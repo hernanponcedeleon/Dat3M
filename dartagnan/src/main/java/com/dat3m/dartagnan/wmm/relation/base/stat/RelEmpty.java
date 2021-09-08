@@ -3,11 +3,9 @@ package com.dat3m.dartagnan.wmm.relation.base.stat;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
-// TODO: Why is RelEmpty not a static relation?
-public class RelEmpty extends Relation {
+public class RelEmpty extends StaticRelation {
 
     public RelEmpty(String name) {
         super(name);

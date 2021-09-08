@@ -10,7 +10,7 @@ public class FilterBasic extends FilterAbstract {
     private final static Map<String, FilterBasic> instances = new HashMap<>();
 
     public static FilterBasic get(String param){
-        return instances.computeIfAbsent(param, k -> new FilterBasic(param));
+        return instances.computeIfAbsent(param, FilterBasic::new);
     }
 
     private final String param;

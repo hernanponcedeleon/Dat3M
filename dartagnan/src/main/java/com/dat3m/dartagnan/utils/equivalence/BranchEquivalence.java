@@ -6,8 +6,9 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.collect.Sets;
 
 import java.util.*;
@@ -75,17 +76,6 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         return start.getThread() == target.getThread() && start.getCId() <= target.getCId() && getEquivalenceClass(start).getReachableClasses().contains(getEquivalenceClass(target));
     }
 
-    public boolean isAfter(Event a, Event b) {
-        if (a.is(EType.INIT)) {
-            return !b.is(EType.INIT);
-        }
-        return a.getThread() == b.getThread() && a.getCId() > b.getCId() && isImplied(b, a);
-    }
-
-    public boolean isBefore(Event a, Event b) {
-        return isAfter(b, a);
-    }
-
     public Set<Event> getExclusiveEvents(Event e) {
         return new ExclusiveSet(e);
     }
@@ -106,6 +96,12 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     @Override
     public Set<Class> getAllEquivalenceClasses() {
         return super.getAllTypedEqClasses();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Set<Class> getNonTrivialClasses() {
+        return (Set<Class>)super.getNonTrivialClasses();
     }
 
     public BranchEquivalence(Program program) {
@@ -348,7 +344,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     private void mergeInitialClasses() {
         if (GlobalSettings.MERGE_BRANCHES) {
             initialClass = getTypedEqClass(program.getThreads().get(0).getEntry());
-            Set<BranchClass> mergedClasses = new HashSet<>();
+            Set<BranchClass> mergedClasses = SetUtil.identityHashSet(classes.size());
             for (int i = 1; i < program.getThreads().size(); i++) {
                 BranchClass c = getTypedEqClass(program.getThreads().get(i).getEntry());
                 mergeClasses(initialClass, c);

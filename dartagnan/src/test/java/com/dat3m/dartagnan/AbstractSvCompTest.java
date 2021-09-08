@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Refinement;
+import com.dat3m.dartagnan.analysis.graphRefinement.RefinementTask;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
@@ -34,15 +36,14 @@ public abstract class AbstractSvCompTest {
     private final Wmm wmm;
     private final Settings settings;
     private Result expected;
-    
+
     public AbstractSvCompTest(String path, Wmm wmm, Settings settings) {
         this.path = path;
         this.wmm = wmm;
         this.settings = settings;
     }
 
-    
-//    @Test(timeout = TIMEOUT)
+    //@Test(timeout = TIMEOUT)
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
@@ -73,7 +74,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-//    @Test(timeout = TIMEOUT)
+    //@Test(timeout = TIMEOUT)
     public void testAssume() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
@@ -83,6 +84,22 @@ public abstract class AbstractSvCompTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
+        } catch (Exception e){
+            fail(e.getMessage());
+        }
+    }
+
+    //@Test(timeout = TIMEOUT)
+    public void testRefinement() {
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
+            String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
+            expected = readExpected(property);
+            Program program = new ProgramParser().parse(new File(path));
+            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover,
+                    RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
         } catch (Exception e){
             fail(e.getMessage());
         }

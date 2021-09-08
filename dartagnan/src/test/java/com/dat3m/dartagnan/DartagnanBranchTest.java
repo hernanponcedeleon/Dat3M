@@ -93,7 +93,7 @@ public class DartagnanBranchTest {
         this.wmm = wmm;
         this.settings = settings;
     }
-    
+
     @Test
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();

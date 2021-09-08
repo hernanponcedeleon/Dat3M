@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemEvent;
 
 import java.math.BigInteger;
 
@@ -10,7 +9,6 @@ import static com.dat3m.dartagnan.program.utils.EType.*;
 
 
 //EventData represents all data associated with an event in a concrete model.
-
 public class EventData implements Comparable<EventData> {
     private final Event event;
     private EventData readFrom;
@@ -89,34 +87,22 @@ public class EventData implements Comparable<EventData> {
     	return event.getThread();
     }
 
-    public boolean isMemoryEvent() {
-        return event instanceof MemEvent;
-    }
-
-    public boolean isWrite() { return event.is(WRITE); }
-
+    public boolean isMemoryEvent() { return event.is(MEMORY); }
     public boolean isInit() {
         return event.is(INIT);
     }
-
+    public boolean isWrite() { return event.is(WRITE); }
     public boolean isRead() { return event.is(READ); }
-
-    public boolean isFence() {
-        return event.is(FENCE);
-    }
-
+    public boolean isFence() { return event.is(FENCE); }
     public boolean isJump() {
         return event.is(JUMP);
     }
-
     public boolean isExclusive() {
     	return event.is(EXCL);
     }
-
     public boolean isLock() {
     	return event.is(LOCK);
     }
-
     public boolean isRMW() {
     	return event.is(RMW);
     }
@@ -127,21 +113,18 @@ public class EventData implements Comparable<EventData> {
 
     @Override
     public int hashCode() {
-        return event.hashCode();
+        return id;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this)
-            return true;
-        if (obj == null || obj.getClass() != this.getClass())
-            return false;
-        return this.event.equals(((EventData)obj).event);
+        // EventData instances are unique per event.
+        return this == obj;
     }
 
     @Override
     public String toString() {
-        return "T" + event.getThread().getId() + ":" + localId /*+ "; " + event.toString()*/;
+        return String.format("T%d:%d", event.getThread().getId(), localId);
     }
 
     @Override

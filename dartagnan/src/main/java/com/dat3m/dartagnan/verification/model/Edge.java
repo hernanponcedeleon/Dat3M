@@ -1,28 +1,53 @@
 package com.dat3m.dartagnan.verification.model;
 
+import com.dat3m.dartagnan.utils.timeable.Timeable;
+import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 // An untyped edge.
 // This is just a decoration for Tuple to use EventData instead of Event
-// Addtionally, it contains timing information used for refinement
+// Additionally, it contains information used for refinement (for now)
 
-public class Edge implements Comparable<Edge> {
+//TODO: Create a version without the refinement-specific extra data.
+// We then differentiate between (Simple)Edge and (Complex)Edge
+// NOTE(!): This change could cause bimorphic callsites, which might hurt performance for Refinement.
+public class Edge implements Comparable<Edge>, Timeable {
 
     private final EventData first;
     private final EventData second;
+    private final Timestamp time;
+    private final int derivLength;
 
-    public Edge(EventData first, EventData second) {
+    public Edge(EventData first, EventData second, Timestamp time, int derivLength) {
         this.first = first;
         this.second = second;
+        this.time = time;
+        this.derivLength = derivLength;
+    }
+
+    public Edge(EventData first, EventData second, Timestamp time) {
+        this (first, second, time, 0);
+    }
+
+    public Edge(EventData first, EventData second, int derivLength) {
+        this (first, second, Timestamp.ZERO, derivLength);
+    }
+
+    public Edge(EventData first, EventData second) {
+        this (first, second, Timestamp.ZERO, 0);
     }
 
     public EventData getFirst(){
         return first;
     }
-
     public EventData getSecond(){
         return second;
     }
+    public Timestamp getTime() {
+        return time;
+    }
+
+    public int getDerivationLength() { return derivLength; }
 
     public String toString() {
         return "(" + first.toString() + ", " + second.toString() + ")";
@@ -31,33 +56,37 @@ public class Edge implements Comparable<Edge> {
     public Tuple toTuple() {
         return new Tuple(first.getEvent(), second.getEvent());
     }
+    public Edge inverse() { return new Edge(second, first, time, derivLength); }
 
-    public Edge getInverse() { return new Edge(second, first); }
 
-    public boolean isCrossEdge() {
-        return !first.getThread().equals(second.getThread());
+    public boolean isInternal() { return first.getThread() == second.getThread();}
+    public boolean isExternal() {
+        return !isInternal();
     }
 
     public boolean isBackwardEdge() {
-        return !isCrossEdge() && first.getLocalId() > second.getLocalId();
+        return isInternal() && first.getLocalId() > second.getLocalId();
     }
-
     public boolean isForwardEdge() {
-        return !isCrossEdge() && first.getLocalId() < second.getLocalId();
+        return isInternal() && first.getLocalId() < second.getLocalId();
     }
-
     public boolean isLoop() {
         return first.equals(second);
     }
-
     public boolean isLocEdge()  { return first.isMemoryEvent() && second.isMemoryEvent()
-            && first.getAccessedAddress().compareTo(second.getAccessedAddress()) == 0; }
+            && first.getAccessedAddress().equals(second.getAccessedAddress()); }
 
+    public Edge with(Timestamp time) { return new Edge(first, second, time, derivLength); }
+    public Edge with(int derivLength) { return new Edge(first, second, time, derivLength); }
+    public Edge with(Timestamp time, int derivLength) { return new Edge(first, second, time, derivLength); }
 
     @Override
     public int hashCode() {
-        return (first.getId() * 8191) + second.getId();
+        int a = first.getId();
+        int b = second.getId();
+        return  a ^ (31 * b + 0x9e3779b9 + (a << 6) + (a >> 2)); // Best hashing function ever :)
     }
+
 
     @Override
     public boolean equals(Object obj) {
@@ -68,8 +97,7 @@ public class Edge implements Comparable<Edge> {
             return false;
 
         Edge other = (Edge) obj;
-        return first.equals(other.first)
-                && second.equals(other.second);
+        return first.equals(other.first) && second.equals(other.second);
     }
 
     @Override

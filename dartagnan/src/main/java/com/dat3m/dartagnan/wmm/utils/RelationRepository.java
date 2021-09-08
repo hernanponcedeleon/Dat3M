@@ -83,11 +83,15 @@ public class RelationRepository {
         }
     }
 
-    private void addRelation(Relation relation) {
+    public void addRelation(Relation relation) {
         relationMap.put(relation.getTerm(), relation);
         if(relation.getIsNamed()){
             relationMap.put(relation.getName(), relation);
         }
+    }
+
+    public boolean containsRelation(String name) {
+        return relationMap.containsKey(name);
     }
 
     private Class<?>[] getArgsForClass(Class<?> cls){

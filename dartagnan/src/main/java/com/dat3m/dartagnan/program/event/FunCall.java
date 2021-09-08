@@ -28,7 +28,7 @@ public class FunCall extends Event {
     }
 
 	@Override
-	public RecursiveAction simplifyRecursive(Event predecessor, int depth) {
+	protected RecursiveAction simplifyRecursive(Event predecessor, int depth) {
 		Event prev = this;
 		Event next = successor;
 		if(successor instanceof FunRet && ((FunRet)successor).getFunctionName().equals(funName)) {

@@ -7,10 +7,9 @@ import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.INT;
-
 import java.util.List;
-import java.util.ListIterator;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.INT;
 
 public class RelInt extends StaticRelation {
 
@@ -24,14 +23,9 @@ public class RelInt extends StaticRelation {
             maxTupleSet = new TupleSet();
             for(Thread t : task.getProgram().getThreads()) {
                 List<Event> events = t.getCache().getEvents(FilterBasic.get(EType.VISIBLE));
-                ListIterator<Event> it1 = events.listIterator();
-                while (it1.hasNext()) {
-                    Event e1 = it1.next();
-                    ListIterator<Event> it2 = events.listIterator(it1.nextIndex());
-                    while (it2.hasNext()) {
-                        Event e2 = it2.next();
+                for (Event e1 : events) {
+                    for (Event e2 : events) {
                         maxTupleSet.add(new Tuple(e1, e2));
-                        maxTupleSet.add(new Tuple(e2, e1));
                     }
                 }
             }

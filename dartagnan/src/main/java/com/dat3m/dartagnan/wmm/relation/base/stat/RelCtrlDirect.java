@@ -14,8 +14,8 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CTRLDIRECT
 
 import java.util.List;
 
-//TODO(TH/HP): Can we restrict to visible events?
-// What is even the use, if none of the edges are visible?
+//TODO: We can restrict the codomain to visible events as the only usage of this Relation is in
+// ctrl := idd^+;ctrlDirect & (R*V)
 public class RelCtrlDirect extends StaticRelation {
 
     public RelCtrlDirect(){

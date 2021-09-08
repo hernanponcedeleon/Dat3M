@@ -23,6 +23,8 @@ public class SvcompProcedures {
 
 	public static List<String> SVCOMPPROCEDURES = Arrays.asList(
 			"__VERIFIER_assert",
+			"__VERIFIER_assume",
+			"assume_abort_if_not",
 			"__VERIFIER_atomic_begin",
 			"__VERIFIER_atomic_end",
 			"__VERIFIER_nondet_bool",
@@ -42,6 +44,10 @@ public class SvcompProcedures {
 		switch(name) {
 		case "__VERIFIER_assert":
 			__VERIFIER_assert(visitor, ctx);
+			break;
+		case "__VERIFIER_assume":
+		case "assume_abort_if_not":
+			__VERIFIER_assume(visitor, ctx);
 			break;
 		case "__VERIFIER_atomic_begin":
 			if(GlobalSettings.ATOMIC_AS_LOCK) {
@@ -89,6 +95,11 @@ public class SvcompProcedures {
 		visitor.programBuilder.addChild(visitor.threadCount, event);
        	Label end = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
        	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newJump(new Atom(ass, NEQ, new IConst(BigInteger.ONE, -1)), end));
+	}
+
+	private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
+    	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
+       	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newAssume(expr));
 	}
 
 	public static void __VERIFIER_atomic(VisitorBoogie visitor, boolean begin) {

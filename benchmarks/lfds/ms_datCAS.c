@@ -131,7 +131,7 @@ void *worker_2(void *unused)
 
 int main()
 {
-  pthread_t t1, t2;
+  pthread_t t1, t2, t3, t4;
 
   init();
 
@@ -139,10 +139,18 @@ int main()
 	abort();
   if (pthread_create(&t2, NULL, worker_2, NULL))
 	abort();
+  if (pthread_create(&t3, NULL, worker_1, NULL))
+	abort();
+  if (pthread_create(&t4, NULL, worker_2, NULL))
+	abort();
 
   if (pthread_join(t1, NULL))
 	abort();
   if (pthread_join(t2, NULL))
+	abort();
+  if (pthread_join(t3, NULL))
+	abort();
+  if (pthread_join(t4, NULL))
 	abort();
 
   int r = dequeue();

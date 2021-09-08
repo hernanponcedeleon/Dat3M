@@ -1,11 +1,13 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.CondJump;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemEvent;
+import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
+import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -13,25 +15,29 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
-
 import java.math.BigInteger;
 import java.util.*;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 
 /*
 The ExecutionModel wraps a Model and extracts data from it in a more workable manner.
  */
 
+//TODO: Add the capability to remove unnecessary init events from a model
+// i.e. those that init some address which no read nor write accesses.
 public class ExecutionModel {
 
-    private final VerificationTask verificationTask;
+    private final VerificationTask task;
 
-    // ============= Refinement specific  =============
+    // ============= Model specific  =============
     private Model model;
     private SolverContext context;
     private FilterAbstract eventFilter;
@@ -42,6 +48,7 @@ public class ExecutionModel {
     private final ArrayList<EventData> eventList;
     private final ArrayList<Thread> threadList;
     private final Map<Thread, List<EventData>> threadEventsMap;
+    private final Map<Thread, List<List<EventData>>> atomicBlocksMap;
     private final Map<EventData, EventData> readWriteMap;
     private final Map<EventData, Set<EventData>> coherenceMap;
     private final Map<EventData, Set<EventData>> writeReadsMap;
@@ -49,13 +56,17 @@ public class ExecutionModel {
     private final Map<BigInteger, Set<EventData>> addressReadsMap;
     private final Map<BigInteger, Set<EventData>> addressWritesMap; // This ALSO contains the init writes
     private final Map<BigInteger, EventData> addressInitMap;
-    //TODO: Note, we could merge the
-    // three above maps into a single one that holds writes, reads and init writes.
+    //Note, we could merge the three above maps into a single one that holds writes, reads and init writes.
+
+    private final Map<EventData, Set<EventData>> dataDepMap;
+    private final Map<EventData, Set<EventData>> addrDepMap;
+    private final Map<EventData, Set<EventData>> ctrlDepMap;
 
     // The following are a read-only views which get passed to the outside
     private List<EventData> eventListView;
     private List<Thread> threadListView;
     private Map<Thread, List<EventData>> threadEventsMapView;
+    private Map<Thread, List<List<EventData>>> atomicBlocksMapView;
     private Map<EventData, EventData> readWriteMapView;
     private Map<EventData, Set<EventData>> coherenceMapView;
     private Map<EventData, Set<EventData>> writeReadsMapView;
@@ -64,13 +75,18 @@ public class ExecutionModel {
     private Map<BigInteger, Set<EventData>> addressWritesMapView;
     private Map<BigInteger, EventData> addressInitMapView;
 
+    private Map<EventData, Set<EventData>> dataDepMapView;
+    private Map<EventData, Set<EventData>> addrDepMapView;
+    private Map<EventData, Set<EventData>> ctrlDepMapView;
+
     //========================== Construction =========================
 
-    public ExecutionModel(VerificationTask verificationTask) {
-        this.verificationTask = verificationTask;
+    public ExecutionModel(VerificationTask task) {
+        this.task = task;
         eventList = new ArrayList<>(100);
         threadList = new ArrayList<>(getProgram().getThreads().size());
         threadEventsMap = new HashMap<>(getProgram().getThreads().size());
+        atomicBlocksMap = new HashMap<>();
         readWriteMap = new HashMap<>();
         coherenceMap = new HashMap<>();
         writeReadsMap = new HashMap<>();
@@ -79,6 +95,10 @@ public class ExecutionModel {
         addressWritesMap = new HashMap<>();
         addressInitMap = new HashMap<>();
         eventMap = new EventMap();
+        dataDepMap = new HashMap<>();
+        addrDepMap = new HashMap<>();
+        ctrlDepMap = new HashMap<>();
+
         createViews();
     }
 
@@ -86,6 +106,7 @@ public class ExecutionModel {
         eventListView = Collections.unmodifiableList(eventList);
         threadListView = Collections.unmodifiableList(threadList);
         threadEventsMapView = Collections.unmodifiableMap(threadEventsMap);
+        atomicBlocksMapView = Collections.unmodifiableMap(atomicBlocksMap);
         readWriteMapView = Collections.unmodifiableMap(readWriteMap);
         coherenceMapView = Collections.unmodifiableMap(coherenceMap);
         writeReadsMapView = Collections.unmodifiableMap(writeReadsMap);
@@ -93,21 +114,24 @@ public class ExecutionModel {
         addressReadsMapView = Collections.unmodifiableMap(addressReadsMap);
         addressWritesMapView = Collections.unmodifiableMap(addressWritesMap);
         addressInitMapView = Collections.unmodifiableMap(addressInitMap);
+        dataDepMapView = Collections.unmodifiableMap(dataDepMap);
+        addrDepMapView = Collections.unmodifiableMap(addrDepMap);
+        ctrlDepMapView = Collections.unmodifiableMap(ctrlDepMap);
     }
 
-    //========================== Public data =========================
+    //======================== Public data ===========================‚
 
     // General data
-    public VerificationTask getVerificationTask() {
-    	return verificationTask;
+    public VerificationTask getTask() {
+    	return task;
     }
     
     public Wmm getMemoryModel() {
-        return verificationTask.getMemoryModel();
+        return task.getMemoryModel();
     }
 
     public Program getProgram() {
-        return verificationTask.getProgram();
+        return task.getProgram();
     }
 
     // Model specific data
@@ -120,7 +144,6 @@ public class ExecutionModel {
     public FilterAbstract getEventFilter() {
     	return eventFilter;
     }
-    
     public boolean hasCoherences() {
     	return extractCoherences;
     }
@@ -136,33 +159,33 @@ public class ExecutionModel {
     public Map<Thread, List<EventData>> getThreadEventsMap() {
         return threadEventsMapView;
     }
-
+    public Map<Thread, List<List<EventData>>> getAtomicBlocksMap() { return atomicBlocksMapView; }
     public Map<EventData, EventData> getReadWriteMap() {
         return readWriteMapView;
     }
-    
     public Map<EventData, Set<EventData>> getCoherenceMap() {
     	return coherenceMapView;
     }
-    
     public Map<EventData, Set<EventData>> getWriteReadsMap() {
         return writeReadsMapView;
     }
     public Map<String, Set<EventData>> getFenceMap() {
         return fenceMapView;
     }
-    
     public Map<BigInteger, Set<EventData>> getAddressReadsMap() {
         return addressReadsMapView;
     }
-    
     public Map<BigInteger, Set<EventData>> getAddressWritesMap() {
         return addressWritesMapView;
     }
-    
     public Map<BigInteger, EventData> getAddressInitMap() {
         return addressInitMapView;
     }
+    public Map<EventData, Set<EventData>> getAddrDepMap() { return addrDepMapView; }
+    public Map<EventData, Set<EventData>> getDataDepMap() { return dataDepMapView; }
+    public Map<EventData, Set<EventData>> getCtrlDepMap() { return ctrlDepMapView; }
+
+
 
     public boolean eventExists(Event e) {
         return eventMap.contains(e);
@@ -211,23 +234,49 @@ public class ExecutionModel {
         eventList.clear();
         threadList.clear();
         threadEventsMap.clear();
+        atomicBlocksMap.clear();
         addressInitMap.clear(); // This one can probably be constant and need not be rebuilt!
         addressWritesMap.clear();
         addressReadsMap.clear();
+        writeReadsMap.clear();
         fenceMap.clear();
         eventMap.clear();
+        addrDepMap.clear();
+        dataDepMap.clear();
+        ctrlDepMap.clear();
 
         List<Thread> threadList = new ArrayList<>(getProgram().getThreads());
         List<Integer> threadEndIndexList = new ArrayList<>(threadList.size());
+        Map<Thread, List<List<Integer>>> atomicBlockRangesMap = new HashMap<>();
 
         for (Thread thread : threadList) {
+            initDepTracking();
+            List<List<Integer>> atomicBlockRanges = atomicBlockRangesMap.computeIfAbsent(thread, key -> new ArrayList<>());
             Event e = thread.getEntry();
+            int atomicBegin = -1;
             int localId = 0;
             do {
-                if (e.wasExecuted(model) && eventFilter.filter(e)) {
+                if (!e.wasExecuted(model)) {
+                    e = e.getSuccessor();
+                    continue;
+                }
+                if (eventFilter.filter(e)) {
                     addEvent(e, id++, localId++);
                 }
-                //TODO: Add support for ifs
+                trackDependencies(e);
+
+                // ===== Atomic blocks =====
+                if (e instanceof BeginAtomic) {
+                    atomicBegin = id;
+                } else if (e instanceof EndAtomic) {
+                    if (atomicBegin == -1) {
+                        throw new IllegalStateException("EndAtomic without matching BeginAtomic in model");
+                    }
+                    atomicBlockRanges.add(ImmutableList.of(atomicBegin, id));
+                    atomicBegin = -1;
+                }
+                // =========================
+
                 if (e instanceof CondJump) {
                     CondJump jump = (CondJump) e;
                     if (jump.didJump(model, context)) {
@@ -238,6 +287,11 @@ public class ExecutionModel {
                 e = e.getSuccessor();
 
             } while (e != null);
+            // We have a BeginAtomic without EndAtomic since the program terminated within the block
+            if (atomicBegin != -1) {
+                atomicBlockRanges.add(ImmutableList.of(atomicBegin, id));
+            }
+            // -----------
             threadEndIndexList.add(id);
         }
 
@@ -249,10 +303,16 @@ public class ExecutionModel {
             if (start != end) {
                 this.threadList.add(thread);
                 threadEventsMap.put(thread, Collections.unmodifiableList(eventList.subList(start, end)));
+
+                atomicBlocksMap.put(thread, new ArrayList<>());
+                for (List<Integer> aRange : atomicBlockRangesMap.get(thread)) {
+                    atomicBlocksMap.get(thread).add(eventList.subList(aRange.get(0), aRange.get(1)));
+                }
             }
             start = end;
         }
     }
+
 
     private void addEvent(Event e, int globalId, int localId) {
         EventData data = eventMap.get(e);
@@ -285,7 +345,7 @@ public class ExecutionModel {
 
         } else if (data.isFence()) {
             // ===== Fences =====
-            String name = data.getEvent().toString();
+            String name = ((Fence)data.getEvent()).getName();
             if (!fenceMap.containsKey(name))
                 fenceMap.put(name, new HashSet<>());
             fenceMap.get(name).add(data);
@@ -299,6 +359,87 @@ public class ExecutionModel {
             // having any data extracted
         }
     }
+
+    // =============== Dependency tracking ===============
+    //TODO: The following code is refinement specific and assumes that only visible events get extracted!
+
+    private Map<Register, Set<EventData>> lastRegWrites;
+    private Set<EventData> curCtrlDeps;
+    // The following is used for Linux
+    private Stack<Set<EventData>> ifCtrlDeps;
+    private Stack<Label> endIfs;
+    //------------------------
+    private void initDepTracking() {
+        lastRegWrites = new HashMap<>();
+        curCtrlDeps = new HashSet<>();
+        ifCtrlDeps = new Stack<>();
+        endIfs = new Stack<>();
+    }
+
+    private void trackDependencies(Event e) {
+
+        while (!endIfs.isEmpty() && e.getCId() >= endIfs.peek().getCId()) {
+            // We exited an If and remove the dependencies associated with it
+            // We do this inside a loop just in case multiple Ifs are left simultaneously
+            endIfs.pop();
+            curCtrlDeps.removeAll(ifCtrlDeps.pop());
+        }
+
+
+        if (e instanceof MemEvent) {
+            // ---- Track address dependency ----
+            MemEvent memEvent = (MemEvent) e;
+            HashSet<EventData> deps = new HashSet<>();
+
+            for (Register reg : memEvent.getAddress().getRegs()) {
+                deps.addAll(lastRegWrites.get(reg));
+            }
+            addrDepMap.put(getData(e), deps);
+        }
+
+        if (e.is(EType.VISIBLE)) {
+            // ---- Track ctrl dependency ----
+            // TODO: This may be done more efficiently, as many events share the same set of ctrldeps.
+            ctrlDepMap.put(getData(e), new HashSet<>(curCtrlDeps));
+        }
+
+        if (e instanceof RegReaderData) {
+            // ---- Track data dependency ----
+            RegReaderData reader = (RegReaderData)e;
+            HashSet<EventData> deps = new HashSet<>();
+            for (Register r : reader.getDataRegs()) {
+                deps.addAll(lastRegWrites.getOrDefault(r, Collections.emptySet()));
+            }
+
+            if (e instanceof Store) {
+                // ---- visible data dependency ----
+                dataDepMap.put(getData(e), deps);
+            }
+            if (e instanceof RegWriter) {
+                // ---- internal data dependency ----
+                RegWriter writer = (RegWriter) e;
+                lastRegWrites.put(writer.getResultRegister(), deps);
+            }
+            if (e instanceof CondJump) {
+                if (e instanceof IfAsJump) {
+                    // Remember what dependencies were added when entering the If so we can remove them when exiting
+                    HashSet<EventData> addedDeps = new HashSet<>(Sets.difference(deps, curCtrlDeps));
+                    ifCtrlDeps.push(addedDeps);
+                    endIfs.push(((IfAsJump)e).getEndIf());
+                }
+                // Jumps add all dependencies
+                curCtrlDeps.addAll(deps);
+            }
+        }
+
+        if (e instanceof Load) {
+            // ---- Update lastRegWrites ----
+            Load load = (Load)e;
+            lastRegWrites.compute(load.getResultRegister(), (k, v) -> new HashSet<>()).add(getData(e));
+        }
+    }
+
+    // ===================================================
 
     private Relation rf;
     private void extractReadsFrom() {
@@ -332,8 +473,9 @@ public class ExecutionModel {
     private Relation co;
     private void extractCoherences() {
         coherenceMap.clear();
-        if (!extractCoherences)
+        if (!extractCoherences) {
             return;
+        }
 
         if (co == null) {
             co = getMemoryModel().getRelationRepository().getRelation(CO);

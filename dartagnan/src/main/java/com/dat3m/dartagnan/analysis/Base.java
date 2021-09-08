@@ -1,9 +1,8 @@
 package com.dat3m.dartagnan.analysis;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
-import static java.util.Collections.singletonList;
-
+import com.dat3m.dartagnan.asserts.AssertTrue;
+import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -12,10 +11,12 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import com.dat3m.dartagnan.asserts.AssertTrue;
-import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
+import static java.util.Collections.singletonList;
 
+
+//TODO: Add symmetry breaking
 public class Base {
 
     private static final Logger logger = LogManager.getLogger(Base.class);
@@ -25,7 +26,7 @@ public class Base {
         
         task.unrollAndCompile();
        	if(task.getProgram().getAss() instanceof AssertTrue) {
-            logger.info("Verification finished: assertion trivialy holds");
+            logger.info("Verification finished: assertion trivially holds");
        		return PASS;
        	}
         task.initialiseEncoding(ctx);
@@ -61,7 +62,7 @@ public class Base {
         
         task.unrollAndCompile();
        	if(task.getProgram().getAss() instanceof AssertTrue) {
-            logger.info("Verification finished: assertion trivialy holds");
+            logger.info("Verification finished: assertion trivially holds");
        		return PASS;
        	}
         task.initialiseEncoding(ctx);

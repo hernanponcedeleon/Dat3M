@@ -57,7 +57,11 @@ public class SVCOMPRunner {
 
         int bound = witness.hasAttributed(UNROLLBOUND.toString()) ?  parseInt(witness.getAttributed(UNROLLBOUND.toString())) : options.getUMin();
 		String output = "UNKNOWN";
-		while(output.equals("UNKNOWN") && bound <= options.getUMax()) {
+		while(output.equals("UNKNOWN")) {
+			if(bound == options.getUMax()+1) {
+				System.out.println("PASS");
+				break;
+			}
 			compile(tmp, options, true);
 	        // If not removed here, file is not removed when we reach the timeout
 	        // File can be safely deleted since it was created by the SVCOMPSanitizer

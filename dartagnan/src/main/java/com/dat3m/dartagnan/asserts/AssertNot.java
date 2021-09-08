@@ -24,6 +24,11 @@ public class AssertNot extends AbstractAssert {
     }
 
     @Override
+    public AbstractAssert removeLocAssertions(boolean replaceByTrue) {
+        return new AssertNot(child.removeLocAssertions(replaceByTrue));
+    }
+
+    @Override
     public BooleanFormula encode(SolverContext ctx) {
         if(child != null){
             return ctx.getFormulaManager().getBooleanFormulaManager().not(child.encode(ctx));

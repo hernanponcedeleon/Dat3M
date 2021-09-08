@@ -57,7 +57,7 @@ public class Memory {
         for(Address add : getAllAddresses()) {
         	if(!add.hasConstantValue()) {
         		enc = bmgr.and(enc, imgr.greaterThan(
-        							convertToIntegerFormula(add.toIntFormula(ctx), ctx), 
+        							convertToIntegerFormula(add.toIntFormula(ctx), ctx),
         							imgr.makeNumber(BigInteger.ZERO)));
         	}
         }
@@ -65,10 +65,10 @@ public class Memory {
         BooleanFormula distinct = getAllAddresses().size() > 1 ?
         		imgr.distinct(getAllAddresses().stream()
                 		.map(a -> convertToIntegerFormula(a.toIntFormula(ctx), ctx))
-                		.collect(Collectors.toList())) : 
+                		.collect(Collectors.toList())) :
                 bmgr.makeTrue();
-        
-        return bmgr.and(enc, distinct);        	
+
+        return bmgr.and(enc, distinct);
     }
 
     // Assigns each Address a fixed memory address.
@@ -77,7 +77,7 @@ public class Memory {
 		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 
     	BooleanFormula[] addrExprs = getAllAddresses().stream().filter(x -> !x.hasConstantValue())
-        		.map(add -> imgr.equal(convertToIntegerFormula(add.toIntFormula(ctx), ctx), 
+        		.map(add -> imgr.equal(convertToIntegerFormula(add.toIntFormula(ctx), ctx),
         								imgr.makeNumber(add.getValue().intValue())))
         		.toArray(BooleanFormula[]::new);
         return fmgr.getBooleanFormulaManager().and(addrExprs);

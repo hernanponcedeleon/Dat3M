@@ -2,6 +2,13 @@ package com.dat3m.dartagnan.program;
 
 
 import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.utils.ThreadCache;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
@@ -11,13 +18,6 @@ import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.utils.ThreadCache;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -160,6 +160,14 @@ public class Program {
     	}
 	}
 
+    public int setFId(int nextId) {
+        for(Thread thread : threads){
+            nextId = thread.setFId(nextId);
+        }
+        cache = null;
+        return nextId;
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -218,7 +226,7 @@ public class Program {
     public BooleanFormula encodeFinalRegisterValues(SolverContext ctx){
         FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-        
+
         if (this.task == null) {
             throw new RuntimeException("The program needs to get initialised first.");
         }
@@ -261,7 +269,7 @@ public class Program {
                         lastModReg = bmgr.and(lastModReg, bmgr.not(w2.exec()));
                     }
                 }
-                
+
                 BooleanFormula same =  generalEqual(reg.getLastValueExpr(ctx), ((RegWriter)w1).getResultRegisterExpr(), ctx);
                 enc = bmgr.and(enc, bmgr.implication(lastModReg, same));
             }

@@ -1,0 +1,11 @@
+format_version: '2.0'
+
+input_files: '../ticketlock-6-rel2rx.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: false
+
+options:
+  language: C
+  data_model: ILP32

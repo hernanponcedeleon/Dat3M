@@ -9,8 +9,7 @@ public class Utils {
 		FormulaManager fmgr = ctx.getFormulaManager();
 		if(f1 instanceof IntegerFormula && f2 instanceof IntegerFormula) {
 			return fmgr.getIntegerFormulaManager().equal((IntegerFormula)f1, (IntegerFormula)f2);
-		}
-		if(f1 instanceof BitvectorFormula && f2 instanceof BitvectorFormula) {
+		} else if(f1 instanceof BitvectorFormula && f2 instanceof BitvectorFormula) {
 			return fmgr.getBitvectorFormulaManager().equal((BitvectorFormula)f1, (BitvectorFormula)f2);
 		}
 		throw new RuntimeException(String.format("Formulas %s and %s have different types or are of unsupported type for generalEqual", f1, f2));

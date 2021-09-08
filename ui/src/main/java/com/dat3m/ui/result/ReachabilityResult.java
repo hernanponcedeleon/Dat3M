@@ -1,5 +1,6 @@
 package com.dat3m.ui.result;
 
+import com.dat3m.dartagnan.analysis.graphRefinement.RefinementTask;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -16,6 +17,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import static com.dat3m.dartagnan.analysis.Base.*;
+import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisGraphRefinement;
 
 public class ReachabilityResult {
 
@@ -31,7 +33,7 @@ public class ReachabilityResult {
         this.options = options;
         run();
     }
-    
+
     public String getVerdict(){
         return verdict;
     }
@@ -66,6 +68,7 @@ public class ReachabilityResult {
                         options.getSolver());
                      ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
 
+
                     switch (options.getMethod()) {
                         case INCREMENTAL:
                             result = runAnalysisIncrementalSolver(ctx, prover, task);
@@ -77,6 +80,9 @@ public class ReachabilityResult {
                             try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
                                 result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
                             }
+                            break;
+                        case REFINEMENT:
+                            result = runAnalysisGraphRefinement(ctx, prover, RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
                             break;
                     }
                     // Verification ended, we can interrupt the timeout Thread

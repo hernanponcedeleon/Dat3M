@@ -138,6 +138,10 @@ public class EventFactory {
         return newJump(new Atom(reg, COpBin.EQ, reg), target);
     }
 
+    public static Assume newAssume(ExprInterface expr) {
+        return new Assume(expr);
+    }
+
     // ------------------------------------------ RMW events ------------------------------------------
 
     public static Load newRMWLoad(Register reg, IExpr address, String mo) {

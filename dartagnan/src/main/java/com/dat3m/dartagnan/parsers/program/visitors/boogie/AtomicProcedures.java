@@ -132,7 +132,7 @@ public class AtomicProcedures {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
 		List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 		IExpr add = (IExpr) params.get(0).accept(visitor);
-		Register expected = (Register) params.get(1).accept(visitor);
+		IExpr expected = (IExpr) params.get(1).accept(visitor);
 		ExprInterface desired = (ExprInterface) params.get(2).accept(visitor);
 		String mo = null;
 		if(params.size() > 3) {

@@ -34,6 +34,8 @@ public abstract class AbstractAssert {
     	return ImmutableSet.of();
     }
 
+    public abstract AbstractAssert removeLocAssertions(boolean replaceByTrue);
+
     public String toStringWithType(){
         if(type != null){
             AbstractAssert child = this;

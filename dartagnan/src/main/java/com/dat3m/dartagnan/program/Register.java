@@ -54,7 +54,7 @@ public class Register extends IExpr implements ExprInterface {
 
     @Override
     public int hashCode(){
-        return (name.hashCode() << 8) + threadId;
+        return name.hashCode() + threadId;
     }
 
     @Override

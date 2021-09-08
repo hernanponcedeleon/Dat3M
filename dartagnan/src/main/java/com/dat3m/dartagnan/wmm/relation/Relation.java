@@ -7,14 +7,15 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
-import com.google.common.collect.Sets;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-
-import java.util.*;
-
+import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
@@ -148,10 +149,6 @@ public abstract class Relation implements Dependent<Relation> {
 
     protected abstract BooleanFormula encodeApprox(SolverContext ctx);
 
-    public BooleanFormula encodeIteration(int recGroupId, int iteration, SolverContext ctx){
-        return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
-    }
-
     protected BooleanFormula doEncode(SolverContext ctx){
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
         	return encodeApprox(ctx);
@@ -160,7 +157,7 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
-        return !getMaxTupleSet().contains(edge) ? 
+        return !getMaxTupleSet().contains(edge) ?
         		ctx.getFormulaManager().getBooleanFormulaManager().makeFalse() :
                 edge(getName(), edge.getFirst(), edge.getSecond(), ctx);
     }
@@ -170,15 +167,18 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     protected BooleanFormula getExecPair(Event e1, Event e2, SolverContext ctx) {
+        if (e1.exec() == e2.exec()) {
+            return e1.exec();
+        }
         if (e1.getCId() > e2.getCId()) {
             Event temp = e1;
             e1 = e2;
             e2 = temp;
         }
         BranchEquivalence eq = task.getBranchEquivalence();
-        if (eq.isImplied(e1, e2)) {
+        if (eq.isImplied(e1, e2) && e2.cfImpliesExec()) {
             return e1.exec();
-        } else if (eq.isImplied(e2 ,e1)) {
+        } else if (eq.isImplied(e2 ,e1) && e1.cfImpliesExec()) {
             return e2.exec();
         }
         return ctx.getFormulaManager().getBooleanFormulaManager().and(e1.exec(), e2.exec());

@@ -3,25 +3,22 @@ package com.dat3m.dartagnan.wmm;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.utils.*;
-import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
-import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ADDRDIRECT;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.IDD;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
-
-import java.util.*;
-
+import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
+import com.dat3m.dartagnan.wmm.utils.RelationRepository;
+import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
+import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.util.*;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 /**
  *
@@ -38,6 +35,12 @@ public class Wmm {
 
     private VerificationTask task;
     private boolean relationsAreEncoded = false;
+
+    private boolean encodeCo = true;
+
+    public void setEncodeCo(boolean encodeCO) {
+        this.encodeCo = encodeCO;
+    }
 
     public Wmm() {
         relationRepository = new RelationRepository();
@@ -56,11 +59,7 @@ public class Wmm {
     }
 
     public FilterAbstract getFilter(String name){
-        FilterAbstract filter = filters.get(name);
-        if(filter == null){
-            filter = FilterBasic.get(name);
-        }
-        return filter;
+        return filters.computeIfAbsent(name, FilterBasic::get);
     }
 
     public RelationRepository getRelationRepository(){
@@ -68,6 +67,8 @@ public class Wmm {
     }
 
     public boolean isLocallyConsistent() {
+        // For now we just return a global flag, but we would like to automatically
+        // detect local consistency
         return GlobalSettings.ASSUME_LOCAL_CONSISTENCY;
     }
 
@@ -87,10 +88,6 @@ public class Wmm {
             relationRepository.getRelation(relName);
         }
 
-        for(FilterAbstract filter : filters.values()){
-            filter.initialise();
-        }
-
         for (Axiom ax : axioms) {
             ax.getRelation().updateRecursiveGroupId(ax.getRelation().getRecursiveGroupId());
         }
@@ -108,33 +105,11 @@ public class Wmm {
         }
     }
 
-    // Encodes only the base relations of the memory model without co!
-    // This should be (almost) equivalent to encoding the empty memory model
-    // A call to <consistent> should not be performed afterwards.
-    public BooleanFormula encodeCore(SolverContext ctx) {
-        if (this.task == null) {
-            throw new IllegalStateException("The WMM needs to get initialised first.");
-        }
-
-        // Encode all base relations except co (essentially encodes rf and po)
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
-        for(String relName : baseRelations){
-            if (relName.equals(CO)) {
-                continue;
-            }
-            relationRepository.getRelation(relName).getMaxTupleSet();
-            enc = bmgr.and(enc, relationRepository.getRelation(relName).encode(ctx));
-        }
-
-        return enc;
-    }
-
     // This methods initializes all relations and encodes all base relations
     // and recursive groups (why recursive groups?)
     // It also triggers the computation of may and active sets!
     // It does NOT encode the axioms nor any non-base relation yet!
-    public BooleanFormula encodeBase(SolverContext ctx) {
+    private BooleanFormula encodeBase(SolverContext ctx) {
         if (this.task == null) {
             throw new IllegalStateException("The WMM needs to get initialised first.");
         }
@@ -164,6 +139,9 @@ public class Wmm {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
         for(String relName : baseRelations){
+            if (!encodeCo && relName.equals(CO)) {
+                continue;
+            }
             enc = bmgr.and(enc, relationRepository.getRelation(relName).encode(ctx));
         }
 
@@ -172,7 +150,8 @@ public class Wmm {
 
     // Initalizes everything just like encodeBase but also encodes all
     // relations that are needed for the axioms (but does NOT encode the axioms themselves yet)
-    public BooleanFormula encode(SolverContext ctx) {
+    // NOTE: It avoids encoding relations that do NOT affect the axioms, i.e. unused relations
+    public BooleanFormula encodeRelations(SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
     	BooleanFormula enc = encodeBase(ctx);
         for (Axiom ax : axioms) {
@@ -182,10 +161,10 @@ public class Wmm {
         return enc;
     }
 
-    // Encodes all axioms. This should be called after <encode>
-    public BooleanFormula consistent(SolverContext ctx) {
+    // Encodes all axioms. This should be called after <encodeRelations>
+    public BooleanFormula encodeConsistency(SolverContext ctx) {
         if(!relationsAreEncoded){
-            throw new IllegalStateException("Wmm relations must be encoded before consistency predicate");
+            throw new IllegalStateException("Wmm relations must be encoded before the consistency predicate.");
         }
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula expr = bmgr.makeTrue();
