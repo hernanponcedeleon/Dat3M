@@ -106,7 +106,7 @@ public abstract class AbstractDartagnanTest {
         }
     }
 
-    @Test(timeout = TIMEOUT)
+//    @Test(timeout = TIMEOUT)
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
