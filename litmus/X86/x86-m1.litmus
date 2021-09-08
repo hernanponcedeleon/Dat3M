@@ -1,8 +1,0 @@
-X86 x86-m1  (X86MOne)
-"plain iriw, no barriers"
-{x = 0; y = 0; P2:EAX = 0; P2:EBX = 0; P3:ECX = 0; P3:EDX = 0};
-
-P0          |P1          |P2        |P3        ;
-mov EAX,[x] |mov EBX,[y] |mov [x],1 |mov [y],2 ;
-mov EBX,[y] |mov EAX,[x] |          |          ;
-~exists(0:EAX=1 /\ 0:EBX=0 /\ 1:EAX=0 /\ 1:EBX=2)

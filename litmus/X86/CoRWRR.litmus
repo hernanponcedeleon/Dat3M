@@ -1,9 +1,0 @@
-X86 CoRWRR
-{ }
- P0          | P1          ;
- MOV EAX,[x] | MOV [x],$2  ;
- MOV [x],$1  |             ;
- MOV EBX,[x] |             ;
- MOV ECX,[x] |             ;
-locations [x;0:EAX;0:EBX;0:ECX;]
-exists (0:EAX=0 /\ 0:EBX=0 /\ 0:ECX=0 /\ x=1) \/ (0:EAX=0 /\ 0:EBX=0 /\ 0:ECX=0 /\ x=2) \/ (0:EAX=0 /\ 0:EBX=1 /\ 0:ECX=0 /\ x=1) \/ (0:EAX=0 /\ 0:EBX=1 /\ 0:ECX=0 /\ x=2) \/ (0:EAX=0 /\ 0:EBX=2 /\ 0:ECX=0 /\ x=1) \/ (0:EAX=0 /\ 0:EBX=2 /\ 0:ECX=0 /\ x=2) \/ (0:EAX=1 /\ 0:EBX=0 /\ 0:ECX=0 /\ x=1) \/ (0:EAX=1 /\ 0:EBX=0 /\ 0:ECX=0 /\ x=2) \/ (0:EAX=1 /\ 0:EBX=2 /\ 0:ECX=0 /\ x=1) \/ (0:EAX=2 /\ 0:EBX=1 /\ 0:ECX=0 /\ x=1) \/ (0:EAX=2 /\ 0:EBX=2 /\ 0:ECX=0 /\ x=1)

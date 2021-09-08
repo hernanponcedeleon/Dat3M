@@ -1,9 +1,0 @@
-X86 SB3
-"PodWR Fre PodWR Fre PodWR Fre"
-{
-}
- P0          | P1          | P2          ;
- MOV [x],$1  | MOV [y],$1  | MOV [z],$1  ;
- MOV EAX,[y] | MOV EAX,[z] | MOV EAX,[x] ;
-exists
-(0:EAX=0 /\ 1:EAX=0 /\ 2:EAX=0)
