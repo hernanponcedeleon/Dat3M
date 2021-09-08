@@ -68,13 +68,9 @@ public class RcuGraph extends StaticEventGraph {
 
     @Override
     public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
-        BiMap<EventData, EventData> map = dir == EdgeDirection.OUTGOING ? lockUnlockMap : unlockLockMap;
-        EventData a = dir == EdgeDirection.OUTGOING ? e : map.get(e);
-        EventData b = (a == e) ? map.get(e) : e;
-        if (a == null || b == null) {
-            return Stream.empty();
-        } else {
-            return Stream.of(new Edge(a, b));
-        }
+        BiMap<EventData, EventData> map = (dir == EdgeDirection.OUTGOING ? lockUnlockMap : unlockLockMap);
+        EventData a = (dir == EdgeDirection.OUTGOING ? e : map.get(e));
+        EventData b = (a == e ? map.get(e) : e);
+        return (a != null && b != null) ? Stream.of(new Edge(a, b)) : Stream.empty();
     }
 }

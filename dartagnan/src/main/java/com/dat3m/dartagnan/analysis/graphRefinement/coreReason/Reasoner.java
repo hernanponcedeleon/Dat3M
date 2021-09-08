@@ -110,7 +110,7 @@ public class Reasoner {
         }
 
         if (graph == execGraph.getSimpleCoherenceGraph()) {
-            // The WoGraph has no corresponding Relation in the WMM.
+            // The SimpleCoherenceGraph has no corresponding Relation in the WMM.
             // Instead we use the CoGraph to look up a static reason.
             graph = execGraph.getCoherenceGraph();
         }
@@ -185,8 +185,9 @@ public class Reasoner {
             EventLiteral eventLit = (EventLiteral) literal;
             Event e = eventLit.getEventData().getEvent();
             return e.cfImpliesExec() && clause.getLiterals().stream().anyMatch(x -> {
-                if (!(x instanceof RfLiteral))
+                if (!(x instanceof RfLiteral)) {
                     return false;
+                }
                 Edge edge = ((AbstractEdgeLiteral) x).getEdge();
                 return eq.isImplied(edge.getFirst().getEvent(), e) || eq.isImplied(edge.getSecond().getEvent(), e);
             });
@@ -197,7 +198,8 @@ public class Reasoner {
 
     // ======================== Visitor ==========================
     /*
-        The visitor is used to traverse the structure of the graph hierarchy.
+        The visitor is used to traverse the structure of the graph hierarchy
+        and compute reasons for each graph.
      */
     private class Visitor implements GraphVisitor<Conjunction<CoreLiteral>, Edge, Void> {
 
@@ -238,7 +240,6 @@ public class Reasoner {
             if (reason != null) {
                 return reason;
             }
-
 
             reason = Conjunction.TRUE();
             for (EventGraph g : graph.getDependencies()) {
@@ -412,7 +413,7 @@ public class Reasoner {
             if (graph instanceof ReadFromGraph) {
                 return visitRf(graph, edge, unused);
             } else if (graph instanceof SimpleCoherenceGraph) {
-                return visitWo(graph, edge, unused);
+                return visitSco(graph, edge, unused);
             } else if (graph instanceof LocationGraph) {
                 return visitLoc(graph, edge, unused);
             } else if (graph instanceof FenceGraph) {
@@ -433,7 +434,7 @@ public class Reasoner {
             return getRfReason(edge);
         }
 
-        private Conjunction<CoreLiteral> visitWo(EventGraph graph, Edge edge, Void unused) {
+        private Conjunction<CoreLiteral> visitSco(EventGraph graph, Edge edge, Void unused) {
             // We still use minTupleSets for Co for now, even if minTupleReasoning is disabled
             if (co.getMinTupleSet().contains(edge.toTuple())) {
                 return getExecReason(edge);

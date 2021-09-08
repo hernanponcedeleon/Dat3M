@@ -16,7 +16,7 @@ import java.util.List;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 
 @RunWith(Parameterized.class)
-public class SvCompLargeTest extends AbstractSvCompTest {
+public class SvCompTestLarge extends AbstractSvCompTest {
 
 	@Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
@@ -81,7 +81,7 @@ public class SvCompLargeTest extends AbstractSvCompTest {
         return data;
     }
 
-	public SvCompLargeTest(String path, Wmm wmm, Settings settings) {
+	public SvCompTestLarge(String path, Wmm wmm, Settings settings) {
 		super(path, wmm, settings);
 	}
 }

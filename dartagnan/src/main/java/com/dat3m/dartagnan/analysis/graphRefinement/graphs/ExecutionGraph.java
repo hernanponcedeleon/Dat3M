@@ -232,7 +232,7 @@ public class ExecutionGraph {
             graph = poGraph = new ProgramOrderGraph();
         } else if (relClass == RelCo.class) {
             graph = coGraph = new TransitiveGraph(scoGraph = new SimpleCoherenceGraph());
-            scoGraph.setName("_wo");
+            scoGraph.setName("_sco");
         } else if (rel.isRecursiveRelation()) {
             RecursiveGraph recGraph = new RecursiveGraph();
             recGraph.setName(rel.getName() + "_rec");

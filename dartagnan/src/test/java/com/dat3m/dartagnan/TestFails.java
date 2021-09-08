@@ -32,7 +32,7 @@ NOTE: We use these tests to collect benchmarks that are failing for some reason
 (buggy, too slow, unsupported features etc.)
  */
 @RunWith(Parameterized.class)
-public class FailsTest {
+public class TestFails {
 
     static final int TIMEOUT = 600000;
 
@@ -42,7 +42,7 @@ public class FailsTest {
     private final Settings settings;
     private final Result expected;
 
-    public FailsTest(String path, Wmm wmm, Arch target, Settings settings, Result expected) {
+    public TestFails(String path, Wmm wmm, Arch target, Settings settings, Result expected) {
         this.path = path;
         this.wmm = wmm;
         this.target = target;
@@ -67,7 +67,7 @@ public class FailsTest {
         return data;
     }
 
-    //    @Test(timeout = TIMEOUT)
+    //@Test(timeout = TIMEOUT)
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(SolverContext.ProverOptions.GENERATE_MODELS))
