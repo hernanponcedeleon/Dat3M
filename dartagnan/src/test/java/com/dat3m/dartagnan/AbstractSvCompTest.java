@@ -91,19 +91,18 @@ public abstract class AbstractSvCompTest {
 
     @Test(timeout = TIMEOUT)
     public void testRefinement() {
-    	assert(true);
-//        try (SolverContext ctx = TestHelper.createContext();
-//             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
-//        {
-//            String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-//            expected = readExpected(property);
-//            Program program = new ProgramParser().parse(new File(path));
-//            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-//            assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover,
-//                    RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
-//        } catch (Exception e){
-//            fail(e.getMessage());
-//        }
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
+            String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
+            expected = readExpected(property);
+            Program program = new ProgramParser().parse(new File(path));
+            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover,
+                    RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
+        } catch (Exception e){
+            fail(e.getMessage());
+        }
     }
 
 	private Result readExpected(String property) {

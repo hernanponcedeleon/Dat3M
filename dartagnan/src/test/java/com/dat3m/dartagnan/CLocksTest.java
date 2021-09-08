@@ -150,16 +150,15 @@ public class CLocksTest {
 
     @Test(timeout = TIMEOUT)
     public void testRefinement() {
-    	assert(true);
-//        try (SolverContext ctx = TestHelper.createContext();
-//             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
-//        {
-//            Program program = new ProgramParser().parse(new File(path));
-//            VerificationTask task = new VerificationTask(program, wmm, target, settings);
-//            assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover,
-//                    RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
-//        } catch (Exception e){
-//            fail(e.getMessage());
-//        }
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
+            Program program = new ProgramParser().parse(new File(path));
+            VerificationTask task = new VerificationTask(program, wmm, target, settings);
+            assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover,
+                    RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
+        } catch (Exception e){
+            fail(e.getMessage());
+        }
     }
 }
