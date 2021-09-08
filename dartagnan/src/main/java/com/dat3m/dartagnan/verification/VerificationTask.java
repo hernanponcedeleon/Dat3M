@@ -19,6 +19,8 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import static com.dat3m.dartagnan.program.utils.Utils.assertionPrecondition;
+
 import java.util.*;
 
 /*
@@ -149,6 +151,11 @@ public class VerificationTask {
 			assertionEncoding = bmgr.and(assertionEncoding, program.getAssFilter().encode(ctx));
         }
         return assertionEncoding;
+    }
+
+    public BooleanFormula encodeAssertionsWithPrecondition(SolverContext ctx) {
+    	return ctx.getFormulaManager().getBooleanFormulaManager().
+    			implication(assertionPrecondition(ctx), encodeAssertions(ctx));
     }
 
     public BooleanFormula encodeWitness(SolverContext ctx) {

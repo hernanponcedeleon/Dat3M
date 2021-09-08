@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.program.utils;
 
+import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
+
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
@@ -20,5 +22,9 @@ public class Utils {
     	return f instanceof BitvectorFormula ? 
     			ctx.getFormulaManager().getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula) f, false) : 
     			(IntegerFormula)f;
-    }    
+    }
+    
+    public static BooleanFormula assertionPrecondition(SolverContext ctx) {
+    	return ctx.getFormulaManager().makeVariable(BooleanType, "DAT3M_assertion_precondition");
+    }
 }
