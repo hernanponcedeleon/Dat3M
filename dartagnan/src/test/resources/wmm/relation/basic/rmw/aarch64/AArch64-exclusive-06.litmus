@@ -1,9 +1,0 @@
-AArch64 AArch64-exclusive-06
-"Unmatched exclusive store, should always fail"
-{
-0:X1=x; 1:X1=x;
-}
- P0                 | P1           ;
- MOV W0,#1          | LDXR W4,[X1] ;
- STXR W3,W0,[X1]    |              ;
-exists (0:X3=0)

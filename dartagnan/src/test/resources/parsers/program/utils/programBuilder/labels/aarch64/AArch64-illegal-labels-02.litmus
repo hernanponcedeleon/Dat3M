@@ -1,9 +1,0 @@
-AArch64 AArch64-illegal-labels-02
-{
-}
- P0                 ;
- MOV W0,#1          ;
- B L0               ;
- L1:                ;
-
-exists (0:X0=1)
