@@ -15,12 +15,12 @@ public class CartesianGraph extends StaticEventGraph {
     private final List<EventData> firstEvents;
     private final List<EventData> secondEvents;
 
-    private final FilterAbstract first;
-    private final FilterAbstract second;
+    private final FilterAbstract firstFilter;
+    private final FilterAbstract secondFilter;
 
     public CartesianGraph(FilterAbstract first, FilterAbstract second) {
-        this.first = first;
-        this.second = second;
+        this.firstFilter = first;
+        this.secondFilter = second;
 
         firstEvents = new ArrayList<>();
         secondEvents = new ArrayList<>();
@@ -28,7 +28,7 @@ public class CartesianGraph extends StaticEventGraph {
 
     @Override
     public boolean contains(EventData a, EventData b) {
-        return first.filter(a.getEvent()) && second.filter(b.getEvent());
+        return firstFilter.filter(a.getEvent()) && secondFilter.filter(b.getEvent());
     }
 
     @Override
@@ -37,14 +37,8 @@ public class CartesianGraph extends StaticEventGraph {
         firstEvents.clear();
         secondEvents.clear();
 
-        for (EventData e : model.getEventList()) {
-            if (first.filter(e.getEvent())) {
-                firstEvents.add(e);
-            }
-            if (second.filter(e.getEvent())) {
-                secondEvents.add(e);
-            }
-        }
+        model.getEventList().stream().filter(e -> firstFilter.filter(e.getEvent())).forEach(firstEvents::add);
+        model.getEventList().stream().filter(e -> secondFilter.filter(e.getEvent())).forEach(secondEvents::add);
         size = firstEvents.size() * secondEvents.size();
     }
 
@@ -56,9 +50,9 @@ public class CartesianGraph extends StaticEventGraph {
     @Override
     public int getMinSize(EventData e, EdgeDirection dir) {
         if (dir == EdgeDirection.OUTGOING) {
-            return first.filter(e.getEvent()) ? secondEvents.size() : 0;
+            return firstFilter.filter(e.getEvent()) ? secondEvents.size() : 0;
         } else {
-            return second.filter(e.getEvent()) ? firstEvents.size() : 0;
+            return secondFilter.filter(e.getEvent()) ? firstEvents.size() : 0;
         }
     }
 
@@ -70,9 +64,9 @@ public class CartesianGraph extends StaticEventGraph {
     @Override
     public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
         if (dir == EdgeDirection.OUTGOING) {
-            return first.filter(e.getEvent()) ? secondEvents.stream().map(b -> new Edge(e, b)) : Stream.empty();
+            return firstFilter.filter(e.getEvent()) ? secondEvents.stream().map(b -> new Edge(e, b)) : Stream.empty();
         } else {
-            return second.filter(e.getEvent()) ? firstEvents.stream().map(a -> new Edge(a, e)) : Stream.empty();
+            return secondFilter.filter(e.getEvent()) ? firstEvents.stream().map(a -> new Edge(a, e)) : Stream.empty();
         }
     }
 }

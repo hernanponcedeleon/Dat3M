@@ -26,10 +26,11 @@ public abstract class AbstractEdgeLiteral extends AbstractLiteral {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this)
+        if (obj == this) {
             return true;
-        if (obj == null || obj.getClass() != this.getClass())
+        } else if (obj == null || obj.getClass() != this.getClass()) {
             return false;
+        }
         AbstractEdgeLiteral other = (AbstractEdgeLiteral)obj;
         // Due to string-interning, we can actually use == for the names.
         return  this.name.equals(other.name) && this.edge.equals(other.edge);
@@ -37,6 +38,6 @@ public abstract class AbstractEdgeLiteral extends AbstractLiteral {
 
     @Override
     public String toString() {
-        return name + "(" + edge.getFirst() + "," + edge.getSecond() + ")";
+        return String.format("%s(%s,%s)", name, getEdge().getFirst(), edge.getSecond());
     }
 }

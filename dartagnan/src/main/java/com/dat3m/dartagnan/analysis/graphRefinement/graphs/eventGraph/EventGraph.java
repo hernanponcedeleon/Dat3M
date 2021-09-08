@@ -10,10 +10,7 @@ import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 public interface EventGraph extends GraphDerivable, Iterable<Edge> {
@@ -26,7 +23,7 @@ public interface EventGraph extends GraphDerivable, Iterable<Edge> {
 
     // Returns the edge that is stored in this graph, including all the metadata
     // Returns NULL, if the edge is not present
-    Edge get(Edge edge);
+    Optional<Edge> get(Edge edge);
 
     //TODO: We might want to make these default
     boolean contains(EventData a, EventData b);

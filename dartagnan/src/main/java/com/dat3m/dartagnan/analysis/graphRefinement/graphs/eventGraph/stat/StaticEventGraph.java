@@ -11,13 +11,14 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 public abstract class StaticEventGraph extends AbstractEventGraph {
     protected int size;
 
     @Override
-    public Edge get(Edge edge) {
-        return contains(edge) ? edge.with(Timestamp.ZERO, 0) : null;
+    public Optional<Edge> get(Edge edge) {
+        return contains(edge) ? Optional.of(edge.with(Timestamp.ZERO, 0)) : Optional.empty();
     }
 
     @Override

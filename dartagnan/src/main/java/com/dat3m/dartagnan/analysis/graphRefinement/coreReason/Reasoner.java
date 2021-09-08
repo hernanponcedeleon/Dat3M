@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.analysis.graphRefinement.coreReason;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.ExecutionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.Constraint;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.basic.CoherenceGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.basic.SimpleCoherenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.DifferenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.FenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.LocationGraph;
@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.ReadF
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary.RecursiveGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.DNF;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.SortedClauseSet;
+import com.dat3m.dartagnan.analysis.graphRefinement.logic.SortedCubeSet;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.program.event.Event;
@@ -69,7 +69,7 @@ public class Reasoner {
             return DNF.FALSE();
         }
 
-        SortedClauseSet<CoreLiteral> clauseSet = new SortedClauseSet<>();
+        SortedCubeSet<CoreLiteral> clauseSet = new SortedCubeSet<>();
         List<List<Edge>> violations = constraint.getViolations();
         EventGraph constrainedGraph = constraint.getConstrainedGraph();;
         for (List<Edge> violation : violations) {
@@ -109,10 +109,10 @@ public class Reasoner {
             return null;
         }
 
-        if (graph == execGraph.getWoGraph()) {
+        if (graph == execGraph.getSimpleCoherenceGraph()) {
             // The WoGraph has no corresponding Relation in the WMM.
             // Instead we use the CoGraph to look up a static reason.
-            graph = execGraph.getCoGraph();
+            graph = execGraph.getCoherenceGraph();
         }
         if (graphRelMap.get(graph).getMinTupleSet().contains(e.toTuple())) {
             return getExecReason(e);
@@ -217,7 +217,7 @@ public class Reasoner {
             Edge min = edge;
             EventGraph next = graph;
             for (EventGraph g : graph.getDependencies()) {
-                Edge e = g.get(edge);
+                Edge e = g.get(edge).orElse(null);
                 if (e != null && e.getDerivationLength() < min.getDerivationLength()) {
                     next = g;
                     min = e;
@@ -242,12 +242,9 @@ public class Reasoner {
 
             reason = Conjunction.TRUE();
             for (EventGraph g : graph.getDependencies()) {
-                Edge e = g.get(edge);
-                if (e != null) {
-                    reason = reason.and(g.accept(this, e, unused));
-                } else {
-                    throw new IllegalStateException("Did not find a reason for " + edge + " in " + graph.getName());
-                }
+                Edge e = g.get(edge).orElseThrow(() ->
+                        new IllegalStateException("Did not find a reason for " + edge + " in " + graph.getName()));
+                reason = reason.and(g.accept(this, e, unused));
             }
             assert !reason.isFalse();
             return reason;
@@ -272,7 +269,7 @@ public class Reasoner {
                     if (e1.getDerivationLength() >= edge.getDerivationLength()) {
                         continue;
                     }
-                    Edge e2 = second.get(new Edge(e1.getSecond(), edge.getSecond()));
+                    Edge e2 = second.get(new Edge(e1.getSecond(), edge.getSecond())).orElse(null);
                     if (e2 != null && e2.getDerivationLength() < edge.getDerivationLength()) {
                         reason = first.accept(this, e1, unused).and(second.accept(this, e2, unused));
                         assert !reason.isFalse();
@@ -284,7 +281,7 @@ public class Reasoner {
                     if (e2.getDerivationLength() >= edge.getDerivationLength()) {
                         continue;
                     }
-                    Edge e1 = first.get(new Edge(edge.getFirst(), e2.getFirst()));
+                    Edge e1 = first.get(new Edge(edge.getFirst(), e2.getFirst())).orElse(null);
                     if (e1 != null && e1.getDerivationLength() < edge.getDerivationLength()) {
                         reason = first.accept(this, e1, unused).and(second.accept(this, e2, unused));
                         assert !reason.isFalse();
@@ -414,7 +411,7 @@ public class Reasoner {
 
             if (graph instanceof ReadFromGraph) {
                 return visitRf(graph, edge, unused);
-            } else if (graph instanceof CoherenceGraph) {
+            } else if (graph instanceof SimpleCoherenceGraph) {
                 return visitWo(graph, edge, unused);
             } else if (graph instanceof LocationGraph) {
                 return visitLoc(graph, edge, unused);

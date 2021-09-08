@@ -124,8 +124,9 @@ public class GraphHierarchy {
     }
 
     private void createPropagationTask(EventGraph from, EventGraph target, Collection<Edge> added, int priority) {
-        if (target == null || added.isEmpty())
+        if (target == null || added.isEmpty()) {
             return;
+        }
         tasks.add(new Task(from, target, added, priority));
     }
 
@@ -135,8 +136,10 @@ public class GraphHierarchy {
         Collection<Edge> added = task.added;
 
         Collection<Edge> newEdges = target.forwardPropagate(from, added);
-        if (newEdges.isEmpty())
+        if (newEdges.isEmpty()) {
+            // Nothing has changed, so we don't create new propagation tasks
             return;
+        }
 
         for (GraphListener listener : graphListenersMap.get(target)) {
             listener.onGraphChanged(target, newEdges);
@@ -151,8 +154,13 @@ public class GraphHierarchy {
         for (int i = 0; i < dependents.size() ; i++) {
             Task newTask = new Task(target, dependents.get(i).getContent(), newEdges, dependents.get(i).getTopologicalIndex());
             tasks.add(newTask);
-            if (i < dependents.size() - 1)
-                newEdges = new HashSet<>(newEdges); // Copy collection for future iteration
+            if (i < dependents.size() - 1) {
+                //TODO: We can avoid copying since the new deriviation length
+                // forces graphs to make their own copies with updated edge information.
+
+                // Copy collection for future iteration
+                newEdges = new HashSet<>(newEdges);
+            }
         }
     }
 

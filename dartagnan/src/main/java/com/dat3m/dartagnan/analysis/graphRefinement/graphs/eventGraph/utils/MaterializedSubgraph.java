@@ -7,7 +7,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-public class MatSubgraph extends MaterializedGraph {
+/*
+IMPORTANT NOTE: As opposed to all other graphs, a Subgraph is only a snapshot of an already existing graph that
+gets populated on construction and won't perform any updates. In particular, it should not be used
+in a GraphHierarchy as it cannot perform propagation.
+
+Note: This seems to perform better than a virtualized Subgraph.
+*/
+public class MaterializedSubgraph extends MaterializedGraph {
 
     private final EventGraph sourceGraph;
 
@@ -16,7 +23,7 @@ public class MatSubgraph extends MaterializedGraph {
         return Collections.singletonList(sourceGraph);
     }
 
-    public MatSubgraph(EventGraph source, Collection<EventData> events) {
+    public MaterializedSubgraph(EventGraph source, Collection<EventData> events) {
         sourceGraph = source;
         simpleGraph.constructFromModel(sourceGraph.getModel());
 

@@ -5,11 +5,11 @@ import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.Acyc
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.Constraint;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.EmptinessConstraint;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.IrreflexivityConstraint;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.basic.CoherenceGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.basic.SimpleCoherenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.CompositionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.DifferenceGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.MatIntersectionGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.MatUnionGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.IntersectionGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.UnionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.*;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary.*;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -72,9 +72,9 @@ public class ExecutionGraph {
     /*
         A non-transitive version of <coGraph> that is maintained by the Saturation procedure.
         We use it to distinguish between directly added coherences and coherences that were transitively derived.
-        We maintain the invariant co = wo^+ at all times.
+        We maintain the invariant co = sco^+ at all times.
      */
-    private EventGraph woGraph;
+    private EventGraph scoGraph;
 
     // =================================================
 
@@ -100,15 +100,15 @@ public class ExecutionGraph {
         Set<EventGraph> graphs = new HashSet<>();
         for (Relation rel : verificationTask.getRelationDependencyGraph().getNodeContents()) {
             if (!EXCLUDED_RELS.contains(rel.getName())) {
-                EventGraph graph = getGraphFromRelation(rel);
+                EventGraph graph = getOrCreateGraphFromRelation(rel);
                 graphs.add(graph);
             }
         }
         graphHierarchy = new GraphHierarchy(graphs);
 
         for (Axiom axiom : verificationTask.getAxioms()) {
-            EventGraph graph = getGraphFromRelation(axiom.getRelation());
-            Constraint constraint = getConstraintFromAxiom(axiom);
+            EventGraph graph = getOrCreateGraphFromRelation(axiom.getRelation());
+            Constraint constraint = getOrCreateConstraintFromAxiom(axiom);
             graphHierarchy.addGraphListener(graph, constraint);
         }
     }
@@ -127,11 +127,11 @@ public class ExecutionGraph {
         return Maps.unmodifiableBiMap(constraintMap);
     }
 
-    public EventGraph getPoGraph() { return poGraph; }
-    public EventGraph getRfGraph() { return rfGraph; }
-    public EventGraph getLocGraph() { return locGraph; }
-    public EventGraph getCoGraph() { return coGraph; }
-    public EventGraph getWoGraph() { return woGraph; }
+    public EventGraph getProgramOrderGraph() { return poGraph; }
+    public EventGraph getReadFromGraph() { return rfGraph; }
+    public EventGraph getLocationGraph() { return locGraph; }
+    public EventGraph getCoherenceGraph() { return coGraph; }
+    public EventGraph getSimpleCoherenceGraph() { return scoGraph; }
 
     public EventGraph getEventGraph(Relation rel) {
         return relationGraphMap.get(rel);
@@ -161,10 +161,10 @@ public class ExecutionGraph {
     }
 
     public boolean addCoherenceEdges(Collection<Edge> coEdges) {
-        if ( woGraph == null) {
+        if ( scoGraph == null) {
             return false;
         }
-        graphHierarchy.addEdgesAndPropagate(woGraph, coEdges);
+        graphHierarchy.addEdgesAndPropagate(scoGraph, coEdges);
         return true;
     }
 
@@ -177,13 +177,13 @@ public class ExecutionGraph {
 
     //=================== Reading the WMM ====================
 
-    private Constraint getConstraintFromAxiom(Axiom axiom) {
+    private Constraint getOrCreateConstraintFromAxiom(Axiom axiom) {
         if (constraintMap.containsKey(axiom)) {
             return constraintMap.get(axiom);
         }
 
         Constraint constraint;
-        EventGraph innerGraph = getGraphFromRelation(axiom.getRelation());
+        EventGraph innerGraph = getOrCreateGraphFromRelation(axiom.getRelation());
         if (axiom.isAcyclicity()) {
             constraint = new AcyclicityConstraint(innerGraph);
         } else if (axiom.isEmptiness()) {
@@ -198,7 +198,7 @@ public class ExecutionGraph {
         return constraint;
     }
 
-    private EventGraph getGraphFromRelation(Relation rel) {
+    private EventGraph getOrCreateGraphFromRelation(Relation rel) {
         if (relationGraphMap.containsKey(rel)) {
             return relationGraphMap.get(rel);
         }
@@ -231,18 +231,18 @@ public class ExecutionGraph {
         } else if (relClass == RelPo.class) {
             graph = poGraph = new ProgramOrderGraph();
         } else if (relClass == RelCo.class) {
-            graph = coGraph = new TransitiveGraph(woGraph = new CoherenceGraph());
-            woGraph.setName("_wo");
+            graph = coGraph = new TransitiveGraph(scoGraph = new SimpleCoherenceGraph());
+            scoGraph.setName("_wo");
         } else if (rel.isRecursiveRelation()) {
             RecursiveGraph recGraph = new RecursiveGraph();
             recGraph.setName(rel.getName() + "_rec");
             relationGraphMap.put(rel, recGraph);
-            recGraph.setConcreteGraph(getGraphFromRelation(rel.getInner()));
+            recGraph.setConcreteGraph(getOrCreateGraphFromRelation(rel.getInner()));
             return recGraph;
         } else if (rel.isUnaryRelation()) {
             Relation innerRelation = rel.getInner();
-            EventGraph innerGraph = getGraphFromRelation(innerRelation);
-            // A safety check because recursion might compute this edge set
+            EventGraph innerGraph = getOrCreateGraphFromRelation(innerRelation);
+            // A safety check because recursion might have computed this EventGraph already
             if (relationGraphMap.containsKey(rel)) {
                 return relationGraphMap.get(rel);
             }
@@ -256,24 +256,24 @@ public class ExecutionGraph {
             } else if (relClass == RelTransRef.class) {
                 RelTrans relTrans = new RelTrans(innerRelation);
                 relTrans.initialise(verificationTask, null); // A little sketchy
-                EventGraph transGraph = getGraphFromRelation(relTrans);
+                EventGraph transGraph = getOrCreateGraphFromRelation(relTrans);
                 graph = new ReflexiveClosureGraph(transGraph);
             } else {
                 throw new UnsupportedOperationException(relClass.toString() + " has no associated graph yet.");
             }
         } else if (rel.isBinaryRelation()) {
-            EventGraph first = getGraphFromRelation(rel.getFirst());
-            EventGraph second = getGraphFromRelation(rel.getSecond());
+            EventGraph first = getOrCreateGraphFromRelation(rel.getFirst());
+            EventGraph second = getOrCreateGraphFromRelation(rel.getSecond());
 
-            // Might be the case when recursion is in play
+            // A safety check because recursion might have computed this EventGraph already
             if (relationGraphMap.containsKey(rel)) {
                 return relationGraphMap.get(rel);
             }
 
             if (relClass == RelUnion.class) {
-                graph = new MatUnionGraph(first, second);
+                graph = new UnionGraph(first, second);
             } else if (relClass == RelIntersection.class) {
-                graph = new MatIntersectionGraph(first, second);
+                graph = new IntersectionGraph(first, second);
             } else if (relClass == RelComposition.class) {
                 graph = new CompositionGraph(first, second);
             } else if (relClass == RelMinus.class) {

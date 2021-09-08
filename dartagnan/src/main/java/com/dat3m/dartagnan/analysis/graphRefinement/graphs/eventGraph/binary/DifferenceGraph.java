@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 //TODO: This class is not up-to-date with the new derivation length.
@@ -34,8 +35,8 @@ public class DifferenceGraph extends AbstractEventGraph {
     }
 
     @Override
-    public Edge get(Edge edge) {
-        return second.contains(edge) ? null : first.get(edge);
+    public Optional<Edge> get(Edge edge) {
+        return second.contains(edge) ? Optional.empty() : first.get(edge);
     }
 
     @Override

@@ -24,10 +24,11 @@ public class EventLiteral extends AbstractLiteral {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this)
+        if (obj == this) {
             return true;
-        if (!(obj instanceof EventLiteral))
+        } else if (!(obj instanceof EventLiteral)) {
             return false;
+        }
 
         EventLiteral other = (EventLiteral) obj;
         return this.eventData.equals(other.eventData);

@@ -6,14 +6,11 @@ import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 // A materialized Intersection Graph.
 // This seems to be more efficient than the virtualized IntersectionGraph we used before.
-public class MatIntersectionGraph extends MaterializedGraph {
+public class IntersectionGraph extends MaterializedGraph {
 
     private final EventGraph first;
     private final EventGraph second;
@@ -26,7 +23,7 @@ public class MatIntersectionGraph extends MaterializedGraph {
     public EventGraph getFirst() { return first; }
     public EventGraph getSecond() { return second; }
 
-    public MatIntersectionGraph(EventGraph first, EventGraph second) {
+    public IntersectionGraph(EventGraph first, EventGraph second) {
         this.first = first;
         this.second = second;
     }
@@ -41,18 +38,15 @@ public class MatIntersectionGraph extends MaterializedGraph {
         super.constructFromModel(model);
 
         if (first.getEstimatedSize() < second.getEstimatedSize()) {
+            //TODO: Using optionals makes the code look nicer, but the performance might degrade
+            // because this will probably end up creating a lot of unnecessary closures.
+            // We need to benchmark this at some point!
             for (Edge e1 : first.edges()) {
-                Edge e2 = second.get(e1);
-                if (e2 != null) {
-                    simpleGraph.add(derive(e1, e2));
-                }
+                second.get(e1).ifPresent(e2 -> simpleGraph.add(derive(e1, e2)));
             }
         } else {
             for (Edge e2 : second.edges()) {
-                Edge e1 = first.get(e2);
-                if (e1 != null) {
-                    simpleGraph.add(derive(e2, e1));
-                }
+                first.get(e2).ifPresent(e1 -> simpleGraph.add(derive(e1, e2)));
             }
         }
     }
@@ -65,9 +59,9 @@ public class MatIntersectionGraph extends MaterializedGraph {
 
             List<Edge> newlyAdded = new ArrayList<>();
             for (Edge e1 : addedEdges) {
-                Edge e2 = other.get(e1);
-                if (e2 != null) {
-                    Edge e = derive(e1, e2);
+                Optional<Edge> e2 = other.get(e1);
+                if (e2.isPresent()) {
+                    Edge e = derive(e1, e2.get());
                     simpleGraph.add(e);
                     newlyAdded.add(e);
                 }

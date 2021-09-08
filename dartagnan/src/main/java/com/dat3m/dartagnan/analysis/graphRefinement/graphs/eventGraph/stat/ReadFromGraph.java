@@ -39,11 +39,6 @@ public class ReadFromGraph extends StaticEventGraph {
     }
 
     @Override
-    public Edge get(Edge edge) {
-        return contains(edge) ? makeEdge(edge.getFirst(), edge.getSecond()) : null;
-    }
-
-    @Override
     public Stream<Edge> edgeStream() {
         return model.getReadWriteMap().entrySet().stream().map(x -> makeEdge(x.getValue(), x.getKey()));
     }

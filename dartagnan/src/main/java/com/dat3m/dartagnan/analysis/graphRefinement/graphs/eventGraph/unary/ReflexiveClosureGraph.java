@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 //TODO: Increase the derivation length of edges of this graph
@@ -28,8 +29,8 @@ public class ReflexiveClosureGraph extends AbstractEventGraph {
     }
 
     @Override
-    public Edge get(Edge edge) {
-        return edge.isLoop() ? edge.with(Timestamp.ZERO, 0) : inner.get(edge);
+    public Optional<Edge> get(Edge edge) {
+        return edge.isLoop() ? Optional.of(edge.with(Timestamp.ZERO, 0)) : inner.get(edge);
     }
 
     @Override

@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.analysis.graphRefinement.resolution;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.SortedClauseSet;
+import com.dat3m.dartagnan.analysis.graphRefinement.logic.SortedCubeSet;
 import com.dat3m.dartagnan.analysis.graphRefinement.searchTree.DecisionNode;
 import com.dat3m.dartagnan.analysis.graphRefinement.searchTree.LeafNode;
 import com.dat3m.dartagnan.analysis.graphRefinement.searchTree.SearchNode;
@@ -29,11 +29,11 @@ public class TreeResolution {
         this.tree = tree;
     }
 
-    public SortedClauseSet<CoreLiteral> computeViolations() {
+    public SortedCubeSet<CoreLiteral> computeViolations() {
         reduceTree();
 
         List<Conjunction<CoreLiteral>> vio = computeViolations(tree.getRoot());
-        SortedClauseSet<CoreLiteral> result = new SortedClauseSet<>(vio.size());
+        SortedCubeSet<CoreLiteral> result = new SortedCubeSet<>(vio.size());
         result.addAll(vio);
         result.simplify();
         return result;
@@ -76,11 +76,11 @@ public class TreeResolution {
             //TODO: Remove the ugly conversion to clauseSet for minimization
             // Remark: clauseSet.simplify does in general not give as good reduction as the reduction performed
             // by DNF.reduce. However, right now it seems that they are equivalently strong for 1-SAT at least
-            SortedClauseSet<CoreLiteral> clauseSet = new SortedClauseSet<>(resolvents.size());
+            SortedCubeSet<CoreLiteral> clauseSet = new SortedCubeSet<>(resolvents.size());
             clauseSet.addAll(resolvents);
             clauseSet.simplify();
             resolvents.clear();
-            resolvents.addAll(clauseSet.getClauses());
+            resolvents.addAll(clauseSet.getCubes());
             return resolvents;
 
         }

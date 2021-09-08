@@ -9,10 +9,7 @@ import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.google.common.collect.Iterators;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,14 +21,17 @@ public class InverseGraph extends AbstractEventGraph {
         this.inner = inner;
     }
 
+    @Override
     public List<EventGraph> getDependencies() {
         return Collections.singletonList(inner);
     }
 
     @Override
-    public Edge get(Edge edge) {
-        Edge e = inner.get(edge.inverse());
-        return e != null ? derive(e) : null;
+    public Optional<Edge> get(Edge edge) {
+        return inner.get(edge.inverse()).map(this::derive);
+
+        /*Edge e = inner.get(edge.inverse());
+        return e != null ? derive(e) : null;*/
     }
 
     @Override

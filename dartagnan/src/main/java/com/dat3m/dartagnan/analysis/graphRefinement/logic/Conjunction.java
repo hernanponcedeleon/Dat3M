@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 // A formal minimal conjunction of ground literals of type T
 // The class is immutable
-// The ordering is based on set inclusion. TRUE is least element, FALSE is largest element
+// The ordering is based on set inclusion. TRUE is the least element, FALSE the is largest element
 public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjunction<T>>
 {
     private static final Conjunction TRUE;

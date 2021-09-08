@@ -8,11 +8,13 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /*
-    A meterialized graph simply encapsulates a SimpleGraph and delegates all its methods
-    to the underlying SimpleGraph.
+    As opposed to a "virtualized graph", a materialized graph actually stores its nodes/edges explicitly.
+    MaterializedGraph simply encapsulates a SimpleGraph and delegates all its methods
+    to the underlying SimpleGraph (similar to a forwarding decorator).
  */
 public abstract class MaterializedGraph extends AbstractEventGraph {
 
@@ -23,7 +25,7 @@ public abstract class MaterializedGraph extends AbstractEventGraph {
     }
 
     @Override
-    public Edge get(Edge edge) {
+    public Optional<Edge> get(Edge edge) {
         return simpleGraph.get(edge);
     }
 

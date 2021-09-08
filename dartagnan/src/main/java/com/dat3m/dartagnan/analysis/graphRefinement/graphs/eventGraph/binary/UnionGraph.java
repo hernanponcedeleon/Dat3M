@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 // A materialized Union Graph.
 // This seems to be more efficient than the virtualized UnionGraph we used before.
-public class MatUnionGraph extends MaterializedGraph {
+public class UnionGraph extends MaterializedGraph {
 
     private final EventGraph first;
     private final EventGraph second;
@@ -26,7 +26,7 @@ public class MatUnionGraph extends MaterializedGraph {
     public EventGraph getFirst() { return first; }
     public EventGraph getSecond() { return second; }
 
-    public MatUnionGraph(EventGraph first, EventGraph second) {
+    public UnionGraph(EventGraph first, EventGraph second) {
         this.first = first;
         this.second = second;
     }

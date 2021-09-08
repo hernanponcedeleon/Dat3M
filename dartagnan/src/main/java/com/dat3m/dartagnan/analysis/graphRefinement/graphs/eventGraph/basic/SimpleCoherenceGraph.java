@@ -11,16 +11,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-//A non-transitive version of coherence.
-// The fact that it is coherence is only relevant for <computeReason>
-public class CoherenceGraph extends MaterializedGraph {
+// A non-transitive version of coherence.
+// In general, we define co as the transitive closure of this graph, i.e. co = sco+;
+// This graph is not necessarily minimal, i.e. it is NOT a transitive reduction of co.
+public class SimpleCoherenceGraph extends MaterializedGraph {
 
     @Override
     public List<EventGraph> getDependencies() {
         return Collections.emptyList();
     }
 
-    public CoherenceGraph() {
+    public SimpleCoherenceGraph() {
     }
 
     @Override

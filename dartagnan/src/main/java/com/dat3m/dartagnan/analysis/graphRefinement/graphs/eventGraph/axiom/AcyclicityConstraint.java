@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.MatSubgraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.MaterializedSubgraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.PathAlgorithm;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
@@ -47,7 +47,7 @@ public class AcyclicityConstraint extends Constraint {
         // (1) find a shortest path C from <e> to <e> (=cycle)
         // (2) remove all nodes in C from the search space (those nodes are likely to give the same cycle)
         for (Set<EventData> scc : violatingSccs) {
-            MatSubgraph subgraph = new MatSubgraph(constrainedGraph, scc);
+            MaterializedSubgraph subgraph = new MaterializedSubgraph(constrainedGraph, scc);
             Set<EventData> nodes = new HashSet<>(Sets.intersection(scc, markedNodes));
             while (!nodes.isEmpty()) {
                 EventData e = nodes.stream().findAny().get();

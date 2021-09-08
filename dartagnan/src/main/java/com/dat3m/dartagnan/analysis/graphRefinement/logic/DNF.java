@@ -6,7 +6,8 @@ import java.util.*;
 
 // A formal minimal(*) disjunction of conjunctions of type T
 // The class is immutable
-// The ordering is based on set inclusion. FALSE is least element. No largest element is defined
+// The ordering is based on set inclusion. FALSE is the least element and TRUE is the largest element
+// (*) the minimality is weak in the sense that only duplicates are avoided.
 public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
 
     private static final DNF FALSE;
@@ -261,8 +262,9 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
 
         HashSet<Conjunction<T>> result = new HashSet<>(this.getNumberOfClauses() * other.getNumberOfClauses());
         for (Conjunction<T> cube1 : this.cubes) {
-            for (Conjunction<T> cube2 : other.cubes)
+            for (Conjunction<T> cube2 : other.cubes) {
                 result.add(cube1.and(cube2));
+            }
         }
         return new DNF<>(result);
     }

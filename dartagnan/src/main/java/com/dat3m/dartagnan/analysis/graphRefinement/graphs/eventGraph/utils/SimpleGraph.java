@@ -72,14 +72,15 @@ public final class SimpleGraph extends AbstractEventGraph {
     }
 
 
-    public Edge get(Edge edge) {
+    public Optional<Edge> get(Edge edge) {
         DataItem item = outgoing[edge.getFirst().getId()];
-        return item != null ? item.get(edge) : null;
+        return item != null ? Optional.ofNullable(item.get(edge)) : Optional.empty();
     }
 
     public Timestamp getTime(Edge edge) {
-        Edge e = get(edge);
-        return e != null ? e.getTime() : Timestamp.INVALID;
+        //Optional<Edge> e = get(edge);
+        return get(edge).map(Edge::getTime).orElse(Timestamp.INVALID);
+        //return e != null ? e.getTime() : Timestamp.INVALID;
     }
 
     public Timestamp getTime(EventData a, EventData b) {
@@ -234,9 +235,7 @@ public final class SimpleGraph extends AbstractEventGraph {
         }
 
 
-        public Edge get(Edge e) {
-            return edgeMap.get(e);
-        }
+        public Edge get(Edge e) { return edgeMap.get(e); }
 
 
         public Iterator<Edge> iterator() {

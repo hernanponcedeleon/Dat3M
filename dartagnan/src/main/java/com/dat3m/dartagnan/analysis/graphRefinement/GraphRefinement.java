@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.Constraint;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.DNF;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.SortedClauseSet;
+import com.dat3m.dartagnan.analysis.graphRefinement.logic.SortedCubeSet;
 import com.dat3m.dartagnan.analysis.graphRefinement.resolution.TreeResolution;
 import com.dat3m.dartagnan.analysis.graphRefinement.searchTree.DecisionNode;
 import com.dat3m.dartagnan.analysis.graphRefinement.searchTree.LeafNode;
@@ -352,7 +352,7 @@ public class GraphRefinement {
     }
 
     private boolean coExists(Edge coEdge) {
-        return execGraph.getCoGraph().contains(coEdge) || execGraph.getCoGraph().contains(coEdge.inverse());
+        return execGraph.getCoherenceGraph().contains(coEdge) || execGraph.getCoherenceGraph().contains(coEdge.inverse());
     }
 
     // ============= Violations + Resolution ================
@@ -382,8 +382,8 @@ public class GraphRefinement {
 
     private DNF<CoreLiteral> computeResolventsFromTree(SearchTree tree) {
         //TODO: This is also ugly code
-        SortedClauseSet<CoreLiteral> res = new TreeResolution(tree).computeViolations();
-        SortedClauseSet<CoreLiteral> res2 = new SortedClauseSet<>();
+        SortedCubeSet<CoreLiteral> res = new TreeResolution(tree).computeViolations();
+        SortedCubeSet<CoreLiteral> res2 = new SortedCubeSet<>();
         res.forEach(clause -> res2.add(reasoner.simplifyReason(clause)));
         res2.simplify();
         return res2.toDNF();
@@ -441,14 +441,14 @@ public class GraphRefinement {
         if (!DEBUG)
             return;
         TupleSet tSet = new TupleSet();
-        for (Edge e : execGraph.getWoGraph()) {
+        for (Edge e : execGraph.getSimpleCoherenceGraph()) {
             tSet.add(new Tuple(e.getFirst().getEvent(), e.getSecond().getEvent()));
         }
         Map<Event, Set<Event>> map = tSet.transMap();
         for (Event e1 : map.keySet()) {
             for (Event e2 : map.get(e1)) {
                 Edge edge = executionModel.getEdge(new Tuple(e1,e2));
-                if (!execGraph.getCoGraph().contains(edge)) {
+                if (!execGraph.getCoherenceGraph().contains(edge)) {
                     throw new RuntimeException();
                 }
             }

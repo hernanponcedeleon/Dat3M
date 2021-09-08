@@ -28,8 +28,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public abstract class AbstractDartagnanTest {
 
@@ -68,7 +67,7 @@ public abstract class AbstractDartagnanTest {
         this.settings = settings;
     }
 
-    @Test(timeout = TIMEOUT)
+    //@Test(timeout = TIMEOUT)
     public void testCombined() {
         // Compares Refinement and TwoSolvers on litmus tests
         // Replaces location-based assertions by ...
@@ -123,7 +122,7 @@ public abstract class AbstractDartagnanTest {
         }
     }
 
-    //@Test(timeout = TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
@@ -133,7 +132,7 @@ public abstract class AbstractDartagnanTest {
                 if (!program.getAss().getLocs().isEmpty()) {
                     // We assert true, because Refinement can't handle these assertions
                     // They need coherence, which Refinement avoids to encode!
-                    assertEquals(0 ,0);
+                    assertTrue(true);
                     return;
                 }
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
