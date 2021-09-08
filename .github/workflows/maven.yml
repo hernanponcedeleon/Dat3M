@@ -21,7 +21,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         ref: badges
-        path: badges
+        path: .github/badges/
         
     - name: Set up the Java JDK
       uses: actions/setup-java@v2
