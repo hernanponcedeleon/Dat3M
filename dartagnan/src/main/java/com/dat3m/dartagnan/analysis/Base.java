@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.analysis;
 
-import static com.dat3m.dartagnan.program.utils.Utils.assertionPrecondition;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static java.util.Collections.singletonList;
@@ -8,6 +7,7 @@ import static java.util.Collections.singletonList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
@@ -73,10 +73,14 @@ public class Base {
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
         prover.addConstraint(task.encodeWitness(ctx));
-        prover.addConstraint(task.encodeAssertionsWithPrecondition(ctx));
+        
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_assertion_assumption");
+        BooleanFormula assumedAssertion = bmgr.implication(assumptionLiteral, task.encodeAssertions(ctx));
+        prover.addConstraint(assumedAssertion);
         
         logger.info("Starting first solver.check()");
-        if(prover.isUnsatWithAssumptions(singletonList(assertionPrecondition(ctx)))) {
+        if(prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
 			prover.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgram().encodeNoBoundEventExec(ctx)));
             logger.info("Starting second solver.check()");
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
