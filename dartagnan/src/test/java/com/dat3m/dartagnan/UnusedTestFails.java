@@ -32,7 +32,7 @@ NOTE: We use these tests to collect benchmarks that are failing for some reason
 (buggy, too slow, unsupported features etc.)
  */
 @RunWith(Parameterized.class)
-public class TestFails {
+public class UnusedTestFails {
 
     static final int TIMEOUT = 600000;
 
@@ -42,7 +42,7 @@ public class TestFails {
     private final Settings settings;
     private final Result expected;
 
-    public TestFails(String path, Wmm wmm, Arch target, Settings settings, Result expected) {
+    public UnusedTestFails(String path, Wmm wmm, Arch target, Settings settings, Result expected) {
         this.path = path;
         this.wmm = wmm;
         this.target = target;

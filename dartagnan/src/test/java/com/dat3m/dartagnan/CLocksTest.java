@@ -34,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-public class SafeCTest {
+public class CLocksTest {
 
 	static final int TIMEOUT = 600000;
 
@@ -127,7 +127,7 @@ public class SafeCTest {
         return data;
     }
 
-    public SafeCTest(String path, Wmm wmm, Arch target, Settings settings, Result expected) {
+    public CLocksTest(String path, Wmm wmm, Arch target, Settings settings, Result expected) {
         this.path = path;
         this.wmm = wmm;
         this.target = target;
