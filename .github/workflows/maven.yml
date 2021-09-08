@@ -22,7 +22,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         ref: badges
-        path: .github/badges/
+        path: badges/
         
     - name: Set up the Java JDK
       uses: actions/setup-java@v2
@@ -37,9 +37,8 @@ jobs:
       id: jacoco
       uses: cicirello/jacoco-badge-generator@v2
       with:
-         coverage-badge-filename: .github/badges/jacoco.svg
          generate-branches-badge: true
-         branches-badge-filename: .github/badges/branches.svg
+         branches-badge-filename: branches.svg
          jacoco-csv-file: dartagnan/target/site/jacoco/jacoco.csv
         
     - name: Log coverage percentage
