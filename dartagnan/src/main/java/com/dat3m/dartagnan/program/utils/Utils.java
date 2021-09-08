@@ -19,5 +19,5 @@ public class Utils {
     	return f instanceof BitvectorFormula ? 
     			ctx.getFormulaManager().getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula) f, false) : 
     			(IntegerFormula)f;
-    }    
+    }
 }

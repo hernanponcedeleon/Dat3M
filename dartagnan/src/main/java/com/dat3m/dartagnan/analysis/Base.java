@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
@@ -34,10 +35,12 @@ public class Base {
         prover.addConstraint(task.encodeProgram(ctx));
         prover.addConstraint(task.encodeWmmRelations(ctx));
         prover.addConstraint(task.encodeWmmConsistency(ctx));
+        // For validation this contains information.
+        // For verification graph.encode() just returns ctx.mkTrue()
+        prover.addConstraint(task.encodeWitness(ctx));
         logger.info("Starting push()");
         prover.push();
         prover.addConstraint(task.encodeAssertions(ctx));
-        prover.addConstraint(task.encodeWitness(ctx));
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsat()) {
@@ -68,10 +71,17 @@ public class Base {
         prover.addConstraint(task.encodeProgram(ctx));
         prover.addConstraint(task.encodeWmmRelations(ctx));
         prover.addConstraint(task.encodeWmmConsistency(ctx));
+        // For validation this contains information.
+        // For verification graph.encode() just returns ctx.mkTrue()
         prover.addConstraint(task.encodeWitness(ctx));
         
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_assertion_assumption");
+        BooleanFormula assumedAssertion = bmgr.implication(assumptionLiteral, task.encodeAssertions(ctx));
+        prover.addConstraint(assumedAssertion);
+        
         logger.info("Starting first solver.check()");
-        if(prover.isUnsatWithAssumptions(singletonList(task.encodeAssertions(ctx)))) {
+        if(prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
 			prover.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgram().encodeNoBoundEventExec(ctx)));
             logger.info("Starting second solver.check()");
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
@@ -108,15 +118,13 @@ public class Base {
 		prover1.addConstraint(encodeConsistency);
         prover2.addConstraint(encodeConsistency);
        	
-        prover1.addConstraint(task.getProgram().getAss().encode(ctx));
-        if(task.getProgram().getAssFilter() != null){
-        	BooleanFormula encodeFilter = task.getProgram().getAssFilter().encode(ctx);
-			prover1.addConstraint(encodeFilter);
-            prover2.addConstraint(encodeFilter);
-        }
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
-        prover1.addConstraint(task.encodeWitness(ctx));
+        BooleanFormula encodeWitness = task.encodeWitness(ctx);
+		prover1.addConstraint(encodeWitness);
+        prover2.addConstraint(encodeWitness);
+        
+        prover1.addConstraint(task.encodeAssertions(ctx));
 
         logger.info("Starting first solver.check()");
         if(prover1.isUnsat()) {
