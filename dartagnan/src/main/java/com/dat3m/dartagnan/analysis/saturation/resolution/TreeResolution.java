@@ -29,10 +29,10 @@ public class TreeResolution {
         this.tree = tree;
     }
 
-    public SortedCubeSet<CoreLiteral> computeCoreReasons() {
+    public SortedCubeSet<CoreLiteral> computeReasons() {
         reduceTree();
 
-        List<Conjunction<CoreLiteral>> coreReasons = computeCoreReasons(tree.getRoot());
+        List<Conjunction<CoreLiteral>> coreReasons = computeReasons(tree.getRoot());
         SortedCubeSet<CoreLiteral> result = new SortedCubeSet<>(coreReasons.size());
         result.addAll(coreReasons);
         result.simplify();
@@ -40,7 +40,7 @@ public class TreeResolution {
     }
 
 
-    private List<Conjunction<CoreLiteral>> computeCoreReasons(SearchNode node) {
+    private List<Conjunction<CoreLiteral>> computeReasons(SearchNode node) {
         if (node.isEmptyNode()) {
             return Collections.emptyList();
         } else if (node.isLeaf()) {
@@ -48,8 +48,8 @@ public class TreeResolution {
         } else {
             DecisionNode decNode = (DecisionNode) node;
             CoreLiteral resLit = new CoLiteral(decNode.getEdge());
-            List<Conjunction<CoreLiteral>> positive = computeCoreReasons(decNode.getPositive());
-            List<Conjunction<CoreLiteral>> negative = computeCoreReasons(decNode.getNegative());
+            List<Conjunction<CoreLiteral>> positive = computeReasons(decNode.getPositive());
+            List<Conjunction<CoreLiteral>> negative = computeReasons(decNode.getNegative());
 
             // A reason is non-resolvable if it does not contain the current decision literal
             Predicate<Conjunction<CoreLiteral>> isNotResolvable = (reason -> !reason.getLiterals().contains(resLit.getOpposite()));

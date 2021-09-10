@@ -123,7 +123,7 @@ public class Refinement {
 
             status = solverResult.getStatus();
             if (status == INCONSISTENT) {
-                DNF<CoreLiteral> reasons = solverResult.getInconsistencyReasons();
+                DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 foundCoreReasons.add(reasons);
                 prover.addConstraint(refiner.refine(reasons));
 
@@ -184,8 +184,8 @@ public class Refinement {
             // Add bound check
             prover.addConstraint(bmgr.not(program.encodeNoBoundEventExec(ctx)));
             // Add back the constraints found during Refinement (TODO: We might need to perform a second refinement)
-            for (DNF<CoreLiteral> violation : foundCoreReasons) {
-                prover.addConstraint(refiner.refine(violation));
+            for (DNF<CoreLiteral> reason : foundCoreReasons) {
+                prover.addConstraint(refiner.refine(reason));
             }
             veriResult = !prover.isUnsat() ? UNKNOWN : PASS;
             boundCheckTime = System.currentTimeMillis() - lastTime;

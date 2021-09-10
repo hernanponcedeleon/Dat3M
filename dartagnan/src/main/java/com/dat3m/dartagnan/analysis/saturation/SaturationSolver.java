@@ -223,7 +223,7 @@ public class SaturationSolver {
                 result.setStatus(status);
                 if (status == INCONSISTENT) {
                     long temp = System.currentTimeMillis();
-                    result.setInconsistencyReasons(computeResolventsFromTree(sTree));
+                    result.setCoreReasons(computeResolventsFromTree(sTree));
                     stats.resolutionTime = System.currentTimeMillis() - temp;
                 }
                 break;
@@ -378,7 +378,7 @@ public class SaturationSolver {
 
     private DNF<CoreLiteral> computeResolventsFromTree(SearchTree tree) {
         //TODO: This is also ugly code
-        SortedCubeSet<CoreLiteral> res = new TreeResolution(tree).computeCoreReasons();
+        SortedCubeSet<CoreLiteral> res = new TreeResolution(tree).computeReasons();
         SortedCubeSet<CoreLiteral> res2 = new SortedCubeSet<>();
         res.forEach(clause -> res2.add(reasoner.simplifyReason(clause)));
         res2.simplify();
