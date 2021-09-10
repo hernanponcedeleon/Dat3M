@@ -24,11 +24,11 @@ import java.util.*;
  */
 public class AliasAnalysis {
 
-    private List<Object> variables = new LinkedList<>(); // TODO: Use a queue
+    private final List<Object> variables = new LinkedList<>(); // TODO: Use a queue
     private ImmutableSet<Address> maxAddressSet;
     private Map<Register, Map<Event, Integer>> ssaMap;
 
-    private Graph graph = new Graph();
+    private final Graph graph = new Graph();
 
     public void calculateLocationSets(Program program, Alias alias) {
         if(alias == Alias.NONE){
@@ -293,7 +293,7 @@ public class AliasAnalysis {
                 		addresses = new HashSet<>(program.getMemory().getArrayfromPointer(bases.get(address)));
             		}
             	} else {
-            	    addresses = graph.getAddresses(((Register) address));	
+            	    addresses = graph.getAddresses(address);
             	}
             } else if (address instanceof Address) {
                     addresses = ImmutableSet.of(((Address) address));

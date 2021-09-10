@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -191,13 +190,8 @@ public class ExecutionModel {
         return eventMap.contains(e);
     }
 
-    public EventData getData(Event e) {
-        return eventExists(e) ? eventMap.get(e) : null;
-    }
-
-    public Edge getEdge(Tuple tuple) {
-        return (eventExists(tuple.getFirst()) && eventExists(tuple.getSecond())) ?
-                new Edge(getData(tuple.getFirst()), getData(tuple.getSecond())) : null;
+    public Optional<EventData> getData(Event e) {
+        return Optional.ofNullable(eventMap.get(e));
     }
 
     //========================== Initialization =========================
@@ -315,7 +309,7 @@ public class ExecutionModel {
 
 
     private void addEvent(Event e, int globalId, int localId) {
-        EventData data = eventMap.get(e);
+        EventData data = eventMap.getOrCreate(e);
         data.setId(globalId);
         data.setLocalId(localId);
         eventList.add(data);
@@ -394,13 +388,13 @@ public class ExecutionModel {
             for (Register reg : memEvent.getAddress().getRegs()) {
                 deps.addAll(lastRegWrites.get(reg));
             }
-            addrDepMap.put(getData(e), deps);
+            addrDepMap.put(eventMap.get(e), deps);
         }
 
         if (e.is(EType.VISIBLE)) {
             // ---- Track ctrl dependency ----
             // TODO: This may be done more efficiently, as many events share the same set of ctrldeps.
-            ctrlDepMap.put(getData(e), new HashSet<>(curCtrlDeps));
+            ctrlDepMap.put(eventMap.get(e), new HashSet<>(curCtrlDeps));
         }
 
         if (e instanceof RegReaderData) {
@@ -413,7 +407,7 @@ public class ExecutionModel {
 
             if (e instanceof Store) {
                 // ---- visible data dependency ----
-                dataDepMap.put(getData(e), deps);
+                dataDepMap.put(eventMap.get(e), deps);
             }
             if (e instanceof RegWriter) {
                 // ---- internal data dependency ----
@@ -435,7 +429,7 @@ public class ExecutionModel {
         if (e instanceof Load) {
             // ---- Update lastRegWrites ----
             Load load = (Load)e;
-            lastRegWrites.compute(load.getResultRegister(), (k, v) -> new HashSet<>()).add(getData(e));
+            lastRegWrites.compute(load.getResultRegister(), (k, v) -> new HashSet<>()).add(eventMap.get(e));
         }
     }
 

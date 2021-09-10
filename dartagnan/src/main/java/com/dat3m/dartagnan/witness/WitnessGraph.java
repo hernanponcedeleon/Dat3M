@@ -1,37 +1,30 @@
 package com.dat3m.dartagnan.witness;
 
-import static com.dat3m.dartagnan.program.utils.EType.MEMORY;
-import static com.dat3m.dartagnan.program.utils.EType.READ;
-import static com.dat3m.dartagnan.program.utils.EType.WRITE;
-import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
-import static com.dat3m.dartagnan.witness.GraphAttributes.*;
-import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.collect.Lists;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.math.BigInteger;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.program.utils.EType.*;
+import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
+import static com.dat3m.dartagnan.witness.GraphAttributes.*;
+import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
 public class WitnessGraph extends ElemWithAttributes {
 
-	private SortedSet<Node> nodes = new TreeSet<>();
+	private final SortedSet<Node> nodes = new TreeSet<>();
 	// The order in which we add / traverse edges is important, thus a List
-	private List<Edge> edges = new ArrayList<>();
+	private final List<Edge> edges = new ArrayList<>();
 	
 	public void addNode(String id) {
 		nodes.add(new Node(id));

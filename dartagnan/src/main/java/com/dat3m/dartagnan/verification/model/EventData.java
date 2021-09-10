@@ -129,6 +129,6 @@ public class EventData implements Comparable<EventData> {
 
     @Override
     public int compareTo(EventData o) {
-        return event.compareTo(o.event);
+        return this.getId() - o.getId();
     }
 }

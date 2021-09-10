@@ -1,12 +1,15 @@
 package com.dat3m.dartagnan.analysis;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.*;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.AbstractEdgeLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.AddressLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.EventLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.DNF;
+import com.dat3m.dartagnan.analysis.saturation.SaturationSolver;
+import com.dat3m.dartagnan.analysis.saturation.SolverResult;
+import com.dat3m.dartagnan.analysis.saturation.SolverStatistics;
+import com.dat3m.dartagnan.analysis.saturation.SolverStatus;
+import com.dat3m.dartagnan.analysis.saturation.coreReason.AbstractEdgeLiteral;
+import com.dat3m.dartagnan.analysis.saturation.coreReason.AddressLiteral;
+import com.dat3m.dartagnan.analysis.saturation.coreReason.CoreLiteral;
+import com.dat3m.dartagnan.analysis.saturation.coreReason.EventLiteral;
+import com.dat3m.dartagnan.analysis.saturation.logic.Conjunction;
+import com.dat3m.dartagnan.analysis.saturation.logic.DNF;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -17,6 +20,7 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
+import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,11 +33,20 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.*;
-import static com.dat3m.dartagnan.analysis.graphRefinement.RefinementStatus.INCONCLUSIVE;
-import static com.dat3m.dartagnan.analysis.graphRefinement.RefinementStatus.REFUTED;
+import static com.dat3m.dartagnan.analysis.saturation.SolverStatus.INCONCLUSIVE;
+import static com.dat3m.dartagnan.analysis.saturation.SolverStatus.REFUTED;
 import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.utils.Result.*;
 
+/*
+    Refinement is a custom solving procedure that starts from a weak memory model (possibly the empty model)
+    and iteratively refines it to perform a verification task.
+    More concretely, it iteratively:
+        - Finds some assertion-violating execution w.r.t. to some (very weak) baseline memory model
+        - Checks the consistency of this execution using a Saturation-based Solver
+        - Refines the used memory model if the found execution was inconsistent, using the explanations
+          provided by the Saturation solver.
+ */
 public class Refinement {
 
     private static final Logger logger = LogManager.getLogger(Refinement.class);
@@ -43,7 +56,7 @@ public class Refinement {
     // we don't have a memory model and thus the bound check is imprecise.
     // We may even want to perform refinement to check the bounds (we envision a case where the
     // refinement is accurate enough to verify the assertions but not accurate enough to check the bounds)
-    public static Result runAnalysisGraphRefinement(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
+    public static Result runAnalysisSaturationSolver(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
             throws InterruptedException, SolverException {
 
         task.unrollAndCompile();
@@ -66,9 +79,9 @@ public class Refinement {
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Program program = task.getProgram();
-        GraphRefinement refinement = new GraphRefinement(task);
-        RefinementStatus status = REFUTED;
+        SaturationSolver saturationSolver = new SaturationSolver(task);
         Refiner refiner = new Refiner(task, ctx);
+        SolverStatus status = REFUTED;
 
         prover.addConstraint(task.encodeProgram(ctx));
         prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
@@ -82,7 +95,7 @@ public class Refinement {
 
         //  ------ Just for statistics ------
         List<DNF<CoreLiteral>> foundViolations = new ArrayList<>();
-        List<RefinementStats> statList = new ArrayList<>();
+        List<SolverStatistics> statList = new ArrayList<>();
         int iterationCount = 0;
         long lastTime = System.currentTimeMillis();
         long curTime;
@@ -99,18 +112,18 @@ public class Refinement {
                             " ===== Iteration: {} =====\n" +
                             "Solving time(ms): {}", iterationCount, curTime - lastTime);
 
-            RefinementResult gRes;
+            SolverResult solverResult;
             try (Model model = prover.getModel()) {
-                gRes = refinement.kSearch(model, ctx, task.getMaxSaturationDepth());
+                solverResult = saturationSolver.check(model, ctx, task.getMaxSaturationDepth());
             }
 
-            RefinementStats stats = gRes.getStatistics();
+            SolverStatistics stats = solverResult.getStatistics();
             statList.add(stats);
             logger.debug("Refinement iteration:\n{}", stats);
 
-            status = gRes.getStatus();
+            status = solverResult.getStatus();
             if (status == REFUTED) {
-                DNF<CoreLiteral> violations = gRes.getViolations();
+                DNF<CoreLiteral> violations = solverResult.getViolations();
                 foundViolations.add(violations);
                 prover.addConstraint(refiner.refine(violations));
 
@@ -162,7 +175,7 @@ public class Refinement {
         }
 
 
-        Result res;
+        Result veriResult;
         long boundCheckTime = 0;
         if (prover.isUnsat()) {
             // ------- CHECK BOUNDS -------
@@ -174,17 +187,17 @@ public class Refinement {
             for (DNF<CoreLiteral> violation : foundViolations) {
                 prover.addConstraint(refiner.refine(violation));
             }
-            res = !prover.isUnsat() ? UNKNOWN : PASS; // Initial bound check without any WMM constraints
+            veriResult = !prover.isUnsat() ? UNKNOWN : PASS; // Initial bound check without any WMM constraints
             boundCheckTime = System.currentTimeMillis() - lastTime;
         } else {
-            res = FAIL;
+            veriResult = FAIL;
         }
 
         logSummary(statList, iterationCount, totalSolvingTime, boundCheckTime);
 
-        res = program.getAss().getInvert() ? res.invert() : res;
-        logger.info("Verification finished with result " + res);
-        return res;
+        veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;
+        logger.info("Verification finished with result " + veriResult);
+        return veriResult;
     }
 
 
@@ -192,7 +205,7 @@ public class Refinement {
 
     // -------------------- Printing -----------------------------
 
-    private static void logSummary(List<RefinementStats> statList, int iterationCount, long totalSolvingTime, long boundCheckTime) {
+    private static void logSummary(List<SolverStatistics> statList, int iterationCount, long totalSolvingTime, long boundCheckTime) {
         if (!logger.isInfoEnabled()) {
             return;
         }
@@ -208,7 +221,7 @@ public class Refinement {
         long maxModelSize = Long.MIN_VALUE;
         int satDepth = 0;
 
-        for (RefinementStats stats : statList) {
+        for (SolverStatistics stats : statList) {
             totalModelTime += stats.getModelConstructionTime();
             totalSearchTime += stats.getSearchTime();
             totalViolationComputationTime += stats.getViolationComputationTime();

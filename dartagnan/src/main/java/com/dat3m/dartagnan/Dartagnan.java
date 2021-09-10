@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.RefinementTask;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
@@ -8,6 +7,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
+import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.dartagnan.witness.WitnessGraph;
@@ -29,7 +29,7 @@ import java.io.File;
 import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.analysis.Base.*;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
-import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisGraphRefinement;
+import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisSaturationSolver;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 
@@ -122,7 +122,7 @@ public class Dartagnan {
                                 result = runAnalysisAssumeSolver(ctx, prover, task);
                                 break;
                             case REFINEMENT:
-                                result = runAnalysisGraphRefinement(ctx, prover,
+                                result = runAnalysisSaturationSolver(ctx, prover,
                                         RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
                                 break;
                             default:

@@ -1,20 +1,18 @@
 package com.dat3m.dartagnan.parsers.witness.visitors;
 
-import static com.dat3m.dartagnan.witness.GraphAttributes.PRODUCER;
-import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMFILE;
-import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
-
 import com.dat3m.dartagnan.parsers.XMLParser;
 import com.dat3m.dartagnan.parsers.XMLParser.ElementContext;
 import com.dat3m.dartagnan.parsers.XMLParserBaseVisitor;
 import com.dat3m.dartagnan.parsers.XMLParserVisitor;
 import com.dat3m.dartagnan.witness.Edge;
-import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.witness.Node;
+import com.dat3m.dartagnan.witness.WitnessGraph;
+
+import static com.dat3m.dartagnan.witness.GraphAttributes.*;
 
 public class VisitorXML extends XMLParserBaseVisitor<Object> implements XMLParserVisitor<Object> {
 	
-	private WitnessGraph graph = new WitnessGraph();
+	private final WitnessGraph graph = new WitnessGraph();
 	
 	@Override
 	public WitnessGraph visitDocument(XMLParser.DocumentContext ctx) {

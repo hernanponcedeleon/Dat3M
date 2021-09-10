@@ -5,7 +5,7 @@ import static java.lang.Integer.parseInt;
 
 public class Node extends ElemWithAttributes implements Comparable<Node> {
 
-	private String id;
+	private final String id;
 	
 	public Node(String id) {
 		this.id = id;

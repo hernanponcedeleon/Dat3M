@@ -67,7 +67,7 @@ public enum Arch {
 	public static Arch[] orderedValues() {
 		Arch[] order = { NONE, ARM, ARM8, POWER, TSO };
 		// Be sure no element is missing
-		assert(Arrays.asList(order).containsAll(Arrays.asList(Arch.values())));
+		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;
 	}
 }

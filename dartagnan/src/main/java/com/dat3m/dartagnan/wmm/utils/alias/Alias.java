@@ -57,7 +57,7 @@ public enum Alias {
 	public static Alias[] orderedValues() {
 		Alias[] order = { NONE, CFIS, CFS };
 		// Be sure no element is missing
-		assert(Arrays.asList(order).containsAll(Arrays.asList(Alias.values())));
+		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;
 	}
 }

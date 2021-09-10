@@ -30,7 +30,7 @@ public class DataRaces {
     private static final Logger logger = LogManager.getLogger(DataRaces.class);
 
 	public static Result checkForRaces(SolverContext ctx, VerificationTask task) {
-        Result res = Result.UNKNOWN;
+        Result res = UNKNOWN;
 
 		// TODO(HP): No program.simplify() ???
 		task.unrollAndCompile();

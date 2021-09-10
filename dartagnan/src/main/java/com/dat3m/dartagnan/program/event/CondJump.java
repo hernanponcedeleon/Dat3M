@@ -53,7 +53,7 @@ public class CondJump extends Event implements RegReaderData {
     	// We do not detect cases like CondJump(2*x==x+x,label) as jumps
     	// However treating those (unusual) as jumps should not break anything
     	try {
-    		return ((BConst)expr.reduce()).getValue();	
+    		return expr.reduce().getValue();
     	} catch (Exception e) {
     		// "Complex" expressions cannot be reduced and thus they are trivially not true.
     		return false;

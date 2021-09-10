@@ -1,8 +1,8 @@
 package com.dat3m.ui.result;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.RefinementTask;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
