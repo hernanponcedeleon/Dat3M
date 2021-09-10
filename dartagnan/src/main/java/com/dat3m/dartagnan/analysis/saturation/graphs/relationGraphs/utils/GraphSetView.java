@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils;
 
-import com.dat3m.dartagnan.analysis.saturation.graphs.Edge;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 
 import java.util.ArrayList;

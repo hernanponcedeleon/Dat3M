@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.analysis.saturation.graphs;
 
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.basic.SimpleCoherenceGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.binary.CompositionGraph;

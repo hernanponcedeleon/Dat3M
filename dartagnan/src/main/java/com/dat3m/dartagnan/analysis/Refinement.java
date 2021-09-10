@@ -34,7 +34,7 @@ import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.*;
 import static com.dat3m.dartagnan.analysis.saturation.SolverStatus.INCONCLUSIVE;
-import static com.dat3m.dartagnan.analysis.saturation.SolverStatus.REFUTED;
+import static com.dat3m.dartagnan.analysis.saturation.SolverStatus.INCONSISTENT;
 import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.utils.Result.*;
 
@@ -81,7 +81,7 @@ public class Refinement {
         Program program = task.getProgram();
         SaturationSolver saturationSolver = new SaturationSolver(task);
         Refiner refiner = new Refiner(task, ctx);
-        SolverStatus status = REFUTED;
+        SolverStatus status = INCONSISTENT;
 
         prover.addConstraint(task.encodeProgram(ctx));
         prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
@@ -94,7 +94,7 @@ public class Refinement {
         prover.addConstraint(task.encodeAssertions(ctx));
 
         //  ------ Just for statistics ------
-        List<DNF<CoreLiteral>> foundViolations = new ArrayList<>();
+        List<DNF<CoreLiteral>> foundReasons = new ArrayList<>();
         List<SolverStatistics> statList = new ArrayList<>();
         int iterationCount = 0;
         long lastTime = System.currentTimeMillis();
@@ -122,17 +122,17 @@ public class Refinement {
             logger.debug("Refinement iteration:\n{}", stats);
 
             status = solverResult.getStatus();
-            if (status == REFUTED) {
-                DNF<CoreLiteral> violations = solverResult.getViolations();
-                foundViolations.add(violations);
-                prover.addConstraint(refiner.refine(violations));
+            if (status == INCONSISTENT) {
+                DNF<CoreLiteral> reasons = solverResult.getInconsistencyReasons();
+                foundReasons.add(reasons);
+                prover.addConstraint(refiner.refine(reasons));
 
                 if (logger.isTraceEnabled()) {
                     // Some statistics
-                    StringBuilder message = new StringBuilder().append("Found violations:");
-                    for (Conjunction<CoreLiteral> cube : violations.getCubes()) {
+                    StringBuilder message = new StringBuilder().append("Found inconsistency reasons:");
+                    for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
                         message.append("\n")
-                                .append("Violation size: ").append(cube.getSize()).append("\n")
+                                .append("Reason size: ").append(cube.getSize()).append("\n")
                                 .append(cube);
                     }
                     logger.trace(message);
@@ -157,20 +157,20 @@ public class Refinement {
                 case INCONCLUSIVE:
                     message = "Refinement procedure was inconclusive.";
                     break;
-                case VERIFIED:
+                case CONSISTENT:
                     message = "Violation verified.";
                     break;
-                case REFUTED:
+                case INCONSISTENT:
                     message = "Bounded safety proven.";
                     break;
                 default:
-                    throw new IllegalStateException("Unknown result type returned by GraphRefinement.");
+                    throw new IllegalStateException("Unknown result type returned by SaturationSolver.");
             }
             logger.info(message);
         }
 
         if (status == INCONCLUSIVE) {
-            // Refinement got no result, so we cannot proceed further.
+            // Saturation got no result, so we cannot proceed further.
             return UNKNOWN;
         }
 
@@ -183,11 +183,11 @@ public class Refinement {
             prover.pop();
             // Add bound check
             prover.addConstraint(bmgr.not(program.encodeNoBoundEventExec(ctx)));
-            // Add back the constraints found by Refinement (TODO: We might need to perform a second refinement)
-            for (DNF<CoreLiteral> violation : foundViolations) {
+            // Add back the constraints found during Refinement (TODO: We might need to perform a second refinement)
+            for (DNF<CoreLiteral> violation : foundReasons) {
                 prover.addConstraint(refiner.refine(violation));
             }
-            veriResult = !prover.isUnsat() ? UNKNOWN : PASS; // Initial bound check without any WMM constraints
+            veriResult = !prover.isUnsat() ? UNKNOWN : PASS;
             boundCheckTime = System.currentTimeMillis() - lastTime;
         } else {
             veriResult = FAIL;
@@ -212,10 +212,10 @@ public class Refinement {
 
         long totalModelTime = 0;
         long totalSearchTime = 0;
-        long totalViolationComputationTime = 0;
+        long totalReasonComputationTime = 0;
         long totalResolutionTime = 0;
         long totalNumGuesses = 0;
-        long totalNumViolations = 0;
+        long totalNumReasons = 0;
         long totalModelSize = 0;
         long minModelSize = Long.MAX_VALUE;
         long maxModelSize = Long.MIN_VALUE;
@@ -224,10 +224,10 @@ public class Refinement {
         for (SolverStatistics stats : statList) {
             totalModelTime += stats.getModelConstructionTime();
             totalSearchTime += stats.getSearchTime();
-            totalViolationComputationTime += stats.getViolationComputationTime();
+            totalReasonComputationTime += stats.getReasonComputationTime();
             totalResolutionTime += stats.getResolutionTime();
             totalNumGuesses += stats.getNumGuessedCoherences();
-            totalNumViolations += stats.getNumComputedViolations();
+            totalNumReasons += stats.getNumComputedReasons();
             satDepth = Math.max(satDepth, stats.getSaturationDepth());
 
             totalModelSize += stats.getModelSize();
@@ -245,11 +245,11 @@ public class Refinement {
                     .append("Average model size (#events): ").append(totalModelSize / statList.size()).append("\n")
                     .append("Max model size (#events): ").append(maxModelSize).append("\n");
         }
-        message.append("Total violation computation time(ms): ").append(totalViolationComputationTime).append("\n")
+        message.append("Total reason computation time(ms): ").append(totalReasonComputationTime).append("\n")
                 .append("Total resolution time(ms): ").append(totalResolutionTime).append("\n")
                 .append("Total search time(ms): ").append(totalSearchTime).append("\n")
-                .append("Total guessings: ").append(totalNumGuesses).append("\n")
-                .append("Total violations: ").append(totalNumViolations).append("\n")
+                .append("Total #guessings: ").append(totalNumGuesses).append("\n")
+                .append("Total #reasons: ").append(totalNumReasons).append("\n")
                 .append("Max Saturation Depth: ").append(satDepth).append("\n")
                 .append("Bound check time(ms): ").append(boundCheckTime);
 
@@ -276,16 +276,15 @@ public class Refinement {
 
         // This method computes a refinement clause from a set of violations.
         // Furthermore, it computes symmetric violations if symmetry learning is enabled.
-        public BooleanFormula refine(DNF<CoreLiteral> coreViolations) {
+        public BooleanFormula refine(DNF<CoreLiteral> coreReasons) {
             BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
             BooleanFormula refinement = bmgr.makeTrue();
             // For each symmetry permutation, we will create refinement clauses
             for (Function<Event, Event> perm : symmPermutations) {
-                for (Conjunction<CoreLiteral> violation : coreViolations.getCubes()) {
-                    BooleanFormula permutedClause = bmgr.makeFalse();
-                    for (CoreLiteral literal : violation.getLiterals()) {
-                        permutedClause = bmgr.or(permutedClause, bmgr.not(permuteAndConvert(literal, perm)));
-                    }
+                for (Conjunction<CoreLiteral> reason : coreReasons.getCubes()) {
+                    BooleanFormula permutedClause = reason.getLiterals().stream()
+                            .map(lit -> bmgr.not(permuteAndConvert(lit, perm)))
+                            .reduce(bmgr.makeFalse(), bmgr::or);
                     refinement = bmgr.and(refinement, permutedClause);
                 }
             }

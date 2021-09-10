@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.analysis.saturation;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.analysis.saturation.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.saturation.coreReason.Reasoner;
-import com.dat3m.dartagnan.analysis.saturation.graphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.ExecutionGraph;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.constraints.Constraint;
 import com.dat3m.dartagnan.analysis.saturation.logic.Conjunction;
@@ -112,7 +112,7 @@ public class SaturationSolver {
     private void populateFromModel(Model model, SolverContext ctx) {
         executionModel.initialize(model, ctx, false);
         execGraph.initializeFromModel(executionModel);
-        if (GlobalSettings.SATURATION_DEBUG) {
+        if (GlobalSettings.SATURATION_ENABLE_DEBUG) {
             testIteration();
             testStaticGraphs();
         }
@@ -191,7 +191,7 @@ public class SaturationSolver {
 
     /*
         <check> performs a sequence of k-Saturations, starting from 0 up to <maxSaturationDepth>
-        It returns whether it was successful, what violations where found (if any) and statistics
+        It returns whether the model is consistent, what inconistency reasons where found (if any) and statistics
         about the computation.
      */
     public SolverResult check(Model model, SolverContext ctx, int maxSaturationDepth) {
@@ -221,9 +221,9 @@ public class SaturationSolver {
             SolverStatus status = saturation(start, Timestamp.ZERO, k, coSearchList, 0);
             if (status != INCONCLUSIVE) {
                 result.setStatus(status);
-                if (status == REFUTED) {
+                if (status == INCONSISTENT) {
                     long temp = System.currentTimeMillis();
-                    result.setViolations(computeResolventsFromTree(sTree));
+                    result.setInconsistencyReasons(computeResolventsFromTree(sTree));
                     stats.resolutionTime = System.currentTimeMillis() - temp;
                 }
                 break;
@@ -240,7 +240,7 @@ public class SaturationSolver {
         // ==============================
 
         stats.searchTime = System.currentTimeMillis() - curTime;
-        if (GlobalSettings.SATURATION_DEBUG && result.getStatus() == VERIFIED) {
+        if (GlobalSettings.SATURATION_ENABLE_DEBUG && result.getStatus() == CONSISTENT) {
             testCoherence();
         }
         return result;
@@ -257,14 +257,14 @@ public class SaturationSolver {
         searchList = searchList.subList(searchStart, searchList.size());
         if (depth == 0 || searchList.isEmpty()) {
             // 0-SAT amounts to a simple violation check
-            if (checkViolations()) {
+            if (checkInconsistency()) {
                 long time = System.currentTimeMillis();
-                curSearchNode.replaceBy(new LeafNode(computeViolationList()));
-                stats.violationComputationTime += (System.currentTimeMillis() - time);
-                return REFUTED;
+                curSearchNode.replaceBy(new LeafNode(computeInconsistencyReasons()));
+                stats.reasonComputationTime += (System.currentTimeMillis() - time);
+                return INCONSISTENT;
             } else if (searchList.stream().allMatch(this::coExists)) {
                 // All remaining edges in the search list are already in the graph (due to transitivity and totality of co)
-                return VERIFIED;
+                return CONSISTENT;
             } else {
                 return INCONCLUSIVE;
             }
@@ -287,49 +287,48 @@ public class SaturationSolver {
                 execGraph.addCoherenceEdges(coEdge.with(nextTime));
                 stats.numGuessedCoherences++;
                 SolverStatus status = saturation(decNode.getPositive(), nextTime, depth - 1, searchList, i + 1);
-                if (status == VERIFIED && searchList.stream().allMatch(this::coExists)) {
-                    return VERIFIED;
+                if (status == CONSISTENT && searchList.stream().allMatch(this::coExists)) {
+                    return CONSISTENT;
                 }
-                // Always backtrack the added edge, because either it caused a violation and needs to be removed
+                // Always backtrack the added edge, because either it caused a constraint violation and needs to be removed
                 // or it did not cause a violation so we want to test another co-edge.
                 backtrackOn(nextTime);
 
-                if (status == REFUTED) {
-                    // ...the last added edge caused a violation
+                if (status == INCONSISTENT) {
+                    // ...the last added edge caused a constraint violation
                     curSearchNode.replaceBy(decNode);
                     curSearchNode = decNode.getNegative();
                     // We now add the opposite edge but with the old time stamp, since this
                     // edge is now permanent with respect to our current search depth.
                     execGraph.addCoherenceEdges(coEdge.inverse().with(curTime));
                     status = saturation(decNode.getNegative(), curTime, depth - 1, searchList, i + 1);
-                    if (status == REFUTED) {
-                        // ... both direction of the co edge caused a violation, so we have an inconsistency/refutation
-                        return REFUTED;
-                    } else if (status == VERIFIED && searchList.stream().allMatch(this::coExists)) {
+                    if (status == INCONSISTENT) {
+                        // ... both directions of the co edge caused a violation, so we have an inconsistency
+                        return INCONSISTENT;
+                    } else if (status == CONSISTENT && searchList.stream().allMatch(this::coExists)) {
                         // ... the inner Saturation verified the violation to be true, and the current Saturation
-                        // has no more coherences to test, so it agrees and also returns VERIFIED.
-                        return VERIFIED;
+                        // has no more coherences to test, so it agrees and also returns consistency.
+                        return CONSISTENT;
                     }
                     // We made progress since we permanently added a new edge for this saturation depth.
                     //TODO: We might want to restart the search or do some other heuristic
                     // to guide our search.
                     progress = true;
                 } else {
-                    // ... the last added edge did NOT cause a violation.
+                    // ... the last added edge did NOT cause a consistency violation.
                     // We still need to test the opposite edge but with a new timestamp again.
                     nextTime = curTime.next();
                     execGraph.addCoherenceEdges(coEdge.inverse().with(nextTime));
                     stats.numGuessedCoherences++;
                     status = saturation(decNode.getNegative(), nextTime, depth - 1, searchList, i + 1);
-                    if (status == VERIFIED && searchList.stream().allMatch(this::coExists)) {
-                        return VERIFIED;
+                    if (status == CONSISTENT && searchList.stream().allMatch(this::coExists)) {
+                        return CONSISTENT;
                     }
                     backtrackOn(nextTime);
 
-                    if (status == REFUTED) {
-                        // ... the inverse co-edge caused a violation but the original did not
-                        // so we fix the original one as permanent now (using the old timestamp)
-                        // and proceed
+                    if (status == INCONSISTENT) {
+                        // ... the inverse co-edge caused a consistency violation but the original did not
+                        // so we fix the original one as permanent now (using the old timestamp) and proceed
                         curSearchNode.replaceBy(decNode);
                         curSearchNode = decNode.getPositive();
                         execGraph.addCoherenceEdges(coEdge.with(curTime));
@@ -355,27 +354,26 @@ public class SaturationSolver {
 
     // ============= Violations + Resolution ================
 
-    private boolean checkViolations() {
+    private boolean checkInconsistency() {
         return execGraph.getConstraints().stream().anyMatch(Constraint::checkForViolations);
     }
 
-    // Precondition: This code is only called if <checkViolations> returns true.
-    private List<Conjunction<CoreLiteral>> computeViolationList() {
-        List<Conjunction<CoreLiteral>> violations = new ArrayList<>();
+    private List<Conjunction<CoreLiteral>> computeInconsistencyReasons() {
+        List<Conjunction<CoreLiteral>> reasons = new ArrayList<>();
         for (Constraint constraint : execGraph.getConstraints()) {
-            violations.addAll(reasoner.computeViolationReasons(constraint).getCubes());
+            reasons.addAll(reasoner.computeViolationReasons(constraint).getCubes());
         }
 
-        // Important code: We only retain those violations with the least number of co-literals
+        // Important code: We only retain those reasons with the least number of co-literals
         // this heavily boosts the performance of the resolution!!!
-        int minComplexity = violations.stream().mapToInt(Conjunction::getResolutionComplexity).min().getAsInt();
-        violations.removeIf(x -> x.getResolutionComplexity() > minComplexity);
+        int minComplexity = reasons.stream().mapToInt(Conjunction::getResolutionComplexity).min().getAsInt();
+        reasons.removeIf(x -> x.getResolutionComplexity() > minComplexity);
         // TODO: The following is ugly, but we convert to DNF again to remove dominated clauses and duplicates
-        violations = new ArrayList<>(new DNF<>(violations).getCubes());
+        reasons = new ArrayList<>(new DNF<>(reasons).getCubes());
 
-        stats.numComputedViolations += violations.size();
+        stats.numComputedReasons += reasons.size();
 
-        return violations;
+        return reasons;
     }
 
     private DNF<CoreLiteral> computeResolventsFromTree(SearchTree tree) {
@@ -390,21 +388,32 @@ public class SaturationSolver {
     // ====================================================
 
     // ===================== TESTING ======================
+
+    /*
+        The following methods check simple properties such as:
+            - Iteration of edges in graphs works correctly (not trivial for virtual graphs)
+            - Min-Sets of Relations are present in the corresponding RelationGraph
+            - Coherence is total and transitive
+     */
+
     private void testIteration() {
         for (RelationGraph g : execGraph.getEventGraphs()) {
             int size = g.size();
             for (Edge e : g) {
                 size--;
                 if (size < 0) {
-                    throw new RuntimeException();
+                    throw new IllegalStateException(String.format(
+                            "The size of relation graph %s is less than the number of edges returned by iteration.", g));
                 }
             }
             if (size > 0) {
-                throw new RuntimeException();
+                throw new IllegalStateException(String.format(
+                        "The size of relation graph %s is greater than the number of edges returned by iteration.", g));
             }
 
             if (g.edgeStream().count() != g.size()) {
-                throw new RuntimeException();
+                throw new IllegalStateException(String.format(
+                        "The size of relation graph %s mismatches the number of streamed edges..", g));
             }
         }
     }
@@ -424,8 +433,8 @@ public class SaturationSolver {
                     Optional<EventData> e2 = executionModel.getData(t.getSecond());
                     if (e1.isPresent() && e2.isPresent() && !g.contains(new Edge(e1.get(), e2.get()))) {
                         throw new IllegalStateException(String.format(
-                                "Static min tuple %s%s is not present in the corresponding relation graph.",
-                                relData.getName(), t));
+                                "Static min tuple %s%s is not present in the corresponding relation graph %s.",
+                                relData.getName(), t, g.getName()));
                     }
                 }
             }

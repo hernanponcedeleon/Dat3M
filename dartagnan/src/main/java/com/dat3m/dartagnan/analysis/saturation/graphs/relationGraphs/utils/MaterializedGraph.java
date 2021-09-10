@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils;
 
-import com.dat3m.dartagnan.analysis.saturation.graphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.AbstractRelationGraph;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.EventData;

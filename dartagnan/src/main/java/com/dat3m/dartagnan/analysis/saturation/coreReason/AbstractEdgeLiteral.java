@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.analysis.saturation.coreReason;
 
-import com.dat3m.dartagnan.analysis.saturation.graphs.Edge;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 
 public abstract class AbstractEdgeLiteral extends AbstractLiteral {
     protected Edge edge;

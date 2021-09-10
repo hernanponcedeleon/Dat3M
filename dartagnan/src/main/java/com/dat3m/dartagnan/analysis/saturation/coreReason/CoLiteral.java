@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.analysis.saturation.coreReason;
 
-import com.dat3m.dartagnan.analysis.saturation.graphs.Edge;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 

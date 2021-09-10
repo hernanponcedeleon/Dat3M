@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.analysis.saturation.coreReason;
 
-import com.dat3m.dartagnan.analysis.saturation.graphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.ExecutionGraph;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.basic.SimpleCoherenceGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.binary.DifferenceGraph;
@@ -23,10 +23,7 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.Maps;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.PathAlgorithm.findShortestPath;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
@@ -48,7 +45,7 @@ public class Reasoner {
     // Due to the new derivation length reasoning, this should never happen!
     private final Map<RelationGraph, Set<Edge>> visitedMap = Maps.newIdentityHashMap();
 
-    //TODO: For edges that do not depend on co, we may want to store the computed violations
+    //TODO: For edges that do not depend on co, we may want to store the computed reasons
     // to reuse them if possible.
 
     public Reasoner(ExecutionGraph execGraph, boolean useMinTupleReasoning) {
@@ -58,25 +55,24 @@ public class Reasoner {
         this.graphRelMap = execGraph.getRelationGraphMap().inverse();
         this.useMinTupleReasoning = useMinTupleReasoning;
 
-        execGraph.getEventGraphs().stream().filter(graph -> graph instanceof RecursiveGraph)
+        execGraph.getEventGraphs().stream()
+                .filter(graph -> graph instanceof RecursiveGraph)
                 .forEach(g -> visitedMap.put(g, new HashSet<>()));
 
     }
-
 
     public DNF<CoreLiteral> computeViolationReasons(Constraint constraint) {
         if (!constraint.checkForViolations()) {
             return DNF.FALSE();
         }
 
-        SortedCubeSet<CoreLiteral> clauseSet = new SortedCubeSet<>();
-        List<List<Edge>> violations = constraint.getViolations();
         RelationGraph constrainedGraph = constraint.getConstrainedGraph();
-        for (List<Edge> violation : violations) {
-            Conjunction<CoreLiteral> reason = Conjunction.TRUE();
-            for (Edge e : violation) {
-                reason = reason.and(computeReason(constrainedGraph, e));
-            }
+        SortedCubeSet<CoreLiteral> clauseSet = new SortedCubeSet<>();
+
+        for (Collection<Edge> violation : constraint.getViolations()) {
+            Conjunction<CoreLiteral> reason = violation.stream()
+                    .map(edge -> computeReason(constrainedGraph, edge))
+                    .reduce(Conjunction.TRUE(), Conjunction::and);
             clauseSet.add(simplifyReason(reason));
         }
 

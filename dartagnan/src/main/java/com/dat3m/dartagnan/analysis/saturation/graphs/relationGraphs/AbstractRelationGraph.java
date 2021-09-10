@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs;
 
-import com.dat3m.dartagnan.analysis.saturation.graphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.util.GraphVisitor;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;

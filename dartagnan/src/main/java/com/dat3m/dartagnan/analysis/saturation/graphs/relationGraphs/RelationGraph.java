@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs;
 
-import com.dat3m.dartagnan.analysis.saturation.graphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.GraphDerivable;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.GraphSetView;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.OneTimeIterable;
@@ -56,7 +55,7 @@ public interface RelationGraph extends GraphDerivable, Iterable<Edge> {
     default boolean contains(Edge edge) { return contains(edge.getFirst(), edge.getSecond()); }
     default Timestamp getTime(Edge edge) { return getTime(edge.getFirst(), edge.getSecond()); }
 
-    default  boolean isEmpty() { return size() == 0; }
+    default boolean isEmpty() { return size() == 0; }
 
     default boolean containsAll(Collection<? extends Edge> edges) {
         return edges.stream().allMatch(this::contains);

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.constraints;
 
-import com.dat3m.dartagnan.analysis.saturation.graphs.Edge;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.utils.timeable.Timeable;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -43,7 +43,7 @@ public class EmptinessConstraint extends Constraint {
     }
 
     @Override
-    public List<List<Edge>> getViolations() {
+    public List<List<Edge>>  getViolations() {
         return violatingEdges.stream().map(Collections::singletonList).collect(Collectors.toList());
     }
 }

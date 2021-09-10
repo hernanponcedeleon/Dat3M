@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.analysis.saturation.searchTree;
 
-import com.dat3m.dartagnan.analysis.saturation.graphs.Edge;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 
 public class DecisionNode extends SearchNode {
     Edge edge;

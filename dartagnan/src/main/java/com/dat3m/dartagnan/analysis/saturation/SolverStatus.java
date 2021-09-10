@@ -1,16 +1,16 @@
 package com.dat3m.dartagnan.analysis.saturation;
 
 public enum SolverStatus {
-    VERIFIED, REFUTED, INCONCLUSIVE;
+    CONSISTENT, INCONSISTENT, INCONCLUSIVE;
 
 
     @Override
     public String toString() {
         switch (this) {
-            case VERIFIED:
-                return "Verified";
-            case REFUTED:
-                return "Refuted";
+            case CONSISTENT:
+                return "Consistent";
+            case INCONSISTENT:
+                return "Inconsistent";
             case INCONCLUSIVE:
                 return "Inconclusive";
             default:

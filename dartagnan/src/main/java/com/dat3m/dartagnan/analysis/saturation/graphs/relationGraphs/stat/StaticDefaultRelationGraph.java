@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.stat;
 
-import com.dat3m.dartagnan.analysis.saturation.graphs.Edge;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.MaterializedGraph;
 import com.dat3m.dartagnan.analysis.saturation.util.GraphVisitor;

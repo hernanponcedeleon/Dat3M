@@ -42,7 +42,7 @@ public class GlobalSettings {
     public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.FULL;
 
     // ==== Saturation ====
-    public static boolean SATURATION_DEBUG = false;
+    public static boolean SATURATION_ENABLE_DEBUG = false;
     public static final int SATURATION_MAX_DEPTH = 3;
 
     // --------------------
@@ -76,7 +76,7 @@ public class GlobalSettings {
     	logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());
 
     	// Saturation settings
-        logger.info("SATURATION_DEBUG: " + SATURATION_DEBUG);
+        logger.info("SATURATION_ENABLE_DEBUG: " + SATURATION_ENABLE_DEBUG);
         logger.info("SATURATION_MAX_DEPTH: " + SATURATION_MAX_DEPTH);
     }
 }

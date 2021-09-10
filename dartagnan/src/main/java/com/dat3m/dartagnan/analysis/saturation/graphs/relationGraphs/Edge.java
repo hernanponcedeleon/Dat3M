@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.analysis.saturation.graphs;
+package com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs;
 
 import com.dat3m.dartagnan.utils.timeable.Timeable;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;

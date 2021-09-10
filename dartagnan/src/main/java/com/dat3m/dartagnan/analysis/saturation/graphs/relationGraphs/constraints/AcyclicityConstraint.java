@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.constraints;
 
-import com.dat3m.dartagnan.analysis.saturation.graphs.Edge;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.MaterializedSubgraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.PathAlgorithm;
@@ -39,8 +39,9 @@ public class AcyclicityConstraint extends Constraint {
 
     @Override
     public List<List<Edge>> getViolations() {
-        if (violatingSccs.isEmpty())
+        if (violatingSccs.isEmpty()) {
             return Collections.emptyList();
+        }
 
         List<List<Edge>> cycles = new ArrayList<>();
         // Current implementation: For all marked events <e> in all SCCs:
