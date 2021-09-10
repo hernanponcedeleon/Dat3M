@@ -253,7 +253,7 @@ public class Refinement {
                 .append("Total search time(ms): ").append(totalSearchTime).append("\n")
                 .append("Total #guessings: ").append(totalNumGuesses).append("\n")
                 .append("Total #computed reasons: ").append(totalNumReasons).append("\n")
-                .append("Total #computed core reasons: ").append(totalNumReasons).append("\n")
+                .append("Total #computed core reasons: ").append(totalNumCoreReasons).append("\n")
                 .append("Max Saturation Depth: ").append(satDepth).append("\n")
                 .append("Bound check time(ms): ").append(boundCheckTime);
 
