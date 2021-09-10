@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import java.util.*;
 import java.util.stream.Collectors;
 
-//TODO: Maybe add a concrete way of backtracking
 
 // This class should manage a hierarchy of event graphs such that the following operations are supported:
 // (1) Adding edges and propagating changes
@@ -108,9 +107,6 @@ public class GraphHierarchy {
     }
 
     public void backtrack() {
-        //TODO: Let RelationGraph.update return a boolean that indicates if the graph changed
-        // Only then backtrack on the listeners
-        // (We could even propagate the deleted edges, if the Graph was explicit)
         graphListenersMap.keySet().forEach(RelationGraph::backtrack);
         graphListenersMap.values().stream().flatMap(Collection::stream).forEach(GraphListener::backtrack);
     }
@@ -151,16 +147,9 @@ public class GraphHierarchy {
             Set<DependencyGraph<RelationGraph>.Node> recGroup = dependencyGraph.get(target).getSCC();
             dependents = dependents.stream().filter(recGroup::contains).collect(Collectors.toList());
         }
-        for (int i = 0; i < dependents.size() ; i++) {
-            Task newTask = new Task(target, dependents.get(i).getContent(), newEdges, dependents.get(i).getTopologicalIndex());
+        for (DependencyGraph<RelationGraph>.Node dependent : dependents) {
+            Task newTask = new Task(target, dependent.getContent(), newEdges, dependent.getTopologicalIndex());
             tasks.add(newTask);
-            if (i < dependents.size() - 1) {
-                //TODO: We can avoid copying since the new deriviation length
-                // forces graphs to make their own copies with updated edge information.
-
-                // Copy collection for future iteration
-                newEdges = new HashSet<>(newEdges);
-            }
         }
     }
 

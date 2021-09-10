@@ -94,7 +94,7 @@ public class Refinement {
         prover.addConstraint(task.encodeAssertions(ctx));
 
         //  ------ Just for statistics ------
-        List<DNF<CoreLiteral>> foundReasons = new ArrayList<>();
+        List<DNF<CoreLiteral>> foundCoreReasons = new ArrayList<>();
         List<SolverStatistics> statList = new ArrayList<>();
         int iterationCount = 0;
         long lastTime = System.currentTimeMillis();
@@ -124,7 +124,7 @@ public class Refinement {
             status = solverResult.getStatus();
             if (status == INCONSISTENT) {
                 DNF<CoreLiteral> reasons = solverResult.getInconsistencyReasons();
-                foundReasons.add(reasons);
+                foundCoreReasons.add(reasons);
                 prover.addConstraint(refiner.refine(reasons));
 
                 if (logger.isTraceEnabled()) {
@@ -184,7 +184,7 @@ public class Refinement {
             // Add bound check
             prover.addConstraint(bmgr.not(program.encodeNoBoundEventExec(ctx)));
             // Add back the constraints found during Refinement (TODO: We might need to perform a second refinement)
-            for (DNF<CoreLiteral> violation : foundReasons) {
+            for (DNF<CoreLiteral> violation : foundCoreReasons) {
                 prover.addConstraint(refiner.refine(violation));
             }
             veriResult = !prover.isUnsat() ? UNKNOWN : PASS;
@@ -205,7 +205,8 @@ public class Refinement {
 
     // -------------------- Printing -----------------------------
 
-    private static void logSummary(List<SolverStatistics> statList, int iterationCount, long totalSolvingTime, long boundCheckTime) {
+    private static void logSummary(List<SolverStatistics> statList, int iterationCount,
+                                   long totalSolvingTime, long boundCheckTime) {
         if (!logger.isInfoEnabled()) {
             return;
         }
@@ -216,6 +217,7 @@ public class Refinement {
         long totalResolutionTime = 0;
         long totalNumGuesses = 0;
         long totalNumReasons = 0;
+        long totalNumCoreReasons = 0;
         long totalModelSize = 0;
         long minModelSize = Long.MAX_VALUE;
         long maxModelSize = Long.MIN_VALUE;
@@ -228,6 +230,7 @@ public class Refinement {
             totalResolutionTime += stats.getResolutionTime();
             totalNumGuesses += stats.getNumGuessedCoherences();
             totalNumReasons += stats.getNumComputedReasons();
+            totalNumCoreReasons += stats.getNumComputedCoreReasons();
             satDepth = Math.max(satDepth, stats.getSaturationDepth());
 
             totalModelSize += stats.getModelSize();
@@ -249,7 +252,8 @@ public class Refinement {
                 .append("Total resolution time(ms): ").append(totalResolutionTime).append("\n")
                 .append("Total search time(ms): ").append(totalSearchTime).append("\n")
                 .append("Total #guessings: ").append(totalNumGuesses).append("\n")
-                .append("Total #reasons: ").append(totalNumReasons).append("\n")
+                .append("Total #computed reasons: ").append(totalNumReasons).append("\n")
+                .append("Total #computed core reasons: ").append(totalNumReasons).append("\n")
                 .append("Max Saturation Depth: ").append(satDepth).append("\n")
                 .append("Bound check time(ms): ").append(boundCheckTime);
 

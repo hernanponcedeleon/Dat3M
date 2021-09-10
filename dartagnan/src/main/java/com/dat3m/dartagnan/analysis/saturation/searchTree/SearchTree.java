@@ -6,7 +6,7 @@ import java.util.function.Predicate;
 /*
     The SearchTree is a binary decision tree.
     Its inner nodes are binary decision nodes containing a co-literal as decision parameter.
-    Its leaf nodes contain the violations that were found during Saturation.
+    Its leaf nodes contain the inconsistencyReasons that were found during Saturation.
 
     Implementation notes:
        - The SearchTree is never empty and always contains a special root node "FakeRoot".

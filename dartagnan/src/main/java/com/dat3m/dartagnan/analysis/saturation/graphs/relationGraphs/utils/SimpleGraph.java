@@ -52,18 +52,14 @@ public final class SimpleGraph extends AbstractRelationGraph {
     }
 
     private DataItem getItem(EventData e, EdgeDirection dir) {
-        DataItem item;
         switch (dir) {
             case OUTGOING:
-                item = outgoing[e.getId()];
-                break;
+                return outgoing[e.getId()];
             case INGOING:
-                item = ingoing[e.getId()];
-                break;
+                return ingoing[e.getId()];
             default:
-                item = null;
+                return null;
         }
-        return item;
     }
 
     public Collection<Edge> getEdges(EventData e, EdgeDirection dir) {
@@ -78,9 +74,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
     }
 
     public Timestamp getTime(Edge edge) {
-        //Optional<Edge> e = get(edge);
         return get(edge).map(Edge::getTime).orElse(Timestamp.INVALID);
-        //return e != null ? e.getTime() : Timestamp.INVALID;
     }
 
     public Timestamp getTime(EventData a, EventData b) {
@@ -93,31 +87,35 @@ public final class SimpleGraph extends AbstractRelationGraph {
         return size;
     }
 
+    @Override
     public int getMinSize() {
-        return size;
+        return size();
     }
 
+    @Override
+    public int getMaxSize() {
+        return size();
+    }
+
+    @Override
+    public int getEstimatedSize() {
+        return size();
+    }
+
+    @Override
     public int getMinSize(EventData e, EdgeDirection dir) {
         DataItem item = getItem(e, dir);
         return item == null ? 0 : item.size();
     }
 
-    public int getMaxSize() {
-        return size;
-    }
-
+    @Override
     public int getMaxSize(EventData e, EdgeDirection dir) {
-        DataItem item = getItem(e, dir);
-        return item == null ? 0 : item.size();
+        return getMinSize(e, dir);
     }
 
-    public int getEstimatedSize() {
-        return size;
-    }
-
+    @Override
     public int getEstimatedSize(EventData e, EdgeDirection dir) {
-        DataItem item = getItem(e, dir);
-        return item == null ? 0 : item.size();
+        return getMinSize(e, dir);
     }
 
     public boolean contains(Edge e) {

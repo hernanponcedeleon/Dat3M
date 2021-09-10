@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,7 +40,7 @@ public class UnionGraph extends MaterializedGraph {
     public void constructFromModel(ExecutionModel model) {
         super.constructFromModel(model);
 
-        //TODO: Maybe try to minimize the deriviation length initially
+        //TODO: Maybe try to minimize the derivation length initially
         first.edgeStream().map(this::derive).forEach(simpleGraph::add);
         second.edgeStream().map(this::derive).forEach(simpleGraph::add);
     }
@@ -48,12 +49,12 @@ public class UnionGraph extends MaterializedGraph {
     @Override
     public Collection<Edge> forwardPropagate(RelationGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == first || changedGraph == second) {
-            addedEdges = addedEdges.stream().map(this::derive)
+            return addedEdges.stream()
+                    .map(this::derive)
                     .filter(simpleGraph::add).collect(Collectors.toList());
         } else {
-            addedEdges.clear();
+            return Collections.emptyList();
         }
-        return addedEdges;
     }
 
     @Override

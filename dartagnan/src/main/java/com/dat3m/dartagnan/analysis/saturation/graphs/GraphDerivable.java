@@ -8,6 +8,7 @@ import java.util.Collection;
 
 public interface GraphDerivable extends Dependent<RelationGraph> {
 
+    // The input collection <addedEdges> SHALL never be modified!
     Collection<Edge> forwardPropagate(RelationGraph changedGraph, Collection<Edge> addedEdges);
     void backtrack();
 }

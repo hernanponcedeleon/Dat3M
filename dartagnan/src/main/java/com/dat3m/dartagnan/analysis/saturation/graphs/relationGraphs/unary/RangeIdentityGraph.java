@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.analysis.saturation.util.GraphVisitor;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,14 +37,13 @@ public class RangeIdentityGraph extends MaterializedGraph {
     @Override
     public Collection<Edge> forwardPropagate(RelationGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == inner) {
-            addedEdges = addedEdges.stream()
+            return addedEdges.stream()
                     .map(this::derive)
                     .filter(simpleGraph::add)
                     .collect(Collectors.toList());
         } else {
-            addedEdges.clear();
+            return Collections.emptyList();
         }
-        return addedEdges;
     }
 
     @Override

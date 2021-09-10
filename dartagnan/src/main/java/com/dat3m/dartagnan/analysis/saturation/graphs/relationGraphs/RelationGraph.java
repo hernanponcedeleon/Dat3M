@@ -26,7 +26,8 @@ public interface RelationGraph extends GraphDerivable, Iterable<Edge> {
     String getName();
 
     // Returns the edge that is stored in this graph, including all the metadata
-    // Returns NULL, if the edge is not present
+    //TODO: We might want to go back to returning NULL instead of using Optional
+    // since Optional can cause a lot of overhead
     Optional<Edge> get(Edge edge);
 
     //TODO: We might want to make these default

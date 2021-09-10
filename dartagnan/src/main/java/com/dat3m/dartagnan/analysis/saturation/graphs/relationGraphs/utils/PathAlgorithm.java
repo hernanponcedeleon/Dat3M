@@ -39,7 +39,7 @@ public class PathAlgorithm {
 
         while (!found && (!queue1.isEmpty() || !queue2.isEmpty())) {
             if (doForwardBFS) {
-                // Forwards BFS
+                // Forward BFS
                 int curSize = queue1.size();
                 while (curSize-- > 0 && !found) {
                     for (Edge next : graph.outEdges(queue1.poll())) {

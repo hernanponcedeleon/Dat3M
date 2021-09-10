@@ -7,18 +7,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LeafNode extends SearchNode {
-    List<Conjunction<CoreLiteral>> violations;
+    List<Conjunction<CoreLiteral>> inconsistencyReasons;
 
-    public LeafNode(List<Conjunction<CoreLiteral>> violations) {
-        this.violations = violations;
+    public LeafNode(List<Conjunction<CoreLiteral>> inconsistencyReasons) {
+        this.inconsistencyReasons = inconsistencyReasons;
     }
 
-    public List<Conjunction<CoreLiteral>> getViolations() {
-        return violations;
+    public List<Conjunction<CoreLiteral>> getInconsistencyReasons() {
+        return inconsistencyReasons;
     }
 
     @Override
     protected SearchNode copy() {
-        return new LeafNode(new ArrayList<>(violations));
+        return new LeafNode(new ArrayList<>(inconsistencyReasons));
     }
 }

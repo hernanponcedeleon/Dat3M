@@ -13,7 +13,10 @@ public class SolverResult {
     public SolverStatistics getStatistics() { return stats; }
 
     void setStatus(SolverStatus status) { this.status = status; }
-    void setInconsistencyReasons(DNF<CoreLiteral> inconsistencyReasons) { this.inconsistencyReasons = inconsistencyReasons; }
+    void setInconsistencyReasons(DNF<CoreLiteral> inconsistencyReasons) {
+        this.inconsistencyReasons = inconsistencyReasons;
+        stats.numComputedCoreReasons = inconsistencyReasons.getNumberOfCubes();
+    }
     void setStats(SolverStatistics stats) { this.stats = stats; }
 
     public SolverResult() {

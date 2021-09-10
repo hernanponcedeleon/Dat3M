@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 
 public abstract class AbstractRelationGraph implements RelationGraph {
@@ -41,8 +42,7 @@ public abstract class AbstractRelationGraph implements RelationGraph {
 
     @Override
     public Collection<Edge> forwardPropagate(RelationGraph changedGraph, Collection<Edge> addedEdges) {
-        addedEdges.clear();
-        return addedEdges;
+        return Collections.emptyList();
     }
 
     @Override

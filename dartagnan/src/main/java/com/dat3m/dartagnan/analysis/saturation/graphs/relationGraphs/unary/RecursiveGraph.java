@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class RecursiveGraph extends MaterializedGraph {
 
@@ -33,8 +34,11 @@ public class RecursiveGraph extends MaterializedGraph {
 
     @Override
     public Collection<Edge> forwardPropagate(RelationGraph changedGraph, Collection<Edge> addedEdges) {
-        addedEdges.removeIf(x -> !simpleGraph.add(x));
-        return addedEdges;
+        if (changedGraph == inner) {
+            return addedEdges.stream().filter(simpleGraph::add).collect(Collectors.toList());
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     public void setConcreteGraph(RelationGraph concreteGraph) {

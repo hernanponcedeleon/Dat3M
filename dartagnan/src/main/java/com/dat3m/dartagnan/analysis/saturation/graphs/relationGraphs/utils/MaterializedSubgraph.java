@@ -28,7 +28,9 @@ public class MaterializedSubgraph extends MaterializedGraph {
         simpleGraph.constructFromModel(sourceGraph.getModel());
 
         for (EventData e : events) {
-            sourceGraph.outEdgeStream(e).filter(edge -> events.contains(edge.getSecond())).forEach(simpleGraph::add);
+            sourceGraph.outEdgeStream(e)
+                    .filter(edge -> events.contains(edge.getSecond()))
+                    .forEach(simpleGraph::add);
         }
 
     }

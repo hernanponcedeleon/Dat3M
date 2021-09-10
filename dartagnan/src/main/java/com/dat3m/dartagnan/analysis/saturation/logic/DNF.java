@@ -31,16 +31,12 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
         return Collections.unmodifiableSet(cubes);
     }
 
-    public int getNumberOfClauses() {
+    public int getNumberOfCubes() {
         return cubes.size();
     }
 
     public int getSize() {
-        int size = 0;
-        for (Conjunction<T> cube : cubes) {
-            size += cube.getSize();
-        }
-        return size;
+        return cubes.stream().mapToInt(Conjunction::getSize).sum();
     }
 
     public boolean isFalse() {
@@ -134,7 +130,7 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
         DNF<T> other = (DNF<T>) obj;
 
         if (this.hashCode != other.hashCode
-                || this.getNumberOfClauses() != other.getNumberOfClauses()
+                || this.getNumberOfCubes() != other.getNumberOfCubes()
                 || this.getSize() != other.getSize()) {
             return false;
         }
@@ -260,7 +256,7 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
             return this;
         }
 
-        HashSet<Conjunction<T>> result = new HashSet<>(this.getNumberOfClauses() * other.getNumberOfClauses());
+        HashSet<Conjunction<T>> result = new HashSet<>(this.getNumberOfCubes() * other.getNumberOfCubes());
         for (Conjunction<T> cube1 : this.cubes) {
             for (Conjunction<T> cube2 : other.cubes) {
                 result.add(cube1.and(cube2));

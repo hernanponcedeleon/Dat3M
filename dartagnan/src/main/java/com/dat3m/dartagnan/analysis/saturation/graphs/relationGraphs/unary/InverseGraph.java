@@ -109,11 +109,10 @@ public class InverseGraph extends AbstractRelationGraph {
     @Override
     public Collection<Edge> forwardPropagate(RelationGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == inner) {
-            addedEdges = addedEdges.stream().map(this::derive).collect(Collectors.toList());
+            return addedEdges.stream().map(this::derive).collect(Collectors.toList());
         } else {
-            addedEdges.clear();
+            return Collections.emptyList();
         }
-        return addedEdges;
     }
 
     @Override

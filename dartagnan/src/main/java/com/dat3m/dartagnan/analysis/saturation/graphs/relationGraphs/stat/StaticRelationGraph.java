@@ -64,8 +64,7 @@ public abstract class StaticRelationGraph extends AbstractRelationGraph {
     }
 
     @Override
-    public void backtrack() {
-    }
+    public void backtrack() { }
 
     @Override
     public void constructFromModel(ExecutionModel model) {
@@ -82,8 +81,9 @@ public abstract class StaticRelationGraph extends AbstractRelationGraph {
 
     protected final void autoComputeSize() {
         size = 0;
-        for (EventData e : model.getEventList())
+        for (EventData e : model.getEventList()) {
             size += getMinSize(e, EdgeDirection.OUTGOING);
+        }
     }
 
 }

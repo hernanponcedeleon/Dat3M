@@ -12,9 +12,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-//TODO: Increase the derivation length of edges of this graph
 public class ReflexiveClosureGraph extends AbstractRelationGraph {
 
     private final RelationGraph inner;
@@ -63,14 +63,17 @@ public class ReflexiveClosureGraph extends AbstractRelationGraph {
         return inner.getMaxSize(e, dir) + 1;
     }
 
+    private Edge derive(Edge e) {
+        return e.with(e.getDerivationLength() + 1);
+    }
+
     @Override
     public Collection<Edge> forwardPropagate(RelationGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == inner) {
-            addedEdges.removeIf(Edge::isLoop);
+            return addedEdges.stream().filter(e -> !e.isLoop()).map(this::derive).collect(Collectors.toList());
         } else {
-            addedEdges.clear();
+            return Collections.emptyList();
         }
-        return addedEdges;
     }
 
     @Override

@@ -29,37 +29,38 @@ public class TreeResolution {
         this.tree = tree;
     }
 
-    public SortedCubeSet<CoreLiteral> computeViolations() {
+    public SortedCubeSet<CoreLiteral> computeCoreReasons() {
         reduceTree();
 
-        List<Conjunction<CoreLiteral>> vio = computeViolations(tree.getRoot());
-        SortedCubeSet<CoreLiteral> result = new SortedCubeSet<>(vio.size());
-        result.addAll(vio);
+        List<Conjunction<CoreLiteral>> coreReasons = computeCoreReasons(tree.getRoot());
+        SortedCubeSet<CoreLiteral> result = new SortedCubeSet<>(coreReasons.size());
+        result.addAll(coreReasons);
         result.simplify();
         return result;
     }
 
 
-    private List<Conjunction<CoreLiteral>> computeViolations(SearchNode node) {
+    private List<Conjunction<CoreLiteral>> computeCoreReasons(SearchNode node) {
         if (node.isEmptyNode()) {
             return Collections.emptyList();
         } else if (node.isLeaf()) {
-            return ((LeafNode)node).getViolations();
+            return ((LeafNode)node).getInconsistencyReasons();
         } else {
             DecisionNode decNode = (DecisionNode) node;
             CoreLiteral resLit = new CoLiteral(decNode.getEdge());
-            List<Conjunction<CoreLiteral>> positive = computeViolations(decNode.getPositive());
-            List<Conjunction<CoreLiteral>> negative = computeViolations(decNode.getNegative());
+            List<Conjunction<CoreLiteral>> positive = computeCoreReasons(decNode.getPositive());
+            List<Conjunction<CoreLiteral>> negative = computeCoreReasons(decNode.getNegative());
 
-            // From the negative branch, we remove all non-resolvable violations and store them in <resolvents>
+            // A reason is non-resolvable if it does not contain the current decision literal
+            Predicate<Conjunction<CoreLiteral>> isNotResolvable = (reason -> !reason.getLiterals().contains(resLit.getOpposite()));
+            // From the negative branch, we remove all non-resolvable reasons and store them in <resolvents>.
             // The remaining ones will need to get resolved.
-            Predicate<Conjunction<CoreLiteral>> isNotResolvable = (vio -> !vio.getLiterals().contains(resLit.getOpposite()));
             List<Conjunction<CoreLiteral>> resolvents = negative.stream().filter(isNotResolvable).collect(Collectors.toList());
             negative.removeIf(isNotResolvable);
 
             for (Conjunction<CoreLiteral> c1 : positive) {
                 if (!c1.getLiterals().contains(resLit)) {
-                    // ... move all non-resolvable violations to <resolvents>
+                    // ... move all non-resolvable reasons to <resolvents>
                     resolvents.add(c1);
                 } else {
                     // ... else resolve the violations
@@ -74,13 +75,13 @@ public class TreeResolution {
 
             // ==== TEST CODE =====
             //TODO: Remove the ugly conversion to clauseSet for minimization
-            // Remark: clauseSet.simplify does in general not give as good reduction as the reduction performed
+            // Remark: SortedCubeSet.simplify does in general not give as good reduction as the reduction performed
             // by DNF.reduce. However, right now it seems that they are equivalently strong for 1-SAT at least
-            SortedCubeSet<CoreLiteral> clauseSet = new SortedCubeSet<>(resolvents.size());
-            clauseSet.addAll(resolvents);
-            clauseSet.simplify();
+            SortedCubeSet<CoreLiteral> cubeSet = new SortedCubeSet<>(resolvents.size());
+            cubeSet.addAll(resolvents);
+            cubeSet.simplify();
             resolvents.clear();
-            resolvents.addAll(clauseSet.getCubes());
+            resolvents.addAll(cubeSet.getCubes());
             return resolvents;
 
         }
@@ -94,31 +95,31 @@ public class TreeResolution {
     }
 
     /*
-        This removes all unproductive violations and decision nodes.
-        - A literal co(w1, w2) is unproductive, if there is no violation containing the opposite literal co(w2, w1)
-        - A violation is unproductive, if any of its co-literals is unproductive.
-        - A leaf node is unproductive, if all its violations are unproductive
+        This removes all unproductive reasons and decision nodes.
+        - A literal co(w1, w2) is unproductive, if there is no reason containing the opposite literal co(w2, w1)
+        - A reason is unproductive, if any of its co-literals is unproductive.
+        - A leaf node is unproductive, if all its reasons are unproductive
         - A decision node is unproductive, if it has some empty leaf node.
-        This method iteratively eliminates unproductive violations until a fixed point is reached.
-         -> Whenever a violation is eliminated, the set of unproductive literals may increase.
+        This method iteratively eliminates unproductive reasons until a fixed point is reached.
+         -> Whenever a reason is eliminated, the set of unproductive literals may increase.
         Then it removes all unproductive decision nodes.
      */
     private void removeUnproductiveNodes() {
         List<LeafNode> leaves = (List<LeafNode>)tree.getRoot().findNodes(SearchNode::isLeaf);
 
-        // Remove violations that are unproductive until a fixed point is reached
+        // Remove reasons that are unproductive until a fixed point is reached
         boolean progress;
         do {
             progress = false;
-            // Find all resolvable literals (this set may change each iteration as violations get eliminated!)
+            // Find all resolvable literals (this set may change each iteration as reasons get eliminated!)
             Set<CoreLiteral> resolvableLits = leaves.stream()
-                    .flatMap(leaf -> leaf.getViolations().stream())
-                    .flatMap(vio -> vio.getResolvableLiterals().stream())
+                    .flatMap(leaf -> leaf.getInconsistencyReasons().stream())
+                    .flatMap(reason -> reason.getResolvableLiterals().stream())
                     .collect(Collectors.toSet());
 
             for (LeafNode leaf : leaves) {
-                // From each leaf, we remove all violations that contain some unresolvable literal
-                progress |= leaf.getViolations().removeIf(vio -> vio.getResolvableLiterals().stream()
+                // From each leaf, we remove all reasons that contain some unproductive/unresolvable literal
+                progress |= leaf.getInconsistencyReasons().removeIf(reason -> reason.getResolvableLiterals().stream()
                         .anyMatch(lit -> !resolvableLits.contains(lit.getOpposite())));
             }
         } while (progress);
@@ -126,7 +127,7 @@ public class TreeResolution {
 
         // Remove decision nodes with some empty leaf and replace them by their non-empty subbranch
         for (LeafNode leaf : leaves) {
-            if (!leaf.getViolations().isEmpty()) {
+            if (!leaf.getInconsistencyReasons().isEmpty()) {
                 continue;
             }
 

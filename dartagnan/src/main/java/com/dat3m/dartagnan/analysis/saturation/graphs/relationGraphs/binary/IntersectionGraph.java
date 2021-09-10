@@ -55,7 +55,7 @@ public class IntersectionGraph extends MaterializedGraph {
     @Override
     public Collection<Edge> forwardPropagate(RelationGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == first || changedGraph == second) {
-            RelationGraph other = changedGraph == first ? second : first;
+            RelationGraph other = (changedGraph == first) ? second : first;
 
             List<Edge> newlyAdded = new ArrayList<>();
             for (Edge e1 : addedEdges) {
@@ -66,11 +66,10 @@ public class IntersectionGraph extends MaterializedGraph {
                     newlyAdded.add(e);
                 }
             }
-            addedEdges = newlyAdded;
+            return newlyAdded;
         } else {
-            addedEdges.clear();
+            return Collections.emptyList();
         }
-        return addedEdges;
     }
 
     @Override

@@ -8,6 +8,7 @@ public class SolverStatistics {
     int modelSize;
     int numGuessedCoherences;
     int numComputedReasons;
+    int numComputedCoreReasons;
     int saturationDepth;
 
     SolverStatistics() {
@@ -18,6 +19,7 @@ public class SolverStatistics {
         modelSize = 0;
         numGuessedCoherences = 0;
         numComputedReasons = 0;
+        numComputedCoreReasons = 0;
         saturationDepth = 0;
     }
 
@@ -28,6 +30,7 @@ public class SolverStatistics {
     public int getModelSize() { return modelSize; }
     public int getNumGuessedCoherences() { return numGuessedCoherences; }
     public int getNumComputedReasons() { return numComputedReasons; }
+    public int getNumComputedCoreReasons() { return numComputedCoreReasons; }
     public int getSaturationDepth() { return saturationDepth; }
 
     public String toString() {
@@ -39,6 +42,7 @@ public class SolverStatistics {
         str.append("Total search time(ms): ").append(getSearchTime()).append("\n");
         str.append("#Guessings: ").append(numGuessedCoherences).append("\n");
         str.append("#Computed reasons: ").append(numComputedReasons).append("\n");
+        str.append("#Computed core reasons: ").append(numComputedCoreReasons).append("\n");
         str.append("Saturation depth: ").append(saturationDepth);
 
         return str.toString();

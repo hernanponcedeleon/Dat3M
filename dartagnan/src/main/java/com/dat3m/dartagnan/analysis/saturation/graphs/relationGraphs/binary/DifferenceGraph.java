@@ -8,10 +8,8 @@ import com.dat3m.dartagnan.analysis.saturation.util.GraphVisitor;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.EventData;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 //TODO: This class is not up-to-date with the new derivation length.
@@ -91,15 +89,13 @@ public class DifferenceGraph extends AbstractRelationGraph {
 
     @Override
     public Collection<Edge> forwardPropagate(RelationGraph changedGraph, Collection<Edge> addedEdges) {
-
         if (changedGraph == first) {
-            addedEdges.removeIf(second::contains);
+            return addedEdges.stream().filter(e -> !second.contains(e)).collect(Collectors.toList());
         } else if (changedGraph == second) {
             throw new IllegalStateException("Non-static relations on the right hand side of Set Minus are invalid.");
         } else {
-            addedEdges.clear();
+            return Collections.emptyList();
         }
-        return addedEdges;
     }
 
     @Override

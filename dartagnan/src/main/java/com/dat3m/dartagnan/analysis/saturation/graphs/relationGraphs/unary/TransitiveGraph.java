@@ -49,9 +49,11 @@ public class TransitiveGraph extends MaterializedGraph {
         inner.edgeStream().forEach(e -> updateEdge(derive(e), fakeSet));
     }
 
-    private void updateEdge(Edge edge, Set<Edge> addedEdges) {
-        if (!simpleGraph.add(edge))
+    // Every (transitive) edge that gets added by adding <edge> is collected into <addedEdged>
+    private void updateEdge(Edge edge, Collection<Edge> addedEdges) {
+        if (!simpleGraph.add(edge)) {
             return;
+        }
         addedEdges.add(edge);
 
         inEdgeStream(edge.getFirst()).forEach(inEdge -> {
@@ -72,11 +74,13 @@ public class TransitiveGraph extends MaterializedGraph {
 
     @Override
     public Collection<Edge> forwardPropagate(RelationGraph changedGraph, Collection<Edge> addedEdges) {
-        Set<Edge> newEdges = new HashSet<>();
         if (changedGraph == inner) {
+            List<Edge> newEdges = new ArrayList<>();
             addedEdges.forEach(e -> updateEdge(derive(e), newEdges));
+            return newEdges;
+        } else {
+            return Collections.emptyList();
         }
-        return newEdges;
     }
 
 }
