@@ -35,12 +35,15 @@ public class GlobalSettings {
     public static final boolean ENABLE_SYMMETRY_REDUCTION = true;
 
     // ==== Refinement ====
-    public static final int REFINEMENT_MAX_SATURATION_DEPTH = 3;
     public static final boolean REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM = true; // Uses acyclic(po-loc + rf) as baseline
     public static final boolean REFINEMENT_ADD_ACYCLIC_DEP_RF = false; // Only takes effect if USE_BASELINE_WMM is set to TRUE
 
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
     public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.FULL;
+
+    // ==== Saturation ====
+    public static boolean SATURATION_DEBUG = false;
+    public static final int SATURATION_MAX_DEPTH = 3;
 
     // --------------------
 
@@ -51,6 +54,7 @@ public class GlobalSettings {
     public static final boolean ENABLE_DEBUG_OUTPUT = false;
 
     public static void LogGlobalSettings() {
+        // General settings
     	logger.info("ATOMIC_AS_LOCK: " + ATOMIC_AS_LOCK);
     	logger.info("ASSUME_LOCAL_CONSISTENCY: " + ASSUME_LOCAL_CONSISTENCY);
     	logger.info("PERFORM_ATOMIC_BLOCK_OPTIMIZATION: " + PERFORM_ATOMIC_BLOCK_OPTIMIZATION);
@@ -66,10 +70,13 @@ public class GlobalSettings {
     	logger.info("MAX_RECURSION_DEPTH: " + MAX_RECURSION_DEPTH);
     	logger.info("ENABLE_DEBUG_OUTPUT: " + ENABLE_DEBUG_OUTPUT);
 
-    	// Refinement data
-        logger.info("REFINEMENT_MAX_SATURATION_DEPTH: " + REFINEMENT_MAX_SATURATION_DEPTH);
+    	// Refinement settings
     	logger.info("REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM: " + REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM);
     	logger.info("REFINEMENT_ADD_ACYCLIC_DEP_RF: " + REFINEMENT_ADD_ACYCLIC_DEP_RF);
     	logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());
+
+    	// Saturation settings
+        logger.info("SATURATION_DEBUG: " + SATURATION_DEBUG);
+        logger.info("SATURATION_MAX_DEPTH: " + SATURATION_MAX_DEPTH);
     }
 }

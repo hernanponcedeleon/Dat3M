@@ -35,7 +35,7 @@ public class RefinementTask extends VerificationTask {
     // For now, we return a constant. But we can add options for this later on.
     //TODO: This is a Saturation-specific information and should not be part of this class
     public int getMaxSaturationDepth() {
-        return GlobalSettings.REFINEMENT_MAX_SATURATION_DEPTH;
+        return GlobalSettings.SATURATION_MAX_DEPTH;
     }
 
     public BooleanFormula encodeBaselineWmmRelations(SolverContext ctx) {

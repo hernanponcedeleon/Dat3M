@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.analysis.saturation;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.analysis.saturation.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.saturation.coreReason.Reasoner;
 import com.dat3m.dartagnan.analysis.saturation.graphs.Edge;
@@ -69,8 +70,6 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 public class SaturationSolver {
     // ================== Fields ==================
 
-    private final static boolean DEBUG = false;
-
     // --------------- Static data ----------------
     private final VerificationTask task;
     private final ExecutionGraph execGraph;
@@ -113,8 +112,7 @@ public class SaturationSolver {
     private void populateFromModel(Model model, SolverContext ctx) {
         executionModel.initialize(model, ctx, false);
         execGraph.initializeFromModel(executionModel);
-        if (DEBUG) {
-            // TODO: Remove testing code
+        if (GlobalSettings.SATURATION_DEBUG) {
             testIteration();
             testStaticGraphs();
         }
@@ -242,7 +240,7 @@ public class SaturationSolver {
         // ==============================
 
         stats.searchTime = System.currentTimeMillis() - curTime;
-        if (DEBUG && result.getStatus() == VERIFIED) {
+        if (GlobalSettings.SATURATION_DEBUG && result.getStatus() == VERIFIED) {
             testCoherence();
         }
         return result;
