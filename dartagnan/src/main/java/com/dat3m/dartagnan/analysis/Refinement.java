@@ -43,9 +43,9 @@ import static com.dat3m.dartagnan.utils.Result.*;
     and iteratively refines it to perform a verification task.
     More concretely, it iteratively:
         - Finds some assertion-violating execution w.r.t. to some (very weak) baseline memory model
-        - Checks the consistency of this execution using a Saturation-based Solver
+        - Checks the consistency of this execution using a Saturation-based solver
         - Refines the used memory model if the found execution was inconsistent, using the explanations
-          provided by the Saturation solver.
+          provided by the Saturation-based solver.
  */
 public class Refinement {
 
@@ -56,6 +56,8 @@ public class Refinement {
     // we don't have a memory model and thus the bound check is imprecise.
     // We may even want to perform refinement to check the bounds (we envision a case where the
     // refinement is accurate enough to verify the assertions but not accurate enough to check the bounds)
+    //TODO 2: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
+    // constraints on hb, which is not encoded in Refinement.
     public static Result runAnalysisSaturationSolver(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
             throws InterruptedException, SolverException {
 

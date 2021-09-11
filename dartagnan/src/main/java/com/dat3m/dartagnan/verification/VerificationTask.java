@@ -115,10 +115,9 @@ public class VerificationTask {
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         if (GlobalSettings.ENABLE_SYMMETRY_REDUCTION) {
-            // Test code
             new SymmetryReduction(program).apply();
         }
-        program.setFId(0);
+        program.setFId(0); // This is used for symmetry breaking
 
         if (GlobalSettings.ENABLE_DEBUG_OUTPUT) {
             for (Thread t : program.getThreads()) {

@@ -16,8 +16,12 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_ADD_ACYCLIC_DEP_RF;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
-// NOTE: A RefinementTask can be treated as a VerificationTask in which case
-// the baseline model is mostly ignored.
+/*
+ A RefinementTask is a VerificationTask with an additional baseline memory model.
+ The intention is that such a task is solved by any solving strategy that starts from the
+ baseline memory model and refines it iteratively towards the target memory model.
+ Currently, we only have a Saturation-based solver to solve such tasks but any CEGAR-like approach could be used.
+ */
 public class RefinementTask extends VerificationTask {
 
     private final Wmm baselineModel;

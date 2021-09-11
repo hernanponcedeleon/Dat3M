@@ -3,11 +3,11 @@ package com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 // Encapsulates a Graph into a read-only Set
@@ -54,16 +54,14 @@ public class GraphSetView implements Set<Edge> {
 
     @Override
     public Object[] toArray() {
-        ArrayList<Edge> edgeList = new ArrayList<>(graph.getEstimatedSize());
-        this.stream().forEach(edgeList::add); // It is important that we do NOT perform edgeList.addAll(this)
-        return edgeList.toArray();
+        // We deliberately use streams to perform this task
+        return this.stream().toArray(Edge[]::new);
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        ArrayList<Edge> edgeList = new ArrayList<>(graph.getEstimatedSize());
-        this.stream().forEach(edgeList::add); // It is important that we do NOT perform edgeList.addAll(this)
-        return edgeList.toArray(a);
+        // We deliberately use streams to perform this task
+        return this.stream().collect(Collectors.toList()).toArray(a);
     }
 
     @Override

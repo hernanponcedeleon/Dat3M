@@ -79,9 +79,13 @@ public class WitnessGraph extends ElemWithAttributes {
 		BooleanFormula enc = bmgr.makeTrue();
 		List<Event> previous = new ArrayList<>();
 		for(Edge edge : edges.stream().filter(Edge::hasCline).collect(Collectors.toList())) {
-			List<Event> events = program.getCache().getEvents(FilterBasic.get(MEMORY)).stream().filter(e -> e.getCLine() == edge.getCline()).collect(Collectors.toList());
+			List<Event> events = program.getCache().getEvents(FilterBasic.get(MEMORY)).stream()
+					.filter(e -> e.getCLine() == edge.getCline())
+					.collect(Collectors.toList());
 			if(!previous.isEmpty() && !events.isEmpty()) {
-				enc = bmgr.and(enc, bmgr.or(Lists.cartesianProduct(previous, events).stream().map(p -> imgr.lessThan(intVar("hb", p.get(0), ctx), intVar("hb", p.get(1), ctx))).collect(Collectors.toList()).toArray(BooleanFormula[]::new)));
+				enc = bmgr.and(enc, bmgr.or(Lists.cartesianProduct(previous, events).stream()
+						.map(p -> imgr.lessThan(intVar("hb", p.get(0), ctx), intVar("hb", p.get(1), ctx)))
+						.toArray(BooleanFormula[]::new)));
 			}
 			if(!events.isEmpty()) {
 				previous = events;				
