@@ -136,7 +136,7 @@ public class CLocksTest {
     }
 
 //    @Test(timeout = TIMEOUT)
-    public void test() {
+    public void testAssume() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
         {
