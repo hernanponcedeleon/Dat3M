@@ -68,10 +68,10 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
     	Register regExpected = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
     	Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         Load loadExpected = newLoad(regExpected, expectedAddr, null);
-        Store storeExpected = newStore(regExpected, regValue, null);
+        Store storeExpected = newStore(expectedAddr, regValue, null);
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedAddr));
+        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
 
