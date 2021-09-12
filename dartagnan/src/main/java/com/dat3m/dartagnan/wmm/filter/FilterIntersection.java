@@ -44,11 +44,11 @@ public class FilterIntersection extends FilterAbstract {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-
-        if (obj == null || getClass() != obj.getClass())
+        } else if (obj == null || getClass() != obj.getClass()) {
             return false;
+        }
 
         FilterIntersection fObj = (FilterIntersection) obj;
         return fObj.filter1.equals(filter1) && fObj.filter2.equals(filter2);

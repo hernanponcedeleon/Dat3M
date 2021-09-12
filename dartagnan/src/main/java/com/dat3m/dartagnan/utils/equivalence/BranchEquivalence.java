@@ -196,8 +196,9 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     private void computeMustPredSet(Branch b) {
-        if (b.mustPredComputed)
+        if (b.mustPredComputed) {
             return;
+        }
 
         Set<Branch> commonPred = null;
         for (Branch br : b.parents) {
@@ -215,8 +216,9 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     private void computeMustSuccSet(Branch b) {
-        if (b.mustSuccComputed)
+        if (b.mustSuccComputed) {
             return;
+        }
 
         Set<Branch> commonSucc = null;
         for (Branch br : b.children) {
@@ -234,8 +236,9 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     private void computeReachableBranches(Branch b) {
-        if (b.reachableBranchesComputed)
+        if (b.reachableBranchesComputed) {
             return;
+        }
 
         for (Branch child : b.children) {
             computeReachableBranches(child);

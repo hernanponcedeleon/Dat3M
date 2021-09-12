@@ -331,8 +331,9 @@ public class ExecutionModel {
                 data.setValue(((MemEvent)e).getMemValue().getIntValue(e, model, context));
                 addressWritesMap.get(address).add(data);
                 writeReadsMap.put(data, new HashSet<>());
-                if (data.isInit())
+                if (data.isInit()) {
                     addressInitMap.put(address, data);
+                }
             } else {
                 throw new RuntimeException("Unexpected memory event");
             }
@@ -340,9 +341,7 @@ public class ExecutionModel {
         } else if (data.isFence()) {
             // ===== Fences =====
             String name = ((Fence)data.getEvent()).getName();
-            if (!fenceMap.containsKey(name))
-                fenceMap.put(name, new HashSet<>());
-            fenceMap.get(name).add(data);
+            fenceMap.computeIfAbsent(name, key -> new HashSet<>()).add(data);
         } else if (data.isJump()) {
             // ===== Jumps =====
             // We override the meaning of execution here. A jump is executed IFF its condition was true.

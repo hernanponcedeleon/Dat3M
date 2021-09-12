@@ -17,10 +17,14 @@ public class Settings {
     private final int bound;
     private final int solver_timeout;
 
-    private final Map<Integer, Boolean> flags = new HashMap<>(){{
-            put(FLAG_USE_SEQ_ENCODING_REL_RF, true);
-            put(FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, false);
-    }};
+    private final Map<Integer, Boolean> flags = createFlags();
+
+    private static Map<Integer, Boolean> createFlags() {
+        Map<Integer, Boolean> flags = new HashMap<>(2);
+        flags.put(FLAG_USE_SEQ_ENCODING_REL_RF, true);
+        flags.put(FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, false);
+        return flags;
+    }
 
     public Settings(Alias alias, int bound, int solver_timeout){
         this.alias = alias == null ? Alias.CFIS : alias;

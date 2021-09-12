@@ -58,8 +58,6 @@ public class Create extends Event {
         Store store = newStore(address, IConst.ONE, SC, cLine);
         store.addFilters(PTHREAD);
 
-
-
         switch (target){
             case NONE:
                 break;

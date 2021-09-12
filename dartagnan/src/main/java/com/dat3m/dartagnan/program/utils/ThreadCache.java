@@ -2,7 +2,8 @@ package com.dat3m.dartagnan.program.utils;
 
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
@@ -58,16 +59,16 @@ public class ThreadCache {
 
     public ImmutableMap<Register, ImmutableList<Event>> getRegWriterMap(){
         if(regWriterMap == null){
-            Map<Register, Set<Event>> setMap = new HashMap<>();
-            for (Event e : getEvents(FilterBasic.get(EType.REG_WRITER))) {
+            Map<Register, List<Event>> regEventMap = new HashMap<>();
+            List<Event> regWriters = getEvents(FilterBasic.get(EType.REG_WRITER));
+            for (Event e : regWriters) {
                 Register register = ((RegWriter) e).getResultRegister();
-                setMap.putIfAbsent(register, new TreeSet<>());
-                setMap.get(register).add(e);
+                regEventMap.computeIfAbsent(register, key -> new ArrayList<>(regWriters.size())).add(e);
             }
 
             ImmutableMap.Builder<Register, ImmutableList<Event>> builder = new ImmutableMap.Builder<>();
-            for (Register register : setMap.keySet()) {
-                List<Event> list = new ArrayList<>(setMap.get(register));
+            for (Register register : regEventMap.keySet()) {
+                List<Event> list = regEventMap.get(register);
                 Collections.sort(list);
                 builder.put(register, ImmutableList.copyOf(list));
             }

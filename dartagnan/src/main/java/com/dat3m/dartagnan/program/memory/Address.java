@@ -8,10 +8,10 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
+import java.math.BigInteger;
+
 import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
 import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
-
-import java.math.BigInteger;
 
 public class Address extends IConst implements ExprInterface {
 
@@ -74,11 +74,11 @@ public class Address extends IConst implements ExprInterface {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-
-        if (obj == null || getClass() != obj.getClass())
+        } else if (obj == null || getClass() != obj.getClass()) {
             return false;
+        }
 
         return index == ((Address)obj).index;
     }

@@ -1,19 +1,12 @@
 package com.dat3m.dartagnan.expression;
 
-import java.math.BigInteger;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.google.common.collect.ImmutableSet;
-
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.java_smt.api.*;
+
+import java.math.BigInteger;
 
 public class BConst extends BExpr implements ExprInterface {
 
@@ -76,9 +69,9 @@ public class BConst extends BExpr implements ExprInterface {
 	public boolean equals(Object obj) {
 		if (obj == this) {
 			return true;
-		}
-		if (obj == null || obj.getClass() != getClass())
+		} else if (obj == null || obj.getClass() != getClass()) {
 			return false;
+		}
 		return ((BConst)obj).value == value;
 	}
 }

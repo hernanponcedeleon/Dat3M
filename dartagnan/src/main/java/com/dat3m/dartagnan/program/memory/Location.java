@@ -1,26 +1,16 @@
 package com.dat3m.dartagnan.program.memory;
 
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.google.common.collect.ImmutableSet;
-
-import java.math.BigInteger;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Init;
-import com.dat3m.dartagnan.program.event.Load;
-import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.program.event.Store;
+import com.dat3m.dartagnan.program.event.*;
+import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+
+import java.math.BigInteger;
 
 public class Location implements ExprInterface {
 
@@ -54,11 +44,11 @@ public class Location implements ExprInterface {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-
-		if (obj == null || getClass() != obj.getClass())
+		} else if (obj == null || getClass() != obj.getClass()) {
 			return false;
+		}
 
 		return address.hashCode() == obj.hashCode();
 	}

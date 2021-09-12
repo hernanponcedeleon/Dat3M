@@ -56,8 +56,11 @@ public abstract class Axiom implements Dependent<Relation> {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || obj.getClass() != this.getClass())
+        if (this == obj) {
+            return true;
+        } else if (obj == null || obj.getClass() != this.getClass()) {
             return false;
+        }
         Axiom other = (Axiom)obj;
         return this.rel.equals(other.rel);
     }

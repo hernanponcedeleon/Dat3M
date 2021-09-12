@@ -18,8 +18,7 @@ public class Graph {
     private final Map<Register, Map<Integer, SSAReg>> ssa = new HashMap<>();
 
     boolean addEdge(Object v1, Object v2){
-        edges.putIfAbsent(v1, new HashSet<>());
-        return edges.get(v1).add(v2);
+        return edges.computeIfAbsent(v1, key -> new HashSet<>()).add(v2);
     }
 
     Set<Object> getEdges(Object v){
@@ -27,13 +26,11 @@ public class Graph {
     }
 
     void addAddress(Object v, Address a){
-        addresses.putIfAbsent(v, new HashSet<>());
-        addresses.get(v).add(a);
+        addresses.computeIfAbsent(v, key -> new HashSet<>()).add(a);
     }
 
     boolean addAllAddresses(Object v, Set<Address> s){
-        addresses.putIfAbsent(v, new HashSet<>());
-        return addresses.get(v).addAll(s);
+        return addresses.computeIfAbsent(v, key -> new HashSet<>()).addAll(s);
     }
 
     Set<Address> getAddresses(Object v){
@@ -41,8 +38,7 @@ public class Graph {
     }
 
     void addEvent(Register r, MemEvent e){
-        events.putIfAbsent(r, new HashSet<>());
-        events.get(r).add(e);
+        events.computeIfAbsent(r, key -> new HashSet<>()).add(e);
     }
 
     Set<MemEvent> getEvents(Register r){
@@ -50,8 +46,8 @@ public class Graph {
     }
 
     SSAReg getSSAReg(Register r, int i){
-        ssa.putIfAbsent(r, new HashMap<>());
-        ssa.get(r).putIfAbsent(i, new SSAReg(i, r));
-        return ssa.get(r).get(i);
+        return ssa
+                .computeIfAbsent(r, key -> new HashMap<>())
+                .computeIfAbsent(i, key -> new SSAReg(i, r));
     }
 }

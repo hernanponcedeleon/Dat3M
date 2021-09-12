@@ -296,7 +296,7 @@ public class AliasAnalysis {
             	    addresses = graph.getAddresses(address);
             	}
             } else if (address instanceof Address) {
-                    addresses = ImmutableSet.of(((Address) address));
+                addresses = ImmutableSet.of(((Address) address));
             } else {
                 addresses = maxAddressSet;
             }
@@ -336,28 +336,25 @@ public class AliasAnalysis {
             Map<Register, Map<Event, Integer>> ssaMap,
             Map<Register, Integer> indexMap
     ){
-        for(int i = 0; i < events.size(); i++){
-            Event e = events.get(i);
-
-            if(e instanceof RegReaderData){
-                for(Register register : ((RegReaderData)e).getDataRegs()){
-                    ssaMap.putIfAbsent(register, new HashMap<>());
-                    ssaMap.get(register).put(e, indexMap.getOrDefault(register, 0));
+        for (Event e : events) {
+            if (e instanceof RegReaderData) {
+                for (Register register : ((RegReaderData) e).getDataRegs()) {
+                    ssaMap.computeIfAbsent(register, key -> new HashMap<>())
+                            .put(e, indexMap.getOrDefault(register, 0));
                 }
             }
 
-            if(e instanceof MemEvent){
-                for(Register register : ((MemEvent)e).getAddress().getRegs()){
-                    ssaMap.putIfAbsent(register, new HashMap<>());
-                    ssaMap.get(register).put(e, indexMap.getOrDefault(register, 0));
+            if (e instanceof MemEvent) {
+                for (Register register : ((MemEvent) e).getAddress().getRegs()) {
+                    ssaMap.computeIfAbsent(register, key -> new HashMap<>())
+                            .put(e, indexMap.getOrDefault(register, 0));
                 }
             }
 
-            if(e instanceof RegWriter){
-                Register register = ((RegWriter)e).getResultRegister();
+            if (e instanceof RegWriter) {
+                Register register = ((RegWriter) e).getResultRegister();
                 int index = indexMap.getOrDefault(register, 0);
-                ssaMap.putIfAbsent(register, new HashMap<>());
-                ssaMap.get(register).put(e, index);
+                ssaMap.computeIfAbsent(register, key -> new HashMap<>()).put(e, index);
                 indexMap.put(register, ++index);
             }
         }
