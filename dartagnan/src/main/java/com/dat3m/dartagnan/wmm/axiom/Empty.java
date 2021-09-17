@@ -18,6 +18,11 @@ public class Empty extends Axiom {
         return rel.getMaxTupleSet();
     }
 
+	@Override
+	public TupleSet getDisabledSet() {
+		return new TupleSet(rel.getMaxTupleSet());
+	}
+
     @Override
     public BooleanFormula consistent(SolverContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();

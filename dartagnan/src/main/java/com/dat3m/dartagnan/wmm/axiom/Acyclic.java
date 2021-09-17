@@ -58,6 +58,38 @@ public class Acyclic extends Axiom {
         return result;
     }
 
+	@Override
+	public TupleSet getDisabledSet() {
+		BranchEquivalence eq = task.getProgram().getBranchEquivalence();
+		//each domain-side event to related events that imply it
+		HashMap<Event,HashSet<Event>> left = new HashMap<>();
+		//each range-side event to related events that imply it
+		HashMap<Event,HashSet<Event>> right = new HashMap<>();
+		//receives only minimal tuples of the minimal transitive closure
+		LinkedList<Tuple> queue = new LinkedList<>(rel.getMinTupleSet());
+		//intersection of maximal set and inverse minimal transitive closure
+		TupleSet result = new TupleSet();
+		while(!queue.isEmpty()) {
+			Tuple t = queue.remove();
+			Event x = t.getFirst();
+			Event y = t.getSecond();
+			Tuple inverse = new Tuple(y, x);
+			if(rel.getMaxTupleSet().contains(inverse))
+				result.add(inverse);
+			if(x.equals(y))
+				continue;
+			if(eq.isImplied(x, y))
+				left.computeIfAbsent(y, k->new HashSet<>()).add(x);
+			if(eq.isImplied(y, x))
+				right.computeIfAbsent(x, k->new HashSet<>()).add(y);
+			for(Event z : right.getOrDefault(y, new HashSet<>()))
+				queue.add(new Tuple(x, z));
+			for(Event w : left.getOrDefault(x, new HashSet<>()))
+				queue.add(new Tuple(w, y));
+		}
+		return result;
+	}
+
     private void reduceWithMinSets(TupleSet encodeSet) {
         /*
             Assumption: MinSet is acyclic!

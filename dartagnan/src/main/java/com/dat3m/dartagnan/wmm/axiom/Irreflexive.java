@@ -24,6 +24,13 @@ public class Irreflexive extends Axiom {
         return set;
     }
 
+	@Override
+	public TupleSet getDisabledSet() {
+		TupleSet set = new TupleSet();
+		rel.getMinTupleSet().stream().filter(Tuple::isLoop).forEach(set::add);
+		return set;
+	}
+
     @Override
     public BooleanFormula consistent(SolverContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();

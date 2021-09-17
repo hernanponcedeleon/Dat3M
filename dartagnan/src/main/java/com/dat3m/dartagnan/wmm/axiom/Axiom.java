@@ -47,6 +47,8 @@ public abstract class Axiom implements Dependent<Relation> {
 
     public abstract TupleSet getEncodeTupleSet();
 
+	public abstract TupleSet getDisabledSet();
+
     public abstract BooleanFormula consistent(SolverContext ctx);
 
     @Override
