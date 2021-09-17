@@ -5,12 +5,9 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverException;
+import org.sosy_lab.java_smt.api.*;
 
+import static com.dat3m.dartagnan.GlobalSettings.ENABLE_SYMMETRY_BREAKING;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static java.util.Collections.singletonList;
@@ -38,6 +35,9 @@ public class Base {
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
         prover.addConstraint(task.encodeWitness(ctx));
+        if (ENABLE_SYMMETRY_BREAKING) {
+            prover.addConstraint(task.encodeSymmetryBreaking(ctx));
+        }
         logger.info("Starting push()");
         prover.push();
         prover.addConstraint(task.encodeAssertions(ctx));
@@ -74,6 +74,9 @@ public class Base {
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
         prover.addConstraint(task.encodeWitness(ctx));
+        if (ENABLE_SYMMETRY_BREAKING) {
+            prover.addConstraint(task.encodeSymmetryBreaking(ctx));
+        }
         
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_assertion_assumption");
