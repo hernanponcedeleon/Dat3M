@@ -12,8 +12,6 @@ import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static java.util.Collections.singletonList;
 
-
-//TODO: Add symmetry breaking
 public class Base {
 
     private static final Logger logger = LogManager.getLogger(Base.class);
@@ -126,6 +124,11 @@ public class Base {
         BooleanFormula encodeWitness = task.encodeWitness(ctx);
 		prover1.addConstraint(encodeWitness);
         prover2.addConstraint(encodeWitness);
+
+        if (ENABLE_SYMMETRY_BREAKING) {
+            prover1.addConstraint(task.encodeSymmetryBreaking(ctx));
+            prover2.addConstraint(task.encodeSymmetryBreaking(ctx));
+        }
         
         prover1.addConstraint(task.encodeAssertions(ctx));
 
