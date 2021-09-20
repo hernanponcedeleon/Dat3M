@@ -22,7 +22,7 @@ public class GlobalSettings {
     public static final boolean ALLOW_PARTIAL_MODELS = false;
     public static final boolean MERGE_CF_VARS = true; // ONLY has effect if ALLOW_PARTIAL_MODELS is 'false'
     public static final boolean ANTISYMM_CO = false;
-    public static final boolean ENABLE_SYMMETRY_BREAKING = true;
+    public static final boolean ENABLE_SYMMETRY_BREAKING = false;
 
     // === BranchEquivalence ===
     public static final boolean MERGE_BRANCHES = true;
@@ -32,14 +32,14 @@ public class GlobalSettings {
     public static final boolean PERFORM_DEAD_CODE_ELIMINATION = true;
     public static final boolean PERFORM_REORDERING = true;
     public static final boolean DETERMINISTIC_REORDERING = true;
-    public static final boolean ENABLE_SYMMETRY_REDUCTION = true;
+    public static final boolean ENABLE_SYMMETRY_REDUCTION = false;
 
     // ==== Refinement ====
     public static final boolean REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM = true; // Uses acyclic(po-loc + rf) as baseline
     public static final boolean REFINEMENT_ADD_ACYCLIC_DEP_RF = false; // Only takes effect if USE_BASELINE_WMM is set to TRUE
 
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
-    public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.FULL;
+    public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.NONE;
 
     // ==== Saturation ====
     public static boolean SATURATION_ENABLE_DEBUG = false;

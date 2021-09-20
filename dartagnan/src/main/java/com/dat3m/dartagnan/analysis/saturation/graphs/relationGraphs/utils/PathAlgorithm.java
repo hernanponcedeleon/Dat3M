@@ -10,12 +10,20 @@ import java.util.function.Predicate;
 public class PathAlgorithm {
 
     private final static Queue<EventData> queue1 = new ArrayDeque<>();
-    private final static HashSet<EventData> visited1 = new HashSet<>();
-    private final static Map<EventData, Edge> parentMap1 = new HashMap<>();
-
     private final static Queue<EventData> queue2 = new ArrayDeque<>();
-    private final static HashSet<EventData> visited2 = new HashSet<>();
-    private final static Map<EventData, Edge> parentMap2 = new HashMap<>();
+
+    private static Edge[] parentMap1 = new Edge[0];
+    private static Edge[] parentMap2 = new Edge[0];
+
+    public static void ensureCapacity(int capacity) {
+        if (capacity <= parentMap1.length) {
+            return;
+        }
+
+        final int newCapacity = capacity + 20;
+        parentMap1 = Arrays.copyOf(parentMap1, newCapacity);
+        parentMap2 = Arrays.copyOf(parentMap2, newCapacity);
+    }
 
 
     /*
@@ -26,10 +34,9 @@ public class PathAlgorithm {
                                                             Predicate<Edge> filter) {
         queue1.clear();
         queue2.clear();
-        visited1.clear();
-        visited2.clear();
-        parentMap1.clear();
-        parentMap2.clear();
+
+        Arrays.fill(parentMap1, null);
+        System.arraycopy(parentMap1, 0, parentMap2, 0, Math.min(parentMap1.length, parentMap2.length));
 
         queue1.add(start);
         queue2.add(end);
@@ -48,13 +55,14 @@ public class PathAlgorithm {
                         }
 
                         cur = next.getSecond();
+                        int id = cur.getId();
 
-                        if (cur == end || visited2.contains(cur)) {
+                        if (cur == end || parentMap2[id] != null) {
+                            parentMap1[id] = next;
                             found = true;
-                            parentMap1.put(cur, next);
                             break;
-                        } else if (visited1.add(cur)) {
-                            parentMap1.put(cur, next);
+                        } else if (parentMap1[id] == null) {
+                            parentMap1[id] = next;
                             queue1.add(cur);
                         }
                     }
@@ -69,13 +77,14 @@ public class PathAlgorithm {
                             continue;
                         }
                         cur = next.getFirst();
+                        int id = cur.getId();
 
-                        if (visited1.contains(cur)) {
+                        if (parentMap1[id] != null) {
+                            parentMap2[id] = next;
                             found = true;
-                            parentMap2.put(cur, next);
                             break;
-                        } else if (visited2.add(cur)) {
-                            parentMap2.put(cur, next);
+                        } else if (parentMap2[id] == null) {
+                            parentMap2[id] = next;
                             queue2.add(cur);
                         }
                     }
@@ -84,7 +93,7 @@ public class PathAlgorithm {
             }
         }
 
-        if (!found || cur == null) {
+        if (!found) {
             return Collections.emptyList();
         }
 
@@ -93,14 +102,14 @@ public class PathAlgorithm {
         LinkedList<Edge> path = new LinkedList<>();
         EventData e = cur;
         do {
-            Edge backEdge = parentMap1.get(e);
+            Edge backEdge = parentMap1[e.getId()];
             path.addFirst(backEdge);
             e = backEdge.getFirst();
         } while (!e.equals(start));
 
         e = cur;
         while (!e.equals(end)) {
-            Edge forwardEdge = parentMap2.get(e);
+            Edge forwardEdge = parentMap2[e.getId()];
             path.addLast(forwardEdge);
             e = forwardEdge.getSecond();
         }

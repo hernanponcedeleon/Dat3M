@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.analysis.saturation.graphs.ExecutionGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.constraints.Constraint;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.PathAlgorithm;
 import com.dat3m.dartagnan.analysis.saturation.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.saturation.logic.DNF;
 import com.dat3m.dartagnan.analysis.saturation.logic.SortedCubeSet;
@@ -112,6 +113,7 @@ public class SaturationSolver {
     private void populateFromModel(Model model, SolverContext ctx) {
         executionModel.initialize(model, ctx, false);
         execGraph.initializeFromModel(executionModel);
+        PathAlgorithm.ensureCapacity(executionModel.getEventList().size());
         if (GlobalSettings.SATURATION_ENABLE_DEBUG) {
             testIteration();
             testStaticGraphs();
