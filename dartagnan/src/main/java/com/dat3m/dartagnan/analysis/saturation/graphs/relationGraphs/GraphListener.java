@@ -4,5 +4,5 @@ import java.util.Collection;
 
 public interface GraphListener {
     void onGraphChanged(RelationGraph graph, Collection<Edge> addedEdges);
-    void backtrack();
+    void backtrackTo(int time);
 }

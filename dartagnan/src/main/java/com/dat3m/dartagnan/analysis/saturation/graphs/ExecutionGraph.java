@@ -168,8 +168,8 @@ public class ExecutionGraph {
         return true;
     }
 
-    public void backtrack() {
-        graphHierarchy.backtrack();
+    public void backtrackTo(int time) {
+        graphHierarchy.backtrackTo(time);
     }
 
     // =======================================================

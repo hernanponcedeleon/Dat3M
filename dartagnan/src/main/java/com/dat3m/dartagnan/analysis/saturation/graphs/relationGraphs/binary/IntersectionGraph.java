@@ -30,7 +30,7 @@ public class IntersectionGraph extends MaterializedGraph {
 
     // Note: The derived edge has the timestamp of edge <a>
     private Edge derive(Edge a, Edge b) {
-        return a.with(Math.max(a.getDerivationLength(), b.getDerivationLength()) + 1);
+        return a.withDerivLength(Math.max(a.getDerivationLength(), b.getDerivationLength()) + 1);
     }
 
     @Override

@@ -46,7 +46,7 @@ public abstract class AbstractRelationGraph implements RelationGraph {
     }
 
     @Override
-    public void backtrack() {
+    public void backtrackTo(int time) {
     }
 
     @Override

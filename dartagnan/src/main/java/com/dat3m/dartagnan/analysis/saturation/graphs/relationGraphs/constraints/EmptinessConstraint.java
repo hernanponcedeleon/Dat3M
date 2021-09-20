@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.constraint
 
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
-import com.dat3m.dartagnan.utils.timeable.Timeable;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.ArrayList;
@@ -32,8 +31,8 @@ public class EmptinessConstraint extends Constraint {
     }
 
     @Override
-    public void backtrack() {
-        violatingEdges.removeIf(Timeable::isInvalid);
+    public void backtrackTo(int time) {
+        violatingEdges.removeIf(e -> e.getTime() > time);
     }
 
 

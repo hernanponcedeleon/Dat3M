@@ -106,9 +106,9 @@ public class GraphHierarchy {
         forwardPropagate();
     }
 
-    public void backtrack() {
-        graphListenersMap.keySet().forEach(RelationGraph::backtrack);
-        graphListenersMap.values().stream().flatMap(Collection::stream).forEach(GraphListener::backtrack);
+    public void backtrackTo(int time) {
+        graphListenersMap.keySet().forEach(graph -> graph.backtrackTo(time));
+        graphListenersMap.values().stream().flatMap(Collection::stream).forEach(graphListener -> graphListener.backtrackTo(time));
     }
 
     // --------------------------------------------

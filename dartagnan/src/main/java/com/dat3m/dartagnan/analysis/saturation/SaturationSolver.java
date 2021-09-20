@@ -17,7 +17,6 @@ import com.dat3m.dartagnan.analysis.saturation.searchTree.LeafNode;
 import com.dat3m.dartagnan.analysis.saturation.searchTree.SearchNode;
 import com.dat3m.dartagnan.analysis.saturation.searchTree.SearchTree;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -220,7 +219,7 @@ public class SaturationSolver {
             stats.saturationDepth = k;
             // There should always exist a single empty node unless we found a violation
             SearchNode start = sTree.findNodes(SearchNode::isEmptyNode).get(0);
-            SolverStatus status = saturation(start, Timestamp.ZERO, k, coSearchList, 0);
+            SolverStatus status = saturation(start, 0, k, coSearchList, 0);
             if (status != INCONCLUSIVE) {
                 result.setStatus(status);
                 if (status == INCONSISTENT) {
@@ -255,7 +254,7 @@ public class SaturationSolver {
         that for each write-pair (w1,w2) there is exactly one edge in the list, either co(w1, w2) or
         co(w2, w1).
      */
-    private SolverStatus saturation(SearchNode curSearchNode, Timestamp curTime, int depth, List<Edge> searchList, int searchStart) {
+    private SolverStatus saturation(SearchNode curSearchNode, int curTime, int depth, List<Edge> searchList, int searchStart) {
         searchList = searchList.subList(searchStart, searchList.size());
         if (depth == 0 || searchList.isEmpty()) {
             // 0-SAT amounts to a simple violation check
@@ -285,8 +284,8 @@ public class SaturationSolver {
 
                 DecisionNode decNode = new DecisionNode(coEdge);
                 // Add coEdge with new time stamp
-                Timestamp nextTime = curTime.next();
-                execGraph.addCoherenceEdges(coEdge.with(nextTime));
+                int nextTime = curTime + 1;
+                execGraph.addCoherenceEdges(coEdge.withTime(nextTime));
                 stats.numGuessedCoherences++;
                 SolverStatus status = saturation(decNode.getPositive(), nextTime, depth - 1, searchList, i + 1);
                 if (status == CONSISTENT && searchList.stream().allMatch(this::coExists)) {
@@ -294,7 +293,7 @@ public class SaturationSolver {
                 }
                 // Always backtrack the added edge, because either it caused a constraint violation and needs to be removed
                 // or it did not cause a violation so we want to test another co-edge.
-                backtrackOn(nextTime);
+                backtrackTo(curTime);
 
                 if (status == INCONSISTENT) {
                     // ...the last added edge caused a constraint violation
@@ -302,7 +301,7 @@ public class SaturationSolver {
                     curSearchNode = decNode.getNegative();
                     // We now add the opposite edge but with the old time stamp, since this
                     // edge is now permanent with respect to our current search depth.
-                    execGraph.addCoherenceEdges(coEdge.inverse().with(curTime));
+                    execGraph.addCoherenceEdges(coEdge.inverse().withTime(curTime));
                     status = saturation(decNode.getNegative(), curTime, depth - 1, searchList, i + 1);
                     if (status == INCONSISTENT) {
                         // ... both directions of the co edge caused a violation, so we have an inconsistency
@@ -319,21 +318,21 @@ public class SaturationSolver {
                 } else {
                     // ... the last added edge did NOT cause a consistency violation.
                     // We still need to test the opposite edge but with a new timestamp again.
-                    nextTime = curTime.next();
-                    execGraph.addCoherenceEdges(coEdge.inverse().with(nextTime));
+                    nextTime = curTime + 1;
+                    execGraph.addCoherenceEdges(coEdge.inverse().withTime(nextTime));
                     stats.numGuessedCoherences++;
                     status = saturation(decNode.getNegative(), nextTime, depth - 1, searchList, i + 1);
                     if (status == CONSISTENT && searchList.stream().allMatch(this::coExists)) {
                         return CONSISTENT;
                     }
-                    backtrackOn(nextTime);
+                    backtrackTo(curTime);
 
                     if (status == INCONSISTENT) {
                         // ... the inverse co-edge caused a consistency violation but the original did not
                         // so we fix the original one as permanent now (using the old timestamp) and proceed
                         curSearchNode.replaceBy(decNode);
                         curSearchNode = decNode.getPositive();
-                        execGraph.addCoherenceEdges(coEdge.with(curTime));
+                        execGraph.addCoherenceEdges(coEdge.withTime(curTime));
                         progress = true;
                     }
                 }
@@ -345,9 +344,8 @@ public class SaturationSolver {
         return INCONCLUSIVE;
     }
 
-    private void backtrackOn(Timestamp time) {
-        time.invalidate();
-        execGraph.backtrack();
+    private void backtrackTo(int time) {
+        execGraph.backtrackTo(time);
     }
 
     private boolean coExists(Edge coEdge) {

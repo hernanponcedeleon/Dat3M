@@ -315,7 +315,7 @@ public class Reasoner {
                 return reason;
             }
 
-            reason = graph.getDependencies().get(0).accept(this, edge.inverse().with(edge.getDerivationLength() - 1), unused);
+            reason = graph.getDependencies().get(0).accept(this, edge.inverse().withDerivLength(edge.getDerivationLength() - 1), unused);
             assert !reason.isFalse();
             return reason;
         }

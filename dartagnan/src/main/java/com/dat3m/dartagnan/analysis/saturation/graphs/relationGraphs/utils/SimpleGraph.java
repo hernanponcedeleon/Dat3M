@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.AbstractRel
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.analysis.saturation.util.EdgeDirection;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.google.common.collect.Lists;
@@ -28,7 +27,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
     private int size;
     private DataItem[] outgoing;
     private DataItem[] ingoing;
-    private Timestamp maxstamp = Timestamp.ZERO;
+    private int maxTime = 0;
 
     @Override
     public List<RelationGraph> getDependencies() {
@@ -36,22 +35,22 @@ public final class SimpleGraph extends AbstractRelationGraph {
     }
 
     @Override
-    public void backtrack() {
-        if (maxstamp.isValid()) {
+    public void backtrackTo(int time) {
+        if (maxTime <= time) {
             return;
         }
         size = 0;
         for (DataItem item : outgoing) {
             if (item != null) {
-                item.backtrack();
+                item.backtrackTo(time);
                 size += item.size();
-                maxstamp = Timestamp.max(maxstamp, item.maxStamp);
+                maxTime = Math.max(maxTime, item.maxTime);
             }
         }
 
         for (DataItem item : ingoing) {
             if (item != null) {
-                item.backtrack();
+                item.backtrackTo(time);
             }
         }
     }
@@ -76,14 +75,6 @@ public final class SimpleGraph extends AbstractRelationGraph {
     public Optional<Edge> get(Edge edge) {
         DataItem item = outgoing[edge.getFirst().getId()];
         return item != null ? Optional.ofNullable(item.get(edge)) : Optional.empty();
-    }
-
-    public Timestamp getTime(Edge edge) {
-        return get(edge).map(Edge::getTime).orElse(Timestamp.INVALID);
-    }
-
-    public Timestamp getTime(EventData a, EventData b) {
-        return getTime(new Edge(a, b));
     }
 
 
@@ -148,7 +139,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
         boolean added = item1.add(e) && item2.add(e);
         if (added) {
             size++;
-            maxstamp = Timestamp.max(maxstamp, e.getTime());
+            maxTime = Math.max(maxTime, e.getTime());
         }
         return added;
     }
@@ -163,7 +154,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
 
     public void clear() {
         size = 0;
-        maxstamp = Timestamp.ZERO;
+        maxTime = 0;
         for (DataItem item : outgoing) {
             item.clear();
         }
@@ -203,7 +194,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
     @Override
     public void constructFromModel(ExecutionModel model) {
         size = 0;
-        maxstamp = Timestamp.ZERO;
+        maxTime = 0;
         outgoing = new DataItem[model.getEventList().size()];
         ingoing = new DataItem[model.getEventList().size()];
     }
@@ -212,12 +203,12 @@ public final class SimpleGraph extends AbstractRelationGraph {
     private static final class DataItem implements Iterable<Edge> {
         final Map<Edge, Edge> edgeMap;
         final List<Edge> edgeList;
-        Timestamp maxStamp;
+        int maxTime;
 
         public DataItem() {
             edgeMap = new HashMap<>(32);
             edgeList = new ArrayList<>(32);
-            maxStamp = Timestamp.ZERO;
+            maxTime = 0;
         }
 
         public int size() {
@@ -231,7 +222,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
         public boolean add(Edge e) {
             if (edgeMap.putIfAbsent(e, e) == null) {
                 edgeList.add(e);
-                maxStamp = Timestamp.max(maxStamp, e.getTime());
+                maxTime = Math.max(maxTime, e.getTime());
                 return true;
             }
             return false;
@@ -257,23 +248,23 @@ public final class SimpleGraph extends AbstractRelationGraph {
         public void clear() {
             edgeMap.clear();
             edgeList.clear();;
-            maxStamp = Timestamp.ZERO;
+            maxTime = 0;
         }
 
-        public void backtrack() {
-            if (maxStamp.isInvalid()) {
+        public void backtrackTo(int time) {
+            if (maxTime > time) {
                 int i = edgeList.size();
                 while (--i >= 0) {
                     Edge e = edgeList.get(i);
-                    if (e.isInvalid()) {
+                    if (e.getTime() > time) {
                         edgeList.remove(i);
                         edgeMap.remove(e);
                     } else {
-                        maxStamp = e.getTime();
+                        maxTime = e.getTime();
                         return;
                     }
                 }
-                maxStamp = Timestamp.ZERO;
+                maxTime = 0;
             }
         }
 

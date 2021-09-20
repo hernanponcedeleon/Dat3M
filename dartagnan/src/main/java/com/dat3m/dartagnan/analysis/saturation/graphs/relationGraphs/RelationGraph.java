@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.Graph
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.OneTimeIterable;
 import com.dat3m.dartagnan.analysis.saturation.util.EdgeDirection;
 import com.dat3m.dartagnan.analysis.saturation.util.GraphVisitor;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
@@ -32,7 +31,6 @@ public interface RelationGraph extends GraphDerivable, Iterable<Edge> {
 
     //TODO: We might want to make these default
     boolean contains(EventData a, EventData b);
-    Timestamp getTime(EventData a, EventData b);
 
     void constructFromModel(ExecutionModel model);
     ExecutionModel getModel();
@@ -54,7 +52,6 @@ public interface RelationGraph extends GraphDerivable, Iterable<Edge> {
     default Set<Edge> setView() { return new GraphSetView(this); }
 
     default boolean contains(Edge edge) { return contains(edge.getFirst(), edge.getSecond()); }
-    default Timestamp getTime(Edge edge) { return getTime(edge.getFirst(), edge.getSecond()); }
 
     default boolean isEmpty() { return size() == 0; }
 

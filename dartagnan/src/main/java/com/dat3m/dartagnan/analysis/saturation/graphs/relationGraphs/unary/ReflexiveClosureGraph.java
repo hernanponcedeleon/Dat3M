@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.analysis.saturation.util.EdgeDirection;
 import com.dat3m.dartagnan.analysis.saturation.util.GraphVisitor;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.EventData;
 
 import java.util.Collection;
@@ -30,17 +29,12 @@ public class ReflexiveClosureGraph extends AbstractRelationGraph {
 
     @Override
     public Optional<Edge> get(Edge edge) {
-        return edge.isLoop() ? Optional.of(edge.with(Timestamp.ZERO, 0)) : inner.get(edge);
+        return edge.isLoop() ? Optional.of(edge.with(0, 0)) : inner.get(edge);
     }
 
     @Override
     public boolean contains(EventData a, EventData b) {
         return a.equals(b) || inner.contains(a, b);
-    }
-
-    @Override
-    public Timestamp getTime(EventData a, EventData b) {
-        return a.equals(b) ? Timestamp.ZERO : inner.getTime(a, b);
     }
 
     @Override
@@ -64,7 +58,7 @@ public class ReflexiveClosureGraph extends AbstractRelationGraph {
     }
 
     private Edge derive(Edge e) {
-        return e.with(e.getDerivationLength() + 1);
+        return e.withDerivLength(e.getDerivationLength() + 1);
     }
 
     @Override

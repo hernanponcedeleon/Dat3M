@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGra
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.MaterializedGraph;
 import com.dat3m.dartagnan.analysis.saturation.util.GraphVisitor;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.*;
@@ -35,10 +34,10 @@ public class TransitiveGraph extends MaterializedGraph {
     }
 
     private Edge derive(Edge e) {
-        return e.with(e.getDerivationLength() + 1);
+        return e.withDerivLength(e.getDerivationLength() + 1);
     }
 
-    private Edge combine(Edge a, Edge b, Timestamp time) {
+    private Edge combine(Edge a, Edge b, int time) {
         return new Edge(a.getFirst(), b.getSecond(), time,
                 Math.max(a.getDerivationLength(), b.getDerivationLength()) + 1);
     }

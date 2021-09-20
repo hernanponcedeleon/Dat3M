@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.analysis.saturation.util.EdgeDirection;
 import com.dat3m.dartagnan.analysis.saturation.util.GraphVisitor;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
@@ -18,22 +17,12 @@ public abstract class StaticRelationGraph extends AbstractRelationGraph {
 
     @Override
     public Optional<Edge> get(Edge edge) {
-        return contains(edge) ? Optional.of(edge.with(Timestamp.ZERO, 0)) : Optional.empty();
+        return contains(edge) ? Optional.of(edge.with(0, 0)) : Optional.empty();
     }
 
     @Override
     public List<RelationGraph> getDependencies() {
         return Collections.emptyList();
-    }
-
-    @Override
-    public Timestamp getTime(Edge edge) {
-        return contains(edge) ? Timestamp.ZERO : Timestamp.INVALID;
-    }
-
-    @Override
-    public Timestamp getTime(EventData a, EventData b) {
-        return contains(a, b) ? Timestamp.ZERO : Timestamp.INVALID;
     }
 
     @Override
@@ -64,7 +53,7 @@ public abstract class StaticRelationGraph extends AbstractRelationGraph {
     }
 
     @Override
-    public void backtrack() { }
+    public void backtrackTo(int time) { }
 
     @Override
     public void constructFromModel(ExecutionModel model) {

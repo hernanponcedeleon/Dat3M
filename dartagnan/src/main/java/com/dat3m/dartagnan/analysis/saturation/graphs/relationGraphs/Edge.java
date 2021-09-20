@@ -1,37 +1,32 @@
 package com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs;
 
-import com.dat3m.dartagnan.utils.timeable.Timeable;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 // An untyped edge.
 // This is just a decoration for Tuple to use EventData instead of Event.
 // Additionally, it contains information used for Saturation.
-public class Edge implements Comparable<Edge>, Timeable {
+public class Edge implements Comparable<Edge> {
 
     private final EventData first;
     private final EventData second;
-    private final Timestamp time;
+    //private final Timestamp time;
+    private final int time;
     private final int derivLength;
 
-    public Edge(EventData first, EventData second, Timestamp time, int derivLength) {
+    public Edge(EventData first, EventData second, int time, int derivLength) {
         this.first = first;
         this.second = second;
         this.time = time;
         this.derivLength = derivLength;
     }
 
-    public Edge(EventData first, EventData second, Timestamp time) {
+    public Edge(EventData first, EventData second, int time) {
         this (first, second, time, 0);
     }
 
-    public Edge(EventData first, EventData second, int derivLength) {
-        this (first, second, Timestamp.ZERO, derivLength);
-    }
-
     public Edge(EventData first, EventData second) {
-        this (first, second, Timestamp.ZERO, 0);
+        this (first, second, 0, 0);
     }
 
     public EventData getFirst(){
@@ -40,7 +35,7 @@ public class Edge implements Comparable<Edge>, Timeable {
     public EventData getSecond(){
         return second;
     }
-    public Timestamp getTime() {
+    public int getTime() {
         return time;
     }
 
@@ -67,15 +62,13 @@ public class Edge implements Comparable<Edge>, Timeable {
     public boolean isForwardEdge() {
         return isInternal() && first.getLocalId() < second.getLocalId();
     }
-    public boolean isLoop() {
-        return first.equals(second);
-    }
+    public boolean isLoop() { return first.equals(second); }
     public boolean isLocEdge()  { return first.isMemoryEvent() && second.isMemoryEvent()
             && first.getAccessedAddress().equals(second.getAccessedAddress()); }
 
-    public Edge with(Timestamp time) { return new Edge(first, second, time, derivLength); }
-    public Edge with(int derivLength) { return new Edge(first, second, time, derivLength); }
-    public Edge with(Timestamp time, int derivLength) { return new Edge(first, second, time, derivLength); }
+    public Edge withTime(int time) { return new Edge(first, second, time, derivLength); }
+    public Edge withDerivLength(int derivLength) { return new Edge(first, second, time, derivLength); }
+    public Edge with(int time, int derivLength) { return new Edge(first, second, time, derivLength); }
 
     @Override
     public int hashCode() {

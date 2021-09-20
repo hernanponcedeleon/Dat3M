@@ -66,7 +66,7 @@ public class AcyclicityConstraint extends Constraint {
     }
 
     @Override
-    public void backtrack() {
+    public void backtrackTo(int time) {
         violatingSccs.clear();
         markedNodes.clear();
     }

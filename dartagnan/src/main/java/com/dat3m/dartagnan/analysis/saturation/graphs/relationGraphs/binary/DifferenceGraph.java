@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.analysis.saturation.util.EdgeDirection;
 import com.dat3m.dartagnan.analysis.saturation.util.GraphVisitor;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.EventData;
 
 import java.util.*;
@@ -45,16 +44,6 @@ public class DifferenceGraph extends AbstractRelationGraph {
     @Override
     public boolean contains(EventData a, EventData b) {
         return first.contains(a, b) && !second.contains(a, b);
-    }
-
-    @Override
-    public Timestamp getTime(Edge edge) {
-        return second.contains(edge) ? Timestamp.INVALID : first.getTime(edge);
-    }
-
-    @Override
-    public Timestamp getTime(EventData a, EventData b) {
-        return second.contains(a, b) ? Timestamp.INVALID : first.getTime(a, b);
     }
 
     @Override

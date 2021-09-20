@@ -33,7 +33,7 @@ public class UnionGraph extends MaterializedGraph {
     }
 
     private Edge derive(Edge e) {
-        return e.with(e.getDerivationLength() + 1);
+        return e.withDerivLength(e.getDerivationLength() + 1);
     }
 
     @Override

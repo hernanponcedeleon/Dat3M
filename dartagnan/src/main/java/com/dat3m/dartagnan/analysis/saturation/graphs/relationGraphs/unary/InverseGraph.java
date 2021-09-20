@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.analysis.saturation.util.EdgeDirection;
 import com.dat3m.dartagnan.analysis.saturation.util.GraphVisitor;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.google.common.collect.Iterators;
 
@@ -37,18 +36,8 @@ public class InverseGraph extends AbstractRelationGraph {
     }
 
     @Override
-    public Timestamp getTime(Edge edge) {
-        return inner.getTime(edge.inverse());
-    }
-
-    @Override
     public boolean contains(EventData a, EventData b) {
         return inner.contains(b, a);
-    }
-
-    @Override
-    public Timestamp getTime(EventData a, EventData b) {
-        return inner.getTime(b, a);
     }
 
     @Override

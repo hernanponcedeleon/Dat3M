@@ -36,6 +36,6 @@ public class MaterializedSubgraph extends MaterializedGraph {
     }
 
     @Override
-    public void backtrack() { }
+    public void backtrackTo(int time) { }
 
 }

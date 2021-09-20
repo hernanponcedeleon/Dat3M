@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.AbstractRelationGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.util.EdgeDirection;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
@@ -40,18 +39,8 @@ public abstract class MaterializedGraph extends AbstractRelationGraph {
     }
 
     @Override
-    public Timestamp getTime(EventData a, EventData b) {
-        return simpleGraph.getTime(a, b);
-    }
-
-    @Override
-    public Timestamp getTime(Edge edge) {
-        return simpleGraph.getTime(edge);
-    }
-
-    @Override
-    public void backtrack() {
-        simpleGraph.backtrack();
+    public void backtrackTo(int time) {
+        simpleGraph.backtrackTo(time);
     }
 
     @Override

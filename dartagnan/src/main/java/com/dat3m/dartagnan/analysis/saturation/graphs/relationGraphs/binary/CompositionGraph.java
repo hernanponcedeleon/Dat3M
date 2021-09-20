@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGra
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.MaterializedGraph;
 import com.dat3m.dartagnan.analysis.saturation.util.GraphVisitor;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.*;
@@ -39,7 +38,7 @@ public class CompositionGraph extends MaterializedGraph {
         return visitor.visitComposition(this, data, context);
     }
 
-    private Edge combine(Edge a, Edge b, Timestamp time) {
+    private Edge combine(Edge a, Edge b, int time) {
         return new Edge(a.getFirst(), b.getSecond(), time,
                 Math.max(a.getDerivationLength(), b.getDerivationLength()) + 1);
     }
