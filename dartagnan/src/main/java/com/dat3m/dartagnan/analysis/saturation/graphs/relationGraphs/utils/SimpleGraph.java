@@ -4,10 +4,10 @@ import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.AbstractRel
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.analysis.saturation.util.EdgeDirection;
-import com.dat3m.dartagnan.utils.timeable.Timeable;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.google.common.collect.Lists;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -28,6 +28,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
     private int size;
     private DataItem[] outgoing;
     private DataItem[] ingoing;
+    private Timestamp maxstamp = Timestamp.ZERO;
 
     @Override
     public List<RelationGraph> getDependencies() {
@@ -36,11 +37,15 @@ public final class SimpleGraph extends AbstractRelationGraph {
 
     @Override
     public void backtrack() {
+        if (maxstamp.isValid()) {
+            return;
+        }
         size = 0;
         for (DataItem item : outgoing) {
             if (item != null) {
                 item.backtrack();
                 size += item.size();
+                maxstamp = Timestamp.max(maxstamp, item.maxStamp);
             }
         }
 
@@ -132,10 +137,10 @@ public final class SimpleGraph extends AbstractRelationGraph {
         int firstId = e.getFirst().getId();
         int secondId = e.getSecond().getId();
         DataItem item1 = outgoing[firstId];
-        DataItem item2 = ingoing[secondId];
         if (item1 == null) {
             outgoing[firstId] = item1 = new DataItem();
         }
+        DataItem item2 = ingoing[secondId];
         if (item2 == null) {
             ingoing[secondId] = item2 = new DataItem();
         }
@@ -143,6 +148,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
         boolean added = item1.add(e) && item2.add(e);
         if (added) {
             size++;
+            maxstamp = Timestamp.max(maxstamp, e.getTime());
         }
         return added;
     }
@@ -157,6 +163,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
 
     public void clear() {
         size = 0;
+        maxstamp = Timestamp.ZERO;
         for (DataItem item : outgoing) {
             item.clear();
         }
@@ -196,6 +203,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
     @Override
     public void constructFromModel(ExecutionModel model) {
         size = 0;
+        maxstamp = Timestamp.ZERO;
         outgoing = new DataItem[model.getEventList().size()];
         ingoing = new DataItem[model.getEventList().size()];
     }
@@ -203,25 +211,26 @@ public final class SimpleGraph extends AbstractRelationGraph {
 
     private static final class DataItem implements Iterable<Edge> {
         final Map<Edge, Edge> edgeMap;
-        final Set<Edge> edgeSet;
+        final List<Edge> edgeList;
         Timestamp maxStamp;
 
         public DataItem() {
-            edgeMap = new HashMap<>();
-            edgeSet = edgeMap.keySet();
+            edgeMap = new HashMap<>(32);
+            edgeList = new ArrayList<>(32);
             maxStamp = Timestamp.ZERO;
         }
 
         public int size() {
-            return edgeMap.size();
+            return edgeList.size();
         }
 
         public boolean isEmpty() {
-            return edgeMap.isEmpty();
+            return edgeList.isEmpty();
         }
 
         public boolean add(Edge e) {
             if (edgeMap.putIfAbsent(e, e) == null) {
+                edgeList.add(e);
                 maxStamp = Timestamp.max(maxStamp, e.getTime());
                 return true;
             }
@@ -237,22 +246,34 @@ public final class SimpleGraph extends AbstractRelationGraph {
 
 
         public Iterator<Edge> iterator() {
-            return edgeSet.iterator();
+            return edgeList.iterator();
         }
 
         public Stream<Edge> stream() {
-            return edgeSet.stream();
+            // For some reason, the reversed order seems to be more beneficial
+            return Lists.reverse(edgeList).stream();
         }
 
         public void clear() {
             edgeMap.clear();
+            edgeList.clear();;
             maxStamp = Timestamp.ZERO;
         }
 
         public void backtrack() {
             if (maxStamp.isInvalid()) {
-                edgeSet.removeIf(Timeable::isInvalid);
-                maxStamp = edgeSet.stream().map(Edge::getTime).reduce(Timestamp.ZERO, Timestamp::max);
+                int i = edgeList.size();
+                while (--i >= 0) {
+                    Edge e = edgeList.get(i);
+                    if (e.isInvalid()) {
+                        edgeList.remove(i);
+                        edgeMap.remove(e);
+                    } else {
+                        maxStamp = e.getTime();
+                        return;
+                    }
+                }
+                maxStamp = Timestamp.ZERO;
             }
         }
 
