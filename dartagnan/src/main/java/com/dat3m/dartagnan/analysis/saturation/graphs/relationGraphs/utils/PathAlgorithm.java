@@ -30,7 +30,7 @@ public class PathAlgorithm {
         This uses a bidirectional BFS to find a shortest path.
         A <filter> can be provided to skip certain edges during the search.
      */
-    private static List<Edge> findShortestPathBiDirInternal(RelationGraph graph, EventData start, EventData end,
+    public static List<Edge> findShortestPath(RelationGraph graph, EventData start, EventData end,
                                                             Predicate<Edge> filter) {
         queue1.clear();
         queue2.clear();
@@ -124,13 +124,13 @@ public class PathAlgorithm {
 
     public static List<Edge> findShortestPath(RelationGraph graph, EventData start, EventData end) {
         Predicate<Edge> alwaysTrueFilter = (edge -> true);
-        return findShortestPathBiDirInternal(graph, start, end, alwaysTrueFilter);
+        return findShortestPath(graph, start, end, alwaysTrueFilter);
     }
 
 
     //TODO: Check this version thoroughly (should we filter with '<' or '<=' ?)
     public static List<Edge> findShortestPath(RelationGraph graph, EventData start, EventData end, int derivationBound) {
         Predicate<Edge> filter = (edge -> edge.getDerivationLength() < derivationBound);
-        return findShortestPathBiDirInternal(graph, start, end, filter);
+        return findShortestPath(graph, start, end, filter);
     }
 }

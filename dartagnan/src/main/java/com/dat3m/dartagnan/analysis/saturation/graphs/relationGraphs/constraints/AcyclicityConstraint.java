@@ -48,11 +48,13 @@ public class AcyclicityConstraint extends Constraint {
         // (1) find a shortest path C from <e> to <e> (=cycle)
         // (2) remove all nodes in C from the search space (those nodes are likely to give the same cycle)
         for (Set<EventData> scc : violatingSccs) {
+            //Predicate<Edge> filter = (edge -> scc.contains(edge.getFirst()) && scc.contains(edge.getSecond()));
             MaterializedSubgraph subgraph = new MaterializedSubgraph(constrainedGraph, scc);
             Set<EventData> nodes = new HashSet<>(Sets.intersection(scc, markedNodes));
             while (!nodes.isEmpty()) {
                 EventData e = nodes.stream().findAny().get();
                 List<Edge> cycle = PathAlgorithm.findShortestPath(subgraph, e, e);
+                //List<Edge> cycle = PathAlgorithm.findShortestPath(constrainedGraph, e, e, filter);
                 cycle.forEach(edge -> nodes.remove(edge.getFirst()));
                 cycles.add(cycle);
             }
@@ -86,7 +88,7 @@ public class AcyclicityConstraint extends Constraint {
 
     // ============== Tarjan & SCCs ================
 
-    private final Stack<EventNode> stack = new Stack<>();
+    private final Deque<EventNode> stack = new ArrayDeque<>();
     private int index = 0;
     private void tarjan() {
         index = 0;
@@ -110,8 +112,10 @@ public class AcyclicityConstraint extends Constraint {
         v.isOnStack = true;
         index++;
 
+        for (Edge e : constrainedGraph.outEdges(v.event)) {
+            EventNode w = nodeMap[e.getSecond().getId()];
 
-        v.successorStream().forEach(w -> {
+            //v.successorStream().forEach(w -> {
                 if (!w.wasVisited()) {
                     strongConnect(w);
                     v.lowlink = Math.min(v.lowlink, w.lowlink);
@@ -122,7 +126,8 @@ public class AcyclicityConstraint extends Constraint {
                 if (w == v) {
                     v.hasSelfLoop = true;
                 }
-        });
+            //});
+        }
 
 
         if (v.lowlink == v.index) {
@@ -161,6 +166,7 @@ public class AcyclicityConstraint extends Constraint {
             final EventNode[] nodeMap = AcyclicityConstraint.this.nodeMap;
             return constrainedGraph.outEdgeStream(event).map(e -> nodeMap[e.getSecond().getId()]);
         }
+
 
         public void reset() {
             hasSelfLoop = false;

@@ -32,7 +32,6 @@ public class MaterializedSubgraph extends MaterializedGraph {
                     .filter(edge -> events.contains(edge.getSecond()))
                     .forEach(simpleGraph::add);
         }
-
     }
 
     @Override

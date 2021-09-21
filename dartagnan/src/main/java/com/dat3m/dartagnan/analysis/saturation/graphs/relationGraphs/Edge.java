@@ -10,7 +10,6 @@ public class Edge implements Comparable<Edge> {
 
     private final EventData first;
     private final EventData second;
-    //private final Timestamp time;
     private final int time;
     private final int derivLength;
 
@@ -85,9 +84,11 @@ public class Edge implements Comparable<Edge> {
         } else if (obj == null || getClass() != obj.getClass()) {
             return false;
         }
+        return equals((Edge)obj);
+    }
 
-        Edge other = (Edge) obj;
-        return first.equals(other.first) && second.equals(other.second);
+    public boolean equals(Edge e) {
+        return first == e.first && second == e.second;
     }
 
     @Override

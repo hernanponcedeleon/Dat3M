@@ -24,10 +24,13 @@ import java.util.stream.Stream;
     It is mostly used as an internal implementation for many event graphs.
  */
 public final class SimpleGraph extends AbstractRelationGraph {
-    private int size;
-    private DataItem[] outgoing;
-    private DataItem[] ingoing;
+    private DataItem[] outgoing = new DataItem[0];
+    private DataItem[] ingoing = new DataItem[0];
     private int maxTime = 0;
+    private int numEvents = 0;
+
+    private final HashMap<Edge, Edge> edgeMap = new HashMap<>();
+    //private final EdgeSet edgeMap = new EdgeSet(400);
 
     @Override
     public List<RelationGraph> getDependencies() {
@@ -39,20 +42,23 @@ public final class SimpleGraph extends AbstractRelationGraph {
         if (maxTime <= time) {
             return;
         }
-        size = 0;
-        for (DataItem item : outgoing) {
+        final int bound = Math.min(numEvents, outgoing.length);
+        for (int i = 0; i < bound; i++) {
+            DataItem item = outgoing[i];
             if (item != null) {
                 item.backtrackTo(time);
-                size += item.size();
                 maxTime = Math.max(maxTime, item.maxTime);
             }
         }
 
-        for (DataItem item : ingoing) {
+        final int bound2 = Math.min(numEvents, ingoing.length);
+        for (int i = 0; i < bound2; i++) {
+            DataItem item = ingoing[i];
             if (item != null) {
                 item.backtrackTo(time);
             }
         }
+
     }
 
     private DataItem getItem(EventData e, EdgeDirection dir) {
@@ -68,19 +74,18 @@ public final class SimpleGraph extends AbstractRelationGraph {
 
     public Collection<Edge> getEdges(EventData e, EdgeDirection dir) {
         DataItem item = getItem(e, dir);
-        return item == null ? Collections.emptyList() : item.edgeMap.keySet();
+        return item == null ? Collections.emptyList() : item.edgeList;
     }
 
 
     public Optional<Edge> get(Edge edge) {
-        DataItem item = outgoing[edge.getFirst().getId()];
-        return item != null ? Optional.ofNullable(item.get(edge)) : Optional.empty();
+        return Optional.ofNullable(edgeMap.get(edge));
     }
 
 
     @Override
     public int size() {
-        return size;
+        return edgeMap.size();
     }
 
     @Override
@@ -115,33 +120,34 @@ public final class SimpleGraph extends AbstractRelationGraph {
     }
 
     public boolean contains(Edge e) {
-        DataItem item = outgoing[e.getFirst().getId()];
-        return item != null && item.contains(e);
+        return edgeMap.containsKey(e);
+        //return edgeMap.contains(e);
     }
 
     public boolean contains(EventData a, EventData b) {
-        DataItem item = outgoing[a.getId()];
-        return item != null && item.contains(new Edge(a, b));
+        return contains(new Edge(a, b));
     }
 
     public boolean add(Edge e) {
+        if (edgeMap.putIfAbsent(e, e) != null/*!edgeMap.add(e)*/) {
+            return false;
+        }
         int firstId = e.getFirst().getId();
         int secondId = e.getSecond().getId();
+        maxTime = Math.max(maxTime, e.getTime());
         DataItem item1 = outgoing[firstId];
         if (item1 == null) {
-            outgoing[firstId] = item1 = new DataItem();
+            outgoing[firstId] = item1 = new DataItem(true);
         }
+        item1.add(e);
+
         DataItem item2 = ingoing[secondId];
         if (item2 == null) {
-            ingoing[secondId] = item2 = new DataItem();
+            ingoing[secondId] = item2 = new DataItem( false);
         }
+        item2.add(e);
 
-        boolean added = item1.add(e) && item2.add(e);
-        if (added) {
-            size++;
-            maxTime = Math.max(maxTime, e.getTime());
-        }
-        return added;
+        return true;
     }
 
     public boolean addAll(Collection<? extends Edge> c) {
@@ -153,14 +159,23 @@ public final class SimpleGraph extends AbstractRelationGraph {
     }
 
     public void clear() {
-        size = 0;
         maxTime = 0;
-        for (DataItem item : outgoing) {
-            item.clear();
+        edgeMap.clear();
+
+        final int bound = Math.min(numEvents, outgoing.length);
+        for (int i = 0; i < bound; i++) {
+            DataItem item = outgoing[i];
+            if (item != null) {
+                item.clear();
+            }
         }
 
-        for (DataItem item : ingoing) {
-            item.clear();
+        final int bound2 = Math.min(numEvents, ingoing.length);
+        for (int i = 0; i < bound2; i++) {
+            DataItem item = ingoing[i];
+            if (item != null) {
+                item.clear();
+            }
         }
     }
 
@@ -169,7 +184,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
         if (outgoing == null) {
             return Stream.empty();
         }
-        return Arrays.stream(outgoing)
+        return Arrays.stream(outgoing, 0, Math.min(numEvents, outgoing.length))
                 .filter(item -> item != null && !item.isEmpty())
                 .flatMap(DataItem::stream);
     }
@@ -183,6 +198,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
         return item == null ? Stream.empty() : item.stream();
     }
 
+    @Override
     public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
         if (outgoing == null) {
             return Collections.emptyIterator();
@@ -192,22 +208,30 @@ public final class SimpleGraph extends AbstractRelationGraph {
     }
 
     @Override
+    public Iterator<Edge> edgeIterator() {
+        return new EdgeIterator();
+    }
+
+    @Override
     public void constructFromModel(ExecutionModel model) {
-        size = 0;
-        maxTime = 0;
-        outgoing = new DataItem[model.getEventList().size()];
-        ingoing = new DataItem[model.getEventList().size()];
+        numEvents = model.getEventList().size();
+        if (numEvents > outgoing.length) {
+            final int newCapacity = numEvents + 20;
+            outgoing = Arrays.copyOf(outgoing, newCapacity);
+            ingoing = Arrays.copyOf(ingoing, newCapacity);
+        }
+        clear();
     }
 
 
-    private static final class DataItem implements Iterable<Edge> {
-        final Map<Edge, Edge> edgeMap;
+    private final class DataItem implements Iterable<Edge> {
         final List<Edge> edgeList;
+        final boolean deleteFromMap;
         int maxTime;
 
-        public DataItem() {
-            edgeMap = new HashMap<>(32);
-            edgeList = new ArrayList<>(32);
+        public DataItem(boolean deleteFromMap) {
+            edgeList = new ArrayList<>(20);
+            this.deleteFromMap = deleteFromMap;
             maxTime = 0;
         }
 
@@ -220,24 +244,14 @@ public final class SimpleGraph extends AbstractRelationGraph {
         }
 
         public boolean add(Edge e) {
-            if (edgeMap.putIfAbsent(e, e) == null) {
-                edgeList.add(e);
-                maxTime = Math.max(maxTime, e.getTime());
-                return true;
-            }
-            return false;
+            edgeList.add(e);
+            maxTime = Math.max(maxTime, e.getTime());
+            return true;
         }
-
-        public boolean contains(Edge e) {
-            return edgeMap.containsKey(e);
-        }
-
-
-        public Edge get(Edge e) { return edgeMap.get(e); }
 
 
         public Iterator<Edge> iterator() {
-            return edgeList.iterator();
+            return Lists.reverse(edgeList).iterator();
         }
 
         public Stream<Edge> stream() {
@@ -246,19 +260,23 @@ public final class SimpleGraph extends AbstractRelationGraph {
         }
 
         public void clear() {
-            edgeMap.clear();
-            edgeList.clear();;
+            edgeList.clear();
             maxTime = 0;
         }
 
         public void backtrackTo(int time) {
             if (maxTime > time) {
+                final List<Edge> edgeList = this.edgeList;
+                //final EdgeSet edgeMap = SimpleGraph.this.edgeMap;
+                final Map<Edge, Edge> edgeMap = SimpleGraph.this.edgeMap;
                 int i = edgeList.size();
                 while (--i >= 0) {
                     Edge e = edgeList.get(i);
                     if (e.getTime() > time) {
                         edgeList.remove(i);
-                        edgeMap.remove(e);
+                        if (deleteFromMap) {
+                            edgeMap.remove(e);
+                        }
                     } else {
                         maxTime = e.getTime();
                         return;
@@ -268,6 +286,47 @@ public final class SimpleGraph extends AbstractRelationGraph {
             }
         }
 
+    }
+
+    private class EdgeIterator implements Iterator<Edge> {
+
+        int index = -1;
+        List<Edge> innerList = Collections.emptyList();
+        int innerIndex = 0;
+        Edge edge = null;
+
+        public EdgeIterator() {
+            findNext();
+        }
+
+        private void findNext() {
+            edge = null;
+            if (++innerIndex >= innerList.size()) {
+                innerIndex = 0;
+                while (++index < outgoing.length) {
+                    DataItem item = outgoing[index];
+                    if (item != null && !item.isEmpty()) {
+                        innerList = item.edgeList;
+                        edge = innerList.get(0);
+                        return;
+                    }
+                }
+            } else {
+                edge = innerList.get(innerIndex);
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return edge != null;
+        }
+
+        @Override
+        public Edge next() {
+            Edge e = edge;
+            findNext();
+            return e;
+        }
     }
 
 }
