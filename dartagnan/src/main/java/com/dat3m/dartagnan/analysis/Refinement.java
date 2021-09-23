@@ -219,6 +219,7 @@ public class Refinement {
         long totalResolutionTime = 0;
         long totalNumGuesses = 0;
         long totalNumReasons = 0;
+        long totalNumReducedReasons = 0;
         long totalNumCoreReasons = 0;
         long totalModelSize = 0;
         long minModelSize = Long.MAX_VALUE;
@@ -232,6 +233,7 @@ public class Refinement {
             totalResolutionTime += stats.getResolutionTime();
             totalNumGuesses += stats.getNumGuessedCoherences();
             totalNumReasons += stats.getNumComputedReasons();
+            totalNumReducedReasons += stats.getNumComputedReducedReasons();
             totalNumCoreReasons += stats.getNumComputedCoreReasons();
             satDepth = Math.max(satDepth, stats.getSaturationDepth());
 
@@ -244,19 +246,20 @@ public class Refinement {
                 .append(" ======== Summary ========").append("\n")
                 .append("Number of iterations: ").append(iterationCount).append("\n")
                 .append("Total solving time(ms): ").append(totalSolvingTime).append("\n")
-                .append("Total model construction time(ms): ").append(totalModelTime).append("\n");
+                .append("Total model construction time(ms): ").append(totalModelTime).append("\n")
+                .append("Total reason computation time(ms): ").append(totalReasonComputationTime).append("\n")
+                .append("Total resolution time(ms): ").append(totalResolutionTime).append("\n")
+                .append("Total search time(ms): ").append(totalSearchTime).append("\n")
+                .append("Total #guessings: ").append(totalNumGuesses).append("\n")
+                .append("Total #computed reasons: ").append(totalNumReasons).append("\n")
+                .append("Total #computed reduced reasons: ").append(totalNumReducedReasons).append("\n")
+                .append("Total #computed core reasons: ").append(totalNumCoreReasons).append("\n");
         if (statList.size() > 0) {
             message.append("Min model size (#events): ").append(minModelSize).append("\n")
                     .append("Average model size (#events): ").append(totalModelSize / statList.size()).append("\n")
                     .append("Max model size (#events): ").append(maxModelSize).append("\n");
         }
-        message.append("Total reason computation time(ms): ").append(totalReasonComputationTime).append("\n")
-                .append("Total resolution time(ms): ").append(totalResolutionTime).append("\n")
-                .append("Total search time(ms): ").append(totalSearchTime).append("\n")
-                .append("Total #guessings: ").append(totalNumGuesses).append("\n")
-                .append("Total #computed reasons: ").append(totalNumReasons).append("\n")
-                .append("Total #computed core reasons: ").append(totalNumCoreReasons).append("\n")
-                .append("Max Saturation Depth: ").append(satDepth).append("\n")
+        message.append("Max Saturation Depth: ").append(satDepth).append("\n")
                 .append("Bound check time(ms): ").append(boundCheckTime);
 
         logger.info(message);

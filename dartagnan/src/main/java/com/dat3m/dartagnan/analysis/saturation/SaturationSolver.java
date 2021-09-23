@@ -366,22 +366,25 @@ public class SaturationSolver {
 
         // Important code: We only retain those reasons with the least number of co-literals
         // this heavily boosts the performance of the resolution!!!
+        stats.numComputedReasons += reasons.size();
         int minComplexity = reasons.stream().mapToInt(Conjunction::getResolutionComplexity).min().getAsInt();
         reasons.removeIf(x -> x.getResolutionComplexity() > minComplexity);
         // TODO: The following is ugly, but we convert to DNF again to remove dominated clauses and duplicates
         reasons = new ArrayList<>(new DNF<>(reasons).getCubes());
 
-        stats.numComputedReasons += reasons.size();
+        stats.numComputedReducedReasons += reasons.size();
 
         return reasons;
     }
 
     private DNF<CoreLiteral> computeResolventsFromTree(SearchTree tree) {
         //TODO: This is also ugly code
-        SortedCubeSet<CoreLiteral> res = new TreeResolution(tree).computeReasons();
+        TreeResolution resolution = new TreeResolution(tree);
+        SortedCubeSet<CoreLiteral> res = resolution.computeReasons();
         SortedCubeSet<CoreLiteral> res2 = new SortedCubeSet<>();
-        res.forEach(clause -> res2.add(reasoner.simplifyReason(clause)));
+        res.forEach(cube -> res2.add(reasoner.simplifyReason(cube)));
         res2.simplify();
+
         return res2.toDNF();
     }
 
