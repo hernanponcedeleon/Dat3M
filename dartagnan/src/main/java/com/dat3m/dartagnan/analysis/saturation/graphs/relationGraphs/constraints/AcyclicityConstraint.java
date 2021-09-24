@@ -4,6 +4,8 @@ import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.MaterializedSubgraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.PathAlgorithm;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.collections.CollectionPool;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.collections.EventSet;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.google.common.collect.Sets;
@@ -13,8 +15,12 @@ import java.util.stream.Stream;
 
 public class AcyclicityConstraint extends Constraint {
 
-    private final List<Set<EventData>> violatingSccs = new ArrayList<>();
-    private final Set<EventData> markedNodes = new HashSet<>();
+    private static final CollectionPool<EventSet> EVENT_SET_COLLECTION_POOL =
+            new CollectionPool<>(EventSet::new, 10);
+
+
+    private final List<EventSet> violatingSccs = new ArrayList<>();
+    private final EventSet markedNodes = new EventSet();
     private EventNode[] nodeMap;
 
     public AcyclicityConstraint(RelationGraph constrainedGraph) {
@@ -48,13 +54,11 @@ public class AcyclicityConstraint extends Constraint {
         // (1) find a shortest path C from <e> to <e> (=cycle)
         // (2) remove all nodes in C from the search space (those nodes are likely to give the same cycle)
         for (Set<EventData> scc : violatingSccs) {
-            //Predicate<Edge> filter = (edge -> scc.contains(edge.getFirst()) && scc.contains(edge.getSecond()));
             MaterializedSubgraph subgraph = new MaterializedSubgraph(constrainedGraph, scc);
             Set<EventData> nodes = new HashSet<>(Sets.intersection(scc, markedNodes));
             while (!nodes.isEmpty()) {
                 EventData e = nodes.stream().findAny().get();
                 List<Edge> cycle = PathAlgorithm.findShortestPath(subgraph, e, e);
-                //List<Edge> cycle = PathAlgorithm.findShortestPath(constrainedGraph, e, e, filter);
                 cycle.forEach(edge -> nodes.remove(edge.getFirst()));
                 cycles.add(cycle);
             }
@@ -69,20 +73,25 @@ public class AcyclicityConstraint extends Constraint {
 
     @Override
     public void backtrackTo(int time) {
-        violatingSccs.clear();
-        markedNodes.clear();
+        cleanUp();
     }
 
     @Override
-    public void initialize(ExecutionModel context) {
-        super.initialize(context);
-        violatingSccs.clear();
-        markedNodes.clear();
-        nodeMap = new EventNode[context.getEventList().size()];
-        for (EventData e : context.getEventList()) {
+    public void initialize(ExecutionModel model) {
+        super.initialize(model);
+        cleanUp();
+        markedNodes.ensureCapacity(model.getEventList().size());
+        nodeMap = new EventNode[model.getEventList().size()];
+        for (EventData e : model.getEventList()) {
             nodeMap[e.getId()] = new EventNode(e);
         }
         onGraphChanged(constrainedGraph, constrainedGraph.setView());
+    }
+
+    private void cleanUp() {
+        violatingSccs.forEach(EVENT_SET_COLLECTION_POOL::returnToPool);
+        violatingSccs.clear();
+        markedNodes.clear();
     }
 
 
@@ -105,6 +114,9 @@ public class AcyclicityConstraint extends Constraint {
         }
     }
 
+    // The TEMP_LIST is used to temporary hold the nodes in a SCC.
+    // The SCC will only actually get created if it is violating! (selfloop or size > 1)
+    private static final ArrayList<EventData> TEMP_LIST = new ArrayList<>();
     private void strongConnect(EventNode v) {
         v.index = index;
         v.lowlink = index;
@@ -114,34 +126,35 @@ public class AcyclicityConstraint extends Constraint {
 
         for (Edge e : constrainedGraph.outEdges(v.event)) {
             EventNode w = nodeMap[e.getSecond().getId()];
+            if (!w.wasVisited()) {
+                strongConnect(w);
+                v.lowlink = Math.min(v.lowlink, w.lowlink);
+            } else if (w.isOnStack) {
+                v.lowlink = Math.min(v.lowlink, w.index);
+            }
 
-            //v.successorStream().forEach(w -> {
-                if (!w.wasVisited()) {
-                    strongConnect(w);
-                    v.lowlink = Math.min(v.lowlink, w.lowlink);
-                } else if (w.isOnStack) {
-                    v.lowlink = Math.min(v.lowlink, w.index);
-                }
-
-                if (w == v) {
-                    v.hasSelfLoop = true;
-                }
-            //});
+            if (w == v) {
+                v.hasSelfLoop = true;
+            }
         }
 
 
         if (v.lowlink == v.index) {
-            Set<EventData> scc = new HashSet<>();
             EventNode w;
             do {
                 w = stack.pop();
                 w.isOnStack = false;
-                scc.add(w.event);
+                TEMP_LIST.add(w.event);
             } while (w != v);
 
-            if (v.hasSelfLoop || scc.size() > 1) {
+            if (v.hasSelfLoop || TEMP_LIST.size() > 1) {
+                EventSet scc = EVENT_SET_COLLECTION_POOL.get();
+                scc.ensureCapacity(model.getEventList().size());
+                scc.clear();
+                scc.addAll(TEMP_LIST);
                 violatingSccs.add(scc);
             }
+            TEMP_LIST.clear();
         }
     }
 

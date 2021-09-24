@@ -6,11 +6,7 @@ import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.Mater
 import com.dat3m.dartagnan.analysis.saturation.util.GraphVisitor;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 
 // A materialized Union Graph.
 // This seems to be more efficient than the virtualized UnionGraph we used before.
@@ -41,17 +37,26 @@ public class UnionGraph extends MaterializedGraph {
         super.constructFromModel(model);
 
         //TODO: Maybe try to minimize the derivation length initially
-        first.edgeStream().map(this::derive).forEach(simpleGraph::add);
-        second.edgeStream().map(this::derive).forEach(simpleGraph::add);
+        for (Edge e : first.edges()) {
+            simpleGraph.add(derive(e));
+        }
+        for (Edge e : second.edges()) {
+            simpleGraph.add(derive(e));
+        }
     }
 
 
     @Override
     public Collection<Edge> forwardPropagate(RelationGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == first || changedGraph == second) {
-            return addedEdges.stream()
-                    .map(this::derive)
-                    .filter(simpleGraph::add).collect(Collectors.toList());
+            ArrayList<Edge> added = new ArrayList<>();
+            for (Edge e : addedEdges) {
+                Edge edge = derive(e);
+                if (simpleGraph.add(edge)) {
+                    added.add(edge);
+                }
+            }
+            return added;
         } else {
             return Collections.emptyList();
         }

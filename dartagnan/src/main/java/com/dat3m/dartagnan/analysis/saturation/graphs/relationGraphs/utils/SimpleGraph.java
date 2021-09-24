@@ -3,10 +3,11 @@ package com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.AbstractRelationGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.collections.EdgeList;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.collections.EdgeSet;
 import com.dat3m.dartagnan.analysis.saturation.util.EdgeDirection;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.google.common.collect.Lists;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -29,8 +30,8 @@ public final class SimpleGraph extends AbstractRelationGraph {
     private int maxTime = 0;
     private int numEvents = 0;
 
-    private final HashMap<Edge, Edge> edgeMap = new HashMap<>();
-    //private final EdgeSet edgeMap = new EdgeSet(400);
+    //private final HashMap<Edge, Edge> edgeMap = new HashMap<>();
+    private final EdgeSet edgeMap = new EdgeSet(400);
 
     @Override
     public List<RelationGraph> getDependencies() {
@@ -120,8 +121,8 @@ public final class SimpleGraph extends AbstractRelationGraph {
     }
 
     public boolean contains(Edge e) {
-        return edgeMap.containsKey(e);
-        //return edgeMap.contains(e);
+        //return edgeMap.containsKey(e);
+        return edgeMap.contains(e);
     }
 
     public boolean contains(EventData a, EventData b) {
@@ -129,7 +130,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
     }
 
     public boolean add(Edge e) {
-        if (edgeMap.putIfAbsent(e, e) != null/*!edgeMap.add(e)*/) {
+        if (/*edgeMap.putIfAbsent(e, e) != null*/!edgeMap.add(e)) {
             return false;
         }
         int firstId = e.getFirst().getId();
@@ -181,9 +182,6 @@ public final class SimpleGraph extends AbstractRelationGraph {
 
     @Override
     public Stream<Edge> edgeStream() {
-        if (outgoing == null) {
-            return Stream.empty();
-        }
         return Arrays.stream(outgoing, 0, Math.min(numEvents, outgoing.length))
                 .filter(item -> item != null && !item.isEmpty())
                 .flatMap(DataItem::stream);
@@ -191,18 +189,12 @@ public final class SimpleGraph extends AbstractRelationGraph {
 
     @Override
     public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
-        if (outgoing == null) {
-            return Stream.empty();
-        }
         DataItem item = getItem(e, dir);
         return item == null ? Stream.empty() : item.stream();
     }
 
     @Override
     public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        if (outgoing == null) {
-            return Collections.emptyIterator();
-        }
         DataItem item = getItem(e, dir);
         return item == null ? Collections.emptyIterator() : item.iterator();
     }
@@ -226,11 +218,14 @@ public final class SimpleGraph extends AbstractRelationGraph {
 
     private final class DataItem implements Iterable<Edge> {
         final List<Edge> edgeList;
+        //final List<Edge> reversedList;
         final boolean deleteFromMap;
         int maxTime;
 
         public DataItem(boolean deleteFromMap) {
-            edgeList = new ArrayList<>(20);
+            //edgeList = new ArrayList<>(20);
+            edgeList = new EdgeList(20);
+            //reversedList = Lists.reverse(edgeList);
             this.deleteFromMap = deleteFromMap;
             maxTime = 0;
         }
@@ -251,12 +246,14 @@ public final class SimpleGraph extends AbstractRelationGraph {
 
 
         public Iterator<Edge> iterator() {
-            return Lists.reverse(edgeList).iterator();
+            return edgeList.iterator();
+            //return reversedList.iterator();
         }
 
         public Stream<Edge> stream() {
             // For some reason, the reversed order seems to be more beneficial
-            return Lists.reverse(edgeList).stream();
+            //return reversedList.stream();
+            return edgeList.stream();
         }
 
         public void clear() {
@@ -267,8 +264,8 @@ public final class SimpleGraph extends AbstractRelationGraph {
         public void backtrackTo(int time) {
             if (maxTime > time) {
                 final List<Edge> edgeList = this.edgeList;
-                //final EdgeSet edgeMap = SimpleGraph.this.edgeMap;
-                final Map<Edge, Edge> edgeMap = SimpleGraph.this.edgeMap;
+                final EdgeSet edgeMap = SimpleGraph.this.edgeMap;
+                //final Map<Edge, Edge> edgeMap = SimpleGraph.this.edgeMap;
                 int i = edgeList.size();
                 while (--i >= 0) {
                     Edge e = edgeList.get(i);
@@ -303,7 +300,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
             edge = null;
             if (++innerIndex >= innerList.size()) {
                 innerIndex = 0;
-                while (++index < outgoing.length) {
+                while (++index < numEvents) {
                     DataItem item = outgoing[index];
                     if (item != null && !item.isEmpty()) {
                         innerList = item.edgeList;

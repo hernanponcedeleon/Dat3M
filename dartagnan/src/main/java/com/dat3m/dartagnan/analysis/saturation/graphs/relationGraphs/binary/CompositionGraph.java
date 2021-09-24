@@ -48,11 +48,15 @@ public class CompositionGraph extends MaterializedGraph {
         ArrayList<Edge> newEdges = new ArrayList<>();
         if (changedGraph == first) {
             // (A+R);B = A;B + R;B
-            addedEdges.forEach(e -> updateFirst(e, newEdges));
+            for (Edge e : addedEdges) {
+                updateFirst(e, newEdges);
+            }
         }
         if (changedGraph == second) {
             // A;(B+R) = A;B + A;R
-            addedEdges.forEach(e -> updateSecond(e, newEdges));
+            for (Edge e : addedEdges) {
+                updateSecond(e, newEdges);
+            }
         }
         // For A;A, we have the following:
         // (A+R);(A+R) = A;A + A;R + R;A + R;R = A;A + (A+R);R + R;(A+R)
@@ -61,24 +65,34 @@ public class CompositionGraph extends MaterializedGraph {
     }
 
     private void updateFirst(Edge a, Collection<Edge> addedEdges) {
-        second.outEdgeStream(a.getSecond())
-                .map(b -> combine(a, b, a.getTime()))
-                .filter(simpleGraph::add).forEach(addedEdges::add);
+        for (Edge b : second.outEdges(a.getSecond())) {
+            Edge c = combine(a, b, a.getTime());
+            if (simpleGraph.add(c)) {
+                addedEdges.add(c);
+            }
+        }
     }
 
     private void updateSecond(Edge b, Collection<Edge> addedEdges) {
-        first.inEdgeStream(b.getFirst())
-                .map(a -> combine(a, b, b.getTime()))
-                .filter(simpleGraph::add).forEach(addedEdges::add);
+        for (Edge a : first.inEdges(b.getFirst())) {
+            Edge c = combine(a, b, b.getTime());
+            if (simpleGraph.add(c)) {
+                addedEdges.add(c);
+            }
+        }
     }
 
 
     private void initialPopulation() {
         Set<Edge> fakeSet = SetUtil.fakeSet();
         if (first.getEstimatedSize() <= second.getEstimatedSize()) {
-            first.edgeStream().forEach(a -> updateFirst(a, fakeSet));
+            for (Edge a : first.edges()) {
+                updateFirst(a, fakeSet);
+            }
         } else {
-            second.edgeStream().forEach(b -> updateSecond(b, fakeSet));
+            for (Edge a : second.edges()) {
+                updateSecond(a, fakeSet);
+            }
         }
     }
 

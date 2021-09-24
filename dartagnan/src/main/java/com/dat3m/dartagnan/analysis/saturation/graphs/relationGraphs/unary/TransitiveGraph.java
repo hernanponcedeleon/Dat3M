@@ -44,8 +44,11 @@ public class TransitiveGraph extends MaterializedGraph {
 
     private void initialPopulation() {
         //TODO: This is inefficient for many edges (the likely default case!)
+        // Initially, we can probably use some non-incremental approach
         Set<Edge> fakeSet = SetUtil.fakeSet();
-        inner.edgeStream().forEach(e -> updateEdge(derive(e), fakeSet));
+        for (Edge e : inner.edges()) {
+            updateEdge(derive(e), fakeSet);
+        }
     }
 
     // Every (transitive) edge that gets added by adding <edge> is collected into <addedEdged>
@@ -54,20 +57,27 @@ public class TransitiveGraph extends MaterializedGraph {
             return;
         }
         addedEdges.add(edge);
+        final int time = edge.getTime();
 
-        inEdgeStream(edge.getFirst()).forEach(inEdge -> {
-            Edge newEdge = combine(inEdge, edge, edge.getTime());
+        for (Edge inEdge : inEdges(edge.getFirst())) {
+            Edge newEdge = combine(inEdge, edge, time);
             if (simpleGraph.add(newEdge)) {
                 addedEdges.add(newEdge);
-                outEdgeStream(edge.getSecond())
-                        .map(outEdge -> combine(newEdge, outEdge, edge.getTime()))
-                        .filter(simpleGraph::add).forEach(addedEdges::add);
+                for (Edge outEdge : outEdges(edge.getSecond())) {
+                    Edge combined = combine(newEdge, outEdge, time);
+                    if (simpleGraph.add(combined)) {
+                        addedEdges.add(combined);
+                    }
+                }
             }
-        });
+        }
 
-        outEdgeStream(edge.getSecond())
-                .map(outEdge -> combine(edge, outEdge, edge.getTime()))
-                .filter(simpleGraph::add).forEach(addedEdges::add);
+        for (Edge outEdge : outEdges(edge.getSecond())) {
+            Edge newEdge = combine(edge, outEdge, time);
+            if (simpleGraph.add(newEdge)) {
+                addedEdges.add(newEdge);
+            }
+        }
     }
 
 
@@ -75,7 +85,9 @@ public class TransitiveGraph extends MaterializedGraph {
     public Collection<Edge> forwardPropagate(RelationGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == inner) {
             List<Edge> newEdges = new ArrayList<>();
-            addedEdges.forEach(e -> updateEdge(derive(e), newEdges));
+            for (Edge e : addedEdges) {
+                updateEdge(derive(e), newEdges);
+            }
             return newEdges;
         } else {
             return Collections.emptyList();
