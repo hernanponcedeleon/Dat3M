@@ -21,23 +21,19 @@ import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
 
 public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReaderData {
 
-    private final Register expected;
+    private final IExpr expectedAddr;
 
-    public AtomicCmpXchg(Register register, IExpr address, Register expected, ExprInterface value, String mo, boolean strong) {
+    public AtomicCmpXchg(Register register, IExpr address, IExpr expectedAddr, ExprInterface value, String mo, boolean strong) {
         super(address, register, value, mo);
-        this.expected = expected;
+        this.expectedAddr = expectedAddr;
         if(strong) {
         	addFilters(STRONG);
         }
     }
 
-    public AtomicCmpXchg(Register register, IExpr address, Register expected, ExprInterface value, String mo) {
-        this(register, address, expected, value, mo, false);
-    }
-
     private AtomicCmpXchg(AtomicCmpXchg other){
         super(other);
-        this.expected = other.expected;
+        this.expectedAddr = other.expectedAddr;
     }
 
     //TODO: Override getDataRegs???
@@ -46,7 +42,7 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
     public String toString() {
     	String tag = is(STRONG) ? "_strong" : "_weak";
     	tag += mo != null ? "_explicit" : "";
-        return resultRegister + " = atomic_compare_exchange" + tag + "(*" + address + ", " + expected + ", " + value + (mo != null ? ", " + mo : "") + ")";
+        return resultRegister + " = atomic_compare_exchange" + tag + "(*" + address + ", " + expectedAddr + ", " + value + (mo != null ? ", " + mo : "") + ")";
     }
 
     // Unrolling
@@ -65,28 +61,36 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         //TODO: Perform Store on <expected> (in general, <expected> should be an address and not a register)
     	List<Event> events;
+
+    	// These events are common to all compilation schemes.
+        // The difference of each architecture lies in the used Store/Load to/from <address>
+        // and the fences that get inserted
+    	Register regExpected = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+    	Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+        Load loadExpected = newLoad(regExpected, expectedAddr, null);
+        Store storeExpected = newStore(expectedAddr, regValue, null);
+        Label casFail = newLabel("CAS_fail");
+        Label casEnd = newLabel("CAS_end");
+        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
+        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
+        CondJump gotoCasEnd = newGoto(casEnd);
+
         switch(target) {
             case NONE:
             case TSO: {
-                Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-                Label casFail = newLabel("CAS_fail");
-                Label casEnd = newLabel("CAS_end");
-                Load load = newRMWLoad(dummy, address, mo);
-                Local casCmpResult = newLocal(resultRegister, new Atom(dummy, EQ, expected));
-                CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
-                Store store = newRMWStore(load, address, value, mo);
-                CondJump gotoCasEnd = newGoto(casEnd);
-                Local updateReg = newLocal(expected, dummy);
+                Load loadValue = newRMWLoad(regValue, address, mo);
+                Store storeValue = newRMWStore(loadValue, address, value, mo);
 
                 events = eventSequence(
                 		// Indentation shows the branching structure
-                        load,
+                        loadExpected,
+                        loadValue,
                         casCmpResult,
                         branchOnCasCmpResult,
-                        	store,
+                            storeValue,
                         	gotoCasEnd,
                         casFail,
-                        	updateReg,
+                        	storeExpected,
                         casEnd
                 );
                 break;
@@ -96,25 +100,15 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 String loadMo = extractLoadMo(mo);
                 String storeMo = extractStoreMo(mo);
 
-                Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-                Label casFail = newLabel("CAS_fail");
-                Label casEnd = newLabel("CAS_end");
-                Load load = newRMWLoadExclusive(dummy, address, loadMo);
-                Local casCmpResult = newLocal(resultRegister, new Atom(dummy, EQ, expected));
-                CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
-                // ---- CAS success ----
-                Store store = newRMWStoreExclusive(address, value, storeMo, is(STRONG));
+                Load loadValue = newRMWLoadExclusive(regValue, address, loadMo);
+                Store storeValue = newRMWStoreExclusive(address, value, storeMo, is(STRONG));
                 ExecutionStatus optionalExecStatus = null;
                 Local optionalUpdateCasCmpResult = null;
                 if (!is(STRONG)) {
                     Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
-                    optionalExecStatus = newExecutionStatus(statusReg, store);
+                    optionalExecStatus = newExecutionStatus(statusReg, storeValue);
                     optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
                 }
-                CondJump gotoCasEnd = newGoto(casEnd);
-                // ---------------------
-                // ---- CAS Fail ----
-                Local updateExpected = newLocal(expected, dummy);
                
                 // --- Add Fence before under POWER ---
                 Fence optionalMemoryBarrier = null;
@@ -128,16 +122,17 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 events = eventSequence(
                 		// Indentation shows the branching structure
                         optionalMemoryBarrier,
-                        load,
+                        loadExpected,
+                        loadValue,
                         casCmpResult,
                         branchOnCasCmpResult,
-                        	store,
+                            storeValue,
                         	optionalExecStatus,
                         	optionalUpdateCasCmpResult,
                         	optionalISyncBarrier,
                         	gotoCasEnd,
                         casFail,
-                        	updateExpected,
+                        	storeExpected,
                         casEnd
                 );
 
