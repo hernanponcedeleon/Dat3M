@@ -156,7 +156,7 @@ public class WitnessBuilder {
 	private void populateMap() {
 		for(Thread t : program.getThreads()) {
 			for(Event e : t.getEntry().getSuccessors()) {
-				eventThreadMap.put(e, t.getId()-1);
+				eventThreadMap.put(e, t.getId() - 1);
 			}
 		}
 	}
@@ -175,7 +175,7 @@ public class WitnessBuilder {
 			}
         	BigInteger var = model.evaluate(intVar("hb", e, ctx));
         	if(var != null) {
-        		map.computeIfAbsent(var.intValue(), x -> new ArrayList<Event>()).add(e);
+        		map.computeIfAbsent(var.intValue(), x -> new ArrayList<>()).add(e);
         	}
         }
 

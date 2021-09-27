@@ -17,8 +17,9 @@ public abstract class RecursiveFunction<T> {
 
     public T execute() {
         RecursiveFunction<T> func = this;
-        while (!func.isDone())
+        while (!func.isDone()) {
             func = func.process();
+        }
         return func.getFinalValue();
     }
 

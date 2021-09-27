@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.boogie;
 
+import com.dat3m.dartagnan.program.Register;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.dat3m.dartagnan.program.Register;
 
 public class PthreadPool {
 
@@ -16,10 +16,7 @@ public class PthreadPool {
 	
 	public void add(Register ptr, String name) {
 		threads.add(ptr);
-		if(!mapPtrName.containsKey(ptr)) {
-			mapPtrName.put(ptr, new ArrayList<>());
-		}
-		mapPtrName.get(ptr).add(name);
+		mapPtrName.computeIfAbsent(ptr, key -> new ArrayList<>()).add(name);
 	}
 	
 	public String getNameFromPtr(Register ptr) {

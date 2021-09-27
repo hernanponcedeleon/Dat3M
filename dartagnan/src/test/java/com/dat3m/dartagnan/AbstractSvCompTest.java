@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.analysis.Refinement;
-import com.dat3m.dartagnan.analysis.graphRefinement.RefinementTask;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.TestHelper;
+import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -89,7 +89,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-//    @Test(timeout = TIMEOUT)
+    //@Test(timeout = TIMEOUT)
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
@@ -98,7 +98,7 @@ public abstract class AbstractSvCompTest {
             expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover,
+            assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
         } catch (Exception e){
             fail(e.getMessage());

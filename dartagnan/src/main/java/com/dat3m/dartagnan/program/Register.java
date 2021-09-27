@@ -59,11 +59,11 @@ public class Register extends IExpr implements ExprInterface {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-
-        if (obj == null || getClass() != obj.getClass())
-            return false;
+        if (this == obj) {
+			return true;
+		} else if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
 
         Register rObj = (Register) obj;
         return name.equals(rObj.name) && threadId == rObj.threadId;

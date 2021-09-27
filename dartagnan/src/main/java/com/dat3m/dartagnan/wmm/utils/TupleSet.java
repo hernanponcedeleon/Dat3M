@@ -64,11 +64,11 @@ public class TupleSet implements Set<Tuple>{
 
     @Override
     public boolean equals(Object obj){
-        if (this == obj)
+        if (this == obj) {
             return true;
-
-        if (obj == null || getClass() != obj.getClass())
+        } else if (obj == null || getClass() != obj.getClass()) {
             return false;
+        }
 
         return tuples.equals(((TupleSet)obj).tuples);
     }
@@ -164,8 +164,9 @@ public class TupleSet implements Set<Tuple>{
                         newEls.addAll(map.get(e2));
                     }
                 }
-                if(map.get(e1).addAll(newEls))
+                if(map.get(e1).addAll(newEls)) {
                     changed = true;
+                }
             }
         }
 

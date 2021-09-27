@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.analysis.Refinement;
-import com.dat3m.dartagnan.analysis.graphRefinement.RefinementTask;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -9,6 +8,7 @@ import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.TestHelper;
+import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -87,7 +87,7 @@ public class UnusedTestFails {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
-            assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover,
+            assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
         } catch (Exception e){
             fail(e.getMessage());

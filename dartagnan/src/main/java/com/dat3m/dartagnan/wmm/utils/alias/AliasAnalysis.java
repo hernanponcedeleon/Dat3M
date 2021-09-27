@@ -24,11 +24,11 @@ import java.util.*;
  */
 public class AliasAnalysis {
 
-    private List<Object> variables = new LinkedList<>(); // TODO: Use a queue
+    private final List<Object> variables = new LinkedList<>(); // TODO: Use a queue
     private ImmutableSet<Address> maxAddressSet;
     private Map<Register, Map<Event, Integer>> ssaMap;
 
-    private Graph graph = new Graph();
+    private final Graph graph = new Graph();
 
     public void calculateLocationSets(Program program, Alias alias) {
         if(alias == Alias.NONE){
@@ -293,10 +293,10 @@ public class AliasAnalysis {
                 		addresses = new HashSet<>(program.getMemory().getArrayfromPointer(bases.get(address)));
             		}
             	} else {
-            	    addresses = graph.getAddresses(((Register) address));	
+            	    addresses = graph.getAddresses(address);
             	}
             } else if (address instanceof Address) {
-                    addresses = ImmutableSet.of(((Address) address));
+                addresses = ImmutableSet.of(((Address) address));
             } else {
                 addresses = maxAddressSet;
             }
@@ -336,28 +336,25 @@ public class AliasAnalysis {
             Map<Register, Map<Event, Integer>> ssaMap,
             Map<Register, Integer> indexMap
     ){
-        for(int i = 0; i < events.size(); i++){
-            Event e = events.get(i);
-
-            if(e instanceof RegReaderData){
-                for(Register register : ((RegReaderData)e).getDataRegs()){
-                    ssaMap.putIfAbsent(register, new HashMap<>());
-                    ssaMap.get(register).put(e, indexMap.getOrDefault(register, 0));
+        for (Event e : events) {
+            if (e instanceof RegReaderData) {
+                for (Register register : ((RegReaderData) e).getDataRegs()) {
+                    ssaMap.computeIfAbsent(register, key -> new HashMap<>())
+                            .put(e, indexMap.getOrDefault(register, 0));
                 }
             }
 
-            if(e instanceof MemEvent){
-                for(Register register : ((MemEvent)e).getAddress().getRegs()){
-                    ssaMap.putIfAbsent(register, new HashMap<>());
-                    ssaMap.get(register).put(e, indexMap.getOrDefault(register, 0));
+            if (e instanceof MemEvent) {
+                for (Register register : ((MemEvent) e).getAddress().getRegs()) {
+                    ssaMap.computeIfAbsent(register, key -> new HashMap<>())
+                            .put(e, indexMap.getOrDefault(register, 0));
                 }
             }
 
-            if(e instanceof RegWriter){
-                Register register = ((RegWriter)e).getResultRegister();
+            if (e instanceof RegWriter) {
+                Register register = ((RegWriter) e).getResultRegister();
                 int index = indexMap.getOrDefault(register, 0);
-                ssaMap.putIfAbsent(register, new HashMap<>());
-                ssaMap.get(register).put(e, index);
+                ssaMap.computeIfAbsent(register, key -> new HashMap<>()).put(e, index);
                 indexMap.put(register, ++index);
             }
         }

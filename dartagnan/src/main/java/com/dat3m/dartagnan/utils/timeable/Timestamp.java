@@ -36,8 +36,9 @@ public class Timestamp implements Comparable<Timestamp> {
 
     public void invalidate() {
         // We don't allow invalidation of ZERO stamps
-        if (!this.equals(ZERO))
+        if (!this.equals(ZERO)) {
             time = Integer.MAX_VALUE;
+        }
     }
 
     @Override
@@ -54,8 +55,9 @@ public class Timestamp implements Comparable<Timestamp> {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || getClass() != obj.getClass() )
+        if (obj == null || getClass() != obj.getClass()) {
             return false;
+        }
         return compareTo((Timestamp)obj) == 0;
     }
 

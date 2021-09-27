@@ -1,20 +1,14 @@
 package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.memory.Location;
-import com.google.common.collect.ImmutableSet;
-
-import java.math.BigInteger;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.memory.Location;
+import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.java_smt.api.*;
+
+import java.math.BigInteger;
 
 public class Atom extends BExpr implements ExprInterface {
 	
@@ -148,9 +142,9 @@ public class Atom extends BExpr implements ExprInterface {
 	public boolean equals(Object obj) {
 		if (obj == this) {
 			return true;
-		}
-		if (obj == null || obj.getClass() != getClass())
+		} else if (obj == null || obj.getClass() != getClass()) {
 			return false;
+		}
 		Atom expr = (Atom) obj;
 		return expr.op == op && expr.lhs.equals(lhs) && expr.rhs.equals(rhs);
 	}

@@ -1,8 +1,8 @@
 package com.dat3m.ui.result;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.RefinementTask;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -17,7 +17,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import static com.dat3m.dartagnan.analysis.Base.*;
-import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisGraphRefinement;
+import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisSaturationSolver;
 
 public class ReachabilityResult {
 
@@ -82,7 +82,8 @@ public class ReachabilityResult {
                             }
                             break;
                         case REFINEMENT:
-                            result = runAnalysisGraphRefinement(ctx, prover, RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
+                            result = runAnalysisSaturationSolver(ctx, prover,
+                                    RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
                             break;
                     }
                     // Verification ended, we can interrupt the timeout Thread

@@ -694,7 +694,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				if(!rhs.equals(BigInteger.ZERO)) {
 					text += "(" + rhs + ")";
 				}
-				programBuilder.initLocEqConst(text, (IConst)value.reduce());
+				programBuilder.initLocEqConst(text, value.reduce());
 				return null;
 			}
 			Store child = EventFactory.newStore(address, value, null, currentLine);

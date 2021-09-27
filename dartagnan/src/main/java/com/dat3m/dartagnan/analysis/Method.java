@@ -48,7 +48,7 @@ public enum Method {
 			case ASSUME:
             	return "Solver with Assumption";
             case REFINEMENT:
-            	return "Graph-based Refinement";
+            	return "Saturation-based Refinement";
         }
         throw new UnsupportedOperationException("Unrecognized analysis " + this);
 	}
@@ -61,7 +61,7 @@ public enum Method {
 	public static Method[] orderedValues() {
 		Method[] order = { INCREMENTAL, ASSUME, TWO, REFINEMENT };
 		// Be sure no element is missing
-		assert(Arrays.asList(order).containsAll(Arrays.asList(Method.values())));
+		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;
 	}
 }

@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.asserts;
 
+import com.dat3m.dartagnan.program.memory.Location;
+import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import com.dat3m.dartagnan.program.memory.Location;
-import com.google.common.collect.ImmutableSet;
-
+//TODO: None of the Assert classes implement equals or hashcode.
 public abstract class AbstractAssert {
 
     public static final String ASSERT_TYPE_EXISTS = "exists";
