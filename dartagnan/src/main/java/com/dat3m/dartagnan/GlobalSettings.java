@@ -35,15 +35,27 @@ public class GlobalSettings {
     public static final boolean ENABLE_SYMMETRY_REDUCTION = false;
 
     // ==== Refinement ====
-    public static final boolean REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM = true; // Uses acyclic(po-loc + rf) as baseline
-    public static final boolean REFINEMENT_ADD_ACYCLIC_DEP_RF = false; // Only takes effect if USE_BASELINE_WMM is set to TRUE
+    public static final boolean REFINEMENT_ENCODE_COHERENCE = true;
+    public static final boolean REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM = false; // Uses acyclic(po-loc + rf) as baseline
+    // Changes the above flag to mean acyclic (por-loc | rf | co). Only takes effect if the above flag as well as
+    // REFINEMENT_ENCODE_COHERENCE are set.
+    public static final boolean REFINEMENT_ADD_COHERENCE_TO_LOCAL_CONSISTENCY = false;
+    public static final boolean REFINEMENT_USE_ACYCLIC_DEP_RF_BASELINE_WMM = false; // Uses acyclic(rf | dep)
 
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
-    public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.NONE;
+    public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.FULL;
 
     // ==== Saturation ====
+    public static boolean SATURATION_USE_MODEL_CHECKING = true;
     public static boolean SATURATION_ENABLE_DEBUG = false;
+    public static boolean SATURATION_LEARN_OUTER_COHERENCES = true;
+    public static boolean SATURATION_NO_RESOLUTION = true;
+    // NOTE: This setting only has an effect if <REFINEMENT_ENCODE_COHERENCES> is enabled.
+    public static boolean SATURATION_USE_MODEL_COHERENCES = true;
     public static final int SATURATION_MAX_DEPTH = 3;
+
+    public enum CoherenceLearning { NONE, HORN_CUBES, ALL }
+    public static final CoherenceLearning SATURATION_COHERENCE_LEARNING = CoherenceLearning.NONE;
 
     // --------------------
 
@@ -72,7 +84,7 @@ public class GlobalSettings {
 
     	// Refinement settings
     	logger.info("REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM: " + REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM);
-    	logger.info("REFINEMENT_ADD_ACYCLIC_DEP_RF: " + REFINEMENT_ADD_ACYCLIC_DEP_RF);
+    	logger.info("REFINEMENT_ADD_ACYCLIC_DEP_RF: " + REFINEMENT_USE_ACYCLIC_DEP_RF_BASELINE_WMM);
     	logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());
 
     	// Saturation settings

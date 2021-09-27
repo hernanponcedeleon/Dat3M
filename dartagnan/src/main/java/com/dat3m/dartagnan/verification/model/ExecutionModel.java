@@ -483,7 +483,6 @@ public class ExecutionModel {
                 	Boolean coVal = model.evaluate(coExpr);
                     if (coVal != null && coVal) {
                         coherenceMap.get(w1).add(w2);
-                        break;
                     }
                 }
             }
