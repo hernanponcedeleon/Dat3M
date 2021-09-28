@@ -172,7 +172,7 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
-        return !getMaxTupleSet().contains(edge) ?
+        return !getMaxTupleSet().contains(edge) || disableTupleSet.contains(edge) ?
         		ctx.getFormulaManager().getBooleanFormulaManager().makeFalse() :
                 edge(getName(), edge.getFirst(), edge.getSecond(), ctx);
     }
