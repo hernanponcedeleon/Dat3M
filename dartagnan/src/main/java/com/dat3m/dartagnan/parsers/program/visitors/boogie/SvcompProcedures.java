@@ -23,8 +23,8 @@ public class SvcompProcedures {
 
 	public static List<String> SVCOMPPROCEDURES = Arrays.asList(
 			"__VERIFIER_assert",
-			"__VERIFIER_assume",
-			"assume_abort_if_not",
+//			"__VERIFIER_assume",
+//			"assume_abort_if_not",
 			"__VERIFIER_atomic_begin",
 			"__VERIFIER_atomic_end",
 			"__VERIFIER_nondet_bool",
