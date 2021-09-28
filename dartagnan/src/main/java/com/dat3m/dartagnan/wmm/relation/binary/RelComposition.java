@@ -78,6 +78,36 @@ public class RelComposition extends BinaryRelation {
         return getMaxTupleSet();
     }
 
+	@Override
+	public boolean disable(TupleSet t) {
+		super.disable(t);
+		if(t.isEmpty())
+			return false;
+		BranchEquivalence eq = task.getBranchEquivalence();
+		TupleSet t1 = new TupleSet();
+		TupleSet t2 = new TupleSet();
+		for(Tuple tuple : t) {
+			Event x = tuple.getFirst();
+			Event z = tuple.getSecond();
+			if(z.cfImpliesExec())
+				r1.getMinTupleSet().getByFirst(x).stream()
+				.map(Tuple::getSecond)
+				.filter(y -> eq.isImplied(y, z))
+				.map(y -> new Tuple(y, z))
+				.filter(r2.getMaxTupleSet()::contains)
+				.forEach(t2::add);
+			if(x.cfImpliesExec())
+				r2.getMinTupleSet().getBySecond(z).stream()
+				.map(Tuple::getFirst)
+				.filter(y -> eq.isImplied(y, x))
+				.map(y -> new Tuple(x, y))
+				.filter(r2.getMaxTupleSet()::contains)
+				.forEach(t1::add);
+		}
+		boolean b = r1.disable(t1);
+		return r2.disable(t2) || b;
+	}
+
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
         Set<Tuple> activeSet = new HashSet<>(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));

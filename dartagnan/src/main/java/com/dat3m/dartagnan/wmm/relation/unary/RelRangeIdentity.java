@@ -47,6 +47,17 @@ public class RelRangeIdentity extends UnaryRelation {
         return maxTupleSet;
     }
 
+	@Override
+	public boolean disable(TupleSet t) {
+		super.disable(t);
+		if(t.isEmpty())
+			return false;
+		TupleSet t1 = new TupleSet();
+		for(Tuple tuple : t)
+			t1.addAll(r1.getMaxTupleSet().getBySecond(tuple.getFirst()));
+		return r1.disable(t1);
+	}
+
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
         TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));

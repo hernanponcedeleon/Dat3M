@@ -46,6 +46,16 @@ public class RelInverse extends UnaryRelation {
         return maxTupleSet;
     }
 
+	@Override
+	public boolean disable(TupleSet t) {
+		super.disable(t);
+		if(t.isEmpty())
+			return false;
+		TupleSet t1 = new TupleSet();
+		t1.addAll(t.inverse());
+		return r1.disable(t1);
+	}
+
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
         TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));

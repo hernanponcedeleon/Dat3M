@@ -63,6 +63,21 @@ public class RelIntersection extends BinaryRelation {
         return getMaxTupleSet();
     }
 
+	@Override
+	public boolean disable(TupleSet t) {
+		super.disable(t);
+		if(t.isEmpty())
+			return false;
+		TupleSet t1 = new TupleSet();
+		t1.addAll(t);
+		t1.retainAll(r2.getMinTupleSet());
+		boolean b = r1.disable(t1);
+		TupleSet t2 = new TupleSet();
+		t2.addAll(t);
+		t2.retainAll(r1.getMinTupleSet());
+		return r2.disable(t2) || b;
+	}
+
     @Override
     public BooleanFormula encodeApprox(SolverContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();

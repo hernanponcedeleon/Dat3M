@@ -63,6 +63,19 @@ public class RelUnion extends BinaryRelation {
         return getMaxTupleSet();
     }
 
+	@Override
+	public boolean disable(TupleSet t) {
+		super.disable(t);
+		if(t.isEmpty())
+			return false;
+		TupleSet t1 = new TupleSet();
+		t1.addAll(t);
+		boolean b = r1.disable(t1);
+		TupleSet t2 = new TupleSet();
+		t2.addAll(t);
+		return r2.disable(t2) || b;
+	}
+
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();

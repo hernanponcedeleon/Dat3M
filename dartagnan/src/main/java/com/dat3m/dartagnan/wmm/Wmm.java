@@ -123,6 +123,13 @@ public class Wmm {
             ax.getRelation().getMaxTupleSet();
         }
 
+		var unfinished = true;
+		while(unfinished) {
+			unfinished = false;
+			for(Axiom ax : axioms)
+				unfinished = ax.getRelation().disable(ax.getDisabledSet());
+		}
+
         for(String relName : baseRelations){
             relationRepository.getRelation(relName).getMaxTupleSet();
         }

@@ -11,6 +11,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
@@ -78,6 +79,38 @@ public class RelTrans extends UnaryRelation {
         }
         return maxTupleSet;
     }
+
+	@Override
+	public boolean disable(TupleSet t) {
+		super.disable(t);
+		if(t.isEmpty())
+			return false;
+		BranchEquivalence eq = task.getBranchEquivalence();
+		TupleSet t1 = new TupleSet();
+		LinkedList<Tuple> q = new LinkedList<>(t);
+		while(!q.isEmpty()) {
+			Tuple tuple = q.remove();
+			Event x = tuple.getFirst();
+			Event z = tuple.getSecond();
+			if(z.cfImpliesExec())
+				r1.getMinTupleSet().getByFirst(x).stream()
+				.map(Tuple::getSecond)
+				.filter(y -> eq.isImplied(y, z))
+				.map(y -> new Tuple(y, z))
+				.filter(r1.getMaxTupleSet()::contains)
+				.filter(t1::add)
+				.forEach(q::add);
+			if(x.cfImpliesExec())
+				r1.getMinTupleSet().getBySecond(z).stream()
+				.map(Tuple::getFirst)
+				.filter(y -> eq.isImplied(y, x))
+				.map(y -> new Tuple(x, y))
+				.filter(r1.getMaxTupleSet()::contains)
+				.filter(t1::add)
+				.forEach(q::add);
+		}
+		return r1.disable(t1);
+	}
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){

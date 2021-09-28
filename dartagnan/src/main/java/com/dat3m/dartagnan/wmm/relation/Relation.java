@@ -37,6 +37,7 @@ public abstract class Relation implements Dependent<Relation> {
     protected TupleSet minTupleSet;
     protected TupleSet maxTupleSet;
     protected TupleSet encodeTupleSet;
+	protected TupleSet disableTupleSet;
 
     protected int recursiveGroupId = 0;
     protected boolean forceUpdateRecursiveGroupId = false;
@@ -73,6 +74,7 @@ public abstract class Relation implements Dependent<Relation> {
         this.maxTupleSet = null;
         this.isEncoded = false;
         encodeTupleSet = new TupleSet();
+		disableTupleSet = new TupleSet();
     }
 
     /*
@@ -89,6 +91,19 @@ public abstract class Relation implements Dependent<Relation> {
     public TupleSet getMaxTupleSetRecursive(){
         return getMaxTupleSet();
     }
+
+	/**
+	 * Marks relationships as impossible due to some axiom of the associated model.
+	 * @param tuples
+	 * Subset of this relation's may set.
+	 * Retains all newly-marked relationships.
+	 * @return
+	 * Detected some new minimal tuples.
+	 */
+	public boolean disable(TupleSet tuples) {
+		tuples.removeIf(t -> !disableTupleSet.add(t));
+		return false;
+	}
 
     public TupleSet getEncodeTupleSet(){
         return encodeTupleSet;
