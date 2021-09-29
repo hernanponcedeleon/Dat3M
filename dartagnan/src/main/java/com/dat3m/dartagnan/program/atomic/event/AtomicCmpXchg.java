@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.atomic.event;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.EventFactory.Power;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
@@ -112,9 +113,11 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                
                 // --- Add Fence before under POWER ---
                 Fence optionalMemoryBarrier = null;
+                // if mo.equals(SC) then loadMo.equals(ACQ)
                 Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(ACQ)) ? Power.newISyncBarrier() : null;
                 if(target.equals(POWER)) {
                     optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier()
+                            // if mo.equals(SC) then storeMo.equals(REL)
                             : storeMo.equals(REL) ? Power.newLwSyncBarrier()
                             : null;
                 }
@@ -129,11 +132,11 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                             storeValue,
                         	optionalExecStatus,
                         	optionalUpdateCasCmpResult,
-                        	optionalISyncBarrier,
                         	gotoCasEnd,
                         casFail,
                         	storeExpected,
-                        casEnd
+                        casEnd,
+                    	optionalISyncBarrier
                 );
 
                 break;
