@@ -82,8 +82,8 @@ public class AtomicLoad extends MemEvent implements RegWriter {
                 events = eventSequence(
                 		optionalMemoryBarrier,
                 		load,
-                		optionalLabel,
                 		optionalFakeCtrlDep,
+                		optionalLabel,
                 		optionalISyncBarrier
                 );
                 break;
