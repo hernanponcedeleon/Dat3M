@@ -53,15 +53,15 @@ public class AtomicThreadFence extends Fence {
                 fence = mo.equals(SC) ? X86.newMemoryFence() : null;
                 break;
             case POWER:
-                fence = mo.equals(ACQUIRE) || mo.equals(RELEASE) || mo.equals(ACQ_REL) || mo.equals(SC) ?
+                fence = mo.equals(ACQUIRE) || mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE) || mo.equals(SC) ?
                         Power.newLwSyncBarrier() : null;
                 break;
             case ARM:
-                fence = mo.equals(ACQUIRE) || mo.equals(RELEASE) || mo.equals(ACQ_REL) || mo.equals(SC) ?
+                fence = mo.equals(ACQUIRE) || mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE) || mo.equals(SC) ?
                         Arm.newISHBarrier() : null;
                 break;
             case ARM8:
-                fence = mo.equals(RELEASE) || mo.equals(ACQ_REL) || mo.equals(SC) ? Arm8.DMB.newISHBarrier()
+                fence = mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE) || mo.equals(SC) ? Arm8.DMB.newISHBarrier()
                         : mo.equals(ACQUIRE) ? Arm8.DSB.newISHLDBarrier() : null;
                 break;
             default:

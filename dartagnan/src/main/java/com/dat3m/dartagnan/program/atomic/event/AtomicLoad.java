@@ -92,7 +92,7 @@ public class AtomicLoad extends MemEvent implements RegWriter {
                 );
                 break;
             case ARM8:
-                if (mo.equals(RELEASE) || mo.equals(ACQ_REL)) {
+                if (mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE)) {
                     throw new UnsupportedOperationException("AtomicLoad can not have memory order: " + mo);
                 }
             	String loadMo = extractLoadMo(mo);
