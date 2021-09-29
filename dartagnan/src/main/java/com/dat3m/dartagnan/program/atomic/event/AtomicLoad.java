@@ -68,7 +68,7 @@ public class AtomicLoad extends MemEvent implements RegWriter {
             case POWER: {
                 if (mo.equals(SC) || mo.equals(ACQUIRE) || mo.equals(CONSUME)) {
                     Fence optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier() : null;
-                    Label label = newLabel("Jump_" + oId);
+                    Label label = newLabel("FakeDep");
                     events = eventSequence(
                             optionalMemoryBarrier,
                             load,
