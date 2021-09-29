@@ -1,5 +1,6 @@
-package com.dat3m.dartagnan.analysis.saturation.coreReason;
+package com.dat3m.dartagnan.analysis.saturation.reasoning;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.analysis.saturation.graphs.ExecutionGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
@@ -55,7 +56,7 @@ public class Reasoner {
         this.graphRelMap = execGraph.getRelationGraphMap().inverse();
         this.useMinTupleReasoning = useMinTupleReasoning;
 
-        execGraph.getEventGraphs().stream()
+        execGraph.getRelationGraphs().stream()
                 .filter(graph -> graph instanceof RecursiveGraph)
                 .forEach(g -> visitedMap.put(g, new HashSet<>()));
 
@@ -69,14 +70,24 @@ public class Reasoner {
         RelationGraph constrainedGraph = constraint.getConstrainedGraph();
         SortedCubeSet<CoreLiteral> clauseSet = new SortedCubeSet<>();
 
-        for (Collection<Edge> violation : constraint.getViolations()) {
-            Conjunction<CoreLiteral> reason = violation.stream()
-                    .map(edge -> computeReason(constrainedGraph, edge))
-                    .reduce(Conjunction.TRUE(), Conjunction::and);
-            clauseSet.add(simplifyReason(reason));
+        if (GlobalSettings.SATURATION_REDUCE_REASONS_TO_CORE_REASONS) {
+            for (Collection<Edge> violation : constraint.getViolations()) {
+                Conjunction<CoreLiteral> reason = violation.stream()
+                        .map(edge -> computeReason(constrainedGraph, edge))
+                        .reduce(Conjunction.TRUE(), Conjunction::and);
+                clauseSet.add(simplifyReason(reason));
+            }
+            clauseSet.simplify();
+        } else {
+            for (Collection<Edge> violation : constraint.getViolations()) {
+                Conjunction<CoreLiteral> reason = violation.stream()
+                        .map(edge -> new Conjunction<>(new EdgeLiteral(constrainedGraph.getName(), edge)))
+                        .reduce(Conjunction.TRUE(), Conjunction::and);
+                clauseSet.add(reason);
+            }
         }
 
-        clauseSet.simplify();
+
         return clauseSet.toDNF();
     }
 
@@ -184,7 +195,7 @@ public class Reasoner {
                 if (!(x instanceof RfLiteral)) {
                     return false;
                 }
-                Edge edge = ((AbstractEdgeLiteral) x).getEdge();
+                Edge edge = ((EdgeLiteral) x).getEdge();
                 return eq.isImplied(edge.getFirst().getEvent(), e) || eq.isImplied(edge.getSecond().getEvent(), e);
             });
         }
@@ -371,7 +382,7 @@ public class Reasoner {
             //TODO: Here might be a problem with the derivation length.
             // Depending on the implementation of findShortestPath, there might be an off-by-one error
             // The path we look for should have strictly smaller derivation length on each edge
-            List<Edge> path = findShortestPath(inner, edge.getFirst(), edge.getSecond(), edge.getDerivationLength());
+            List<Edge> path = findShortestPath(inner, edge.getFirst(), edge.getSecond(), edge.getDerivationLength() - 1);
             for (Edge e : path) {
                 reason = reason.and(inner.accept(this, e, unused));
             }

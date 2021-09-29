@@ -1,8 +1,8 @@
-package com.dat3m.dartagnan.analysis.saturation.coreReason;
+package com.dat3m.dartagnan.analysis.saturation.reasoning;
 
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 
-public abstract class AbstractEdgeLiteral extends AbstractLiteral {
+public class EdgeLiteral extends AbstractLiteral {
     protected Edge edge;
     protected String name;
 
@@ -14,7 +14,7 @@ public abstract class AbstractEdgeLiteral extends AbstractLiteral {
         return edge;
     }
 
-    public AbstractEdgeLiteral(String name, Edge edge) {
+    public EdgeLiteral(String name, Edge edge) {
         this.edge = edge;
         this.name = name;
     }
@@ -31,8 +31,7 @@ public abstract class AbstractEdgeLiteral extends AbstractLiteral {
         } else if (obj == null || obj.getClass() != this.getClass()) {
             return false;
         }
-        AbstractEdgeLiteral other = (AbstractEdgeLiteral)obj;
-        // Due to string-interning, we can actually use == for the names.
+        EdgeLiteral other = (EdgeLiteral)obj;
         return  this.name.equals(other.name) && this.edge.equals(other.edge);
     }
 

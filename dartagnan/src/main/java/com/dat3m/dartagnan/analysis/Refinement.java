@@ -4,12 +4,12 @@ import com.dat3m.dartagnan.analysis.saturation.SaturationSolver;
 import com.dat3m.dartagnan.analysis.saturation.SolverResult;
 import com.dat3m.dartagnan.analysis.saturation.SolverStatistics;
 import com.dat3m.dartagnan.analysis.saturation.SolverStatus;
-import com.dat3m.dartagnan.analysis.saturation.coreReason.AbstractEdgeLiteral;
-import com.dat3m.dartagnan.analysis.saturation.coreReason.AddressLiteral;
-import com.dat3m.dartagnan.analysis.saturation.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.saturation.coreReason.EventLiteral;
 import com.dat3m.dartagnan.analysis.saturation.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.saturation.logic.DNF;
+import com.dat3m.dartagnan.analysis.saturation.reasoning.AddressLiteral;
+import com.dat3m.dartagnan.analysis.saturation.reasoning.CoreLiteral;
+import com.dat3m.dartagnan.analysis.saturation.reasoning.EdgeLiteral;
+import com.dat3m.dartagnan.analysis.saturation.reasoning.EventLiteral;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -21,7 +21,7 @@ import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
 import com.dat3m.dartagnan.verification.RefinementTask;
-import com.dat3m.dartagnan.wmm.utils.Utils;
+import com.dat3m.dartagnan.wmm.relation.Relation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
@@ -81,13 +81,22 @@ public class Refinement {
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Program program = task.getProgram();
-        SaturationSolver saturationSolver = new SaturationSolver(task);
+        SaturationSolver saturationSolver = new SaturationSolver(task, SATURATION_MODE);
         Refiner refiner = new Refiner(task, ctx);
         SolverStatus status = INCONSISTENT;
 
         prover.addConstraint(task.encodeProgram(ctx));
-        prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
-        prover.addConstraint(task.encodeBaselineWmmConsistency(ctx));
+        if (SATURATION_REDUCE_REASONS_TO_CORE_REASONS) {
+            prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
+            prover.addConstraint(task.encodeBaselineWmmConsistency(ctx));
+            //prover.addConstraint(task.getMemoryModel().encodeNonDerived(ctx));
+            //prover.addConstraint(task.getMemoryModel().encodeConsistency(ctx));
+        } else {
+            // If we do not reduce the reasons to core reasons,
+            // we need to encode more relations than just rf and co!
+            prover.addConstraint(task.encodeWmmRelations(ctx));
+        }
+
         if (ENABLE_SYMMETRY_BREAKING) {
             prover.addConstraint(task.encodeSymmetryBreaking(ctx));
         }
@@ -116,7 +125,7 @@ public class Refinement {
 
             SolverResult solverResult;
             try (Model model = prover.getModel()) {
-                solverResult = saturationSolver.check(model, ctx, task.getMaxSaturationDepth());
+                solverResult = saturationSolver.check(model, ctx);
             }
 
             SolverStatistics stats = solverResult.getStatistics();
@@ -128,6 +137,27 @@ public class Refinement {
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 foundCoreReasons.add(reasons);
                 prover.addConstraint(refiner.refine(reasons));
+
+                // ====== Test code =======
+                /*Map<RelationGraph, Relation> graphRelMap = saturationSolver.getExecutionGraph().getRelationGraphMap().inverse();
+                for (DependencyGraph<TypedEdge>.Node node : saturationSolver.getImplicationGraph().getDependencyGraph().getNodes()) {
+                    if (node.getDependencies().isEmpty()) {
+                        continue;
+                    }
+                    Relation rel = graphRelMap.get(node.getContent().getGraph());
+                    if (rel == null || rel.getDependencies().isEmpty()) {
+                        continue; // For the internal sco relation
+                    }
+
+                    BooleanFormula edgeExpr = rel.getSMTVar(node.getContent().toTuple(), ctx);
+                    BooleanFormula deps = bmgr.makeTrue();
+                    for (TypedEdge dep : node.getDependencies().stream().map(DependencyGraph.Node::getContent).collect(Collectors.toList())) {
+                        Relation r = graphRelMap.get(dep.getGraph());
+                        deps = bmgr.and(deps, r.getSMTVar(dep.toTuple(), ctx));
+                    }
+                    prover.addConstraint(bmgr.implication(deps, edgeExpr));
+                }*/
+                // ====================
 
                 if (logger.isTraceEnabled()) {
                     // Some statistics
@@ -300,6 +330,12 @@ public class Refinement {
             return refinement;
         }
 
+        public BooleanFormula refineLearned(DNF<CoreLiteral> learnedReasons) {
+            //TODO: We might want to handle these clauses in a special way
+            // and e.g. avoid negating co-literals but instead flip them
+            return refine(learnedReasons);
+        }
+
 
 
         // Computes a list of permutations allowed by the program.
@@ -357,11 +393,16 @@ public class Refinement {
                 MemEvent e1 = (MemEvent) perm.apply(loc.getEdge().getFirst().getEvent());
                 MemEvent e2 = (MemEvent) perm.apply(loc.getEdge().getSecond().getEvent());
                 return generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), context);
-            } else if (literal instanceof AbstractEdgeLiteral) {
-                AbstractEdgeLiteral lit = (AbstractEdgeLiteral) literal;
-                return Utils.edge(lit.getName(),
+            } else if (literal instanceof EdgeLiteral) {
+                EdgeLiteral lit = (EdgeLiteral) literal;
+                Relation rel = task.getMemoryModel().getRelationRepository().getRelation(lit.getName());
+                return rel.getSMTVar(
                         perm.apply(lit.getEdge().getFirst().getEvent()),
-                        perm.apply(lit.getEdge().getSecond().getEvent()), context);
+                        perm.apply(lit.getEdge().getSecond().getEvent()),
+                        context);
+                /*return Utils.edge(lit.getName(),
+                        perm.apply(lit.getEdge().getFirst().getEvent()),
+                        perm.apply(lit.getEdge().getSecond().getEvent()), context);*/
             }
             throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
         }

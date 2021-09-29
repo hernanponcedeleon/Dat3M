@@ -37,7 +37,7 @@ public abstract class AbstractRelationGraph implements RelationGraph {
 
     @Override
     public String toString() {
-        return name != null ? name : super.toString();
+        return (name != null ? name : super.toString()) + ": " + size();
     }
 
     @Override

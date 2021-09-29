@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.analysis.saturation;
 
-import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.analysis.saturation.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.saturation.coreReason.Reasoner;
 import com.dat3m.dartagnan.analysis.saturation.graphs.ExecutionGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
@@ -11,12 +8,15 @@ import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.PathA
 import com.dat3m.dartagnan.analysis.saturation.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.saturation.logic.DNF;
 import com.dat3m.dartagnan.analysis.saturation.logic.SortedCubeSet;
+import com.dat3m.dartagnan.analysis.saturation.reasoning.CoreLiteral;
+import com.dat3m.dartagnan.analysis.saturation.reasoning.Reasoner;
 import com.dat3m.dartagnan.analysis.saturation.resolution.TreeResolution;
 import com.dat3m.dartagnan.analysis.saturation.searchTree.DecisionNode;
 import com.dat3m.dartagnan.analysis.saturation.searchTree.LeafNode;
 import com.dat3m.dartagnan.analysis.saturation.searchTree.SearchNode;
 import com.dat3m.dartagnan.analysis.saturation.searchTree.SearchTree;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -28,7 +28,9 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.GlobalSettings.*;
 import static com.dat3m.dartagnan.analysis.saturation.SolverStatus.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 
@@ -68,16 +70,24 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
         - The resolution is handled by TreeResolution.
  */
 public class SaturationSolver {
+
+    public enum Mode {
+        SATURATION, MODEL_CHECKING
+    }
+
     // ================== Fields ==================
 
     // --------------- Static data ----------------
     private final VerificationTask task;
     private final ExecutionGraph execGraph;
     private final Reasoner reasoner;
+    //private final Learner learner;
+    private final Mode mode;
 
     // ----------- Iteration-specific data -----------
     //TODO: We might want to take an external executionModel to perform refinement on!
     private final ExecutionModel executionModel;
+    private int maxSaturationDepth = SATURATION_MAX_DEPTH;
     private SolverStatistics stats;  // Statistics of the last call to kSearch
 
     // ============================================
@@ -95,30 +105,81 @@ public class SaturationSolver {
         return executionModel;
     }
 
+    /*public DNF<CoreLiteral> getLearnedViolations() { return learner.getLearnedViolationsAsDNF(); }
+    public List<DNF<CoreLiteral>> getLearnedDerivations() { return  learner.getLearnedDerivations(); }*/
+
+    public int getMaxSaturationDepth() { return  maxSaturationDepth; }
+    public void setMaxSaturationDepth(int depth) { maxSaturationDepth = depth; }
+
+    public Mode getMode() { return mode; }
+
+
 
     // =============================================
 
     // =========== Construction & Init ==============
 
-    public SaturationSolver(VerificationTask task) {
+    public SaturationSolver(VerificationTask task, Mode mode) {
         this.task = task;
         this.execGraph = new ExecutionGraph(task);
         this.executionModel = new ExecutionModel(task);
         this.reasoner = new Reasoner(execGraph, true);
+        //this.learner = new Learner();
+        this.mode = mode;
+
+        /*if (mode == Mode.MODEL_CHECKING) {
+            learner.setViolationLearningStrategy(Learner.ViolationLearningStrategy.NONE);
+        } else {
+            learner.setViolationLearningStrategy(SATURATION_VIOLATION_LEARNING);
+        }*/
     }
 
     // ----------------------------------------------
 
     private void populateFromModel(Model model, SolverContext ctx) {
-        executionModel.initialize(model, ctx, false);
+        executionModel.initialize(model, ctx, SATURATION_USE_MODEL_COHERENCES);
         execGraph.initializeFromModel(executionModel);
+        if (mode == Mode.MODEL_CHECKING && SATURATION_USE_MODEL_COHERENCES) {
+            populateModelCoherences();
+        }
         PathAlgorithm.ensureCapacity(executionModel.getEventList().size());
-        if (GlobalSettings.SATURATION_ENABLE_DEBUG) {
+        //learner.clear(); // TODO: We assume "outer learning" for now. For inner learning we cannot forget the learned cubes
+        if (SATURATION_ENABLE_DEBUG) {
             testIteration();
             testStaticGraphs();
         }
     }
 
+    private void populateModelCoherences() {
+        if (!executionModel.hasCoherences()) {
+            throw new IllegalStateException("The solver model has no coherences.");
+        }
+
+        List<Edge> coherences = new ArrayList<>();
+        // ----------------------------------------------
+        // We find the total order per address (w1, w2, ..., wk) induced by the coherences in the ExecutionModel
+        // and only add coherence edges for consecutive writes
+        Map<EventData, Set<EventData>> coMap = executionModel.getCoherenceMap();
+        DependencyGraph<EventData> coGraph = DependencyGraph.from(coMap.keySet(), coMap);
+
+        List<EventData> events = coGraph.getSCCs().stream().map(scc -> scc.stream().findAny().get().getContent()).collect(Collectors.toList());
+        Collections.reverse(events);
+        for (BigInteger addr : executionModel.getAddressWritesMap().keySet()) {
+            List<EventData> sameAddrWrites = events.stream().filter(e -> e.getAccessedAddress().equals(addr)).collect(Collectors.toList());
+            for (int i = 1; i < sameAddrWrites.size(); i++) {
+                coherences.add(new Edge(sameAddrWrites.get(i - 1), sameAddrWrites.get(i)));
+            }
+        }
+        // ----------------------------------------------
+
+        execGraph.addCoherenceEdges(coherences);
+    }
+
+    /*
+        Creates a list of coherence that need to be searched by Saturation.
+        All coherences that are trivially present (e.g. min-set coherences or initial coherences)
+        are directly added to the coherence graph.
+     */
     private List<Edge> createCoSearchList() {
         Relation co = task.getMemoryModel().getRelationRepository().getRelation(CO);
         Map<BigInteger, Set<Edge>> possibleCoEdges = new HashMap<>();
@@ -190,12 +251,22 @@ public class SaturationSolver {
 
     // ==============  Core functionality  =================
 
+    public SolverResult check(Model model, SolverContext ctx) {
+        switch (mode) {
+            case SATURATION:
+                return checkUsingSaturation(model, ctx, maxSaturationDepth);
+            case MODEL_CHECKING:
+                return checkModel(model, ctx);
+            default:
+                throw new IllegalStateException("Unknown Mode: " + mode);
+        }
+    }
+
     /*
-        <check> performs a sequence of k-Saturations, starting from 0 up to <maxSaturationDepth>
-        It returns whether the model is consistent, what inconistency reasons where found (if any) and statistics
-        about the computation.
+        This method checks a given model without performing any search.
+        The model may or may not contain coherences.
      */
-    public SolverResult check(Model model, SolverContext ctx, int maxSaturationDepth) {
+    private SolverResult checkModel(Model model, SolverContext ctx) {
         SolverResult result = new SolverResult();
         stats = new SolverStatistics();
         result.setStats(stats);
@@ -207,6 +278,38 @@ public class SaturationSolver {
         stats.modelSize = executionModel.getEventList().size();
         // =================================
 
+        curTime = System.currentTimeMillis();
+        SolverStatus status = checkInconsistency() ? INCONSISTENT : CONSISTENT;
+        result.setStatus(status);
+        if (status == INCONSISTENT) {
+            long time = System.currentTimeMillis();
+            result.setCoreReasons(convertToDNF(computeInconsistencyReasons()));
+            stats.reasonComputationTime += (System.currentTimeMillis() - time);
+        }
+
+        stats.searchTime = System.currentTimeMillis() - curTime;
+
+        return result;
+    }
+
+    /*
+        <checkUsingSaturation> performs a sequence of k-Saturations, starting from 0 up to <maxSaturationDepth>
+        It returns whether the model is consistent, what inconsistency reasons where found (if any) and statistics
+        about the computation.
+     */
+    private SolverResult checkUsingSaturation(Model model, SolverContext ctx, int maxSaturationDepth) {
+        SolverResult result = new SolverResult();
+        stats = new SolverStatistics();
+        result.setStats(stats);
+
+        // ====== Populate from model ======
+        long curTime = System.currentTimeMillis();
+        populateFromModel(model, ctx);
+        stats.modelConstructionTime = System.currentTimeMillis() - curTime;
+        stats.modelSize = executionModel.getEventList().size();
+        // =================================
+
+        curTime = System.currentTimeMillis();
         // ======= Initialize search =======
         SearchTree sTree = new SearchTree();
         List<Edge> coSearchList = createCoSearchList();
@@ -214,7 +317,6 @@ public class SaturationSolver {
         // =================================
 
         // ========= Actual search =========
-        curTime = System.currentTimeMillis();
         for (int k = 0; k <= maxSaturationDepth; k++) {
             stats.saturationDepth = k;
             // There should always exist a single empty node unless we found a violation
@@ -224,7 +326,7 @@ public class SaturationSolver {
                 result.setStatus(status);
                 if (status == INCONSISTENT) {
                     long temp = System.currentTimeMillis();
-                    result.setCoreReasons(computeResolventsFromTree(sTree));
+                    result.setCoreReasons(computeInconsistencyReasonsFromSearchTree(sTree));
                     stats.resolutionTime = System.currentTimeMillis() - temp;
                 }
                 break;
@@ -241,7 +343,7 @@ public class SaturationSolver {
         // ==============================
 
         stats.searchTime = System.currentTimeMillis() - curTime;
-        if (GlobalSettings.SATURATION_ENABLE_DEBUG && result.getStatus() == CONSISTENT) {
+        if (SATURATION_ENABLE_DEBUG && result.getStatus() == CONSISTENT) {
             testCoherence();
         }
         return result;
@@ -358,34 +460,54 @@ public class SaturationSolver {
         return execGraph.getConstraints().stream().anyMatch(Constraint::checkForViolations);
     }
 
+    // Computes the inconsistency reasons (if any) of the current ExecutionGraph
     private List<Conjunction<CoreLiteral>> computeInconsistencyReasons() {
         List<Conjunction<CoreLiteral>> reasons = new ArrayList<>();
         for (Constraint constraint : execGraph.getConstraints()) {
             reasons.addAll(reasoner.computeViolationReasons(constraint).getCubes());
         }
-
-        // Important code: We only retain those reasons with the least number of co-literals
-        // this heavily boosts the performance of the resolution!!!
         stats.numComputedReasons += reasons.size();
-        int minComplexity = reasons.stream().mapToInt(Conjunction::getResolutionComplexity).min().getAsInt();
-        reasons.removeIf(x -> x.getResolutionComplexity() > minComplexity);
+
+        if ( mode == Mode.SATURATION && !SATURATION_NO_RESOLUTION) {
+            // Important code: We only retain those reasons with the least number of co-literals
+            // this heavily boosts the performance of the resolution!!!
+            int minComplexity = reasons.stream().mapToInt(Conjunction::getResolutionComplexity).min().getAsInt();
+            reasons.removeIf(x -> x.getResolutionComplexity() > minComplexity);
+        }
         // TODO: The following is ugly, but we convert to DNF again to remove dominated clauses and duplicates
         reasons = new ArrayList<>(new DNF<>(reasons).getCubes());
+
+        //learner.suggestViolations(reasons);
 
         stats.numComputedReducedReasons += reasons.size();
 
         return reasons;
     }
 
-    private DNF<CoreLiteral> computeResolventsFromTree(SearchTree tree) {
-        //TODO: This is also ugly code
-        TreeResolution resolution = new TreeResolution(tree);
-        SortedCubeSet<CoreLiteral> res = resolution.computeReasons();
-        SortedCubeSet<CoreLiteral> res2 = new SortedCubeSet<>();
-        res.forEach(cube -> res2.add(reasoner.simplifyReason(cube)));
-        res2.simplify();
+    // Computes the inconsistency (core) reasons from a given search tree.
+    // This may either just return all found reasons in the leaves
+    // or perform a resolution to obtain core reasons.
+    private DNF<CoreLiteral> computeInconsistencyReasonsFromSearchTree(SearchTree tree) {
+        SortedCubeSet<CoreLiteral> res = new SortedCubeSet<>();
 
-        return res2.toDNF();
+        if (SATURATION_NO_RESOLUTION) {
+           List<Conjunction<CoreLiteral>> reasons = tree.findNodes(SearchNode::isLeaf).stream()
+                   .map(node -> (LeafNode)node).flatMap(leaf -> leaf.getInconsistencyReasons().stream())
+                   .collect(Collectors.toList());
+           res.addAll(reasons);
+        } else {
+            res = new TreeResolution(tree).computeReasons();
+        }
+
+        return convertToDNF(res.getCubes());
+    }
+
+    private DNF<CoreLiteral> convertToDNF(Collection<Conjunction<CoreLiteral>> cubes) {
+        SortedCubeSet<CoreLiteral> res = new SortedCubeSet<>();
+        cubes.forEach(cube -> res.add(reasoner.simplifyReason(cube)));
+        res.simplify();
+        return res.toDNF();
+
     }
 
     // ====================================================
@@ -400,7 +522,7 @@ public class SaturationSolver {
      */
 
     private void testIteration() {
-        for (RelationGraph g : execGraph.getEventGraphs()) {
+        for (RelationGraph g : execGraph.getRelationGraphs()) {
             int size = g.size();
             for (Edge e : g) {
                 size--;
@@ -427,7 +549,7 @@ public class SaturationSolver {
                 continue;
             }
             if (relData.isStaticRelation() || relData.isRecursiveRelation()) {
-                RelationGraph g = execGraph.getEventGraph(relData);
+                RelationGraph g = execGraph.getRelationGraph(relData);
                 if (g == null) {
                     continue;
                 }

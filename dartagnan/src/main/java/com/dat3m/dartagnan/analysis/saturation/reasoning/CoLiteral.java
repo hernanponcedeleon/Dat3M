@@ -1,10 +1,10 @@
-package com.dat3m.dartagnan.analysis.saturation.coreReason;
+package com.dat3m.dartagnan.analysis.saturation.reasoning;
 
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 
-public class CoLiteral extends AbstractEdgeLiteral {
+public class CoLiteral extends EdgeLiteral {
     private CoLiteral opposite;
 
     public CoLiteral(Edge edge) {

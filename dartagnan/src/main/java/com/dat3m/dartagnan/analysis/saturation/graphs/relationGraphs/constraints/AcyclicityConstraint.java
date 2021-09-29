@@ -187,5 +187,10 @@ public class AcyclicityConstraint extends Constraint {
             index = -1;
             lowlink = -1;
         }
+
+        @Override
+        public String toString() {
+            return event.toString();
+        }
     }
 }

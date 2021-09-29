@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.analysis.saturation;
 
-import com.dat3m.dartagnan.analysis.saturation.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.saturation.logic.DNF;
+import com.dat3m.dartagnan.analysis.saturation.reasoning.CoreLiteral;
 
 public class SolverResult {
     private SolverStatus status;

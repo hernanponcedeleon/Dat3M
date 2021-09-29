@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.saturation.SaturationSolver;
+import com.dat3m.dartagnan.analysis.saturation.util.Learner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,19 +45,18 @@ public class GlobalSettings {
     public static final boolean REFINEMENT_USE_ACYCLIC_DEP_RF_BASELINE_WMM = false; // Uses acyclic(rf | dep)
 
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
-    public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.FULL;
+    public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.NONE;
 
     // ==== Saturation ====
-    public static boolean SATURATION_USE_MODEL_CHECKING = true;
     public static boolean SATURATION_ENABLE_DEBUG = false;
-    public static boolean SATURATION_LEARN_OUTER_COHERENCES = true;
-    public static boolean SATURATION_NO_RESOLUTION = true;
-    // NOTE: This setting only has an effect if <REFINEMENT_ENCODE_COHERENCES> is enabled.
+    public static SaturationSolver.Mode SATURATION_MODE = SaturationSolver.Mode.MODEL_CHECKING;
     public static boolean SATURATION_USE_MODEL_COHERENCES = true;
+    public static boolean SATURATION_REDUCE_REASONS_TO_CORE_REASONS = true;
+    public static boolean SATURATION_NO_RESOLUTION = false;
+    // NOTE: This setting only has an effect if <REFINEMENT_ENCODE_COHERENCES> is enabled.
     public static final int SATURATION_MAX_DEPTH = 3;
 
-    public enum CoherenceLearning { NONE, HORN_CUBES, ALL }
-    public static final CoherenceLearning SATURATION_COHERENCE_LEARNING = CoherenceLearning.NONE;
+    public static final Learner.ViolationLearningStrategy SATURATION_VIOLATION_LEARNING = Learner.ViolationLearningStrategy.NONE;
 
     // --------------------
 

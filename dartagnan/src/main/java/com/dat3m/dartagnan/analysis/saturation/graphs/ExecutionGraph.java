@@ -133,11 +133,11 @@ public class ExecutionGraph {
     public RelationGraph getCoherenceGraph() { return coGraph; }
     public RelationGraph getSimpleCoherenceGraph() { return scoGraph; }
 
-    public RelationGraph getEventGraph(Relation rel) {
+    public RelationGraph getRelationGraph(Relation rel) {
         return relationGraphMap.get(rel);
     }
 
-    public Collection<RelationGraph> getEventGraphs() {
+    public Collection<RelationGraph> getRelationGraphs() {
         return graphHierarchy.getGraphList();
     }
 

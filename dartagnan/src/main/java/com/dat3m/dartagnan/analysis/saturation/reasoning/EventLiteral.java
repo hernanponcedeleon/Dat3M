@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.analysis.saturation.coreReason;
+package com.dat3m.dartagnan.analysis.saturation.reasoning;
 
 import com.dat3m.dartagnan.verification.model.EventData;
 

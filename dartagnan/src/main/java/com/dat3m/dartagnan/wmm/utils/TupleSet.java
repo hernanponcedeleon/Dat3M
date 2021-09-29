@@ -199,7 +199,7 @@ public class TupleSet implements Set<Tuple>{
             Event e2 = t1.getSecond();
             for (Tuple t2 : this.getByFirst(e2)) {
                 Event e3 = t2.getSecond();
-                result.add(new Tuple(e1 , e3));
+                result.add(new Tuple(e1, e3));
             }
         }
         return result;

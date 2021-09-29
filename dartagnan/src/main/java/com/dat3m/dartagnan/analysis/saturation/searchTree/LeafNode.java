@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.analysis.saturation.searchTree;
 
-import com.dat3m.dartagnan.analysis.saturation.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.saturation.logic.Conjunction;
+import com.dat3m.dartagnan.analysis.saturation.reasoning.CoreLiteral;
 
 import java.util.ArrayList;
 import java.util.List;

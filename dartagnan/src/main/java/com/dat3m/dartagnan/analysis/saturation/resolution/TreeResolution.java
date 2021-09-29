@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.analysis.saturation.resolution;
 
-import com.dat3m.dartagnan.analysis.saturation.coreReason.CoLiteral;
-import com.dat3m.dartagnan.analysis.saturation.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.saturation.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.saturation.logic.SortedCubeSet;
+import com.dat3m.dartagnan.analysis.saturation.reasoning.CoLiteral;
+import com.dat3m.dartagnan.analysis.saturation.reasoning.CoreLiteral;
 import com.dat3m.dartagnan.analysis.saturation.searchTree.DecisionNode;
 import com.dat3m.dartagnan.analysis.saturation.searchTree.LeafNode;
 import com.dat3m.dartagnan.analysis.saturation.searchTree.SearchNode;

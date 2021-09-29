@@ -148,6 +148,21 @@ public class Wmm {
         return enc;
     }
 
+    // Test code
+    public BooleanFormula encodeNonDerived(SolverContext ctx) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormula enc = encodeBase(ctx);
+        Set<String> derivedBase = Set.of(ADDR, CTRL, DATA);
+        for (Relation rel : relationRepository.getRelations()) {
+            if (!rel.getDependencies().isEmpty() && !derivedBase.contains(rel.getName())) {
+                continue;
+            }
+            enc = bmgr.and(enc, rel.encode(ctx));
+        }
+
+        return enc;
+    }
+
     // Initalizes everything just like encodeBase but also encodes all
     // relations that are needed for the axioms (but does NOT encode the axioms themselves yet)
     // NOTE: It avoids encoding relations that do NOT affect the axioms, i.e. unused relations
@@ -163,9 +178,9 @@ public class Wmm {
 
     // Encodes all axioms. This should be called after <encodeRelations>
     public BooleanFormula encodeConsistency(SolverContext ctx) {
-        if(!relationsAreEncoded){
+        /*if(!relationsAreEncoded){
             throw new IllegalStateException("Wmm relations must be encoded before the consistency predicate.");
-        }
+        }*/
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula expr = bmgr.makeTrue();
         for (Axiom ax : axioms) {
