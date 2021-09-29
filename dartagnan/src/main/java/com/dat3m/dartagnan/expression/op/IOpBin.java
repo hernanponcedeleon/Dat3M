@@ -3,8 +3,6 @@ package com.dat3m.dartagnan.expression.op;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
-import static java.util.Arrays.asList;
-
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
@@ -102,13 +100,6 @@ public enum IOpBin {
             	case AR_SHIFT:
             		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
             		return bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, i1), bvmgr.makeBitvector(32, i2), true), false);
-            	case SREM:
-            	case UREM:
-            		IntegerFormula zero = imgr.makeNumber(0);
-        			IntegerFormula modulo = imgr.modulo(i1, i2);
-            		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-            		BooleanFormula cond = bmgr.and(imgr.distinct(asList(modulo, zero)), imgr.lessThan(i1, zero));
-            		return bmgr.ifThenElse(cond, imgr.subtract(modulo, i2), modulo);
             	default:
                     throw new UnsupportedOperationException("Encoding of IOpBin operation " + this + " not supported on integer formulas.");
 			}			
