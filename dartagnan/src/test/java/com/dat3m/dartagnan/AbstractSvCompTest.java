@@ -74,17 +74,17 @@ public abstract class AbstractSvCompTest {
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
            	 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/" + getClass().getSimpleName() + "-incremental.csv", true)))
         {
+        	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
+        	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
-            if (program.getAss() != null) {
-                VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-                long start = System.currentTimeMillis();
-                assertEquals(expected, runAnalysisIncrementalSolver(ctx, prover, task));
-                Long solvingTime = (Long)System.currentTimeMillis() - start;
-                writer.append(path);
-                writer.append(", ");
-   				writer.append(solvingTime.toString());
-   				writer.newLine();
-            }
+            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            long start = System.currentTimeMillis();
+            assertEquals(expected, runAnalysisIncrementalSolver(ctx, prover, task));
+            Long solvingTime = (Long)System.currentTimeMillis() - start;
+            writer.append(path);
+            writer.append(", ");
+			writer.append(solvingTime.toString());
+			writer.newLine();
         } catch (Exception e){
             fail(e.getMessage());
         }
@@ -112,7 +112,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-//    @Test(timeout = TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
