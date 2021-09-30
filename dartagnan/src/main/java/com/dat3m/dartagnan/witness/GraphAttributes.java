@@ -2,7 +2,10 @@ package com.dat3m.dartagnan.witness;
 
 public enum GraphAttributes {
 
-	ARCHITECTURE, CREATIONTIME, PRODUCER, PROGRAMFILE, PROGRAMHASH, SOURCECODELANG, SPECIFICATION, UNROLLBOUND, WITNESSTYPE;
+	// General attributes
+	ARCHITECTURE, CREATIONTIME, PRODUCER, PROGRAMFILE, PROGRAMHASH, SOURCECODELANG, SPECIFICATION, WITNESSTYPE,
+	// Dartagnan specific attributes
+	UNROLLBOUND, EVENTID, LOADEDVALUE, STOREDVALUE;
 
 	@Override
 	public String toString() {
@@ -24,9 +27,14 @@ public enum GraphAttributes {
 		case UNROLLBOUND:
 			return "unroll-bound";
 		case WITNESSTYPE:
-			return "witness-type"; 
-		default:
-			throw new RuntimeException(this + " cannot be converted to String");
+			return "witness-type";
+		case EVENTID:
+			return "event-id";
+		case LOADEDVALUE:
+			return "loaded-value";
+		case STOREDVALUE:
+			return "stored-value";
 		}
+		throw new RuntimeException(this + " cannot be converted to String");
 	}
 }

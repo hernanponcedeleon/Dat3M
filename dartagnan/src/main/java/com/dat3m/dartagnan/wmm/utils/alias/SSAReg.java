@@ -32,11 +32,11 @@ public class SSAReg {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-
-        if (obj == null || getClass() != obj.getClass())
+        } else if (obj == null || getClass() != obj.getClass()) {
             return false;
+        }
 
         SSAReg sObj = (SSAReg)obj;
         return register == sObj.register && ssaId == sObj.ssaId;

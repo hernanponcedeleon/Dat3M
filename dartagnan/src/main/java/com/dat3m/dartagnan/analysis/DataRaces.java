@@ -30,7 +30,6 @@ public class DataRaces {
     private static final Logger logger = LogManager.getLogger(DataRaces.class);
 
 	public static Result checkForRaces(SolverContext ctx, VerificationTask task) {
-        Result res = Result.UNKNOWN;
 
 		// TODO(HP): No program.simplify() ???
 		task.unrollAndCompile();
@@ -56,7 +55,7 @@ public class DataRaces {
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-		return res;
+		return UNKNOWN;
     }
     
     private static BooleanFormula encodeRaces(Program p, SolverContext ctx) {

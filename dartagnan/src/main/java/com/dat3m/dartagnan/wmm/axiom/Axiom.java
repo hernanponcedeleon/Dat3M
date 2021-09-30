@@ -4,13 +4,12 @@ import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -44,15 +43,11 @@ public abstract class Axiom implements Dependent<Relation> {
     }
     
     @Override
-    public String toString(){
-        return _toString();
-    }
+    public abstract String toString();
 
     public abstract TupleSet getEncodeTupleSet();
 
     public abstract BooleanFormula consistent(SolverContext ctx);
-
-    protected abstract String _toString();
 
     @Override
     public int hashCode() {
@@ -61,8 +56,11 @@ public abstract class Axiom implements Dependent<Relation> {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || obj.getClass() != this.getClass())
+        if (this == obj) {
+            return true;
+        } else if (obj == null || obj.getClass() != this.getClass()) {
             return false;
+        }
         Axiom other = (Axiom)obj;
         return this.rel.equals(other.rel);
     }

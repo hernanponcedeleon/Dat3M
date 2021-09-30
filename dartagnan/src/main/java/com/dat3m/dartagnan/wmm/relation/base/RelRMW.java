@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
-import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
@@ -16,11 +16,6 @@ import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.Sets;
-
-import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
-import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -31,16 +26,25 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RMW;
+import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
+
+/*
+    NOTE: Changes to the semantics of this class may need to be reflected
+    in RMWGraph for Refinement!
+ */
 public class RelRMW extends StaticRelation {
 
 	private static final Logger logger = LogManager.getLogger(RelRMW.class);
 
-    private final FilterAbstract loadFilter  = FilterIntersection.get(
+    private final FilterAbstract loadExclFilter = FilterIntersection.get(
             FilterBasic.get(EType.EXCL),
             FilterBasic.get(EType.READ)
     );
 
-    private final FilterAbstract storeFilter = FilterIntersection.get(
+    private final FilterAbstract storeExclFilter = FilterIntersection.get(
             FilterBasic.get(EType.EXCL),
             FilterBasic.get(EType.WRITE)
     );
@@ -49,7 +53,7 @@ public class RelRMW extends StaticRelation {
     private TupleSet baseMaxTupleSet;
 
     public RelRMW(){
-        term = "rmw";
+        term = RMW;
         forceDoEncode = true;
     }
 
@@ -112,8 +116,8 @@ public class RelRMW extends StaticRelation {
             //TODO: This can be improved using branching analysis
             // to find guaranteed pairs (the encoding can then also be improved)
             for(Thread thread : task.getProgram().getThreads()){
-                for(Event load : thread.getCache().getEvents(loadFilter)){
-                    for(Event store : thread.getCache().getEvents(storeFilter)){
+                for(Event load : thread.getCache().getEvents(loadExclFilter)){
+                    for(Event store : thread.getCache().getEvents(storeExclFilter)){
                         if(load.getCId() < store.getCId()){
                             maxTupleSet.add(new Tuple(load, store));
                         }
@@ -140,9 +144,9 @@ public class RelRMW extends StaticRelation {
         // Encode RMW for exclusive pairs
 		BooleanFormula unpredictable = bmgr.makeFalse();
         for(Thread thread : task.getProgram().getThreads()) {
-            for (Event store : thread.getCache().getEvents(storeFilter)) {
+            for (Event store : thread.getCache().getEvents(storeExclFilter)) {
             	BooleanFormula storeExec = bmgr.makeFalse();
-                for (Event load : thread.getCache().getEvents(loadFilter)) {
+                for (Event load : thread.getCache().getEvents(loadExclFilter)) {
                     if (load.getCId() < store.getCId()) {
 
                         // Encode if load and store form an exclusive pair
@@ -173,12 +177,12 @@ public class RelRMW extends StaticRelation {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula pairingCond = bmgr.and(load.exec(), store.cf());
 
-        for (Event otherLoad : thread.getCache().getEvents(loadFilter)) {
+        for (Event otherLoad : thread.getCache().getEvents(loadExclFilter)) {
             if (otherLoad.getCId() > load.getCId() && otherLoad.getCId() < store.getCId()) {
                 pairingCond = bmgr.and(pairingCond, bmgr.not(otherLoad.exec()));
             }
         }
-        for (Event otherStore : thread.getCache().getEvents(storeFilter)) {
+        for (Event otherStore : thread.getCache().getEvents(storeExclFilter)) {
             if (otherStore.getCId() > load.getCId() && otherStore.getCId() < store.getCId()) {
                 pairingCond = bmgr.and(pairingCond, bmgr.not(otherStore.cf()));
             }

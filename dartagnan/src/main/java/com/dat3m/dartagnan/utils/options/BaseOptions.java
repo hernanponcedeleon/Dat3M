@@ -64,7 +64,7 @@ public abstract class BaseOptions extends Options {
         		"The solver method to be used: " + supported_methods));
         
         Set<String> supported_smtsolvers =
-        		ImmutableSet.copyOf(Arrays.stream(Solvers.values())
+        		ImmutableSet.copyOf(Arrays.stream(values())
         		.map(a -> a.toString().toLowerCase())
                 .sorted(Comparator.comparing(String::toString))
         		.collect(Collectors.toList()));

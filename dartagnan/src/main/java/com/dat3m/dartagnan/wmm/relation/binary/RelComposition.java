@@ -1,20 +1,17 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
-import com.google.common.collect.Sets;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.wmm.utils.Utils;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
+import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -41,7 +38,8 @@ public class RelComposition extends BinaryRelation {
         if(minTupleSet == null){
             BranchEquivalence eq = task.getBranchEquivalence();
             minTupleSet = r1.getMinTupleSet().postComposition(r2.getMinTupleSet(),
-                    (t1, t2) -> t1.getSecond().cfImpliesExec() && eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()));
+                    (t1, t2) -> t1.getSecond().cfImpliesExec() &&
+                            (eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond())));
             removeMutuallyExclusiveTuples(minTupleSet);
         }
         return minTupleSet;
@@ -61,7 +59,8 @@ public class RelComposition extends BinaryRelation {
         if(recursiveGroupId > 0 && maxTupleSet != null){
             BranchEquivalence eq = task.getBranchEquivalence();
             minTupleSet = r1.getMinTupleSetRecursive().postComposition(r2.getMinTupleSetRecursive(),
-                    (t1, t2) -> t1.getSecond().cfImpliesExec() && eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()));
+                    (t1, t2) -> t1.getSecond().cfImpliesExec() &&
+                            (eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond())));
             removeMutuallyExclusiveTuples(minTupleSet);
             return minTupleSet;
         }
@@ -72,15 +71,8 @@ public class RelComposition extends BinaryRelation {
     public TupleSet getMaxTupleSetRecursive(){
         if(recursiveGroupId > 0 && maxTupleSet != null){
             BranchEquivalence eq = task.getBranchEquivalence();
-            TupleSet set1 = r1.getMaxTupleSetRecursive();
-            TupleSet set2 = r2.getMaxTupleSetRecursive();
-            for(Tuple rel1 : set1){
-                for(Tuple rel2 : set2.getByFirst(rel1.getSecond())){
-                    if (!eq.areMutuallyExclusive(rel1.getFirst(), rel2.getSecond())) {
-                        maxTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
-                    }
-                }
-            }
+            maxTupleSet = r1.getMaxTupleSetRecursive().postComposition(r2.getMaxTupleSetRecursive(),
+                    (t1, t2) -> !eq.areMutuallyExclusive(t1.getFirst(), t2.getSecond()));
             return maxTupleSet;
         }
         return getMaxTupleSet();
@@ -96,23 +88,17 @@ public class RelComposition extends BinaryRelation {
             TupleSet r1Set = new TupleSet();
             TupleSet r2Set = new TupleSet();
 
-            Map<Integer, Set<Integer>> myMap = new HashMap<>();
-            for(Tuple tuple : activeSet){
-                int id1 = tuple.getFirst().getCId();
-                int id2 = tuple.getSecond().getCId();
-                myMap.putIfAbsent(id1, new HashSet<>());
-                myMap.get(id1).add(id2);
-            }
-
-            for(Tuple tuple1 : r1.getMaxTupleSet()){
-                Event e1 = tuple1.getFirst();
-                Set<Integer> ends = myMap.get(e1.getCId());
-                if(ends == null) continue;
-                for(Tuple tuple2 : r2.getMaxTupleSet().getByFirst(tuple1.getSecond())){
-                    Event e2 = tuple2.getSecond();
-                    if(ends.contains(e2.getCId())){
-                        r1Set.add(tuple1);
-                        r2Set.add(tuple2);
+            TupleSet r1Max = r1.getMaxTupleSet();
+            TupleSet r2Max = r2.getMaxTupleSet();
+            for (Tuple t : activeSet) {
+                Event e1 = t.getFirst();
+                Event e3 = t.getSecond();
+                for (Tuple t1 : r1Max.getByFirst(e1)) {
+                    Event e2 = t1.getSecond();
+                    Tuple t2 = new Tuple(e2, e3);
+                    if (r2Max.contains(t2)) {
+                        r1Set.add(t1);
+                        r2Set.add(t2);
                     }
                 }
             }
@@ -131,101 +117,20 @@ public class RelComposition extends BinaryRelation {
         TupleSet r2Set = r2.getEncodeTupleSet();
         TupleSet minSet = getMinTupleSet();
 
-        //TODO: Fix this abuse of hashCode
-        Map<Integer, BooleanFormula> exprMap = new HashMap<>();
-        for(Tuple tuple : encodeTupleSet){
-            if (minSet.contains(tuple)) {
-                exprMap.put(tuple.hashCode(), getExecPair(tuple, ctx));
-            } else {
-                exprMap.put(tuple.hashCode(), bmgr.makeFalse());
-            }
-        }
-
-        for(Tuple tuple1 : r1Set){
-            Event e1 = tuple1.getFirst();
-            Event e3 = tuple1.getSecond();
-            for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                Event e2 = tuple2.getSecond();
-                if (minSet.contains(new Tuple(e1, e2))) {
-                    continue;
-                }
-
-                int id = Tuple.toHashCode(e1.getCId(), e2.getCId());
-                if(exprMap.containsKey(id)){
-                	BooleanFormula e = exprMap.get(id);
-                    e = bmgr.or(e, bmgr.and(r1.getSMTVar(tuple1, ctx), r2.getSMTVar(tuple2, ctx)));
-                    exprMap.put(id, e);
-                }
-            }
-        }
-
         for(Tuple tuple : encodeTupleSet) {
-            enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), exprMap.get(tuple.hashCode())));
-        }
-        return enc;
-    }
-
-    @Override
-    public BooleanFormula encodeIteration(int groupId, int iteration, SolverContext ctx){
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
-
-        if((groupId & recursiveGroupId) > 0 && iteration > lastEncodedIteration) {
-            lastEncodedIteration = iteration;
-            String name = this.getName() + "_" + iteration;
-
-            if(iteration == 0 && isRecursive){
-                for(Tuple tuple : encodeTupleSet){
-                    enc = bmgr.and(bmgr.not(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx)));
-                }
+            BooleanFormula expr = bmgr.makeFalse();
+            if (minSet.contains(tuple)) {
+                expr = getExecPair(tuple, ctx);
             } else {
-                int childIteration = isRecursive ? iteration - 1 : iteration;
-
-                boolean recurseInR1 = (r1.getRecursiveGroupId() & groupId) > 0;
-                boolean recurseInR2 = (r2.getRecursiveGroupId() & groupId) > 0;
-
-                String r1Name = recurseInR1 ? r1.getName() + "_" + childIteration : r1.getName();
-                String r2Name = recurseInR2 ? r2.getName() + "_" + childIteration : r2.getName();
-
-                TupleSet r1Set = new TupleSet();
-                r1Set.addAll(r1.getEncodeTupleSet());
-                r1Set.retainAll(r1.getMaxTupleSet());
-
-                TupleSet r2Set = new TupleSet();
-                r2Set.addAll(r2.getEncodeTupleSet());
-                r2Set.retainAll(r2.getMaxTupleSet());
-
-                Map<Integer, BooleanFormula> exprMap = new HashMap<>();
-                for(Tuple tuple : encodeTupleSet){
-                    exprMap.put(tuple.hashCode(), bmgr.makeFalse());
-                }
-
-                for(Tuple tuple1 : r1Set){
-                    Event e1 = tuple1.getFirst();
-                    Event e3 = tuple1.getSecond();
-                    for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                        Event e2 = tuple2.getSecond();
-                        int id = Tuple.toHashCode(e1.getCId(), e2.getCId());
-                        if(exprMap.containsKey(id)){
-                        	BooleanFormula e = exprMap.get(id);
-                            e = bmgr.or(e, bmgr.and(Utils.edge(r1Name, e1, e3, ctx), Utils.edge(r2Name, e3, e2, ctx)));
-                            exprMap.put(id, e);
-                        }
+                for (Tuple t1 : r1Set.getByFirst(tuple.getFirst())) {
+                    Tuple t2 = new Tuple(t1.getSecond(), tuple.getSecond());
+                    if (r2Set.contains(t2)) {
+                        expr = bmgr.or(expr, bmgr.and(r1.getSMTVar(t1, ctx), r2.getSMTVar(t2, ctx)));
                     }
                 }
-
-                for(Tuple tuple : encodeTupleSet){
-                    enc = bmgr.and(enc, bmgr.equivalence(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx), exprMap.get(tuple.hashCode())));
-                }
-
-                if(recurseInR1){
-                    enc = bmgr.and(enc, r1.encodeIteration(groupId, childIteration, ctx));
-                }
-
-                if(recurseInR2){
-                    enc = bmgr.and(enc, r2.encodeIteration(groupId, childIteration, ctx));
-                }
             }
+
+            enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), expr));
         }
         return enc;
     }

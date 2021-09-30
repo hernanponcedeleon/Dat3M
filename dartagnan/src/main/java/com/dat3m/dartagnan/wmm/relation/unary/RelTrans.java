@@ -1,19 +1,18 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.google.common.collect.Sets;
-import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-
-import java.util.Map;
-import java.util.Set;
-
+import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -55,7 +54,8 @@ public class RelTrans extends UnaryRelation {
             int size = minTupleSet.size();
             do {
                 minTupleSet.addAll(minTupleSet.postComposition(r1.getMinTupleSet(),
-                        (t1, t2) -> t1.getSecond().cfImpliesExec() && eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond())));
+                        (t1, t2) -> t1.getSecond().cfImpliesExec() &&
+                                (eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()))));
                 changed = minTupleSet.size() != size;
                 size = minTupleSet.size();
             } while (changed);

@@ -1,29 +1,30 @@
 package com.dat3m.dartagnan.witness;
 
-import static com.dat3m.dartagnan.program.utils.EType.MEMORY;
-import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
-
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Load;
+import com.dat3m.dartagnan.program.event.Store;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.google.common.collect.Lists;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.google.common.collect.Lists;
+import java.math.BigInteger;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.program.utils.EType.*;
+import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
+import static com.dat3m.dartagnan.witness.GraphAttributes.*;
+import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
 public class WitnessGraph extends ElemWithAttributes {
 
-	private SortedSet<Node> nodes = new TreeSet<>();
+	private final SortedSet<Node> nodes = new TreeSet<>();
 	// The order in which we add / traverse edges is important, thus a List
-	private List<Edge> edges = new ArrayList<>();
+	private final List<Edge> edges = new ArrayList<>();
 	
 	public void addNode(String id) {
 		nodes.add(new Node(id));
@@ -78,13 +79,29 @@ public class WitnessGraph extends ElemWithAttributes {
 		BooleanFormula enc = bmgr.makeTrue();
 		List<Event> previous = new ArrayList<>();
 		for(Edge edge : edges.stream().filter(Edge::hasCline).collect(Collectors.toList())) {
-			List<Event> events = program.getCache().getEvents(FilterBasic.get(MEMORY)).stream().filter(e -> e.getCLine() == edge.getCline()).collect(Collectors.toList());
+			List<Event> events = program.getCache().getEvents(FilterBasic.get(MEMORY)).stream()
+					.filter(e -> e.getCLine() == edge.getCline())
+					.collect(Collectors.toList());
 			if(!previous.isEmpty() && !events.isEmpty()) {
-				enc = bmgr.and(enc, bmgr.or(Lists.cartesianProduct(previous, events).stream().map(p -> imgr.lessThan(intVar("hb", p.get(0), ctx), intVar("hb", p.get(1), ctx))).collect(Collectors.toList()).toArray(BooleanFormula[]::new)));
+				enc = bmgr.and(enc, bmgr.or(Lists.cartesianProduct(previous, events).stream()
+						.map(p -> imgr.lessThan(intVar("hb", p.get(0), ctx), intVar("hb", p.get(1), ctx)))
+						.toArray(BooleanFormula[]::new)));
 			}
 			if(!events.isEmpty()) {
 				previous = events;				
-			}				
+			}
+			if(edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(LOADEDVALUE.toString())) {
+				int id = Integer.parseInt(edge.getAttributed(EVENTID.toString()));
+				Load load = (Load)program.getCache().getEvents(FilterBasic.get(READ)).stream().filter(e -> e.getUId() == id).findFirst().get();
+				BigInteger value = new BigInteger(edge.getAttributed(LOADEDVALUE.toString()));
+				enc = bmgr.and(enc, imgr.equal(convertToIntegerFormula(load.getResultRegisterExpr(), ctx), imgr.makeNumber(value)));
+			}
+			if(edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(STOREDVALUE.toString())) {
+				int id = Integer.parseInt(edge.getAttributed(EVENTID.toString()));
+				Store store = (Store)program.getCache().getEvents(FilterBasic.get(WRITE)).stream().filter(e -> e.getUId() == id).findFirst().get();
+				BigInteger value = new BigInteger(edge.getAttributed(STOREDVALUE.toString()));
+				enc = bmgr.and(enc, imgr.equal(convertToIntegerFormula(store.getMemValueExpr(), ctx), imgr.makeNumber(value)));
+			}
 		}
 		return enc;
 	}

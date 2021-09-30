@@ -1,22 +1,15 @@
 package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.memory.Location;
-import com.google.common.collect.ImmutableSet;
-
-import java.math.BigInteger;
-
-import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.expression.op.BOpBin;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.memory.Location;
+import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+
+import java.math.BigInteger;
 
 public class BExprBin extends BExpr {
 
@@ -85,14 +78,14 @@ public class BExprBin extends BExpr {
     }
 
     @Override
-	public IConst reduce() {
-    	BigInteger v1 = b1.reduce().getIntValue();
-    	BigInteger v2 = b2.reduce().getIntValue();
+	public BConst reduce() {
+    	boolean v1 = ((BConst)b1.reduce()).getValue();
+    	boolean v2 = ((BConst)b2.reduce()).getValue();
 		switch(op) {
         case AND:
-        	return new IConst(v1.compareTo(BigInteger.ONE) == 0 ? v2 : BigInteger.ZERO, -1);
+        	return new BConst(v1 && v2);
         case OR:
-        	return new IConst(v1.compareTo(BigInteger.ONE) == 0 ? BigInteger.ONE : v2, -1);
+        	return new BConst(v1 || v2);
         }
         throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
@@ -111,9 +104,9 @@ public class BExprBin extends BExpr {
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
-        }
-        if (obj == null || obj.getClass() != getClass())
+        } else if (obj == null || obj.getClass() != getClass()) {
             return false;
+        }
         BExprBin expr = (BExprBin) obj;
         return expr.op == op && expr.b1.equals(b1) && expr.b2.equals(b2);
     }

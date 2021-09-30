@@ -1,15 +1,12 @@
 package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.utils.Utils;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.Collections;
 import java.util.List;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
@@ -142,25 +139,4 @@ public class RecursiveRelation extends Relation {
         return r1.encodeApprox(ctx);
     }
 
-    @Override
-    public BooleanFormula encodeIteration(int recGroupId, int iteration, SolverContext ctx){
-        if(doRecurse){
-            doRecurse = false;
-            return r1.encodeIteration(recGroupId, iteration, ctx);
-        }
-        return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
-    }
-
-    public BooleanFormula encodeFinalIteration(int iteration, SolverContext ctx){
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
-
-        for(Tuple tuple : encodeTupleSet){
-            enc = bmgr.and(enc, bmgr.equivalence(
-                    this.getSMTVar(tuple, ctx),
-                    Utils.edge(getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
-            ));
-        }
-        return enc;
-    }
 }

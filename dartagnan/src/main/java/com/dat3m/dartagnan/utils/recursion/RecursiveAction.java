@@ -12,8 +12,9 @@ public abstract class RecursiveAction {
 
     public void execute() {
         RecursiveAction action = this;
-        while (!action.isDone())
+        while (!action.isDone()) {
             action = action.process();
+        }
     }
 
     public RecursiveAction then(RecursiveAction then) {

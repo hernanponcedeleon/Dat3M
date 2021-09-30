@@ -6,10 +6,9 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 
 public class FunCall extends Event {
 
-	String funName;
+	private final String funName;
 	
-	public FunCall(String funName, int cLine) {
-		super(cLine);
+	public FunCall(String funName) {
 		this.funName = funName;
         addFilters(EType.ANY);
 	}
@@ -29,7 +28,7 @@ public class FunCall extends Event {
     }
 
 	@Override
-	public RecursiveAction simplifyRecursive(Event predecessor, int depth) {
+	protected RecursiveAction simplifyRecursive(Event predecessor, int depth) {
 		Event prev = this;
 		Event next = successor;
 		if(successor instanceof FunRet && ((FunRet)successor).getFunctionName().equals(funName)) {

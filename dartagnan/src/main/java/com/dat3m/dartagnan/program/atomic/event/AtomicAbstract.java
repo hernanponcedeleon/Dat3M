@@ -1,16 +1,16 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.arch.linux.utils.EType;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.program.arch.linux.utils.EType;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.collect.ImmutableSet;
 
 public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegReaderData {
 

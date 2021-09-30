@@ -57,7 +57,11 @@ public class SVCOMPRunner {
 
         int bound = witness.hasAttributed(UNROLLBOUND.toString()) ?  parseInt(witness.getAttributed(UNROLLBOUND.toString())) : options.getUMin();
 		String output = "UNKNOWN";
-		while(output.equals("UNKNOWN") && bound <= options.getUMax()) {
+		while(output.equals("UNKNOWN")) {
+			if(bound == options.getUMax()+1) {
+				System.out.println("PASS");
+				break;
+			}
 			compile(tmp, options, true);
 	        // If not removed here, file is not removed when we reach the timeout
 	        // File can be safely deleted since it was created by the SVCOMPSanitizer
@@ -76,7 +80,7 @@ public class SVCOMPRunner {
 	    	cmd.add("java");
 	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
 	    	cmd.add("-DLOGNAME=" + file.getName());
-	    	cmd.addAll(asList("-jar", "dartagnan/target/dartagnan-2.0.7.jar"));
+	    	cmd.addAll(asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-2.0.7.jar"));
 	    	cmd.addAll(asList("-i", boogieName));
 	    	cmd.addAll(asList("-cat", options.getTargetModelFilePath()));
 	    	cmd.addAll(asList("-t", options.getTarget().asStringOption()));

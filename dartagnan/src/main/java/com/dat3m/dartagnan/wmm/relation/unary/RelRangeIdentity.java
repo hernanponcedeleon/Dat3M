@@ -1,14 +1,14 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.Sets;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class RelRangeIdentity extends UnaryRelation {
 
@@ -29,7 +29,12 @@ public class RelRangeIdentity extends UnaryRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            minTupleSet = r1.getMinTupleSet().mapped(t -> new Tuple(t.getSecond(), t.getSecond()));
+            BranchEquivalence eq = task.getBranchEquivalence();
+            minTupleSet = new TupleSet();
+            r1.getMinTupleSet().stream()
+                    .filter(t -> t.getFirst().cfImpliesExec() && eq.isImplied(t.getSecond(), t.getFirst()))
+                    .map(t -> new Tuple(t.getSecond(), t.getSecond()))
+                    .forEach(minTupleSet::add);
         }
         return minTupleSet;
     }
@@ -46,6 +51,7 @@ public class RelRangeIdentity extends UnaryRelation {
     public void addEncodeTupleSet(TupleSet tuples){
         TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
         encodeTupleSet.addAll(activeSet);
+        activeSet.removeAll(getMinTupleSet());
 
         //TODO: Optimize using minSets (but no CAT uses this anyway)
         if(!activeSet.isEmpty()){

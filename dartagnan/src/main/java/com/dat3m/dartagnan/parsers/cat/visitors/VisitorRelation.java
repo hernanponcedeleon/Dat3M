@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.parsers.cat.visitors;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ID;
+
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
 import com.dat3m.dartagnan.parsers.CatVisitor;
 import com.dat3m.dartagnan.parsers.CatParser;
@@ -82,7 +84,7 @@ public class VisitorRelation extends CatBaseVisitor<Relation> implements CatVisi
     public Relation visitExprOptional(CatParser.ExprOptionalContext ctx) {
         Relation r = ctx.e.accept(this);
         if(r != null){
-            return base.relationRepository.getRelation(RelUnion.class, base.relationRepository.getRelation("id"), r);
+            return base.relationRepository.getRelation(RelUnion.class, base.relationRepository.getRelation(ID), r);
         }
         return null;
     }

@@ -6,11 +6,14 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.utils.symmetry.SymmetryBreaking;
+import com.dat3m.dartagnan.utils.symmetry.SymmetryReduction;
+import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
+import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
-import com.dat3m.dartagnan.witness.WitnessGraph;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.apache.logging.log4j.LogManager;
@@ -19,7 +22,8 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 
 /*
 Represents a verification task.
@@ -34,6 +38,7 @@ public class VerificationTask {
     private final WitnessGraph witness;
     private final Arch target;
     private final Settings settings;
+    private ThreadSymmetry threadSymmetry;
 
     public VerificationTask(Program program, Wmm memoryModel, Arch target, Settings settings) {
     	this(program, memoryModel, new WitnessGraph(), target, settings);
@@ -83,6 +88,16 @@ public class VerificationTask {
         return memoryModel.getRelationDependencyGraph();
     }
 
+    public ThreadSymmetry getThreadSymmetry() {
+        if (!program.isCompiled()) {
+            throw new IllegalStateException("ThreadSymmetry is only available after compilation");
+        }
+        if (threadSymmetry == null) {
+            threadSymmetry = new ThreadSymmetry(program);
+        }
+        return threadSymmetry;
+    }
+
 
     // ===================== Utility Methods ====================
 
@@ -99,16 +114,16 @@ public class VerificationTask {
         program.simplify();
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
+        if (GlobalSettings.ENABLE_SYMMETRY_REDUCTION) {
+            new SymmetryReduction(program).apply();
+        }
+        program.setFId(0); // This is used for symmetry breaking
 
         if (GlobalSettings.ENABLE_DEBUG_OUTPUT) {
             for (Thread t : program.getThreads()) {
                 System.out.println("========== Thread " + t.getId() + " ==============");
                 for (Event e : t.getEntry().getSuccessors()) {
                     String indent = ((e instanceof Label) ? "" : "   ");
-                    //TODO(TH): why this print?
-                    // Answer(TH): why not? I use it for inspecting the final program (after all transformations)
-                    // HP: I think we should avoid printf ... I this is useful for us for inspection, maybe log it 
-                    // (that is the whole idea of the logger, that we can using for debugging, but switch it off for the normal user)
                     System.out.printf("%4d: %s%s%n", e.getCId(), indent, e);
                 }
             }
@@ -129,16 +144,16 @@ public class VerificationTask {
         return ctx.getFormulaManager().getBooleanFormulaManager().and(cfEncoding, finalRegValueEncoding);
     }
 
-    public BooleanFormula encodeWmmCore(SolverContext ctx) {
-        return memoryModel.encodeCore(ctx);
-    }
-
     public BooleanFormula encodeWmmRelations(SolverContext ctx) {
-        return memoryModel.encode( ctx);
+        return memoryModel.encodeRelations( ctx);
     }
 
     public BooleanFormula encodeWmmConsistency(SolverContext ctx) {
-        return memoryModel.consistent(ctx);
+        return memoryModel.encodeConsistency(ctx);
+    }
+
+    public BooleanFormula encodeSymmetryBreaking(SolverContext ctx) {
+        return new SymmetryBreaking(this).encode(ctx);
     }
 
     public BooleanFormula encodeAssertions(SolverContext ctx) {

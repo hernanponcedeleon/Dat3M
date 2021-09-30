@@ -6,6 +6,16 @@ import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
+
+//TODO: This class should probably be replaced
+// The utility functions are nice, but it is not extensible/interchangeable with custom
+// implementations
+// The solutions are as follows:
+// (1) Make TupleSet an interface and this class its default implementation (easy)
+// (2) Use Set<Tuple> instead, and move the utility of this class into a separate class
+//     Right now, the only value it has is the byFirst/bySecond functionality
+//     which could be computed on demand instead.
+//     Advantage over (1): We can reuse all code that generates arbitrary sets (e.g. the functionality provided by guava)
 public class TupleSet implements Set<Tuple>{
 
     private final Set<Tuple> tuples;
@@ -54,11 +64,11 @@ public class TupleSet implements Set<Tuple>{
 
     @Override
     public boolean equals(Object obj){
-        if (this == obj)
+        if (this == obj) {
             return true;
-
-        if (obj == null || getClass() != obj.getClass())
+        } else if (obj == null || getClass() != obj.getClass()) {
             return false;
+        }
 
         return tuples.equals(((TupleSet)obj).tuples);
     }
@@ -154,8 +164,9 @@ public class TupleSet implements Set<Tuple>{
                         newEls.addAll(map.get(e2));
                     }
                 }
-                if(map.get(e1).addAll(newEls))
+                if(map.get(e1).addAll(newEls)) {
                     changed = true;
+                }
             }
         }
 
@@ -219,9 +230,7 @@ public class TupleSet implements Set<Tuple>{
 
     public TupleSet mapped(Function<Tuple, Tuple> mapping) {
         TupleSet result = new TupleSet();
-        for (Tuple t : tuples) {
-            result.add(mapping.apply(t));
-        }
+        tuples.stream().map(mapping).forEach(result::add);
         return result;
     }
 }

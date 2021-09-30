@@ -1,21 +1,16 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.program.Thread;
-
-import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
+import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
 
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
+import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 public abstract class Event implements Comparable<Event> {
 
@@ -24,7 +19,10 @@ public abstract class Event implements Comparable<Event> {
 	protected int oId = -1;		// ID after parsing (original)
 	protected int uId = -1;		// ID after unrolling
 	protected int cId = -1;		// ID after compilation
-	
+	protected int fId = -1;		// ID within a function
+
+	protected String symmId;	// ID for symmetry breaking
+
 	protected int cLine = -1;	// line in the original C program
 
 	protected Thread thread; // The thread this event belongs to
@@ -37,16 +35,11 @@ public abstract class Event implements Comparable<Event> {
     protected transient BooleanFormula cfCond;
 	protected transient BooleanFormula cfVar;
 
-	protected VerificationTask task;
+	protected transient VerificationTask task;
 
 	protected Set<Event> listeners = new HashSet<>();
 
-	private String repr;
-
-	protected Event(int cLine) {
-		filter = new HashSet<>();
-		this.cLine = cLine;
-	}
+	private transient String repr;
 
 	protected Event(){
 		filter = new HashSet<>();
@@ -56,6 +49,7 @@ public abstract class Event implements Comparable<Event> {
 		this.oId = other.oId;
         this.uId = other.uId;
         this.cId = other.cId;
+        this.fId = other.fId;
         this.cLine = other.cLine;
         this.filter = other.filter;
         this.thread = other.thread;
@@ -76,6 +70,10 @@ public abstract class Event implements Comparable<Event> {
 
 	public int getCId() {
 		return cId;
+	}
+
+	public String getSymmId() {
+		return symmId;
 	}
 
 	public int getCLine() {
@@ -184,6 +182,23 @@ public abstract class Event implements Comparable<Event> {
 		return RecursiveAction.done();
 	}
 
+    public final int setFId(int nextId) {
+		return setFIdRecursive(nextId, 0).execute();
+    }
+
+	public RecursiveFunction<Integer> setFIdRecursive(int nextId, int depth) {
+		fId = nextId;
+		if (successor != null) {
+			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+				return successor.setFIdRecursive(nextId + 1, depth + 1);
+			} else {
+				return RecursiveFunction.call(() -> successor.setFIdRecursive(nextId + 1, 0));
+			}
+		}
+		return RecursiveFunction.done(nextId + 1);
+	}
+
+
 	// Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -267,7 +282,7 @@ public abstract class Event implements Comparable<Event> {
 		return RecursiveFunction.done(nextId);
 	}
 
-	protected RecursiveFunction<Integer> compileSequenceRecursive(Arch target, int nextId, Event predecessor, LinkedList<Event> sequence, int depth){
+	protected RecursiveFunction<Integer> compileSequenceRecursive(Arch target, int nextId, Event predecessor, List<Event> sequence, int depth){
 		for(Event e : sequence){
 			e.oId = oId;
 			e.uId = uId;
@@ -302,9 +317,11 @@ public abstract class Event implements Comparable<Event> {
 		if(cId < 0){
 			throw new RuntimeException("Event ID is not set in " + this);
 		}
+		this.symmId = getThread().getName() + "-" + fId;
 		this.task = task;
 		FormulaManager fmgr = ctx.getFormulaManager();
-		String repr = GlobalSettings.MERGE_CF_VARS ? task.getBranchEquivalence().getRepresentative(this).repr() : repr();
+		String repr = GlobalSettings.MERGE_CF_VARS && !GlobalSettings.ALLOW_PARTIAL_MODELS
+				? task.getBranchEquivalence().getRepresentative(this).repr() : repr();
 		cfVar = fmgr.makeVariable(BooleanType, "cf(" + repr + ")");
 		//listeners.removeIf(x -> x.getCId() < 0);
 	}
@@ -348,6 +365,15 @@ public abstract class Event implements Comparable<Event> {
 		return cfEnc;
 	}
 
+	public BooleanFormula encodePrefixCF(SolverContext ctx, BooleanFormula cond) {
+		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		if(cfEnc == null){
+			cfCond = (cfCond == null) ? cond : bmgr.or(cfCond, cond);
+			cfEnc = bmgr.and(bmgr.implication(cfVar, cfCond), encodeExec(ctx));
+		}
+		return cfEnc;
+	}
+
 	protected BooleanFormula encodeExec(SolverContext ctx){
 		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
 	}
@@ -356,11 +382,13 @@ public abstract class Event implements Comparable<Event> {
 	// =============== Utility methods ==================
 
 	public boolean wasExecuted(Model model) {
-		return model.evaluate(exec()).booleanValue();
+		Boolean expr = model.evaluate(exec());
+		return expr != null && expr;
 	}
 
 	public boolean wasInControlFlow(Model model) {
-		return model.evaluate(cf()).booleanValue();
+		Boolean expr = model.evaluate(cf());
+		return expr != null && expr;
 	}
 
 	public boolean cfImpliesExec() {

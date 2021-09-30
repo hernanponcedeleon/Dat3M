@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.utils.equivalence;
 
+import com.google.common.collect.Sets;
+
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -18,5 +20,10 @@ public interface Equivalence<T> {
     default Set<T> getAllRepresentatives() {
         return getAllEquivalenceClasses().stream().map(EquivalenceClass::getRepresentative)
                 .collect(Collectors.toSet());
+    }
+
+    default Set<? extends EquivalenceClass<T>> getNonTrivialClasses() {
+        return getAllEquivalenceClasses().stream().filter(c -> c.size() > 1)
+                .collect(Collectors.toCollection(Sets::newIdentityHashSet));
     }
 }

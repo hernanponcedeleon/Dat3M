@@ -1,45 +1,42 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Atom;
+import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.arch.aarch64.event.RMWLoadExclusive;
-import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusiveStatus;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
-import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
+import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.*;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.*;
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
 
 public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData {
 
-    private final IExpr expected;
+    private final ExprInterface expectedValue;
 
-    public Dat3mCAS(Register register, IExpr address, IExpr expected, ExprInterface value, String mo) {
-        super(address, register, value, mo);
-        this.expected = expected;
+    public Dat3mCAS(Register register, IExpr address, ExprInterface expectedVal, ExprInterface desiredValue, String mo) {
+        super(address, register, desiredValue, mo);
+        this.expectedValue = expectedVal;
     }
 
     private Dat3mCAS(Dat3mCAS other){
         super(other);
-        this.expected = other.expected;
+        this.expectedValue = other.expectedValue;
     }
 
     @Override
     public String toString() {
-        return resultRegister + " = __DAT3M_CAS(*" + address + ", " + expected + ", " + value + (mo != null ? ", " + mo : "") + ")";
+        return resultRegister + " = __DAT3M_CAS(*" + address + ", " + expectedValue + ", " + value + (mo != null ? ", " + mo : "") + ")";
     }
 
     // Unrolling
@@ -56,75 +53,56 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Load load;
-    	Store store;
-    	LinkedList<Event> events = new LinkedList<>();
+    	List<Event> events;
+
+    	// Events common for all compilation schemes.
+        Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
+        Label casEnd = newLabel("CAS_end");
+        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casEnd);
+
         switch(target) {
             case NONE: case TSO: {
-                Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-                load = new RMWLoad(dummy, address, mo);
-                Local casResult = new Local(resultRegister, new Atom(dummy, EQ, expected));
-                Label endCas = new Label("CAS_end");
-                CondJump branch = new CondJump(new Atom(resultRegister, NEQ, IConst.ONE), endCas);
-                store = new RMWStore((RMWLoad)load, address, value, mo);
-                events.addAll(Arrays.asList(load, casResult, branch, store, endCas));
+                Load load = newRMWLoad(regValue, address, mo);
+                Store store = newRMWStore(load, address, value, mo);
+
+                events = eventSequence(
+                		// Indentation shows the branching structure
+                        load,
+                        casCmpResult,
+                        branchOnCasCmpResult,
+                        	store,
+                        casEnd
+                );
                 break;
             }
             case POWER:
             case ARM8: {
-                String loadMo;
-                String storeMo;
-                switch (mo) {
-                    case SC:
-                    case ACQ_REL:
-                        loadMo = ACQ;
-                        storeMo = REL;
-                        break;
-                    case ACQUIRE:
-                        loadMo = ACQ;
-                        storeMo = RX;
-                        break;
-                    case RELEASE:
-                        loadMo = RX;
-                        storeMo = REL;
-                        break;
-                    case RELAXED:
-                        loadMo = RX;
-                        storeMo = RX;
-                        break;
-                    default:
-                        throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
-                }
+                String loadMo = extractLoadMo(mo);
+                String storeMo = extractStoreMo(mo);
 
-                Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-                load = new RMWLoadExclusive(dummy, address, loadMo);
-                Local casResult = new Local(resultRegister, new Atom(dummy, EQ, expected));
-                Label endCas = new Label("CAS_end");
-                CondJump branch = new CondJump(new Atom(resultRegister, NEQ, IConst.ONE), endCas);
-                // ---- CAS success ----
-                store = new RMWStoreExclusive(address, value, storeMo);
-                Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
-                RMWStoreExclusiveStatus status = new RMWStoreExclusiveStatus(statusReg, (RMWStoreExclusive)store);
-                Event jumpStoreFail = new CondJump(new Atom(statusReg, EQ, IConst.ONE), (Label) getThread().getExit());
-                jumpStoreFail.addFilters(EType.BOUND);
-                // ---------------------
+                Load load = newRMWLoadExclusive(regValue, address, loadMo);
+                Store store = newRMWStoreExclusive(address, value, storeMo, true);
 
                 // --- Add Fence before under POWER ---
+                Fence optionalMemoryBarrier = null;
+                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(ACQ)) ? Power.newISyncBarrier() : null;
                 if(target.equals(POWER)) {
-                    if (mo.equals(SC)) {
-                        events.addFirst(new Fence("Sync"));
-                    } else if (storeMo.equals(REL)) {
-                        events.addFirst(new Fence("Lwsync"));
-                    }                	
+                    optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier()
+                            : storeMo.equals(REL) ? Power.newLwSyncBarrier()
+                            : null;
                 }
                 // --- Add success events ---
-                events.addAll(Arrays.asList(load, casResult, branch, store, status, jumpStoreFail));
-                // --- Add Fence after success under POWER ---
-                if (target.equals(POWER) && loadMo.equals(ACQ)) {
-                    events.addLast(new Fence("Isync"));
-                }
-                // --- Add exit ---
-                events.addAll(Arrays.asList(endCas));
+                events = eventSequence(
+                		// Indentation shows the branching structure
+                        optionalMemoryBarrier,
+                        load,
+                        casCmpResult,
+                        branchOnCasCmpResult,
+                        	store,
+                        	optionalISyncBarrier,
+                        casEnd
+                );
                 break;
             }
             default:

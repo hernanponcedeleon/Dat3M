@@ -14,7 +14,5 @@ public abstract class FilterAbstract {
         this.name = name;
     }
 
-    public void initialise(){}
-
     public abstract boolean filter(Event e);
 }

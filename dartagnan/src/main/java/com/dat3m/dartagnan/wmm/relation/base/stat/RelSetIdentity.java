@@ -25,6 +25,10 @@ public class RelSetIdentity extends StaticRelation {
         term = makeTerm(filter);
     }
 
+    public FilterAbstract getFilter() {
+        return filter;
+    }
+
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){

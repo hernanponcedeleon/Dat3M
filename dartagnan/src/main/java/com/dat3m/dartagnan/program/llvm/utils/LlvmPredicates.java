@@ -1,22 +1,14 @@
 package com.dat3m.dartagnan.program.llvm.utils;
 
-import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
-import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
-import static com.dat3m.dartagnan.expression.op.COpBin.LTE;
-import static com.dat3m.dartagnan.expression.op.COpBin.LT;
-import static com.dat3m.dartagnan.expression.op.COpBin.GTE;
-import static com.dat3m.dartagnan.expression.op.COpBin.GT;
-import static com.dat3m.dartagnan.expression.op.COpBin.ULTE;
-import static com.dat3m.dartagnan.expression.op.COpBin.ULT;
-import static com.dat3m.dartagnan.expression.op.COpBin.UGTE;
-import static com.dat3m.dartagnan.expression.op.COpBin.UGT;
-import java.util.Arrays;
-import java.util.List;
-
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+
+import java.util.Arrays;
+import java.util.List;
+
+import static com.dat3m.dartagnan.expression.op.COpBin.*;
 
 public class LlvmPredicates {
 
@@ -37,32 +29,23 @@ public class LlvmPredicates {
 		COpBin op = null;
 		if(name.startsWith("$sle.")) {
 			op = LTE;
-		}
-		if(name.startsWith("$ule.")) {
+		} else if(name.startsWith("$ule.")) {
 			op = ULTE;
-		}
-		if(name.startsWith("$slt.")) {
+		} else if(name.startsWith("$slt.")) {
 			op = LT;
-		}
-		if(name.startsWith("$ult.")) {
+		} else if(name.startsWith("$ult.")) {
 			op = ULT;
-		}
-		if(name.startsWith("$sge.")) {
+		} else if(name.startsWith("$sge.")) {
 			op = GTE;
-		}
-		if(name.startsWith("$uge.")) {
+		} else if(name.startsWith("$uge.")) {
 			op = UGTE;
-		}
-		if(name.startsWith("$sgt.")) {
+		} else if(name.startsWith("$sgt.")) {
 			op = GT;
-		}
-		if(name.startsWith("$ugt.")) {
+		} else if(name.startsWith("$ugt.")) {
 			op = UGT;
-		}
-		if(name.startsWith("$eq.")) {
+		} else if(name.startsWith("$eq.")) {
 			op = EQ;
-		}
-		if(name.startsWith("$ne.")) {
+		} else if(name.startsWith("$ne.")) {
 			op = NEQ;
 		}
 		if(op == null) {

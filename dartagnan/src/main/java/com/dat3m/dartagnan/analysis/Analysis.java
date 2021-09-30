@@ -49,7 +49,7 @@ public enum Analysis {
 	public static Analysis[] orderedValues() {
 		Analysis[] order = { REACHABILITY, RACES };
 		// Be sure no element is missing
-		assert(Arrays.asList(order).containsAll(Arrays.asList(Analysis.values())));
+		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;
 	}
 }

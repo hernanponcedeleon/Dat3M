@@ -4,7 +4,10 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
+import com.dat3m.dartagnan.program.event.Store;
+import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
@@ -124,6 +127,18 @@ public class WitnessBuilder {
 					edge.addAttribute(CREATETHREAD.toString(), valueOf(threads));
 					threads++;
 				}
+				
+				if(e instanceof Load) {
+					RegWriter l = (RegWriter)e;
+					edge.addAttribute(EVENTID.toString(), valueOf(e.getUId()));
+					edge.addAttribute(LOADEDVALUE.toString(), l.getWrittenValue(e, model, ctx).toString());
+				}
+
+				if(e instanceof Store) {
+					Store s = (Store)e;
+					edge.addAttribute(EVENTID.toString(), valueOf(e.getUId()));
+					edge.addAttribute(STOREDVALUE.toString(), s.getMemValue().getIntValue(s, model, ctx).toString());
+				}
 
 				graph.addEdge(edge);
 
@@ -141,7 +156,7 @@ public class WitnessBuilder {
 	private void populateMap() {
 		for(Thread t : program.getThreads()) {
 			for(Event e : t.getEntry().getSuccessors()) {
-				eventThreadMap.put(e, t.getId()-1);
+				eventThreadMap.put(e, t.getId() - 1);
 			}
 		}
 	}
@@ -160,12 +175,7 @@ public class WitnessBuilder {
 			}
         	BigInteger var = model.evaluate(intVar("hb", e, ctx));
         	if(var != null) {
-        		List<Event> list = map.computeIfAbsent(var.intValue(), x -> new ArrayList<Event>());
-				Event next = e;
-				do {
-					list.add(next);
-					next = next.getSuccessor();
-				} while (next != null && execEvents.contains(next) && model.evaluate(intVar("hb", next, ctx)) == null);
+        		map.computeIfAbsent(var.intValue(), x -> new ArrayList<>()).add(e);
         	}
         }
 

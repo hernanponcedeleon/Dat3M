@@ -3,11 +3,11 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.utils.Utils;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -49,8 +49,15 @@ public class CondJump extends Event implements RegReaderData {
     }
     
     public boolean isGoto() {
-    	SolverContext defaultCtx = Utils.getDefaultCtx();
-        return defaultCtx.getFormulaManager().getBooleanFormulaManager().isTrue(expr.toBoolFormula(this, defaultCtx));
+    	// This is an under-approximation
+    	// We do not detect cases like CondJump(2*x==x+x,label) as jumps
+    	// However treating those (unusual) as jumps should not break anything
+    	try {
+    		return expr.reduce().getValue();
+    	} catch (Exception e) {
+    		// "Complex" expressions cannot be reduced and thus they are trivially not true.
+    		return false;
+		}
     }
     
     public Label getLabel(){
@@ -140,7 +147,7 @@ public class CondJump extends Event implements RegReaderData {
             Event next = predecessor;
             if(bound == 1) {
                 Label target = (Label)getThread().getExit();
-                next = new CondJump(BConst.TRUE, target);
+                next = EventFactory.newGoto(target);
                 next.addFilters(EType.BOUND);
                 predecessor.setSuccessor(next);
             }
@@ -187,6 +194,18 @@ public class CondJump extends Event implements RegReaderData {
             BooleanFormula ifCond = expr.toBoolFormula(this, ctx);
             label.addCfCond(ctx, bmgr.and(ifCond, cfVar));
             cfEnc = bmgr.and(bmgr.equivalence(cfVar, cfCond), encodeExec(ctx));
+        }
+        return cfEnc;
+    }
+
+    @Override
+    public BooleanFormula encodePrefixCF(SolverContext ctx, BooleanFormula cond) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        if(cfEnc == null){
+            cfCond = (cfCond == null) ? cond : bmgr.or(cfCond, cond);
+            BooleanFormula ifCond = expr.toBoolFormula(this, ctx);
+            label.addCfCond(ctx, bmgr.and(ifCond, cfVar));
+            cfEnc = bmgr.and(bmgr.implication(cfVar, cfCond), encodeExec(ctx));
         }
         return cfEnc;
     }

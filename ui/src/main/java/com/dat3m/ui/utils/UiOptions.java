@@ -1,14 +1,13 @@
 package com.dat3m.ui.utils;
 
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-
 import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 public class UiOptions {
 
-	private Arch target;
+	private final Arch target;
 	private final Method method;
 	private final Solvers solver;
 	private final Settings settings;

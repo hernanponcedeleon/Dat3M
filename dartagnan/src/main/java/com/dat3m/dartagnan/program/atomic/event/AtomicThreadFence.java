@@ -5,12 +5,10 @@ import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.ACQUIRE;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.ACQ_REL;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELEASE;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
+import java.util.List;
 
-import java.util.LinkedList;
+import static com.dat3m.dartagnan.program.EventFactory.*;
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.*;
 
 public class AtomicThreadFence extends Fence {
 
@@ -46,36 +44,32 @@ public class AtomicThreadFence extends Fence {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        LinkedList<Event> events = new LinkedList<>();
+        List<Event> events;
+        Fence fence = null;
         switch (target) {
             case NONE:
                 break;
             case TSO:
-                if(SC.equals(mo)){
-                    events.add(new Fence("Mfence"));
-                }
+                fence = mo.equals(SC) ? X86.newMemoryFence() : null;
                 break;
             case POWER:
-                if(ACQUIRE.equals(mo) || RELEASE.equals(mo) || ACQ_REL.equals(mo) || SC.equals(mo)){
-                    events.add(new Fence("Lwsync"));
-                }
+                fence = mo.equals(ACQUIRE) || mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE) || mo.equals(SC) ?
+                        Power.newLwSyncBarrier() : null;
                 break;
             case ARM:
-                if(ACQUIRE.equals(mo) || RELEASE.equals(mo) || ACQ_REL.equals(mo) || SC.equals(mo)){
-                    events.addLast(new Fence("Ish"));
-                }
+                fence = mo.equals(ACQUIRE) || mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE) || mo.equals(SC) ?
+                        Arm.newISHBarrier() : null;
                 break;
             case ARM8:
-                if(RELEASE.equals(mo) || ACQ_REL.equals(mo) || SC.equals(mo)){
-                	events.addLast(new Fence("DMB.ISH"));
-                }
-                if(ACQUIRE.equals(mo)){
-                	events.addLast(new Fence("DSB.ISHLD"));
-                }                
+                fence = mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE) || mo.equals(SC) ? Arm8.DMB.newISHBarrier()
+                        : mo.equals(ACQUIRE) ? Arm8.DSB.newISHLDBarrier() : null;
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
+        events = eventSequence(
+                fence
+        );
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }

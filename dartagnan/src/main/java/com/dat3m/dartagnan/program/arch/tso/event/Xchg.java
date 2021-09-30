@@ -1,21 +1,22 @@
 package com.dat3m.dartagnan.program.arch.tso.event;
 
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.arch.tso.utils.EType;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.arch.tso.utils.EType;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.collect.ImmutableSet;
 
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.List;
+
+import static com.dat3m.dartagnan.program.EventFactory.*;
 
 public class Xchg extends MemEvent implements RegWriter, RegReaderData {
 
@@ -66,15 +67,19 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.TSO) {
             Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            RMWLoad load = new RMWLoad(dummyReg, address, null);
+            Load load = newRMWLoad(dummyReg, address, null);
             load.addFilters(EType.ATOM);
 
-            RMWStore store = new RMWStore(load, address, resultRegister, null);
+            RMWStore store = newRMWStore(load, address, resultRegister, null);
             store.addFilters(EType.ATOM);
 
-            Local local = new Local(resultRegister, dummyReg);
+            Local updateReg = newLocal(resultRegister, dummyReg);
 
-            LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store, local));
+            List<Event> events = eventSequence(
+                    load,
+                    store,
+                    updateReg
+            );
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }
         throw new RuntimeException("Compilation of xchg is not implemented for " + target);

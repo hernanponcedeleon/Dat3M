@@ -10,7 +10,7 @@ public class FilterBasic extends FilterAbstract {
     private final static Map<String, FilterBasic> instances = new HashMap<>();
 
     public static FilterBasic get(String param){
-        return instances.computeIfAbsent(param, k -> new FilterBasic(param));
+        return instances.computeIfAbsent(param, FilterBasic::new);
     }
 
     private final String param;
@@ -36,11 +36,11 @@ public class FilterBasic extends FilterAbstract {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-
-        if (obj == null || getClass() != obj.getClass())
+        } else if (obj == null || getClass() != obj.getClass()) {
             return false;
+        }
 
         FilterBasic fObj = (FilterBasic) obj;
         return fObj.param.equals(param);

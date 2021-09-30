@@ -1,17 +1,15 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.google.common.collect.ImmutableSet;
-
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-
-import java.math.BigInteger;
-
+import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.math.BigInteger;
 
 public class IConst extends IExpr implements ExprInterface {
 
@@ -107,9 +105,9 @@ public class IConst extends IExpr implements ExprInterface {
 	public boolean equals(Object obj) {
 		if (obj == this) {
 			return true;
-		}
-		if (obj == null || obj.getClass() != getClass())
+		} else if (obj == null || obj.getClass() != getClass()) {
 			return false;
+		}
 		IConst expr = (IConst) obj;
 		return expr.value.equals(value) && expr.precision == precision;
 	}

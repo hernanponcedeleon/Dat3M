@@ -1,19 +1,16 @@
 package com.dat3m.dartagnan.analysis;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
-import static java.util.Collections.singletonList;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverException;
-
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.sosy_lab.java_smt.api.*;
+
+import static com.dat3m.dartagnan.GlobalSettings.ENABLE_SYMMETRY_BREAKING;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
+import static java.util.Collections.singletonList;
 
 public class Base {
 
@@ -24,7 +21,7 @@ public class Base {
         
         task.unrollAndCompile();
        	if(task.getProgram().getAss() instanceof AssertTrue) {
-            logger.info("Verification finished: assertion trivialy holds");
+            logger.info("Verification finished: assertion trivially holds");
        		return PASS;
        	}
         task.initialiseEncoding(ctx);
@@ -33,10 +30,15 @@ public class Base {
         prover.addConstraint(task.encodeProgram(ctx));
         prover.addConstraint(task.encodeWmmRelations(ctx));
         prover.addConstraint(task.encodeWmmConsistency(ctx));
+        // For validation this contains information.
+        // For verification graph.encode() just returns ctx.mkTrue()
+        prover.addConstraint(task.encodeWitness(ctx));
+        if (ENABLE_SYMMETRY_BREAKING) {
+            prover.addConstraint(task.encodeSymmetryBreaking(ctx));
+        }
         logger.info("Starting push()");
         prover.push();
         prover.addConstraint(task.encodeAssertions(ctx));
-        prover.addConstraint(task.encodeWitness(ctx));
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsat()) {
@@ -58,7 +60,7 @@ public class Base {
         
         task.unrollAndCompile();
        	if(task.getProgram().getAss() instanceof AssertTrue) {
-            logger.info("Verification finished: assertion trivialy holds");
+            logger.info("Verification finished: assertion trivially holds");
        		return PASS;
        	}
         task.initialiseEncoding(ctx);
@@ -67,10 +69,20 @@ public class Base {
         prover.addConstraint(task.encodeProgram(ctx));
         prover.addConstraint(task.encodeWmmRelations(ctx));
         prover.addConstraint(task.encodeWmmConsistency(ctx));
+        // For validation this contains information.
+        // For verification graph.encode() just returns ctx.mkTrue()
         prover.addConstraint(task.encodeWitness(ctx));
+        if (ENABLE_SYMMETRY_BREAKING) {
+            prover.addConstraint(task.encodeSymmetryBreaking(ctx));
+        }
+        
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_assertion_assumption");
+        BooleanFormula assumedAssertion = bmgr.implication(assumptionLiteral, task.encodeAssertions(ctx));
+        prover.addConstraint(assumedAssertion);
         
         logger.info("Starting first solver.check()");
-        if(prover.isUnsatWithAssumptions(singletonList(task.encodeAssertions(ctx)))) {
+        if(prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
 			prover.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgram().encodeNoBoundEventExec(ctx)));
             logger.info("Starting second solver.check()");
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
@@ -107,15 +119,18 @@ public class Base {
 		prover1.addConstraint(encodeConsistency);
         prover2.addConstraint(encodeConsistency);
        	
-        prover1.addConstraint(task.getProgram().getAss().encode(ctx));
-        if(task.getProgram().getAssFilter() != null){
-        	BooleanFormula encodeFilter = task.getProgram().getAssFilter().encode(ctx);
-			prover1.addConstraint(encodeFilter);
-            prover2.addConstraint(encodeFilter);
-        }
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
-        prover1.addConstraint(task.encodeWitness(ctx));
+        BooleanFormula encodeWitness = task.encodeWitness(ctx);
+		prover1.addConstraint(encodeWitness);
+        prover2.addConstraint(encodeWitness);
+
+        if (ENABLE_SYMMETRY_BREAKING) {
+            prover1.addConstraint(task.encodeSymmetryBreaking(ctx));
+            prover2.addConstraint(task.encodeSymmetryBreaking(ctx));
+        }
+        
+        prover1.addConstraint(task.encodeAssertions(ctx));
 
         logger.info("Starting first solver.check()");
         if(prover1.isUnsat()) {

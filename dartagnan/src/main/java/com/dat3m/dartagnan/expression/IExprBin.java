@@ -1,18 +1,16 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
-
-import java.math.BigInteger;
-
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
+import java.math.BigInteger;
 
 public class IExprBin extends IExpr implements ExprInterface {
 
@@ -58,8 +56,8 @@ public class IExprBin extends IExpr implements ExprInterface {
     
     @Override
 	public IConst reduce() {
-    	BigInteger v1 = lhs.reduce().getIntValue();
-    	BigInteger v2 = rhs.reduce().getIntValue();
+    	BigInteger v1 = ((IConst)lhs.reduce()).getIntValue();
+    	BigInteger v2 = ((IConst)rhs.reduce()).getIntValue();
 		return new IConst(op.combine(v1, v2), lhs.getPrecision());
 	}
 
@@ -113,9 +111,9 @@ public class IExprBin extends IExpr implements ExprInterface {
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
-        }
-        if (obj == null || obj.getClass() != getClass())
+        } else if (obj == null || obj.getClass() != getClass()) {
             return false;
+        }
         IExprBin expr = (IExprBin) obj;
         return expr.op == op && expr.lhs.equals(lhs) && expr.rhs.equals(rhs);
     }

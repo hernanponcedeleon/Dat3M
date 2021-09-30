@@ -1,22 +1,15 @@
 package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.memory.Location;
-import com.google.common.collect.ImmutableSet;
-
-import java.math.BigInteger;
-
-import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.expression.op.BOpUn;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.memory.Location;
+import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+
+import java.math.BigInteger;
 
 public class BExprUn extends BExpr {
 
@@ -75,8 +68,8 @@ public class BExprUn extends BExpr {
     }
 
 	@Override
-	public IConst reduce() {
-		return new IConst(b.reduce().getIntValue(), -1);
+	public BConst reduce() {
+		return new BConst(!((BConst)b.reduce()).getValue());
 	}
 
     @Override
@@ -93,9 +86,9 @@ public class BExprUn extends BExpr {
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
-        }
-        if (obj == null || obj.getClass() != getClass())
+        } else if (obj == null || obj.getClass() != getClass()) {
             return false;
+        }
         BExprUn expr = (BExprUn) obj;
         return expr.op == op && expr.b.equals(b);
     }

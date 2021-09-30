@@ -2,13 +2,13 @@ package com.dat3m.dartagnan.utils;
 
 import com.google.common.collect.ImmutableMap;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 
 public class ResourceHelper {
 
@@ -33,5 +33,9 @@ public class ResourceHelper {
             }
         }
         return expectedResults;
+    }
+
+    public static String getCSVFileName(Class<?> testingClass, String name) {
+        return String.format("%s/output/%s-%s.csv", System.getenv("DAT3M_HOME"), testingClass.getSimpleName(), name);
     }
 }

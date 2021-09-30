@@ -22,6 +22,11 @@ public class AssertCompositeAnd extends AbstractAssert {
     }
 
     @Override
+    public AbstractAssert removeLocAssertions(boolean replaceByTrue) {
+        return new AssertCompositeAnd(a1.removeLocAssertions(replaceByTrue), a2.removeLocAssertions(replaceByTrue));
+    }
+
+    @Override
     public BooleanFormula encode(SolverContext ctx) {
         return ctx.getFormulaManager().getBooleanFormulaManager().and(a1.encode(ctx), a2.encode(ctx));
     }

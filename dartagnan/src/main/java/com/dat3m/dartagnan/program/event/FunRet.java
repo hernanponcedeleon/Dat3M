@@ -4,10 +4,9 @@ import com.dat3m.dartagnan.program.utils.EType;
 
 public class FunRet extends Event {
 
-	String funName;
+	private final String funName;
 	
-	public FunRet(String funName, int cLine) {
-		super(cLine);
+	public FunRet(String funName) {
 		this.funName = funName;
         addFilters(EType.ANY);
 	}

@@ -1,20 +1,14 @@
 package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.memory.Location;
-import com.google.common.collect.ImmutableSet;
-
-import java.math.BigInteger;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.memory.Location;
+import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.java_smt.api.*;
+
+import java.math.BigInteger;
 
 public class Atom extends BExpr implements ExprInterface {
 	
@@ -84,27 +78,45 @@ public class Atom extends BExpr implements ExprInterface {
     }
 
     @Override
-	public IConst reduce() {
-    	BigInteger v1 = lhs.reduce().getIntValue();
-    	BigInteger v2 = rhs.reduce().getIntValue();
-        switch(op) {
-        case EQ:
-            return new IConst(v1.compareTo(v2) == 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
-        case NEQ:
-            return new IConst(v1.compareTo(v2) != 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
-        case LT:
-        case ULT:
-            return new IConst(v1.compareTo(v2) < 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
-        case LTE:
-        case ULTE:
-            return new IConst(v1.compareTo(v2) <= 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
-        case GT:
-        case UGT:
-            return new IConst(v1.compareTo(v2) > 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
-        case GTE:
-        case UGTE:
-            return new IConst(v1.compareTo(v2) >= 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
-        }
+	public BConst reduce() {
+    	// Reduction for IExpr
+    	if(lhs instanceof IExpr && rhs instanceof IExpr) {
+        	BigInteger v1 = ((IExpr)lhs).reduce().getIntValue();
+        	BigInteger v2 = ((IExpr)lhs).reduce().getIntValue();
+            switch(op) {
+            	case EQ:
+            		return new BConst(v1.compareTo(v2) == 0);
+            	case NEQ:
+            		return new BConst(v1.compareTo(v2) != 0);
+	            case LT:
+	            case ULT:
+	                return new BConst(v1.compareTo(v2) < 0);
+	            case LTE:
+	            case ULTE:
+	                return new BConst(v1.compareTo(v2) <= 0);
+	            case GT:
+	            case UGT:
+	                return new BConst(v1.compareTo(v2) > 0);
+	            case GTE:
+	            case UGTE:
+	                return new BConst(v1.compareTo(v2) >= 0);
+	            default:
+	                throw new UnsupportedOperationException("Reduce not supported for " + this);
+            }            
+    	}
+    	// Reduction for BExpr
+    	if(lhs instanceof BConst && rhs instanceof BConst) {
+    		boolean v1 = ((BConst)lhs).reduce().getValue();
+    		boolean v2 = ((BConst)lhs).reduce().getValue();
+            switch(op) {
+	            case EQ:
+	            	return new BConst(v1 == v2);
+	            case NEQ:
+	            	return new BConst(v1 != v2);
+	            default:
+	                throw new UnsupportedOperationException("Reduce not supported for " + this);
+            }
+    	}
         throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
 
@@ -130,9 +142,9 @@ public class Atom extends BExpr implements ExprInterface {
 	public boolean equals(Object obj) {
 		if (obj == this) {
 			return true;
-		}
-		if (obj == null || obj.getClass() != getClass())
+		} else if (obj == null || obj.getClass() != getClass()) {
 			return false;
+		}
 		Atom expr = (Atom) obj;
 		return expr.op == op && expr.lhs.equals(lhs) && expr.rhs.equals(rhs);
 	}

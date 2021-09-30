@@ -36,38 +36,27 @@ public class LlvmFunctions {
 		IOpBin op = null; 
 		if(name.startsWith("$add.")) {
 			op = PLUS;
-		}
-		if(name.startsWith("$sub.")) {
+		} else if(name.startsWith("$sub.")) {
 			op = MINUS;
-		}
-		if(name.startsWith("$mul.")) {
+		} else if(name.startsWith("$mul.")) {
 			op = MULT;
-		}
-		if(name.startsWith("$smod.")) {
+		} else if(name.startsWith("$smod.")) {
 			op = MOD;
-		}
-		if(name.startsWith("$srem.")) {
+		} else if(name.startsWith("$srem.")) {
 			op = SREM;
-		}
-		if(name.startsWith("$urem.")) {
+		} else if(name.startsWith("$urem.")) {
 			op = UREM;
-		}
-		if(name.startsWith("$sdiv.")) {
+		} else if(name.startsWith("$sdiv.")) {
 			op = DIV;
-		}
-		if(name.startsWith("$udiv.")) {
+		} else if(name.startsWith("$udiv.")) {
 			op = UDIV;
-		}
-		if(name.startsWith("$shl.")) {
+		} else if(name.startsWith("$shl.")) {
 			op = L_SHIFT;
-		}
-		if(name.startsWith("$lshr.")) {
+		} else if(name.startsWith("$lshr.")) {
 			op = R_SHIFT;
-		}
-		if(name.startsWith("$ashr.")) {
+		} else if(name.startsWith("$ashr.")) {
 			op = AR_SHIFT;
-		}
-		if(name.startsWith("$xor.")) {
+		} else if(name.startsWith("$xor.")) {
 			//TODO: This is a temporary fix to parse xor.x1 as boolean negation.
 			// Once we have proper preprocessing code, we should remove this here!
 			if (name.startsWith("$xor.i1") && callParams.get(1) instanceof IConst) {
@@ -79,11 +68,9 @@ public class LlvmFunctions {
 				}
 			}
 			op = XOR;
-		}
-		if(name.startsWith("$or.")) {
+		} else if(name.startsWith("$or.")) {
 			op = OR;
-		}
-		if(name.startsWith("$and.") || name.startsWith("$nand.")) {
+		} else if(name.startsWith("$and.") || name.startsWith("$nand.")) {
 			op = AND;
 		}
 		if(op == null) {

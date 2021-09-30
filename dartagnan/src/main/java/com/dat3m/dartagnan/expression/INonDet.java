@@ -44,11 +44,6 @@ public class INonDet extends IExpr implements ExprInterface {
 	}
 	
 	@Override
-	public IConst reduce() {
-        throw new UnsupportedOperationException("Reduce not supported for " + this);
-	}
-
-	@Override
 	public Formula toIntFormula(Event e, SolverContext ctx) {
 		String name = Integer.toString(hashCode());
 		FormulaManager fmgr = ctx.getFormulaManager();

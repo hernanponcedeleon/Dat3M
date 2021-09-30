@@ -32,13 +32,12 @@ public class EventMap {
         eventMap.remove(eventData.getEvent());
     }
 
+    public EventData getOrCreate(Event e) {
+        return eventMap.computeIfAbsent(e, EventData::new);
+    }
+
     public EventData get(Event e) {
-        EventData data = eventMap.get(e);
-        if (data == null) {
-            data = new EventData(e);
-            eventMap.put(e, data);
-        }
-        return data;
+        return eventMap.get(e);
     }
 
     public Collection<EventData> getValues() {

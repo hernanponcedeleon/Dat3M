@@ -112,8 +112,9 @@ public class DependencyGraph<T> {
         stack.clear();
 
         for (Node node : nodeMap.values()) {
-            if (!node.wasVisited())
+            if (!node.wasVisited()) {
                 strongConnect(node);
+            }
         }
 
         // Tarjan finds reverse topological ordering, so we put it into standard order
@@ -146,8 +147,9 @@ public class DependencyGraph<T> {
                 strongConnect(w);
                 v.lowlink = Math.min(v.lowlink, w.lowlink);
             }
-            else if (w.isOnStack)
+            else if (w.isOnStack) {
                 v.lowlink = Math.min(v.lowlink, w.index);
+            }
         }
 
 
@@ -215,10 +217,11 @@ public class DependencyGraph<T> {
         @Override
         @SuppressWarnings("unchecked")
         public boolean equals(Object obj) {
-            if (obj == this)
+            if (obj == this) {
                 return true;
-            if (obj == null || obj.getClass() != getClass())
+            } else if (obj == null || obj.getClass() != getClass()) {
                 return false;
+            }
             Node node = (Node)obj;
             return node.content.equals(this.content);
         }

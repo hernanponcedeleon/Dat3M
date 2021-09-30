@@ -1,25 +1,22 @@
 package com.dat3m.dartagnan.program.event.pthread;
 
-import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
-import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
-import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
-
-import java.math.BigInteger;
-import java.util.LinkedList;
-
 import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
+import static com.dat3m.dartagnan.program.EventFactory.*;
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
+import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
 
 public class Join extends Event {
 
@@ -74,8 +71,8 @@ public class Join extends Event {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        LinkedList<Event> events = new LinkedList<>();
-        Load load = new Load(reg, address, SC);
+        List<Event> events = new ArrayList<>();
+        Load load = newLoad(reg, address, SC);
         load.addFilters(PTHREAD);
         events.add(load);
 
@@ -83,23 +80,24 @@ public class Join extends Event {
             case NONE: case TSO:
                 break;
             case POWER:
-                Label label = new Label("Jump_" + oId);
-                CondJump jump = new CondJump(new Atom(reg, EQ, reg), label);
-                events.addLast(jump);
-                events.addLast(label);
-                events.addLast(new Fence("Isync"));
+                Label label = newLabel("Jump_" + oId);
+                events.addAll(eventSequence(
+                        newFakeCtrlDep(reg, label),
+                        label,
+                        Power.newISyncBarrier()
+                ));
                 break;
             case ARM:
-                events.addLast(new Fence("Ish"));
+                events.add(Arm.newISHBarrier());
                 break;
             case ARM8:
-                events.addLast(new Fence("DMB.ISH"));
+                events.add(Arm8.DMB.newISHBarrier());
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
 
-        events.add(new CondJump(new BExprUn(NOT, new Atom(reg, EQ, new IConst(BigInteger.ZERO, -1))), label));
+        events.add(newJumpUnless(new Atom(reg, EQ, IConst.ZERO), label));
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }
