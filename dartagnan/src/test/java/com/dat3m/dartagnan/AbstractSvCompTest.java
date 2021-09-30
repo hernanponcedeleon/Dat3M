@@ -112,7 +112,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    @Test(timeout = TIMEOUT)
+//    @Test(timeout = TIMEOUT)
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
