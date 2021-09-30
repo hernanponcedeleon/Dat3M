@@ -17,13 +17,10 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.*;
 
 import static com.dat3m.dartagnan.analysis.Base.*;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
@@ -50,7 +47,7 @@ public abstract class AbstractSvCompTest {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
              ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-        	 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/" + getClass().getSimpleName() + "-two-solvers.csv", true)))
+             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "two-solvers"), true)))
         {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
@@ -58,11 +55,9 @@ public abstract class AbstractSvCompTest {
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
-            Long solvingTime = (Long)System.currentTimeMillis() - start;
-            writer.append(path);
-            writer.append(", ");
-			writer.append(solvingTime.toString());
-			writer.newLine();
+            long solvingTime = System.currentTimeMillis() - start;
+            writer.append(path).append(", ").append(Long.toString(solvingTime));
+            writer.newLine();
         } catch (Exception e){
             fail(e.getMessage());
         }
@@ -72,7 +67,7 @@ public abstract class AbstractSvCompTest {
     public void testIncremental() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-           	 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/" + getClass().getSimpleName() + "-incremental.csv", true)))
+             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "incremental"), true)))
         {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
@@ -80,11 +75,9 @@ public abstract class AbstractSvCompTest {
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisIncrementalSolver(ctx, prover, task));
-            Long solvingTime = (Long)System.currentTimeMillis() - start;
-            writer.append(path);
-            writer.append(", ");
-			writer.append(solvingTime.toString());
-			writer.newLine();
+            long solvingTime = System.currentTimeMillis() - start;
+            writer.append(path).append(", ").append(Long.toString(solvingTime));
+            writer.newLine();
         } catch (Exception e){
             fail(e.getMessage());
         }
@@ -94,7 +87,7 @@ public abstract class AbstractSvCompTest {
     public void testAssume() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-        	 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/" + getClass().getSimpleName() + "-assume.csv", true)))
+             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "assume"), true)))
         {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
@@ -102,11 +95,9 @@ public abstract class AbstractSvCompTest {
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
-            Long solvingTime = (Long)System.currentTimeMillis() - start;
-            writer.append(path);
-            writer.append(", ");
-			writer.append(solvingTime.toString());
-			writer.newLine();
+            long solvingTime = System.currentTimeMillis() - start;
+            writer.append(path).append(", ").append(Long.toString(solvingTime));
+            writer.newLine();
         } catch (Exception e){
             fail(e.getMessage());
         }
@@ -116,7 +107,7 @@ public abstract class AbstractSvCompTest {
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-           	 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/" + getClass().getSimpleName() + "-refinement.csv", true)))
+             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement"), true)))
         {
             String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
             expected = readExpected(property);
@@ -125,11 +116,9 @@ public abstract class AbstractSvCompTest {
             long start = System.currentTimeMillis();
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
-            Long solvingTime = (Long)System.currentTimeMillis() - start;
-            writer.append(path);
-            writer.append(", ");
-			writer.append(solvingTime.toString());
-			writer.newLine();
+            long solvingTime = System.currentTimeMillis() - start;
+            writer.append(path).append(", ").append(Long.toString(solvingTime));
+            writer.newLine();
         } catch (Exception e){
             fail(e.getMessage());
         }

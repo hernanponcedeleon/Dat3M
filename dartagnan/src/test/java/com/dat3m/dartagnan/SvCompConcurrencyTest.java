@@ -10,13 +10,13 @@ import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 
 @RunWith(Parameterized.class)
 public class SvCompConcurrencyTest extends AbstractSvCompTest {
@@ -33,10 +33,10 @@ public class SvCompConcurrencyTest extends AbstractSvCompTest {
         Settings s7 = new Settings(Alias.CFIS, 7, TIMEOUT);
         
     	// We want the files to be created every time we run the unit tests
-		Files.deleteIfExists(Paths.get(System.getenv().get("DAT3M_HOME") + "/output/" + MethodHandles.lookup().lookupClass().getSimpleName() + "-two-solvers.csv"));
-		Files.deleteIfExists(Paths.get(System.getenv().get("DAT3M_HOME") + "/output/" + MethodHandles.lookup().lookupClass().getSimpleName() + "-incremental.csv"));
-		Files.deleteIfExists(Paths.get(System.getenv().get("DAT3M_HOME") + "/output/" + MethodHandles.lookup().lookupClass().getSimpleName() + "-assume.csv"));
-		Files.deleteIfExists(Paths.get(System.getenv().get("DAT3M_HOME") + "/output/" + MethodHandles.lookup().lookupClass().getSimpleName() + "-refinement.csv"));
+        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompConcurrencyTest.class, "two-solvers")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompConcurrencyTest.class, "incremental")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompConcurrencyTest.class, "assume")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompConcurrencyTest.class, "refinement")));
 
         List<Object[]> data = new ArrayList<>();
 

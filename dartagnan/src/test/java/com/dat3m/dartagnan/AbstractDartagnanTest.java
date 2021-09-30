@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static org.junit.Assert.*;
 
 public abstract class AbstractDartagnanTest {
@@ -113,18 +114,16 @@ public abstract class AbstractDartagnanTest {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
              ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-        	 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/" + getClass().getSimpleName() + "-two-solvers.csv", true)))
+        	 BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "two-solvers"), true)))
         {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
                 long start = System.currentTimeMillis();
                 assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
-                Long solvingTime = (Long)System.currentTimeMillis() - start;
-                writer.append(path);
-                writer.append(", ");
-   				writer.append(solvingTime.toString());
-   				writer.newLine();
+                long solvingTime = System.currentTimeMillis() - start;
+                writer.append(path).append(", ").append(Long.toString(solvingTime));
+                writer.newLine();
             }
         } catch (Exception e){
             fail(e.getMessage());
@@ -135,7 +134,7 @@ public abstract class AbstractDartagnanTest {
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-           	 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/" + getClass().getSimpleName() + "-refinement.csv", true)))
+             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement"), true)))
         {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
@@ -149,11 +148,9 @@ public abstract class AbstractDartagnanTest {
                 long start = System.currentTimeMillis();
                 assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                         RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
-                Long solvingTime = (Long)System.currentTimeMillis() - start;
-                writer.append(path);
-                writer.append(", ");
-   				writer.append(solvingTime.toString());
-   				writer.newLine();
+                long solvingTime = System.currentTimeMillis() - start;
+                writer.append(path).append(", ").append(Long.toString(solvingTime));
+                writer.newLine();
             }
         } catch (Exception e){
             fail(e.getMessage());
