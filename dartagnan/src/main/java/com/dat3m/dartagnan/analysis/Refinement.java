@@ -92,9 +92,13 @@ public class Refinement {
             //prover.addConstraint(task.getMemoryModel().encodeNonDerived(ctx));
             //prover.addConstraint(task.getMemoryModel().encodeConsistency(ctx));
         } else {
+            // ==== Test Code ====
             // If we do not reduce the reasons to core reasons,
             // we need to encode more relations than just rf and co!
-            prover.addConstraint(task.encodeWmmRelations(ctx));
+            //prover.addConstraint(task.encodeWmmRelations(ctx));
+            prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
+            //prover.addConstraint(task.getMemoryModel().encodeRelations(ctx));
+            prover.addConstraint(task.getMemoryModel().encodeConsistency(ctx));
         }
 
         if (ENABLE_SYMMETRY_BREAKING) {
@@ -137,6 +141,30 @@ public class Refinement {
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 foundCoreReasons.add(reasons);
                 prover.addConstraint(refiner.refine(reasons));
+
+                /*for (Constraint c : saturationSolver.getExecutionGraph().getConstraints()) {
+                    RelationGraph g = c.getConstrainedGraph();
+                    Relation rel = task.getMemoryModel().getRelationRepository().getRelation(g.getName());
+                    for (Edge e : c.getConstrainedGraph()) {
+                        BooleanFormula relVar = rel.getSMTVar(e.toTuple(), ctx);
+                        if ( relVar.equals(bmgr.makeFalse())) {
+                            continue; // BUGGY?
+                        }
+                        BooleanFormula implication = bmgr.or(refiner.refine(new DNF<>(saturationSolver.getReasoner().computeReason(g, e))), rel.getSMTVar(e.toTuple(), ctx));
+                        prover.addConstraint(implication);
+                    }
+                }*/
+
+                /*Map<RelationGraph, Map<Edge, DNF<CoreLiteral>>> cutEdgeReasonMap = saturationSolver.getReasoner().getCutEdgeReasonMap();
+                for (RelationGraph g : cutEdgeReasonMap.keySet()) {
+                    Relation rel = task.getMemoryModel().getRelationRepository().getRelation(g.getName());
+                    for (Map.Entry<Edge, DNF<CoreLiteral>> entry : cutEdgeReasonMap.get(g).entrySet()) {
+                        Edge e = entry.getKey();
+                        DNF<CoreLiteral> derivation = entry.getValue();
+                        BooleanFormula implication = bmgr.or(refiner.refine(derivation), rel.getSMTVar(e.toTuple(), ctx));
+                        prover.addConstraint(implication);
+                    }
+                }*/
 
                 // ====== Test code =======
                 /*Map<RelationGraph, Relation> graphRelMap = saturationSolver.getExecutionGraph().getRelationGraphMap().inverse();

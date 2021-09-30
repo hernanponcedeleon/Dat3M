@@ -109,7 +109,7 @@ public class Wmm {
     // and recursive groups (why recursive groups?)
     // It also triggers the computation of may and active sets!
     // It does NOT encode the axioms nor any non-base relation yet!
-    private BooleanFormula encodeBase(SolverContext ctx) {
+    public BooleanFormula encodeBase(SolverContext ctx) {
         if (this.task == null) {
             throw new IllegalStateException("The WMM needs to get initialised first.");
         }

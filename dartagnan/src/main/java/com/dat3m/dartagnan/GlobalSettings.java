@@ -50,10 +50,11 @@ public class GlobalSettings {
     // ==== Saturation ====
     public static boolean SATURATION_ENABLE_DEBUG = false;
     public static SaturationSolver.Mode SATURATION_MODE = SaturationSolver.Mode.MODEL_CHECKING;
+    // NOTE: This setting only has an effect if <REFINEMENT_ENCODE_COHERENCES> is enabled.
     public static boolean SATURATION_USE_MODEL_COHERENCES = true;
     public static boolean SATURATION_REDUCE_REASONS_TO_CORE_REASONS = true;
-    public static boolean SATURATION_NO_RESOLUTION = false;
     // NOTE: This setting only has an effect if <REFINEMENT_ENCODE_COHERENCES> is enabled.
+    public static boolean SATURATION_NO_RESOLUTION = false;
     public static final int SATURATION_MAX_DEPTH = 3;
 
     public static final Learner.ViolationLearningStrategy SATURATION_VIOLATION_LEARNING = Learner.ViolationLearningStrategy.NONE;

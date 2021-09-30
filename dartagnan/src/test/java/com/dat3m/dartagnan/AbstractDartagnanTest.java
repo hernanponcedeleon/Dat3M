@@ -28,7 +28,8 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public abstract class AbstractDartagnanTest {
 
@@ -106,7 +107,7 @@ public abstract class AbstractDartagnanTest {
         }
     }
 
-    @Test(timeout = TIMEOUT)
+     //@Test(timeout = TIMEOUT)
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
@@ -122,19 +123,19 @@ public abstract class AbstractDartagnanTest {
         }
     }
 
-    //@Test(timeout = TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
         {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
-                if (!program.getAss().getLocs().isEmpty()) {
+                /*if (!program.getAss().getLocs().isEmpty()) {
                     // We assert true, because Refinement can't handle these assertions
                     // They need coherence, which Refinement avoids to encode!
                     assertTrue(true);
                     return;
-                }
+                }*/
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
                 assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                         RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));

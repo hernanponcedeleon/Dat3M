@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.analysis.saturation.graphs;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.GraphListener;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.basic.SimpleCoherenceGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.unary.RecursiveGraph;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -31,6 +32,52 @@ public class GraphHierarchy {
     }
 
     // ========================================
+
+    // Test code
+
+    public Set<RelationGraph> findMinimalCut() {
+        Set<RelationGraph> graphs = getGraphs().stream().
+                filter(g -> !(g instanceof SimpleCoherenceGraph)).collect(Collectors.toSet());
+        Set<RelationGraph> cut = graphs.stream().filter(g -> g.isStatic() ||  g.getName().equals("co"))
+                .collect(Collectors.toSet());
+        cut.removeIf(RelationGraph::isEmpty);
+
+        boolean progress;
+        do {
+            progress = false;
+            for (RelationGraph g : new ArrayList<>(cut)) {
+                progress |= coverGraphInCut(cut, g);
+            }
+        } while (progress);
+
+        cut.removeIf(RelationGraph::isEmpty);
+        return cut;
+    }
+
+    private boolean coverGraphInCut(Set<RelationGraph> cut, RelationGraph graph) {
+        int cutSize = cut.stream().mapToInt(RelationGraph::size).sum();
+        Set<RelationGraph> successors = dependencyGraph.get(graph).getDependents().stream().map(DependencyGraph.Node::getContent)
+                .collect(Collectors.toSet());
+
+        Set<RelationGraph> newCut = new HashSet<>(cut);
+        newCut.addAll(successors);
+        newCut.remove(graph);
+
+        newCut.removeIf(g -> dependencyGraph.get(g).getDependents().stream()
+                .map(node -> node.getContent()).allMatch(newCut::contains)
+                && !dependencyGraph.get(g).getDependents().isEmpty());
+        int newCutSize = newCut.stream().mapToInt(RelationGraph::size).sum();
+
+        if (newCutSize < cutSize) {
+            cut.clear();
+            cut.addAll(newCut);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // --------
 
     // ============= Accessors =================
 

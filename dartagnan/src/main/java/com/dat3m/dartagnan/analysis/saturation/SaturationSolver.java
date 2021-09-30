@@ -283,14 +283,19 @@ public class SaturationSolver {
         result.setStatus(status);
         if (status == INCONSISTENT) {
             long time = System.currentTimeMillis();
+            // Test code
+            /*reasoner.clear();
+            Set<RelationGraph> cut = execGraph.computeMinimalCut();
+            reasoner.setCut(cut);*/
             result.setCoreReasons(convertToDNF(computeInconsistencyReasons()));
             stats.reasonComputationTime += (System.currentTimeMillis() - time);
         }
 
         stats.searchTime = System.currentTimeMillis() - curTime;
-
         return result;
     }
+
+    public Reasoner getReasoner() { return reasoner; }
 
     /*
         <checkUsingSaturation> performs a sequence of k-Saturations, starting from 0 up to <maxSaturationDepth>

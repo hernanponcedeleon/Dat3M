@@ -41,6 +41,25 @@ public class Reasoner {
     private final Relation co;
     private final Visitor visitor = new Visitor();
 
+    // ======= Test code for cuts =======
+    private Set<RelationGraph> cut = new HashSet<>();
+
+    public void setCut(Set<RelationGraph> cut) {
+        this.cut = cut;
+    }
+
+    private final Map<RelationGraph, Map<Edge, DNF<CoreLiteral>>> cutEdgeReasonMap = new HashMap<>();
+
+    public void clear() {
+        cutEdgeReasonMap.clear();
+    }
+
+    public Map<RelationGraph, Map<Edge, DNF<CoreLiteral>>> getCutEdgeReasonMap() {
+        return cutEdgeReasonMap;
+    }
+
+    // ==================================
+
     // For debugging purposes, we track for each recursive graph the edges we visit recursively.
     // If we recursively visit some edge twice, we end up in a cyclic reasoning which causes an exception right now.
     // Due to the new derivation length reasoning, this should never happen!
@@ -91,11 +110,24 @@ public class Reasoner {
         return clauseSet.toDNF();
     }
 
+    boolean computeCoreReasons = false;
     public Conjunction<CoreLiteral> computeReason(RelationGraph graph, Edge edge) {
         if (!graph.contains(edge)) {
             return Conjunction.FALSE();
         }
-        Conjunction<CoreLiteral> reason = graph.accept(visitor, edge, null);
+        Conjunction<CoreLiteral> reason;
+        if (!cut.contains(graph) || computeCoreReasons) {
+            reason = graph.accept(visitor, edge, null);
+        } else {
+            reason = new Conjunction<>(new EdgeLiteral(graph.getName(), edge));
+            computeCoreReasons = true;
+            Conjunction<CoreLiteral> coreReason = simplifyReason(graph.accept(visitor, edge, null));
+            cutEdgeReasonMap.computeIfAbsent(graph, key -> new HashMap<>())
+                    .compute(edge, (k, v) -> v == null ? new DNF<>(coreReason) : v.and(new DNF<>(coreReason)));
+            computeCoreReasons = false;
+        }
+
+        //Conjunction<CoreLiteral> reason = graph.accept(visitor, edge, null);
         assert !reason.isFalse();
         return simplifyReason(reason);
     }
@@ -192,8 +224,9 @@ public class Reasoner {
             EventLiteral eventLit = (EventLiteral) literal;
             Event e = eventLit.getEventData().getEvent();
             return e.cfImpliesExec() && clause.getLiterals().stream().anyMatch(x -> {
-                if (!(x instanceof RfLiteral)) {
+                if (x instanceof AddressLiteral || x instanceof EventLiteral) {
                     return false;
+                    //TODO: We assume model checking mode right now!!!
                 }
                 Edge edge = ((EdgeLiteral) x).getEdge();
                 return eq.isImplied(edge.getFirst().getEvent(), e) || eq.isImplied(edge.getSecond().getEvent(), e);
@@ -235,7 +268,8 @@ public class Reasoner {
             if (next == graph) {
                 throw new IllegalStateException("Did not find a reason for " + edge + " in " + graph.getName());
             }
-            reason = next.accept(this, min, null);
+            reason = computeReason(next, min);
+            //reason = next.accept(this, min, null);
             assert !reason.isFalse();
             return reason;
 
@@ -252,7 +286,8 @@ public class Reasoner {
             for (RelationGraph g : graph.getDependencies()) {
                 Edge e = g.get(edge).orElseThrow(() ->
                         new IllegalStateException("Did not find a reason for " + edge + " in " + graph.getName()));
-                reason = reason.and(g.accept(this, e, unused));
+                reason = reason.and(computeReason(g, e));
+                //reason = reason.and(g.accept(this, e, unused));
             }
             assert !reason.isFalse();
             return reason;
@@ -279,7 +314,8 @@ public class Reasoner {
                     }
                     Edge e2 = second.get(new Edge(e1.getSecond(), edge.getSecond())).orElse(null);
                     if (e2 != null && e2.getDerivationLength() < edge.getDerivationLength()) {
-                        reason = first.accept(this, e1, unused).and(second.accept(this, e2, unused));
+                        reason = computeReason(first, e1).and(computeReason(second, e2));
+                        //reason = first.accept(this, e1, unused).and(second.accept(this, e2, unused));
                         assert !reason.isFalse();
                         return reason;
                     }
@@ -291,7 +327,8 @@ public class Reasoner {
                     }
                     Edge e1 = first.get(new Edge(edge.getFirst(), e2.getFirst())).orElse(null);
                     if (e1 != null && e1.getDerivationLength() < edge.getDerivationLength()) {
-                        reason = first.accept(this, e1, unused).and(second.accept(this, e2, unused));
+                        reason = computeReason(first, e1).and(computeReason(second, e2));
+                        //reason = first.accept(this, e1, unused).and(second.accept(this, e2, unused));
                         assert !reason.isFalse();
                         return reason;
                     }
@@ -314,7 +351,8 @@ public class Reasoner {
             if (!graphRelMap.get(difGraph.getSecond()).isStaticRelation()) {
                 throw new IllegalStateException("The difference graph" + difGraph + " has a non-static second operand");
             }
-            reason = difGraph.getFirst().accept(this, edge, unused);
+            reason = computeReason(difGraph.getFirst(), edge);
+            //reason = difGraph.getFirst().accept(this, edge, unused);
             assert !reason.isFalse();
             return reason;
         }
@@ -326,7 +364,8 @@ public class Reasoner {
                 return reason;
             }
 
-            reason = graph.getDependencies().get(0).accept(this, edge.inverse().withDerivLength(edge.getDerivationLength() - 1), unused);
+            reason = computeReason(graph.getDependencies().get(0), edge.inverse().withDerivLength(edge.getDerivationLength() - 1));
+            //reason = graph.getDependencies().get(0).accept(this, edge.inverse().withDerivLength(edge.getDerivationLength() - 1), unused);
             assert !reason.isFalse();
             return reason;
         }
@@ -345,7 +384,8 @@ public class Reasoner {
             for (Edge inEdge : inner.inEdges(edge.getSecond())) {
                 // TODO: We could look for the edge with the least derivation length here
                 if (inEdge.getDerivationLength() < edge.getDerivationLength()) {
-                    reason = inner.accept(this, inEdge, unused);
+                    reason = computeReason(inner, inEdge);
+                    //reason = inner.accept(this, inEdge, unused);
                     return reason;
                 }
             }
@@ -364,7 +404,8 @@ public class Reasoner {
             } else {
                 //TODO: Make sure that we can simply delegate the edge through.
                 // The reflexive closure right now does NOT change the derivation length
-                reason = graph.getDependencies().get(0).accept(this, edge, unused);
+                reason = computeReason(graph.getDependencies().get(0), edge);
+                //reason = graph.getDependencies().get(0).accept(this, edge, unused);
                 assert !reason.isFalse();
                 return reason;
             }
@@ -377,6 +418,11 @@ public class Reasoner {
                 return reason;
             }
 
+            // TEST CODE
+            if (graph.getName().equals(CO)) {
+                return visitSco(graph, edge, null);
+            }
+
             RelationGraph inner = graph.getDependencies().get(0);
             reason = Conjunction.TRUE();
             //TODO: Here might be a problem with the derivation length.
@@ -384,7 +430,8 @@ public class Reasoner {
             // The path we look for should have strictly smaller derivation length on each edge
             List<Edge> path = findShortestPath(inner, edge.getFirst(), edge.getSecond(), edge.getDerivationLength() - 1);
             for (Edge e : path) {
-                reason = reason.and(inner.accept(this, e, unused));
+                reason = reason.and(computeReason(inner, e));
+                //reason = reason.and(inner.accept(this, e, unused));
             }
             assert !reason.isFalse();
             return reason;
@@ -403,7 +450,8 @@ public class Reasoner {
             }
 
             visited.add(edge);
-            reason = graph.getDependencies().get(0).accept(this, edge, unused);
+            reason = computeReason(graph.getDependencies().get(0), edge);
+            //reason = graph.getDependencies().get(0).accept(this, edge, unused);
             assert !reason.isFalse();
             visited.remove(edge);
 

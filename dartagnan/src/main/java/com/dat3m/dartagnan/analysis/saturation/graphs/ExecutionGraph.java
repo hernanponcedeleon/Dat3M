@@ -98,11 +98,14 @@ public class ExecutionGraph {
         // We make sure to compute graphs along the dependency order
         // TODO: Is the order really important?
         Set<RelationGraph> graphs = new HashSet<>();
-        for (Relation rel : verificationTask.getRelationDependencyGraph().getNodeContents()) {
+        /*for (Relation rel : verificationTask.getRelationDependencyGraph().getNodeContents()) {
             if (!EXCLUDED_RELS.contains(rel.getName())) {
                 RelationGraph graph = getOrCreateGraphFromRelation(rel);
                 graphs.add(graph);
             }
+        }*/
+        for (Axiom ax : verificationTask.getAxioms()) {
+            graphs.add(getOrCreateGraphFromRelation(ax.getRelation()));
         }
         graphHierarchy = new GraphHierarchy(graphs);
 
@@ -127,6 +130,10 @@ public class ExecutionGraph {
         return Maps.unmodifiableBiMap(constraintMap);
     }
 
+    public GraphHierarchy getGraphHierarchy() {
+        return graphHierarchy;
+    }
+
     public RelationGraph getProgramOrderGraph() { return poGraph; }
     public RelationGraph getReadFromGraph() { return rfGraph; }
     public RelationGraph getLocationGraph() { return locGraph; }
@@ -148,6 +155,8 @@ public class ExecutionGraph {
     public Collection<Constraint> getConstraints() {
         return constraintMap.values();
     }
+
+    public Set<RelationGraph> computeMinimalCut() { return graphHierarchy.findMinimalCut(); }
 
     // ====================================================
 
