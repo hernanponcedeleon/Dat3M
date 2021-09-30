@@ -18,8 +18,10 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 
 import static com.dat3m.dartagnan.analysis.Base.*;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -47,13 +49,20 @@ public abstract class AbstractSvCompTest {
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+        	 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/" + getClass().getSimpleName() + "-two-solvers.csv", true)))
         {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
+            Long solvingTime = (Long)System.currentTimeMillis() - start;
+            writer.append(path);
+            writer.append(", ");
+			writer.append(solvingTime.toString());
+			writer.newLine();
         } catch (Exception e){
             fail(e.getMessage());
         }
@@ -62,44 +71,65 @@ public abstract class AbstractSvCompTest {
     @Test(timeout = TIMEOUT)
     public void testIncremental() {
         try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+           	 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/" + getClass().getSimpleName() + "-incremental.csv", true)))
         {
-        	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-        	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(expected, runAnalysisIncrementalSolver(ctx, prover, task));
+            if (program.getAss() != null) {
+                VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+                long start = System.currentTimeMillis();
+                assertEquals(expected, runAnalysisIncrementalSolver(ctx, prover, task));
+                Long solvingTime = (Long)System.currentTimeMillis() - start;
+                writer.append(path);
+                writer.append(", ");
+   				writer.append(solvingTime.toString());
+   				writer.newLine();
+            }
         } catch (Exception e){
             fail(e.getMessage());
         }
     }
-
+    
     //@Test(timeout = TIMEOUT)
     public void testAssume() {
         try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+        	 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/" + getClass().getSimpleName() + "-assume.csv", true)))
         {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
+            Long solvingTime = (Long)System.currentTimeMillis() - start;
+            writer.append(path);
+            writer.append(", ");
+			writer.append(solvingTime.toString());
+			writer.newLine();
         } catch (Exception e){
             fail(e.getMessage());
         }
     }
 
-    //@Test(timeout = TIMEOUT)
+//    @Test(timeout = TIMEOUT)
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+           	 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/" + getClass().getSimpleName() + "-refinement.csv", true)))
         {
             String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
             expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            long start = System.currentTimeMillis();
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
+            Long solvingTime = (Long)System.currentTimeMillis() - start;
+            writer.append(path);
+            writer.append(", ");
+			writer.append(solvingTime.toString());
+			writer.newLine();
         } catch (Exception e){
             fail(e.getMessage());
         }
