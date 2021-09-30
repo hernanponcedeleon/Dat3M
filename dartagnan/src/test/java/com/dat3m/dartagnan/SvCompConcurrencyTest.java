@@ -10,10 +10,13 @@ import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 
 @RunWith(Parameterized.class)
 public class SvCompConcurrencyTest extends AbstractSvCompTest {
@@ -29,6 +32,12 @@ public class SvCompConcurrencyTest extends AbstractSvCompTest {
         Settings s6 = new Settings(Alias.CFIS, 6, TIMEOUT);
         Settings s7 = new Settings(Alias.CFIS, 7, TIMEOUT);
         
+    	// We want the files to be created every time we run the unit tests
+        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompConcurrencyTest.class, "two-solvers")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompConcurrencyTest.class, "incremental")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompConcurrencyTest.class, "assume")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompConcurrencyTest.class, "refinement")));
+
         List<Object[]> data = new ArrayList<>();
 
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench-1-O0.bpl", wmm, s6});

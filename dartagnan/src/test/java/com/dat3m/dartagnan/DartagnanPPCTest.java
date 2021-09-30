@@ -8,12 +8,22 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 
 @RunWith(Parameterized.class)
 public class DartagnanPPCTest extends AbstractDartagnanTest {
 
     @Parameterized.Parameters(name = "{index}: {0} {4}")
     public static Iterable<Object[]> data() throws IOException {
+    	// We want the files to be created every time we run the unit tests
+        Files.deleteIfExists(Paths.get(getCSVFileName(DartagnanPPCTest.class, "two-solvers")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(DartagnanPPCTest.class, "incremental")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(DartagnanPPCTest.class, "assume")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(DartagnanPPCTest.class, "refinement")));
+
         return buildParameters("litmus/PPC/", "cat/power.cat", Arch.POWER);
     }
 

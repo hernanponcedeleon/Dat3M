@@ -10,10 +10,13 @@ import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 
 @RunWith(Parameterized.class)
 public class SvCompTestLarge extends AbstractSvCompTest {
@@ -24,6 +27,11 @@ public class SvCompTestLarge extends AbstractSvCompTest {
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat_file));
 
         Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
+
+        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompTestLarge.class, "two-solvers")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompTestLarge.class, "incremental")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompTestLarge.class, "assume")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompTestLarge.class, "refinement")));
 
         List<Object[]> data = new ArrayList<>();
         String base = TEST_RESOURCE_PATH + "large/";

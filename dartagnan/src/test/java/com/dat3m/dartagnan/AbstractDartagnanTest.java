@@ -18,7 +18,9 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static org.junit.Assert.*;
 
 public abstract class AbstractDartagnanTest {
@@ -36,7 +39,7 @@ public abstract class AbstractDartagnanTest {
     static final int TIMEOUT = 10000;
 	
     static Iterable<Object[]> buildParameters(String litmusPath, String cat, Arch target) throws IOException {
-        int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
+    	int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
         Map<String, Result> expectationMap = ResourceHelper.getExpectedResults();
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat));
 
@@ -110,22 +113,28 @@ public abstract class AbstractDartagnanTest {
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+        	 BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "two-solvers"), true)))
         {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
+                long start = System.currentTimeMillis();
                 assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
+                long solvingTime = System.currentTimeMillis() - start;
+                writer.append(path).append(", ").append(Long.toString(solvingTime));
+                writer.newLine();
             }
         } catch (Exception e){
             fail(e.getMessage());
         }
     }
 
-    //@Test(timeout = TIMEOUT)
+//    @Test(timeout = TIMEOUT)
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement"), true)))
         {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
@@ -136,8 +145,12 @@ public abstract class AbstractDartagnanTest {
                     return;
                 }
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
+                long start = System.currentTimeMillis();
                 assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                         RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
+                long solvingTime = System.currentTimeMillis() - start;
+                writer.append(path).append(", ").append(Long.toString(solvingTime));
+                writer.newLine();
             }
         } catch (Exception e){
             fail(e.getMessage());
