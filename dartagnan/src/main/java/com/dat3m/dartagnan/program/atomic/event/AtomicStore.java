@@ -97,7 +97,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
                 );
                 break;
             case ARM8:
-                if (mo.equals(ACQUIRE) || mo.equals(ACQ_REL)) {
+                if (mo.equals(ACQUIRE) || mo.equals(ACQUIRE_RELEASE)) {
                     throw new UnsupportedOperationException("AtomicStore can not have memory order: " + mo);
                 }
             	String storeMo = extractStoreMo(mo);

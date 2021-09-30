@@ -168,18 +168,15 @@ void *threadRW(void *arg)
 //
 int main()
 {
-    pthread_t W0, W1, R0, R1, RW0, RW1;
+    pthread_t W0, R0, RW0;
 
     atomic_init(&mylock.lock, RW_LOCK_BIAS);
     
     pthread_create(&W0, NULL, threadW, NULL);
-    pthread_create(&W1, NULL, threadW, NULL);
     
     pthread_create(&R0, NULL, threadR, NULL);
-    pthread_create(&R1, NULL, threadR, NULL);
 
     pthread_create(&RW0, NULL, threadRW, NULL);
-    pthread_create(&RW1, NULL, threadRW, NULL);
 
     return 0;
 }

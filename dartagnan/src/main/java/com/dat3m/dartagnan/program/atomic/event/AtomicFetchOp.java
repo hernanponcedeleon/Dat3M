@@ -79,7 +79,10 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
 
                 // Extra fences for POWER
                 Fence optionalMemoryBarrier = null;
-                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(ACQ)) ? Power.newISyncBarrier() : null;
+                // Academics papers normally say an isync barrier is enough
+                // However this makes benchmark linuxrwlocks.c fail
+                // Additionally, power compilers in godbolt.org use a lwsync
+                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(ACQ)) ? Power.newLwSyncBarrier() : null;
                 if(target.equals(POWER)) {
                     optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier()
                             : storeMo.equals(REL) ? Power.newLwSyncBarrier()

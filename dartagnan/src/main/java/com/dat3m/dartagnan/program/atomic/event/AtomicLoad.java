@@ -66,21 +66,26 @@ public class AtomicLoad extends MemEvent implements RegWriter {
                 );
                 break;
             case POWER: {
-                if (mo.equals(SC) || mo.equals(ACQUIRE) || mo.equals(CONSUME)) {
-                    Fence optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier() : null;
-                    Label label = newLabel("Jump_" + oId);
-                    events = eventSequence(
-                            optionalMemoryBarrier,
-                            load,
-                            newFakeCtrlDep(resultRegister, label),
-                            label,
-                            Power.newISyncBarrier()
-                    );
-                } else {
-                    events = eventSequence(
-                            load
-                    );
-                }
+                Fence optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier() : null;
+                Label optionalLabel = 
+                		(mo.equals(SC) || mo.equals(ACQUIRE) || mo.equals(RELAXED)) ? 
+                		newLabel("FakeDep") : 
+                		null;
+                CondJump optionalFakeCtrlDep = 
+                		(mo.equals(SC) || mo.equals(ACQUIRE) || mo.equals(RELAXED)) ? 
+                		newFakeCtrlDep(resultRegister, optionalLabel) :
+                		null;
+                Fence optionalISyncBarrier =
+                		(mo.equals(SC) || mo.equals(ACQUIRE)) ?
+                		Power.newISyncBarrier() :
+                		null;
+                events = eventSequence(
+                		optionalMemoryBarrier,
+                		load,
+                		optionalFakeCtrlDep,
+                		optionalLabel,
+                		optionalISyncBarrier
+                );
                 break;
             }
             case ARM:
@@ -92,7 +97,7 @@ public class AtomicLoad extends MemEvent implements RegWriter {
                 );
                 break;
             case ARM8:
-                if (mo.equals(RELEASE) || mo.equals(ACQ_REL)) {
+                if (mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE)) {
                     throw new UnsupportedOperationException("AtomicLoad can not have memory order: " + mo);
                 }
             	String loadMo = extractLoadMo(mo);
