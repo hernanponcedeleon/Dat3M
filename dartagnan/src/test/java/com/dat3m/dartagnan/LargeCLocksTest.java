@@ -39,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-public class CLocksTest {
+public class LargeCLocksTest {
 
 	static final int TIMEOUT = 600000;
 
@@ -58,10 +58,10 @@ public class CLocksTest {
         Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
 
     	// We want the files to be created every time we run the unit tests
-        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTest.class, "two-solvers")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTest.class, "incremental")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTest.class, "assume")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTest.class, "refinement")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(LargeCLocksTest.class, "two-solvers")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(LargeCLocksTest.class, "incremental")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(LargeCLocksTest.class, "assume")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(LargeCLocksTest.class, "refinement")));
 
 		List<Object[]> data = new ArrayList<>();
 
@@ -80,60 +80,60 @@ public class CLocksTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-rel2rx.bpl", power, POWER, s1, FAIL});
 
         // Known to be safe
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6.bpl", power, POWER, s1, UNKNOWN});
 
         // We don't yet know what expected should be and currently we timeout
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3-acq2rx.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3-acq2rx.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3-acq2rx.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3-rel2rx.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6-acq2rx.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6-acq2rx.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6-acq2rx.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6-rel2rx.bpl", tso, TSO, s1, UNKNOWN});
 
         // These expected result were obtained from refinement. Cannot guarantee they are correct
         // These two I expect to be correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3-rel2rx.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3-rel2rx.bpl", power, POWER, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6-rel2rx.bpl", arm, ARM8, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6-rel2rx.bpl", power, POWER, s1, FAIL});
 
         // Known to be safe
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4.bpl", power, POWER, s1, UNKNOWN});
 
         // These expected result were obtained from refinement. Cannot guarantee they are correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-acq2rx-futex.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-acq2rx-futex.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-acq2rx-futex.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-acq2rx-lock.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-acq2rx-lock.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-acq2rx-lock.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-rel2rx-futex.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-rel2rx-futex.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-rel2rx-futex.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-rel2rx-unlock.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-acq2rx-futex.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-acq2rx-futex.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-acq2rx-futex.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-acq2rx-lock.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-acq2rx-lock.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-acq2rx-lock.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-rel2rx-futex.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-rel2rx-futex.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-rel2rx-futex.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-rel2rx-unlock.bpl", tso, TSO, s1, UNKNOWN});
         // These two I expect to be correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-rel2rx-unlock.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-rel2rx-unlock.bpl", power, POWER, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-rel2rx-unlock.bpl", arm, ARM8, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-rel2rx-unlock.bpl", power, POWER, s1, FAIL});
 
         // Known to be safe
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4.bpl", power, POWER, s1, UNKNOWN});
 
         // These expected result were obtained from refinement. Cannot guarantee they are correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-futex.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-futex.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-futex.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-lock.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-lock.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-lock.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-futex.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-futex.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-futex.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-unlock.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-acq2rx-futex.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-acq2rx-futex.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-acq2rx-futex.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-acq2rx-lock.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-acq2rx-lock.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-acq2rx-lock.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-rel2rx-futex.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-rel2rx-futex.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-rel2rx-futex.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-rel2rx-unlock.bpl", tso, TSO, s1, UNKNOWN});
         // This two I expect to be correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-unlock.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-unlock.bpl", power, POWER, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-rel2rx-unlock.bpl", arm, ARM8, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-rel2rx-unlock.bpl", power, POWER, s1, FAIL});
 
         // Known to be safe
         data.add(new Object[]{TEST_RESOURCE_PATH + "locks/spinlock-5.bpl", tso, TSO, s1, UNKNOWN});
@@ -162,7 +162,7 @@ public class CLocksTest {
         return data;
     }
 
-    public CLocksTest(String path, Wmm wmm, Arch target, Settings settings, Result expected) {
+    public LargeCLocksTest(String path, Wmm wmm, Arch target, Settings settings, Result expected) {
         this.path = path;
         this.wmm = wmm;
         this.target = target;

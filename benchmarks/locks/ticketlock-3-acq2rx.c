@@ -33,7 +33,7 @@ static inline int get_next_ticket(struct ticketlock_s *l)
 
 static inline void await_for_ticket(struct ticketlock_s *l, int ticket)
 {
-    while (atomic_load_explicit(&l->owner, memory_order_acquire) != ticket)
+    while (atomic_load_explicit(&l->owner, memory_order_relaxed) != ticket)
         ;
 }
 
@@ -56,7 +56,7 @@ static inline int ticketlock_tryacquire(struct ticketlock_s *l)
 static inline void ticketlock_release(struct ticketlock_s *l)
 {
     int owner = atomic_load_explicit(&l->owner, memory_order_relaxed);
-    atomic_store_explicit(&l->owner, owner + 1, memory_order_relaxed);
+    atomic_store_explicit(&l->owner, owner + 1, memory_order_release);
 }
 
 // main.c
@@ -80,7 +80,7 @@ void *thread_n(void *arg)
 //
 int main()
 {
-    pthread_t t0, t1, t2, t3, t4, t5;
+    pthread_t t0, t1, t2;
 
     lock = malloc(sizeof(ticketlock_t));
     ticketlock_init(lock);
@@ -88,9 +88,6 @@ int main()
     pthread_create(&t0, NULL, thread_n, (void *) 0);
     pthread_create(&t1, NULL, thread_n, (void *) 1);
     pthread_create(&t2, NULL, thread_n, (void *) 2);
-    pthread_create(&t3, NULL, thread_n, (void *) 3);
-    pthread_create(&t4, NULL, thread_n, (void *) 4);
-    pthread_create(&t5, NULL, thread_n, (void *) 5);
     
     return 0;
 }
