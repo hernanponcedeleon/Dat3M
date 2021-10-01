@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.analysis.saturation.SaturationSolver;
-import com.dat3m.dartagnan.analysis.saturation.util.Learner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,8 +55,6 @@ public class GlobalSettings {
     // NOTE: This setting only has an effect if <REFINEMENT_ENCODE_COHERENCES> is enabled.
     public static boolean SATURATION_NO_RESOLUTION = false;
     public static final int SATURATION_MAX_DEPTH = 3;
-
-    public static final Learner.ViolationLearningStrategy SATURATION_VIOLATION_LEARNING = Learner.ViolationLearningStrategy.NONE;
 
     // --------------------
 
