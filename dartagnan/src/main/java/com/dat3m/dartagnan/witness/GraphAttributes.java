@@ -5,7 +5,7 @@ public enum GraphAttributes {
 	// General attributes
 	ARCHITECTURE, CREATIONTIME, PRODUCER, PROGRAMFILE, PROGRAMHASH, SOURCECODELANG, SPECIFICATION, WITNESSTYPE,
 	// Dartagnan specific attributes
-	UNROLLBOUND, EVENTID, LOADEDVALUE, STOREDVALUE;
+	UNROLLBOUND;
 
 	@Override
 	public String toString() {
@@ -28,12 +28,6 @@ public enum GraphAttributes {
 			return "unroll-bound";
 		case WITNESSTYPE:
 			return "witness-type";
-		case EVENTID:
-			return "event-id";
-		case LOADEDVALUE:
-			return "loaded-value";
-		case STOREDVALUE:
-			return "stored-value";
 		}
 		throw new RuntimeException(this + " cannot be converted to String");
 	}
