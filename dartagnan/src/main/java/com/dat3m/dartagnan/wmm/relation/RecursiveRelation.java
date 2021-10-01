@@ -17,6 +17,7 @@ public class RecursiveRelation extends Relation {
 
     private Relation r1;
     private boolean doRecurse = false;
+	private TupleSet disableInNextRecursion;
 
     public Relation getInner() {
         return r1;
@@ -91,6 +92,23 @@ public class RecursiveRelation extends Relation {
         }
         return getMaxTupleSet();
     }
+
+	@Override
+	public boolean disable(TupleSet t) {
+		if(doRecurse) {
+			doRecurse = false;
+			return r1.disable(t);
+		}
+		disableInNextRecursion = t;
+		return !t.isEmpty();
+	}
+
+	public boolean disableRecursive() {
+		if(null==disableInNextRecursion) {
+			throw new NullPointerException();
+		}
+		return r1.disable(disableInNextRecursion);
+	}
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){

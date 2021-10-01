@@ -59,6 +59,18 @@ public class RecursiveGroup {
         }
     }
 
+	public void initDisableTupleSets() {
+		boolean changed = true;
+		while(changed) {
+			changed = false;
+			for(RecursiveRelation r : relations) {
+				r.setDoRecurse();
+				if(r.disableRecursive())
+					changed = true;
+			}
+		}
+	}
+
     public void updateEncodeTupleSets(){
         Map<Relation, Integer> encodeSetSizes = new HashMap<>();
         for(Relation relation : relations){
