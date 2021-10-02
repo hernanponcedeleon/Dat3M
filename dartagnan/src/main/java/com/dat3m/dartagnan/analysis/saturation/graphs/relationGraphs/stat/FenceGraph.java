@@ -20,8 +20,9 @@ public class FenceGraph extends StaticRelationGraph {
 
     @Override
     public boolean contains(EventData a, EventData b) {
-        if (a.getThread() != b.getThread() || a.getLocalId() >= b.getLocalId())
+        if (a.getThread() != b.getThread() || a.getLocalId() >= b.getLocalId() || !a.isMemoryEvent() || !b.isMemoryEvent()) {
             return false;
+        }
 
         //TODO: We might want to employ binary search instead of linear search
         return threadFencesMap.get(a.getThread()).stream()
@@ -53,15 +54,14 @@ public class FenceGraph extends StaticRelationGraph {
     @Override
     public Stream<Edge> edgeStream() {
         return model.getThreadEventsMap().entrySet().stream()
-                .map(x ->  {
+                .flatMap(x -> {
                     List<EventData> fences = threadFencesMap.get(x.getKey());
                     if (fences.isEmpty()) {
-                        return Collections.<EventData>emptyList();
+                        return Stream.empty();
                     }
                     int lastId = fences.get(fences.size() - 1).getLocalId();
-                    return x.getValue().subList(0, lastId);
+                    return x.getValue().subList(0, lastId).stream().filter(EventData::isMemoryEvent);
                 })
-                .flatMap(Collection::stream)
                 .flatMap(x -> edgeStream(x, EdgeDirection.OUTGOING));
     }
 
@@ -71,12 +71,13 @@ public class FenceGraph extends StaticRelationGraph {
         if (dir == EdgeDirection.OUTGOING) {
             EventData fence = getNextFence(e);
             return fence == null ? Stream.empty() :
-                    threadEvents.subList(fence.getLocalId() + 1, threadEvents.size())
-                            .stream().map(x -> new Edge(e, x));
+                    threadEvents.subList(fence.getLocalId() + 1, threadEvents.size()).stream()
+                            .filter(EventData::isMemoryEvent).map(x -> new Edge(e, x));
         } else {
             EventData fence = getPreviousFence(e);
             return fence == null ? Stream.empty() :
-                    threadEvents.subList(0, fence.getLocalId()).stream().map(x -> new Edge(x, e));
+                    threadEvents.subList(0, fence.getLocalId()).stream()
+                            .filter(EventData::isMemoryEvent).map(x -> new Edge(x, e));
         }
     }
     @Override
@@ -84,11 +85,20 @@ public class FenceGraph extends StaticRelationGraph {
         int size = 0;
         if (dir == EdgeDirection.OUTGOING) {
             EventData closestFence = getNextFence(e);
-            size = closestFence == null ? 0 :
-                    model.getThreadEventsMap().get(e.getThread()).size() - (closestFence.getLocalId() + 1);
+            if (closestFence == null) {
+                return 0;
+            }
+            List<EventData> eventsAfterFence = model.getThreadEventsMap().get(e.getThread());
+            eventsAfterFence = eventsAfterFence.subList(closestFence.getLocalId() + 1, eventsAfterFence.size());
+            return (int)eventsAfterFence.stream().filter(EventData::isMemoryEvent).count();
         } else if (dir == EdgeDirection.INGOING) {
             EventData closestFence = getPreviousFence(e);
-            size = closestFence == null ? 0 : closestFence.getLocalId();
+            if (closestFence == null) {
+                return 0;
+            }
+            List<EventData> eventsBeforeFence = model.getThreadEventsMap().get(e.getThread());
+            eventsBeforeFence = eventsBeforeFence.subList(0, closestFence.getLocalId());
+            return (int) eventsBeforeFence.stream().filter(EventData::isMemoryEvent).count();
         }
         return size;
     }

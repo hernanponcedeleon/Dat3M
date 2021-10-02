@@ -147,6 +147,7 @@ public class SaturationSolver {
         if (SATURATION_ENABLE_DEBUG) {
             testIteration();
             testStaticGraphs();
+            testMaxSetContainment();
         }
     }
 
@@ -535,6 +536,10 @@ public class SaturationSolver {
                     throw new IllegalStateException(String.format(
                             "The size of relation graph %s is less than the number of edges returned by iteration.", g));
                 }
+                if (!g.contains(e)) {
+                    throw new IllegalStateException(String.format(
+                            "Iteration of relation graph %s returned an edge %s but <contains> returns false", g, e));
+                }
             }
             if (size > 0) {
                 throw new IllegalStateException(String.format(
@@ -545,6 +550,26 @@ public class SaturationSolver {
                 throw new IllegalStateException(String.format(
                         "The size of relation graph %s mismatches the number of streamed edges..", g));
             }
+        }
+    }
+
+    private void testMaxSetContainment() {
+        task.getMemoryModel().encodeBase(executionModel.getContext());
+        Map<Relation, TupleSet> missingTuples = new HashMap<>();
+        for (Relation relData : execGraph.getRelationGraphMap().keySet()) {
+            missingTuples.put(relData, new TupleSet());
+            TupleSet maxSet = relData.getMaxTupleSet();
+            RelationGraph graph = execGraph.getRelationGraph(relData);
+
+            for (Edge e : graph) {
+                if (!maxSet.contains(e.toTuple())) {
+                    missingTuples.get(relData).add(e.toTuple());
+                }
+            }
+        }
+        missingTuples.values().removeIf(Collection::isEmpty);
+        if (missingTuples.size() > 0) {
+            throw new IllegalStateException("There are graphs with more edges than the corresponding relation's maxSet has.");
         }
     }
 
