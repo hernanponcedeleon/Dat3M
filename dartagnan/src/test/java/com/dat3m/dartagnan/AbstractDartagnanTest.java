@@ -74,9 +74,6 @@ public abstract class AbstractDartagnanTest {
     //@Test(timeout = TIMEOUT)
     public void testCombined() {
         // Compares Refinement and TwoSolvers on litmus tests
-        // Replaces location-based assertions by ...
-        final boolean REPLACE_BY_TRUE = true;
-        // ... to allow Refinement to work
 
         Result res = Result.UNKNOWN;
         // Get initial result by TwoSolvers
@@ -86,7 +83,6 @@ public abstract class AbstractDartagnanTest {
         {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
-                program.setAss(program.getAss().removeLocAssertions(REPLACE_BY_TRUE));
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
                 res = runAnalysisTwoSolvers(ctx, prover1, prover2, task);
             }
@@ -100,7 +96,6 @@ public abstract class AbstractDartagnanTest {
         {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
-                program.setAss(program.getAss().removeLocAssertions(REPLACE_BY_TRUE));
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
                 assertEquals(res, Refinement.runAnalysisSaturationSolver(ctx, prover,
                         RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
@@ -110,7 +105,7 @@ public abstract class AbstractDartagnanTest {
         }
     }
 
-     //@Test(timeout = TIMEOUT)
+     @Test(timeout = TIMEOUT)
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
