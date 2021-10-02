@@ -92,7 +92,7 @@ Other optional arguments include:
 - `-a, --alias`: specifies the alias-analysis used. Option `andersen` (the default one) uses a control-flow-insensitive method. Option `cfs` uses a control-flow-sensitive method. Option `none` performs no alias analysis.
 - `-unroll`: unrolling bound for the BMC (default is 1).
 - `-solver`: specifies which SMT solver to use as a backend. Since we use [JavaSMT](https://github.com/sosy-lab/java-smt), several SMT solvers are supported depending on the OS and the used SMT logic (default is Z3).
-- `-method`: specifies which solving method to use. Options `incremental` (the default one) and `assume` solve a monotonic formula using incremental/assume-based SMT solving. Option `refinement` uses a customized solver for memory consistency.  
+- `-method`: specifies which solving method to use. Options `incremental` (the default one) and `assume` solve a monolithic formula using incremental/assume-based SMT solving. Option `refinement` uses a customized solver for memory consistency.  
 
 Dartagnan supports input non-determinism, assumptions and assertions using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) commands `__VERIFIER_nondet_X`, `__VERIFIER_assume` and `__VERIFIER_assert`.
 
