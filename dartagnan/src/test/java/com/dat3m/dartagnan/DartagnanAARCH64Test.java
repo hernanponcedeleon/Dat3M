@@ -8,10 +8,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
-import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
+import static com.dat3m.dartagnan.utils.ResourceHelper.initialiseCSVFile;
 
 @RunWith(Parameterized.class)
 public class DartagnanAARCH64Test extends AbstractDartagnanTest {
@@ -19,10 +16,10 @@ public class DartagnanAARCH64Test extends AbstractDartagnanTest {
     @Parameterized.Parameters(name = "{index}: {0} {4}")
     public static Iterable<Object[]> data() throws IOException {
     	// We want the files to be created every time we run the unit tests
-		Files.deleteIfExists(Paths.get(getCSVFileName(DartagnanAARCH64Test.class, "two-solvers")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(DartagnanAARCH64Test.class, "incremental")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(DartagnanAARCH64Test.class, "assume")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(DartagnanAARCH64Test.class, "refinement")));
+		initialiseCSVFile(DartagnanAARCH64Test.class, "two-solvers");
+        initialiseCSVFile(DartagnanAARCH64Test.class, "incremental");
+        initialiseCSVFile(DartagnanAARCH64Test.class, "assume");
+        initialiseCSVFile(DartagnanAARCH64Test.class, "refinement");
 
         return buildParameters("litmus/AARCH64/", "cat/aarch64.cat", Arch.ARM8);
     }

@@ -39,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-public class LargeCLocksTest {
+public class CLocksTestLarge {
 
 	static final int TIMEOUT = 600000;
 
@@ -58,10 +58,10 @@ public class LargeCLocksTest {
         Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
 
     	// We want the files to be created every time we run the unit tests
-        Files.deleteIfExists(Paths.get(getCSVFileName(LargeCLocksTest.class, "two-solvers")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(LargeCLocksTest.class, "incremental")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(LargeCLocksTest.class, "assume")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(LargeCLocksTest.class, "refinement")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTestLarge.class, "two-solvers")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTestLarge.class, "incremental")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTestLarge.class, "assume")));
+        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTestLarge.class, "refinement")));
 
 		List<Object[]> data = new ArrayList<>();
 
@@ -162,7 +162,7 @@ public class LargeCLocksTest {
         return data;
     }
 
-    public LargeCLocksTest(String path, Wmm wmm, Arch target, Settings settings, Result expected) {
+    public CLocksTestLarge(String path, Wmm wmm, Arch target, Settings settings, Result expected) {
         this.path = path;
         this.wmm = wmm;
         this.target = target;

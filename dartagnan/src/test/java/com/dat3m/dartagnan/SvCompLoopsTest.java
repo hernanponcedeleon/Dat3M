@@ -10,13 +10,11 @@ import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
+import static com.dat3m.dartagnan.utils.ResourceHelper.initialiseCSVFile;
 
 @RunWith(Parameterized.class)
 public class SvCompLoopsTest extends AbstractSvCompTest {
@@ -33,10 +31,10 @@ public class SvCompLoopsTest extends AbstractSvCompTest {
         Settings s11 = new Settings(Alias.CFIS,11, TIMEOUT);
 
     	// We want the files to be created every time we run the unit tests
-        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompLoopsTest.class, "two-solvers")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompLoopsTest.class, "incremental")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompLoopsTest.class, "assume")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompLoopsTest.class, "refinement")));
+        initialiseCSVFile(SvCompLoopsTest.class, "two-solvers");
+        initialiseCSVFile(SvCompLoopsTest.class, "incremental");
+        initialiseCSVFile(SvCompLoopsTest.class, "assume");
+        initialiseCSVFile(SvCompLoopsTest.class, "refinement");
 
         List<Object[]> data = new ArrayList<>();
 

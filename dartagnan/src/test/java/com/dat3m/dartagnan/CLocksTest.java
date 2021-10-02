@@ -24,14 +24,13 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
+import static com.dat3m.dartagnan.utils.ResourceHelper.initialiseCSVFile;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static com.dat3m.dartagnan.wmm.utils.Arch.*;
@@ -58,10 +57,10 @@ public class CLocksTest {
         Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
 
     	// We want the files to be created every time we run the unit tests
-        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTest.class, "two-solvers")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTest.class, "incremental")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTest.class, "assume")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTest.class, "refinement")));
+        initialiseCSVFile(CLocksTest.class, "two-solvers");
+        initialiseCSVFile(CLocksTest.class, "incremental");
+        initialiseCSVFile(CLocksTest.class, "assume");
+        initialiseCSVFile(CLocksTest.class, "refinement");
 
 		List<Object[]> data = new ArrayList<>();
 
@@ -181,7 +180,7 @@ public class CLocksTest {
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
             long solvingTime = System.currentTimeMillis() - start;
-            writer.append(path).append(", ").append(Long.toString(solvingTime));
+            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
             writer.newLine();
         } catch (Exception e){
             fail(e.getMessage());
@@ -200,7 +199,7 @@ public class CLocksTest {
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
             long solvingTime = System.currentTimeMillis() - start;
-            writer.append(path).append(", ").append(Long.toString(solvingTime));
+            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
 			writer.newLine();
         } catch (Exception e){
             fail(e.getMessage());
