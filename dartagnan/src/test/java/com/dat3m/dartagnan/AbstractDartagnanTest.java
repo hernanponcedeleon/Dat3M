@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.GlobalSettings.SKIP_TIMINGOUT_LITMUS;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static org.junit.Assert.assertEquals;
@@ -50,6 +51,9 @@ public abstract class AbstractDartagnanTest {
                     .filter(Files::isRegularFile)
                     .map(Path::toString)
                     .filter(f -> f.endsWith("litmus"))
+                    // All litmus test timing out with refinement match this
+                    .filter(f -> !SKIP_TIMINGOUT_LITMUS || !f.contains("manual/extra"))
+                    .filter(f -> !SKIP_TIMINGOUT_LITMUS || !f.contains("PPC/Dart-"))
                     .filter(f -> expectationMap.containsKey(f.substring(n)))
                     .map(f -> new Object[]{f, expectationMap.get(f.substring(n))})
                     .collect(ArrayList::new,
