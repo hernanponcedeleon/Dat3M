@@ -4,8 +4,11 @@ import com.dat3m.dartagnan.analysis.saturation.SaturationSolver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static com.dat3m.dartagnan.verification.RefinementTask.BaselineWMM.EMPTY;
+
 public class GlobalSettings {
-	
+
+
 	private static final Logger logger = LogManager.getLogger(GlobalSettings.class);
 
     // === Parsing ===
@@ -37,11 +40,7 @@ public class GlobalSettings {
 
     // ==== Refinement ====
     public static final boolean REFINEMENT_ENCODE_COHERENCE = true;
-    public static final boolean REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM = false; // Uses acyclic(po-loc + rf) as baseline
-    // Changes the above flag to mean acyclic (por-loc | rf | co). Only takes effect if the above flag as well as
-    // REFINEMENT_ENCODE_COHERENCE are set.
-    public static final boolean REFINEMENT_ADD_COHERENCE_TO_LOCAL_CONSISTENCY = false;
-    public static final boolean REFINEMENT_USE_ACYCLIC_DEP_RF_BASELINE_WMM = false; // Uses acyclic(rf | dep)
+    public static final int REFINEMENT_BASELINE_WMM = EMPTY;
 
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
     public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.NONE;
@@ -82,8 +81,7 @@ public class GlobalSettings {
     	logger.info("ENABLE_DEBUG_OUTPUT: " + ENABLE_DEBUG_OUTPUT);
 
     	// Refinement settings
-    	logger.info("REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM: " + REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM);
-    	logger.info("REFINEMENT_ADD_ACYCLIC_DEP_RF: " + REFINEMENT_USE_ACYCLIC_DEP_RF_BASELINE_WMM);
+    	logger.info("REFINEMENT_BASELINE_WMM: " + REFINEMENT_BASELINE_WMM);
     	logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());
 
     	// Saturation settings

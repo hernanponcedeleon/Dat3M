@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.verification;
 
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.utils.BitFlags;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -13,6 +14,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import static com.dat3m.dartagnan.GlobalSettings.*;
+import static com.dat3m.dartagnan.verification.RefinementTask.BaselineWMM.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 /*
@@ -22,6 +24,15 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
  Currently, we only have a Saturation-based solver to solve such tasks but any CEGAR-like approach could be used.
  */
 public class RefinementTask extends VerificationTask {
+
+    public static class BaselineWMM {
+        private BaselineWMM() {}
+
+        public static final int EMPTY = 0;
+        public static final int ACYCLIC_DEP_RF = 1; // no OOTA
+        public static final int ACYCLIC_POLOC_RF = 2;
+        public static final int ACYCLIC_POLOC_RF_CO_FR = 6; // SC-per-location
+    }
 
     private final Wmm baselineModel;
 
@@ -71,8 +82,7 @@ public class RefinementTask extends VerificationTask {
         baseline.setEncodeCo(REFINEMENT_ENCODE_COHERENCE);
 
         RelationRepository repo = baseline.getRelationRepository();
-
-        if (REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM) {
+        if (BitFlags.isSet(REFINEMENT_BASELINE_WMM, ACYCLIC_POLOC_RF)) {
             // ====== Locally consistent baseline WMM ======
             // ---- acyclic(po-loc | rf (| co)) ----
             Relation poloc = repo.getRelation(POLOC);
@@ -80,17 +90,20 @@ public class RefinementTask extends VerificationTask {
             Relation porf = new RelUnion(poloc, rf);
             repo.addRelation(porf);
             Relation localConsistency = porf;
-            if (REFINEMENT_ENCODE_COHERENCE && REFINEMENT_ADD_COHERENCE_TO_LOCAL_CONSISTENCY) {
+            if (REFINEMENT_ENCODE_COHERENCE && BitFlags.isSet(REFINEMENT_BASELINE_WMM, ACYCLIC_POLOC_RF_CO_FR)) {
                 Relation co = repo.getRelation(CO);
+                Relation fr = repo.getRelation(FR);
                 Relation porfco = new RelUnion(porf, co);
                 repo.addRelation(porfco);
-                localConsistency = porfco;
+                Relation porfcofr = new RelUnion(porfco, fr);
+                repo.addRelation(porfcofr);
+                localConsistency = porfcofr;
             }
             baseline.addAxiom(new Acyclic(localConsistency));
         }
 
         // ---- acyclic (dep | rf) ----
-        if (REFINEMENT_USE_ACYCLIC_DEP_RF_BASELINE_WMM) {
+        if (BitFlags.isSet(REFINEMENT_BASELINE_WMM, ACYCLIC_DEP_RF)) {
             Relation rf = repo.getRelation(RF);
             Relation data = repo.getRelation(DATA);
             Relation ctrl = repo.getRelation(CTRL);
