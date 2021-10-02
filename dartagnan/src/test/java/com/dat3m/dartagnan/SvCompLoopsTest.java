@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
-
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -13,7 +12,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
+import static com.dat3m.dartagnan.utils.ResourceHelper.initialiseCSVFile;
 
 @RunWith(Parameterized.class)
 public class SvCompLoopsTest extends AbstractSvCompTest {
@@ -28,6 +29,12 @@ public class SvCompLoopsTest extends AbstractSvCompTest {
         Settings s4 = new Settings(Alias.CFIS, 4, TIMEOUT);
         Settings s5 = new Settings(Alias.CFIS, 5, TIMEOUT);
         Settings s11 = new Settings(Alias.CFIS,11, TIMEOUT);
+
+    	// We want the files to be created every time we run the unit tests
+        initialiseCSVFile(SvCompLoopsTest.class, "two-solvers");
+        initialiseCSVFile(SvCompLoopsTest.class, "incremental");
+        initialiseCSVFile(SvCompLoopsTest.class, "assume");
+        initialiseCSVFile(SvCompLoopsTest.class, "refinement");
 
         List<Object[]> data = new ArrayList<>();
 

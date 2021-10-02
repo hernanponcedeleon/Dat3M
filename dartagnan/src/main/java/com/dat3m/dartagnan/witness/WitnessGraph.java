@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.utils.EType.*;
 import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
-import static com.dat3m.dartagnan.witness.GraphAttributes.*;
+import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
 public class WitnessGraph extends ElemWithAttributes {

@@ -80,7 +80,7 @@ void *thread_n(void *arg)
 //
 int main()
 {
-    pthread_t t0, t1, t2, t3, t4, t5, t6;
+    pthread_t t0, t1, t2, t3, t4, t5;
 
     lock = malloc(sizeof(ticketlock_t));
     ticketlock_init(lock);

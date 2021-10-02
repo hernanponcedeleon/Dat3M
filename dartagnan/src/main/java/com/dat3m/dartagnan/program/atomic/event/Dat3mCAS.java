@@ -24,8 +24,8 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
 
     private final ExprInterface expectedValue;
 
-    public Dat3mCAS(Register register, IExpr address, ExprInterface expectedVal, ExprInterface value, String mo) {
-        super(address, register, value, mo);
+    public Dat3mCAS(Register register, IExpr address, ExprInterface expectedVal, ExprInterface desiredValue, String mo) {
+        super(address, register, desiredValue, mo);
         this.expectedValue = expectedVal;
     }
 
@@ -54,13 +54,16 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
     	List<Event> events;
+
+    	// Events common for all compilation schemes.
+        Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
+        Label casEnd = newLabel("CAS_end");
+        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casEnd);
+
         switch(target) {
             case NONE: case TSO: {
-                Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-                Load load = newRMWLoad(dummy, address, mo);
-                Local casCmpResult = newLocal(resultRegister, new Atom(dummy, EQ, expectedValue));
-                Label casEnd = newLabel("CAS_end");
-                CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casEnd);
+                Load load = newRMWLoad(regValue, address, mo);
                 Store store = newRMWStore(load, address, value, mo);
 
                 events = eventSequence(
@@ -78,14 +81,8 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                 String loadMo = extractLoadMo(mo);
                 String storeMo = extractStoreMo(mo);
 
-                Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-                Load load = newRMWLoadExclusive(dummy, address, loadMo);
-                Local casCmpResult = newLocal(resultRegister, new Atom(dummy, EQ, expectedValue));
-                Label endCas = newLabel("CAS_end");
-                CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), endCas);
-                // ---- CAS success ----
+                Load load = newRMWLoadExclusive(regValue, address, loadMo);
                 Store store = newRMWStoreExclusive(address, value, storeMo, true);
-                // ---------------------
 
                 // --- Add Fence before under POWER ---
                 Fence optionalMemoryBarrier = null;
@@ -104,7 +101,7 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                         branchOnCasCmpResult,
                         	store,
                         	optionalISyncBarrier,
-                        endCas
+                        casEnd
                 );
                 break;
             }

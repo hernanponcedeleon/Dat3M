@@ -2,13 +2,17 @@ package com.dat3m.dartagnan.utils;
 
 import com.google.common.collect.ImmutableMap;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.HashMap;
+
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
-
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.HashMap;
 
 public class ResourceHelper {
 
@@ -33,5 +37,17 @@ public class ResourceHelper {
             }
         }
         return expectedResults;
+    }
+
+    public static void initialiseCSVFile(Class<?> testingClass, String name) throws IOException {
+        Files.deleteIfExists(Paths.get(getCSVFileName(testingClass, name)));
+    	try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(testingClass, name), true))) {
+            writer.append("benchmark, time");
+            writer.newLine();    		
+    	}
+    }
+
+    public static String getCSVFileName(Class<?> testingClass, String name) {
+        return String.format("%s/output/%s-%s.csv", System.getenv("DAT3M_HOME"), testingClass.getSimpleName(), name);
     }
 }
