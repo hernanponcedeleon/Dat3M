@@ -72,7 +72,6 @@ public class genMCTest {
     	cmd.add("genmc");
     	cmd.add("-imm");
     	cmd.add(path);
-    	System.out.println(cmd);
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
     	
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "genMC"), true)))
@@ -93,6 +92,9 @@ public class genMCTest {
 	   				System.exit(0);
 	   			}
 	   			long solvingTime = System.currentTimeMillis() - start;
+	   			// Three times to match the other files where we have TSO, POWER and ARM
+	   			writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
+	   			writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
 	   			writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
 	   			writer.newLine();
            } catch (Exception e){
