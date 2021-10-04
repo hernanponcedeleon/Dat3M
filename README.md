@@ -94,7 +94,8 @@ Other optional arguments include:
 - `-solver`: specifies which SMT solver to use as a backend. Since we use [JavaSMT](https://github.com/sosy-lab/java-smt), several SMT solvers are supported depending on the OS and the used SMT logic (default is Z3).
 - `-method`: specifies which solving method to use. Options `incremental` (the default one) and `assume` solve a monolithic formula using incremental/assume-based SMT solving. Option `refinement` uses a customized solver for memory consistency.  
 
-Dartagnan supports input non-determinism, assumptions and assertions using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) commands `__VERIFIER_nondet_X`, `__VERIFIER_assume` and `__VERIFIER_assert`.
+Dartagnan supports input non-determinism and atomicity using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) commands `__VERIFIER_nondet_X()`, `__VERIFIER_atomic_begin()` and `__VERIFIER_atomic_end()`, as well as the `__VERIFIER_atomic_` function rule.
+Additionally, the generic `void __DAT3M_assume(A)` can be used to filter executions passing non-zero values.
 
 **SV-COMP Experiments**
 

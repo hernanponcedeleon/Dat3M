@@ -21,7 +21,7 @@ import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 public class SvcompProcedures {
 
 	public static List<String> SVCOMPPROCEDURES = Arrays.asList(
-			"__VERIFIER_assume",
+			"__DAT3M_assume",
 			"__VERIFIER_atomic_begin",
 			"__VERIFIER_atomic_end",
 			"__VERIFIER_nondet_bool",
@@ -39,7 +39,7 @@ public class SvcompProcedures {
 	public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
 		switch(name) {
-		case "__VERIFIER_assume":
+		case "__DAT3M_assume":
 			__VERIFIER_assume(visitor, ctx);
 			break;
 		case "__VERIFIER_atomic_begin":
