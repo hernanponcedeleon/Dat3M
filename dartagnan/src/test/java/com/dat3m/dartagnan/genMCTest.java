@@ -18,7 +18,7 @@ import static org.junit.Assert.fail;
 @RunWith(Parameterized.class)
 public class genMCTest {
 
-	static final int TIMEOUT = 1800000;
+	static final int TIMEOUT = 60000;
 
     private final String path;
 
@@ -66,12 +66,13 @@ public class genMCTest {
     }
 
     @Test(timeout = TIMEOUT)
-    public void testAssume() {
+    public void test() {
     	String output;
     	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.add("genmc");
     	cmd.add("-imm");
     	cmd.add(path);
+    	System.out.println(cmd);
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
     	
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "genMC"), true)))
