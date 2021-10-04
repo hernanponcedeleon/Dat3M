@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
-import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.utils.EType;
 
@@ -22,7 +21,6 @@ import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 public class SvcompProcedures {
 
 	public static List<String> SVCOMPPROCEDURES = Arrays.asList(
-			"__VERIFIER_assert",
 			"__VERIFIER_assume",
 			"__VERIFIER_atomic_begin",
 			"__VERIFIER_atomic_end",
@@ -41,9 +39,6 @@ public class SvcompProcedures {
 	public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
 		switch(name) {
-		case "__VERIFIER_assert":
-			__VERIFIER_assert(visitor, ctx);
-			break;
 		case "__VERIFIER_assume":
 			__VERIFIER_assume(visitor, ctx);
 			break;
@@ -79,20 +74,6 @@ public class SvcompProcedures {
 		default:
 			throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
 		}
-	}
-
-	private static void __VERIFIER_assert(VisitorBoogie visitor, Call_cmdContext ctx) {
-    	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
-    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, expr.getPrecision());
-    	visitor.assertionIndex++;
-    	if(expr instanceof IConst && ((IConst)expr).getIntValue().equals(BigInteger.ONE)) {
-    		return;
-    	}
-    	Local event = EventFactory.newLocal(ass, expr);
-		event.addFilters(EType.ASSERTION);
-		visitor.programBuilder.addChild(visitor.threadCount, event);
-       	Label end = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-       	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newJump(new Atom(ass, NEQ, new IConst(BigInteger.ONE, -1)), end));
 	}
 
 	private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
