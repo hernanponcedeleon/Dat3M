@@ -22,6 +22,17 @@ public class SvcompProcedures {
 
 	public static List<String> SVCOMPPROCEDURES = Arrays.asList(
 			"__DAT3M_assume",
+			"__DAT3M_nondet_bool",
+			"__DAT3M_nondet_int",
+			"__DAT3M_nondet_uint",
+			"__DAT3M_nondet_unsigned_int",
+			"__DAT3M_nondet_short",
+			"__DAT3M_nondet_ushort",
+			"__DAT3M_nondet_unsigned_short",
+			"__DAT3M_nondet_long",
+			"__DAT3M_nondet_ulong",
+			"__DAT3M_nondet_char",
+			"__DAT3M_nondet_uchar",
 			"__VERIFIER_atomic_begin",
 			"__VERIFIER_atomic_end",
 			"__VERIFIER_nondet_bool",
@@ -51,6 +62,16 @@ public class SvcompProcedures {
 		case "__VERIFIER_nondet_bool":
 			__VERIFIER_nondet_bool(visitor, ctx);
 			break;
+		case "__DAT3M_nondet_int":
+		case "__DAT3M_nondet_uint":
+		case "__DAT3M_nondet_unsigned_int":
+		case "__DAT3M_nondet_short":
+		case "__DAT3M_nondet_ushort":
+		case "__DAT3M_nondet_unsigned_short":
+		case "__DAT3M_nondet_long":
+		case "__DAT3M_nondet_ulong":
+		case "__DAT3M_nondet_char":
+		case "__DAT3M_nondet_uchar":
 		case "__VERIFIER_nondet_int":
 		case "__VERIFIER_nondet_uint":
 		case "__VERIFIER_nondet_unsigned_int":
@@ -101,32 +122,33 @@ public class SvcompProcedures {
 	}
 	
 	private static void __VERIFIER_nondet(VisitorBoogie visitor, Call_cmdContext ctx, String name) {
-		INonDetTypes type = null;
-		switch (name) {
-			case "__VERIFIER_nondet_int":
+		INonDetTypes type;
+		assert name.startsWith("__DAT3M_nondet_") || name.startsWith("__VERIFIER_nondet_");
+		switch(name.substring((name.startsWith("__D") ? "__DAT3M_nondet_" : "__VERIFIER_nondet_").length())) {
+			case "int":
 				type = INonDetTypes.INT;
 				break;
-			case "__VERIFIER_nondet_uint":
-			case "__VERIFIER_nondet_unsigned_int":
+			case "uint":
+			case "unsigned_int":
 				type = INonDetTypes.UINT;
 				break;
-			case "__VERIFIER_nondet_short":
+			case "short":
 				type = INonDetTypes.SHORT;
 				break;
-			case "__VERIFIER_nondet_ushort":
-			case "__VERIFIER_nondet_unsigned_short":
+			case "ushort":
+			case "unsigned_short":
 				type = INonDetTypes.USHORT;
 				break;
-			case "__VERIFIER_nondet_long":
+			case "long":
 				type = INonDetTypes.LONG;
 				break;
-			case "__VERIFIER_nondet_ulong":
+			case "ulong":
 				type = INonDetTypes.ULONG;
 				break;
-			case "__VERIFIER_nondet_char":
+			case "char":
 				type = INonDetTypes.CHAR;
 				break;
-			case "__VERIFIER_nondet_uchar":
+			case "uchar":
 				type = INonDetTypes.UCHAR;
 				break;
 			default:
