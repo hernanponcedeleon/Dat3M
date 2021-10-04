@@ -94,7 +94,9 @@ public class genMCTest {
 	   			long solvingTime = System.currentTimeMillis() - start;
 	   			// Three times to match the other files where we have TSO, POWER and ARM
 	   			writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
+	   			writer.newLine();
 	   			writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
+	   			writer.newLine();
 	   			writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
 	   			writer.newLine();
            } catch (Exception e){
