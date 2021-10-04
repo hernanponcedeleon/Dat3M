@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -16,10 +17,9 @@ public class DartagnanAARCH64Test extends AbstractDartagnanTest {
     @Parameterized.Parameters(name = "{index}: {0} {4}")
     public static Iterable<Object[]> data() throws IOException {
     	// We want the files to be created every time we run the unit tests
-		initialiseCSVFile(DartagnanAARCH64Test.class, "two-solvers");
-        initialiseCSVFile(DartagnanAARCH64Test.class, "incremental");
-        initialiseCSVFile(DartagnanAARCH64Test.class, "assume");
-        initialiseCSVFile(DartagnanAARCH64Test.class, "refinement");
+        for(Method method : Method.values()) {
+        	initialiseCSVFile(DartagnanAARCH64Test.class, method.asStringOption(), "");
+        }
 
         return buildParameters("litmus/AARCH64/", "cat/aarch64.cat", Arch.ARM8);
     }

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.analysis.Refinement;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -57,10 +58,11 @@ public class CLocksTest {
         Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
 
     	// We want the files to be created every time we run the unit tests
-        initialiseCSVFile(CLocksTest.class, "two-solvers");
-        initialiseCSVFile(CLocksTest.class, "incremental");
-        initialiseCSVFile(CLocksTest.class, "assume");
-        initialiseCSVFile(CLocksTest.class, "refinement");
+        for(Method method : Method.values()) {
+        	for(Arch arch : Arch.values()) {
+        		initialiseCSVFile(CLocksTest.class, method.asStringOption(), arch.toString());
+        	}
+        }
 
 		List<Object[]> data = new ArrayList<>();
 
@@ -173,7 +175,7 @@ public class CLocksTest {
     public void testAssume() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "assume"), true)))
+             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "assume", target.toString()), true)))
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
@@ -191,7 +193,7 @@ public class CLocksTest {
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement"), true)))
+             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement", target.toString()), true)))
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);

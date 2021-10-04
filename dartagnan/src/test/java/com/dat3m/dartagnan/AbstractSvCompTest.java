@@ -47,7 +47,7 @@ public abstract class AbstractSvCompTest {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
              ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "two-solvers"), true)))
+             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "two", ""), true)))
         {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
@@ -67,7 +67,7 @@ public abstract class AbstractSvCompTest {
     public void testIncremental() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "incremental"), true)))
+             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "incremental", ""), true)))
         {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
@@ -87,7 +87,7 @@ public abstract class AbstractSvCompTest {
     public void testAssume() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "assume"), true)))
+             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "assume", ""), true)))
         {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
@@ -107,7 +107,7 @@ public abstract class AbstractSvCompTest {
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement"), true)))
+             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement", ""), true)))
         {
             String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
             expected = readExpected(property);

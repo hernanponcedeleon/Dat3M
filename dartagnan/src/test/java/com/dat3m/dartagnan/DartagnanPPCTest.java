@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -16,10 +17,9 @@ public class DartagnanPPCTest extends AbstractDartagnanTest {
     @Parameterized.Parameters(name = "{index}: {0} {4}")
     public static Iterable<Object[]> data() throws IOException {
     	// We want the files to be created every time we run the unit tests
-    	initialiseCSVFile(DartagnanPPCTest.class, "two-solvers");
-        initialiseCSVFile(DartagnanPPCTest.class, "incremental");
-        initialiseCSVFile(DartagnanPPCTest.class, "assume");
-        initialiseCSVFile(DartagnanPPCTest.class, "refinement");
+        for(Method method : Method.values()) {
+        	initialiseCSVFile(DartagnanPPCTest.class, method.asStringOption(), "");
+        }
 
         return buildParameters("litmus/PPC/", "cat/power.cat", Arch.POWER);
     }

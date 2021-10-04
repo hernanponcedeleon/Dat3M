@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.analysis.Refinement;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -24,14 +25,13 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
+import static com.dat3m.dartagnan.utils.ResourceHelper.initialiseCSVFile;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static com.dat3m.dartagnan.wmm.utils.Arch.*;
@@ -58,10 +58,11 @@ public class CLocksTestLarge {
         Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
 
     	// We want the files to be created every time we run the unit tests
-        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTestLarge.class, "two-solvers")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTestLarge.class, "incremental")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTestLarge.class, "assume")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(CLocksTestLarge.class, "refinement")));
+        for(Method method : Method.values()) {
+        	for(Arch arch : Arch.values()) {
+        		initialiseCSVFile(CLocksTestLarge.class, method.asStringOption(), arch.toString());
+        	}
+        }
 
 		List<Object[]> data = new ArrayList<>();
 
@@ -174,7 +175,7 @@ public class CLocksTestLarge {
     public void testAssume() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "assume"), true)))
+             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "assume", target.toString()), true)))
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
@@ -192,7 +193,7 @@ public class CLocksTestLarge {
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement"), true)))
+             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement", target.toString()), true)))
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);

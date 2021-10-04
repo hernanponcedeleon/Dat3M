@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Settings;
@@ -10,13 +11,11 @@ import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
+import static com.dat3m.dartagnan.utils.ResourceHelper.initialiseCSVFile;
 
 @RunWith(Parameterized.class)
 public class SvCompTestLarge extends AbstractSvCompTest {
@@ -28,10 +27,10 @@ public class SvCompTestLarge extends AbstractSvCompTest {
 
         Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
 
-        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompTestLarge.class, "two-solvers")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompTestLarge.class, "incremental")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompTestLarge.class, "assume")));
-        Files.deleteIfExists(Paths.get(getCSVFileName(SvCompTestLarge.class, "refinement")));
+    	// We want the files to be created every time we run the unit tests
+        for(Method method : Method.values()) {
+        	initialiseCSVFile(SvCompTestLarge.class, method.asStringOption(), "");
+        }
 
         List<Object[]> data = new ArrayList<>();
         String base = TEST_RESOURCE_PATH + "large/";

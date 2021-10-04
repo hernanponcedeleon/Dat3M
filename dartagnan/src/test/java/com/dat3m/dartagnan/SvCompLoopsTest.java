@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Settings;
@@ -31,10 +32,9 @@ public class SvCompLoopsTest extends AbstractSvCompTest {
         Settings s11 = new Settings(Alias.CFIS,11, TIMEOUT);
 
     	// We want the files to be created every time we run the unit tests
-        initialiseCSVFile(SvCompLoopsTest.class, "two-solvers");
-        initialiseCSVFile(SvCompLoopsTest.class, "incremental");
-        initialiseCSVFile(SvCompLoopsTest.class, "assume");
-        initialiseCSVFile(SvCompLoopsTest.class, "refinement");
+        for(Method method : Method.values()) {
+        	initialiseCSVFile(SvCompLoopsTest.class, method.asStringOption(), "");
+        }
 
         List<Object[]> data = new ArrayList<>();
 

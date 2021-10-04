@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Settings;
@@ -31,10 +32,9 @@ public class SvCompConcurrencyTest extends AbstractSvCompTest {
         Settings s7 = new Settings(Alias.CFIS, 7, TIMEOUT);
         
     	// We want the files to be created every time we run the unit tests
-        initialiseCSVFile(SvCompConcurrencyTest.class, "two-solvers");
-        initialiseCSVFile(SvCompConcurrencyTest.class, "incremental");
-        initialiseCSVFile(SvCompConcurrencyTest.class, "assume");
-        initialiseCSVFile(SvCompConcurrencyTest.class, "refinement");
+        for(Method method : Method.values()) {
+        	initialiseCSVFile(SvCompConcurrencyTest.class, method.asStringOption(), "");
+        }
 
         List<Object[]> data = new ArrayList<>();
 

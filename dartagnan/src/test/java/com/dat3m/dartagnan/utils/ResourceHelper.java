@@ -39,15 +39,19 @@ public class ResourceHelper {
         return expectedResults;
     }
 
-    public static void initialiseCSVFile(Class<?> testingClass, String name) throws IOException {
-        Files.deleteIfExists(Paths.get(getCSVFileName(testingClass, name)));
-    	try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(testingClass, name), true))) {
+    public static void initialiseCSVFile(Class<?> testingClass, String method, String target) throws IOException {
+        Files.deleteIfExists(Paths.get(getCSVFileName(testingClass, method, target)));
+    	try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(testingClass, method, target), true))) {
             writer.append("benchmark, time");
             writer.newLine();    		
     	}
     }
 
-    public static String getCSVFileName(Class<?> testingClass, String name) {
-        return String.format("%s/output/%s-%s.csv", System.getenv("DAT3M_HOME"), testingClass.getSimpleName(), name);
+    public static String getCSVFileName(Class<?> testingClass, String method, String target) {
+        return String.format("%s/output/csv/%s-%s%s.csv", 
+        		System.getenv("DAT3M_HOME"), 
+        		testingClass.getSimpleName(), 
+        		method, 
+        		target != "" ? "-" + target : target);
     }
 }

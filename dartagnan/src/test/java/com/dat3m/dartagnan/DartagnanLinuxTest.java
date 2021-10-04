@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -16,10 +17,9 @@ public class DartagnanLinuxTest extends AbstractDartagnanTest {
     @Parameterized.Parameters(name = "{index}: {0} {4}")
     public static Iterable<Object[]> data() throws IOException {
     	// We want the files to be created every time we run the unit tests
-        initialiseCSVFile(DartagnanLinuxTest.class, "two-solvers");
-        initialiseCSVFile(DartagnanLinuxTest.class, "incremental");
-        initialiseCSVFile(DartagnanLinuxTest.class, "assume");
-        initialiseCSVFile(DartagnanLinuxTest.class, "refinement");
+        for(Method method : Method.values()) {
+        	initialiseCSVFile(DartagnanLinuxTest.class, method.asStringOption(), "");
+        }
 
         return buildParameters("litmus/C/", "cat/linux-kernel.cat", Arch.NONE);
     }

@@ -114,7 +114,7 @@ public abstract class AbstractDartagnanTest {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
              ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-        	 BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "two-solvers"), true)))
+        	 BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "two", ""), true)))
         {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
@@ -134,7 +134,7 @@ public abstract class AbstractDartagnanTest {
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement"), true)))
+             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement", ""), true)))
         {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
