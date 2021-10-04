@@ -43,18 +43,10 @@ public class SvcompProcedures {
 			__VERIFIER_assume(visitor, ctx);
 			break;
 		case "__VERIFIER_atomic_begin":
-			if(GlobalSettings.ATOMIC_AS_LOCK) {
-				__VERIFIER_atomic(visitor, true);
-			} else {
-				__VERIFIER_atomic_begin(visitor);	
-			}
+			__VERIFIER_atomic(visitor, true);
 			break;
 		case "__VERIFIER_atomic_end":
-			if(GlobalSettings.ATOMIC_AS_LOCK) {
-				__VERIFIER_atomic(visitor, false);
-			} else {
-				__VERIFIER_atomic_end(visitor);
-			}
+			__VERIFIER_atomic(visitor, false);
 			break;
 		case "__VERIFIER_nondet_bool":
 			__VERIFIER_nondet_bool(visitor, ctx);
@@ -82,30 +74,30 @@ public class SvcompProcedures {
 	}
 
 	public static void __VERIFIER_atomic(VisitorBoogie visitor, boolean begin) {
-        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
-        Address lockAddress = visitor.programBuilder.getOrCreateLocation("__VERIFIER_atomic", -1).getAddress();
-       	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-		LinkedList<Event> events = new LinkedList<>();
-        events.add(EventFactory.newLoad(register, lockAddress, null));
-        events.add(EventFactory.newJump(new Atom(register, NEQ, new IConst(begin ? BigInteger.ZERO : BigInteger.ONE, -1)), label));
-        events.add(EventFactory.newStore(lockAddress, new IConst(begin ? BigInteger.ONE : BigInteger.ZERO, -1), null));
-        for(Event e : events) {
-        	e.addFilters(EType.LOCK, EType.RMW);
-        	visitor.programBuilder.addChild(visitor.threadCount, e);
-        }
-	}
-	
-	private static void __VERIFIER_atomic_begin(VisitorBoogie visitor) {
-		visitor.currentBeginAtomic = EventFactory.Svcomp.newBeginAtomic();
-		visitor.programBuilder.addChild(visitor.threadCount, visitor.currentBeginAtomic);	
-	}
-	
-	private static void __VERIFIER_atomic_end(VisitorBoogie visitor) {
-		if(visitor.currentBeginAtomic == null) {
-            throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
+		if(GlobalSettings.ATOMIC_AS_LOCK) {
+			Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
+			Address lockAddress = visitor.programBuilder.getOrCreateLocation("__VERIFIER_atomic", -1).getAddress();
+			Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
+			LinkedList<Event> events = new LinkedList<>();
+			events.add(EventFactory.newLoad(register, lockAddress, null));
+			events.add(EventFactory.newJump(new Atom(register, NEQ, new IConst(begin ? BigInteger.ZERO : BigInteger.ONE, -1)), label));
+			events.add(EventFactory.newStore(lockAddress, new IConst(begin ? BigInteger.ONE : BigInteger.ZERO, -1), null));
+			for(Event e : events) {
+				e.addFilters(EType.LOCK, EType.RMW);
+				visitor.programBuilder.addChild(visitor.threadCount, e);
+			}
 		}
-		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newEndAtomic(visitor.currentBeginAtomic));
-		visitor.currentBeginAtomic = null;
+		else if(begin) {
+			visitor.currentBeginAtomic = EventFactory.Svcomp.newBeginAtomic();
+			visitor.programBuilder.addChild(visitor.threadCount, visitor.currentBeginAtomic);
+		}
+		else {
+			if(visitor.currentBeginAtomic == null) {
+				throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
+			}
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newEndAtomic(visitor.currentBeginAtomic));
+			visitor.currentBeginAtomic = null;
+		}
 	}
 	
 	private static void __VERIFIER_nondet(VisitorBoogie visitor, Call_cmdContext ctx, String name) {

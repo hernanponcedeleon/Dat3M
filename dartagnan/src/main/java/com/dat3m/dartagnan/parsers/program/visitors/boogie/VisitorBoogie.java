@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.boogie.Function;
 import com.dat3m.dartagnan.boogie.FunctionCall;
 import com.dat3m.dartagnan.boogie.PthreadPool;
@@ -89,7 +88,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	protected int assertionIndex = 0;
 	
 	protected BeginAtomic currentBeginAtomic = null;
-	protected Call_cmdContext atomicMode = null;
 	 
 	private final List<String> smackDummyVariables = Arrays.asList("$M.0", "$exn", "$exnv", "$CurrAddr", "$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", "$0.ref", "$1.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global", "$CurrAddr");
 
@@ -363,14 +361,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			handleStdFunction(this, ctx);
 			return null;
 		}
-		if(name.contains("__VERIFIER_atomic_")) {
-			atomicMode = ctx;
-			if(GlobalSettings.ATOMIC_AS_LOCK) {
-				SvcompProcedures.__VERIFIER_atomic(this, true);	
-			} else {
-				currentBeginAtomic = EventFactory.Svcomp.newBeginAtomic();
-				programBuilder.addChild(threadCount, currentBeginAtomic);
-			}
+		boolean atomic = name.contains("__VERIFIER_atomic_");
+		if(atomic) {
+			SvcompProcedures.__VERIFIER_atomic(this, true);
 		}
 		// TODO: double check this 
 		// Some procedures might have an empty implementation.
@@ -391,18 +384,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		Event call = EventFactory.newFunctionCall(name, currentLine);
 		programBuilder.addChild(threadCount, call);	
 		visitProc_decl(procedures.get(name), false, callingValues);
-		if(ctx.equals(atomicMode)) {
-			atomicMode = null;
-			if(GlobalSettings.ATOMIC_AS_LOCK) {
-				SvcompProcedures.__VERIFIER_atomic(this, false);	
-			} else {
-				if(currentBeginAtomic == null) {
-		            throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
-				}
-				programBuilder.addChild(threadCount, EventFactory.Svcomp.newEndAtomic(currentBeginAtomic));
-				currentBeginAtomic = null;				
-			}
-			
+		if(atomic) {
+			SvcompProcedures.__VERIFIER_atomic(this, false);
 		}
 		Event ret = EventFactory.newFunctionReturn(name, call.getCLine());
 		programBuilder.addChild(threadCount, ret);
