@@ -40,7 +40,7 @@ import static org.junit.Assert.fail;
 @RunWith(Parameterized.class)
 public class CLocksTest {
 
-	static final int TIMEOUT = 600000;
+	static final int TIMEOUT = 1800000;
 
     private final String path;
     private final Wmm wmm;
@@ -169,7 +169,7 @@ public class CLocksTest {
         this.expected = expected;
     }
 
-//    @Test(timeout = TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void testAssume() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);

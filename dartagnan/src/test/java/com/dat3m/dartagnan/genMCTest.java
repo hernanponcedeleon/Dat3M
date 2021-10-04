@@ -18,7 +18,7 @@ import static org.junit.Assert.fail;
 @RunWith(Parameterized.class)
 public class genMCTest {
 
-	static final int TIMEOUT = 60000;
+	static final int TIMEOUT = 1800000;
 
     private final String path;
 
