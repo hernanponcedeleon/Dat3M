@@ -59,16 +59,22 @@ public class RecursiveGroup {
         }
     }
 
-	public void initDisableTupleSets() {
-		boolean changed = true;
-		while(changed) {
+	/**
+	 * Continues disabling tuples until convergence for this group.
+	 * @return
+	 * Minimal tuples were detected.
+	 */
+	public boolean initDisableTupleSets() {
+		boolean news = false;
+		for(boolean changed = true; changed;) {
 			changed = false;
 			for(RecursiveRelation r : relations) {
 				r.setDoRecurse();
-				if(r.disableRecursive())
-					changed = true;
+				changed = r.hasDisableTuples() || changed;
+				news = r.disableRecursive() || news;
 			}
 		}
+		return news;
 	}
 
     public void updateEncodeTupleSets(){

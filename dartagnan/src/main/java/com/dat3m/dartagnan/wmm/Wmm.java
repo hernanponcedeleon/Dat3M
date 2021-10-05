@@ -19,6 +19,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.*;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+import static com.google.common.collect.Lists.reverse;
 
 /**
  *
@@ -116,18 +117,21 @@ public class Wmm {
 
         for (RecursiveGroup recursiveGroup : recursiveGroups) {
             recursiveGroup.initMaxTupleSets();
-            recursiveGroup.initMinTupleSets();
         }
 
         for (Axiom ax : axioms) {
             ax.getRelation().getMaxTupleSet();
         }
 
-		var unfinished = true;
-		while(unfinished) {
-			unfinished = false;
-			for(Axiom ax : axioms)
-				unfinished = ax.getRelation().disable(ax.getDisabledSet());
+		//fixed point of minimal and disabled
+		for(boolean changed = true; changed;) {
+			changed = false;
+			for(RecursiveGroup g : recursiveGroups)
+				g.initMinTupleSets();
+			for(Axiom a : axioms)
+				changed = a.getRelation().disable(a.getDisabledSet()) || changed;
+			for(RecursiveGroup g : reverse(recursiveGroups))
+				changed = g.initDisableTupleSets() || changed;
 		}
 
         for(String relName : baseRelations){
@@ -138,8 +142,7 @@ public class Wmm {
             ax.getRelation().addEncodeTupleSet(ax.getEncodeTupleSet());
         }
 
-        Collections.reverse(recursiveGroups);
-        for(RecursiveGroup recursiveGroup : recursiveGroups){
+        for(RecursiveGroup recursiveGroup : reverse(recursiveGroups)){
             recursiveGroup.updateEncodeTupleSets();
         }
 

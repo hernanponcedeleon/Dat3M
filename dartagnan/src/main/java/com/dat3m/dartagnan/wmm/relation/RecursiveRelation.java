@@ -17,7 +17,6 @@ public class RecursiveRelation extends Relation {
 
     private Relation r1;
     private boolean doRecurse = false;
-	private TupleSet disableInNextRecursion;
 
     public Relation getInner() {
         return r1;
@@ -93,21 +92,23 @@ public class RecursiveRelation extends Relation {
         return getMaxTupleSet();
     }
 
-	@Override
-	public boolean disable(TupleSet t) {
-		if(doRecurse) {
-			doRecurse = false;
-			return r1.disable(t);
-		}
-		disableInNextRecursion = t;
-		return !t.isEmpty();
+	/**
+	 * Called by the associated recursive group.
+	 * @return
+	 * There are tuples pending to be disabled.
+	 */
+	public boolean hasDisableTuples() {
+		return !r1.disableTupleSet.containsAll(disableTupleSet);
 	}
 
+	/**
+	 * Called by the associated recursive group.
+	 * Continues disabling tuples.
+	 * @return
+	 * Minimal tuples were detected.
+	 */
 	public boolean disableRecursive() {
-		if(null==disableInNextRecursion) {
-			throw new NullPointerException();
-		}
-		return r1.disable(disableInNextRecursion);
+		return r1.disable(new TupleSet(disableTupleSet));
 	}
 
     @Override
