@@ -15,26 +15,17 @@ df = df_empty = pd.DataFrame({'benchmark' : []})
 df['benchmark'] = genmc.iloc[:, 0].apply(lambda x: x.replace(".c", ""))
 df['GenMC'] = genmc.iloc[:, 1]
 
-mapping = dict([
+mapping_method = dict([
     ('assume', 'Dartagnan'),
     ('refinement', 'Refinement')
 ])
 
-for a in arch:
-    for m in methods:
-        current_df = pd.DataFrame(pd.read_csv(path + "CLocksTest-" + m + "-" + a + ".csv"))
-        df[mapping[m]] = current_df.iloc[:, 1]
-
-    df.set_index('benchmark').sort_index().plot.bar(log=True, width=0.8)
-    plt.title(a)
-    plt.xticks(rotation=45, ha="right")
-    plt.xlabel("")
-    plt.ylabel("Time (ms)")
-    plt.tight_layout()
-    plt.legend(loc='upper left', bbox_to_anchor=(0.01, 1.025))
-    plt.savefig("Figures/" + a + ".png")
-
-arch = ["TSO", "Power", "ARM8", "Linux"]
+mapping_title = dict([
+    ('TSO', 'X86'),
+    ('Power', 'PPC'),
+    ('ARM8', 'AARCH64'),
+    ('Linux', 'LKMM')
+])
 
 mapping_files = dict([
     ('two-TSO', pd.read_csv(path + 'DartagnanX86Test-two.csv')),
@@ -47,12 +38,21 @@ mapping_files = dict([
     ('refinement-Linux', pd.read_csv(path + 'DartagnanLinuxTest-refinement.csv'))
 ])
 
-mapping_title = dict([
-    ('TSO', 'X86'),
-    ('Power', 'PPC'),
-    ('ARM8', 'AARCH64'),
-    ('Linux', 'LKMM')
-])
+for a in arch:
+    for m in methods:
+        current_df = pd.DataFrame(pd.read_csv(path + "CLocksTest-" + m + "-" + a + ".csv"))
+        df[mapping_method[m]] = current_df.iloc[:, 1]
+
+    df.set_index('benchmark').sort_index().plot.bar(log=True, width=0.8)
+    plt.title(mapping_title[a])
+    plt.xticks(rotation=45, ha="right")
+    plt.xlabel("")
+    plt.ylabel("Time (ms)")
+    plt.tight_layout()
+    plt.legend(loc='upper left', bbox_to_anchor=(0.01, 1.025))
+    plt.savefig("Figures/" + a + ".png")
+
+arch = ["TSO", "Power", "ARM8", "Linux"]
 
 for a in arch:
     plt.figure()
