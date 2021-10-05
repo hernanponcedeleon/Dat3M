@@ -12,19 +12,19 @@ import java.io.IOException;
 import static com.dat3m.dartagnan.utils.ResourceHelper.initialiseCSVFile;
 
 @RunWith(Parameterized.class)
-public class DartagnanAARCH64Test extends AbstractDartagnanTest {
+public class AARCH64Test extends AbstractDartagnanTest {
 
     @Parameterized.Parameters(name = "{index}: {0} {4}")
     public static Iterable<Object[]> data() throws IOException {
     	// We want the files to be created every time we run the unit tests
         for(Method method : Method.values()) {
-        	initialiseCSVFile(DartagnanAARCH64Test.class, method.asStringOption(), "");
+        	initialiseCSVFile(AARCH64Test.class, method.asStringOption(), "");
         }
 
         return buildParameters("litmus/AARCH64/", "cat/aarch64.cat", Arch.ARM8);
     }
 
-    public DartagnanAARCH64Test(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
+    public AARCH64Test(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
         super(path, expected, target, wmm, settings);
     }
 }
