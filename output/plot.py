@@ -29,3 +29,28 @@ for a in arch:
     plt.legend(loc='upper left', bbox_to_anchor=(0.01, 1.025))
     plt.savefig(a + ".png")
     Image.open(a + ".png").show()
+
+arch = ["TSO", "Power", "ARM8", "Linux"]
+
+mapping = dict([
+    ('two-TSO', pd.read_csv(path + 'DartagnanX86Test-two.csv')),
+    ('refinement-TSO', pd.read_csv(path + 'DartagnanX86Test-refinement.csv')),
+    ('two-Power', pd.read_csv(path + 'DartagnanPPCTest-two.csv')),
+    ('refinement-Power', pd.read_csv(path + 'DartagnanPPCTest-refinement.csv')),
+    ('two-ARM8', pd.read_csv(path + 'DartagnanAARCH64Test-two.csv')),
+    ('refinement-ARM8', pd.read_csv(path + 'DartagnanAARCH64Test-refinement.csv')),
+    ('two-Linux', pd.read_csv(path + 'DartagnanLinuxTest-two.csv')),
+    ('refinement-Linux', pd.read_csv(path + 'DartagnanLinuxTest-refinement.csv')),
+])
+
+for a in arch:
+    plt.figure()
+    f, ax = plt.subplots(figsize=(6, 6))
+    ax.plot([0, 1], [0, 1], color='r', transform=ax.transAxes)
+    plt.title(a)
+    plt.xlabel("Two solvers time (ms)")
+    plt.ylabel("Refinement time (ms)")
+    plt.plot(mapping["two-" + a].iloc[:, 1], mapping["refinement-" + a].iloc[:, 1], 's')
+    plt.savefig("litmus-" + a + ".png")
+    Image.open("litmus-" + a + ".png").show()
+    plt.close()
