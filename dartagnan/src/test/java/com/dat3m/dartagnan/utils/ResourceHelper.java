@@ -42,7 +42,7 @@ public class ResourceHelper {
     public static void initialiseCSVFile(Class<?> testingClass, String method, String target) throws IOException {
         Files.deleteIfExists(Paths.get(getCSVFileName(testingClass, method, target)));
     	try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(testingClass, method, target), true))) {
-            writer.append("benchmark, time");
+            writer.append("benchmark, result, time");
             writer.newLine();    		
     	}
     }

@@ -182,7 +182,9 @@ public class CLocksTest {
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
             long solvingTime = System.currentTimeMillis() - start;
-            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
+            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ")
+            	  .append(expected.toString()).append(", ")	
+            	  .append(Long.toString(solvingTime));
             writer.newLine();
         } catch (Exception e){
             fail(e.getMessage());
@@ -201,7 +203,9 @@ public class CLocksTest {
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
             long solvingTime = System.currentTimeMillis() - start;
-            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
+            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ")
+            	  .append(expected.toString()).append(", ")	
+            	  .append(Long.toString(solvingTime));
 			writer.newLine();
         } catch (Exception e){
             fail(e.getMessage());
