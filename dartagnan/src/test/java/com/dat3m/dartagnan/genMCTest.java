@@ -67,7 +67,7 @@ public class genMCTest {
 
     @Test(timeout = TIMEOUT)
     public void test() {
-    	String output;
+    	String output = "";
     	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.add("genmc");
     	cmd.add("-imm");
@@ -81,7 +81,7 @@ public class genMCTest {
 	   			BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 	   			proc.waitFor();
 	   			while(read.ready()) {
-	   				output = read.readLine();
+	   				output.concat(read.readLine());
 	   				System.out.println(output);
 	   			}
 	   			if(proc.exitValue() == 1) {
@@ -93,7 +93,10 @@ public class genMCTest {
 	   			}
 	   			long solvingTime = System.currentTimeMillis() - start;
 	   			// Three times to match the other files where we have TSO, POWER and ARM
-	   			writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
+                String result = output.contains("violation") ? "FAIL" : "PASS";
+                writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ")
+          	  		  .append(result).append(", ")	
+          	  		  .append(Long.toString(solvingTime));
 	   			writer.newLine();
            } catch (Exception e){
                fail(e.getMessage());
