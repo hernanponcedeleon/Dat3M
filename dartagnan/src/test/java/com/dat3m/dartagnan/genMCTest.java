@@ -81,8 +81,7 @@ public class genMCTest {
 	   			BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 	   			proc.waitFor();
 	   			while(read.ready()) {
-	   				output.concat(read.readLine());
-	   				System.out.println(output);
+	   				output = output + read.readLine();
 	   			}
 	   			if(proc.exitValue() == 1) {
 	   				BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
