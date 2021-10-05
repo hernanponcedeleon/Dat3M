@@ -6,9 +6,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.utils.EType;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -48,8 +46,13 @@ public class StdProcedures {
 			alloc(visitor, ctx);
 			return;
 		}
-		if(name.equals("__assert_rtn") || name.equals("assert_.i32") || name.equals("__assert_fail")) {
-			__assert(visitor, ctx);
+		if(name.equals("__assert_rtn") || name.equals("assert_.i32")) {
+			visitor.addAssert((ExprInterface)ctx.call_params().exprs().expr(0).accept(visitor));
+			return;
+		}
+		if(name.equals("__assert_fail")) {
+			//ignore parameters
+			visitor.addFail();
 			return;
 		}
 		if(name.startsWith("fopen")) {
@@ -119,17 +122,4 @@ public class StdProcedures {
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(start, adds));
 		visitor.allocationRegs.add(start);
 	}
-	
-	private static void __assert(VisitorBoogie visitor, Call_cmdContext ctx) {
-    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
-    	visitor.assertionIndex++;
-    	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
-    	if(expr instanceof IConst && ((IConst)expr).getIntValue().compareTo(BigInteger.ONE) == 0) {
-    		return;
-    	}
-    	Local event = EventFactory.newLocal(ass, expr);
-		event.addFilters(EType.ASSERTION);
-		visitor.programBuilder.addChild(visitor.threadCount, event);
-	}
-
 }

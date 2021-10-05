@@ -85,7 +85,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	protected Map<Integer, List<ExprInterface>> threadCallingValues = new HashMap<>();
 	
-	protected int assertionIndex = 0;
+	private int assertionIndex = 0;
 	
 	protected BeginAtomic currentBeginAtomic = null;
 	 
@@ -94,7 +94,20 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
 	}
-	
+
+	public void addFail() {
+		addAssert(BConst.FALSE);
+	}
+
+	public Register addAssert(ExprInterface condition) {
+		Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, condition.getPrecision());
+		assertionIndex++;
+		Local event = EventFactory.newLocal(ass, condition, currentLine);
+		event.addFilters(EType.ASSERTION);
+		programBuilder.addChild(threadCount, event);
+		return ass;
+	}
+
     @Override
     public Object visitMain(MainContext ctx) {
     	visitLine_comment(ctx.line_comment(0));
@@ -296,11 +309,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	// We need to create an event carrying the value of the expression 
     	// and see if this event can be executed.
     	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
-    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, expr.getPrecision());
-    	assertionIndex++;
-    	Local event = EventFactory.newLocal(ass, expr, currentLine);
-		event.addFilters(EType.ASSERTION);
-		programBuilder.addChild(threadCount, event);
+		Register ass = addAssert(expr);
        	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 		programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, new IConst(BigInteger.ONE, -1)), end));
     	return null;
@@ -332,11 +341,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	       	return null;
 		}
 		if(name.equals("reach_error")) {
-	    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, -1);
-	    	assertionIndex++;
-	    	Local event = EventFactory.newLocal(ass, new BConst(false), currentLine);
-			event.addFilters(EType.ASSERTION);
-			programBuilder.addChild(threadCount, event);
+			addFail();
 			return null;
 		}
 
