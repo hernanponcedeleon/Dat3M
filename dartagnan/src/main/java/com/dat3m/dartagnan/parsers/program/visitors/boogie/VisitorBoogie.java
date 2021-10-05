@@ -337,8 +337,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	    	Local event = EventFactory.newLocal(ass, new BConst(false), currentLine);
 			event.addFilters(EType.ASSERTION);
 			programBuilder.addChild(threadCount, event);
-	       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-			programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, new IConst(BigInteger.ONE, -1)), end));
 			return null;
 		}
 
