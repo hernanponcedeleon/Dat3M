@@ -28,7 +28,7 @@ RUN cd home && \
     sed -i 's/TEST_SMACK=1/TEST_SMACK=0/' bin/build.sh && \
     bash bin/build.sh
 
-# Install PLDI
+# Install Dat3M
 RUN cd home && \
     git clone --branch development https://github.com/hernanponcedeleon/Dat3M.git && \
     cd Dat3M && \
@@ -40,6 +40,6 @@ RUN cd home && \
 RUN cd home && \
     git clone https://github.com/sosy-lab/sv-benchmarks.git
 
-ENV PLDI_HOME=/home/Dat3M
-ENV PATH=$PLDI_HOME/:$PATH
-ENV LD_LIBRARY_PATH=$PLDI_HOME/lib/:$LD_LIBRARY_PATH
+ENV DAT3M_HOME=/home/Dat3M
+ENV PATH=$DAT3M_HOME/:$PATH
+ENV LD_LIBRARY_PATH=$DAT3M_HOME/lib/:$LD_LIBRARY_PATH

@@ -20,8 +20,8 @@ public class Compilation {
 
     	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("smack", "-q", "-t", "--no-memory-splitting"));
-        cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -fno-vectorize -fno-slp-vectorize -I" + System.getenv().get("PLDI_HOME") + "/include/");    		    		
-    	cmd.addAll(asList("-bpl", System.getenv().get("PLDI_HOME") + "/output/" + name + ".bpl"));
+        cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -fno-vectorize -fno-slp-vectorize -I" + System.getenv().get("DAT3M_HOME") + "/include/");    		    		
+    	cmd.addAll(asList("-bpl", System.getenv().get("DAT3M_HOME") + "/output/" + name + ".bpl"));
     	cmd.add(file.getAbsolutePath());
     	
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
@@ -45,7 +45,7 @@ public class Compilation {
 	public static void compileWithClang(File file) throws Exception {
     	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("clang", "-S", "-o"));
-    	cmd.add(System.getenv().get("PLDI_HOME") + "/output/test.s");
+    	cmd.add(System.getenv().get("DAT3M_HOME") + "/output/test.s");
     	cmd.add(file.getAbsolutePath());
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
     	logger.info("Compiling with clang");
@@ -56,7 +56,7 @@ public class Compilation {
 			throw new Exception(errorString);
     	}
     	// TODO(HP): Can this be removed?
-    	File testFile = new File(System.getenv().get("PLDI_HOME") + "/output/test.s");
+    	File testFile = new File(System.getenv().get("DAT3M_HOME") + "/output/test.s");
     	testFile.delete();
 	}	
 

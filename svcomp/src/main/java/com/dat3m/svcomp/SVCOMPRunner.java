@@ -68,7 +68,7 @@ public class SVCOMPRunner {
 	        // (it not the original C file) and we already created the Boogie file
 	        tmp.delete();
 
-	        String boogieName = System.getenv().get("PLDI_HOME") + "/output/" +
+	        String boogieName = System.getenv().get("DAT3M_HOME") + "/output/" +
 					file.getName().substring(0, file.getName().lastIndexOf('.')) +
 					"-" + options.getOptimization() + ".bpl";
 	        
@@ -78,9 +78,9 @@ public class SVCOMPRunner {
 	        
 	    	ArrayList<String> cmd = new ArrayList<String>();
 	    	cmd.add("java");
-	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("PLDI_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
+	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
 	    	cmd.add("-DLOGNAME=" + file.getName());
-	    	cmd.addAll(asList("-jar", System.getenv().get("PLDI_HOME") + "/dartagnan/target/dartagnan-2.0.7.jar"));
+	    	cmd.addAll(asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-2.0.7.jar"));
 	    	cmd.addAll(asList("-i", boogieName));
 	    	cmd.addAll(asList("-cat", options.getTargetModelFilePath()));
 	    	cmd.addAll(asList("-t", options.getTarget().asStringOption()));

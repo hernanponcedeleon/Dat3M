@@ -30,33 +30,33 @@ public class genMCTest {
 
 		List<Object[]> data = new ArrayList<>();
 
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/ttas-5.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/ttas-5-acq2rx.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/ttas-5-rel2rx.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ttas-5.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ttas-5-acq2rx.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ttas-5-rel2rx.c"});
 
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/ticketlock-3.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/ticketlock-3-acq2rx.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/ticketlock-3-rel2rx.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ticketlock-3.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ticketlock-3-acq2rx.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ticketlock-3-rel2rx.c"});
 
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/mutex-3.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/mutex-3-acq2rx-futex.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/mutex-3-acq2rx-lock.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/mutex-3-rel2rx-futex.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/mutex-3-rel2rx-unlock.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-3.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-3-acq2rx-futex.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-3-acq2rx-lock.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-3-rel2rx-futex.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-3-rel2rx-unlock.c"});
 
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/spinlock-5.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/spinlock-5-acq2rx.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/spinlock-5-rel2rx.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/spinlock-5.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/spinlock-5-acq2rx.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/spinlock-5-rel2rx.c"});
         
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/linuxrwlock-3.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/linuxrwlock-3-acq2rx.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/linuxrwlock-3-rel2rx.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/linuxrwlock-3.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/linuxrwlock-3-acq2rx.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/linuxrwlock-3-rel2rx.c"});
         
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/mutex_musl-3.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/mutex_musl-3-acq2rx-futex.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/mutex_musl-3-acq2rx-lock.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/mutex_musl-3-rel2rx-futex.c"});
-        data.add(new Object[]{System.getenv("PLDI_HOME") + "/benchmarks/locks/mutex_musl-3-rel2rx-unlock.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex_musl-3.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex_musl-3-acq2rx-futex.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex_musl-3-acq2rx-lock.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex_musl-3-rel2rx-futex.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex_musl-3-rel2rx-unlock.c"});
 
         return data;
     }
