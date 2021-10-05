@@ -19,6 +19,7 @@ public class StdProcedures {
 			"devirtbounce",
 			"external_alloc",
 			"$alloc",
+			"assert_",
 			"__assert_rtn",
 			"assert_.i32",
 			"__assert_fail",
@@ -46,7 +47,7 @@ public class StdProcedures {
 			alloc(visitor, ctx);
 			return;
 		}
-		if(name.equals("__assert_rtn") || name.equals("assert_.i32")) {
+		if(name.equals("assert_") || name.equals("__assert_rtn") || name.equals("assert_.i32")) {
 			visitor.addAssert((ExprInterface)ctx.call_params().exprs().expr(0).accept(visitor));
 			return;
 		}
