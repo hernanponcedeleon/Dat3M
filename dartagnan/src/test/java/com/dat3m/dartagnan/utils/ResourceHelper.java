@@ -49,7 +49,7 @@ public class ResourceHelper {
 
     public static String getCSVFileName(Class<?> testingClass, String method, String target) {
         return String.format("%s/output/csv/%s-%s%s.csv", 
-        		System.getenv("DAT3M_HOME"), 
+        		System.getenv("PLDI_HOME"), 
         		testingClass.getSimpleName(), 
         		method, 
         		target != "" ? "-" + target : target);

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from PIL import Image
 
-path = '/Users/ponce/git/Dat3M/output/csv/'
+path = '$PLDI_HOME/output/csv/'
 
 methods = ["assume", "refinement"]
 arch = ["TSO", "Power", "ARM8"]
@@ -33,14 +33,14 @@ for a in arch:
 arch = ["TSO", "Power", "ARM8", "Linux"]
 
 mapping = dict([
-    ('two-TSO', pd.read_csv(path + 'DartagnanX86Test-two.csv')),
-    ('refinement-TSO', pd.read_csv(path + 'DartagnanX86Test-refinement.csv')),
-    ('two-Power', pd.read_csv(path + 'DartagnanPPCTest-two.csv')),
-    ('refinement-Power', pd.read_csv(path + 'DartagnanPPCTest-refinement.csv')),
-    ('two-ARM8', pd.read_csv(path + 'DartagnanAARCH64Test-two.csv')),
-    ('refinement-ARM8', pd.read_csv(path + 'DartagnanAARCH64Test-refinement.csv')),
-    ('two-Linux', pd.read_csv(path + 'DartagnanLinuxTest-two.csv')),
-    ('refinement-Linux', pd.read_csv(path + 'DartagnanLinuxTest-refinement.csv')),
+    ('two-TSO', pd.read_csv(path + 'X86Test-two.csv')),
+    ('refinement-TSO', pd.read_csv(path + 'X86Test-refinement.csv')),
+    ('two-Power', pd.read_csv(path + 'PPCTest-two.csv')),
+    ('refinement-Power', pd.read_csv(path + 'PPCTest-refinement.csv')),
+    ('two-ARM8', pd.read_csv(path + 'AARCH64Test-two.csv')),
+    ('refinement-ARM8', pd.read_csv(path + 'AARCH64Test-refinement.csv')),
+    ('two-Linux', pd.read_csv(path + 'LinuxTest-two.csv')),
+    ('refinement-Linux', pd.read_csv(path + 'LinuxTest-refinement.csv')),
 ])
 
 for a in arch:
