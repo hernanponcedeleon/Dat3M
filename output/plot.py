@@ -38,6 +38,10 @@ arch = ["TSO", "Power", "ARM8"]
 genmc = pd.read_csv(path + 'genMCTest-genMC.csv')
 genmc_df = pd.DataFrame(genmc)
 
+##################################################
+### All three together ###
+##################################################
+
 df = df_empty = pd.DataFrame({'benchmark' : []})
 df['benchmark'] = genmc.iloc[:, 0].apply(lambda x: x.replace(".c", ""))
 ## colums are: benchmark, result, time
@@ -61,6 +65,59 @@ for a in arch:
     plt.close()
 
 ##################################################
+### Refinement vs GenMC ###
+##################################################
+
+df = df_empty = pd.DataFrame({'benchmark' : []})
+df['benchmark'] = genmc.iloc[:, 0].apply(lambda x: x.replace(".c", ""))
+## colums are: benchmark, result, time
+df['GenMC'] = genmc.iloc[:, 2]
+
+for a in arch:
+    current_df = pd.DataFrame(pd.read_csv(path + "CLocksTest-refinement-" + a + ".csv"))
+    ## colums are: benchmark, result, time
+    df[mapping_method["refinement"]] = current_df.iloc[:, 2]
+
+    my_colors = ['tab:green', 'tab:blue']
+
+    plt.figure()
+    df.set_index('benchmark').sort_index().plot.bar(log=True, width=0.8, color=my_colors)
+    plt.title(mapping_title[a])
+    plt.xticks(rotation=45, ha="right")
+    plt.xlabel("")
+    plt.ylabel("Time (ms)")
+    plt.tight_layout()
+    plt.legend(loc='upper left', bbox_to_anchor=(0.01, 1.025))
+    plt.savefig("Figures/refinement-vs-genmc-" + a + ".png")
+    plt.close()
+
+##################################################
+### Refinement vs Dartagnan ###
+##################################################
+
+df = df_empty = pd.DataFrame({'benchmark' : []})
+df['benchmark'] = genmc.iloc[:, 0].apply(lambda x: x.replace(".c", ""))
+
+for a in arch:
+    for m in methods:
+        current_df = pd.DataFrame(pd.read_csv(path + "CLocksTest-" + m + "-" + a + ".csv"))
+        ## colums are: benchmark, result, time
+        df[mapping_method[m]] = current_df.iloc[:, 2]
+
+    my_colors = ['tab:orange', 'tab:blue']
+
+    plt.figure()
+    df.set_index('benchmark').sort_index().plot.bar(log=True, width=0.8, color=my_colors)
+    plt.title(mapping_title[a])
+    plt.xticks(rotation=45, ha="right")
+    plt.xlabel("")
+    plt.ylabel("Time (ms)")
+    plt.tight_layout()
+    plt.legend(loc='upper left', bbox_to_anchor=(0.01, 1.025))
+    plt.savefig("Figures/refinement-vs-dartagnan-" + a + ".png")
+    plt.close()
+
+##################################################
 ### Generates table for verification result of the lock benchmarks ###
 ##################################################
 
@@ -79,9 +136,9 @@ for a in arch:
     for row in df.index:
         if (df.loc[row]['GenMC'] != " N/A") & (df.loc[row]['GenMC'] != df.loc[row]['Dartagnan']):
             if (df.loc[row]['GenMC'] == " FAIL") & (df.loc[row]['Dartagnan'] == " PASS"):
-                color = "g"
+                color = 'tab:green'
             else:
-                color = "r"
+                color = 'tab:red'
         else:
             color = "w"
         colors.append(["w", color, color, color])
