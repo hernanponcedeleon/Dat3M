@@ -67,16 +67,14 @@ public class Acyclic extends Axiom {
 		HashMap<Event,HashSet<Event>> right = new HashMap<>();
 		//receives only minimal tuples of the minimal transitive closure
 		LinkedList<Tuple> queue = new LinkedList<>(rel.getMinTupleSet());
-		//intersection of maximal set and inverse minimal transitive closure
+		//inverse minimal transitive closure
 		TupleSet result = new TupleSet();
 		while(!queue.isEmpty()) {
 			Tuple t = queue.remove();
+			assert !t.isLoop();
 			Event x = t.getFirst();
 			Event y = t.getSecond();
-			Tuple inverse = new Tuple(y, x);
-			if(rel.getMaxTupleSet().contains(inverse))
-				result.add(inverse);
-			if(x.equals(y))
+			if(!result.add(new Tuple(y, x)))
 				continue;
 			if(eq.isImplied(x, y))
 				left.computeIfAbsent(y, k->new HashSet<>()).add(x);
@@ -87,6 +85,7 @@ public class Acyclic extends Axiom {
 			for(Event w : left.getOrDefault(x, new HashSet<>()))
 				queue.add(new Tuple(w, y));
 		}
+		result.retainAll(rel.getMaxTupleSet());
 		return result;
 	}
 
