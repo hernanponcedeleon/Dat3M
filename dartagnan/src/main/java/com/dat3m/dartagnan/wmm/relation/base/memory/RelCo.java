@@ -46,6 +46,21 @@ public class RelCo extends Relation {
         return minTupleSet;
     }
 
+	@Override
+	public boolean disable(TupleSet tuples) {
+		super.disable(tuples);
+		boolean changed = false;
+		for(Tuple t : tuples) {
+			Tuple inverse = t.getInverse();
+			changed = maxTupleSet.contains(inverse)
+					&& ((MemEvent)t.getFirst()).getMaxAddressSet().size() == 1
+					&& ((MemEvent)t.getSecond()).getMaxAddressSet().size() == 1
+					&& minTupleSet.add(inverse)
+				|| changed;
+		}
+		return changed;
+	}
+
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
