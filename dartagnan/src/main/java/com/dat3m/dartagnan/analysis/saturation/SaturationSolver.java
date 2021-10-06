@@ -286,8 +286,10 @@ public class SaturationSolver {
             long time = System.currentTimeMillis();
             // Test code
             /*reasoner.clear();
-            Set<RelationGraph> cut = execGraph.computeMinimalCut();
-            reasoner.setCut(cut);*/
+            if (!reasoner.hasCut()) {
+                Set<RelationGraph> cut = execGraph.computeMinimalCut();
+                reasoner.setCut(cut);
+            }*/
             result.setCoreReasons(convertToDNF(computeInconsistencyReasons()));
             stats.reasonComputationTime += (System.currentTimeMillis() - time);
         }

@@ -54,6 +54,8 @@ public class Reasoner {
         cutEdgeReasonMap.clear();
     }
 
+    public boolean hasCut() { return !cut.isEmpty(); }
+
     public Map<RelationGraph, Map<Edge, DNF<CoreLiteral>>> getCutEdgeReasonMap() {
         return cutEdgeReasonMap;
     }
@@ -269,6 +271,7 @@ public class Reasoner {
                 throw new IllegalStateException("Did not find a reason for " + edge + " in " + graph.getName());
             }
             reason = computeReason(next, min);
+
             //reason = next.accept(this, min, null);
             assert !reason.isFalse();
             return reason;

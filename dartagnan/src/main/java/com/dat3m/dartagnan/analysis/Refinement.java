@@ -89,15 +89,12 @@ public class Refinement {
         if (SATURATION_REDUCE_REASONS_TO_CORE_REASONS) {
             prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
             prover.addConstraint(task.encodeBaselineWmmConsistency(ctx));
-            //prover.addConstraint(task.getMemoryModel().encodeNonDerived(ctx));
-            //prover.addConstraint(task.getMemoryModel().encodeConsistency(ctx));
+            //task.getMemoryModel().encodeBase(ctx);
         } else {
             // ==== Test Code ====
             // If we do not reduce the reasons to core reasons,
-            // we need to encode more relations than just rf and co!
-            //prover.addConstraint(task.encodeWmmRelations(ctx));
             prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
-            //prover.addConstraint(task.getMemoryModel().encodeRelations(ctx));
+            task.getMemoryModel().encodeBase(ctx); // Just to trigger min/max-set computation
             prover.addConstraint(task.getMemoryModel().encodeConsistency(ctx));
         }
 
@@ -146,10 +143,6 @@ public class Refinement {
                     RelationGraph g = c.getConstrainedGraph();
                     Relation rel = task.getMemoryModel().getRelationRepository().getRelation(g.getName());
                     for (Edge e : c.getConstrainedGraph()) {
-                        BooleanFormula relVar = rel.getSMTVar(e.toTuple(), ctx);
-                        if ( relVar.equals(bmgr.makeFalse())) {
-                            continue; // BUGGY?
-                        }
                         BooleanFormula implication = bmgr.or(refiner.refine(new DNF<>(saturationSolver.getReasoner().computeReason(g, e))), rel.getSMTVar(e.toTuple(), ctx));
                         prover.addConstraint(implication);
                     }

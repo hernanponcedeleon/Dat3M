@@ -67,6 +67,9 @@ public class FenceGraph extends StaticRelationGraph {
 
     @Override
     public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
+        if (!e.isMemoryEvent()) {
+            return Stream.empty();
+        }
         List<EventData> threadEvents = model.getThreadEventsMap().get(e.getThread());
         if (dir == EdgeDirection.OUTGOING) {
             EventData fence = getNextFence(e);
@@ -82,6 +85,9 @@ public class FenceGraph extends StaticRelationGraph {
     }
     @Override
     public int getMinSize(EventData e, EdgeDirection dir) {
+        if (!e.isMemoryEvent()) {
+            return 0;
+        }
         int size = 0;
         if (dir == EdgeDirection.OUTGOING) {
             EventData closestFence = getNextFence(e);
