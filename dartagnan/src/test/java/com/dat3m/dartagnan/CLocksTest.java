@@ -183,7 +183,7 @@ public class CLocksTest {
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
             long solvingTime = System.currentTimeMillis() - start;
             writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ")
-            	  .append(expected.toString()).append(", ")	
+            	  .append(expected.equals(UNKNOWN) ? "PASS" : "FAIL").append(", ")	
             	  .append(Long.toString(solvingTime));
             writer.newLine();
         } catch (Exception e){
@@ -204,7 +204,7 @@ public class CLocksTest {
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
             long solvingTime = System.currentTimeMillis() - start;
             writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ")
-            	  .append(expected.toString()).append(", ")	
+      	  .append(expected.equals(UNKNOWN) ? "PASS" : "FAIL").append(", ")	
             	  .append(Long.toString(solvingTime));
 			writer.newLine();
         } catch (Exception e){
