@@ -80,7 +80,8 @@ public class AtomicProcedures {
 		if(ctx.call_params().exprs().expr().size() > 2) {
 			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getIntValue().intValue());
 		}
-		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newStore(add, value, mo));
+		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newStore(add, value, mo))
+				.setCLine(visitor.currentLine);
 	}
 
 	private static void atomicLoad(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -90,7 +91,8 @@ public class AtomicProcedures {
 		if(ctx.call_params().exprs().expr().size() > 1) {
 			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(1).accept(visitor)).getIntValue().intValue());
 		}
-		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newLoad(reg, add, mo));
+		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newLoad(reg, add, mo))
+				.setCLine(visitor.currentLine);
 	}
 
 	private static void atomicFetchOp(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -115,7 +117,8 @@ public class AtomicProcedures {
 		if(ctx.call_params().exprs().expr().size() > 2) {
 			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getIntValue().intValue());
 		}
-		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newFetchOp(reg, add, value, op, mo));
+		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newFetchOp(reg, add, value, op, mo))
+				.setCLine(visitor.currentLine);
 	}
 
 	private static void atomicXchg(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -126,7 +129,8 @@ public class AtomicProcedures {
 		if(ctx.call_params().exprs().expr().size() > 2) {
 			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getIntValue().intValue());
 		}
-		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newExchange(reg, add, value, mo));
+		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newExchange(reg, add, value, mo))
+				.setCLine(visitor.currentLine);
 	}
 
 	private static void DAT3M_CAS(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -139,12 +143,14 @@ public class AtomicProcedures {
 		if(params.size() > 3) {
 			mo = intToMo(((IConst) params.get(3).accept(visitor)).getIntValue().intValue());
 		}
-		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newDat3mCAS(reg, addr, expectedVal, desiredVal, mo));
+		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newDat3mCAS(reg, addr, expectedVal, desiredVal, mo))
+				.setCLine(visitor.currentLine);
 	}
 
 	private static void atomicThreadFence(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(0).accept(visitor)).getIntValue().intValue());
-		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newFence(mo));
+		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newFence(mo))
+				.setCLine(visitor.currentLine);
 	}
 	
 	private static void atomicCmpXchg(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -160,6 +166,7 @@ public class AtomicProcedures {
 			// NOTE: We forget about the 5th parameter (MO on fail) because it is never used
 			// (see issue #123 for an explanation)
 		}
-		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newCompareExchange(reg, addr, expectedAddr, desiredVal, mo, strong));
+		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newCompareExchange(reg, addr, expectedAddr, desiredVal, mo, strong))
+				.setCLine(visitor.currentLine);
 	}
 }

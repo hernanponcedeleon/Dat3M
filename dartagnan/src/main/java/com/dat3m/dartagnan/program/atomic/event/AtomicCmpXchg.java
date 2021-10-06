@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.atomic.event;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
+import com.dat3m.dartagnan.program.EventFactory.*;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.EventFactory.Power;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
@@ -144,6 +144,7 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
+        setCLineForAll(events, this.cLine);
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }
