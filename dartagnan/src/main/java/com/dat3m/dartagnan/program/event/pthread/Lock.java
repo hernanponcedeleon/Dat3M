@@ -76,6 +76,7 @@ public class Lock extends Event {
         for(Event e : events) {
             e.addFilters(LOCK, RMW);
         }
+        setCLineForAll(events, this.cLine);
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }
