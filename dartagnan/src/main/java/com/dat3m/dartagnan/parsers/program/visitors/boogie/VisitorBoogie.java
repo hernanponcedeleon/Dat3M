@@ -96,7 +96,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	}
 
 	public void addFail() {
-		addAssert(BConst.FALSE);
+		Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, -1);
+		assertionIndex++;
+		Local event = EventFactory.newLocal(ass, BConst.FALSE, currentLine);
+		event.addFilters(EType.ASSERTION);
+		programBuilder.addChild(threadCount, event);
 	}
 
 	public Register addAssert(ExprInterface condition) {
