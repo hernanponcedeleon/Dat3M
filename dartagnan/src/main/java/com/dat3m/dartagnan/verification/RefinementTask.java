@@ -6,7 +6,10 @@ import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
+import com.dat3m.dartagnan.wmm.axiom.Empty;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
+import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
@@ -32,6 +35,7 @@ public class RefinementTask extends VerificationTask {
         public static final int ACYCLIC_DEP_RF = 1; // no OOTA
         public static final int ACYCLIC_POLOC_RF = 2;
         public static final int ACYCLIC_POLOC_RF_CO_FR = 6; // SC-per-location
+        public static final int ATOMIC_RMW = 8; // empty(RMW & fre;coe)
     }
 
     private final Wmm baselineModel;
@@ -115,6 +119,19 @@ public class RefinementTask extends VerificationTask {
             Relation hb = new RelUnion(dep, rf);
             repo.addRelation(hb);
             baseline.addAxiom(new Acyclic(hb));
+        }
+
+        if (REFINEMENT_ENCODE_COHERENCE && BitFlags.isSet(REFINEMENT_BASELINE_WMM, ATOMIC_RMW)) {
+            Relation rmw = repo.getRelation(RMW);
+            Relation coe = repo.getRelation(COE);
+            Relation fre = repo.getRelation(FRE);
+
+            Relation frecoe = new RelComposition(fre, coe);
+            repo.addRelation(frecoe);
+            Relation rmwANDfrecoe = new RelIntersection(rmw, frecoe);
+            repo.addRelation(rmwANDfrecoe);
+
+            baseline.addAxiom(new Empty(rmwANDfrecoe));
         }
 
         return baseline;
