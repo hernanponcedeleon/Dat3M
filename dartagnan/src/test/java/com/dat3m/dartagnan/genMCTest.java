@@ -76,7 +76,9 @@ public class genMCTest {
     	
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "genMC", ""), true)))
            {
-               long start = System.currentTimeMillis();
+        		// Append the name at the beginning to have the entry even if it times out
+        		writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
+        		long start = System.currentTimeMillis();
 	           	Process proc = processBuilder.start();
 	   			BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 	   			proc.waitFor();
@@ -93,9 +95,7 @@ public class genMCTest {
 	   			long solvingTime = System.currentTimeMillis() - start;
 	   			// Three times to match the other files where we have TSO, POWER and ARM
                 String result = output.contains("violation") ? "FAIL" : "PASS";
-                writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ")
-          	  		  .append(result).append(", ")	
-          	  		  .append(Long.toString(solvingTime));
+                writer.append(result).append(", ").append(Long.toString(solvingTime));
 	   			writer.newLine();
            } catch (Exception e){
                fail(e.getMessage());

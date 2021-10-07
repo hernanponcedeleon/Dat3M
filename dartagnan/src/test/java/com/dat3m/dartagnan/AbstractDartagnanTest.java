@@ -119,12 +119,11 @@ public abstract class AbstractDartagnanTest {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
+                writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
                 long start = System.currentTimeMillis();
                 assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
                 long solvingTime = System.currentTimeMillis() - start;
-                writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ")
-                	  .append(expected.toString()).append(", ")	
-                	  .append(Long.toString(solvingTime));
+                writer.append(expected.toString()).append(", ").append(Long.toString(solvingTime));
                 writer.newLine();
             }
         } catch (Exception e){
@@ -141,13 +140,12 @@ public abstract class AbstractDartagnanTest {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
+                writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
                 long start = System.currentTimeMillis();
                 assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                         RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
                 long solvingTime = System.currentTimeMillis() - start;
-                writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ")
-                	  .append(expected.toString()).append(", ")	
-                	  .append(Long.toString(solvingTime));
+                writer.append(expected.toString()).append(", ").append(Long.toString(solvingTime));
                 writer.newLine();
             }
         } catch (Exception e){

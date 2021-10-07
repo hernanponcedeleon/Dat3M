@@ -179,12 +179,11 @@ public class CLocksTest {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
+            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
             long solvingTime = System.currentTimeMillis() - start;
-            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ")
-            	  .append(expected.equals(UNKNOWN) ? "PASS" : "FAIL").append(", ")	
-            	  .append(Long.toString(solvingTime));
+            writer.append(expected.equals(UNKNOWN) ? "PASS" : "FAIL").append(", ").append(Long.toString(solvingTime));
             writer.newLine();
         } catch (Exception e){
             fail(e.getMessage());
@@ -199,13 +198,12 @@ public class CLocksTest {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
+            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
             long start = System.currentTimeMillis();
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
             long solvingTime = System.currentTimeMillis() - start;
-            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ")
-      	  .append(expected.equals(UNKNOWN) ? "PASS" : "FAIL").append(", ")	
-            	  .append(Long.toString(solvingTime));
+            writer.append(expected.equals(UNKNOWN) ? "PASS" : "FAIL").append(", ").append(Long.toString(solvingTime));
 			writer.newLine();
         } catch (Exception e){
             fail(e.getMessage());
