@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.utils.visualization;
 
 
+import java.io.IOException;
 import java.io.Writer;
 
 /*
@@ -58,12 +59,8 @@ public class Graphviz {
         return this;
     }
 
-    public void generateOutput(Writer writer) {
-        try {
-            writer.write(text.toString());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public void generateOutput(Writer writer) throws IOException {
+        writer.write(text.toString());
     }
 
 }

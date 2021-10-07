@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
+import java.io.IOException;
 import java.io.Writer;
 import java.math.BigInteger;
 import java.util.Collections;
@@ -37,7 +38,7 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
-    public void generateGraphOfExecutionModel(Writer writer, String graphName, ExecutionModel model) {
+    public void generateGraphOfExecutionModel(Writer writer, String graphName, ExecutionModel model) throws IOException {
         graphviz.begin(graphName);
         graphviz.append(String.format("label=\"%s\" \n", graphName));
         addAllThreads(model);
