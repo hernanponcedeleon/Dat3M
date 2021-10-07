@@ -39,11 +39,12 @@ public class GlobalSettings {
     public static final boolean ENABLE_SYMMETRY_REDUCTION = false;
 
     // ==== Refinement ====
+    public static final boolean REFINEMENT_GENERATE_GRAPHVIZ_FILES = false;
     public static final boolean REFINEMENT_ENCODE_COHERENCE = true;
     public static final int REFINEMENT_BASELINE_WMM = EMPTY;
 
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
-    public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.NONE;
+    public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.FULL;
 
     // ==== Saturation ====
     public static boolean SATURATION_ENABLE_DEBUG = false;

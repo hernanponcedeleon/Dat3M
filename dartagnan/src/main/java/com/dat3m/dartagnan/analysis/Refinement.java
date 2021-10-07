@@ -20,16 +20,21 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
+import com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer;
 import com.dat3m.dartagnan.verification.RefinementTask;
+import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.*;
@@ -135,9 +140,51 @@ public class Refinement {
 
             status = solverResult.getStatus();
             if (status == INCONSISTENT) {
+
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 foundCoreReasons.add(reasons);
                 prover.addConstraint(refiner.refine(reasons));
+
+                if (REFINEMENT_GENERATE_GRAPHVIZ_FILES) {
+                    //   =============== Visualization code ==================
+                    // The edgeFilter filters those co/rf that belong to some violation
+                    BiPredicate<EventData, EventData> edgeFilter = (e1, e2) -> {
+                        for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
+                            for (CoreLiteral lit : cube.getLiterals()) {
+                                if (lit instanceof EdgeLiteral) {
+                                    EdgeLiteral edgeLit = (EdgeLiteral) lit;
+                                    if (edgeLit.getEdge().getFirst() == e1 && edgeLit.getEdge().getSecond() == e2) {
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                        return false;
+                    };
+
+                    String programName = task.getProgram().getName();
+                    programName = programName.substring(0, programName.lastIndexOf("."));
+
+                    String directoryName = String.format("%s/dartagnan/output/refinement/", System.getenv("DAT3M_HOME"));
+                    String fileNameBase = String.format("%s-%d", programName, iterationCount);
+                    File file = new File(directoryName + fileNameBase + ".dot");
+                    file.getParentFile().mkdirs();
+                    try (FileWriter writer = new FileWriter(file)) {
+                        new ExecutionGraphVisualizer()
+                                .setReadFromFilter(edgeFilter)
+                                .setCoherenceFilter(edgeFilter)
+                                .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, saturationSolver.getCurrentModel());
+
+                        Process p = new ProcessBuilder()
+                                .directory(new File(directoryName))
+                                .command("dot", "-Tpdf", fileNameBase + ".dot", ">", fileNameBase + ".pdf")
+                                .start();
+                        p.getInputStream().close();
+                    } catch (Exception e) {
+                        logger.error(e);
+                    }
+                }
+                //   ================================================
 
                 /*for (Constraint c : saturationSolver.getExecutionGraph().getConstraints()) {
                     RelationGraph g = c.getConstrainedGraph();
@@ -185,7 +232,7 @@ public class Refinement {
                     StringBuilder message = new StringBuilder().append("Found inconsistency reasons:");
                     for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
                         message.append("\n")
-                                .append("Reason size: ").append(cube.getSize()).append("\n")
+                                //.append("Reason size: ").append(cube.getSize()).append("\n")
                                 .append(cube);
                     }
                     logger.trace(message);
