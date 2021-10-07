@@ -43,7 +43,7 @@ const $MALLOC_TOP: ref;
 var $M.0: [ref] i32;
 
 // Memory address bounds
-axiom ($GLOBALS_BOTTOM == $sub.ref(0, 38172));
+axiom ($GLOBALS_BOTTOM == $sub.ref(0, 38165));
 axiom ($EXTERNS_BOTTOM == $add.ref($GLOBALS_BOTTOM, $sub.ref(0, 32768)));
 axiom ($MALLOC_TOP == 9223372036854775807);
 function {:inline} $isExternal(p: ref) returns (bool) { $slt.ref.bool(p, $EXTERNS_BOTTOM) }
@@ -1491,32 +1491,12 @@ const mutex: ref;
 axiom (mutex == $sub.ref(0, 1028));
 const shared: ref;
 axiom (shared == $sub.ref(0, 2056));
+const .str: ref;
+axiom (.str == $sub.ref(0, 3081));
 const sig: ref;
-axiom (sig == $sub.ref(0, 3084));
-const assert_: ref;
-axiom (assert_ == $sub.ref(0, 4116));
-procedure  assert_($i0: i32)
-{
-$bb0:
-  assume {:sourceloc "include/assert.h", 2, 31} true;
-  assume {:verifier.code 1} true;
-  call {:cexpr "assert_:arg:exp"} boogie_si_record_i32($i0);
-  assume {:sourceloc "include/assert.h", 2, 31} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_assert($i0);
-  assume {:sourceloc "include/assert.h", 2, 54} true;
-  assume {:verifier.code 0} true;
-  $exn := false;
-  return;
-}
-const llvm.dbg.declare: ref;
-axiom (llvm.dbg.declare == $sub.ref(0, 5148));
-procedure  llvm.dbg.declare($p0: ref, $p1: ref, $p2: ref);
-const __VERIFIER_assert: ref;
-axiom (__VERIFIER_assert == $sub.ref(0, 6180));
-procedure  __VERIFIER_assert($i0: i32);
+axiom (sig == $sub.ref(0, 4109));
 const thread_n: ref;
-axiom (thread_n == $sub.ref(0, 7212));
+axiom (thread_n == $sub.ref(0, 5141));
 procedure  thread_n($p0: ref)
   returns ($r: ref)
 {
@@ -1525,7 +1505,6 @@ procedure  thread_n($p0: ref)
   var $i3: i32;
   var $i4: i64;
   var $i5: i1;
-  var $i6: i32;
 $bb0:
   assume {:sourceloc "benchmarks/locks/mutex-3.c", 101, 23} true;
   assume {:verifier.code 0} true;
@@ -1547,18 +1526,30 @@ $bb0:
   assume {:verifier.code 0} true;
   $i3 := $load.i32($M.0, shared);
   call {:cexpr "r"} boogie_si_record_i32($i3);
-  assume {:sourceloc "benchmarks/locks/mutex-3.c", 106, 12} true;
-  assume {:verifier.code 0} true;
-  $i4 := $sext.i32.i64($i3);
-  assume {:sourceloc "benchmarks/locks/mutex-3.c", 106, 14} true;
-  assume {:verifier.code 0} true;
-  $i5 := $eq.i64($i4, $i1);
-  assume {:sourceloc "benchmarks/locks/mutex-3.c", 106, 14} true;
-  assume {:verifier.code 0} true;
-  $i6 := $zext.i1.i32($i5);
   assume {:sourceloc "benchmarks/locks/mutex-3.c", 106, 5} true;
   assume {:verifier.code 0} true;
-  call assert_($i6);
+  $i4 := $sext.i32.i64($i3);
+  assume {:sourceloc "benchmarks/locks/mutex-3.c", 106, 5} true;
+  assume {:verifier.code 0} true;
+  $i5 := $eq.i64($i4, $i1);
+  assume {:sourceloc "benchmarks/locks/mutex-3.c", 106, 5} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i5} true;
+  goto $bb1, $bb2;
+$bb1:
+  assume ($i5 == 1);
+  assume {:sourceloc "benchmarks/locks/mutex-3.c", 106, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb3;
+$bb2:
+  assume !(($i5 == 1));
+  assume {:sourceloc "benchmarks/locks/mutex-3.c", 106, 5} true;
+  assume {:verifier.code 0} true;
+  call __assert_fail(.str, .str, 0, .str);
+  assume {:sourceloc "benchmarks/locks/mutex-3.c", 106, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb3;
+$bb3:
   assume {:sourceloc "benchmarks/locks/mutex-3.c", 107, 5} true;
   assume {:verifier.code 0} true;
   call mutex_unlock(mutex);
@@ -1568,8 +1559,11 @@ $bb0:
   $exn := false;
   return;
 }
+const llvm.dbg.declare: ref;
+axiom (llvm.dbg.declare == $sub.ref(0, 6173));
+procedure  llvm.dbg.declare($p0: ref, $p1: ref, $p2: ref);
 const mutex_lock: ref;
-axiom (mutex_lock == $sub.ref(0, 8244));
+axiom (mutex_lock == $sub.ref(0, 7205));
 procedure  mutex_lock($p0: ref)
 {
   var $p1: ref;
@@ -1640,8 +1634,11 @@ $bb6:
   assume {:verifier.code 0} true;
   goto $bb4;
 }
+const __assert_fail: ref;
+axiom (__assert_fail == $sub.ref(0, 8237));
+procedure  __assert_fail($p0: ref, $p1: ref, $i2: i32, $p3: ref);
 const mutex_unlock: ref;
-axiom (mutex_unlock == $sub.ref(0, 9276));
+axiom (mutex_unlock == $sub.ref(0, 9269));
 procedure  mutex_unlock($p0: ref)
 {
   var $i1: i32;
@@ -1683,7 +1680,7 @@ $bb3:
   return;
 }
 const mutex_unlock_fastpath: ref;
-axiom (mutex_unlock_fastpath == $sub.ref(0, 10308));
+axiom (mutex_unlock_fastpath == $sub.ref(0, 10301));
 procedure  mutex_unlock_fastpath($p0: ref)
   returns ($r: i32)
 {
@@ -1708,11 +1705,11 @@ $bb0:
   return;
 }
 const atomic_store_explicit: ref;
-axiom (atomic_store_explicit == $sub.ref(0, 11340));
+axiom (atomic_store_explicit == $sub.ref(0, 11333));
 procedure  atomic_store_explicit.ref.i32.i32(p.0: ref, p.1: i32, p.2: i32)
   returns ($r: i32);
 const __futex_wake: ref;
-axiom (__futex_wake == $sub.ref(0, 12372));
+axiom (__futex_wake == $sub.ref(0, 12365));
 procedure  __futex_wake($p0: ref, $i1: i32)
 {
   var $i2: i32;
@@ -1729,15 +1726,15 @@ $bb0:
   return;
 }
 const atomic_fetch_add_explicit: ref;
-axiom (atomic_fetch_add_explicit == $sub.ref(0, 13404));
+axiom (atomic_fetch_add_explicit == $sub.ref(0, 13397));
 procedure  atomic_fetch_add_explicit.ref.i32.i32(p.0: ref, p.1: i32, p.2: i32)
   returns ($r: i32);
 const atomic_compare_exchange_strong_explicit: ref;
-axiom (atomic_compare_exchange_strong_explicit == $sub.ref(0, 14436));
+axiom (atomic_compare_exchange_strong_explicit == $sub.ref(0, 14429));
 procedure  atomic_compare_exchange_strong_explicit.ref.ref.i32.i32.i32(p.0: ref, p.1: ref, p.2: i32, p.3: i32, p.4: i32)
   returns ($r: i32);
 const mutex_lock_fastpath: ref;
-axiom (mutex_lock_fastpath == $sub.ref(0, 15468));
+axiom (mutex_lock_fastpath == $sub.ref(0, 15461));
 procedure  mutex_lock_fastpath($p0: ref)
   returns ($r: i32)
 {
@@ -1762,7 +1759,7 @@ $bb0:
   return;
 }
 const __futex_wait: ref;
-axiom (__futex_wait == $sub.ref(0, 16500));
+axiom (__futex_wait == $sub.ref(0, 16493));
 procedure  __futex_wait($p0: ref, $i1: i32)
 {
   var $i2: i32;
@@ -1826,7 +1823,7 @@ $bb6:
   goto $bb3;
 }
 const mutex_lock_try_acquire: ref;
-axiom (mutex_lock_try_acquire == $sub.ref(0, 17532));
+axiom (mutex_lock_try_acquire == $sub.ref(0, 17525));
 procedure  mutex_lock_try_acquire($p0: ref)
   returns ($r: i32)
 {
@@ -1851,11 +1848,11 @@ $bb0:
   return;
 }
 const atomic_load_explicit: ref;
-axiom (atomic_load_explicit == $sub.ref(0, 18564));
+axiom (atomic_load_explicit == $sub.ref(0, 18557));
 procedure  atomic_load_explicit.ref.i32(p.0: ref, p.1: i32)
   returns ($r: i32);
 const main: ref;
-axiom (main == $sub.ref(0, 19596));
+axiom (main == $sub.ref(0, 19589));
 procedure {:entrypoint} main()
   returns ($r: i32)
 {
@@ -1895,15 +1892,15 @@ $bb0:
   return;
 }
 const pthread_create: ref;
-axiom (pthread_create == $sub.ref(0, 20628));
+axiom (pthread_create == $sub.ref(0, 20621));
 procedure  pthread_create($p0: ref, $p1: ref, $p2: ref, $p3: ref)
   returns ($r: i32);
 const __SMACK_code: ref;
-axiom (__SMACK_code == $sub.ref(0, 21660));
+axiom (__SMACK_code == $sub.ref(0, 21653));
 procedure  __SMACK_code.ref($p0: ref);
 procedure  __SMACK_code.ref.i32($p0: ref, p.1: i32);
 const __VERIFIER_assume: ref;
-axiom (__VERIFIER_assume == $sub.ref(0, 22692));
+axiom (__VERIFIER_assume == $sub.ref(0, 22685));
 procedure  __VERIFIER_assume($i0: i32)
 {
 $bb0:
@@ -1922,7 +1919,7 @@ $bb0:
   return;
 }
 const __SMACK_dummy: ref;
-axiom (__SMACK_dummy == $sub.ref(0, 23724));
+axiom (__SMACK_dummy == $sub.ref(0, 23717));
 procedure  __SMACK_dummy($i0: i32)
 {
 $bb0:
@@ -1938,7 +1935,7 @@ $bb0:
   return;
 }
 const __SMACK_and32: ref;
-axiom (__SMACK_and32 == $sub.ref(0, 24756));
+axiom (__SMACK_and32 == $sub.ref(0, 24749));
 procedure  __SMACK_and32($i0: i32, $i1: i32)
   returns ($r: i32)
 {
@@ -9150,7 +9147,7 @@ $bb576:
   goto $bb570;
 }
 const __SMACK_and64: ref;
-axiom (__SMACK_and64 == $sub.ref(0, 25788));
+axiom (__SMACK_and64 == $sub.ref(0, 25781));
 procedure  __SMACK_and64($i0: i64, $i1: i64)
   returns ($r: i64)
 {
@@ -9183,7 +9180,7 @@ $bb0:
   return;
 }
 const __SMACK_and16: ref;
-axiom (__SMACK_and16 == $sub.ref(0, 26820));
+axiom (__SMACK_and16 == $sub.ref(0, 26813));
 procedure  __SMACK_and16($i0: i16, $i1: i16)
   returns ($r: i16)
 {
@@ -11843,7 +11840,7 @@ $bb144:
   goto $bb138;
 }
 const __SMACK_and8: ref;
-axiom (__SMACK_and8 == $sub.ref(0, 27852));
+axiom (__SMACK_and8 == $sub.ref(0, 27845));
 procedure  __SMACK_and8($i0: i8, $i1: i8)
   returns ($r: i8)
 {
@@ -13151,7 +13148,7 @@ $bb72:
   goto $bb66;
 }
 const __SMACK_or32: ref;
-axiom (__SMACK_or32 == $sub.ref(0, 28884));
+axiom (__SMACK_or32 == $sub.ref(0, 28877));
 procedure  __SMACK_or32($i0: i32, $i1: i32)
   returns ($r: i32)
 {
@@ -16267,7 +16264,7 @@ $bb192:
   goto $bb189;
 }
 const __SMACK_or64: ref;
-axiom (__SMACK_or64 == $sub.ref(0, 29916));
+axiom (__SMACK_or64 == $sub.ref(0, 29909));
 procedure  __SMACK_or64($i0: i64, $i1: i64)
   returns ($r: i64)
 {
@@ -16300,7 +16297,7 @@ $bb0:
   return;
 }
 const __SMACK_or16: ref;
-axiom (__SMACK_or16 == $sub.ref(0, 30948));
+axiom (__SMACK_or16 == $sub.ref(0, 30941));
 procedure  __SMACK_or16($i0: i16, $i1: i16)
   returns ($r: i16)
 {
@@ -16333,7 +16330,7 @@ $bb0:
   return;
 }
 const __SMACK_or8: ref;
-axiom (__SMACK_or8 == $sub.ref(0, 31980));
+axiom (__SMACK_or8 == $sub.ref(0, 31973));
 procedure  __SMACK_or8($i0: i8, $i1: i8)
   returns ($r: i8)
 {
@@ -16366,7 +16363,7 @@ $bb0:
   return;
 }
 const __SMACK_check_overflow: ref;
-axiom (__SMACK_check_overflow == $sub.ref(0, 33012));
+axiom (__SMACK_check_overflow == $sub.ref(0, 33005));
 procedure  __SMACK_check_overflow($i0: i32)
 {
 $bb0:
@@ -16385,7 +16382,7 @@ $bb0:
   return;
 }
 const __SMACK_decls: ref;
-axiom (__SMACK_decls == $sub.ref(0, 34044));
+axiom (__SMACK_decls == $sub.ref(0, 34037));
 type $mop;
 procedure  boogie_si_record_mop(m: $mop);
 const $MOP: $mop;
@@ -16424,10 +16421,10 @@ modifies $CurrAddr;
 procedure  $free(p: ref);
 
 const __SMACK_top_decl: ref;
-axiom (__SMACK_top_decl == $sub.ref(0, 35076));
+axiom (__SMACK_top_decl == $sub.ref(0, 35069));
 procedure  __SMACK_top_decl.ref($p0: ref);
 const __SMACK_init_func_memory_model: ref;
-axiom (__SMACK_init_func_memory_model == $sub.ref(0, 36108));
+axiom (__SMACK_init_func_memory_model == $sub.ref(0, 36101));
 procedure  __SMACK_init_func_memory_model()
 {
 $bb0:
@@ -16442,10 +16439,10 @@ $bb0:
   return;
 }
 const llvm.dbg.value: ref;
-axiom (llvm.dbg.value == $sub.ref(0, 37140));
+axiom (llvm.dbg.value == $sub.ref(0, 37133));
 procedure  llvm.dbg.value($p0: ref, $p1: ref, $p2: ref);
 const __SMACK_static_init: ref;
-axiom (__SMACK_static_init == $sub.ref(0, 38172));
+axiom (__SMACK_static_init == $sub.ref(0, 38165));
 procedure  __SMACK_static_init()
 {
 $bb0:
