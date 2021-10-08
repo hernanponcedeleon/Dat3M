@@ -51,11 +51,11 @@ public class SVCOMPRunner {
         }
         
         File file = new File(options.getProgramFilePath());
-        File tmp = new SVCOMPSanitizer(file).run(1);
+        int bound = witness.hasAttributed(UNROLLBOUND.toString()) ?  parseInt(witness.getAttributed(UNROLLBOUND.toString())) : options.getUMin();
+        File tmp = new SVCOMPSanitizer(file).run(bound);
         // First time we compiler with standard atomic header to catch compilation problems
         compile(tmp, options, false);
 
-        int bound = witness.hasAttributed(UNROLLBOUND.toString()) ?  parseInt(witness.getAttributed(UNROLLBOUND.toString())) : options.getUMin();
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN")) {
 			if(bound == options.getUMax()+1) {
