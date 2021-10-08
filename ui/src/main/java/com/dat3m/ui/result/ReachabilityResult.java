@@ -60,6 +60,7 @@ public class ReachabilityResult {
             	t.start();
                 Configuration config = Configuration.builder()
                 		.setOption("solver.z3.usePhantomReferences", "true")
+                		.setOption("solver.nonLinearArithmetic", "APPROXIMATE_FALLBACK")
                 		.build();
 				try (SolverContext ctx = SolverContextFactory.createSolverContext(
                         config,
