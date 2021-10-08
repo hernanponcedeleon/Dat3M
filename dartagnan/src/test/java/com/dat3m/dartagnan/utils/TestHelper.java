@@ -15,7 +15,6 @@ public class TestHelper {
     public static SolverContext createContext() throws InvalidConfigurationException {
             Configuration config = Configuration.builder()
                     .setOption("solver.z3.usePhantomReferences", "true")
-            		.setOption("solver.nonLinearArithmetic", "APPROXIMATE_FALLBACK")
                     .build();
             return SolverContextFactory.createSolverContext(
                     config,
