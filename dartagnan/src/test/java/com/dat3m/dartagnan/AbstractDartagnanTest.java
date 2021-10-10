@@ -75,41 +75,7 @@ public abstract class AbstractDartagnanTest {
         this.settings = settings;
     }
 
-    //@Test(timeout = TIMEOUT)
-    public void testCombined() {
-        // Compares Refinement and TwoSolvers on litmus tests
-
-        Result res = Result.UNKNOWN;
-        // Get initial result by TwoSolvers
-        try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
-        {
-            Program program = new ProgramParser().parse(new File(path));
-            if (program.getAss() != null) {
-                VerificationTask task = new VerificationTask(program, wmm, target, settings);
-                res = runAnalysisTwoSolvers(ctx, prover1, prover2, task);
-            }
-        } catch (Exception e) {
-            fail(e.getMessage());
-        }
-
-        // Now compare TwoSolvers result with Refinement result.
-        try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
-        {
-            Program program = new ProgramParser().parse(new File(path));
-            if (program.getAss() != null) {
-                VerificationTask task = new VerificationTask(program, wmm, target, settings);
-                assertEquals(res, Refinement.runAnalysisSaturationSolver(ctx, prover,
-                        RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
-            }
-        } catch (Exception e) {
-            fail(e.getMessage());
-        }
-    }
-
-     @Test(timeout = TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
@@ -138,12 +104,6 @@ public abstract class AbstractDartagnanTest {
         {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
-                /*if (!program.getAss().getLocs().isEmpty()) {
-                    // We assert true, because Refinement can't handle these assertions
-                    // They need coherence, which Refinement avoids to encode!
-                    assertTrue(true);
-                    return;
-                }*/
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
                 long start = System.currentTimeMillis();
                 assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,

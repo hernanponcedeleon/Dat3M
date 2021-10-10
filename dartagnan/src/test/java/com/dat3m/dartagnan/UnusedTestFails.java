@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
@@ -25,8 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
-import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
-import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -64,7 +61,7 @@ public class UnusedTestFails {
         Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
 
         List<Object[]> data = new ArrayList<>();
-        data.add(new Object[]{"../tests/mutex-2.c", tso, POWER, s1, UNKNOWN});
+        //data.add(new Object[]{"../tests/mutex-2.c", tso, POWER, s1, UNKNOWN});
         //data.add(new Object[]{"../lfds/ms_datCAS-O0.bpl", wmm, s2});
         //data.add(new Object[]{"../lfds/ms-O0.bpl", wmm, s2});
         //data.add(new Object[]{"../output/ms-test-O0.bpl", wmm, s2});
@@ -87,7 +84,7 @@ public class UnusedTestFails {
         }
     }
 
-    @Test(timeout = TIMEOUT)
+    //@Test(timeout = TIMEOUT)
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(SolverContext.ProverOptions.GENERATE_MODELS))

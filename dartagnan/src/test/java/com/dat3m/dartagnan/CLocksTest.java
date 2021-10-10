@@ -28,9 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
-import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
-import static com.dat3m.dartagnan.utils.ResourceHelper.initialiseCSVFile;
+import static com.dat3m.dartagnan.utils.ResourceHelper.*;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static com.dat3m.dartagnan.wmm.utils.Arch.*;
@@ -169,7 +167,7 @@ public class CLocksTest {
         this.expected = expected;
     }
 
-//    @Test(timeout = TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void testAssume() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
