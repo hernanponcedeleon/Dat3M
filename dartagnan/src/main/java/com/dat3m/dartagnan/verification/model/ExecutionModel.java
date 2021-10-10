@@ -221,6 +221,7 @@ public class ExecutionModel {
         this.extractCoherences = extractCoherences;
         extractEventsFromModel();
         extractReadsFrom();
+        coherenceMap.clear();
         if (extractCoherences) {
             extractCoherences();
         }
