@@ -310,7 +310,6 @@ public class Refinement {
 
 
 
-
     /*
         This class handles the computation of refinement clauses from violations found by the saturation procedure.
         Furthermore, it incorporates symmetry reasoning if possible.
