@@ -26,7 +26,7 @@ public interface RelationGraph extends GraphDerivable, Iterable<Edge> {
 
     // Returns the edge that is stored in this graph, including all the metadata
     //TODO: We might want to go back to returning NULL instead of using Optional
-    // since Optional can cause a lot of overhead
+    // since Optional causes overhead and we tend to convert non-present values to NULL anyway (its easier to handle)
     Optional<Edge> get(Edge edge);
 
     //TODO: We might want to make these default

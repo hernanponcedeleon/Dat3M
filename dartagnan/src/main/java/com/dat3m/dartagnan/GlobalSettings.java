@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.analysis.saturation.SaturationSolver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,7 +39,6 @@ public class GlobalSettings {
 
     // ==== Refinement ====
     public static final boolean REFINEMENT_GENERATE_GRAPHVIZ_FILES = false;
-    public static final boolean REFINEMENT_ENCODE_COHERENCE = true;
     public static final int REFINEMENT_BASELINE_WMM = EMPTY;
 
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
@@ -48,13 +46,6 @@ public class GlobalSettings {
 
     // ==== Saturation ====
     public static boolean SATURATION_ENABLE_DEBUG = false;
-    public static SaturationSolver.Mode SATURATION_MODE = SaturationSolver.Mode.MODEL_CHECKING;
-    // NOTE: This setting only has an effect if <REFINEMENT_ENCODE_COHERENCES> is enabled.
-    public static boolean SATURATION_USE_MODEL_COHERENCES = true;
-    public static boolean SATURATION_REDUCE_REASONS_TO_CORE_REASONS = true;
-    // NOTE: This setting only has an effect if <REFINEMENT_ENCODE_COHERENCES> is enabled.
-    public static boolean SATURATION_NO_RESOLUTION = false;
-    public static final int SATURATION_MAX_DEPTH = 3;
 
     // --------------------
 
@@ -85,11 +76,11 @@ public class GlobalSettings {
     	logger.info("ENABLE_DEBUG_OUTPUT: " + ENABLE_DEBUG_OUTPUT);
 
     	// Refinement settings
+        logger.info("REFINEMENT_GENERATE_GRAPHVIZ_FILES: " + REFINEMENT_GENERATE_GRAPHVIZ_FILES);
     	logger.info("REFINEMENT_BASELINE_WMM: " + REFINEMENT_BASELINE_WMM);
     	logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());
 
     	// Saturation settings
         logger.info("SATURATION_ENABLE_DEBUG: " + SATURATION_ENABLE_DEBUG);
-        logger.info("SATURATION_MAX_DEPTH: " + SATURATION_MAX_DEPTH);
     }
 }

@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.analysis.saturation.graphs;
 
-import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
-import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.basic.SimpleCoherenceGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.binary.CompositionGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.binary.DifferenceGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.binary.IntersectionGraph;
@@ -30,7 +28,10 @@ import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
 import com.dat3m.dartagnan.wmm.relation.unary.RelRangeIdentity;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTransRef;
-import com.google.common.collect.*;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -69,22 +70,15 @@ public class ExecutionGraph {
     private RelationGraph coGraph;
     private RelationGraph locGraph;
 
-    /*
-        A non-transitive version of <coGraph> that is maintained by the Saturation procedure.
-        We use it to distinguish between directly added coherences and coherences that were transitively derived.
-        We maintain the invariant co = sco^+ at all times.
-     */
-    private RelationGraph scoGraph;
-
     // =================================================
 
     // ============= Construction & Init ===============
 
-    public ExecutionGraph(VerificationTask verificationTask) {
+    public ExecutionGraph(VerificationTask verificationTask, boolean createOnlyAxiomRelevantGraphs) {
         this.verificationTask = verificationTask;
         relationGraphMap = HashBiMap.create();
         constraintMap = HashBiMap.create();
-        constructMappings();
+        constructMappings(createOnlyAxiomRelevantGraphs);
     }
 
     public void initializeFromModel(ExecutionModel executionModel) {
@@ -94,18 +88,21 @@ public class ExecutionGraph {
 
     // --------------------------------------------------
 
-    private void constructMappings() {
-        // We make sure to compute graphs along the dependency order
-        // TODO: Is the order really important?
+    private void constructMappings(boolean createOnlyAxiomRelevantGraphs) {
         Set<RelationGraph> graphs = new HashSet<>();
-        /*for (Relation rel : verificationTask.getRelationDependencyGraph().getNodeContents()) {
-            if (!EXCLUDED_RELS.contains(rel.getName())) {
-                RelationGraph graph = getOrCreateGraphFromRelation(rel);
-                graphs.add(graph);
+        if (createOnlyAxiomRelevantGraphs) {
+            // We create only graphs that belong to some relation that influences the axioms
+            for (Axiom ax : verificationTask.getAxioms()) {
+                graphs.add(getOrCreateGraphFromRelation(ax.getRelation()));
             }
-        }*/
-        for (Axiom ax : verificationTask.getAxioms()) {
-            graphs.add(getOrCreateGraphFromRelation(ax.getRelation()));
+        } else {
+            // We create graphs for all relations in the model (with som exceptions)
+            for (Relation rel : verificationTask.getRelationDependencyGraph().getNodeContents()) {
+                if (!EXCLUDED_RELS.contains(rel.getName())) {
+                    RelationGraph graph = getOrCreateGraphFromRelation(rel);
+                    graphs.add(graph);
+                }
+            }
         }
         graphHierarchy = new GraphHierarchy(graphs);
 
@@ -126,7 +123,7 @@ public class ExecutionGraph {
         return Maps.unmodifiableBiMap(relationGraphMap);
     }
 
-    public BiMap<Axiom, Constraint> getConstraintMap() {
+    public BiMap<Axiom, Constraint> getAxiomConstraintMap() {
         return Maps.unmodifiableBiMap(constraintMap);
     }
 
@@ -138,7 +135,6 @@ public class ExecutionGraph {
     public RelationGraph getReadFromGraph() { return rfGraph; }
     public RelationGraph getLocationGraph() { return locGraph; }
     public RelationGraph getCoherenceGraph() { return coGraph; }
-    public RelationGraph getSimpleCoherenceGraph() { return scoGraph; }
 
     public RelationGraph getRelationGraph(Relation rel) {
         return relationGraphMap.get(rel);
@@ -156,26 +152,9 @@ public class ExecutionGraph {
         return constraintMap.values();
     }
 
-    public Set<RelationGraph> computeMinimalCut() { return graphHierarchy.findMinimalCut(); }
-
     // ====================================================
 
     // ==================== Mutation ======================
-
-    // For now we only allow refinement on co-edges.
-    // We might want to add similar features for other linear orders (i.e. user defined orders)
-    // We also assume, that the non-transitive write order is defined.
-    public boolean addCoherenceEdges(Edge coEdge) {
-        return addCoherenceEdges(ImmutableList.of(coEdge));
-    }
-
-    public boolean addCoherenceEdges(Collection<Edge> coEdges) {
-        if ( scoGraph == null) {
-            return false;
-        }
-        graphHierarchy.addEdgesAndPropagate(scoGraph, coEdges);
-        return true;
-    }
 
     public void backtrackTo(int time) {
         graphHierarchy.backtrackTo(time);
@@ -240,8 +219,7 @@ public class ExecutionGraph {
         } else if (relClass == RelPo.class) {
             graph = poGraph = new ProgramOrderGraph();
         } else if (relClass == RelCo.class) {
-            graph = coGraph = new TransitiveGraph(scoGraph = new SimpleCoherenceGraph());
-            scoGraph.setName("_sco");
+            graph = coGraph = new CoherenceGraph();
         } else if (rel.isRecursiveRelation()) {
             RecursiveGraph recGraph = new RecursiveGraph();
             recGraph.setName(rel.getName() + "_rec");

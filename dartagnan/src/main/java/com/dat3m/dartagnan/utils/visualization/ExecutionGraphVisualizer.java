@@ -1,22 +1,18 @@
 package com.dat3m.dartagnan.utils.visualization;
 
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.math.BigInteger;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
 
 /*
-    This is some rudimentary class to create graphs of executions
+    This is some rudimentary class to create graphs of executions.
+    Currently, it just creates very special graphs.
  */
 public class ExecutionGraphVisualizer {
 
@@ -41,7 +37,7 @@ public class ExecutionGraphVisualizer {
     public void generateGraphOfExecutionModel(Writer writer, String graphName, ExecutionModel model) throws IOException {
         graphviz.begin(graphName);
         graphviz.append(String.format("label=\"%s\" \n", graphName));
-        addAllThreads(model);
+        addAllThreadPos(model);
         addReadFrom(model);
         addCoherence(model);
         graphviz.end();
@@ -73,22 +69,14 @@ public class ExecutionGraphVisualizer {
 
     private ExecutionGraphVisualizer addCoherence(ExecutionModel model) {
 
-        Map<EventData, Set<EventData>> coMap = model.getCoherenceMap();
-        DependencyGraph<EventData> coGraph = DependencyGraph.from(coMap.keySet(), coMap);
-
-        List<EventData> events = coGraph.getSCCs().stream().map(scc -> scc.stream().findAny().get().getContent()).collect(Collectors.toList());
-        Collections.reverse(events);
-
-
         graphviz.beginSubgraph("Coherence");
         graphviz.setEdgeAttributes("color=red"/*, "constraint=false"*/);
 
-        for (BigInteger addr : model.getAddressWritesMap().keySet()) {
-            List<EventData> sameAddrWrites = events.stream().filter(e -> e.getAccessedAddress().equals(addr)).collect(Collectors.toList());
-            for (int i = 2; i < sameAddrWrites.size(); i++) {
+        for (List<EventData> co : model.getCoherenceMap().values()) {
+            for (int i = 2; i < co.size(); i++) {
                 // We skip the init writes
-                EventData w1 = sameAddrWrites.get(i - 1);
-                EventData w2 = sameAddrWrites.get(i);
+                EventData w1 = co.get(i - 1);
+                EventData w2 = co.get(i);
                 if (ignore(w1) || ignore(w2) || !coFilter.test(w1, w2)) {
                     continue;
                 }
@@ -99,8 +87,9 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
-    private ExecutionGraphVisualizer addAllThreads(ExecutionModel model) {
+    private ExecutionGraphVisualizer addAllThreadPos(ExecutionModel model) {
         for (Thread thread : model.getThreads()) {
+            // We skip the first two threads (empty thread and main) for now
             if (thread.getId() <= 1) {
                 continue;
             }

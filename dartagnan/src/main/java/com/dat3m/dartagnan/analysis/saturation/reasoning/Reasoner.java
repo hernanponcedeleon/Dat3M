@@ -1,16 +1,15 @@
 package com.dat3m.dartagnan.analysis.saturation.reasoning;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.analysis.saturation.graphs.ExecutionGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.Edge;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGraph;
-import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.basic.SimpleCoherenceGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.binary.DifferenceGraph;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.constraints.AcyclicityConstraint;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.constraints.Constraint;
+import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.stat.CoherenceGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.stat.FenceGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.stat.LocationGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.stat.ReadFromGraph;
-import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.unary.RecursiveGraph;
 import com.dat3m.dartagnan.analysis.saturation.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.saturation.logic.DNF;
 import com.dat3m.dartagnan.analysis.saturation.logic.SortedCubeSet;
@@ -22,9 +21,11 @@ import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.google.common.collect.BiMap;
-import com.google.common.collect.Maps;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.PathAlgorithm.findShortestPath;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
@@ -34,53 +35,17 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 // Especially for ReflexiveClosure and TransitiveClosure
 public class Reasoner {
 
-    private final ExecutionGraph execGraph;
     private final BranchEquivalence eq;
     private final BiMap<RelationGraph, Relation> graphRelMap;
     private final boolean useMinTupleReasoning;
     private final Relation co;
     private final Visitor visitor = new Visitor();
 
-    // ======= Test code for cuts =======
-    private Set<RelationGraph> cut = new HashSet<>();
-
-    public void setCut(Set<RelationGraph> cut) {
-        this.cut = cut;
-    }
-
-    private final Map<RelationGraph, Map<Edge, DNF<CoreLiteral>>> cutEdgeReasonMap = new HashMap<>();
-
-    public void clear() {
-        cutEdgeReasonMap.clear();
-    }
-
-    public boolean hasCut() { return !cut.isEmpty(); }
-
-    public Map<RelationGraph, Map<Edge, DNF<CoreLiteral>>> getCutEdgeReasonMap() {
-        return cutEdgeReasonMap;
-    }
-
-    // ==================================
-
-    // For debugging purposes, we track for each recursive graph the edges we visit recursively.
-    // If we recursively visit some edge twice, we end up in a cyclic reasoning which causes an exception right now.
-    // Due to the new derivation length reasoning, this should never happen!
-    private final Map<RelationGraph, Set<Edge>> visitedMap = Maps.newIdentityHashMap();
-
-    //TODO: For edges that do not depend on co, we may want to store the computed reasons
-    // to reuse them if possible.
-
     public Reasoner(ExecutionGraph execGraph, boolean useMinTupleReasoning) {
-        this.execGraph = execGraph;
         this.eq = execGraph.getVerificationTask().getBranchEquivalence();
         this.co = execGraph.getVerificationTask().getMemoryModel().getRelationRepository().getRelation(CO);
         this.graphRelMap = execGraph.getRelationGraphMap().inverse();
         this.useMinTupleReasoning = useMinTupleReasoning;
-
-        execGraph.getRelationGraphs().stream()
-                .filter(graph -> graph instanceof RecursiveGraph)
-                .forEach(g -> visitedMap.put(g, new HashSet<>()));
-
     }
 
     public DNF<CoreLiteral> computeViolationReasons(Constraint constraint) {
@@ -89,47 +54,46 @@ public class Reasoner {
         }
 
         RelationGraph constrainedGraph = constraint.getConstrainedGraph();
-        SortedCubeSet<CoreLiteral> clauseSet = new SortedCubeSet<>();
+        SortedCubeSet<CoreLiteral> reasonSet = new SortedCubeSet<>();
+        Collection<? extends Collection<Edge>> violations = constraint.getViolations();
 
-        if (GlobalSettings.SATURATION_REDUCE_REASONS_TO_CORE_REASONS) {
-            for (Collection<Edge> violation : constraint.getViolations()) {
+        if (constraint instanceof AcyclicityConstraint) {
+            // For acyclicity constraints, it is likely that we encounter the same
+            // edge multiple times (as it can be part of different cycles)
+            // so we memoize the computed reasons and reuse them if possible.
+            final int mapSize = violations.stream().mapToInt(Collection::size).sum() * 4 / 3;
+            final Map<Edge, Conjunction<CoreLiteral>> reasonMap = new HashMap<>(mapSize);
+
+            for (Collection<Edge> violation : violations) {
+                Conjunction<CoreLiteral> reason = violation.stream()
+                        .map(edge -> reasonMap.computeIfAbsent(edge, key -> computeReason(constrainedGraph, key)))
+                        .reduce(Conjunction.TRUE(), Conjunction::and);
+                reasonSet.add(simplifyReason(reason));
+            }
+        } else {
+            for (Collection<Edge> violation : violations) {
                 Conjunction<CoreLiteral> reason = violation.stream()
                         .map(edge -> computeReason(constrainedGraph, edge))
                         .reduce(Conjunction.TRUE(), Conjunction::and);
-                clauseSet.add(simplifyReason(reason));
-            }
-            clauseSet.simplify();
-        } else {
-            for (Collection<Edge> violation : constraint.getViolations()) {
-                Conjunction<CoreLiteral> reason = violation.stream()
-                        .map(edge -> new Conjunction<>(new EdgeLiteral(constrainedGraph.getName(), edge)))
-                        .reduce(Conjunction.TRUE(), Conjunction::and);
-                clauseSet.add(reason);
+                reasonSet.add(simplifyReason(reason));
             }
         }
 
-
-        return clauseSet.toDNF();
+        reasonSet.simplify();
+        return reasonSet.toDNF();
     }
 
-    boolean computeCoreReasons = false;
     public Conjunction<CoreLiteral> computeReason(RelationGraph graph, Edge edge) {
         if (!graph.contains(edge)) {
             return Conjunction.FALSE();
         }
-        Conjunction<CoreLiteral> reason;
-        if (!cut.contains(graph) || computeCoreReasons) {
-            reason = graph.accept(visitor, edge, null);
-        } else {
-            reason = new Conjunction<>(new EdgeLiteral(graph.getName(), edge));
-            computeCoreReasons = true;
-            Conjunction<CoreLiteral> coreReason = simplifyReason(graph.accept(visitor, edge, null));
-            cutEdgeReasonMap.computeIfAbsent(graph, key -> new HashMap<>())
-                    .compute(edge, (k, v) -> v == null ? new DNF<>(coreReason) : v.and(new DNF<>(coreReason)));
-            computeCoreReasons = false;
+
+        Conjunction<CoreLiteral> reason = tryGetStaticReason(graph, edge);
+        if (reason != null) {
+            return reason;
         }
 
-        //Conjunction<CoreLiteral> reason = graph.accept(visitor, edge, null);
+        reason = graph.accept(visitor, edge, null);
         assert !reason.isFalse();
         return simplifyReason(reason);
     }
@@ -143,20 +107,13 @@ public class Reasoner {
     // ================= Private Methods ==================
 
     private Conjunction<CoreLiteral> tryGetStaticReason(RelationGraph graph, Edge e) {
-        if (!useMinTupleReasoning) {
+        if (useMinTupleReasoning) {
             // We will probably always use minTupleReasoning, but this
             // is for testing purposes here.
             // Refinement should ideally work even without having min tuples
-            return null;
-        }
-
-        if (graph == execGraph.getSimpleCoherenceGraph()) {
-            // The SimpleCoherenceGraph has no corresponding Relation in the WMM.
-            // Instead we use the CoGraph to look up a static reason.
-            graph = execGraph.getCoherenceGraph();
-        }
-        if (graphRelMap.get(graph).getMinTupleSet().contains(e.toTuple())) {
-            return getExecReason(e);
+            if (graphRelMap.get(graph).getMinTupleSet().contains(e.toTuple())) {
+                return getExecReason(e);
+            }
         }
         return null;
     }
@@ -176,7 +133,7 @@ public class Reasoner {
         if (!e.getFirst().isWrite() || !e.getSecond().isWrite()) {
             return Conjunction.FALSE();
         }
-        return new Conjunction<>(new CoLiteral(e)).and(getAddressReason(e));
+        return new Conjunction<>(new CoLiteral(e));
     }
 
     private Conjunction<CoreLiteral> getAddressReason(Edge e) {
@@ -222,16 +179,27 @@ public class Reasoner {
     // is already implied by the other literals in <clause>
     private boolean canBeRemoved(CoreLiteral literal, Conjunction<CoreLiteral> clause) {
         if (literal instanceof EventLiteral) {
+            // EventLiterals may be implied by EdgeLiterals other than AddressLiterals
             final BranchEquivalence eq = this.eq;
             EventLiteral eventLit = (EventLiteral) literal;
             Event e = eventLit.getEventData().getEvent();
             return e.cfImpliesExec() && clause.getLiterals().stream().anyMatch(x -> {
                 if (x instanceof AddressLiteral || x instanceof EventLiteral) {
                     return false;
-                    //TODO: We assume model checking mode right now!!!
                 }
                 Edge edge = ((EdgeLiteral) x).getEdge();
                 return eq.isImplied(edge.getFirst().getEvent(), e) || eq.isImplied(edge.getSecond().getEvent(), e);
+            });
+        } else if (literal instanceof AddressLiteral) {
+            // AddressLiterals may be implied by co or rf literals
+            Edge e = ((AddressLiteral)literal).getEdge();
+            Edge eOpp = e.inverse();
+            return clause.getLiterals().stream().anyMatch( x -> {
+                if (x instanceof EdgeLiteral && !(x instanceof AddressLiteral)) {
+                    Edge e2 = ((EdgeLiteral)x).getEdge();
+                    return e.equals(e2) || eOpp.equals(e2);
+                }
+                return false;
             });
         }
 
@@ -252,11 +220,6 @@ public class Reasoner {
 
         @Override
         public Conjunction<CoreLiteral> visitUnion(RelationGraph graph, Edge edge, Void unused) {
-            Conjunction<CoreLiteral> reason = tryGetStaticReason(graph, edge);
-            if (reason != null) {
-                return reason;
-            }
-
             // We try to compute a shortest reason based on the distance to the base graphs
             Edge min = edge;
             RelationGraph next = graph;
@@ -270,9 +233,8 @@ public class Reasoner {
             if (next == graph) {
                 throw new IllegalStateException("Did not find a reason for " + edge + " in " + graph.getName());
             }
-            reason = computeReason(next, min);
 
-            //reason = next.accept(this, min, null);
+            Conjunction<CoreLiteral> reason = computeReason(next, min);
             assert !reason.isFalse();
             return reason;
 
@@ -280,17 +242,11 @@ public class Reasoner {
 
         @Override
         public Conjunction<CoreLiteral> visitIntersection(RelationGraph graph, Edge edge, Void unused) {
-            Conjunction<CoreLiteral> reason = tryGetStaticReason(graph, edge);
-            if (reason != null) {
-                return reason;
-            }
-
-            reason = Conjunction.TRUE();
+            Conjunction<CoreLiteral> reason = Conjunction.TRUE();
             for (RelationGraph g : graph.getDependencies()) {
                 Edge e = g.get(edge).orElseThrow(() ->
                         new IllegalStateException("Did not find a reason for " + edge + " in " + graph.getName()));
                 reason = reason.and(computeReason(g, e));
-                //reason = reason.and(g.accept(this, e, unused));
             }
             assert !reason.isFalse();
             return reason;
@@ -298,11 +254,6 @@ public class Reasoner {
 
         @Override
         public Conjunction<CoreLiteral> visitComposition(RelationGraph graph, Edge edge, Void unused) {
-            Conjunction<CoreLiteral> reason = tryGetStaticReason(graph, edge);
-            if (reason != null) {
-                return reason;
-            }
-
             RelationGraph first = graph.getDependencies().get(0);
             RelationGraph second = graph.getDependencies().get(1);
 
@@ -317,8 +268,7 @@ public class Reasoner {
                     }
                     Edge e2 = second.get(new Edge(e1.getSecond(), edge.getSecond())).orElse(null);
                     if (e2 != null && e2.getDerivationLength() < edge.getDerivationLength()) {
-                        reason = computeReason(first, e1).and(computeReason(second, e2));
-                        //reason = first.accept(this, e1, unused).and(second.accept(this, e2, unused));
+                        Conjunction<CoreLiteral> reason = computeReason(first, e1).and(computeReason(second, e2));
                         assert !reason.isFalse();
                         return reason;
                     }
@@ -330,8 +280,7 @@ public class Reasoner {
                     }
                     Edge e1 = first.get(new Edge(edge.getFirst(), e2.getFirst())).orElse(null);
                     if (e1 != null && e1.getDerivationLength() < edge.getDerivationLength()) {
-                        reason = computeReason(first, e1).and(computeReason(second, e2));
-                        //reason = first.accept(this, e1, unused).and(second.accept(this, e2, unused));
+                        Conjunction<CoreLiteral> reason = computeReason(first, e1).and(computeReason(second, e2));
                         assert !reason.isFalse();
                         return reason;
                     }
@@ -343,42 +292,26 @@ public class Reasoner {
 
         @Override
         public Conjunction<CoreLiteral> visitDifference(RelationGraph graph, Edge edge, Void unused) {
-            Conjunction<CoreLiteral> reason = tryGetStaticReason(graph, edge);
-            if (reason != null) {
-                return reason;
-            }
-
             DifferenceGraph difGraph = (DifferenceGraph)graph;
             //TODO: This is only correct as long as the second operand of the difference
             // is a static relation. For now we work with this assumption and check it here.
             if (!graphRelMap.get(difGraph.getSecond()).isStaticRelation()) {
                 throw new IllegalStateException("The difference graph" + difGraph + " has a non-static second operand");
             }
-            reason = computeReason(difGraph.getFirst(), edge);
-            //reason = difGraph.getFirst().accept(this, edge, unused);
+            Conjunction<CoreLiteral> reason = computeReason(difGraph.getFirst(), edge);
             assert !reason.isFalse();
             return reason;
         }
 
         @Override
         public Conjunction<CoreLiteral> visitInverse(RelationGraph graph, Edge edge, Void unused) {
-            Conjunction<CoreLiteral> reason = tryGetStaticReason(graph, edge);
-            if (reason != null) {
-                return reason;
-            }
-
-            reason = computeReason(graph.getDependencies().get(0), edge.inverse().withDerivLength(edge.getDerivationLength() - 1));
-            //reason = graph.getDependencies().get(0).accept(this, edge.inverse().withDerivLength(edge.getDerivationLength() - 1), unused);
+            Conjunction<CoreLiteral> reason = computeReason(graph.getDependencies().get(0), edge.inverse().withDerivLength(edge.getDerivationLength() - 1));
             assert !reason.isFalse();
             return reason;
         }
 
         @Override
         public Conjunction<CoreLiteral> visitRangeIdentity(RelationGraph graph, Edge edge, Void unused) {
-            Conjunction<CoreLiteral> reason = tryGetStaticReason(graph, edge);
-            if (reason != null) {
-                return reason;
-            }
             if (!edge.isLoop()) {
                 throw new IllegalArgumentException(edge + " is no loop in " + graph.getName());
             }
@@ -387,8 +320,8 @@ public class Reasoner {
             for (Edge inEdge : inner.inEdges(edge.getSecond())) {
                 // TODO: We could look for the edge with the least derivation length here
                 if (inEdge.getDerivationLength() < edge.getDerivationLength()) {
-                    reason = computeReason(inner, inEdge);
-                    //reason = inner.accept(this, inEdge, unused);
+                    Conjunction<CoreLiteral> reason = computeReason(inner, inEdge);
+                    assert !reason.isFalse();
                     return reason;
                 }
             }
@@ -397,18 +330,12 @@ public class Reasoner {
 
         @Override
         public Conjunction<CoreLiteral> visitReflexiveClosure(RelationGraph graph, Edge edge, Void unused) {
-            Conjunction<CoreLiteral> reason = tryGetStaticReason(graph, edge);
-            if (reason != null) {
-                return reason;
-            }
-
             if (edge.isLoop()) {
                 return new Conjunction<>(new EventLiteral(edge.getFirst()));
             } else {
                 //TODO: Make sure that we can simply delegate the edge through.
                 // The reflexive closure right now does NOT change the derivation length
-                reason = computeReason(graph.getDependencies().get(0), edge);
-                //reason = graph.getDependencies().get(0).accept(this, edge, unused);
+                Conjunction<CoreLiteral> reason = computeReason(graph.getDependencies().get(0), edge);
                 assert !reason.isFalse();
                 return reason;
             }
@@ -416,25 +343,14 @@ public class Reasoner {
 
         @Override
         public Conjunction<CoreLiteral> visitTransitiveClosure(RelationGraph graph, Edge edge, Void unused) {
-            Conjunction<CoreLiteral> reason = tryGetStaticReason(graph, edge);
-            if (reason != null) {
-                return reason;
-            }
-
-            // TEST CODE
-            if (graph.getName().equals(CO)) {
-                return visitSco(graph, edge, null);
-            }
-
             RelationGraph inner = graph.getDependencies().get(0);
-            reason = Conjunction.TRUE();
+            Conjunction<CoreLiteral> reason = Conjunction.TRUE();
             //TODO: Here might be a problem with the derivation length.
             // Depending on the implementation of findShortestPath, there might be an off-by-one error
             // The path we look for should have strictly smaller derivation length on each edge
             List<Edge> path = findShortestPath(inner, edge.getFirst(), edge.getSecond(), edge.getDerivationLength() - 1);
             for (Edge e : path) {
                 reason = reason.and(computeReason(inner, e));
-                //reason = reason.and(inner.accept(this, e, unused));
             }
             assert !reason.isFalse();
             return reason;
@@ -442,36 +358,17 @@ public class Reasoner {
 
         @Override
         public Conjunction<CoreLiteral> visitRecursive(RelationGraph graph, Edge edge, Void unused) {
-            Conjunction<CoreLiteral> reason = tryGetStaticReason(graph, edge);
-            if (reason != null) {
-                return reason;
-            }
-
-            Set<Edge> visited = visitedMap.get(graph);
-            if (visited.contains(edge)) {
-                throw new IllegalStateException(edge.toString() + " got visited recursively in " + graph.getName());
-            }
-
-            visited.add(edge);
-            reason = computeReason(graph.getDependencies().get(0), edge);
-            //reason = graph.getDependencies().get(0).accept(this, edge, unused);
+            Conjunction<CoreLiteral> reason = computeReason(graph.getDependencies().get(0), edge);
             assert !reason.isFalse();
-            visited.remove(edge);
-
             return reason;
         }
 
         @Override
         public Conjunction<CoreLiteral> visitBase(RelationGraph graph, Edge edge, Void unused) {
-            Conjunction<CoreLiteral> reason = tryGetStaticReason(graph, edge);
-            if (reason != null) {
-                return reason;
-            }
-
             if (graph instanceof ReadFromGraph) {
                 return visitRf(graph, edge, unused);
-            } else if (graph instanceof SimpleCoherenceGraph) {
-                return visitSco(graph, edge, unused);
+            } else if (graph instanceof CoherenceGraph) {
+                return visitCo(graph, edge, unused);
             } else if (graph instanceof LocationGraph) {
                 return visitLoc(graph, edge, unused);
             } else if (graph instanceof FenceGraph) {
@@ -492,7 +389,7 @@ public class Reasoner {
             return getRfReason(edge);
         }
 
-        private Conjunction<CoreLiteral> visitSco(RelationGraph graph, Edge edge, Void unused) {
+        private Conjunction<CoreLiteral> visitCo(RelationGraph graph, Edge edge, Void unused) {
             // We still use minTupleSets for Co for now, even if minTupleReasoning is disabled
             if (co.getMinTupleSet().contains(edge.toTuple())) {
                 return getExecReason(edge);
@@ -507,6 +404,8 @@ public class Reasoner {
         }
 
         private Conjunction<CoreLiteral> visitStatic(RelationGraph graph, Edge edge, Void unused) {
+            //TODO: We might have to treat Data, Addr and Ctrl differently,
+            // potentially adding new base literals for those
             return getExecReason(edge);
         }
     }
