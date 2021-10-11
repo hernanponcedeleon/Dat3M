@@ -56,7 +56,7 @@ public class GlobalSettings {
     public static final boolean ENABLE_DEBUG_OUTPUT = false;
 
     // === Testing ===
-    public static final boolean SKIP_TIMINGOUT_LITMUS = true;
+    public static final boolean SKIP_TIMINGOUT_LITMUS = false;
 
     public static void LogGlobalSettings() {
         // General settings

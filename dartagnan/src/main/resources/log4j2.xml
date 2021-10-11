@@ -22,11 +22,11 @@
   </Appenders>
   
   <Loggers>
-    <Logger name="com.dat3m.dartagnan.analysis.Refinement" level="off" additivity="false">
+    <Logger name="com.dat3m.dartagnan.analysis.Refinement" level="info" additivity="false">
       <AppenderRef ref="Refinement_Console"/>
       <AppenderRef ref="Refinement_File"/>
     </Logger>
-    <Root level="off">
+    <Root level="info">
       <AppenderRef ref="Console"/>
       <AppenderRef ref="File"/>
     </Root>
