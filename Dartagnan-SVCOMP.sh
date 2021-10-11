@@ -20,8 +20,8 @@ else
         PROGRAMPATH=$2
     fi
 
-    export PATH=$PATH:$HOME/bin:$JAVA_HOME/bin
-    export LD_LIBRARY_PATH=$(pwd)/lib/
+    export DAT3M_HOME=$(pwd)
+    export PATH=$PATH:$DAT3M_HOME/smack/bin
 
     FLAGS="-method incremental"
     if ! grep -q "pthread" $2; then
