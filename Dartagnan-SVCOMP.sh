@@ -24,7 +24,7 @@ else
     export PATH=$PATH:$DAT3M_HOME/smack/bin
 
     FLAGS="-method incremental"
-    if ! grep -q "pthread" $2; then
+    if ! grep -q "pthread" $PROGRAMPATH; then
         FLAGS+=" -o O3 -e bit-vector -cat cat/sc.cat"
     else
         FLAGS+=" -cat cat/svcomp.cat"
