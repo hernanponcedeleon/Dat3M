@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.utils.Result;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -19,7 +18,7 @@ public class HerdX86 extends AbstractHerdTest {
 		return buildParameters("litmus/X86/", "cat/tso.cat");
     }
 
-    public HerdX86(String path, Result expected, String wmm) {
-        super(path, expected, wmm);
+    public HerdX86(String path, String wmm) {
+        super(path, wmm);
     }
 }

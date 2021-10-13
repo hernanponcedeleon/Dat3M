@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.utils.Result;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -18,7 +17,7 @@ public class HerdLinux extends AbstractHerdTest {
         return buildParameters("litmus/C/", "cat/linux-kernel.cat");
     }
 
-    public HerdLinux(String path, Result expected, String wmm) {
-        super(path, expected, wmm);
+    public HerdLinux(String path, String wmm) {
+        super(path, wmm);
     }
 }

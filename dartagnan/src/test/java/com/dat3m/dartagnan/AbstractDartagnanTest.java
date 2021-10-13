@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.GlobalSettings.SKIP_TIMINGOUT_LITMUS;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static org.junit.Assert.assertEquals;
@@ -38,7 +37,7 @@ import static org.junit.Assert.fail;
 public abstract class AbstractDartagnanTest {
 
 	static final int SOLVER_TIMEOUT = 60;
-    static final int TIMEOUT = 10000;
+    static final int TIMEOUT = 5000;
 	
     static Iterable<Object[]> buildParameters(String litmusPath, String cat, Arch target) throws IOException {
     	int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
@@ -51,9 +50,6 @@ public abstract class AbstractDartagnanTest {
                     .filter(Files::isRegularFile)
                     .map(Path::toString)
                     .filter(f -> f.endsWith("litmus"))
-                    // All litmus test timing out with refinement match this
-                    .filter(f -> !SKIP_TIMINGOUT_LITMUS || !f.contains("manual/extra"))
-                    .filter(f -> !SKIP_TIMINGOUT_LITMUS || !f.contains("PPC/Dart-"))
                     .filter(f -> expectationMap.containsKey(f.substring(n)))
                     .map(f -> new Object[]{f, expectationMap.get(f.substring(n))})
                     .collect(ArrayList::new,
@@ -116,16 +112,16 @@ public abstract class AbstractDartagnanTest {
              ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
         	 BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "two", ""), true)))
         {
+            writer.newLine();
+            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
+            // The flush() is required to write the content in the presence of timeouts
+            writer.flush();
             Program program = new ProgramParser().parse(new File(path));
-            if (program.getAss() != null) {
-                VerificationTask task = new VerificationTask(program, wmm, target, settings);
-                writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
-                long start = System.currentTimeMillis();
-                assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
-                long solvingTime = System.currentTimeMillis() - start;
-                writer.append(expected.toString()).append(", ").append(Long.toString(solvingTime));
-                writer.newLine();
-            }
+            VerificationTask task = new VerificationTask(program, wmm, target, settings);
+            long start = System.currentTimeMillis();
+            assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
+            long solvingTime = System.currentTimeMillis() - start;
+            writer.append(expected.toString()).append(", ").append(Long.toString(solvingTime));
         } catch (Exception e){
             fail(e.getMessage());
         }
@@ -137,17 +133,17 @@ public abstract class AbstractDartagnanTest {
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
              BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement", ""), true)))
         {
+            writer.newLine();
+            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
+            // The flush() is required to write the content in the presence of timeouts
+            writer.flush();
             Program program = new ProgramParser().parse(new File(path));
-            if (program.getAss() != null) {
-                VerificationTask task = new VerificationTask(program, wmm, target, settings);
-                writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
-                long start = System.currentTimeMillis();
-                assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
-                        RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
-                long solvingTime = System.currentTimeMillis() - start;
-                writer.append(expected.toString()).append(", ").append(Long.toString(solvingTime));
-                writer.newLine();
-            }
+            VerificationTask task = new VerificationTask(program, wmm, target, settings);
+            long start = System.currentTimeMillis();
+            assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
+            		RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
+            long solvingTime = System.currentTimeMillis() - start;
+            writer.append(expected.toString()).append(", ").append(Long.toString(solvingTime));
         } catch (Exception e){
             fail(e.getMessage());
         }

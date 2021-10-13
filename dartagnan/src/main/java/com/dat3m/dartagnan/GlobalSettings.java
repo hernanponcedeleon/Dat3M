@@ -63,9 +63,6 @@ public class GlobalSettings {
     // === Debug ===
     public static final boolean ENABLE_DEBUG_OUTPUT = false;
 
-    // === Testing ===
-    public static final boolean SKIP_TIMINGOUT_LITMUS = true;
-
     public static void LogGlobalSettings() {
         // General settings
     	logger.info("ATOMIC_AS_LOCK: " + ATOMIC_AS_LOCK);
