@@ -30,7 +30,7 @@ else
         FLAGS+=" -cat cat/svcomp.cat"
     fi
 
-    cmd="java -jar svcomp/target/svcomp-"$VERSION".jar "$FLAGS" -property "$PROPERTYPATH" -i "$PROGRAMPATH $WITNESS
+    cmd="java -jar svcomp/target/svcomp-"$VERSION".jar "$FLAGS" -property "$PROPERTYPATH" -i "$PROGRAMPATH" "$WITNESS
     echo $cmd
     $cmd
 fi
