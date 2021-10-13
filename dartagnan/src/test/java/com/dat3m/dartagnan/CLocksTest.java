@@ -169,11 +169,7 @@ public class CLocksTest {
         this.expected = expected;
     }
 
-<<<<<<< HEAD
     @Test(timeout = TIMEOUT)
-=======
-    //@Test(timeout = TIMEOUT)
->>>>>>> refs/heads/experimental
     public void testAssume() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
