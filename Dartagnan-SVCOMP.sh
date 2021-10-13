@@ -10,6 +10,16 @@ fi
 if [ $1 == "-v" ] || [ $1 == "--version" ]; then
     echo $VERSION
 else
+    if [ $1 == "-witness" ]; then
+        WITNESS=$1" "$2
+        PROPERTYPATH=$3
+        PROGRAMPATH=$4
+    else
+        WITNESS=""
+        PROPERTYPATH=$1
+        PROGRAMPATH=$2
+    fi
+
     export PATH=$PATH:$HOME/bin:$JAVA_HOME/bin
     export LD_LIBRARY_PATH=$(pwd)/lib/
 
@@ -19,6 +29,6 @@ else
     else
         FLAGS+=" -cat cat/svcomp.cat"
     fi
-    echo $FLAGS -property $1 -i $2
-    java -jar svcomp/target/svcomp-$VERSION.jar $FLAGS -property $1 -i $2
+    echo java -jar svcomp/target/svcomp-$VERSION.jar $FLAGS -property $PROPERTYPATH -i $PROGRAMPATH $WITNESS
+    java -jar svcomp/target/svcomp-$VERSION.jar $FLAGS -property $PROPERTYPATH -i $PROGRAMPATH $WITNESS
 fi

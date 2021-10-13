@@ -24,7 +24,7 @@ public class IrreflexivityConstraint extends Constraint {
     }
 
     @Override
-    public List<List<Edge>>  getViolations() {
+    public List<List<Edge>> getViolations() {
         return violatingEdges.stream().map(Collections::singletonList).collect(Collectors.toList());
     }
 

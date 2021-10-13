@@ -93,6 +93,7 @@ public class Start extends Event {
         }
 
         events.add(newJumpUnless(new Atom(reg, EQ, IConst.ONE), label));
+        setCLineForAll(events, this.cLine);
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 

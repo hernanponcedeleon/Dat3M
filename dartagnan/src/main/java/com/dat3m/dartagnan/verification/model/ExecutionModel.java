@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -22,6 +23,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
@@ -35,6 +37,7 @@ The ExecutionModel wraps a Model and extracts data from it in a more workable ma
 public class ExecutionModel {
 
     private final VerificationTask task;
+    private final RelCo co;
 
     // ============= Model specific  =============
     private Model model;
@@ -49,7 +52,6 @@ public class ExecutionModel {
     private final Map<Thread, List<EventData>> threadEventsMap;
     private final Map<Thread, List<List<EventData>>> atomicBlocksMap;
     private final Map<EventData, EventData> readWriteMap;
-    private final Map<EventData, Set<EventData>> coherenceMap;
     private final Map<EventData, Set<EventData>> writeReadsMap;
     private final Map<String, Set<EventData>> fenceMap;
     private final Map<BigInteger, Set<EventData>> addressReadsMap;
@@ -61,13 +63,14 @@ public class ExecutionModel {
     private final Map<EventData, Set<EventData>> addrDepMap;
     private final Map<EventData, Set<EventData>> ctrlDepMap;
 
+    private final Map<BigInteger, List<EventData>> coherenceMap;
+
     // The following are a read-only views which get passed to the outside
     private List<EventData> eventListView;
     private List<Thread> threadListView;
     private Map<Thread, List<EventData>> threadEventsMapView;
     private Map<Thread, List<List<EventData>>> atomicBlocksMapView;
     private Map<EventData, EventData> readWriteMapView;
-    private Map<EventData, Set<EventData>> coherenceMapView;
     private Map<EventData, Set<EventData>> writeReadsMapView;
     private Map<String, Set<EventData>> fenceMapView;
     private Map<BigInteger, Set<EventData>> addressReadsMapView;
@@ -78,16 +81,19 @@ public class ExecutionModel {
     private Map<EventData, Set<EventData>> addrDepMapView;
     private Map<EventData, Set<EventData>> ctrlDepMapView;
 
+    private Map<BigInteger, List<EventData>> coherenceMapView;
+
     //========================== Construction =========================
 
     public ExecutionModel(VerificationTask task) {
         this.task = task;
+        co = (RelCo)task.getMemoryModel().getRelationRepository().getRelation(CO);
+
         eventList = new ArrayList<>(100);
         threadList = new ArrayList<>(getProgram().getThreads().size());
-        threadEventsMap = new HashMap<>(getProgram().getThreads().size());
+        threadEventsMap = new HashMap<>(getProgram().getThreads().size() * 4/3, 0.75f);
         atomicBlocksMap = new HashMap<>();
         readWriteMap = new HashMap<>();
-        coherenceMap = new HashMap<>();
         writeReadsMap = new HashMap<>();
         fenceMap = new HashMap<>();
         addressReadsMap = new HashMap<>();
@@ -97,6 +103,7 @@ public class ExecutionModel {
         dataDepMap = new HashMap<>();
         addrDepMap = new HashMap<>();
         ctrlDepMap = new HashMap<>();
+        coherenceMap = new HashMap<>();
 
         createViews();
     }
@@ -107,7 +114,6 @@ public class ExecutionModel {
         threadEventsMapView = Collections.unmodifiableMap(threadEventsMap);
         atomicBlocksMapView = Collections.unmodifiableMap(atomicBlocksMap);
         readWriteMapView = Collections.unmodifiableMap(readWriteMap);
-        coherenceMapView = Collections.unmodifiableMap(coherenceMap);
         writeReadsMapView = Collections.unmodifiableMap(writeReadsMap);
         fenceMapView = Collections.unmodifiableMap(fenceMap);
         addressReadsMapView = Collections.unmodifiableMap(addressReadsMap);
@@ -116,6 +122,7 @@ public class ExecutionModel {
         dataDepMapView = Collections.unmodifiableMap(dataDepMap);
         addrDepMapView = Collections.unmodifiableMap(addrDepMap);
         ctrlDepMapView = Collections.unmodifiableMap(ctrlDepMap);
+        coherenceMapView = Collections.unmodifiableMap(coherenceMap);
     }
 
     //======================== Public data ===========================‚
@@ -162,9 +169,6 @@ public class ExecutionModel {
     public Map<EventData, EventData> getReadWriteMap() {
         return readWriteMapView;
     }
-    public Map<EventData, Set<EventData>> getCoherenceMap() {
-    	return coherenceMapView;
-    }
     public Map<EventData, Set<EventData>> getWriteReadsMap() {
         return writeReadsMapView;
     }
@@ -183,6 +187,7 @@ public class ExecutionModel {
     public Map<EventData, Set<EventData>> getAddrDepMap() { return addrDepMapView; }
     public Map<EventData, Set<EventData>> getDataDepMap() { return dataDepMapView; }
     public Map<EventData, Set<EventData>> getCtrlDepMap() { return ctrlDepMapView; }
+    public Map<BigInteger, List<EventData>> getCoherenceMap() { return coherenceMapView; }
 
 
 
@@ -216,7 +221,10 @@ public class ExecutionModel {
         this.extractCoherences = extractCoherences;
         extractEventsFromModel();
         extractReadsFrom();
-        extractCoherences();
+        coherenceMap.clear();
+        if (extractCoherences) {
+            extractCoherences();
+        }
     }
 
     //========================== Internal methods  =========================
@@ -455,7 +463,6 @@ public class ExecutionModel {
                         readWriteMap.put(read, write);
                         read.setReadFrom(write);
                         writeReadsMap.get(write).add(read);
-                        write.setImportance(write.getImportance() + 1);
                         break;
                     }
                 }
@@ -463,29 +470,23 @@ public class ExecutionModel {
         }
     }
 
-    private Relation co;
     private void extractCoherences() {
-        coherenceMap.clear();
-        if (!extractCoherences) {
-            return;
-        }
+        for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
+            BigInteger addr = addrWrites.getKey();
+            Set<EventData> writes = addrWrites.getValue();
+            Map<EventData, BigInteger> writeCoIndexMap = new HashMap<>(writes.size() * 4 / 3, 0.75f);
 
-        if (co == null) {
-            co = getMemoryModel().getRelationRepository().getRelation(CO);
-        }
-
-        for (Map.Entry<BigInteger, Set<EventData>> addressedWrites : addressWritesMap.entrySet()) {
-        	BigInteger address = addressedWrites.getKey();
-            for (EventData w1 : addressedWrites.getValue()) {
-                coherenceMap.put(w1, new HashSet<>());
-                for (EventData w2 : addressWritesMap.get(address)) {
-                	BooleanFormula coExpr = co.getSMTVar(w1.getEvent(), w2.getEvent(), context);
-                	Boolean coVal = model.evaluate(coExpr);
-                    if (coVal != null && coVal) {
-                        coherenceMap.get(w1).add(w2);
-                    }
-                }
+            for (EventData w : writes) {
+                writeCoIndexMap.put(w, model.evaluate(co.getIntVar(w.getEvent(), context)));
             }
+
+            List<EventData> sortedWrites = writes.stream().sorted(Comparator.comparing(writeCoIndexMap::get)).collect(Collectors.toList());
+            int i = 0;
+            for (EventData w : sortedWrites) {
+                w.setCoherenceIndex(i++);
+            }
+
+            coherenceMap.put(addr, Collections.unmodifiableList(sortedWrites));
         }
     }
 }

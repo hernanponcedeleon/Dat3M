@@ -23,6 +23,7 @@ public class SVCOMPOptions extends BaseOptions {
 	private static final String BOOGIESAN = "sanitise";
 	private static final String UMIN = "umin";
 	private static final String UMAX = "umax";
+	private static final String STEP = "step";
 	
     private Set<String> supported_formats = 
     		ImmutableSet.copyOf(Arrays.asList("c", "i"));
@@ -36,7 +37,8 @@ public class SVCOMPOptions extends BaseOptions {
     private String witnessFilePath;
     private boolean boogiesan;
     private Integer umin;
-    private Integer umax; 
+    private Integer umax;
+    private Integer step;
     
     public SVCOMPOptions(){
         super();
@@ -50,6 +52,9 @@ public class SVCOMPOptions extends BaseOptions {
         
         addOption(new Option(UMAX, true,
                 "Ending unrolling bound <integer>"));
+        
+        addOption(new Option(STEP, true,
+                "Step size for the increasing unrolling bound <integer>"));
         
         Option propOption = new Option("p", PROPERTY_OPTION, true,
                 "The path to the property to be checked");
@@ -85,6 +90,7 @@ public class SVCOMPOptions extends BaseOptions {
         boogiesan = cmd.hasOption(BOOGIESAN);
         umin = cmd.hasOption(UMIN) ? Integer.parseInt(cmd.getOptionValue(UMIN)) : 1;
         umax = cmd.hasOption(UMAX) ? Integer.parseInt(cmd.getOptionValue(UMAX)) : Integer.MAX_VALUE;
+        step = cmd.hasOption(STEP) ? Integer.parseInt(cmd.getOptionValue(STEP)) : 1;
         
         encoding = cmd.hasOption(INTERGER_ENCODING_OPTION) ? cmd.getOptionValue(INTERGER_ENCODING_OPTION) : "unbounded-integer";
         if(!supported_integer_encoding.contains(encoding)) {
@@ -130,5 +136,9 @@ public class SVCOMPOptions extends BaseOptions {
 
     public Integer getUMax(){
 		return umax;
+    }
+
+    public Integer getStep(){
+		return step;
     }
 }

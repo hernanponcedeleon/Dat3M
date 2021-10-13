@@ -52,12 +52,16 @@ public class UnusedTestFails {
 
 	@Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
-        String cat_file = GlobalSettings.ATOMIC_AS_LOCK ? "cat/svcomp-locks.cat" : "cat/svcomp.cat";
-        Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat_file));
+        String scCat = GlobalSettings.ATOMIC_AS_LOCK ? "cat/svcomp-locks.cat" : "cat/svcomp.cat";
+        Wmm sc = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + scCat));
+        Wmm tso = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/tso.cat"));
+        Wmm power = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/power.cat"));
+        Wmm arm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat"));
 
-        Settings s2 = new Settings(Alias.CFIS, 1, TIMEOUT);
+        Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
 
         List<Object[]> data = new ArrayList<>();
+        //data.add(new Object[]{"../tests/mutex-2.c", tso, POWER, s1, UNKNOWN});
         //data.add(new Object[]{"../lfds/ms_datCAS-O0.bpl", wmm, s2});
         //data.add(new Object[]{"../lfds/ms-O0.bpl", wmm, s2});
         //data.add(new Object[]{"../output/ms-test-O0.bpl", wmm, s2});

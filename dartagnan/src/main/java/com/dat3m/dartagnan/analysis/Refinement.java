@@ -20,16 +20,23 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
+import com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer;
 import com.dat3m.dartagnan.verification.RefinementTask;
+import com.dat3m.dartagnan.verification.model.EventData;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.*;
@@ -81,25 +88,13 @@ public class Refinement {
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Program program = task.getProgram();
-        SaturationSolver saturationSolver = new SaturationSolver(task, SATURATION_MODE);
+        SaturationSolver saturationSolver = new SaturationSolver(task, true);
         Refiner refiner = new Refiner(task, ctx);
         SolverStatus status = INCONSISTENT;
 
         prover.addConstraint(task.encodeProgram(ctx));
-        if (SATURATION_REDUCE_REASONS_TO_CORE_REASONS) {
-            prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
-            prover.addConstraint(task.encodeBaselineWmmConsistency(ctx));
-            //prover.addConstraint(task.getMemoryModel().encodeNonDerived(ctx));
-            //prover.addConstraint(task.getMemoryModel().encodeConsistency(ctx));
-        } else {
-            // ==== Test Code ====
-            // If we do not reduce the reasons to core reasons,
-            // we need to encode more relations than just rf and co!
-            //prover.addConstraint(task.encodeWmmRelations(ctx));
-            prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
-            //prover.addConstraint(task.getMemoryModel().encodeRelations(ctx));
-            prover.addConstraint(task.getMemoryModel().encodeConsistency(ctx));
-        }
+        prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
+        prover.addConstraint(task.encodeBaselineWmmConsistency(ctx));
 
         if (ENABLE_SYMMETRY_BREAKING) {
             prover.addConstraint(task.encodeSymmetryBreaking(ctx));
@@ -130,6 +125,9 @@ public class Refinement {
             SolverResult solverResult;
             try (Model model = prover.getModel()) {
                 solverResult = saturationSolver.check(model, ctx);
+            } catch (SolverException e) {
+                logger.error(e);
+                throw e;
             }
 
             SolverStatistics stats = solverResult.getStatistics();
@@ -138,62 +136,20 @@ public class Refinement {
 
             status = solverResult.getStatus();
             if (status == INCONSISTENT) {
+
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 foundCoreReasons.add(reasons);
                 prover.addConstraint(refiner.refine(reasons));
 
-                /*for (Constraint c : saturationSolver.getExecutionGraph().getConstraints()) {
-                    RelationGraph g = c.getConstrainedGraph();
-                    Relation rel = task.getMemoryModel().getRelationRepository().getRelation(g.getName());
-                    for (Edge e : c.getConstrainedGraph()) {
-                        BooleanFormula relVar = rel.getSMTVar(e.toTuple(), ctx);
-                        if ( relVar.equals(bmgr.makeFalse())) {
-                            continue; // BUGGY?
-                        }
-                        BooleanFormula implication = bmgr.or(refiner.refine(new DNF<>(saturationSolver.getReasoner().computeReason(g, e))), rel.getSMTVar(e.toTuple(), ctx));
-                        prover.addConstraint(implication);
-                    }
-                }*/
-
-                /*Map<RelationGraph, Map<Edge, DNF<CoreLiteral>>> cutEdgeReasonMap = saturationSolver.getReasoner().getCutEdgeReasonMap();
-                for (RelationGraph g : cutEdgeReasonMap.keySet()) {
-                    Relation rel = task.getMemoryModel().getRelationRepository().getRelation(g.getName());
-                    for (Map.Entry<Edge, DNF<CoreLiteral>> entry : cutEdgeReasonMap.get(g).entrySet()) {
-                        Edge e = entry.getKey();
-                        DNF<CoreLiteral> derivation = entry.getValue();
-                        BooleanFormula implication = bmgr.or(refiner.refine(derivation), rel.getSMTVar(e.toTuple(), ctx));
-                        prover.addConstraint(implication);
-                    }
-                }*/
-
-                // ====== Test code =======
-                /*Map<RelationGraph, Relation> graphRelMap = saturationSolver.getExecutionGraph().getRelationGraphMap().inverse();
-                for (DependencyGraph<TypedEdge>.Node node : saturationSolver.getImplicationGraph().getDependencyGraph().getNodes()) {
-                    if (node.getDependencies().isEmpty()) {
-                        continue;
-                    }
-                    Relation rel = graphRelMap.get(node.getContent().getGraph());
-                    if (rel == null || rel.getDependencies().isEmpty()) {
-                        continue; // For the internal sco relation
-                    }
-
-                    BooleanFormula edgeExpr = rel.getSMTVar(node.getContent().toTuple(), ctx);
-                    BooleanFormula deps = bmgr.makeTrue();
-                    for (TypedEdge dep : node.getDependencies().stream().map(DependencyGraph.Node::getContent).collect(Collectors.toList())) {
-                        Relation r = graphRelMap.get(dep.getGraph());
-                        deps = bmgr.and(deps, r.getSMTVar(dep.toTuple(), ctx));
-                    }
-                    prover.addConstraint(bmgr.implication(deps, edgeExpr));
-                }*/
-                // ====================
+                if (REFINEMENT_GENERATE_GRAPHVIZ_FILES) {
+                    generateGraphvizFiles(task, saturationSolver.getCurrentModel(), iterationCount, reasons);
+                }
 
                 if (logger.isTraceEnabled()) {
                     // Some statistics
                     StringBuilder message = new StringBuilder().append("Found inconsistency reasons:");
                     for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
-                        message.append("\n")
-                                .append("Reason size: ").append(cube.getSize()).append("\n")
-                                .append(cube);
+                        message.append("\n").append(cube);
                     }
                     logger.trace(message);
                 }
@@ -259,8 +215,6 @@ public class Refinement {
         logger.info("Verification finished with result " + veriResult);
         return veriResult;
     }
-
-
     // ======================= Helper Methods ======================
 
     // -------------------- Printing -----------------------------
@@ -272,28 +226,20 @@ public class Refinement {
         }
 
         long totalModelTime = 0;
-        long totalSearchTime = 0;
+        long totalConsistencyCheckTime = 0;
         long totalReasonComputationTime = 0;
-        long totalResolutionTime = 0;
-        long totalNumGuesses = 0;
         long totalNumReasons = 0;
         long totalNumReducedReasons = 0;
-        long totalNumCoreReasons = 0;
         long totalModelSize = 0;
         long minModelSize = Long.MAX_VALUE;
         long maxModelSize = Long.MIN_VALUE;
-        int satDepth = 0;
 
         for (SolverStatistics stats : statList) {
             totalModelTime += stats.getModelConstructionTime();
-            totalSearchTime += stats.getSearchTime();
+            totalConsistencyCheckTime += stats.getConsistencyCheckTime();
             totalReasonComputationTime += stats.getReasonComputationTime();
-            totalResolutionTime += stats.getResolutionTime();
-            totalNumGuesses += stats.getNumGuessedCoherences();
             totalNumReasons += stats.getNumComputedReasons();
             totalNumReducedReasons += stats.getNumComputedReducedReasons();
-            totalNumCoreReasons += stats.getNumComputedCoreReasons();
-            satDepth = Math.max(satDepth, stats.getSaturationDepth());
 
             totalModelSize += stats.getModelSize();
             minModelSize = Math.min(stats.getModelSize(), minModelSize);
@@ -305,23 +251,62 @@ public class Refinement {
                 .append("Number of iterations: ").append(iterationCount).append("\n")
                 .append("Total solving time(ms): ").append(totalSolvingTime).append("\n")
                 .append("Total model construction time(ms): ").append(totalModelTime).append("\n")
+                .append("Total consistency check time(ms): ").append(totalConsistencyCheckTime).append("\n")
                 .append("Total reason computation time(ms): ").append(totalReasonComputationTime).append("\n")
-                .append("Total resolution time(ms): ").append(totalResolutionTime).append("\n")
-                .append("Total search time(ms): ").append(totalSearchTime).append("\n")
-                .append("Total #guessings: ").append(totalNumGuesses).append("\n")
                 .append("Total #computed reasons: ").append(totalNumReasons).append("\n")
-                .append("Total #computed reduced reasons: ").append(totalNumReducedReasons).append("\n")
-                .append("Total #computed core reasons: ").append(totalNumCoreReasons).append("\n");
+                .append("Total #computed reduced reasons: ").append(totalNumReducedReasons).append("\n");
         if (statList.size() > 0) {
             message.append("Min model size (#events): ").append(minModelSize).append("\n")
                     .append("Average model size (#events): ").append(totalModelSize / statList.size()).append("\n")
                     .append("Max model size (#events): ").append(maxModelSize).append("\n");
         }
-        message.append("Max Saturation Depth: ").append(satDepth).append("\n")
-                .append("Bound check time(ms): ").append(boundCheckTime);
+        message.append("Bound check time(ms): ").append(boundCheckTime);
 
         logger.info(message);
     }
+
+    private static void generateGraphvizFiles(RefinementTask task, ExecutionModel model, int iterationCount, DNF<CoreLiteral> reasons) {
+        //   =============== Visualization code ==================
+        // The edgeFilter filters those co/rf that belong to some violation
+        BiPredicate<EventData, EventData> edgeFilter = (e1, e2) -> {
+            for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
+                for (CoreLiteral lit : cube.getLiterals()) {
+                    if (lit instanceof EdgeLiteral) {
+                        EdgeLiteral edgeLit = (EdgeLiteral) lit;
+                        if (edgeLit.getEdge().getFirst() == e1 && edgeLit.getEdge().getSecond() == e2) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        };
+
+        String programName = task.getProgram().getName();
+        programName = programName.substring(0, programName.lastIndexOf("."));
+
+        String directoryName = String.format("%s/dartagnan/output/refinement/", System.getenv("DAT3M_HOME"));
+        String fileNameBase = String.format("%s-%d", programName, iterationCount);
+        File file = new File(directoryName + fileNameBase + ".dot");
+        file.getParentFile().mkdirs();
+        try (FileWriter writer = new FileWriter(file)) {
+            // Create .dot file
+            new ExecutionGraphVisualizer()
+                    .setReadFromFilter(edgeFilter)
+                    .setCoherenceFilter(edgeFilter)
+                    .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
+
+            // Convert .dot file to pdf
+            Process p = new ProcessBuilder()
+                    .directory(new File(directoryName))
+                    .command("dot", "-Tpdf", fileNameBase + ".dot", ">", fileNameBase + ".pdf")
+                    .start();
+            p.waitFor(1000, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            logger.error(e);
+        }
+    }
+
 
 
 
@@ -357,14 +342,6 @@ public class Refinement {
             }
             return refinement;
         }
-
-        public BooleanFormula refineLearned(DNF<CoreLiteral> learnedReasons) {
-            //TODO: We might want to handle these clauses in a special way
-            // and e.g. avoid negating co-literals but instead flip them
-            return refine(learnedReasons);
-        }
-
-
 
         // Computes a list of permutations allowed by the program.
         // Depending on the <learningOption>, the set of computed permutations differs.
@@ -428,9 +405,6 @@ public class Refinement {
                         perm.apply(lit.getEdge().getFirst().getEvent()),
                         perm.apply(lit.getEdge().getSecond().getEvent()),
                         context);
-                /*return Utils.edge(lit.getName(),
-                        perm.apply(lit.getEdge().getFirst().getEvent()),
-                        perm.apply(lit.getEdge().getSecond().getEvent()), context);*/
             }
             throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
         }

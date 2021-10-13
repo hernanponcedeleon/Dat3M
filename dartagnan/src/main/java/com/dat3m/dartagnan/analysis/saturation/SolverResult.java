@@ -15,7 +15,6 @@ public class SolverResult {
     void setStatus(SolverStatus status) { this.status = status; }
     void setCoreReasons(DNF<CoreLiteral> coreReasons) {
         this.coreReasons = coreReasons;
-        stats.numComputedCoreReasons = coreReasons.getNumberOfCubes();
     }
     void setStats(SolverStatistics stats) { this.stats = stats; }
 

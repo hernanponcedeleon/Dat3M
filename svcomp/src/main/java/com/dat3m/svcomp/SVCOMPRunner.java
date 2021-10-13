@@ -117,7 +117,7 @@ public class SVCOMPRunner {
 				System.out.println(e.getMessage());
 				System.exit(0);
 			}
-			bound++;
+			bound = bound + options.getStep();
 	        tmp = new SVCOMPSanitizer(file).run(bound);
 		}
 

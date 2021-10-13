@@ -84,6 +84,7 @@ public class Create extends Event {
                 store,
                 optionalBarrierAfter
         );
+        setCLineForAll(events, this.cLine);
 
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
