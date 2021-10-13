@@ -179,10 +179,16 @@ public class CLocksTest {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
+
+            writer.newLine();
             writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
+            // The flush() is required to write the content in the presence of timeouts
+            writer.flush();
+
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
             long solvingTime = System.currentTimeMillis() - start;
+            
             writer.append(expected.equals(UNKNOWN) ? "PASS" : "FAIL").append(", ").append(Long.toString(solvingTime));
             writer.newLine();
         } catch (Exception e){
@@ -198,11 +204,18 @@ public class CLocksTest {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
+
+            writer.newLine();
             writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
+            // The flush() is required to write the content in the presence of timeouts
+            writer.flush();
+
             long start = System.currentTimeMillis();
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
             long solvingTime = System.currentTimeMillis() - start;
+            
+            // We treat UNKNOWN as PASS because we know the loops are just spin-loops
             writer.append(expected.equals(UNKNOWN) ? "PASS" : "FAIL").append(", ").append(Long.toString(solvingTime));
 			writer.newLine();
         } catch (Exception e){

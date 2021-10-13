@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.dat3m.dartagnan.CLocksTest.TIMEOUT;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static com.dat3m.dartagnan.utils.ResourceHelper.initialiseCSVFile;
 import static org.junit.Assert.fail;
@@ -18,7 +19,8 @@ import static org.junit.Assert.fail;
 @RunWith(Parameterized.class)
 public class genMCTest {
 
-	static final int TIMEOUT = 1800000;
+	// These tests are supposed to be run in conjunction with com.dat3m.dartagnan.CLocksTest
+	// We use com.dat3m.dartagnan.CLocksTest.TIMEOUT to guarantee fairness in the comparison 
 
     private final String path;
 
@@ -67,18 +69,22 @@ public class genMCTest {
 
     @Test(timeout = TIMEOUT)
     public void test() {
-    	String output = "";
-    	ArrayList<String> cmd = new ArrayList<String>();
-    	cmd.add("genmc");
-    	cmd.add("-imm");
-    	cmd.add(path);
-    	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
     	
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "genMC", ""), true)))
            {
-        		// Append the name at the beginning to have the entry even if it times out
+        		writer.newLine();
         		writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
-        		long start = System.currentTimeMillis();
+        		// The flush() is required to write the content in the presence of timeouts
+        		writer.flush();
+        		
+            	String output = "";
+            	ArrayList<String> cmd = new ArrayList<String>();
+            	cmd.add("genmc");
+            	cmd.add("-imm");
+            	cmd.add(path);
+            	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+
+            	long start = System.currentTimeMillis();
 	           	Process proc = processBuilder.start();
 	   			BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 	   			proc.waitFor();
@@ -93,8 +99,8 @@ public class genMCTest {
 	   				System.exit(0);
 	   			}
 	   			long solvingTime = System.currentTimeMillis() - start;
-	   			// Three times to match the other files where we have TSO, POWER and ARM
                 String result = output.contains("violation") ? "FAIL" : "PASS";
+
                 writer.append(result).append(", ").append(Long.toString(solvingTime));
 	   			writer.newLine();
            } catch (Exception e){

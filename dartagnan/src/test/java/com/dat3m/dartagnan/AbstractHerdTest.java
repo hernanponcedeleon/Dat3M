@@ -16,13 +16,14 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.AbstractDartagnanTest.TIMEOUT;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static org.junit.Assert.fail;
 
 public abstract class AbstractHerdTest {
 
-	static final int SOLVER_TIMEOUT = 60;
-    static final int TIMEOUT = 5000;
+	// These tests are supposed to be run in conjunction with com.dat3m.dartagnan.AbstractDartagnanTest
+	// We use com.dat3m.dartagnan.AbstractDartagnanTest.TIMEOUT to guarantee fairness in the comparison 
 	
     static Iterable<Object[]> buildParameters(String litmusPath, String cat) throws IOException {
     	int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
@@ -88,7 +89,7 @@ public abstract class AbstractHerdTest {
    				System.exit(0);
    			}
    			long solvingTime = System.currentTimeMillis() - start;
-            writer.append("N/A, ").append(Long.toString(solvingTime));
+            writer.append(", ").append(Long.toString(solvingTime));
     	} catch (Exception e){
     		fail(e.getMessage());
     	}
