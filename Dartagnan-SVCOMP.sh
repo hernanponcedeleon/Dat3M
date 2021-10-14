@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=2.0.7
+VERSION=3.0.0
 
 if [ $# -eq 0 ]; then
     echo "No input file supplied"
