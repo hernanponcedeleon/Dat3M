@@ -13,13 +13,15 @@ import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.misc.Interval;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.MFENCE;
+
 import java.math.BigInteger;
 
 public class VisitorLitmusX86
         extends LitmusX86BaseVisitor<Object>
         implements LitmusX86Visitor<Object> {
 
-    private final static ImmutableSet<String> fences = ImmutableSet.of("Mfence");
+    private final static ImmutableSet<String> fences = ImmutableSet.of(MFENCE);
 
     private final ProgramBuilder programBuilder;
     private int mainThread;
@@ -174,7 +176,6 @@ public class VisitorLitmusX86
     @Override
     public Object visitFence(LitmusX86Parser.FenceContext ctx) {
         String name = ctx.getText().toLowerCase();
-        name = name.substring(0, 1).toUpperCase() + name.substring(1);
         if(fences.contains(name)){
             return programBuilder.addChild(mainThread, EventFactory.newFence(name));
         }
