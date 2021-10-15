@@ -17,7 +17,7 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.initialiseCSVFile;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-public class GenmcTest {
+public class Genmc {
 
 	// These tests are supposed to be run in conjunction with com.dat3m.dartagnan.CLocksTest
 	// We use com.dat3m.dartagnan.CLocksTest.TIMEOUT to guarantee fairness in the comparison 
@@ -28,7 +28,7 @@ public class GenmcTest {
     public static Iterable<Object[]> data() throws IOException {
 
     	// We want the files to be created every time we run the unit tests
-        initialiseCSVFile(GenmcTest.class, "genMC", "");
+        initialiseCSVFile(Genmc.class, "genMC", "");
 
 		List<Object[]> data = new ArrayList<>();
 
@@ -63,7 +63,7 @@ public class GenmcTest {
         return data;
     }
 
-    public GenmcTest(String path) {
+    public Genmc(String path) {
         this.path = path;
     }
 
