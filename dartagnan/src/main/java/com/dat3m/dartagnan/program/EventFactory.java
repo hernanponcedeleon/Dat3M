@@ -18,6 +18,8 @@ import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
@@ -291,7 +293,7 @@ public class EventFactory {
         private Arm() {}
 
         public static Fence newISHBarrier() {
-            return new Fence("Ish");
+            return new Fence(ISH);
         }
     }
 
@@ -408,7 +410,7 @@ public class EventFactory {
         }
 
         public static Fence newMemoryFence() {
-            return newFence("Mfence");
+            return newFence(MFENCE);
         }
     }
 
@@ -420,15 +422,15 @@ public class EventFactory {
         private Power() {}
 
         public static Fence newISyncBarrier() {
-            return newFence("ISync");
+            return newFence(ISYNC);
         }
 
         public static Fence newSyncBarrier() {
-            return newFence("Sync");
+            return newFence(SYNC);
         }
 
         public static Fence newLwSyncBarrier() {
-            return newFence("Lwsync");
+            return newFence(LWSYNC);
         }
     }
 
