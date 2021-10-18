@@ -8,14 +8,12 @@ import java.util.*;
 public class Memory {
 
     private final Map<Address, Location> map;
-    private final Map<String, Location> locationIndex;
     private final Map<String, List<Address>> arrays;
 
     private int nextIndex = 1;
 
     public Memory() {
         map = new HashMap<>();
-        locationIndex = new HashMap<>();
         arrays = new HashMap<>();
     }
 
@@ -36,13 +34,9 @@ public class Memory {
     }
 
     public Location newLocation(String name){
-        if(!locationIndex.containsKey(name)) {
-            Location location = new Location(name, new Address(nextIndex++));
-            map.put(location.getAddress(), location);
-            locationIndex.put(name, location);
-            return location;
-        }
-        return locationIndex.get(name);
+        Location location = new Location(name, new Address(nextIndex++));
+        map.put(location.getAddress(), location);
+        return location;
     }
 
     public ImmutableSet<Address> getAllAddresses() {
@@ -56,11 +50,11 @@ public class Memory {
     public boolean isArrayPointer(Address address) {
         return arrays.values().stream().anyMatch(array -> array.contains(address));
     }
-    
+
     public Collection<List<Address>> getArrays() {
         return arrays.values();
     }
-    
+
     public List<Address> getArrayFromPointer(Address address) {
         return arrays.values().stream()
                 .filter(array -> array.contains(address))
