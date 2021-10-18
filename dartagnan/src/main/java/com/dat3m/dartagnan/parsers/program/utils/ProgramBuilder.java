@@ -86,31 +86,31 @@ public class ProgramBuilder {
     // Declarators
 
     public void initLocEqLocPtr(String leftName, String rightName){
-        Location location = getOrCreateLocation(leftName);
-        iValueMap.put(location.getAddress(), getOrCreateLocation(rightName).getAddress());
+        Address location = getOrCreateLocation(leftName);
+        iValueMap.put(location, getOrCreateLocation(rightName));
     }
 
     public void initLocEqLocVal(String leftName, String rightName){
-        Location left = getOrCreateLocation(leftName);
-        Location right = getOrCreateLocation(rightName);
-        iValueMap.put(left.getAddress(), iValueMap.get(right.getAddress()));
+        Address left = getOrCreateLocation(leftName);
+        Address right = getOrCreateLocation(rightName);
+        iValueMap.put(left, iValueMap.get(right));
     }
 
     public void initLocEqConst(String locName, IConst iValue){
-        Location location = getOrCreateLocation(locName);
-        iValueMap.put(location.getAddress(), iValue);
+        Address location = getOrCreateLocation(locName);
+        iValueMap.put(location, iValue);
     }
 
     public void initRegEqLocPtr(int regThread, String regName, String locName, int precision){
-        Location loc = getOrCreateLocation(locName);
+        Address loc = getOrCreateLocation(locName);
         Register reg = getOrCreateRegister(regThread, regName, precision);
-        addChild(regThread, EventFactory.newLocal(reg, loc.getAddress()));
+        addChild(regThread, EventFactory.newLocal(reg, loc));
     }
 
     public void initRegEqLocVal(int regThread, String regName, String locName, int precision){
-        Location loc = getOrCreateLocation(locName);
+        Address loc = getOrCreateLocation(locName);
         Register reg = getOrCreateRegister(regThread, regName, precision);
-        addChild(regThread, EventFactory.newLocal(reg, iValueMap.get(loc.getAddress())));
+        addChild(regThread, EventFactory.newLocal(reg, iValueMap.get(loc)));
     }
 
     public void initRegEqConst(int regThread, String regName, IConst iValue){
@@ -140,13 +140,13 @@ public class ProgramBuilder {
         return locations.get(name);
     }
 
-    public Location getOrCreateLocation(String name){
+    public Address getOrCreateLocation(String name){
         if(!locations.containsKey(name)){
             Location location = memory.getOrCreateLocation(name);
             locations.put(name, location);
             iValueMap.put(location.getAddress(), new IConst(Location.DEFAULT_INIT_VALUE, location.getAddress().getPrecision()));
         }
-        return locations.get(name);
+        return locations.get(name).getAddress();
     }
 
     public Location getOrErrorLocation(String name){

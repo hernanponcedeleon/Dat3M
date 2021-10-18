@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.memory.Address;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.misc.Interval;
 
@@ -118,29 +118,29 @@ public class VisitorLitmusX86
     @Override
     public Object visitLoadLocationToRegister(LitmusX86Parser.LoadLocationToRegisterContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
-        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLoad(register, location.getAddress(), "_rx"));
+        Address location = programBuilder.getOrCreateLocation(ctx.location().getText());
+        return programBuilder.addChild(mainThread, EventFactory.newLoad(register, location, "_rx"));
     }
 
     @Override
     public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
-        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
+        Address location = programBuilder.getOrCreateLocation(ctx.location().getText());
         IConst constant = new IConst(new BigInteger(ctx.constant().getText()), -1);
-        return programBuilder.addChild(mainThread, EventFactory.newStore(location.getAddress(), constant, "_rx"));
+        return programBuilder.addChild(mainThread, EventFactory.newStore(location, constant, "_rx"));
     }
 
     @Override
     public Object visitStoreRegisterToLocation(LitmusX86Parser.StoreRegisterToLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
-        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
-        return programBuilder.addChild(mainThread, EventFactory.newStore(location.getAddress(), register, "_rx"));
+        Address location = programBuilder.getOrCreateLocation(ctx.location().getText());
+        return programBuilder.addChild(mainThread, EventFactory.newStore(location, register, "_rx"));
     }
 
     @Override
     public Object visitExchangeRegisterLocation(LitmusX86Parser.ExchangeRegisterLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
-        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
-        return programBuilder.addChild(mainThread, EventFactory.X86.newExchange(location.getAddress(), register));
+        Address location = programBuilder.getOrCreateLocation(ctx.location().getText());
+        return programBuilder.addChild(mainThread, EventFactory.X86.newExchange(location, register));
     }
 
     @Override

@@ -172,14 +172,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 					tmp = tmp.split(":allocSize")[1];
 					tmp = tmp.split("}")[0];
 					size = Integer.parseInt(tmp);
-				} 
+				}
 				if(size > 0) {
-					programBuilder.addDeclarationArray(name, Collections.nCopies(size, IConst.ZERO));										
+					programBuilder.addDeclarationArray(name, Collections.nCopies(size, IConst.ZERO));
 				} else {
-					// Since we treat all globally defined variables as arrays 
-					// (e.g. an int variable results in an array of size 4 since 
-					// boogie works at the byte granularity), we need this for char 
-					// variables which would result in a single variable but we will 
+					// Since we treat all globally defined variables as arrays
+					// (e.g. an int variable results in an array of size 4 since
+					// boogie works at the byte granularity), we need this for char
+					// variables which would result in a single variable but we will
 					// treat it as an array of size 1
 					programBuilder.getOrCreateLocation(name + "[0]");
 				}
@@ -244,10 +244,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
             programBuilder.initThread(name, threadCount);
             if(threadCount != 1) {
             	// Used to allow execution of threads after they have been created (pthread_create)
-        		Location loc = programBuilder.getOrCreateLocation(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
+        		Address loc = programBuilder.getOrCreateLocation(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
         		Register reg = programBuilder.getOrCreateRegister(threadCount, null, -1);
                	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-               	programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, loc.getAddress(), label));
+               	programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, loc, label));
             }
     	}
 
@@ -291,8 +291,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	if(create) {
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
-        		Location loc = programBuilder.getOrCreateLocation(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
-        		programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(loc.getAddress()));
+        		Address loc = programBuilder.getOrCreateLocation(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
+        		programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(loc));
          	}
         	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
          	programBuilder.addChild(threadCount, label);
@@ -695,7 +695,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 					text = split[split.length - 1];
 					text = text.substring(text.indexOf("(")+1, text.indexOf(","));
 				}
-				// This needs to be consistent with the naming  
+				// This needs to be consistent with the naming
 				// used in ProgramBuilder for arrays
 				text += "[" + rhs + "]";
 				programBuilder.initLocEqConst(text, value.reduce());

@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.memory.Address;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -78,8 +78,8 @@ public class PthreadsProcedures {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
 		// We assume pthread_create always succeeds
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, new IConst(BigInteger.ZERO, -1)));
-		Location loc = visitor.programBuilder.getOrCreateLocation(String.format("%s(%s)_active", threadPtr, visitor.pool.getCreatorFromPtr(threadPtr)));
-		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(threadPtr, threadName, loc.getAddress(), visitor.currentLine));
+		Address loc = visitor.programBuilder.getOrCreateLocation(String.format("%s(%s)_active", threadPtr, visitor.pool.getCreatorFromPtr(threadPtr)));
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(threadPtr, threadName, loc, visitor.currentLine));
 	}
 	
 	private static void pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -89,10 +89,10 @@ public class PthreadsProcedures {
 		if(visitor.pool.getPtrFromReg(callReg) == null) {
         	throw new UnsupportedOperationException("pthread_join cannot be handled");
 		}
-		Location loc = visitor.programBuilder.getOrCreateLocation(String.format("%s(%s)_active", visitor.pool.getPtrFromReg(callReg), visitor.pool.getCreatorFromPtr(visitor.pool.getPtrFromReg(callReg))));
+		Address loc = visitor.programBuilder.getOrCreateLocation(String.format("%s(%s)_active", visitor.pool.getPtrFromReg(callReg), visitor.pool.getCreatorFromPtr(visitor.pool.getPtrFromReg(callReg))));
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-       	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(visitor.pool.getPtrFromReg(callReg), reg, loc.getAddress(), label));
+       	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(visitor.pool.getPtrFromReg(callReg), reg, loc, label));
 	}
 
 	private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {

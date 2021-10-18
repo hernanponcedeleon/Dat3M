@@ -138,7 +138,7 @@ public class VisitorLitmusC
                         if(address != null){
                             values.add(address);
                         } else {
-                            address = programBuilder.getOrCreateLocation(varName).getAddress();
+                            address = programBuilder.getOrCreateLocation(varName);
                             values.add(elCtx.Ast() == null ? address : programBuilder.getInitValue(address));
                         }
                     }
@@ -177,9 +177,9 @@ public class VisitorLitmusC
                     Register register = programBuilder.getOrCreateRegister(scope, name, -1);
                     programBuilder.addChild(currentThread, EventFactory.newLocal(register, pointer));
                 } else {
-                    Location location = programBuilder.getOrCreateLocation(varName.getText());
+                    Address location = programBuilder.getOrCreateLocation(varName.getText());
                     Register register = programBuilder.getOrCreateRegister(scope, varName.getText(), -1);
-                    programBuilder.addChild(currentThread, EventFactory.newLocal(register, location.getAddress()));
+                    programBuilder.addChild(currentThread, EventFactory.newLocal(register, location));
                 }
             }
         }
@@ -459,9 +459,9 @@ public class VisitorLitmusC
             }
             return programBuilder.getOrCreateRegister(scope, ctx.getText(), -1);
         }
-        Location location = programBuilder.getOrCreateLocation(ctx.getText());
+        Address location = programBuilder.getOrCreateLocation(ctx.getText());
         Register register = programBuilder.getOrCreateRegister(scope, null, -1);
-        programBuilder.addChild(currentThread, EventFactory.newLoad(register, location.getAddress(), "NA"));
+        programBuilder.addChild(currentThread, EventFactory.newLoad(register, location, "NA"));
         return register;
     }
 
