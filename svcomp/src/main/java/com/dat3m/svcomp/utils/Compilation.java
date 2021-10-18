@@ -36,11 +36,13 @@ public class Compilation {
     	
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
     	try {
+		String msg = ownAtomics ? "Compiling with smack" : "Compiling with clang";
+    		logger.info(msg);
         	Process proc = processBuilder.start();
         	proc.waitFor();
         	int tries = 1 ;
         	while(proc.exitValue() != 0 && tries < 100) {
-        		logger.info("Compiling with smack");
+        		logger.info(msg);
         		tries++;
             	proc = processBuilder.start();
             	proc.waitFor();

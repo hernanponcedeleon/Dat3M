@@ -104,13 +104,13 @@ let bob = po; [dmb.full]; po
 	| po; [L]; coi
 
 (* Ordered-before *)
-let ob = (obs | dob | aob | bob)^+
+let ob = obs | dob | aob | bob
 
 (* Internal visibility requirement *)
 acyclic po-loc | ca | rf as internal
 
 (* External visibility requirement *)
-irreflexive ob as external
+acyclic ob as external
 
 (* Atomic: Basic LDXR/STXR constraint to forbid intervening writes. *)
 empty rmw & (fre; coe) as atomic

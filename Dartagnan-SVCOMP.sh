@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=2.0.7
+VERSION=3.0.0
 
 if [ $# -eq 0 ]; then
     echo "No input file supplied"
@@ -20,15 +20,17 @@ else
         PROGRAMPATH=$2
     fi
 
-    export PATH=$PATH:$HOME/bin:$JAVA_HOME/bin
-    export LD_LIBRARY_PATH=$(pwd)/lib/
+    export DAT3M_HOME=$(pwd)
+    export PATH=$PATH:$DAT3M_HOME/smack/bin
 
-    FLAGS="-method incremental"
-    if ! grep -q "pthread" $2; then
+    FLAGS="-method incremental -step 5 -umax 26"
+    if ! grep -q "pthread" $PROGRAMPATH; then
         FLAGS+=" -o O3 -e bit-vector -cat cat/sc.cat"
     else
         FLAGS+=" -cat cat/svcomp.cat"
     fi
-    echo java -jar svcomp/target/svcomp-$VERSION.jar $FLAGS -property $PROPERTYPATH -i $PROGRAMPATH $WITNESS
-    java -jar svcomp/target/svcomp-$VERSION.jar $FLAGS -property $PROPERTYPATH -i $PROGRAMPATH $WITNESS
+
+    cmd="java -jar svcomp/target/svcomp-"$VERSION".jar "$FLAGS" -property "$PROPERTYPATH" -i "$PROGRAMPATH" "$WITNESS
+    echo $cmd
+    $cmd
 fi
