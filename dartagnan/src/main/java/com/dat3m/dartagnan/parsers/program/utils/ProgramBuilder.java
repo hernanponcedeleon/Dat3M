@@ -15,7 +15,6 @@ import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.*;
 
@@ -37,7 +36,7 @@ public class ProgramBuilder {
     private int lastOrigId = 0;
 
     public Program build(){
-        Program program = new Program(memory, ImmutableSet.copyOf(locations.values()));
+        Program program = new Program(memory);
         buildInitThreads();
         for(Thread thread : threads.values()){
             validateLabels(thread);
