@@ -179,6 +179,9 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
     }
 
     public Conjunction<T> removeIf(Predicate<T> pred) {
+        if (this.isFalse() || this.isTrue()) {
+            return this;
+        }
         HashSet<T> result = new HashSet<>(this.getSize());
         literals.stream().filter(Predicate.not(pred)).forEach(result::add);
         return new Conjunction<>(result, false);
