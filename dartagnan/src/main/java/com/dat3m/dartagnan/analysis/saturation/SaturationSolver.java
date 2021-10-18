@@ -67,8 +67,10 @@ public class SaturationSolver {
         this.executionModel = new ExecutionModel(task);
         this.reasoner = new Reasoner(execGraph, true);
         this.useModelCoherences = useModelCoherences;
-        task.getMemoryModel().performRelationalAnalysis(false);
 
+        // We trigger a relational analysis (without active sets)
+        // because we use this information in reason-computations
+        task.getMemoryModel().performRelationalAnalysis(false);
     }
 
     // ----------------------------------------------
@@ -89,7 +91,7 @@ public class SaturationSolver {
     // ==============  Core functionality  =================
 
     public SolverResult check(Model model, SolverContext ctx) {
-        return checkModel(model, ctx);
+        return checkModel(model, ctx); // We only have one checking algorithm for now
     }
 
     /*
@@ -97,7 +99,7 @@ public class SaturationSolver {
         The model may or may not contain coherences.
         If it does not contain coherences, the coherence-less model
         is checked as is and it may be considered consistent even though it has
-        no possible coherence extensions.
+        no possible coherence extensions (this could be useful for partial checking)
      */
     private SolverResult checkModel(Model model, SolverContext ctx) {
         SolverResult result = new SolverResult();
@@ -112,7 +114,7 @@ public class SaturationSolver {
         // =================================
 
         curTime = System.currentTimeMillis();
-        SolverStatus status = checkInconsistency() ? INCONSISTENT : CONSISTENT;
+        SolverStatus status = execGraph.checkInconsistency() ? INCONSISTENT : CONSISTENT;
         stats.consistencyCheckTime = System.currentTimeMillis() - curTime;
         result.setStatus(status);
         if (status == INCONSISTENT) {
@@ -125,10 +127,6 @@ public class SaturationSolver {
     }
 
     // ============= Violations + Resolution ================
-
-    private boolean checkInconsistency() {
-        return execGraph.getConstraints().stream().anyMatch(Constraint::checkForViolations);
-    }
 
     // Computes the inconsistency reasons (if any) of the current ExecutionGraph
     private DNF<CoreLiteral> computeInconsistencyReasons() {
@@ -152,7 +150,6 @@ public class SaturationSolver {
         The following methods check simple properties such as:
             - Iteration of edges in graphs works correctly (not trivial for virtual graphs)
             - Min-Sets of Relations are present in the corresponding RelationGraph
-            - Coherence is total and transitive
      */
 
     private void testIteration() {
@@ -181,6 +178,8 @@ public class SaturationSolver {
         }
     }
 
+    //WARNING: This code will only run correctly if the relational analysis of the WMM has been performed
+    // and min/max-sets have been computed.
     private void testGraphsContent() {
         for (Relation rel : task.getRelationDependencyGraph().getNodeContents()) {
             RelationGraph g = execGraph.getRelationGraph(rel);

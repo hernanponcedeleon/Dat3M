@@ -253,6 +253,8 @@ public final class SimpleGraph extends AbstractRelationGraph {
         }
 
         public void backtrackTo(int time) {
+            //NOTE: We use the fact that the edge list
+            // should be sorted by timestamp (since edges with higher timestamp get added later)
             if (maxTime > time) {
                 final List<Edge> edgeList = this.edgeList;
                 final Map<Edge, Edge> edgeMap = SimpleGraph.this.edgeMap;

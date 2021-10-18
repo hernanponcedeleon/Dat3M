@@ -162,6 +162,13 @@ public class ExecutionGraph {
 
     // =======================================================
 
+    // ==================== Analysis ======================
+
+    public boolean checkInconsistency() {
+        return getConstraints().stream().anyMatch(Constraint::checkForViolations);
+    }
+
+    // =======================================================
 
     //=================== Reading the WMM ====================
 

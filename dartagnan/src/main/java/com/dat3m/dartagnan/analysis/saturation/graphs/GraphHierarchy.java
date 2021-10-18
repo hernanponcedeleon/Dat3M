@@ -100,7 +100,7 @@ public class GraphHierarchy {
     // Should only ever be used on non-derived Graphs
     public void addEdgesAndPropagate(RelationGraph graph, Collection<Edge> edges) {
         if (graph.getDependencies().size() > 0) {
-            throw new UnsupportedOperationException("Edges can only be added directly to non-derived graphs!");
+            throw new UnsupportedOperationException("Edges cannot be added directly to derived graphs!");
         }
         createPropagationTask(null, graph, edges, 0);
         forwardPropagate();

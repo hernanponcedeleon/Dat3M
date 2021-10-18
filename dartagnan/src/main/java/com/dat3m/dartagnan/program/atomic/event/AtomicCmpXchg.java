@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.atomic.event;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
-import com.dat3m.dartagnan.program.EventFactory.*;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
@@ -60,7 +59,6 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        //TODO: Perform Store on <expected> (in general, <expected> should be an address and not a register)
     	List<Event> events;
 
     	// These events are common to all compilation schemes.

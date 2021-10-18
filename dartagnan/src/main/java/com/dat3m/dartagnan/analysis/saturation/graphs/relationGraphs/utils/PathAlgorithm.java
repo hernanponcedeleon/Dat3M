@@ -128,7 +128,6 @@ public class PathAlgorithm {
     }
 
 
-    //TODO: Check this version thoroughly (should we filter with '<' or '<=' ?)
     public static List<Edge> findShortestPath(RelationGraph graph, EventData start, EventData end, int derivationBound) {
         Predicate<Edge> filter = (edge -> edge.getDerivationLength() <= derivationBound);
         return findShortestPath(graph, start, end, filter);

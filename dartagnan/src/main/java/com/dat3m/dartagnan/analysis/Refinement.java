@@ -209,7 +209,9 @@ public class Refinement {
             veriResult = FAIL;
         }
 
-        logSummary(statList, iterationCount, totalSolvingTime, boundCheckTime);
+        if (logger.isInfoEnabled()) {
+            logger.info(generateSummary(statList, iterationCount, totalSolvingTime, boundCheckTime));
+        }
 
         veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;
         logger.info("Verification finished with result " + veriResult);
@@ -219,12 +221,8 @@ public class Refinement {
 
     // -------------------- Printing -----------------------------
 
-    private static void logSummary(List<SolverStatistics> statList, int iterationCount,
+    private static CharSequence generateSummary(List<SolverStatistics> statList, int iterationCount,
                                    long totalSolvingTime, long boundCheckTime) {
-        if (!logger.isInfoEnabled()) {
-            return;
-        }
-
         long totalModelTime = 0;
         long totalConsistencyCheckTime = 0;
         long totalReasonComputationTime = 0;
@@ -262,12 +260,15 @@ public class Refinement {
         }
         message.append("Bound check time(ms): ").append(boundCheckTime);
 
-        logger.info(message);
+        return message;
     }
 
+    //TODO: This code is very specific to visualize the core reasons found
+    // in refinement iterations. We might want to generalize this.
+    // TODO(2): Sometimes the automatic pdf-generation doesn't work properly
     private static void generateGraphvizFiles(RefinementTask task, ExecutionModel model, int iterationCount, DNF<CoreLiteral> reasons) {
         //   =============== Visualization code ==================
-        // The edgeFilter filters those co/rf that belong to some violation
+        // The edgeFilter filters those co/rf that belong to some violation reason
         BiPredicate<EventData, EventData> edgeFilter = (e1, e2) -> {
             for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
                 for (CoreLiteral lit : cube.getLiterals()) {

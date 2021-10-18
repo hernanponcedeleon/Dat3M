@@ -28,6 +28,8 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
  */
 public class RefinementTask extends VerificationTask {
 
+    //TODO: The usage of plain integers is not so nice.
+    // Maybe we can use EnumSets or something similar to model this more nicely.
     public static class BaselineWMM {
         private BaselineWMM() {}
 
