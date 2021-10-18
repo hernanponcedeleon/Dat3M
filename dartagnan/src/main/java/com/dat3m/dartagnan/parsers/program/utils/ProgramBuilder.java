@@ -16,9 +16,12 @@ import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
 
+import java.math.BigInteger;
 import java.util.*;
 
 public class ProgramBuilder {
+
+	public static final BigInteger DEFAULT_INIT_VALUE = BigInteger.ZERO;
 
     private final Map<Integer, Thread> threads = new HashMap<>();
 
@@ -144,7 +147,7 @@ public class ProgramBuilder {
         if(!locations.containsKey(name)){
             Address address = memory.newLocation();
             locations.put(name, new Location(name,address));
-            iValueMap.put(address, new IConst(Location.DEFAULT_INIT_VALUE, address.getPrecision()));
+            iValueMap.put(address, new IConst(DEFAULT_INIT_VALUE, address.getPrecision()));
         }
         return locations.get(name).getAddress();
     }
@@ -193,7 +196,7 @@ public class ProgramBuilder {
     }
 
     public IConst getInitValue(Address address){
-        return iValueMap.getOrDefault(address, new IConst(Location.DEFAULT_INIT_VALUE, address.getPrecision()));
+        return iValueMap.getOrDefault(address, new IConst(DEFAULT_INIT_VALUE, address.getPrecision()));
     }
 
     public Address getPointer(String name){

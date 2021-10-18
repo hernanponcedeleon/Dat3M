@@ -17,7 +17,6 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.IfAsJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
@@ -67,7 +66,7 @@ public class VisitorLitmusC
 
     @Override
     public Object visitGlobalDeclaratorLocation(LitmusCParser.GlobalDeclaratorLocationContext ctx) {
-    	BigInteger value = Location.DEFAULT_INIT_VALUE;
+    	BigInteger value = ProgramBuilder.DEFAULT_INIT_VALUE;
         if (ctx.initConstantValue() != null) {
             value = new BigInteger(ctx.initConstantValue().constant().getText());
         }
@@ -77,7 +76,7 @@ public class VisitorLitmusC
 
     @Override
     public Object visitGlobalDeclaratorRegister(LitmusCParser.GlobalDeclaratorRegisterContext ctx) {
-        BigInteger value = Location.DEFAULT_INIT_VALUE;
+        BigInteger value = ProgramBuilder.DEFAULT_INIT_VALUE;
         if (ctx.initConstantValue() != null) {
             value = new BigInteger(ctx.initConstantValue().constant().getText());
         }

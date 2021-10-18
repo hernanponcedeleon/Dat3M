@@ -2,11 +2,8 @@ package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.LastValueInterface;
 import org.sosy_lab.java_smt.api.*;
-import java.math.BigInteger;
 
 public class Location implements LastValueInterface {
-
-	public static final BigInteger DEFAULT_INIT_VALUE = BigInteger.ZERO;
 
 	private final String name;
 	private final Address address;
