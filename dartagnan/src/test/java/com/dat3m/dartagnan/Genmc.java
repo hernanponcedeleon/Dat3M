@@ -106,10 +106,5 @@ public class Genmc {
            } catch (Exception e){
                fail(e.getMessage());
            }
-        try {
-		} catch(Exception e) {
-			System.out.println(e.getMessage());
-			System.exit(0);
-		}
     }
 }
