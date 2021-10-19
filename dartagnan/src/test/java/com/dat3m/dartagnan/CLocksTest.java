@@ -214,7 +214,7 @@ public class CLocksTest {
             long solvingTime = System.currentTimeMillis() - start;
             
             // We treat UNKNOWN as PASS because we know the loops are just spin-loops
-            writer.append(expected.equals(UNKNOWN) ? "PASS" : "FAIL").append(", ").append(Long.toString(solvingTime));
+            writer.append(expected.equals(UNKNOWN) ? "\\gtick" : "\\\redcross").append(", ").append(Long.toString(solvingTime));
 			writer.newLine();
         } catch (Exception e){
             fail(e.getMessage());

@@ -99,7 +99,7 @@ public class Genmc {
 	   				System.exit(0);
 	   			}
 	   			long solvingTime = System.currentTimeMillis() - start;
-                String result = output.contains("violation") ? "FAIL" : "PASS";
+                String result = output.contains("violation") ? "\\redcross" : "\\gtick";
 
                 writer.append(result).append(", ").append(Long.toString(solvingTime));
 	   			writer.newLine();
