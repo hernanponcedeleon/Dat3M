@@ -149,7 +149,7 @@ public class CLocksTestAlternative {
         this.expected = expected;
     }
 
-//    @Test
+    @Test
     public void testAssume() throws Exception {
 	    assertEquals(expected, runAnalysisAssumeSolver(contextProvider.get(), proverProvider.get(), taskProvider.get()));
     }
