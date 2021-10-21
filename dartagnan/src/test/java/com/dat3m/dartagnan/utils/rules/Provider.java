@@ -12,4 +12,15 @@ public interface Provider<T> extends Supplier<T>, TestRule {
     default Statement apply(Statement statement, Description description) {
         return statement;
     }
+
+
+    static <V> Provider<V> fromSupplier(Supplier<V> supplier) {
+        return new AbstractProvider<>() {
+            @Override
+            protected V provide() {
+                return supplier.get();
+            }
+        };
+    }
+
 }

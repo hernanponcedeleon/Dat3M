@@ -34,4 +34,5 @@ public abstract class AbstractProvider<T> extends ExternalResource implements Pr
         }
         value = null;
     }
+
 }

@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,7 +37,7 @@ public class CLocksTestAlternative {
 
     static final int TIMEOUT = 1800000;
 
-    private String path;
+    private String name;
     private Arch target;
     private final Result expected;
 
@@ -44,15 +45,15 @@ public class CLocksTestAlternative {
     public static CSVLogger.Initialization csvInit = new CSVLogger.Initialization();
 
     private final Provider<Arch> targetProvider = () -> target;
-    private final Provider<String> filePathProvider = PathProvider.addPrefix(() -> path, TEST_RESOURCE_PATH + "locks/");
-    private final Provider<Settings> settingsProvider = SettingsProvider.builderWithDefaultValues().build(); // Default settings
+    private final Provider<String> filePathProvider = Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "locks/" + name + ".bpl");
+    private final Provider<Settings> settingsProvider = Provider.fromSupplier(() -> new Settings(Alias.CFIS, 1, 0));
     private final Provider<Program> programProvider = new ProgramFromFileProvider(filePathProvider);
     private final Provider<Wmm> wmmProvider = new WmmFromArchitectureProvider(targetProvider);
     private final Provider<VerificationTask> taskProvider = new TaskProvider(programProvider, wmmProvider, targetProvider, settingsProvider);
     private final Provider<SolverContext> contextProvider = new SolverContextProvider();
     private final Provider<ProverEnvironment> proverProvider = new ProverProvider(contextProvider, () -> new ProverOptions[] { ProverOptions.GENERATE_MODELS });
 
-    private final CSVLogger csvLogger = new CSVLogger(filePathProvider);
+    private final CSVLogger csvLogger = new CSVLogger(() -> String.format("%s-%s", name, target));
     private final Timeout timeout = Timeout.millis(TIMEOUT);
 
 
@@ -68,81 +69,81 @@ public class CLocksTestAlternative {
             .around(proverProvider);
 
 
-	@Parameterized.Parameters(name = "{index}: {0} target={1}")
+	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-	            {"ttas-5.bpl", TSO, UNKNOWN},
-	            {"ttas-5.bpl", ARM8, UNKNOWN},
-	            {"ttas-5.bpl", POWER, UNKNOWN},
-	            {"ttas-5-acq2rx.bpl", TSO, UNKNOWN},
-	            {"ttas-5-acq2rx.bpl", ARM8, UNKNOWN},
-	            {"ttas-5-acq2rx.bpl", POWER, UNKNOWN},
-	            {"ttas-5-rel2rx.bpl", TSO, UNKNOWN},
-	            {"ttas-5-rel2rx.bpl", ARM8, FAIL},
-	            {"ttas-5-rel2rx.bpl", POWER, FAIL},
-	            {"ticketlock-3.bpl", TSO, UNKNOWN},
-	            {"ticketlock-3.bpl", ARM8, UNKNOWN},
-	            {"ticketlock-3.bpl", POWER, UNKNOWN},
-	            {"ticketlock-3-acq2rx.bpl", TSO, UNKNOWN},
-	            {"ticketlock-3-acq2rx.bpl", ARM8, UNKNOWN},
-	            {"ticketlock-3-acq2rx.bpl", POWER, UNKNOWN},
-	            {"ticketlock-3-rel2rx.bpl", TSO, UNKNOWN},
-	            {"ticketlock-3-rel2rx.bpl", ARM8, FAIL},
-	            {"ticketlock-3-rel2rx.bpl", POWER, FAIL},
-                {"mutex-3.bpl", TSO, UNKNOWN},
-                {"mutex-3.bpl", ARM8, UNKNOWN},
-                {"mutex-3.bpl", POWER, UNKNOWN},
-                {"mutex-3-acq2rx-futex.bpl", TSO, UNKNOWN},
-                {"mutex-3-acq2rx-futex.bpl", ARM8, UNKNOWN},
-                {"mutex-3-acq2rx-futex.bpl", POWER, UNKNOWN},
-                {"mutex-3-acq2rx-lock.bpl", TSO, UNKNOWN},
-                {"mutex-3-acq2rx-lock.bpl", ARM8, UNKNOWN},
-                {"mutex-3-acq2rx-lock.bpl", POWER, UNKNOWN},
-                {"mutex-3-rel2rx-futex.bpl", TSO, UNKNOWN},
-                {"mutex-3-rel2rx-futex.bpl", ARM8, UNKNOWN},
-                {"mutex-3-rel2rx-futex.bpl", POWER, UNKNOWN},
-                {"mutex-3-rel2rx-unlock.bpl", TSO, UNKNOWN},
-                {"mutex-3-rel2rx-unlock.bpl", ARM8, FAIL},
-                {"mutex-3-rel2rx-unlock.bpl", POWER, FAIL},
-                {"spinlock-5.bpl", TSO, UNKNOWN},
-                {"spinlock-5.bpl", ARM8, UNKNOWN},
-                {"spinlock-5.bpl", POWER, UNKNOWN},
-                {"spinlock-5-acq2rx.bpl", TSO, UNKNOWN},
-                {"spinlock-5-acq2rx.bpl", ARM8, UNKNOWN},
-                {"spinlock-5-acq2rx.bpl", POWER, UNKNOWN},
-                {"spinlock-5-rel2rx.bpl", TSO, UNKNOWN},
-                {"spinlock-5-rel2rx.bpl", ARM8, FAIL},
-                {"spinlock-5-rel2rx.bpl", POWER, FAIL},
-                {"linuxrwlock-3.bpl", TSO, UNKNOWN},
-                {"linuxrwlock-3.bpl", ARM8, UNKNOWN},
-                {"linuxrwlock-3.bpl", POWER, UNKNOWN},
-                {"linuxrwlock-3-acq2rx.bpl", TSO, UNKNOWN},
-                {"linuxrwlock-3-acq2rx.bpl", ARM8, FAIL},
-                {"linuxrwlock-3-acq2rx.bpl", POWER, FAIL},
-                {"linuxrwlock-3-rel2rx.bpl", TSO, UNKNOWN},
-                {"linuxrwlock-3-rel2rx.bpl", ARM8, FAIL},
-                {"linuxrwlock-3-rel2rx.bpl", POWER, FAIL},
-                {"mutex_musl-3.bpl", TSO, UNKNOWN},
-                {"mutex_musl-3.bpl", ARM8, UNKNOWN},
-                {"mutex_musl-3.bpl", POWER, UNKNOWN},
-                {"mutex_musl-3-acq2rx-futex.bpl", TSO, UNKNOWN},
-                {"mutex_musl-3-acq2rx-futex.bpl", ARM8, UNKNOWN},
-                {"mutex_musl-3-acq2rx-futex.bpl", POWER, UNKNOWN},
-                {"mutex_musl-3-acq2rx-lock.bpl", TSO, UNKNOWN},
-                {"mutex_musl-3-acq2rx-lock.bpl", ARM8, UNKNOWN},
-                {"mutex_musl-3-acq2rx-lock.bpl", POWER, UNKNOWN},
-                {"mutex_musl-3-rel2rx-futex.bpl", TSO, UNKNOWN},
-                {"mutex_musl-3-rel2rx-futex.bpl", ARM8, UNKNOWN},
-                {"mutex_musl-3-rel2rx-futex.bpl", POWER, UNKNOWN},
-                {"mutex_musl-3-rel2rx-unlock.bpl", TSO, UNKNOWN},
-                {"mutex_musl-3-rel2rx-unlock.bpl", ARM8, FAIL},
-                {"mutex_musl-3-rel2rx-unlock.bpl", POWER, FAIL}
+	            {"ttas-5", TSO, UNKNOWN},
+	            {"ttas-5", ARM8, UNKNOWN},
+	            {"ttas-5", POWER, UNKNOWN},
+	            {"ttas-5-acq2rx", TSO, UNKNOWN},
+	            {"ttas-5-acq2rx", ARM8, UNKNOWN},
+	            {"ttas-5-acq2rx", POWER, UNKNOWN},
+	            {"ttas-5-rel2rx", TSO, UNKNOWN},
+	            {"ttas-5-rel2rx", ARM8, FAIL},
+	            {"ttas-5-rel2rx", POWER, FAIL},
+	            {"ticketlock-3", TSO, UNKNOWN},
+	            {"ticketlock-3", ARM8, UNKNOWN},
+	            {"ticketlock-3", POWER, UNKNOWN},
+	            {"ticketlock-3-acq2rx", TSO, UNKNOWN},
+	            {"ticketlock-3-acq2rx", ARM8, UNKNOWN},
+	            {"ticketlock-3-acq2rx", POWER, UNKNOWN},
+	            {"ticketlock-3-rel2rx", TSO, UNKNOWN},
+	            {"ticketlock-3-rel2rx", ARM8, FAIL},
+	            {"ticketlock-3-rel2rx", POWER, FAIL},
+                {"mutex-3", TSO, UNKNOWN},
+                {"mutex-3", ARM8, UNKNOWN},
+                {"mutex-3", POWER, UNKNOWN},
+                {"mutex-3-acq2rx-futex", TSO, UNKNOWN},
+                {"mutex-3-acq2rx-futex", ARM8, UNKNOWN},
+                {"mutex-3-acq2rx-futex", POWER, UNKNOWN},
+                {"mutex-3-acq2rx-lock", TSO, UNKNOWN},
+                {"mutex-3-acq2rx-lock", ARM8, UNKNOWN},
+                {"mutex-3-acq2rx-lock", POWER, UNKNOWN},
+                {"mutex-3-rel2rx-futex", TSO, UNKNOWN},
+                {"mutex-3-rel2rx-futex", ARM8, UNKNOWN},
+                {"mutex-3-rel2rx-futex", POWER, UNKNOWN},
+                {"mutex-3-rel2rx-unlock", TSO, UNKNOWN},
+                {"mutex-3-rel2rx-unlock", ARM8, FAIL},
+                {"mutex-3-rel2rx-unlock", POWER, FAIL},
+                {"spinlock-5", TSO, UNKNOWN},
+                {"spinlock-5", ARM8, UNKNOWN},
+                {"spinlock-5", POWER, UNKNOWN},
+                {"spinlock-5-acq2rx", TSO, UNKNOWN},
+                {"spinlock-5-acq2rx", ARM8, UNKNOWN},
+                {"spinlock-5-acq2rx", POWER, UNKNOWN},
+                {"spinlock-5-rel2rx", TSO, UNKNOWN},
+                {"spinlock-5-rel2rx", ARM8, FAIL},
+                {"spinlock-5-rel2rx", POWER, FAIL},
+                {"linuxrwlock-3", TSO, UNKNOWN},
+                {"linuxrwlock-3", ARM8, UNKNOWN},
+                {"linuxrwlock-3", POWER, UNKNOWN},
+                {"linuxrwlock-3-acq2rx", TSO, UNKNOWN},
+                {"linuxrwlock-3-acq2rx", ARM8, FAIL},
+                {"linuxrwlock-3-acq2rx", POWER, FAIL},
+                {"linuxrwlock-3-rel2rx", TSO, UNKNOWN},
+                {"linuxrwlock-3-rel2rx", ARM8, FAIL},
+                {"linuxrwlock-3-rel2rx", POWER, FAIL},
+                {"mutex_musl-3", TSO, UNKNOWN},
+                {"mutex_musl-3", ARM8, UNKNOWN},
+                {"mutex_musl-3", POWER, UNKNOWN},
+                {"mutex_musl-3-acq2rx-futex", TSO, UNKNOWN},
+                {"mutex_musl-3-acq2rx-futex", ARM8, UNKNOWN},
+                {"mutex_musl-3-acq2rx-futex", POWER, UNKNOWN},
+                {"mutex_musl-3-acq2rx-lock", TSO, UNKNOWN},
+                {"mutex_musl-3-acq2rx-lock", ARM8, UNKNOWN},
+                {"mutex_musl-3-acq2rx-lock", POWER, UNKNOWN},
+                {"mutex_musl-3-rel2rx-futex", TSO, UNKNOWN},
+                {"mutex_musl-3-rel2rx-futex", ARM8, UNKNOWN},
+                {"mutex_musl-3-rel2rx-futex", POWER, UNKNOWN},
+                {"mutex_musl-3-rel2rx-unlock", TSO, UNKNOWN},
+                {"mutex_musl-3-rel2rx-unlock", ARM8, FAIL},
+                {"mutex_musl-3-rel2rx-unlock", POWER, FAIL}
         });
 
     }
 
-    public CLocksTestAlternative(String path, Arch target, Result expected) {
-        this.path = path;
+    public CLocksTestAlternative(String name, Arch target, Result expected) {
+        this.name = name;
         this.target = target;
         this.expected = expected;
     }

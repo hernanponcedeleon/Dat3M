@@ -20,11 +20,11 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 
 public class CSVLogger extends TestWatcher {
 
-    private final Supplier<String> pathSupplier;
+    private final Supplier<String> nameSupplier;
     private long startTime;
 
-    public CSVLogger(Supplier<String> pathSupplier) {
-        this.pathSupplier = pathSupplier;
+    public CSVLogger(Supplier<String> nameSupplier) {
+        this.nameSupplier = nameSupplier;
     }
 
     @Override
@@ -50,13 +50,13 @@ public class CSVLogger extends TestWatcher {
 
     @Override
     protected void succeeded(Description description) {
-        logCSVLine(description, pathSupplier.get(), Long.toString(System.currentTimeMillis() - startTime));
+        logCSVLine(description, nameSupplier.get(), Long.toString(System.currentTimeMillis() - startTime));
     }
 
     @Override
     protected void failed(Throwable e, Description description) {
         String message = e instanceof TestTimedOutException ? "Timeout" : "Error";
-        logCSVLine(description, pathSupplier.get(), message);
+        logCSVLine(description, nameSupplier.get(), message);
     }
 
     public static class Initialization extends TestWatcher {
