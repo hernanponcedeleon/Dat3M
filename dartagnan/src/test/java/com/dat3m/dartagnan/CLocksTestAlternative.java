@@ -30,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 public class CLocksTestAlternative {
 
 
-    static final int TIMEOUT = 5000;
+    static final int TIMEOUT = 1800000;
 
     private String path;
     private Arch target;
@@ -73,25 +73,72 @@ public class CLocksTestAlternative {
 	@Parameterized.Parameters(name = "{index}: {0} target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-                {"ttas-5.bpl", TSO, UNKNOWN},
-                {"ttas-5.bpl", ARM8, UNKNOWN},
-                {"ttas-5.bpl", POWER, UNKNOWN},
-                {"ttas-5-acq2rx.bpl", TSO, UNKNOWN},
-                {"ttas-5-acq2rx.bpl", ARM8, UNKNOWN},
-                {"ttas-5-acq2rx.bpl", POWER, UNKNOWN},
-                {"ttas-5-rel2rx.bpl", TSO, UNKNOWN},
-                {"ttas-5-rel2rx.bpl", ARM8, FAIL},
-                {"ttas-5-rel2rx.bpl", POWER, FAIL},
-                {"ticketlock-3.bpl", TSO, UNKNOWN},
-                {"ticketlock-3.bpl", ARM, UNKNOWN},
-                {"ticketlock-3.bpl", POWER, UNKNOWN},
-                {"ticketlock-3-acq2rx.bpl", TSO, UNKNOWN},
-                {"ticketlock-3-acq2rx.bpl", ARM, UNKNOWN},
-                {"ticketlock-3-acq2rx.bpl", POWER, UNKNOWN},
-                {"ticketlock-3-rel2rx.bpl", TSO, UNKNOWN},
-                {"ticketlock-3-rel2rx.bpl", ARM, FAIL},
-                {"ticketlock-3-rel2rx.bpl", POWER, FAIL}
-                //TODO: Add remaining tests
+	            {"ttas-5.bpl", TSO, UNKNOWN},
+	            {"ttas-5.bpl", ARM8, UNKNOWN},
+	            {"ttas-5.bpl", POWER, UNKNOWN},
+	            {"ttas-5-acq2rx.bpl", TSO, UNKNOWN},
+	            {"ttas-5-acq2rx.bpl", ARM8, UNKNOWN},
+	            {"ttas-5-acq2rx.bpl", POWER, UNKNOWN},
+	            {"ttas-5-rel2rx.bpl", TSO, UNKNOWN},
+	            {"ttas-5-rel2rx.bpl", ARM8, FAIL},
+	            {"ttas-5-rel2rx.bpl", POWER, FAIL},
+	            {"ticketlock-3.bpl", TSO, UNKNOWN},
+	            {"ticketlock-3.bpl", ARM8, UNKNOWN},
+	            {"ticketlock-3.bpl", POWER, UNKNOWN},
+	            {"ticketlock-3-acq2rx.bpl", TSO, UNKNOWN},
+	            {"ticketlock-3-acq2rx.bpl", ARM8, UNKNOWN},
+	            {"ticketlock-3-acq2rx.bpl", POWER, UNKNOWN},
+	            {"ticketlock-3-rel2rx.bpl", TSO, UNKNOWN},
+	            {"ticketlock-3-rel2rx.bpl", ARM8, FAIL},
+	            {"ticketlock-3-rel2rx.bpl", POWER, FAIL},
+                {"mutex-3.bpl", TSO, UNKNOWN},
+                {"mutex-3.bpl", ARM8, UNKNOWN},
+                {"mutex-3.bpl", POWER, UNKNOWN},
+                {"mutex-3-acq2rx-futex.bpl", TSO, UNKNOWN},
+                {"mutex-3-acq2rx-futex.bpl", ARM8, UNKNOWN},
+                {"mutex-3-acq2rx-futex.bpl", POWER, UNKNOWN},
+                {"mutex-3-acq2rx-lock.bpl", TSO, UNKNOWN},
+                {"mutex-3-acq2rx-lock.bpl", ARM8, UNKNOWN},
+                {"mutex-3-acq2rx-lock.bpl", POWER, UNKNOWN},
+                {"mutex-3-rel2rx-futex.bpl", TSO, UNKNOWN},
+                {"mutex-3-rel2rx-futex.bpl", ARM8, UNKNOWN},
+                {"mutex-3-rel2rx-futex.bpl", POWER, UNKNOWN},
+                {"mutex-3-rel2rx-unlock.bpl", TSO, UNKNOWN},
+                {"mutex-3-rel2rx-unlock.bpl", ARM8, FAIL},
+                {"mutex-3-rel2rx-unlock.bpl", POWER, FAIL},
+                {"spinlock-5.bpl", TSO, UNKNOWN},
+                {"spinlock-5.bpl", ARM8, UNKNOWN},
+                {"spinlock-5.bpl", POWER, UNKNOWN},
+                {"spinlock-5-acq2rx.bpl", TSO, UNKNOWN},
+                {"spinlock-5-acq2rx.bpl", ARM8, UNKNOWN},
+                {"spinlock-5-acq2rx.bpl", POWER, UNKNOWN},
+                {"spinlock-5-rel2rx.bpl", TSO, UNKNOWN},
+                {"spinlock-5-rel2rx.bpl", ARM8, FAIL},
+                {"spinlock-5-rel2rx.bpl", POWER, FAIL},
+                {"linuxrwlock-3.bpl", TSO, UNKNOWN},
+                {"linuxrwlock-3.bpl", ARM8, UNKNOWN},
+                {"linuxrwlock-3.bpl", POWER, UNKNOWN},
+                {"linuxrwlock-3-acq2rx.bpl", TSO, UNKNOWN},
+                {"linuxrwlock-3-acq2rx.bpl", ARM8, FAIL},
+                {"linuxrwlock-3-acq2rx.bpl", POWER, FAIL},
+                {"linuxrwlock-3-rel2rx.bpl", TSO, UNKNOWN},
+                {"linuxrwlock-3-rel2rx.bpl", ARM8, FAIL},
+                {"linuxrwlock-3-rel2rx.bpl", POWER, FAIL},
+                {"mutex_musl-3.bpl", TSO, UNKNOWN},
+                {"mutex_musl-3.bpl", ARM8, UNKNOWN},
+                {"mutex_musl-3.bpl", POWER, UNKNOWN},
+                {"mutex_musl-3-acq2rx-futex.bpl", TSO, UNKNOWN},
+                {"mutex_musl-3-acq2rx-futex.bpl", ARM8, UNKNOWN},
+                {"mutex_musl-3-acq2rx-futex.bpl", POWER, UNKNOWN},
+                {"mutex_musl-3-acq2rx-lock.bpl", TSO, UNKNOWN},
+                {"mutex_musl-3-acq2rx-lock.bpl", ARM8, UNKNOWN},
+                {"mutex_musl-3-acq2rx-lock.bpl", POWER, UNKNOWN},
+                {"mutex_musl-3-rel2rx-futex.bpl", TSO, UNKNOWN},
+                {"mutex_musl-3-rel2rx-futex.bpl", ARM8, UNKNOWN},
+                {"mutex_musl-3-rel2rx-futex.bpl", POWER, UNKNOWN},
+                {"mutex_musl-3-rel2rx-unlock.bpl", TSO, UNKNOWN},
+                {"mutex_musl-3-rel2rx-unlock.bpl", ARM8, FAIL},
+                {"mutex_musl-3-rel2rx-unlock.bpl", POWER, FAIL}                
         });
 
     }
@@ -102,7 +149,7 @@ public class CLocksTestAlternative {
         this.expected = expected;
     }
 
-    @Test
+//    @Test
     public void testAssume() throws Exception {
 	    assertEquals(expected, runAnalysisAssumeSolver(contextProvider.get(), proverProvider.get(), taskProvider.get()));
     }
