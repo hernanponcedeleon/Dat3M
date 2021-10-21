@@ -6,10 +6,10 @@ import com.dat3m.dartagnan.program.Program;
 import java.io.File;
 import java.util.function.Supplier;
 
-public class ProgramProvider extends Provider<Program> {
+public class ProgramFromFileProvider extends AbstractProvider<Program> {
 
     private final Supplier<String> pathProvider;
-    public ProgramProvider(Supplier<String> pathProvider) {
+    public ProgramFromFileProvider(Supplier<String> pathProvider) {
         this.pathProvider = pathProvider;
     }
 

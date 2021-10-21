@@ -1,9 +1,13 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.analysis.Refinement;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.rules.*;
 import com.dat3m.dartagnan.verification.RefinementTask;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -12,12 +16,12 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.function.Supplier;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
@@ -37,36 +41,30 @@ public class CLocksTestAlternative {
     private final Result expected;
 
     @ClassRule
-    public static CSVInitRule csvInitRule = new CSVInitRule( "assume", "refinement");
+    public static CSVLogger.Initialization csvInit = new CSVLogger.Initialization();
 
-    private final MethodSpecificProvider<String> methodNameProvider =
-            MethodSpecificProvider.fromMethodName(Map.of(
-                    "testAssume", "assume",
-                    "testRefinement", "refinement")
-            );
+    private final Provider<Arch> targetProvider = () -> target;
+    private final Provider<String> filePathProvider = PathProvider.addPrefix(() -> path, TEST_RESOURCE_PATH + "locks/");
+    private final Provider<Settings> settingsProvider = SettingsProvider.builderWithDefaultValues().build(); // Default settings
+    private final Provider<Program> programProvider = new ProgramFromFileProvider(filePathProvider);
+    private final Provider<Wmm> wmmProvider = new WmmFromArchitectureProvider(targetProvider);
+    private final Provider<VerificationTask> taskProvider = new TaskProvider(programProvider, wmmProvider, targetProvider, settingsProvider);
+    private final Provider<SolverContext> contextProvider = new SolverContextProvider();
+    private final Provider<ProverEnvironment> proverProvider = new ProverProvider(contextProvider, () -> new ProverOptions[] { ProverOptions.GENERATE_MODELS });
 
-    private final Supplier<Arch> targetProvider = () -> target;
-    private final PathProvider pathProvider = PathProvider.addPrefix(() -> path, TEST_RESOURCE_PATH + "locks/");
-    private final SettingsProvider settingsProvider = new SettingsProvider.Builder().build(); // Default settings
-    private final ProgramProvider programProvider = new ProgramProvider(pathProvider);
-    private final WmmProvider wmmProvider = new WmmProvider(targetProvider);
-    private final TaskProvider taskProvider = new TaskProvider(programProvider, wmmProvider, targetProvider, settingsProvider);
-    private final SolverContextProvider contextProvider = new SolverContextProvider();
-    private final ProverProvider proverProvider = new ProverProvider(contextProvider, () -> new ProverOptions[] { ProverOptions.GENERATE_MODELS });
-    private final CSVLogger csvLogger  = new CSVLogger(methodNameProvider, pathProvider);
+    private final CSVLogger csvLogger = new CSVLogger(filePathProvider);
     private final Timeout timeout = Timeout.millis(TIMEOUT);
 
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(pathProvider)
+    public RuleChain ruleChain = RuleChain.outerRule(filePathProvider)
             .around(settingsProvider)
             .around(programProvider)
             .around(wmmProvider)
             .around(taskProvider)
-            .around(methodNameProvider)
             .around(csvLogger) // csvLogger needs to get created before the timeout rule to be able to detect timeouts
-            .around(timeout) // Timeout needs to get created before the Context/Prover due to threading issues
-            .around(contextProvider)
+            .around(timeout)
+            .around(contextProvider)// Context/Prover need to get created AFTER timeout due to threading issues!
             .around(proverProvider);
 
 
@@ -138,7 +136,7 @@ public class CLocksTestAlternative {
                 {"mutex_musl-3-rel2rx-futex.bpl", POWER, UNKNOWN},
                 {"mutex_musl-3-rel2rx-unlock.bpl", TSO, UNKNOWN},
                 {"mutex_musl-3-rel2rx-unlock.bpl", ARM8, FAIL},
-                {"mutex_musl-3-rel2rx-unlock.bpl", POWER, FAIL}                
+                {"mutex_musl-3-rel2rx-unlock.bpl", POWER, FAIL}
         });
 
     }
@@ -150,11 +148,13 @@ public class CLocksTestAlternative {
     }
 
     @Test
+    @CSVLogger.FileName("csv/assume")
     public void testAssume() throws Exception {
 	    assertEquals(expected, runAnalysisAssumeSolver(contextProvider.get(), proverProvider.get(), taskProvider.get()));
     }
 
     @Test
+    @CSVLogger.FileName("csv/refinement")
     public void testRefinement() throws Exception {
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(contextProvider.get(), proverProvider.get(),
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(taskProvider.get())));

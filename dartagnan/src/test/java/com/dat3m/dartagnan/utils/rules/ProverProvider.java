@@ -5,7 +5,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.function.Supplier;
 
-public class ProverProvider extends Provider<ProverEnvironment> {
+public class ProverProvider extends AbstractProvider<ProverEnvironment> {
 
     private final Supplier<SolverContext> contextSupplier;
     private final Supplier<SolverContext.ProverOptions[]> optionsProvider;

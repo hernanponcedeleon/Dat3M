@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 
 import java.util.function.Supplier;
 
-public class SettingsProvider extends Provider<Settings>  {
+public class SettingsProvider extends AbstractProvider<Settings> {
 
     private final Supplier<Alias> aliasSupplier;
     private final Supplier<Integer> boundSupplier;
@@ -20,6 +20,10 @@ public class SettingsProvider extends Provider<Settings>  {
     @Override
     protected Settings provide() {
         return new Settings(aliasSupplier.get(), boundSupplier.get(), timeoutSupplier.get());
+    }
+
+    public static Builder builderWithDefaultValues() {
+        return new Builder();
     }
 
     public static class Builder {

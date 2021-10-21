@@ -2,11 +2,7 @@ package com.dat3m.dartagnan.utils;
 
 import com.google.common.collect.ImmutableMap;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -48,6 +44,16 @@ public class ResourceHelper {
     }
 
     public static String getCSVFileName(Class<?> testingClass, String name) {
-        return String.format("%s/output/%s-%s.csv", System.getenv("DAT3M_HOME"), testingClass.getSimpleName(), name);
+        String dirPrefix;
+        String fileName;
+        int dirIndex = name.lastIndexOf("/");
+        if (dirIndex == -1) {
+            dirPrefix= "";
+            fileName = name;
+        } else {
+            dirPrefix = name.substring(0, dirIndex + 1);
+            fileName = name.substring(dirIndex + 1);
+        }
+        return String.format("%s/output/%s%s-%s.csv", System.getenv("DAT3M_HOME"), dirPrefix, testingClass.getSimpleName(), fileName);
     }
 }
