@@ -71,6 +71,11 @@ public class CLocksTestAlternative {
             .around(csvLogger)
             .around(shutdownRule); // The shutdownRule should be the innermost rule
 
+    // NOTE: If using <Timeout> instead of <ShutdownRule>, then this rule should apply before the
+    // context/prover providers as these objects need to be constructed inside the thread that uses them.
+    // For the CSVLogger to properly log timeouts, it needs to be applied before the Timeout rule
+    // => CSVLogger -> Timeout -> ContextProvider -> ProverProvider
+
 
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {

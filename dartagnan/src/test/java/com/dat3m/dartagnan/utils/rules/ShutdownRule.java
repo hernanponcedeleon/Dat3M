@@ -5,6 +5,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestTimedOutException;
 import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.ShutdownNotifier;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,30 +46,24 @@ public class ShutdownRule implements TestRule {
         return new Statement() {
             @Override
             public void evaluate() throws Throwable {
-                Future<?> task = null;
+                ShutdownNotifier notifier = shutdownManagerSupplier.get().getNotifier();
+                Future<?> task = pool.submit(ShutdownRule.this::timedShutdown);
                 long startTime = System.currentTimeMillis();
                 try {
-                    task = pool.submit(ShutdownRule.this::timedShutdown);
                     base.evaluate();
-                    checkTimeout(startTime);
-                } catch (Throwable e) {
-                    checkTimeout(startTime);
-                    throw e;
                 } finally {
-                    if (task != null && !task.isDone()) {
+                    if (!task.isDone()) {
                         task.cancel(true);
+                    }
+                    if (notifier.shouldShutdown()) {
+                        // If a shutdown was requested, we have a timeout
+                        long timeSpent = (System.currentTimeMillis() - startTime);
+                        timeSpent = timeUnit.convert(timeSpent, TimeUnit.MILLISECONDS);
+                        throw new TestTimedOutException(timeSpent, timeUnit);
                     }
                 }
             }
         };
-    }
-
-    private void checkTimeout(long startTime) throws Throwable {
-        long timeSpent = (System.currentTimeMillis() - startTime);
-        timeSpent = timeUnit.convert(timeSpent, TimeUnit.MILLISECONDS);
-        if (timeSpent >= timeout) {
-            throw new TestTimedOutException(timeSpent, timeUnit);
-        }
     }
 
 
