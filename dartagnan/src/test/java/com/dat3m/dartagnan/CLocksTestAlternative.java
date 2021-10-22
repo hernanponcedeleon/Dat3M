@@ -14,15 +14,16 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
@@ -35,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 public class CLocksTestAlternative {
 
 
-    static final int TIMEOUT = 1800000;
+    static final int TIMEOUT = 60000;
 
     private String name;
     private Arch target;
@@ -44,17 +45,18 @@ public class CLocksTestAlternative {
     @ClassRule
     public static CSVLogger.Initialization csvInit = new CSVLogger.Initialization();
 
+    private final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
     private final Provider<Arch> targetProvider = () -> target;
     private final Provider<String> filePathProvider = Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "locks/" + name + ".bpl");
     private final Provider<Settings> settingsProvider = Provider.fromSupplier(() -> new Settings(Alias.CFIS, 1, 0));
     private final Provider<Program> programProvider = new ProgramFromFileProvider(filePathProvider);
     private final Provider<Wmm> wmmProvider = new WmmFromArchitectureProvider(targetProvider);
     private final Provider<VerificationTask> taskProvider = new TaskProvider(programProvider, wmmProvider, targetProvider, settingsProvider);
-    private final Provider<SolverContext> contextProvider = new SolverContextProvider();
+    private final Provider<SolverContext> contextProvider = new SolverContextProvider(() -> shutdownManagerProvider.get().getNotifier());
     private final Provider<ProverEnvironment> proverProvider = new ProverProvider(contextProvider, () -> new ProverOptions[] { ProverOptions.GENERATE_MODELS });
 
     private final CSVLogger csvLogger = new CSVLogger(() -> String.format("%s-%s", name, target));
-    private final Timeout timeout = Timeout.millis(TIMEOUT);
+    private final ShutdownRule shutdownRule = new ShutdownRule(TIMEOUT, TimeUnit.MILLISECONDS, shutdownManagerProvider);
 
 
     @Rule
@@ -63,10 +65,11 @@ public class CLocksTestAlternative {
             .around(programProvider)
             .around(wmmProvider)
             .around(taskProvider)
-            .around(csvLogger) // csvLogger needs to get created before the timeout rule to be able to detect timeouts
-            .around(timeout)
-            .around(contextProvider)// Context/Prover need to get created AFTER timeout due to threading issues!
-            .around(proverProvider);
+            .around(shutdownManagerProvider)
+            .around(contextProvider)
+            .around(proverProvider)
+            .around(csvLogger)
+            .around(shutdownRule); // The shutdownRule should be the innermost rule
 
 
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
