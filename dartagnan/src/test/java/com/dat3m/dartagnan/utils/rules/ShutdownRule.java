@@ -20,9 +20,6 @@ public class ShutdownRule implements TestRule {
     private final long timeout;
     private final TimeUnit timeUnit;
 
-    private Future<?> task;
-    private long startTime;
-
     public ShutdownRule(long timeout, TimeUnit timeUnit, Supplier<ShutdownManager> shutdownManagerSupplier) {
         this.timeout = timeout;
         this.timeUnit = timeUnit;
@@ -48,13 +45,14 @@ public class ShutdownRule implements TestRule {
         return new Statement() {
             @Override
             public void evaluate() throws Throwable {
+                Future<?> task = null;
+                long startTime = System.currentTimeMillis();
                 try {
-                    startTime = System.currentTimeMillis();
                     task = pool.submit(ShutdownRule.this::timedShutdown);
                     base.evaluate();
-                    checkTimeout();
+                    checkTimeout(startTime);
                 } catch (Throwable e) {
-                    checkTimeout();
+                    checkTimeout(startTime);
                     throw e;
                 } finally {
                     if (task != null && !task.isDone()) {
@@ -65,7 +63,7 @@ public class ShutdownRule implements TestRule {
         };
     }
 
-    private void checkTimeout() throws Throwable {
+    private void checkTimeout(long startTime) throws Throwable {
         long timeSpent = (System.currentTimeMillis() - startTime);
         timeSpent = timeUnit.convert(timeSpent, TimeUnit.MILLISECONDS);
         if (timeSpent >= timeout) {

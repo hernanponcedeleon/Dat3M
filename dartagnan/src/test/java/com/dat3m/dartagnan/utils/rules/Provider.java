@@ -6,6 +6,11 @@ import org.junit.runners.model.Statement;
 
 import java.util.function.Supplier;
 
+/*
+    A Provider is a TestRule that provides values for tests.
+    While not strictly necessary, Providers are implemented to generate
+    their value only once per test and then return cached values.
+ */
 public interface Provider<T> extends Supplier<T>, TestRule {
 
     @Override
