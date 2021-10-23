@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
+import com.dat3m.dartagnan.program.utils.preprocessing.PreprocessingChain;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
@@ -18,6 +19,8 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -38,6 +41,7 @@ public class VerificationTask {
     private final WitnessGraph witness;
     private final Arch target;
     private final Settings settings;
+    private final Configuration config = Configuration.defaultConfiguration(); // TODO: Change this
     private ThreadSymmetry threadSymmetry;
 
     public VerificationTask(Program program, Wmm memoryModel, Arch target, Settings settings) {
@@ -103,15 +107,12 @@ public class VerificationTask {
 
     public void unrollAndCompile() {
         logger.info("#Events: " + program.getEvents().size());
-        if (GlobalSettings.PERFORM_DEAD_CODE_ELIMINATION) {
-            program.eliminateDeadCode();
-            logger.info("#Events after DCE: " + program.getEvents().size());
+        try {
+            PreprocessingChain.fromConfig(config).run(program);
+        } catch (InvalidConfigurationException ex) {
+            logger.warn("Configuration error when preprocessing program. Some preprocessing steps may have been skipped.");
         }
-        if (GlobalSettings.PERFORM_REORDERING) {
-            program.reorder();
-            logger.info("Events reordered");
-        }
-        program.simplify();
+
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         if (GlobalSettings.ENABLE_SYMMETRY_REDUCTION) {

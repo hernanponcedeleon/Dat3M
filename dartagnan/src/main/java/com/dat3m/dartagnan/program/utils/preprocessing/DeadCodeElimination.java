@@ -1,24 +1,40 @@
 package com.dat3m.dartagnan.program.utils.preprocessing;
 
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.Thread;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashSet;
 import java.util.Set;
 
 
-//TODO: Add support for Ifs
-public class DeadCodeElimination {
+public class DeadCodeElimination implements ProgramPreprocessor {
 
-    private final Thread thread;
+    private static final Logger logger = LogManager.getLogger(DeadCodeElimination.class);
 
-    public DeadCodeElimination(Thread t) {
-        this.thread = t;
+    public DeadCodeElimination() { }
+
+    @Override
+    public void run(Program program) {
+        if (program.isUnrolled()) {
+            throw new IllegalStateException("Dead code elimination should be performed before unrolling.");
+        }
+        int id = 0;
+        for (Thread t : program.getThreads()) {
+            eliminateDeadCode(t, id);
+            t.clearCache();
+            id = t.getExit().getOId() + 1;
+        }
+        program.clearCache();
+
+        logger.info("#Events after DCE: " + program.getEvents().size());
     }
 
-    private void eliminateDeadCode(int startId) {
+    private void eliminateDeadCode(Thread thread, int startId) {
         Event entry = thread.getEntry();
         Event exit = thread.getExit();
 
@@ -63,7 +79,5 @@ public class DeadCodeElimination {
         }
     }
 
-    public void apply(int startId) {
-        eliminateDeadCode(startId);
-    }
+
 }

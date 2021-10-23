@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
@@ -12,6 +11,8 @@ import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -24,6 +25,7 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
  *
  * @author Florian Furbach
  */
+@Options(prefix = "wmm")
 public class Wmm {
 
     private final static ImmutableSet<String> baseRelations = ImmutableSet.of(CO, RF, IDD, ADDRDIRECT);
@@ -33,8 +35,31 @@ public class Wmm {
     private final RelationRepository relationRepository;
     private final List<RecursiveGroup> recursiveGroups = new ArrayList<>();
 
+    // =========================== Configurables ===========================
+
+    // We would like to automatically detect local consistency but for now we make it a configuration option
+    @Option(name = "assumeLocalConsistency",
+            description = "Assumes a locally consistent WMM.",
+            secure = true)
+    private boolean isLocallyConsistent = false;
+
+    public boolean isLocallyConsistent() { return isLocallyConsistent; }
+    public void setLocallyConsistent(boolean value) { isLocallyConsistent = value; }
+
+    @Option(name = "respectsAtomicBlocks",
+            description = "Assumes the WMM respects atomic blocks for optimization (only the case for SVCOMP right now).",
+            secure = true)
+    private boolean respectAtomicBlocks = false;
+
+    public boolean respectsAtomicBlocks() { return respectAtomicBlocks; }
+    public void setRespectsAtomicBlocks(boolean value) { respectAtomicBlocks = value; }
+
+    // =====================================================================
+
+
     private VerificationTask task;
     private boolean relationsAreEncoded = false;
+
 
     private boolean encodeCo = true;
 
@@ -66,11 +91,6 @@ public class Wmm {
         return relationRepository;
     }
 
-    public boolean isLocallyConsistent() {
-        // For now we just return a global flag, but we would like to automatically
-        // detect local consistency
-        return GlobalSettings.ASSUME_LOCAL_CONSISTENCY;
-    }
 
     public void addRecursiveGroup(Set<RecursiveRelation> recursiveGroup){
         int id = 1 << recursiveGroups.size();

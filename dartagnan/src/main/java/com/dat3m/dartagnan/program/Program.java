@@ -1,14 +1,6 @@
 package com.dat3m.dartagnan.program;
 
 
-import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.utils.ThreadCache;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
@@ -18,20 +10,62 @@ import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.utils.ThreadCache;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
-
 import java.util.*;
 
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+
+@Options(prefix = "program")
 public class Program {
 
     private final static Logger logger = LogManager.getLogger(Program.class);
+
+    // =========================== Configurables ===========================
+    private Configuration config;
+
+    // We would like to automatically detect local consistency but for now we make it a configuration option
+    @Option(name = "encoding.useFixedMemory",
+            description = "Pre-assigns fixed values to dynamically allocated objects if possible.",
+            secure = true)
+    private boolean useFixedMemoryEncoding = false;
+
+    public boolean usesFixedMemoryEncoding() { return useFixedMemoryEncoding; }
+    public void setUseFixedMemoryEncoding(boolean value) { useFixedMemoryEncoding = value; }
+
+    @Option(name = "encoding.allowPartialExecutions",
+            description = "Allows to terminate executions on the first found violation.",
+            secure = true)
+    private boolean allowPartialExecutions = false;
+
+    public boolean allowsPartialExecutions() { return allowPartialExecutions; }
+    public void setAllowPartialExecutions(boolean value) { allowPartialExecutions = value; }
+
+    @Option(name = "encoding.mergeCFVars",
+            description = "Merges control flow variables of events with identical control-flow behaviour.",
+            secure = true)
+    private boolean mergeCFVars = true;
+
+    public boolean mergesCFVars() { return mergeCFVars; }
+    public void setMergeCFVars(boolean value) { mergeCFVars = value; }
+
+
+    // =====================================================================
 
     private String name;
 	private AbstractAssert ass;
@@ -216,7 +250,7 @@ public class Program {
             throw new RuntimeException("The program needs to get initialised first.");
         }
 
-        BooleanFormula enc = GlobalSettings.FIXED_MEMORY_ENCODING ? memory.fixedMemoryEncoding(ctx) : memory.encode(ctx);
+        BooleanFormula enc = useFixedMemoryEncoding ? memory.fixedMemoryEncoding(ctx) : memory.encode(ctx);
         for(Thread t : threads){
             enc = ctx.getFormulaManager().getBooleanFormulaManager().and(enc, t.encodeCF(ctx));
         }
@@ -291,49 +325,6 @@ public class Program {
     }
 
 
-
-    // ----------------------------- Preprocessing -----------------------------------
-
-    public void reorder() {
-        if (isUnrolled) {
-            throw new IllegalStateException("Reordering should be performed before unrolling.");
-        }
-
-        for (Thread t : getThreads()) {
-            t.reorderBranches();
-        }
-    }
-
-    public void eliminateDeadCode() {
-        if (isUnrolled) {
-            throw new IllegalStateException("Dead code elimination should be performed before unrolling.");
-        }
-        int id = 0;
-        for (Thread t : getThreads()) {
-            id = t.eliminateDeadCode(id);
-        }
-        cache = null;
-    }
-
-    public void simplify() {
-        // Some simplification are only applicable after others.
-        // Thus we apply them iteratively until we reach a fixpoint.
-        int size = getEvents().size();
-        logger.info("pre-simplification: " + size + " events");
-        one_step_simplify();
-        while(getEvents().size() != size) {
-            size = getEvents().size();
-            one_step_simplify();
-        }
-        logger.info("post-simplification: " + size + " events");
-    }
-
-    private void one_step_simplify() {
-        for(Thread thread : threads){
-            thread.simplify();
-        }
-        cache = null;
-    }
 
 
 }

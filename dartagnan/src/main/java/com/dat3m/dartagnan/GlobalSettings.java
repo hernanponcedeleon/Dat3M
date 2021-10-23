@@ -8,6 +8,8 @@ public class GlobalSettings {
 	private static final Logger logger = LogManager.getLogger(GlobalSettings.class);
 
     // === Parsing ===
+    //TODO: This is used in a static method and hence doesn't allow
+    // to be defined via a config file
     public static final boolean ATOMIC_AS_LOCK = false;
 
     // === WMM Assumptions ===

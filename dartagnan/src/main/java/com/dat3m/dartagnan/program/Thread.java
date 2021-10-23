@@ -4,8 +4,6 @@ import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
-import com.dat3m.dartagnan.program.utils.preprocessing.BranchReordering;
-import com.dat3m.dartagnan.program.utils.preprocessing.DeadCodeElimination;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -127,11 +125,6 @@ public class Thread {
         return id == ((Thread) obj).id;
     }
 
-    public void simplify() {
-        entry.simplify(null);
-        cache = null;
-    }
-
     public int setFId(int nextId) {
         nextId = entry.setFId(0);
         cache = null;
@@ -178,21 +171,6 @@ public class Thread {
     		}
     	}
     	return enc;
-    }
-
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // -------------------------------- Preprocessing -----------------------------------
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public int eliminateDeadCode(int startId) {
-        new DeadCodeElimination(this).apply(startId);
-        clearCache();
-        return getExit().getOId() + 1;
-    }
-    
-    public void reorderBranches() {
-        new BranchReordering(this).apply();
     }
 
 }
