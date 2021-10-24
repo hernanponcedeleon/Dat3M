@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
@@ -101,7 +100,9 @@ public class DartagnanBranchTest {
              ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
         {
             Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            VerificationTask task = VerificationTask.builder()
+                    .withSettings(settings)
+                    .build(program, wmm);
             assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
         } catch (Exception e){
             fail("Missing resource file");

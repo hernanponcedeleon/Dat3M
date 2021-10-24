@@ -52,7 +52,7 @@ public class UnusedTestFails {
 
 	@Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
-        String cat_file = GlobalSettings.ATOMIC_AS_LOCK ? "cat/svcomp-locks.cat" : "cat/svcomp.cat";
+        String cat_file = GlobalSettings.getInstance().shouldParseAtomicBlockAsLocks()  ? "cat/svcomp-locks.cat" : "cat/svcomp.cat";
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat_file));
 
         Settings s2 = new Settings(Alias.CFIS, 1, TIMEOUT);
@@ -73,7 +73,9 @@ public class UnusedTestFails {
              ProverEnvironment prover = ctx.newProverEnvironment(SolverContext.ProverOptions.GENERATE_MODELS))
         {
             Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, target, settings);
+            VerificationTask task = VerificationTask.builder()
+                    .withSettings(settings).withTarget(target)
+                    .build(program, wmm);
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
         } catch (Exception e){
             fail(e.getMessage());
@@ -86,7 +88,9 @@ public class UnusedTestFails {
              ProverEnvironment prover = ctx.newProverEnvironment(SolverContext.ProverOptions.GENERATE_MODELS))
         {
             Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, target, settings);
+            VerificationTask task = VerificationTask.builder()
+                    .withSettings(settings).withTarget(target)
+                    .build(program, wmm);
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
         } catch (Exception e){

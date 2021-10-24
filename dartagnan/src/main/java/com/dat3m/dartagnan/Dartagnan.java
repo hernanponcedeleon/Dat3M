@@ -26,7 +26,6 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
 
-import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.analysis.Base.*;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
 import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisSaturationSolver;
@@ -40,13 +39,14 @@ public class Dartagnan {
     public static void main(String[] args) throws Exception {
     	
     	CreateGitInfo();
-    	LogGlobalSettings();
+        Configuration config = Configuration.defaultConfiguration(); // TODO: We don't parse configs yet
+    	GlobalSettings.initializeFromConfig(config);
+    	GlobalSettings.log();
     	
         DartagnanOptions options = new DartagnanOptions();
         try {
             options.parse(args);
-        }
-        catch (Exception e){
+        } catch (Exception e){
             if(e instanceof UnsupportedOperationException){
                 System.out.println(e.getMessage());
             }
@@ -56,7 +56,7 @@ public class Dartagnan {
         }        
         
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
-        Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));        	
+        Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
 
         Arch target = p.getArch();
         if(target == null){
@@ -76,7 +76,9 @@ public class Dartagnan {
         }        
 
         Settings settings = options.getSettings();
-        VerificationTask task = new VerificationTask(p, mcm, witness, target, settings);
+        VerificationTask task = VerificationTask.builder()
+                .withConfig(config).withWitness(witness).withSettings(settings).withTarget(target)
+                .build(p, mcm);
 
         ShutdownManager sdm = ShutdownManager.create();
     	Thread t = new Thread(() -> {
@@ -93,12 +95,12 @@ public class Dartagnan {
 
     	try {
             t.start();
-            Configuration config = Configuration.builder()
+            Configuration solverConfig = Configuration.builder()
                     .setOption("solver.z3.usePhantomReferences", "true")
                     .build();
             try (SolverContext ctx = SolverContextFactory.createSolverContext(
-                    config,
-                    BasicLogManager.create(config),
+                    solverConfig,
+                    BasicLogManager.create(solverConfig),
                     sdm.getNotifier(),
                     options.getSMTSolver());
                  ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))

@@ -36,7 +36,7 @@ public class Label extends Event {
             predecessor.setSuccessor(successor);
         }
         if(next != null){
-            if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+            if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
                 return next.simplifyRecursive(prev, depth + 1);
             } else {
                 Event finalPrev = prev;

@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -52,7 +51,9 @@ public abstract class AbstractSvCompTest {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            VerificationTask task = VerificationTask.builder()
+                    .withSettings(settings)
+                    .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
             long solvingTime = System.currentTimeMillis() - start;
@@ -72,7 +73,9 @@ public abstract class AbstractSvCompTest {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            VerificationTask task = VerificationTask.builder()
+                    .withSettings(settings)
+                    .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisIncrementalSolver(ctx, prover, task));
             long solvingTime = System.currentTimeMillis() - start;
@@ -92,7 +95,9 @@ public abstract class AbstractSvCompTest {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            VerificationTask task = VerificationTask.builder()
+                    .withSettings(settings)
+                    .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
             long solvingTime = System.currentTimeMillis() - start;
@@ -112,7 +117,9 @@ public abstract class AbstractSvCompTest {
             String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
             expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            VerificationTask task = VerificationTask.builder()
+                    .withSettings(settings)
+                    .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));

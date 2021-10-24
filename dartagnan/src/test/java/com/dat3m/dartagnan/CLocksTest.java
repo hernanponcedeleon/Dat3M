@@ -28,9 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
-import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
-import static com.dat3m.dartagnan.utils.ResourceHelper.initialiseCSVFile;
+import static com.dat3m.dartagnan.utils.ResourceHelper.*;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static com.dat3m.dartagnan.wmm.utils.Arch.*;
@@ -176,7 +174,9 @@ public class CLocksTest {
              BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "assume"), true)))
         {
             Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, target, settings);
+            VerificationTask task = VerificationTask.builder()
+                    .withSettings(settings).withTarget(target)
+                    .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
             long solvingTime = System.currentTimeMillis() - start;
@@ -194,7 +194,9 @@ public class CLocksTest {
              BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement"), true)))
         {
             Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, target, settings);
+            VerificationTask task = VerificationTask.builder()
+                    .withSettings(settings).withTarget(target)
+                    .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));

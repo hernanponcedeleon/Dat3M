@@ -16,6 +16,8 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
+import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -41,13 +43,11 @@ public class VerificationTask {
     private final Arch target;
     private final Settings settings;
     private final Configuration config;
+    private BranchEquivalence branchEquivalence;
     private ThreadSymmetry threadSymmetry;
 
-    public VerificationTask(Program program, Wmm memoryModel, Arch target, Settings settings) {
-    	this(program, memoryModel, new WitnessGraph(), target, settings);
-    }
-    
-    public VerificationTask(Program program, Wmm memoryModel, WitnessGraph witness, Arch target, Settings settings) {
+    protected VerificationTask(Program program, Wmm memoryModel, WitnessGraph witness,
+                            Arch target, Settings settings, Configuration config) {
         this.program = program;
         this.memoryModel = memoryModel;
         this.witness = witness;
@@ -56,13 +56,60 @@ public class VerificationTask {
 
         try {
             //TODO: This should be a parameter and <target> as well as <settings> should directly be integrated
-            config = Configuration.builder()
-                    .copyFrom(settings.applyToConfig(Configuration.defaultConfiguration()))
+            // But for now we will use the VerificationTask as the point where different settings are merged into
+            // a config. From here on, all algorithms should be able to purely rely on configs.
+            this.config = Configuration.builder()
+                    .copyFrom(settings.applyToConfig(config))
                     .setOption("program.processing.compilationTarget", target.toString())
                     .build();
         } catch (InvalidConfigurationException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    public static VerificationTaskBuilder builder() {
+        return new VerificationTaskBuilder();
+    }
+
+    public static class VerificationTaskBuilder {
+        protected WitnessGraph witness = new WitnessGraph();
+        protected Arch target = Arch.NONE;
+        protected Settings settings = new Settings(Alias.CFIS, 1, 0);
+        protected Configuration config = Configuration.defaultConfiguration();
+
+        protected VerificationTaskBuilder() { }
+
+        public VerificationTaskBuilder withWitness(WitnessGraph witness) {
+            Preconditions.checkNotNull(witness, "Witness may not be null.");
+            this.witness = witness;
+            return this;
+        }
+
+        public VerificationTaskBuilder withTarget(Arch target) {
+            Preconditions.checkNotNull(target, "Target architecture may not be null");
+            this.target = target;
+            return this;
+        }
+
+        public VerificationTaskBuilder withSettings(Settings settings) {
+            Preconditions.checkNotNull(settings, "Settings may not be null");
+            this.settings = settings;
+            return this;
+        }
+
+        public VerificationTaskBuilder withConfig(Configuration config) {
+            Preconditions.checkNotNull(config, "Config may not be null");
+            this.config = config;
+            return this;
+        }
+
+        public VerificationTask build(Program program, Wmm memoryModel) {
+            return new VerificationTask(program, memoryModel, witness, target, settings, config);
+        }
+    }
+
+    public Configuration getConfig() {
+        return this.config;
     }
 
     public Program getProgram() {
@@ -94,7 +141,7 @@ public class VerificationTask {
     }
 
     public BranchEquivalence getBranchEquivalence() {
-        return program.getBranchEquivalence();
+        return branchEquivalence;
     }
 
     public DependencyGraph<Relation> getRelationDependencyGraph() {
@@ -102,10 +149,8 @@ public class VerificationTask {
     }
 
     public ThreadSymmetry getThreadSymmetry() {
-        if (!program.isCompiled()) {
-            throw new IllegalStateException("ThreadSymmetry is only available after compilation");
-        }
         if (threadSymmetry == null) {
+            Preconditions.checkState(program.isCompiled(), "Thread symmetry can only be computed after compilation.");
             threadSymmetry = new ThreadSymmetry(program);
         }
         return threadSymmetry;
@@ -118,19 +163,14 @@ public class VerificationTask {
         logger.info("#Events: " + program.getEvents().size());
         try {
             ConfigurableProcessor.fromConfig(config).run(program);
+            branchEquivalence = new BranchEquivalence(program, config);
         } catch (InvalidConfigurationException ex) {
             logger.warn("Configuration error when preprocessing program. Some preprocessing steps may have been skipped.");
         }
 
-
-        /*program.unroll(settings.getBound(), 0);
-        program.compile(target, 0);
-        if (GlobalSettings.ENABLE_SYMMETRY_REDUCTION) {
-            SymmetryReduction.newInstance().run(program);
-        }*/
         program.setFId(0); // This is used for symmetry breaking
 
-        if (GlobalSettings.ENABLE_DEBUG_OUTPUT) {
+        if (GlobalSettings.getInstance().shouldDebugPrintProgram()) {
             for (Thread t : program.getThreads()) {
                 System.out.println("========== Thread " + t.getId() + " ==============");
                 for (Event e : t.getEntry().getSuccessors()) {

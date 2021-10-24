@@ -37,7 +37,7 @@ public class FunCall extends Event {
 			predecessor.setSuccessor(next);
 		}
 		if(next != null){
-			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+			if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
 				return next.simplifyRecursive(prev, depth + 1);
 			} else {
 				Event finalNext = next;

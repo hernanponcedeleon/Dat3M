@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
@@ -17,7 +18,6 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.GlobalSettings.ANTISYMM_CO;
 import static com.dat3m.dartagnan.program.utils.EType.INIT;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
 import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
@@ -186,7 +186,7 @@ public class RelCo extends Relation {
     
     @Override
     public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
-        if(!ANTISYMM_CO) {
+        if(!GlobalSettings.getInstance().shouldEncodeAntiSymmCo()) {
             return super.getSMTVar(edge, ctx);
         }
 

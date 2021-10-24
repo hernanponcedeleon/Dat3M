@@ -2,83 +2,198 @@ package com.dat3m.dartagnan;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.*;
 
+@Options
 public class GlobalSettings {
-	
-	private static final Logger logger = LogManager.getLogger(GlobalSettings.class);
 
-    // === Parsing ===
-    //TODO: This is used in a static method and hence doesn't allow
-    // to be defined via a config file
-    public static final boolean ATOMIC_AS_LOCK = false;
+    private static final Logger logger = LogManager.getLogger(GlobalSettings.class);
 
-    // === WMM Assumptions ===
-    public static final boolean ASSUME_LOCAL_CONSISTENCY = true;
-    public static final boolean PERFORM_ATOMIC_BLOCK_OPTIMIZATION = true;
+    private static GlobalSettings instance;
 
-    // === Encoding ===
-    public static final boolean FIXED_MEMORY_ENCODING = false;
-    // NOTE: ALLOW_PARTIAL_MODELS does NOT work on Litmus tests due to their different assertion condition
+    public static GlobalSettings getInstance() {
+        if (instance == null) {
+            try {
+                initializeFromConfig(Configuration.defaultConfiguration());
+            } catch (InvalidConfigurationException ex) {
+                // We expect this to never happen for a default config
+                logger.error(ex.getMessage());
+                throw new RuntimeException(ex);
+            }
+        }
+        return instance;
+    }
+
+    public static void initializeFromConfig(Configuration config) throws InvalidConfigurationException {
+        instance = new GlobalSettings(config);
+    }
+
+    private GlobalSettings(Configuration config) throws InvalidConfigurationException {
+        config.inject(this);
+    }
+
+    // =========================== Configurables ===========================
+
+    @Option(name = "program.parsing.atomicBlocksAsLocks",
+            description = "Transforms atomic blocks by adding global locks.",
+            secure = true)
+    private boolean shouldParseAtomicBlockAsLocks = false;
+
+    public boolean shouldParseAtomicBlockAsLocks() { return shouldParseAtomicBlockAsLocks; }
+    public void setShouldParseAtomicBlockAsLocks(boolean value) { shouldParseAtomicBlockAsLocks = value; }
+
+    @Option(name = "encoding.useFixedMemory",
+            description = "Pre-assigns fixed values to dynamically allocated objects if possible.",
+            secure = true)
+    private boolean shouldUseFixedMemoryEncoding = false;
+
+    public boolean shouldUseFixedMemoryEncoding() { return shouldUseFixedMemoryEncoding; }
+    public void setShouldUseFixedMemoryEncoding(boolean value) { shouldUseFixedMemoryEncoding = value; }
+
+
     //TODO: This is not used right now. Some previous merge with the JavaSMT branch removed its usage
     // We will fix this later or remove this option completely.
-    public static final boolean ALLOW_PARTIAL_MODELS = false;
-    public static final boolean MERGE_CF_VARS = true; // ONLY has effect if ALLOW_PARTIAL_MODELS is 'false'
-    public static final boolean ANTISYMM_CO = false;
-    public static final boolean ENABLE_SYMMETRY_BREAKING = true;
+    @Option(name = "encoding.allowPartialExecutions",
+            description = "Allows to terminate executions on the first found violation." +
+                    "This is not allowed on Litmus tests due to their different assertion condition.",
+            secure = true)
+    private boolean shouldAllowPartialExecutions = false;
 
-    // === BranchEquivalence ===
-    public static final boolean MERGE_BRANCHES = true;
-    public static final boolean ALWAYS_SPLIT_ON_JUMP = false;
+    public boolean shouldAllowPartialExecutions() { return shouldAllowPartialExecutions; }
+    public void setShouldAllowPartialExecutions(boolean value) { shouldAllowPartialExecutions = value; }
 
-    // === Static analysis ===
-    public static final boolean PERFORM_DEAD_CODE_ELIMINATION = true;
-    public static final boolean PERFORM_REORDERING = true;
-    public static final boolean DETERMINISTIC_REORDERING = true;
-    public static final boolean ENABLE_SYMMETRY_REDUCTION = true;
+    @Option(name = "encoding.mergeCFVars",
+            description = "Merges control flow variables of events with identical control-flow behaviour.",
+            secure = true)
+    private boolean shouldMergeCFVars = true;
 
-    // ==== Refinement ====
-    public static final boolean REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM = true; // Uses acyclic(po-loc + rf) as baseline
-    public static final boolean REFINEMENT_ADD_ACYCLIC_DEP_RF = false; // Only takes effect if USE_BASELINE_WMM is set to TRUE
+    public boolean shouldMergeCFVars() { return shouldMergeCFVars; }
+    public void setShouldMergeCFVars(boolean value) { shouldMergeCFVars = value; }
+
+    @Option(name = "encoding.antiSymmCo",
+            description = "Encodes the antisymmetry of coherences explicitly.",
+            secure = true)
+    private boolean shouldEncodeAntiSymmCo = false;
+
+    public boolean shouldEncodeAntiSymmCo() { return shouldEncodeAntiSymmCo; }
+    public void setShouldEncodeAntiSymmCo(boolean value) { shouldEncodeAntiSymmCo = value; }
+
+    @Option(name = "encoding.enableSymmetryBreaking",
+            description = "Adds a symmetry breaking formula to the encoding. " +
+                    "This is unsound if the program contains assertions that distinguish symmetric threads.",
+            secure = true)
+    private boolean symmetryBreakingEnabled = false;
+
+    public boolean isSymmetryBreakingEnabled() { return symmetryBreakingEnabled ; }
+    public void setIsSymmetryBreakingEnabled(boolean value) { symmetryBreakingEnabled  = value; }
+
+    @Option(name = "wmm.assumeLocalConsistency",
+            description = "Assumes local consistency for all created wmms.",
+            secure = true)
+    private boolean shouldWmmAssumeLocalConsistency = true;
+
+    public boolean shouldWmmAssumeLocalConsistency() { return shouldWmmAssumeLocalConsistency; }
+    public void setShouldWmmAssumeLocalConsistency(boolean value) { shouldWmmAssumeLocalConsistency = value; }
+
+    @Option(name = "wmm.respectsAtomicBlocks",
+            description = "Assumes the WMM respects atomic blocks for optimization (only the case for SVCOMP right now).",
+            secure = true)
+    private boolean doesWmmRespectAtomicBlocks = true;
+
+    public boolean doesWmmRespectAtomicBlocks() { return doesWmmRespectAtomicBlocks; }
+    public void setDoesWmmRespectAtomicBlocks(boolean value) { doesWmmRespectAtomicBlocks = value; }
+
+
+    //TODO: The following options get replaced when the new Refinement branch gets merged.
+    @Option(name = "refinement.assumeLocallyConsistentWMM",
+            description = "Refinement will start from a locally consistent baseline WMM instead of the empty one.",
+            secure = true)
+    private boolean shouldRefinementUseLocallyConsistentBaselineWmm = false;
+
+    public boolean shouldRefinementUseLocallyConsistentBaselineWMM() { return shouldRefinementUseLocallyConsistentBaselineWmm; }
+    public void setShouldRefinementUseLocallyConsistentBaselineWMM(boolean value) { shouldRefinementUseLocallyConsistentBaselineWmm = value; }
+
+    @Option(name = "refinement.assumeNoOOTA",
+            description = "Refinement will start from a baseline WMM that does not allow Out-Of-Thin-Air behaviour.",
+            secure = true)
+    private boolean shouldRefinementUseNoOOTABaselineWMM = false;
+
+    public boolean shouldRefinementUseNoOOTABaselineWMM() { return shouldRefinementUseNoOOTABaselineWMM; }
+    public void setShouldRefinementUseNoOOTABaselineWMM(boolean value) { shouldRefinementUseNoOOTABaselineWMM = value; }
+
 
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
-    public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.FULL;
+    @Option(name = "refinement.symmetryLearning",
+            description = "Refinement will learn symmetries if possible.",
+            secure = true,
+            toUppercase = true)
+    private SymmetryLearning refinementSymmetryLearning = SymmetryLearning.FULL;
 
-    // ==== Saturation ====
-    public static boolean SATURATION_ENABLE_DEBUG = false;
-    public static final int SATURATION_MAX_DEPTH = 3;
+    public SymmetryLearning getRefinementSymmetryLearning() { return refinementSymmetryLearning; }
+    public void setRefinementSymmetryLearning(SymmetryLearning value) { refinementSymmetryLearning = value; }
 
-    // --------------------
+    @Option(name = "saturation.enableDebug",
+            description = "Enables debugging of the Saturation algorithm.",
+            secure = true)
+    private boolean saturationDebugEnabled = false;
 
-    // === Recursion depth ===
-    public static final int MAX_RECURSION_DEPTH = 200;
+    public boolean isSaturationDebugEnabled() { return saturationDebugEnabled; }
+    public void setIsSaturationDebugEnabled(boolean value) { saturationDebugEnabled = value; }
 
-    // === Debug ===
-    public static final boolean ENABLE_DEBUG_OUTPUT = false;
 
-    public static void LogGlobalSettings() {
-        // General settings
-    	logger.info("ATOMIC_AS_LOCK: " + ATOMIC_AS_LOCK);
-    	logger.info("ASSUME_LOCAL_CONSISTENCY: " + ASSUME_LOCAL_CONSISTENCY);
-    	logger.info("PERFORM_ATOMIC_BLOCK_OPTIMIZATION: " + PERFORM_ATOMIC_BLOCK_OPTIMIZATION);
-    	logger.info("MERGE_CF_VARS: " + MERGE_CF_VARS);
-    	logger.info("ALLOW_PARTIAL_MODELS: " + ALLOW_PARTIAL_MODELS);
-    	logger.info("ANTISYMM_CO: " + ANTISYMM_CO);
-    	logger.info("MERGE_BRANCHES: " + MERGE_BRANCHES);
-    	logger.info("ALWAYS_SPLIT_ON_JUMP: " + ALWAYS_SPLIT_ON_JUMP);
-    	logger.info("PERFORM_DEAD_CODE_ELIMINATION: " + PERFORM_DEAD_CODE_ELIMINATION);
-    	logger.info("PERFORM_REORDERING: " + PERFORM_REORDERING);
-    	logger.info("ENABLE_SYMMETRY_BREAKING: " + ENABLE_SYMMETRY_BREAKING);
-        logger.info("ENABLE_SYMMETRY_REDUCTION: " + ENABLE_SYMMETRY_REDUCTION);
-    	logger.info("MAX_RECURSION_DEPTH: " + MAX_RECURSION_DEPTH);
-    	logger.info("ENABLE_DEBUG_OUTPUT: " + ENABLE_DEBUG_OUTPUT);
+    @Option(name = "saturation.maxDepth",
+            description = "Sets the maximal saturation depth.",
+            secure = true)
+    @IntegerOption(min = 0)
+    private int saturationMaxDepth = 3;
 
-    	// Refinement settings
-    	logger.info("REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM: " + REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM);
-    	logger.info("REFINEMENT_ADD_ACYCLIC_DEP_RF: " + REFINEMENT_ADD_ACYCLIC_DEP_RF);
-    	logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());
+    public int getSaturationMaxDepth() { return saturationMaxDepth; }
+    public void setSaturationMaxDepth(int value) { saturationMaxDepth = value; }
 
-    	// Saturation settings
-        logger.info("SATURATION_ENABLE_DEBUG: " + SATURATION_ENABLE_DEBUG);
-        logger.info("SATURATION_MAX_DEPTH: " + SATURATION_MAX_DEPTH);
+    //TODO: End of options that will be replaced
+
+    // TODO: This option does not need to be exposed. Setting some value we are comfortable with should be enough.
+    @Option(name = "general.maxRecursion",
+            description = "Sets the maximal recursion depth before the call stack gets cleared." +
+                    "A high limit may cause stack overflow exceptions.",
+            secure = true)
+    @IntegerOption(min = 1)
+    private int maxRecursionDepth = 200;
+
+    public int getMaxRecursionDepth() { return maxRecursionDepth; }
+    public void setMaxRecursionDepth(int value) { maxRecursionDepth = value; }
+
+    @Option(name = "program.debugPrint",
+            description = "Prints the program after all processing steps and before verification for debug purposes.",
+            secure = true)
+    private boolean shouldDebugPrintProgram = false;
+
+    public boolean shouldDebugPrintProgram () { return shouldDebugPrintProgram ; }
+    public void setShouldDebugPrintProgram(boolean value) { shouldDebugPrintProgram  = value; }
+
+    // =====================================================================
+
+    public static void log() {
+        getInstance().logPrivate();
     }
+
+    private void logPrivate() {
+        logger.info("ATOMIC_AS_LOCK: " + shouldParseAtomicBlockAsLocks);
+        logger.info("MERGE_CF_VARS: " + shouldMergeCFVars);
+        logger.info("ALLOW_PARTIAL_MODELS: " + shouldAllowPartialExecutions);
+        logger.info("ANTISYMM_CO: " + shouldEncodeAntiSymmCo);
+        logger.info("ENABLE_SYMMETRY_BREAKING: " + symmetryBreakingEnabled);
+        logger.info("MAX_RECURSION_DEPTH: " + maxRecursionDepth);
+        logger.info("ENABLE_DEBUG_OUTPUT: " + shouldDebugPrintProgram);
+
+        // Refinement settings
+        logger.info("REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM: " + shouldRefinementUseLocallyConsistentBaselineWmm);
+        logger.info("REFINEMENT_ADD_ACYCLIC_DEP_RF: " + shouldRefinementUseNoOOTABaselineWMM);
+        logger.info("REFINEMENT_SYMMETRY_LEARNING: " + refinementSymmetryLearning.name());
+
+        // Saturation settings
+        logger.info("SATURATION_ENABLE_DEBUG: " + saturationDebugEnabled);
+        logger.info("SATURATION_MAX_DEPTH: " + saturationMaxDepth);
+    }
+
 }

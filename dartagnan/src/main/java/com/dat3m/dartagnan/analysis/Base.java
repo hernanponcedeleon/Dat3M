@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.analysis;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -7,7 +8,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
 
-import static com.dat3m.dartagnan.GlobalSettings.ENABLE_SYMMETRY_BREAKING;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static java.util.Collections.singletonList;
@@ -33,7 +33,7 @@ public class Base {
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
         prover.addConstraint(task.encodeWitness(ctx));
-        if (ENABLE_SYMMETRY_BREAKING) {
+        if (GlobalSettings.getInstance().isSymmetryBreakingEnabled()) {
             prover.addConstraint(task.encodeSymmetryBreaking(ctx));
         }
         logger.info("Starting push()");
@@ -72,7 +72,7 @@ public class Base {
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
         prover.addConstraint(task.encodeWitness(ctx));
-        if (ENABLE_SYMMETRY_BREAKING) {
+        if (GlobalSettings.getInstance().isSymmetryBreakingEnabled()) {
             prover.addConstraint(task.encodeSymmetryBreaking(ctx));
         }
         
@@ -125,7 +125,7 @@ public class Base {
 		prover1.addConstraint(encodeWitness);
         prover2.addConstraint(encodeWitness);
 
-        if (ENABLE_SYMMETRY_BREAKING) {
+        if (GlobalSettings.getInstance().isSymmetryBreakingEnabled()) {
             prover1.addConstraint(task.encodeSymmetryBreaking(ctx));
             prover2.addConstraint(task.encodeSymmetryBreaking(ctx));
         }

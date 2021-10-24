@@ -112,7 +112,7 @@ public class SaturationSolver {
     private void populateFromModel(Model model, SolverContext ctx) {
         executionModel.initialize(model, ctx, false);
         execGraph.initializeFromModel(executionModel);
-        if (GlobalSettings.SATURATION_ENABLE_DEBUG) {
+        if (GlobalSettings.getInstance().isSaturationDebugEnabled()) {
             testIteration();
             testStaticGraphs();
         }
@@ -240,7 +240,7 @@ public class SaturationSolver {
         // ==============================
 
         stats.searchTime = System.currentTimeMillis() - curTime;
-        if (GlobalSettings.SATURATION_ENABLE_DEBUG && result.getStatus() == CONSISTENT) {
+        if (GlobalSettings.getInstance().isSaturationDebugEnabled() && result.getStatus() == CONSISTENT) {
             testCoherence();
         }
         return result;

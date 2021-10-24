@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program;
 
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
@@ -16,12 +17,8 @@ import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
@@ -31,41 +28,7 @@ import java.util.*;
 
 import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
 
-@Options(prefix = "program")
 public class Program {
-
-    private final static Logger logger = LogManager.getLogger(Program.class);
-
-    // =========================== Configurables ===========================
-    private Configuration config;
-
-    // We would like to automatically detect local consistency but for now we make it a configuration option
-    @Option(name = "encoding.useFixedMemory",
-            description = "Pre-assigns fixed values to dynamically allocated objects if possible.",
-            secure = true)
-    private boolean useFixedMemoryEncoding = false;
-
-    public boolean usesFixedMemoryEncoding() { return useFixedMemoryEncoding; }
-    public void setUseFixedMemoryEncoding(boolean value) { useFixedMemoryEncoding = value; }
-
-    @Option(name = "encoding.allowPartialExecutions",
-            description = "Allows to terminate executions on the first found violation.",
-            secure = true)
-    private boolean allowPartialExecutions = false;
-
-    public boolean allowsPartialExecutions() { return allowPartialExecutions; }
-    public void setAllowPartialExecutions(boolean value) { allowPartialExecutions = value; }
-
-    @Option(name = "encoding.mergeCFVars",
-            description = "Merges control flow variables of events with identical control-flow behaviour.",
-            secure = true)
-    private boolean mergeCFVars = true;
-
-    public boolean mergesCFVars() { return mergeCFVars; }
-    public void setMergeCFVars(boolean value) { mergeCFVars = value; }
-
-
-    // =====================================================================
 
     private String name;
 	private AbstractAssert ass;
@@ -78,7 +41,6 @@ public class Program {
     private boolean isUnrolled;
     private boolean isCompiled;
     private VerificationTask task;
-    private BranchEquivalence branchEquivalence;
 
     public Program(Memory memory, ImmutableSet<Location> locations){
         this("", memory, locations);
@@ -90,6 +52,7 @@ public class Program {
 		this.locations = locations;
 		this.threads = new ArrayList<>();
 	}
+
 
 	public boolean isCompiled(){
         return isCompiled;
@@ -170,13 +133,6 @@ public class Program {
 		return events;
 	}
 
-    public BranchEquivalence getBranchEquivalence() {
-        if (branchEquivalence == null) {
-            branchEquivalence = new BranchEquivalence(this);
-        }
-        return branchEquivalence;
-    }
-
 	public void updateAssertion() {
 		if(ass != null) {
 			return;
@@ -229,9 +185,8 @@ public class Program {
     // -----------------------------------------------------------------------------------------------------------------
 
     public void initialise(VerificationTask task, SolverContext ctx) {
-        if (!isCompiled) {
-            throw new IllegalStateException("The program needs to be compiled first.");
-        }
+        Preconditions.checkState(isCompiled, "The program needs to be compiled first.");
+
         this.task = task;
         for(Event e : getEvents()){
             e.initialise(task, ctx);
@@ -239,11 +194,10 @@ public class Program {
     }
 
     public BooleanFormula encodeCF(SolverContext ctx) {
-        if (this.task == null) {
-            throw new RuntimeException("The program needs to get initialised first.");
-        }
+        Preconditions.checkState(task != null, "The program needs to get initialized for encoding first.");
 
-        BooleanFormula enc = useFixedMemoryEncoding ? memory.fixedMemoryEncoding(ctx) : memory.encode(ctx);
+        BooleanFormula enc = GlobalSettings.getInstance().shouldUseFixedMemoryEncoding() ?
+                memory.fixedMemoryEncoding(ctx) : memory.encode(ctx);
         for(Thread t : threads){
             enc = ctx.getFormulaManager().getBooleanFormulaManager().and(enc, t.encodeCF(ctx));
         }
@@ -251,12 +205,10 @@ public class Program {
     }
 
     public BooleanFormula encodeFinalRegisterValues(SolverContext ctx){
+        Preconditions.checkState(task != null, "The program needs to get initialized for encoding first.");
+
         FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-
-        if (this.task == null) {
-            throw new RuntimeException("The program needs to get initialised first.");
-        }
 
         Map<Register, List<Event>> eMap = new HashMap<>();
         for(Event e : getCache().getEvents(FilterBasic.get(EType.REG_WRITER))){
@@ -265,7 +217,7 @@ public class Program {
             eMap.get(reg).add(e);
         }
 
-        BranchEquivalence eq = getBranchEquivalence();
+        BranchEquivalence eq = task.getBranchEquivalence();
 		BooleanFormula enc = bmgr.makeTrue();
         for (Register reg : eMap.keySet()) {
             Thread thread = threads.get(reg.getThreadId());
@@ -305,9 +257,7 @@ public class Program {
     }
     
     public BooleanFormula encodeNoBoundEventExec(SolverContext ctx){
-        if (this.task == null) {
-            throw new RuntimeException("The program needs to get initialised first.");
-        }
+        Preconditions.checkState(task != null, "The program needs to get initialized for encoding first.");
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();

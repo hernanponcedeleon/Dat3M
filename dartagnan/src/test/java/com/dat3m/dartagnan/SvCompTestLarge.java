@@ -23,7 +23,7 @@ public class SvCompTestLarge extends AbstractSvCompTest {
 
 	@Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
-        String cat_file = GlobalSettings.ATOMIC_AS_LOCK ? "cat/svcomp-locks.cat" : "cat/svcomp.cat";
+        String cat_file = GlobalSettings.getInstance().shouldParseAtomicBlockAsLocks() ? "cat/svcomp-locks.cat" : "cat/svcomp.cat";
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat_file));
 
         Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);

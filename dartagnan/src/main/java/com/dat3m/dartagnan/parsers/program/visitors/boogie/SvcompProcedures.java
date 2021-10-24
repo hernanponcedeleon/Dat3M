@@ -50,14 +50,14 @@ public class SvcompProcedures {
 			__VERIFIER_assume(visitor, ctx);
 			break;
 		case "__VERIFIER_atomic_begin":
-			if(GlobalSettings.ATOMIC_AS_LOCK) {
+			if(GlobalSettings.getInstance().shouldParseAtomicBlockAsLocks()) {
 				__VERIFIER_atomic(visitor, true);
 			} else {
 				__VERIFIER_atomic_begin(visitor);	
 			}
 			break;
 		case "__VERIFIER_atomic_end":
-			if(GlobalSettings.ATOMIC_AS_LOCK) {
+			if(GlobalSettings.getInstance().shouldParseAtomicBlockAsLocks()) {
 				__VERIFIER_atomic(visitor, false);
 			} else {
 				__VERIFIER_atomic_end(visitor);

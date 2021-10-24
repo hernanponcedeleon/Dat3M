@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
@@ -210,7 +209,7 @@ public class RelRf extends Relation {
     }
 
     private void atomicBlockOptimization() {
-        if (!GlobalSettings.PERFORM_ATOMIC_BLOCK_OPTIMIZATION) {
+        if (!task.getMemoryModel().doesRespectAtomicBlocks()) {
             return;
         }
 

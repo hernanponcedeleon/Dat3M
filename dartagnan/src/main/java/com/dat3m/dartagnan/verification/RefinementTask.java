@@ -10,10 +10,10 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
+import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_ADD_ACYCLIC_DEP_RF;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 /*
@@ -22,24 +22,60 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
  baseline memory model and refines it iteratively towards the target memory model.
  Currently, we only have a Saturation-based solver to solve such tasks but any CEGAR-like approach could be used.
  */
+//TODO: We don't make SaturationDepth etc. an option, because
+// this class gets reworked in the Experimental branch!
 public class RefinementTask extends VerificationTask {
 
     private final Wmm baselineModel;
 
-    public RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, WitnessGraph witness, Arch target,
-                          Settings settings) {
-        super(program, targetMemoryModel, witness, target, settings);
+    private RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, WitnessGraph witness, Arch target,
+                          Settings settings, Configuration config) {
+        super(program, targetMemoryModel, witness, target, settings, config);
         this.baselineModel = baselineModel;
+    }
+
+    public static class RefinementTaskBuilder extends VerificationTaskBuilder {
+
+        private Wmm baselineModel;
+
+        @Override
+        public RefinementTaskBuilder withWitness(WitnessGraph witness) {
+            super.withWitness(witness);
+            return this;
+        }
+
+        @Override
+        public RefinementTaskBuilder withTarget(Arch target) {
+            super.withTarget(target);
+            return this;
+        }
+
+        @Override
+        public RefinementTaskBuilder withSettings(Settings settings) {
+            super.withSettings(settings);
+            return this;
+        }
+
+        @Override
+        public RefinementTaskBuilder withConfig(Configuration config) {
+            super.withConfig(config);
+            return this;
+        }
+
+        public RefinementTaskBuilder withBaselineWMM(Wmm baselineModel) {
+            this.baselineModel = baselineModel;
+            return this;
+        }
+
+        @Override
+        public RefinementTask build(Program program, Wmm memoryModel) {
+            Wmm baseline = baselineModel == null ? createDefaultWmm() : baselineModel;
+            return new RefinementTask(program, memoryModel, baseline, witness, target, settings, config);
+        }
     }
 
     public Wmm getBaselineModel() {
         return baselineModel;
-    }
-
-    // For now, we return a constant. But we can add options for this later on.
-    //TODO: This is a Saturation-specific information and should not be part of this class
-    public int getMaxSaturationDepth() {
-        return GlobalSettings.SATURATION_MAX_DEPTH;
     }
 
     public BooleanFormula encodeBaselineWmmRelations(SolverContext ctx) {
@@ -63,7 +99,8 @@ public class RefinementTask extends VerificationTask {
                 createDefaultWmm(),
                 task.getWitness(),
                 task.getTarget(),
-                task.getSettings()
+                task.getSettings(),
+                task.getConfig()
         );
     }
 
@@ -71,7 +108,9 @@ public class RefinementTask extends VerificationTask {
         Wmm baseline = new Wmm();
         baseline.setEncodeCo(false);
 
-        if (!GlobalSettings.REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM) {
+        GlobalSettings gSet = GlobalSettings.getInstance();
+
+        if (!gSet.shouldRefinementUseLocallyConsistentBaselineWMM()) {
             return baseline;
         }
 
@@ -86,7 +125,7 @@ public class RefinementTask extends VerificationTask {
         baseline.addAxiom(new Acyclic(porf));
 
         // ---- acyclic (dep | rf) ----
-        if (REFINEMENT_ADD_ACYCLIC_DEP_RF) {
+        if (gSet.shouldRefinementUseNoOOTABaselineWMM()) {
             Relation data = repo.getRelation(DATA);
             Relation ctrl = repo.getRelation(CTRL);
             Relation addr = repo.getRelation(ADDR);

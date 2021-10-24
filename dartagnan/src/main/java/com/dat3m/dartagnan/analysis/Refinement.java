@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.analysis;
 
+import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.GlobalSettings.SymmetryLearning;
 import com.dat3m.dartagnan.analysis.saturation.SaturationSolver;
 import com.dat3m.dartagnan.analysis.saturation.SolverResult;
 import com.dat3m.dartagnan.analysis.saturation.SolverStatistics;
@@ -32,7 +34,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-import static com.dat3m.dartagnan.GlobalSettings.*;
 import static com.dat3m.dartagnan.analysis.saturation.SolverStatus.INCONCLUSIVE;
 import static com.dat3m.dartagnan.analysis.saturation.SolverStatus.INCONSISTENT;
 import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
@@ -88,7 +89,7 @@ public class Refinement {
         prover.addConstraint(task.encodeProgram(ctx));
         prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
         prover.addConstraint(task.encodeBaselineWmmConsistency(ctx));
-        if (ENABLE_SYMMETRY_BREAKING) {
+        if (GlobalSettings.getInstance().isSymmetryBreakingEnabled()) {
             prover.addConstraint(task.encodeSymmetryBreaking(ctx));
         }
 
@@ -116,7 +117,7 @@ public class Refinement {
 
             SolverResult solverResult;
             try (Model model = prover.getModel()) {
-                solverResult = saturationSolver.check(model, ctx, task.getMaxSaturationDepth());
+                solverResult = saturationSolver.check(model, ctx, GlobalSettings.getInstance().getSaturationMaxDepth());
             }
 
             SolverStatistics stats = solverResult.getStatistics();
@@ -276,7 +277,7 @@ public class Refinement {
         public Refiner(RefinementTask task, SolverContext ctx) {
             this.task = task;
             this.context = ctx;
-            symmPermutations = computeSymmetryPermutations(REFINEMENT_SYMMETRY_LEARNING);
+            symmPermutations = computeSymmetryPermutations(GlobalSettings.getInstance().getRefinementSymmetryLearning());
         }
 
 

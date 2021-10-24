@@ -41,7 +41,9 @@ public class ReachabilityResult {
     private void run(){
         if(validate()){
             Arch arch = program.getArch() != null ? program.getArch() : options.getTarget();
-            VerificationTask task = new VerificationTask(program, wmm, arch, options.getSettings());
+            VerificationTask task = VerificationTask.builder()
+                    .withSettings(options.getSettings()).withTarget(arch)
+                    .build(program, wmm);
             Result result = Result.UNKNOWN;
 
             ShutdownManager sdm = ShutdownManager.create();

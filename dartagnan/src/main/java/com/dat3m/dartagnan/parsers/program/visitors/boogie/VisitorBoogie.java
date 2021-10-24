@@ -365,7 +365,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(name.contains("__VERIFIER_atomic_")) {
 			atomicMode = ctx;
-			if(GlobalSettings.ATOMIC_AS_LOCK) {
+			if(GlobalSettings.getInstance().shouldParseAtomicBlockAsLocks()) {
 				SvcompProcedures.__VERIFIER_atomic(this, true);	
 			} else {
 				currentBeginAtomic = EventFactory.Svcomp.newBeginAtomic();
@@ -393,7 +393,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
 			atomicMode = null;
-			if(GlobalSettings.ATOMIC_AS_LOCK) {
+			if(GlobalSettings.getInstance().shouldParseAtomicBlockAsLocks()) {
 				SvcompProcedures.__VERIFIER_atomic(this, false);	
 			} else {
 				if(currentBeginAtomic == null) {

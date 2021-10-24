@@ -113,7 +113,7 @@ public class CondJump extends Event implements RegReaderData {
             predecessor.setSuccessor(next);
         }
         if(next != null){
-            if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+            if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
                 return next.simplifyRecursive(prev, depth + 1);
             } else {
                 Event finalNext = next;
@@ -152,7 +152,7 @@ public class CondJump extends Event implements RegReaderData {
                 predecessor.setSuccessor(next);
             }
             if(successor != null) {
-                if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+                if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
                     return successor.unrollRecursive(bound, next, depth + 1);
                 } else {
                     Event finalNext = next;

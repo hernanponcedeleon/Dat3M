@@ -177,7 +177,9 @@ public class CLocksTestLarge {
              BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "assume"), true)))
         {
             Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, target, settings);
+            VerificationTask task = VerificationTask.builder()
+                    .withSettings(settings).withTarget(target)
+                    .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
             long solvingTime = System.currentTimeMillis() - start;
@@ -195,7 +197,9 @@ public class CLocksTestLarge {
              BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement"), true)))
         {
             Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, target, settings);
+            VerificationTask task = VerificationTask.builder()
+                    .withSettings(settings).withTarget(target)
+                    .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));

@@ -118,7 +118,7 @@ public abstract class Event implements Comparable<Event> {
 	protected RecursiveAction getSuccessorsRecursive(List<Event> list, int depth) {
 		list.add(this);
 		if (successor != null) {
-			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+			if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
 				return successor.getSuccessorsRecursive(list, depth + 1);
 			} else {
 				return RecursiveAction.call(() -> successor.getSuccessorsRecursive(list, 0));
@@ -173,7 +173,7 @@ public abstract class Event implements Comparable<Event> {
 
     protected RecursiveAction simplifyRecursive(Event predecessor, int depth) {
 		if (successor != null) {
-			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+			if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
 				return successor.simplifyRecursive(this, depth + 1);
 			} else {
 				return RecursiveAction.call(() -> successor.simplifyRecursive(this, 0));
@@ -189,7 +189,7 @@ public abstract class Event implements Comparable<Event> {
 	public RecursiveFunction<Integer> setFIdRecursive(int nextId, int depth) {
 		fId = nextId;
 		if (successor != null) {
-			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+			if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
 				return successor.setFIdRecursive(nextId + 1, depth + 1);
 			} else {
 				return RecursiveFunction.call(() -> successor.setFIdRecursive(nextId + 1, 0));
@@ -209,7 +209,7 @@ public abstract class Event implements Comparable<Event> {
 	protected RecursiveFunction<Integer> setUIdRecursive(int nextId, int depth) {
 		uId = nextId;
 		if (successor != null) {
-			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+			if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
 				return successor.setUIdRecursive(nextId + 1, depth + 1);
 			} else {
 				return RecursiveFunction.call(() -> successor.setUIdRecursive(nextId + 1, 0));
@@ -237,7 +237,7 @@ public abstract class Event implements Comparable<Event> {
 			predecessor.setSuccessor(copy);
 		}
 		if(successor != null) {
-			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+			if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
 				return successor.unrollRecursive(bound, copy, depth + 1);
 			} else {
 				Event finalCopy = copy;
@@ -272,7 +272,7 @@ public abstract class Event implements Comparable<Event> {
 	protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
 		cId = nextId++;
 		if(successor != null){
-			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+			if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
 				return successor.compileRecursive(target, nextId, this, depth + 1);
 			} else {
 				int finalNextId = nextId;
@@ -292,7 +292,7 @@ public abstract class Event implements Comparable<Event> {
 		}
 		if(successor != null){
 			predecessor.successor = successor;
-			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+			if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
 				return successor.compileRecursive(target, nextId, predecessor, depth + 1);
 			} else {
 				Event finalPredecessor = predecessor;
@@ -320,8 +320,9 @@ public abstract class Event implements Comparable<Event> {
 		this.symmId = getThread().getName() + "-" + fId;
 		this.task = task;
 		FormulaManager fmgr = ctx.getFormulaManager();
-		String repr = GlobalSettings.MERGE_CF_VARS && !GlobalSettings.ALLOW_PARTIAL_MODELS
-				? task.getBranchEquivalence().getRepresentative(this).repr() : repr();
+		GlobalSettings gSet = GlobalSettings.getInstance();
+		boolean mergeVars = gSet.shouldMergeCFVars() && !gSet.shouldAllowPartialExecutions();
+		String repr = mergeVars ? task.getBranchEquivalence().getRepresentative(this).repr() : repr();
 		cfVar = fmgr.makeVariable(BooleanType, "cf(" + repr + ")");
 		//listeners.removeIf(x -> x.getCId() < 0);
 	}
