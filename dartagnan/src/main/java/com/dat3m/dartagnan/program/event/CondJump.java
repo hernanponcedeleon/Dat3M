@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -25,12 +26,9 @@ public class CondJump extends Event implements RegReaderData {
     private final ImmutableSet<Register> dataRegs;
 
     public CondJump(BExpr expr, Label label){
-        if(label == null){
-            throw new IllegalArgumentException("CondJump event requires non null label event");
-        }
-        if(expr == null){
-            throw new IllegalArgumentException("CondJump event requires non null expression");
-        }
+        Preconditions.checkNotNull(expr, "CondJump event requires non-null expression.");
+        Preconditions.checkNotNull(label, "CondJump event requires non-null target label.");
+
         this.label = label;
         this.label.addListener(this);
         this.thread = label.getThread();
@@ -71,8 +69,9 @@ public class CondJump extends Event implements RegReaderData {
     @Override
     public void setThread(Thread thread) {
         super.setThread(thread);
-        if (label != null)
+        if (label != null) {
             label.setThread(thread);
+        }
     }
 
     @Override
@@ -175,9 +174,7 @@ public class CondJump extends Event implements RegReaderData {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        if(successor == null){
-            throw new RuntimeException("Malformed CondJump event");
-        }
+        Preconditions.checkState(successor != null, "Malformed CondJump event has no successor.");
         return super.compileRecursive(target, nextId, predecessor, depth);
     }
 

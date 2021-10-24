@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -24,12 +25,9 @@ public class Thread {
     private ThreadCache cache;
 
     public Thread(String name, int id, Event entry){
-        if(id < 0){
-            throw new IllegalArgumentException("Invalid thread ID");
-        }
-        if(entry == null){
-            throw new IllegalArgumentException("Thread entry event must be not null");
-        }
+        Preconditions.checkArgument(id >= 0, "Thread id must be non-negative.");
+        Preconditions.checkNotNull(entry, "Thread entry event must be not null.");
+
         entry.setThread(this);
         this.name = name;
         this.id = id;
@@ -74,9 +72,8 @@ public class Thread {
     }
 
     public Register addRegister(String name, int precision){
-        if(registers.containsKey(name)){
-            throw new RuntimeException("Register " + id + ":" + name + " already exists");
-        }
+        Preconditions.checkState(!registers.containsKey(name), "Register %s : %s already exists", id, name);
+
         cache = null;
         Register register = new Register(name, id, precision);
         registers.put(register.getName(), register);

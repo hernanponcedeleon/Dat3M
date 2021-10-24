@@ -29,7 +29,7 @@ import java.io.File;
 import static com.dat3m.dartagnan.analysis.Base.*;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
 import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisSaturationSolver;
-import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
+import static com.dat3m.dartagnan.utils.GitInfo.createGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 
 public class Dartagnan {
@@ -38,7 +38,7 @@ public class Dartagnan {
 	
     public static void main(String[] args) throws Exception {
     	
-    	CreateGitInfo();
+    	createGitInfo();
         Configuration config = Configuration.defaultConfiguration(); // TODO: We don't parse configs yet
     	GlobalSettings.initializeFromConfig(config);
     	GlobalSettings.log();

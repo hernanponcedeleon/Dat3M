@@ -74,8 +74,9 @@ public class DeadCodeElimination implements ProgramProcessor {
     }
 
     private void computeReachableEvents(Event e, Set<Event> reachable) {
-        if (reachable.contains(e))
+        if (reachable.contains(e)) {
             return;
+        }
 
         while (e != null && reachable.add(e)) {
             if (e instanceof CondJump) {

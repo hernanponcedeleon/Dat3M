@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
@@ -70,43 +71,34 @@ public class Location implements ExprInterface {
 
 	@Override
 	public Formula toIntFormula(Event e, SolverContext ctx){
-		if(e instanceof MemEvent){
-			return ((MemEvent) e).getMemValueExpr();
-		}
-		throw new RuntimeException("Attempt to encode memory value for illegal event");
+		Preconditions.checkArgument(e instanceof MemEvent, "Attempt to encode memory value for illegal event %s", e);
+		return ((MemEvent) e).getMemValueExpr();
 	}
 
 	@Override
 	public BooleanFormula toBoolFormula(Event e, SolverContext ctx){
-		if(e instanceof MemEvent){
-			IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
-			return imgr.greaterThan((IntegerFormula)((MemEvent) e).getMemValueExpr(), imgr.makeNumber(BigInteger.ZERO));
-		}
-		throw new RuntimeException("Attempt to encode memory value for illegal event");
+		Preconditions.checkArgument(e instanceof MemEvent, "Attempt to encode memory value for illegal event %s", e);
+		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+		return imgr.greaterThan((IntegerFormula)((MemEvent) e).getMemValueExpr(), imgr.makeNumber(BigInteger.ZERO));
 	}
 
 	@Override
 	public BigInteger getIntValue(Event e, Model model, SolverContext ctx){
-		if(e instanceof Store){
-			return ((Store) e).getMemValue().getIntValue(e, model, ctx);
-		}
-		if(e instanceof Init){
-			return ((Init) e).getMemValue().getIntValue(e, model, ctx);
-		}
-		if(e instanceof Load){
+		Preconditions.checkArgument(e instanceof MemEvent, "Attempt to obtain memory value for illegal event %s", e);
+		if(e instanceof Store || e instanceof Init){
+			return ((MemEvent) e).getMemValue().getIntValue(e, model, ctx);
+		} else if(e instanceof Load){
 			Register reg = ((Load) e).getResultRegister();
 			return new BigInteger(model.evaluate(reg.toIntFormulaResult(e, ctx)).toString());
-
 		}
-		throw new RuntimeException("Attempt to encode memory value for illegal event");
+
+		throw new IllegalArgumentException("Encountered unrecognized MemEvent when retrieving int value from model: " + e);
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Model model, SolverContext ctx){
-		if(e instanceof MemEvent){
-			return ((MemEvent) e).getMemValue().getBoolValue(e, model, ctx);
-		}
-		throw new RuntimeException("Attempt to encode memory value for illegal event");
+	public boolean getBoolValue(Event e, Model model, SolverContext ctx) {
+		Preconditions.checkArgument(e instanceof MemEvent, "Attempt to obtain memory value for illegal event %s", e);
+		return ((MemEvent) e).getMemValue().getBoolValue(e, model, ctx);
 	}
 
 	@Override
