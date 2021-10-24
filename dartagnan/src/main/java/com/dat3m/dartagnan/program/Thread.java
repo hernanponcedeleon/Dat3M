@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -127,31 +126,6 @@ public class Thread {
 
     public int setFId(int nextId) {
         nextId = entry.setFId(0);
-        cache = null;
-        return nextId;
-    }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public int unroll(int bound, int nextId){
-    	while(bound > 0) {
-    		entry.unroll(bound, null);
-    		bound--;
-    	}
-        nextId = entry.setUId(nextId);
-        updateExit(entry);
-        cache = null;
-        return nextId;
-    }
-
-
-    // Compilation
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public int compile(Arch target, int nextId) {
-        nextId = entry.compile(target, nextId, null);
-        updateExit(entry);
         cache = null;
         return nextId;
     }

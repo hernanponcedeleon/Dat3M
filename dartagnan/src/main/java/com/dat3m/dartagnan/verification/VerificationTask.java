@@ -5,12 +5,11 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
-import com.dat3m.dartagnan.program.utils.preprocessing.PreprocessingChain;
+import com.dat3m.dartagnan.program.processing.ConfigurableProcessor;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.symmetry.SymmetryBreaking;
-import com.dat3m.dartagnan.utils.symmetry.SymmetryReduction;
 import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -41,7 +40,7 @@ public class VerificationTask {
     private final WitnessGraph witness;
     private final Arch target;
     private final Settings settings;
-    private final Configuration config = Configuration.defaultConfiguration(); // TODO: Change this
+    private final Configuration config;
     private ThreadSymmetry threadSymmetry;
 
     public VerificationTask(Program program, Wmm memoryModel, Arch target, Settings settings) {
@@ -54,6 +53,16 @@ public class VerificationTask {
         this.witness = witness;
         this.target = target;
         this.settings = settings;
+
+        try {
+            //TODO: This should be a parameter and <target> as well as <settings> should directly be integrated
+            config = Configuration.builder()
+                    .copyFrom(settings.applyToConfig(Configuration.defaultConfiguration()))
+                    .setOption("program.processing.compilationTarget", target.toString())
+                    .build();
+        } catch (InvalidConfigurationException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     public Program getProgram() {
@@ -108,16 +117,17 @@ public class VerificationTask {
     public void unrollAndCompile() {
         logger.info("#Events: " + program.getEvents().size());
         try {
-            PreprocessingChain.fromConfig(config).run(program);
+            ConfigurableProcessor.fromConfig(config).run(program);
         } catch (InvalidConfigurationException ex) {
             logger.warn("Configuration error when preprocessing program. Some preprocessing steps may have been skipped.");
         }
 
-        program.unroll(settings.getBound(), 0);
+
+        /*program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         if (GlobalSettings.ENABLE_SYMMETRY_REDUCTION) {
-            new SymmetryReduction(program).apply();
-        }
+            SymmetryReduction.newInstance().run(program);
+        }*/
         program.setFId(0); // This is used for symmetry breaking
 
         if (GlobalSettings.ENABLE_DEBUG_OUTPUT) {

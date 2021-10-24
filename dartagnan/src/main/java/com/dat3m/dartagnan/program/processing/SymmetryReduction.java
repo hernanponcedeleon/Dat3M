@@ -1,26 +1,38 @@
-package com.dat3m.dartagnan.utils.symmetry;
+package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
+import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.Set;
 import java.util.stream.Collectors;
 
 
 // A first rough implementation for symmetry reduction
-public class SymmetryReduction {
+public class SymmetryReduction implements ProgramProcessor {
 
-    private final ThreadSymmetry symm;
+    private static final Logger logger = LogManager.getLogger(SymmetryReduction.class);
 
-    public SymmetryReduction(Program prog) {
-        this.symm = new ThreadSymmetry(prog, false);
+    private SymmetryReduction() { }
+
+    public static SymmetryReduction newInstance() {
+        return new SymmetryReduction();
     }
 
-    public void apply() {
+    public static SymmetryReduction fromConfig(Configuration config) throws InvalidConfigurationException {
+        return newInstance();
+    }
 
+    public void run(Program program) {
+
+        ThreadSymmetry symm = new ThreadSymmetry(program, false);
         Set<? extends EquivalenceClass<Thread>> symmClasses = symm.getNonTrivialClasses();
         if (symmClasses.isEmpty()) {
             return;
@@ -46,5 +58,8 @@ public class SymmetryReduction {
                 t.clearCache();
             }
         }
+
+        logger.info("Reduced symmetry of {} many symmetry classes", symmClasses.size());
+
     }
 }

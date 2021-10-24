@@ -205,30 +205,23 @@ public class Program {
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-    public int unroll(int bound, int nextId) {
-        for(Thread thread : threads){
-            nextId = thread.unroll(bound, nextId);
+    public boolean markAsUnrolled() {
+        if (isUnrolled) {
+            return false;
         }
         isUnrolled = true;
-        cache = null;
-        return nextId;
+        return true;
     }
-
 
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    public int compile(Arch target, int nextId) {
-        if (!isUnrolled()) {
-            throw new IllegalStateException("The program needs to be unrolled first.");
-        }
-
-        for(Thread thread : threads){
-            nextId = thread.compile(target, nextId);
+    public boolean markAsCompiled() {
+        if (isCompiled) {
+            return false;
         }
         isCompiled = true;
-        cache = null;
-        return nextId;
+        return true;
     }
 
 

@@ -1,28 +1,41 @@
-package com.dat3m.dartagnan.program.utils.preprocessing;
+package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.HashSet;
 import java.util.Set;
 
 
-public class DeadCodeElimination implements ProgramPreprocessor {
+public class DeadCodeElimination implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(DeadCodeElimination.class);
 
-    public DeadCodeElimination() { }
+    private DeadCodeElimination() { }
+
+    public static DeadCodeElimination newInstance() {
+        return new DeadCodeElimination();
+    }
+
+    public static DeadCodeElimination fromConfig(Configuration config) throws InvalidConfigurationException {
+        return newInstance();
+    }
+
 
     @Override
     public void run(Program program) {
-        if (program.isUnrolled()) {
-            throw new IllegalStateException("Dead code elimination should be performed before unrolling.");
-        }
+        Preconditions.checkArgument(!program.isUnrolled(), "Dead code elimination should be performed before unrolling.");
+
+        logger.info("#Events before DCE: " + program.getEvents().size());
+
         int id = 0;
         for (Thread t : program.getThreads()) {
             eliminateDeadCode(t, id);

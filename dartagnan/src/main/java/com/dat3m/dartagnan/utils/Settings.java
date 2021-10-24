@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.utils;
 
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -65,5 +67,16 @@ public class Settings {
     @Override
     public String toString(){
         return " alias=" + alias + " bound=" + bound;
+    }
+
+
+    public Configuration applyToConfig(Configuration sourceConfig) throws InvalidConfigurationException {
+        return Configuration.builder()
+                .copyFrom(sourceConfig)
+                .setOption("program.processing.loopBound", Integer.toString(bound))
+                .setOption("program.analysis.alias", alias.toString())
+                .setOption("verification.timeout", Integer.toString(solver_timeout))
+                .build();
+
     }
 }

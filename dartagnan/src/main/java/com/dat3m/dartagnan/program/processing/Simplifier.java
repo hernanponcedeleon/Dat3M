@@ -1,13 +1,25 @@
-package com.dat3m.dartagnan.program.utils.preprocessing;
+package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-public class Simplifier implements ProgramPreprocessor {
+public class Simplifier implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(Simplifier.class);
+
+    private Simplifier() { }
+
+    public static Simplifier newInstance() {
+        return new Simplifier();
+    }
+
+    public static Simplifier fromConfig(Configuration config) throws InvalidConfigurationException {
+        return newInstance(); // There is noting to configure
+    }
 
     @Override
     public void run(Program program) {

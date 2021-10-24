@@ -1,9 +1,10 @@
-package com.dat3m.dartagnan.program.utils.preprocessing;
+package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
@@ -28,39 +29,47 @@ import java.util.stream.Collectors;
     (3) In the case of loops, this procedure is repeated recursively within each loop
  */
 
-@Options(prefix = "program.preprocessing")
-public class BranchReordering implements ProgramPreprocessor {
+@Options(prefix = "program.processing")
+public class BranchReordering implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(BranchReordering.class);
+
+    // =========================== Configurables ===========================
 
     @Option(name = "detReordering",
             description = "Deterministically reorders branches (only applicable if program.preprocessing.reorderBranches is TRUE).",
             secure = true)
     private boolean reorderDeterministically = true;
 
-    public boolean reordersDeterministically() {
-        return reorderDeterministically;
+    public boolean reordersDeterministically() { return reorderDeterministically; }
+    public void setReorderDeterministically(boolean value) { reorderDeterministically = value; }
+
+    // =====================================================================
+
+    private BranchReordering() { }
+
+    private BranchReordering(Configuration config) throws InvalidConfigurationException {
+        config.inject(this);
     }
 
-    public void setReorderDeterministically(boolean value) {
-        reorderDeterministically = value;
+    public static BranchReordering fromConfig(Configuration config) throws InvalidConfigurationException {
+        return new BranchReordering(config);
     }
+
+    public static BranchReordering newInstance() {
+        return new BranchReordering();
+    }
+
 
     @Override
     public void run(Program program) {
-        if (program.isUnrolled()) {
-            throw new IllegalStateException("Reordering should be performed before unrolling.");
-        }
+        Preconditions.checkArgument(!program.isUnrolled(), "Reordering should be performed before unrolling.");
 
         for (Thread t : program.getThreads()) {
             new ThreadReordering(t).run();
         }
 
         logger.info("Branches reordered");
-    }
-
-    public BranchReordering(Configuration config) throws InvalidConfigurationException {
-        config.inject(this);
     }
 
 
