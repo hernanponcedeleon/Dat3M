@@ -58,7 +58,7 @@ public class SVCOMPRunner {
 
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN")) {
-			if(bound == options.getUMax()+1) {
+			if(bound > options.getUMax()) {
 				System.out.println("PASS");
 				break;
 			}
