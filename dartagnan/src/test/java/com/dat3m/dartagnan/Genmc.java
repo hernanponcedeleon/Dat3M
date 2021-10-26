@@ -102,7 +102,6 @@ public class Genmc {
                 String result = output.contains("violation") ? "\\redcross" : "\\gtick";
 
                 writer.append(result).append(", ").append(Long.toString(solvingTime));
-	   			writer.newLine();
            } catch (Exception e){
                fail(e.getMessage());
            }
