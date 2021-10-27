@@ -115,26 +115,30 @@ public class ProgramEncoder implements Encoder {
         BooleanFormula enc = bmgr.makeTrue();
         BiFunction<BooleanFormula, BooleanFormula, BooleanFormula> cfEncoder = shouldAllowPartialExecutions ?
                 bmgr::implication : bmgr::equivalence;
+        Map<Label, Set<Event>> labelJumpMap = new HashMap<>();
 
         Event pred = null;
         for(Event e : thread.getEntry().getSuccessors()) {
+
             // Immediate control flow
-            BooleanFormula eCFCond = pred == null ? bmgr.makeTrue() : pred.cf();
+            BooleanFormula cfCond = pred == null ? bmgr.makeTrue() : pred.cf();
             if (pred instanceof CondJump) {
                 CondJump jump = (CondJump) pred;
-                eCFCond = bmgr.and(eCFCond, bmgr.not(jump.getGuard().toBoolFormula(jump, ctx)));
+                cfCond = bmgr.and(cfCond, bmgr.not(jump.getGuard().toBoolFormula(jump, ctx)));
+                // NOTE: we need to register the actual jumps here, because the
+                // listener sets of labels is too large (it contains old copies)
+                labelJumpMap.computeIfAbsent(jump.getLabel(), key -> new HashSet<>()).add(jump);
             }
 
-            // Jump-induced control flow
+            // Control flow via jumps
             if (e instanceof Label) {
-                Label lbl = (Label) e;
-                for (Event listener : lbl.getListeners()) {
-                    CondJump jump = (CondJump)listener;
-                    eCFCond = bmgr.or(eCFCond, bmgr.and(jump.cf(), jump.getGuard().toBoolFormula(jump, ctx)));
+                for (Event jump : labelJumpMap.getOrDefault(e, Collections.emptySet())) {
+                    CondJump j = (CondJump)jump;
+                    cfCond = bmgr.or(cfCond, bmgr.and(j.cf(), j.getGuard().toBoolFormula(j, ctx)));
                 }
             }
 
-            enc = bmgr.and(enc, cfEncoder.apply(e.cf(), eCFCond), e.encodeExec(ctx));
+            enc = bmgr.and(enc, cfEncoder.apply(e.cf(), cfCond), e.encodeExec(ctx));
             pred = e;
         }
         return enc;
