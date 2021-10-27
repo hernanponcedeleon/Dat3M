@@ -74,11 +74,11 @@ public class PthreadsProcedures {
 		String threadName = ctx.call_params().exprs().expr().get(2).getText();
 		ExprInterface callingValue = (ExprInterface)ctx.call_params().exprs().expr().get(3).accept(visitor);
 		visitor.threadCallingValues.get(visitor.currentThread).add(callingValue);
-		visitor.pool.add(threadPtr, threadName);
+		visitor.pool.add(threadPtr, threadName, visitor.threadCount);
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
 		// We assume pthread_create always succeeds
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, new IConst(BigInteger.ZERO, -1)));
-		Location loc = visitor.programBuilder.getOrCreateLocation(threadPtr + "_active", -1);
+		Location loc = visitor.programBuilder.getOrCreateLocation(String.format("%s(%s)_active", threadPtr, visitor.pool.getCreatorFromPtr(threadPtr)), -1);
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(threadPtr, threadName, loc.getAddress(), visitor.currentLine));
 	}
 	
@@ -89,7 +89,7 @@ public class PthreadsProcedures {
 		if(visitor.pool.getPtrFromReg(callReg) == null) {
         	throw new UnsupportedOperationException("pthread_join cannot be handled");
 		}
-		Location loc = visitor.programBuilder.getOrCreateLocation(visitor.pool.getPtrFromReg(callReg) + "_active", -1);
+		Location loc = visitor.programBuilder.getOrCreateLocation(String.format("%s(%s)_active", visitor.pool.getPtrFromReg(callReg), visitor.pool.getCreatorFromPtr(visitor.pool.getPtrFromReg(callReg))), -1);
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
        	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(visitor.pool.getPtrFromReg(callReg), reg, loc.getAddress(), label));
