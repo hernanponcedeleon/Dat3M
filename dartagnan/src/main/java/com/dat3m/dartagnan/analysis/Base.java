@@ -43,7 +43,7 @@ public class Base {
         logger.info("Starting first solver.check()");
         if(prover.isUnsat()) {
         	prover.pop();
-			prover.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgram().encodeNoBoundEventExec(ctx)));
+			prover.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgramEncoder().encodeNoBoundEventExec(ctx)));
             logger.info("Starting second solver.check()");
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
         } else {
@@ -83,7 +83,7 @@ public class Base {
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
-			prover.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgram().encodeNoBoundEventExec(ctx)));
+			prover.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgramEncoder().encodeNoBoundEventExec(ctx)));
             logger.info("Starting second solver.check()");
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
         } else {
@@ -134,7 +134,7 @@ public class Base {
 
         logger.info("Starting first solver.check()");
         if(prover1.isUnsat()) {
-			prover2.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgram().encodeNoBoundEventExec(ctx)));
+			prover2.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgramEncoder().encodeNoBoundEventExec(ctx)));
             logger.info("Starting second solver.check()");
             res = prover2.isUnsat() ? PASS : Result.UNKNOWN;
         } else {

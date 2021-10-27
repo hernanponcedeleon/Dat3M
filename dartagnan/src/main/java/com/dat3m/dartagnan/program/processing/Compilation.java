@@ -19,7 +19,7 @@ public class Compilation implements ProgramProcessor {
     // =========================== Configurables ===========================
 
     @Option(name = "compilationTarget",
-            description = "The target architecture for which the program shall be compiled.",
+            description = "The target architecture to which the program shall be compiled to.",
             secure = true,
             toUppercase = true)
     private Arch target = Arch.NONE;

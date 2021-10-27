@@ -42,7 +42,7 @@ public class DataRaces {
 	        prover.push();
 	        prover.addConstraint(encodeRaces(task.getProgram(), ctx));
 	        
-			BooleanFormula noBoundEventExec = task.getProgram().encodeNoBoundEventExec(ctx);
+			BooleanFormula noBoundEventExec = task.getProgramEncoder().encodeNoBoundEventExec(ctx);
 			
 			if(prover.isUnsat()) {
 	        	prover.pop();

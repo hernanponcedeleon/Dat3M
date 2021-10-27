@@ -37,7 +37,7 @@ public class BranchReordering implements ProgramProcessor {
     // =========================== Configurables ===========================
 
     @Option(name = "detReordering",
-            description = "Deterministically reorders branches (only applicable if program.preprocessing.reorderBranches is TRUE).",
+            description = "Deterministically reorders branches. Non-deterministic reordering may be used for testing.",
             secure = true)
     private boolean reorderDeterministically = true;
 

@@ -42,33 +42,9 @@ public class GlobalSettings {
     public boolean shouldParseAtomicBlockAsLocks() { return shouldParseAtomicBlockAsLocks; }
     public void setShouldParseAtomicBlockAsLocks(boolean value) { shouldParseAtomicBlockAsLocks = value; }
 
-    @Option(name = "encoding.useFixedMemory",
-            description = "Pre-assigns fixed values to dynamically allocated objects if possible.",
-            secure = true)
-    private boolean shouldUseFixedMemoryEncoding = false;
-
-    public boolean shouldUseFixedMemoryEncoding() { return shouldUseFixedMemoryEncoding; }
-    public void setShouldUseFixedMemoryEncoding(boolean value) { shouldUseFixedMemoryEncoding = value; }
-
 
     //TODO: This is not used right now. Some previous merge with the JavaSMT branch removed its usage
     // We will fix this later or remove this option completely.
-    @Option(name = "encoding.allowPartialExecutions",
-            description = "Allows to terminate executions on the first found violation." +
-                    "This is not allowed on Litmus tests due to their different assertion condition.",
-            secure = true)
-    private boolean shouldAllowPartialExecutions = false;
-
-    public boolean shouldAllowPartialExecutions() { return shouldAllowPartialExecutions; }
-    public void setShouldAllowPartialExecutions(boolean value) { shouldAllowPartialExecutions = value; }
-
-    @Option(name = "encoding.mergeCFVars",
-            description = "Merges control flow variables of events with identical control-flow behaviour.",
-            secure = true)
-    private boolean shouldMergeCFVars = true;
-
-    public boolean shouldMergeCFVars() { return shouldMergeCFVars; }
-    public void setShouldMergeCFVars(boolean value) { shouldMergeCFVars = value; }
 
     @Option(name = "encoding.antiSymmCo",
             description = "Encodes the antisymmetry of coherences explicitly.",
@@ -178,9 +154,9 @@ public class GlobalSettings {
     }
 
     private void logPrivate() {
+        //TODO: This is temporary code that will get removed once all
+        // options are moved to their appropriate classes
         logger.info("ATOMIC_AS_LOCK: " + shouldParseAtomicBlockAsLocks);
-        logger.info("MERGE_CF_VARS: " + shouldMergeCFVars);
-        logger.info("ALLOW_PARTIAL_MODELS: " + shouldAllowPartialExecutions);
         logger.info("ANTISYMM_CO: " + shouldEncodeAntiSymmCo);
         logger.info("ENABLE_SYMMETRY_BREAKING: " + symmetryBreakingEnabled);
         logger.info("MAX_RECURSION_DEPTH: " + maxRecursionDepth);

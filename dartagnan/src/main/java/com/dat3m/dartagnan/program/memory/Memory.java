@@ -4,21 +4,15 @@ import com.dat3m.dartagnan.program.memory.utils.IllegalMemoryAccessException;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
-
-import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
+import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
 
 public class Memory {
 
@@ -103,6 +97,10 @@ public class Memory {
             return location;
         }
         return locationIndex.get(name);
+    }
+
+    public Collection<List<Address>> getArrays() {
+        return arrays.values();
     }
 
     public ImmutableSet<Address> getAllAddresses(){

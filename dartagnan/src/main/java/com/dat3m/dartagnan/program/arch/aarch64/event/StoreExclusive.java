@@ -12,8 +12,6 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.List;
 
@@ -70,12 +68,4 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
         throw new RuntimeException("Compilation of StoreExclusive is not implemented for " + target);
     }
 
-
-    // Encoding
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    public BooleanFormula encodeCF(SolverContext ctx, BooleanFormula cond) {
-        throw new RuntimeException("StoreExclusive event must be compiled before encoding");
-    }
 }

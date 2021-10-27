@@ -43,7 +43,7 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
     }
 
     @Override
-    protected BooleanFormula encodeExec(SolverContext ctx){
+    public BooleanFormula encodeExec(SolverContext ctx){
     	return ctx.getFormulaManager().getBooleanFormulaManager().implication(execVar, cfVar);
     }
 

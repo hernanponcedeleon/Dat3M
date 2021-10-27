@@ -3,9 +3,11 @@ package com.dat3m.dartagnan.verification;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.encoding.MemoryEncoder;
+import com.dat3m.dartagnan.program.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
-import com.dat3m.dartagnan.program.processing.ConfigurableProcessor;
+import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
@@ -23,7 +25,6 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.List;
@@ -46,6 +47,9 @@ public class VerificationTask {
     private BranchEquivalence branchEquivalence;
     private ThreadSymmetry threadSymmetry;
 
+    private final ProgramEncoder progEncoder;
+    private final MemoryEncoder memoryEncoder;
+
     protected VerificationTask(Program program, Wmm memoryModel, WitnessGraph witness,
                             Arch target, Settings settings, Configuration config) {
         this.program = program;
@@ -62,6 +66,8 @@ public class VerificationTask {
                     .copyFrom(settings.applyToConfig(config))
                     .setOption("program.processing.compilationTarget", target.toString())
                     .build();
+            progEncoder = ProgramEncoder.fromConfig(config);
+            memoryEncoder = MemoryEncoder.fromConfig(config);
         } catch (InvalidConfigurationException ex) {
             throw new RuntimeException(ex);
         }
@@ -156,13 +162,19 @@ public class VerificationTask {
         return threadSymmetry;
     }
 
+    public ProgramEncoder getProgramEncoder() {
+        return progEncoder;
+    }
+
+    public MemoryEncoder getMemoryEncoder() { return memoryEncoder; }
+
 
     // ===================== Utility Methods ====================
 
     public void unrollAndCompile() {
         logger.info("#Events: " + program.getEvents().size());
         try {
-            ConfigurableProcessor.fromConfig(config).run(program);
+            ProcessingManager.fromConfig(config).run(program);
             branchEquivalence = new BranchEquivalence(program, config);
         } catch (InvalidConfigurationException ex) {
             logger.warn("Configuration error when preprocessing program. Some preprocessing steps may have been skipped.");
@@ -185,14 +197,16 @@ public class VerificationTask {
     }
 
     public void initialiseEncoding(SolverContext ctx) {
-        program.initialise(this, ctx);
+        progEncoder.initialise(this, ctx);
+        memoryEncoder.initialise(this, ctx);
         memoryModel.initialise(this, ctx);
     }
 
     public BooleanFormula encodeProgram(SolverContext ctx) {
-    	BooleanFormula cfEncoding = program.encodeCF(ctx);
-    	BooleanFormula finalRegValueEncoding = program.encodeFinalRegisterValues(ctx);
-        return ctx.getFormulaManager().getBooleanFormulaManager().and(cfEncoding, finalRegValueEncoding);
+        BooleanFormula memEncoding = memoryEncoder.encodeMemory(ctx);
+    	BooleanFormula cfEncoding = progEncoder.encodeControlFlow(ctx);
+    	BooleanFormula finalRegValueEncoding = progEncoder.encodeFinalRegisterValues(ctx);
+        return ctx.getFormulaManager().getBooleanFormulaManager().and(memEncoding, cfEncoding, finalRegValueEncoding);
     }
 
     public BooleanFormula encodeWmmRelations(SolverContext ctx) {
@@ -208,13 +222,7 @@ public class VerificationTask {
     }
 
     public BooleanFormula encodeAssertions(SolverContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-
-        BooleanFormula assertionEncoding = program.getAss().encode(ctx);
-        if (program.getAssFilter() != null) {
-			assertionEncoding = bmgr.and(assertionEncoding, program.getAssFilter().encode(ctx));
-        }
-        return assertionEncoding;
+        return progEncoder.encodeAssertions(ctx);
     }
 
     public BooleanFormula encodeWitness(SolverContext ctx) {

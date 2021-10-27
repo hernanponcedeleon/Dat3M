@@ -65,7 +65,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
 	@Override
-	protected BooleanFormula encodeExec(SolverContext ctx){
+    public BooleanFormula encodeExec(SolverContext ctx){
 		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		
 		BooleanFormula enc = super.encodeExec(ctx);

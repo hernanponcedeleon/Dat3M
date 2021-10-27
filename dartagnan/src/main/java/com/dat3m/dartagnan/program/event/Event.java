@@ -7,11 +7,12 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.base.Preconditions;
-import org.sosy_lab.java_smt.api.*;
+import com.google.common.collect.ComparisonChain;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
-
-import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 public abstract class Event implements Comparable<Event> {
 
@@ -72,6 +73,8 @@ public abstract class Event implements Comparable<Event> {
 	public int getCId() {
 		return cId;
 	}
+
+	public void setSymmId(String value) { this.symmId = value; }
 
 	public String getSymmId() {
 		return symmId;
@@ -146,14 +149,11 @@ public abstract class Event implements Comparable<Event> {
 	
 	@Override
 	public int compareTo(Event e){
-		int result = Integer.compare(cId, e.cId);
-		if(result == 0){
-			result = Integer.compare(uId, e.uId);
-			if(result == 0){
-				result = Integer.compare(oId, e.oId);
-			}
-		}
-		return result;
+		return ComparisonChain.start()
+				.compare(cId, e.cId)
+				.compare(uId, e.uId)
+				.compare(oId, e.oId)
+				.result();
 	}
 
     public void addListener(Event e) {
@@ -315,16 +315,10 @@ public abstract class Event implements Comparable<Event> {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void initialise(VerificationTask task, SolverContext ctx){
-		Preconditions.checkState(cId >= 0,"Event cID is not set for %s. Event was not compiled?", this);
+		Preconditions.checkState(cId >= 0,"Event cID is not set for %s. Event was not compiled yet?", this);
 
 		this.symmId = getThread().getName() + "-" + fId;
 		this.task = task;
-		FormulaManager fmgr = ctx.getFormulaManager();
-		GlobalSettings gSet = GlobalSettings.getInstance();
-		boolean mergeVars = gSet.shouldMergeCFVars() && !gSet.shouldAllowPartialExecutions();
-		String repr = mergeVars ? task.getBranchEquivalence().getRepresentative(this).repr() : repr();
-		cfVar = fmgr.makeVariable(BooleanType, "cf(" + repr + ")");
-		//listeners.removeIf(x -> x.getCId() < 0);
 	}
 
 	public String repr() {
@@ -348,34 +342,11 @@ public abstract class Event implements Comparable<Event> {
 		return cfVar;
 	}
 
-	public BooleanFormula getCfCond(){
-		return cfCond;
+	public void setCfVar(BooleanFormula cfVar) {
+		this.cfVar = cfVar;
 	}
 
-	public void addCfCond(SolverContext ctx, BooleanFormula cond){
-		cfCond = (cfCond == null) ? cond : ctx.getFormulaManager().getBooleanFormulaManager().or(cfCond, cond);
-	}
-
-	public BooleanFormula encodeCF(SolverContext ctx, BooleanFormula cond) {
-		if(cfEnc == null){
-			BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-			cfCond = (cfCond == null) ? cond : bmgr.or(cfCond, cond);
-			cfEnc = bmgr.equivalence(cfVar, cfCond);
-			cfEnc = bmgr.and(cfEnc, encodeExec(ctx));
-		}
-		return cfEnc;
-	}
-
-	public BooleanFormula encodePrefixCF(SolverContext ctx, BooleanFormula cond) {
-		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		if(cfEnc == null){
-			cfCond = (cfCond == null) ? cond : bmgr.or(cfCond, cond);
-			cfEnc = bmgr.and(bmgr.implication(cfVar, cfCond), encodeExec(ctx));
-		}
-		return cfEnc;
-	}
-
-	protected BooleanFormula encodeExec(SolverContext ctx){
+	public BooleanFormula encodeExec(SolverContext ctx){
 		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
 	}
 

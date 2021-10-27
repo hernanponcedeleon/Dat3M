@@ -18,7 +18,7 @@ public class Simplifier implements ProgramProcessor {
     }
 
     public static Simplifier fromConfig(Configuration config) throws InvalidConfigurationException {
-        return newInstance(); // There is noting to configure
+        return newInstance(); // There is nothing to configure
     }
 
     @Override

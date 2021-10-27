@@ -10,10 +10,10 @@ import org.sosy_lab.common.configuration.Options;
 
 
 @Options(prefix = "program.processing")
-public class ConfigurableProcessor implements ProgramProcessor {
+public class ProcessingManager implements ProgramProcessor {
     //TODO: We might want to also add unrolling and compiling into this process
 
-    private final static Logger logger = LogManager.getLogger(ConfigurableProcessor.class);
+    private final static Logger logger = LogManager.getLogger(ProcessingManager.class);
 
     private final Configuration config;
 
@@ -38,14 +38,14 @@ public class ConfigurableProcessor implements ProgramProcessor {
     @Option(name = "reduceSymmetry",
             description = "Reduces the symmetry of the program (unsound in general).",
             secure = true)
-    private boolean reduceSymmetry = true;
+    private boolean reduceSymmetry = false;
 
     public boolean reducesSymmetry() { return reduceSymmetry; }
     public void setReduceSymmetry(boolean value) { reduceSymmetry = value; }
 
     // ======================================================================
 
-    private ConfigurableProcessor(Configuration config) throws InvalidConfigurationException {
+    private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         this.config = config;
         config.inject(this);
     }
@@ -73,8 +73,8 @@ public class ConfigurableProcessor implements ProgramProcessor {
 
     // ==================================================
 
-    public static ConfigurableProcessor fromConfig(Configuration config) throws InvalidConfigurationException {
-        return new ConfigurableProcessor(config);
+    public static ProcessingManager fromConfig(Configuration config) throws InvalidConfigurationException {
+        return new ProcessingManager(config);
     }
 
 

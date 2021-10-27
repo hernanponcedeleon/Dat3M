@@ -13,8 +13,6 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -179,31 +177,4 @@ public class CondJump extends Event implements RegReaderData {
     }
 
 
-    // Encoding
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    public BooleanFormula encodeCF(SolverContext ctx, BooleanFormula cond) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-
-    	if(cfEnc == null){
-			cfCond = (cfCond == null) ? cond : bmgr.or(cfCond, cond);
-            BooleanFormula ifCond = expr.toBoolFormula(this, ctx);
-            label.addCfCond(ctx, bmgr.and(ifCond, cfVar));
-            cfEnc = bmgr.and(bmgr.equivalence(cfVar, cfCond), encodeExec(ctx));
-        }
-        return cfEnc;
-    }
-
-    @Override
-    public BooleanFormula encodePrefixCF(SolverContext ctx, BooleanFormula cond) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        if(cfEnc == null){
-            cfCond = (cfCond == null) ? cond : bmgr.or(cfCond, cond);
-            BooleanFormula ifCond = expr.toBoolFormula(this, ctx);
-            label.addCfCond(ctx, bmgr.and(ifCond, cfVar));
-            cfEnc = bmgr.and(bmgr.implication(cfVar, cfCond), encodeExec(ctx));
-        }
-        return cfEnc;
-    }
 }

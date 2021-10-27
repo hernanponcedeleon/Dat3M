@@ -1,32 +1,23 @@
 package com.dat3m.dartagnan.program;
 
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
 
 public class Program {
 
@@ -40,7 +31,6 @@ public class Program {
     private ThreadCache cache;
     private boolean isUnrolled;
     private boolean isCompiled;
-    private VerificationTask task;
 
     public Program(Memory memory, ImmutableSet<Location> locations){
         this("", memory, locations);
@@ -178,93 +168,6 @@ public class Program {
         }
         isCompiled = true;
         return true;
-    }
-
-
-    // Encoding
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public void initialise(VerificationTask task, SolverContext ctx) {
-        Preconditions.checkState(isCompiled, "The program needs to be compiled first.");
-
-        this.task = task;
-        for(Event e : getEvents()){
-            e.initialise(task, ctx);
-        }
-    }
-
-    public BooleanFormula encodeCF(SolverContext ctx) {
-        Preconditions.checkState(task != null, "The program needs to get initialized for encoding first.");
-
-        BooleanFormula enc = GlobalSettings.getInstance().shouldUseFixedMemoryEncoding() ?
-                memory.fixedMemoryEncoding(ctx) : memory.encode(ctx);
-        for(Thread t : threads){
-            enc = ctx.getFormulaManager().getBooleanFormulaManager().and(enc, t.encodeCF(ctx));
-        }
-        return enc;
-    }
-
-    public BooleanFormula encodeFinalRegisterValues(SolverContext ctx){
-        Preconditions.checkState(task != null, "The program needs to get initialized for encoding first.");
-
-        FormulaManager fmgr = ctx.getFormulaManager();
-		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-
-        Map<Register, List<Event>> eMap = new HashMap<>();
-        for(Event e : getCache().getEvents(FilterBasic.get(EType.REG_WRITER))){
-            Register reg = ((RegWriter)e).getResultRegister();
-            eMap.putIfAbsent(reg, new ArrayList<>());
-            eMap.get(reg).add(e);
-        }
-
-        BranchEquivalence eq = task.getBranchEquivalence();
-		BooleanFormula enc = bmgr.makeTrue();
-        for (Register reg : eMap.keySet()) {
-            Thread thread = threads.get(reg.getThreadId());
-
-            List<Event> events = eMap.get(reg);
-            events.sort(Collections.reverseOrder());
-
-            // =======================================================
-            // Optimizations that remove registers which are guaranteed to get overwritten
-            //TODO: Make sure that this is correct even for EXCL events
-            for (int i = 0; i < events.size(); i++) {
-                if (eq.isImplied(thread.getExit(), events.get(i))) {
-                    events = events.subList(0, i + 1);
-                    break;
-                }
-            }
-            final List<Event> events2 = events;
-            events.removeIf(x -> events2.stream().anyMatch(y -> y.getCId() > x.getCId() && eq.isImplied(x, y)));
-            // ========================================================
-
-
-            for(int i = 0; i <  events.size(); i++){
-                Event w1 = events.get(i);
-                BooleanFormula lastModReg = w1.exec();
-                for(int j = 0; j < i; j++){
-                    Event w2 = events.get(j);
-                    if (!eq.areMutuallyExclusive(w1, w2)) {
-                        lastModReg = bmgr.and(lastModReg, bmgr.not(w2.exec()));
-                    }
-                }
-
-                BooleanFormula same =  generalEqual(reg.getLastValueExpr(ctx), ((RegWriter)w1).getResultRegisterExpr(), ctx);
-                enc = bmgr.and(enc, bmgr.implication(lastModReg, same));
-            }
-        }
-        return enc;
-    }
-    
-    public BooleanFormula encodeNoBoundEventExec(SolverContext ctx){
-        Preconditions.checkState(task != null, "The program needs to get initialized for encoding first.");
-
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
-        for(Event e : getCache().getEvents(FilterBasic.get(EType.BOUND))){
-        	enc = bmgr.and(enc, bmgr.not(e.exec()));
-        }
-        return enc;
     }
 
 

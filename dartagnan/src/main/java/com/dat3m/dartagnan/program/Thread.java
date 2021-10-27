@@ -1,14 +1,10 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.base.Preconditions;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.HashMap;
 import java.util.List;
@@ -125,23 +121,6 @@ public class Thread {
         nextId = entry.setFId(0);
         cache = null;
         return nextId;
-    }
-
-    // Encoding
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public BooleanFormula encodeCF(SolverContext ctx){
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
-    	BooleanFormula guard = bmgr.makeTrue();
-    	for(Event e : entry.getSuccessors()) {
-    		enc = bmgr.and(enc, e.encodeCF(ctx, guard));
-    		guard = e.cf();
-    		if(e instanceof CondJump) {
-    			guard = bmgr.and(guard, bmgr.not(((CondJump)e).getGuard().toBoolFormula(e, ctx)));
-    		}
-    	}
-    	return enc;
     }
 
 }
