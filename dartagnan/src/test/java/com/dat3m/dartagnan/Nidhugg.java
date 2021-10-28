@@ -28,7 +28,7 @@ public class Nidhugg {
     public static Iterable<Object[]> data() throws IOException {
 
     	// We want the files to be created every time we run the unit tests
-        initialiseCSVFile(Nidhugg.class, "genMC", "");
+        initialiseCSVFile(Nidhugg.class, "nidhugg", "tso");
 
 		List<Object[]> data = new ArrayList<>();
 
@@ -70,7 +70,7 @@ public class Nidhugg {
     @Test(timeout = TIMEOUT)
     public void test() {
     	
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "genMC", ""), true)))
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "nidhugg", "tso"), true)))
            {
         		writer.newLine();
         		writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
@@ -118,8 +118,8 @@ public class Nidhugg {
         	cmd.add("-emit-llvm");
         	cmd.add("-S");
         	cmd.add("-o");
-        	cmd.add(path);
         	cmd.add(path + ".ll");
+        	cmd.add(path);
         	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
 
            	Process proc = processBuilder.start();
@@ -140,7 +140,6 @@ public class Nidhugg {
         	cmd.add("nidhugg");
         	cmd.add("--unroll=" + bound);
         	cmd.add(String.format("--transform=%s.u%s.ll", path, bound));
-        	cmd.add(path);
         	cmd.add(path + ".ll");
         	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
 
