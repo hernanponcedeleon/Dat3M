@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.arch.linux.event.cond;
 
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
-import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -45,9 +44,4 @@ public class FenceCond extends Fence {
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-
-    @Override
-    protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
-        throw new RuntimeException("FenceCond cannot be unrolled: event must be generated during compilation");
-    }
 }

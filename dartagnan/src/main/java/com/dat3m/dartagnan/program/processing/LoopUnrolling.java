@@ -1,7 +1,12 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.CondJump;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Label;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,13 +68,69 @@ public class LoopUnrolling implements ProgramProcessor {
 
     private int unrollThread(Thread t, int bound, int nextId){
         while(bound > 0) {
-            t.getEntry().unroll(bound, null);
-            bound--;
+            unrollThreadOnce(t, bound--);
         }
-        nextId = t.getEntry().setUId(nextId);
-        t.updateExit(t.getEntry());
         t.clearCache();
+        t.updateExit(t.getEntry());
+        for (Event e : t.getEvents()) {
+            e.setUId(nextId++);
+        }
         return nextId;
+    }
+
+    private void unrollThreadOnce(Thread t, int bound) {
+        //TODO: This function implements the identical unroll semantics
+        // that was implemented before. However, the unrolling is quite odd
+        // Furthemore, we might want to use different bounds per loop
+        Event cur = t.getEntry();
+        Event successor;
+        Event predecessor = null;
+        Event newPred;
+        do {
+            successor = cur.getSuccessor();
+
+            if (cur instanceof CondJump && ((CondJump) cur).getLabel().getOId() < cur.getOId()) {
+                CondJump jump = (CondJump) cur;
+                Label label = jump.getLabel();
+                if (bound > 1) {
+                    predecessor = copyPath(label, successor, predecessor);
+                }
+
+                if (bound == 1) {
+                    Label target = (Label) jump.getThread().getExit();
+                    newPred = EventFactory.newGoto(target);
+                    newPred.addFilters(EType.BOUND);
+                    predecessor.setSuccessor(newPred);
+                } else {
+                    newPred = predecessor;
+                }
+            } else {
+                newPred = cur;
+                if (predecessor != null) {
+                    // This check must be done inside this if
+                    // Needed for the current implementation of copy in If events
+                    //TODO: Is this needed anymore since we got rid of If events?
+                    if (bound != 1) {
+                        newPred = cur.getCopy();
+                    }
+                    predecessor.setSuccessor(newPred);
+                }
+            }
+
+            cur = successor;
+            predecessor = newPred;
+        } while(successor != null);
+
+    }
+
+    private Event copyPath(Event from, Event until, Event appendTo){
+        while(from != null && !from.equals(until)){
+            Event copy = from.getCopy();
+            appendTo.setSuccessor(copy);
+            appendTo = copy;
+            from = from.getSuccessor();
+        }
+        return appendTo;
     }
 
 

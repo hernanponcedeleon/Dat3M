@@ -23,8 +23,6 @@ public abstract class Event implements Comparable<Event> {
 	protected int cId = -1;		// ID after compilation
 	protected int fId = -1;		// ID within a function
 
-	protected String symmId;	// ID for symmetry breaking
-
 	protected int cLine = -1;	// line in the original C program
 
 	protected Thread thread; // The thread this event belongs to
@@ -57,7 +55,6 @@ public abstract class Event implements Comparable<Event> {
 	public int getOId() {
 		return oId;
 	}
-
 	public void setOId(int id) {
 		this.oId = id;
 	}
@@ -65,26 +62,20 @@ public abstract class Event implements Comparable<Event> {
 	public int getUId(){
 		return uId;
 	}
+	public void setUId(int nextId) { this.uId = nextId; }
 
 	public int getCId() {
 		return cId;
 	}
 
-	public final void setFId(int nextId) {
+	public int getFId() { return this.fId; }
+	public void setFId(int nextId) {
 		this.fId = nextId;
 	}
 
-	public int getFId() {
-		return this.fId;
-	}
 
-	public int getCLine() {
-		return cLine;
-	}
-
-	public void setCLine(int line) {
-		this.cLine = line;
-	}
+	public int getCLine() { return cLine; }
+	public void setCLine(int line) { this.cLine = line; }
 
 	public Event getSuccessor(){
 		return successor;
@@ -166,66 +157,9 @@ public abstract class Event implements Comparable<Event> {
     	throw new UnsupportedOperationException("notify is not allowed for " + getClass().getSimpleName());
     }
 
-	// Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public final int setUId(int nextId) {
-		return setUIdRecursive(nextId, 0).execute();
-    }
-
-	protected RecursiveFunction<Integer> setUIdRecursive(int nextId, int depth) {
-		uId = nextId;
-		if (successor != null) {
-			if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
-				return successor.setUIdRecursive(nextId + 1, depth + 1);
-			} else {
-				return RecursiveFunction.call(() -> successor.setUIdRecursive(nextId + 1, 0));
-			}
-		}
-		return RecursiveFunction.done(nextId + 1);
-	}
-
-
-
-	// --------------------------------
-
-    public final void unroll(int bound, Event predecessor) {
-		unrollRecursive(bound, predecessor, 0).execute();
-    }
-
-    protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
-		Event copy = this;
-		if(predecessor != null) {
-			// This check must be done inside this if
-			// Needed for the current implementation of copy in If events
-			if(bound != 1) {
-				copy = getCopy();
-			}
-			predecessor.setSuccessor(copy);
-		}
-		if(successor != null) {
-			if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
-				return successor.unrollRecursive(bound, copy, depth + 1);
-			} else {
-				Event finalCopy = copy;
-				return RecursiveAction.call(() -> successor.unrollRecursive(bound, finalCopy, 0));
-			}
-		}
-		return RecursiveAction.done();
-	}
 
 	public Event getCopy(){
 		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
-	}
-
-	static Event copyPath(Event from, Event until, Event appendTo){
-		while(from != null && !from.equals(until)){
-			Event copy = from.getCopy();
-			appendTo.setSuccessor(copy);
-			appendTo = copy;
-			from = from.successor;
-		}
-		return appendTo;
 	}
 
 

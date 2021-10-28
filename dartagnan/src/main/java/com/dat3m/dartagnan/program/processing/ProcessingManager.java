@@ -11,7 +11,6 @@ import org.sosy_lab.common.configuration.Options;
 
 @Options(prefix = "program.processing")
 public class ProcessingManager implements ProgramProcessor {
-    //TODO: We might want to also add unrolling and compiling into this process
 
     private final static Logger logger = LogManager.getLogger(ProcessingManager.class);
 

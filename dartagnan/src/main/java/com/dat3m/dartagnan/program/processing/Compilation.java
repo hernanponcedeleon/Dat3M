@@ -91,7 +91,7 @@ public class Compilation implements ProgramProcessor {
     private void updateAssertions(Program program) {
         if (program.getAss() != null) {
             //TODO: Check why exactly this is needed. Litmus tests seem to have the assertion already defined
-            // but I was under the impression that assFilter was used for that purpose.
+            // but I was under the impression that assFilter was used for Litmus tests.
             return;
         }
 
@@ -108,7 +108,7 @@ public class Compilation implements ProgramProcessor {
         }
         program.setAss(ass);
 
-        //TODO: Does compilation actually add new assertions? If not, we should move this to the unrolling instead.
+        //TODO: It probably makes more sense to move this code to LoopUnrolling
         logger.info("Updated assertions after compilation.");
     }
 
