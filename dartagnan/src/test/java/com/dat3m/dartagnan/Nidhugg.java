@@ -70,42 +70,43 @@ public class Nidhugg {
     @Test(timeout = TIMEOUT)
     public void test() {
     	
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "nidhugg", "tso"), true)))
+        try //(BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "nidhugg", "tso"), true)))
            {
-        		writer.newLine();
-        		writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
-        		// The flush() is required to write the content in the presence of timeouts
-        		writer.flush();
+//        		writer.newLine();
+//        		writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
+//        		// The flush() is required to write the content in the presence of timeouts
+//        		writer.flush();
         		
         		int bound = 1;
         		toLLVM(path);
         		unroll(path, bound);
+        		test(path, bound);
         		
-            	String output = "";
-            	ArrayList<String> cmd = new ArrayList<String>();
-            	cmd.add("nidhugg");
-            	cmd.add("--tso");
-            	cmd.add(String.format("--transform=%s.u%s.ll", path, bound));
-            	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
-
-            	long start = System.currentTimeMillis();
-	           	Process proc = processBuilder.start();
-	   			BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-	   			proc.waitFor();
-	   			while(read.ready()) {
-	   				output = output + read.readLine();
-	   			}
-	   			if(proc.exitValue() == 1) {
-	   				BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
-	   				while(error.ready()) {
-	   					System.out.println(error.readLine());
-	   				}
-	   				System.exit(0);
-	   			}
-	   			long solvingTime = System.currentTimeMillis() - start;
-                String result = output.contains("No errors were detected") ? "\\gtick" : "\\redcross";
-
-                writer.append(result).append(", ").append(Long.toString(solvingTime));
+//            	String output = "";
+//            	ArrayList<String> cmd = new ArrayList<String>();
+//            	cmd.add("nidhugg");
+//            	cmd.add("--tso");
+//            	cmd.add(String.format("--transform=%s.u%s.ll", path, bound));
+//            	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+//
+//            	long start = System.currentTimeMillis();
+//	           	Process proc = processBuilder.start();
+//	   			BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+//	   			proc.waitFor();
+//	   			while(read.ready()) {
+//	   				output = output + read.readLine();
+//	   			}
+//	   			if(proc.exitValue() == 1) {
+//	   				BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+//	   				while(error.ready()) {
+//	   					System.out.println(error.readLine());
+//	   				}
+//	   				System.exit(0);
+//	   			}
+//	   			long solvingTime = System.currentTimeMillis() - start;
+//                String result = output.contains("No errors were detected") ? "\\gtick" : "\\redcross";
+//
+//                writer.append(result).append(", ").append(Long.toString(solvingTime));
            } catch (Exception e){
                fail(e.getMessage());
            }
@@ -141,6 +142,26 @@ public class Nidhugg {
         	cmd.add("--unroll=" + bound);
         	cmd.add(String.format("--transform=%s.u%s.ll", path, bound));
         	cmd.add(path + ".ll");
+        	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+
+           	Process proc = processBuilder.start();
+    		proc.waitFor();
+    		if(proc.exitValue() == 1) {
+    			BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+    			while(error.ready()) {
+    				System.out.println(error.readLine());
+    			}
+    			System.exit(0);
+    		}
+    	} catch(Exception ignore) {}
+    }
+
+    private void test(String path, int bound) {
+    	try {
+        	ArrayList<String> cmd = new ArrayList<String>();
+        	cmd.add("nidhugg");
+        	cmd.add("--tso");
+        	cmd.add(String.format("--transform=%s.u%s.ll", path, bound));
         	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
 
            	Process proc = processBuilder.start();
