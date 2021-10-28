@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 public class ThreadSymmetry extends AbstractEquivalence<Thread> {
 
     private final Program program;
-    private final Map<Thread, Map<String, Event>> symmMap = new HashMap<>();
+    private final Map<Thread, Map<Integer, Event>> symmMap = new HashMap<>(); // TODO: These can be replaced by simple lists
     private final boolean hasEventMappings;
 
     public ThreadSymmetry(Program program) {
@@ -43,8 +43,8 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
 
     private void createEventMappings() {
         for (Thread thread : program.getThreads()) {
-            Map<String, Event> mapping = symmMap.computeIfAbsent(thread, key -> new HashMap<>());
-            thread.getEvents().forEach(e -> mapping.put(e.getSymmId(), e));
+            Map<Integer, Event> mapping = symmMap.computeIfAbsent(thread, key -> new HashMap<>());
+            thread.getEvents().forEach(e -> mapping.put(e.getFId(), e));
         }
     }
 
@@ -52,18 +52,16 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
 
     public Event map(Event source, Thread target) {
         Preconditions.checkArgument(hasEventMappings, "This instance was created without symmetry mappings.");
-        if (!areEquivalent(source.getThread(), target)) {
-            throw new IllegalArgumentException("Target thread is not symmetric with source thread.");
-        }
+        Preconditions.checkArgument(areEquivalent(source.getThread(), target), "Target thread is not symmetric with source thread.");
 
-        return symmMap.get(target).get(source.getSymmId());
+        return symmMap.get(target).get(source.getFId());
     }
 
     public Function<Event, Event> createPermutation(List<Thread> orig, List<Thread> target) {
         Preconditions.checkArgument(hasEventMappings, "This instance was created without symmetry mappings.");
-        if (orig.size() != target.size()) {
-            throw new IllegalArgumentException("Target permutation has different size");
-        } else if (orig.equals(target)) {
+        Preconditions.checkArgument(orig.size() == target.size(), "Target permutation has different size.");
+
+        if (orig.equals(target)) {
             return Function.identity();
         }
 
@@ -88,9 +86,7 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
 
     public List<Function<Event, Event>> createAllPermutations(EquivalenceClass<Thread> eqClass) {
         Preconditions.checkArgument(hasEventMappings, "This instance was created without symmetry mappings.");
-        if (eqClass.getEquivalence() != this) {
-            throw new IllegalArgumentException("<eqClass> is not a symmetry class of this symmetry equivalence.");
-        }
+        Preconditions.checkArgument(eqClass.getEquivalence() == this, "Provided <eqClass> is not a symmetry class of this symmetry equivalence.");
 
         List<Thread> symmThreads = new ArrayList<>(eqClass);
         symmThreads.sort(Comparator.comparingInt(Thread::getId));

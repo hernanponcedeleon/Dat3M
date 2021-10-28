@@ -12,7 +12,6 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.utils.EType.RMW;
 import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
@@ -55,19 +54,17 @@ public class EndAtomic extends Event {
 		super.initialise(task, ctx);
 		//===== Temporary fix to rematch atomic blocks correctly =====
 		BranchEquivalence eq = task.getBranchEquivalence();
-		List<Event> begins = this.thread.getEvents()
+		this.begin = (BeginAtomic) this.thread.getEvents()
 				.stream().filter( x -> x instanceof BeginAtomic && eq.isReachableFrom(x, this))
-				.collect(Collectors.toList());
-		this.begin = (BeginAtomic) begins.get(begins.size() - 1);
+				.reduce((a, b) -> b).orElseThrow();
 		// =======================================================
 
-		findEnclosedEvents();
+		findEnclosedEvents(eq);
 
 	}
 
-	private void findEnclosedEvents() {
+	private void findEnclosedEvents(BranchEquivalence eq) {
     	enclosedEvents = new ArrayList<>();
-		BranchEquivalence eq = task.getBranchEquivalence();
 		BranchEquivalence.Class startClass = eq.getEquivalenceClass(begin);
 		BranchEquivalence.Class endClass = eq.getEquivalenceClass(this);
 		if (!startClass.getReachableClasses().contains(endClass)) {

@@ -33,11 +33,7 @@ public abstract class Event implements Comparable<Event> {
 
 	protected transient Event successor;
 
-    protected transient BooleanFormula cfEnc;
-    protected transient BooleanFormula cfCond;
 	protected transient BooleanFormula cfVar;
-
-	protected transient VerificationTask task;
 
 	protected Set<Event> listeners = new HashSet<>();
 
@@ -74,10 +70,12 @@ public abstract class Event implements Comparable<Event> {
 		return cId;
 	}
 
-	public void setSymmId(String value) { this.symmId = value; }
+	public final void setFId(int nextId) {
+		this.fId = nextId;
+	}
 
-	public String getSymmId() {
-		return symmId;
+	public int getFId() {
+		return this.fId;
 	}
 
 	public int getCLine() {
@@ -183,21 +181,6 @@ public abstract class Event implements Comparable<Event> {
 		return RecursiveAction.done();
 	}
 
-    public final int setFId(int nextId) {
-		return setFIdRecursive(nextId, 0).execute();
-    }
-
-	public RecursiveFunction<Integer> setFIdRecursive(int nextId, int depth) {
-		fId = nextId;
-		if (successor != null) {
-			if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
-				return successor.setFIdRecursive(nextId + 1, depth + 1);
-			} else {
-				return RecursiveFunction.call(() -> successor.setFIdRecursive(nextId + 1, 0));
-			}
-		}
-		return RecursiveFunction.done(nextId + 1);
-	}
 
 
 	// Unrolling
@@ -316,9 +299,6 @@ public abstract class Event implements Comparable<Event> {
 
 	public void initialise(VerificationTask task, SolverContext ctx){
 		Preconditions.checkState(cId >= 0,"Event cID is not set for %s. Event was not compiled yet?", this);
-
-		this.symmId = getThread().getName() + "-" + fId;
-		this.task = task;
 	}
 
 	public String repr() {

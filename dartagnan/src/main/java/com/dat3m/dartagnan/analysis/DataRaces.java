@@ -31,8 +31,7 @@ public class DataRaces {
 
 	public static Result checkForRaces(SolverContext ctx, VerificationTask task) {
 
-		// TODO(HP): No program.simplify() ???
-		task.unrollAndCompile();
+		task.preprocessProgram();
 		task.initialiseEncoding(ctx);
 		
 		try (ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {

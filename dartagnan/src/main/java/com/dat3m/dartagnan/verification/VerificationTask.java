@@ -171,16 +171,14 @@ public class VerificationTask {
 
     // ===================== Utility Methods ====================
 
-    public void unrollAndCompile() {
+    public void preprocessProgram() {
         logger.info("#Events: " + program.getEvents().size());
         try {
             ProcessingManager.fromConfig(config).run(program);
             branchEquivalence = new BranchEquivalence(program, config);
         } catch (InvalidConfigurationException ex) {
-            logger.warn("Configuration error when preprocessing program. Some preprocessing steps may have been skipped.");
+            logger.warn("Configuration error when processing program. Some processing steps may have been skipped.");
         }
-
-        program.setFId(0); // This is used for symmetry breaking
 
         if (GlobalSettings.getInstance().shouldDebugPrintProgram()) {
             for (Thread t : program.getThreads()) {
@@ -191,9 +189,6 @@ public class VerificationTask {
                 }
             }
         }
-        // AssertionInline depends on compiled events (copies)
-        // Thus we need to update the assertion after compilation
-        program.updateAssertion();
     }
 
     public void initialiseEncoding(SolverContext ctx) {

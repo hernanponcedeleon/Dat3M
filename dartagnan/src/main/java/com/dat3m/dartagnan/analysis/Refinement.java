@@ -62,7 +62,7 @@ public class Refinement {
     public static Result runAnalysisSaturationSolver(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
             throws InterruptedException, SolverException {
 
-        task.unrollAndCompile();
+        task.preprocessProgram();
         if(task.getProgram().getAss() instanceof AssertTrue) {
             logger.info("Verification finished: assertion trivially holds");
             return PASS;
