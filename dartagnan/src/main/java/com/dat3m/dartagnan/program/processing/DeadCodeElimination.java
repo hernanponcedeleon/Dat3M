@@ -42,7 +42,7 @@ public class DeadCodeElimination implements ProgramProcessor {
             t.clearCache();
             id = t.getExit().getOId() + 1;
         }
-        program.clearCache();
+        program.clearCache(false);
 
         logger.info("#Events after DCE: " + program.getEvents().size());
     }

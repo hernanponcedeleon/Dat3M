@@ -95,10 +95,12 @@ public class Program {
         return cache;
     }
 
-    public void clearCache(){
-    	for(Thread t : threads){
-    		t.clearCache();
-    	}
+    public void clearCache(boolean clearThreadCaches){
+        if (clearThreadCaches) {
+            for (Thread t : threads) {
+                t.clearCache();
+            }
+        }
     	cache = null;
     }
 

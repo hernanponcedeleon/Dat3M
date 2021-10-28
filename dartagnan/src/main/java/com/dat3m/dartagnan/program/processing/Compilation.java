@@ -74,11 +74,18 @@ public class Compilation implements ProgramProcessor {
         }
 
         program.setArch(target);
-        program.clearCache();
+        program.clearCache(false);
         program.markAsCompiled();
         logger.info("Program compiled to {}", target);
 
         updateAssertions(program);
+    }
+
+    private int compileThread(Thread thread, int nextId) {
+        nextId = thread.getEntry().compile(target, nextId, null);
+        thread.updateExit(thread.getEntry());
+        thread.clearCache();
+        return nextId;
     }
 
     private void updateAssertions(Program program) {
@@ -105,10 +112,4 @@ public class Compilation implements ProgramProcessor {
         logger.info("Updated assertions after compilation.");
     }
 
-    private int compileThread(Thread thread, int nextId) {
-        nextId = thread.getEntry().compile(target, nextId, null);
-        thread.updateExit(thread.getEntry());
-        thread.clearCache();
-        return nextId;
-    }
 }

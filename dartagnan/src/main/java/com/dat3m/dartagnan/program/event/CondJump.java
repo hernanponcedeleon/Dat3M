@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
@@ -92,33 +91,6 @@ public class CondJump extends Event implements RegReaderData {
     	} else if (oId > label.getOId()) {
     		this.label4Copy = (Label)label;
     	}
-    }
-
-    @Override
-    protected RecursiveAction simplifyRecursive(Event predecessor, int depth) {
-        Event prev = this;
-        Event next = successor;
-        // If the label immediately follows and the condition is either true or false we can remove the jump
-        // (in both cases the next executed event is the successor)
-        if(label.equals(successor) && expr instanceof BConst) {
-            prev = predecessor;
-            label.listeners.remove(this);
-            // If the label is only the target of the removed jump, we can also remove the label
-            if(label.listeners.isEmpty()) {
-                next = successor.getSuccessor();
-            }
-            predecessor.setSuccessor(next);
-        }
-        if(next != null){
-            if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
-                return next.simplifyRecursive(prev, depth + 1);
-            } else {
-                Event finalNext = next;
-                Event finalPrev = prev;
-                return RecursiveAction.call(() -> finalNext.simplifyRecursive(finalPrev,0));
-            }
-        }
-        return RecursiveAction.done();
     }
 
     @Override

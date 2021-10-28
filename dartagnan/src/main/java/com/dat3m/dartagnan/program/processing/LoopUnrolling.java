@@ -55,7 +55,7 @@ public class LoopUnrolling implements ProgramProcessor {
         for(Thread thread : program.getThreads()){
             nextId = unrollThread(thread, bound, nextId);
         }
-        program.clearCache();
+        program.clearCache(false);
         program.markAsUnrolled();
 
         logger.info("Program unrolled {} times", bound);
