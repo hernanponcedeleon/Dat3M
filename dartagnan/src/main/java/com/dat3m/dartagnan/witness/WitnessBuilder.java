@@ -85,7 +85,9 @@ public class WitnessBuilder {
 		
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 		df.setTimeZone(TimeZone.getTimeZone("UTC"));
-		graph.addAttribute(CREATIONTIME.toString(), df.format(new Date()));
+		// "If the timestamp is in UTC time, it ends with a 'Z'."
+		// https://github.com/sosy-lab/sv-witnesses/blob/main/README-GraphML.md
+		graph.addAttribute(CREATIONTIME.toString(), df.format(new Date())+"Z");
 
 		Node v0 = new Node("N0");
 		v0.addAttribute("entry", "true");

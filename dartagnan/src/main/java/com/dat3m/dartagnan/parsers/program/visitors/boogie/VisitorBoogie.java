@@ -120,7 +120,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	}
 
     	Register next = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + "ptrMain", -1);
-    	pool.add(next, "main");
+    	pool.add(next, "main", -1);
     	while(pool.canCreate()) {
     		next = pool.next();
     		String nextName = pool.getNameFromPtr(next);
@@ -235,7 +235,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
             programBuilder.initThread(name, threadCount);
             if(threadCount != 1) {
             	// Used to allow execution of threads after they have been created (pthread_create)
-        		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active", -1);
+        		Location loc = programBuilder.getOrCreateLocation(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))), -1);
         		Register reg = programBuilder.getOrCreateRegister(threadCount, null, -1);
                	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
                	programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, loc.getAddress(), label));
@@ -282,7 +282,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	if(create) {
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
-        		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active", -1);
+        		Location loc = programBuilder.getOrCreateLocation(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))), -1);
         		programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(loc.getAddress()));
          	}
         	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);

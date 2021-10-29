@@ -58,7 +58,7 @@ public class SVCOMPRunner {
 
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN")) {
-			if(bound == options.getUMax()+1) {
+			if(bound > options.getUMax()) {
 				System.out.println("PASS");
 				break;
 			}
@@ -80,7 +80,7 @@ public class SVCOMPRunner {
 	    	cmd.add("java");
 	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
 	    	cmd.add("-DLOGNAME=" + file.getName());
-	    	cmd.addAll(asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-2.0.7.jar"));
+	    	cmd.addAll(asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-3.0.0.jar"));
 	    	cmd.addAll(asList("-i", boogieName));
 	    	cmd.addAll(asList("-cat", options.getTargetModelFilePath()));
 	    	cmd.addAll(asList("-t", options.getTarget().asStringOption()));

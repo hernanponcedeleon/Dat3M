@@ -18,6 +18,7 @@ import java.util.List;
 public class StdProcedures {
 	
 	public static List<String> STDPROCEDURES = Arrays.asList(
+			"devirtbounce",
 			"external_alloc",
 			"$alloc",
 			"__assert_rtn",

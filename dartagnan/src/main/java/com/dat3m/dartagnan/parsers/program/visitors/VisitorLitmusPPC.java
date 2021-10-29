@@ -18,13 +18,15 @@ import com.dat3m.dartagnan.program.event.Label;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.misc.Interval;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+
 import java.math.BigInteger;
 
 public class VisitorLitmusPPC
         extends LitmusPPCBaseVisitor<Object>
         implements LitmusPPCVisitor<Object> {
 
-    private final static ImmutableSet<String> fences = ImmutableSet.of("Sync", "Lwsync", "Isync");
+    private final static ImmutableSet<String> fences = ImmutableSet.of(SYNC, LWSYNC, ISYNC);
 
     private final ProgramBuilder programBuilder;
     private int mainThread;
@@ -194,7 +196,6 @@ public class VisitorLitmusPPC
     @Override
     public Object visitFence(LitmusPPCParser.FenceContext ctx) {
         String name = ctx.getText().toLowerCase();
-        name = name.substring(0, 1).toUpperCase() + name.substring(1);
         if(fences.contains(name)){
             return programBuilder.addChild(mainThread, EventFactory.newFence(name));
         }

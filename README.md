@@ -59,7 +59,7 @@ Usage
 Dartagnan comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
 You can start the user interface by running
 ```
-java -jar ui/target/ui-2.0.7.jar
+java -jar ui/target/ui-3.0.0.jar
 ```
 <p align="center"> 
 <img src="ui/src/main/resources/ui.jpg">
@@ -75,7 +75,7 @@ There are three possible results for the verification:
 You can also run Dartagnan from the console:
 
 ```
-java -jar dartagnan/target/dartagnan-2.0.7.jar -cat <CAT file> [-t <target>] -i <program file> [options]
+java -jar dartagnan/target/dartagnan-3.0.0.jar -cat <CAT file> [-t <target>] -i <program file> [options]
 ```
 The `-cat` option specifies the path to the CAT file.
 
