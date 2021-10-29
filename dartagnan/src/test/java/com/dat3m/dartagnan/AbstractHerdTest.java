@@ -18,7 +18,6 @@ import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.AbstractDartagnanTest.TIMEOUT;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
-import static org.junit.Assert.fail;
 
 public abstract class AbstractHerdTest {
 
@@ -86,12 +85,11 @@ public abstract class AbstractHerdTest {
    				while(error.ready()) {
    					System.out.println(error.readLine());
    				}
-   				System.exit(0);
    			}
    			long solvingTime = System.currentTimeMillis() - start;
             writer.append(", ").append(Long.toString(solvingTime));
     	} catch (Exception e){
-    		fail(e.getMessage());
+        	System.out.println(e.getMessage());
     	}
     }
 }

@@ -24,7 +24,6 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public abstract class AbstractSvCompTest {
@@ -49,6 +48,10 @@ public abstract class AbstractSvCompTest {
              ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
              BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "two", ""), true)))
         {
+            writer.newLine();
+            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
+            // The flush() is required to write the content in the presence of timeouts
+            writer.flush();
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
@@ -58,9 +61,8 @@ public abstract class AbstractSvCompTest {
             assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
             long solvingTime = System.currentTimeMillis() - start;
             writer.append(expected.toString()).append(", ").append(Long.toString(solvingTime));
-            writer.newLine();
         } catch (Exception e){
-            fail(e.getMessage());
+        	System.out.println(e.getMessage());
         }
     }
 
@@ -70,6 +72,10 @@ public abstract class AbstractSvCompTest {
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
              BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "incremental", ""), true)))
         {
+            writer.newLine();
+            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
+            // The flush() is required to write the content in the presence of timeouts
+            writer.flush();
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
@@ -79,9 +85,8 @@ public abstract class AbstractSvCompTest {
             assertEquals(expected, runAnalysisIncrementalSolver(ctx, prover, task));
             long solvingTime = System.currentTimeMillis() - start;
             writer.append(expected.toString()).append(", ").append(Long.toString(solvingTime));
-            writer.newLine();
         } catch (Exception e){
-            fail(e.getMessage());
+        	System.out.println(e.getMessage());
         }
     }
     
@@ -91,6 +96,10 @@ public abstract class AbstractSvCompTest {
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
              BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "assume", ""), true)))
         {
+            writer.newLine();
+            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
+            // The flush() is required to write the content in the presence of timeouts
+            writer.flush();
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
@@ -100,9 +109,8 @@ public abstract class AbstractSvCompTest {
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
             long solvingTime = System.currentTimeMillis() - start;
             writer.append(expected.toString()).append(", ").append(Long.toString(solvingTime));
-            writer.newLine();
         } catch (Exception e){
-            fail(e.getMessage());
+        	System.out.println(e.getMessage());
         }
     }
 
@@ -112,6 +120,10 @@ public abstract class AbstractSvCompTest {
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
              BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement", ""), true)))
         {
+            writer.newLine();
+            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
+            // The flush() is required to write the content in the presence of timeouts
+            writer.flush();
             String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
             expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
@@ -122,9 +134,8 @@ public abstract class AbstractSvCompTest {
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
             long solvingTime = System.currentTimeMillis() - start;
             writer.append(expected.toString()).append(", ").append(Long.toString(solvingTime));
-            writer.newLine();
         } catch (Exception e){
-            fail(e.getMessage());
+        	System.out.println(e.getMessage());
         }
     }
 
@@ -137,7 +148,6 @@ public abstract class AbstractSvCompTest {
 
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
-            System.exit(0);
 		}
 		return null;
 	}

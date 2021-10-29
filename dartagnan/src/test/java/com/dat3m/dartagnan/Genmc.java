@@ -14,7 +14,6 @@ import java.util.List;
 import static com.dat3m.dartagnan.CLocksTest.TIMEOUT;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static com.dat3m.dartagnan.utils.ResourceHelper.initialiseCSVFile;
-import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public class Genmc {
@@ -96,14 +95,13 @@ public class Genmc {
 	   				while(error.ready()) {
 	   					System.out.println(error.readLine());
 	   				}
-	   				System.exit(0);
 	   			}
 	   			long solvingTime = System.currentTimeMillis() - start;
                 String result = output.contains("violation") ? "\\redcross" : "\\gtick";
 
                 writer.append(result).append(", ").append(Long.toString(solvingTime));
            } catch (Exception e){
-               fail(e.getMessage());
+        	   System.out.println(e.getMessage());
            }
     }
 }

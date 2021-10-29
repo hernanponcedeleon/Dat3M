@@ -14,7 +14,6 @@ import java.util.List;
 import static com.dat3m.dartagnan.CLocksTest.TIMEOUT;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static com.dat3m.dartagnan.utils.ResourceHelper.initialiseCSVFile;
-import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public class Nidhugg {
@@ -100,14 +99,13 @@ public class Nidhugg {
 	   				while(error.ready()) {
 	   					System.out.println(error.readLine());
 	   				}
-	   				System.exit(0);
 	   			}
 	   			long solvingTime = System.currentTimeMillis() - start;
                 String result = output.contains("No errors were detected") ? "\\gtick" : "\\redcross";
 
                 writer.append(result).append(", ").append(Long.toString(solvingTime));
            } catch (Exception e){
-               fail(e.getMessage());
+        	   System.out.println(e.getMessage());
            }
     }
     
@@ -129,9 +127,10 @@ public class Nidhugg {
     			while(error.ready()) {
     				System.out.println(error.readLine());
     			}
-    			System.exit(0);
     		}
-    	} catch(Exception ignore) {}
+    	} catch(Exception e) {
+        	System.out.println(e.getMessage());
+    	}
     }
 
     private void unroll(String path, int bound) {
@@ -150,8 +149,9 @@ public class Nidhugg {
     			while(error.ready()) {
     				System.out.println(error.readLine());
     			}
-    			System.exit(0);
     		}
-    	} catch(Exception ignore) {}
+    	} catch(Exception e) {
+        	System.out.println(e.getMessage());
+    	}
     }
 }
