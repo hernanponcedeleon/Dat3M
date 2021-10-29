@@ -11,16 +11,22 @@ public class PthreadPool {
 
 	private final List<Register> threads = new ArrayList<>();
 	private final Map<Register, List<String>> mapPtrName = new HashMap<>();
+	private final Map<Register, List<Integer>> mapPtrCreator = new HashMap<>();
 	private final Map<Integer, Register> mapIntPtr = new HashMap<>();
 	private final Map<Register, Register> mapRegPtr = new HashMap<>();
 	
-	public void add(Register ptr, String name) {
+	public void add(Register ptr, String name, int creator) {
 		threads.add(ptr);
 		mapPtrName.computeIfAbsent(ptr, key -> new ArrayList<>()).add(name);
+		mapPtrCreator.computeIfAbsent(ptr, key -> new ArrayList<>()).add(creator);
 	}
 	
 	public String getNameFromPtr(Register ptr) {
 		return mapPtrName.get(ptr).remove(0);
+	}
+
+	public Integer getCreatorFromPtr(Register ptr) {
+		return mapPtrCreator.get(ptr).get(0);
 	}
 
 	public void addIntPtr(Integer i, Register ptr) {
