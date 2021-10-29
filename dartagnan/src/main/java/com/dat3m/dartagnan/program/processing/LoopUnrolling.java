@@ -79,9 +79,10 @@ public class LoopUnrolling implements ProgramProcessor {
     }
 
     private void unrollThreadOnce(Thread t, int bound) {
-        //TODO: This function implements the identical unroll semantics
-        // that was implemented before. However, the unrolling is quite odd
-        // Furthemore, we might want to use different bounds per loop
+        // NOTE: The implemented unroll semantics are identical to the previous one we had.
+        //TODO: We might want to allow usage of different bounds per loop by e.g.
+        // annotating the looping jump with a custom bound counter
+        //TODO (2): The code can surely be cleaned up somehow
         Event cur = t.getEntry();
         Event successor;
         Event predecessor = null;

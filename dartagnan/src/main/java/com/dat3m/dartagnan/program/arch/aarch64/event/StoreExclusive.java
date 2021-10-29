@@ -10,8 +10,8 @@ import com.dat3m.dartagnan.program.event.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 
 import java.util.List;
 
@@ -54,18 +54,17 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
+
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        if(target == Arch.ARM || target == Arch.ARM8) {
-            RMWStoreExclusive store = newRMWStoreExclusive(address, value, mo);
-            ExecutionStatus status = newExecutionStatus(register, store);
-            List<Event> events = eventSequence(
-                    store,
-                    status
-            );
-            return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
-        }
-        throw new RuntimeException("Compilation of StoreExclusive is not implemented for " + target);
+    public List<Event> compile(Arch target) {
+        Preconditions.checkArgument(target == Arch.ARM8 || target == Arch.ARM, "Compilation of StoreExclusive is not implemented for " + target);
+
+        RMWStoreExclusive store = newRMWStoreExclusive(address, value, mo);
+        ExecutionStatus status = newExecutionStatus(register, store);
+        return eventSequence(
+                store,
+                status
+        );
     }
 
 }

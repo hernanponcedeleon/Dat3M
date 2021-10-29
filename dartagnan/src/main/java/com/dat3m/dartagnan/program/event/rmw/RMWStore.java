@@ -24,7 +24,4 @@ public class RMWStore extends Store implements RegReaderData {
         return loadEvent;
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
 }

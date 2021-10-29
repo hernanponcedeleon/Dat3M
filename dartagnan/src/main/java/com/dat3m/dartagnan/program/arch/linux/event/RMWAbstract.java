@@ -1,16 +1,17 @@
 package com.dat3m.dartagnan.program.arch.linux.event;
 
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.arch.linux.utils.EType;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.program.arch.linux.utils.EType;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.List;
 
 public abstract class RMWAbstract extends MemEvent implements RegWriter, RegReaderData {
 
@@ -44,12 +45,10 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
         return dataRegs;
     }
 
-
-    // Compilation
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+    public List<Event> compile(Arch target) {
         throw new RuntimeException("Compilation to " + target + " is not supported for " + getClass().getName() + " " + mo);
     }
+
+
 }

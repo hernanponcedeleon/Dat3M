@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import java.util.List;
@@ -51,11 +50,12 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	List<Event> events;
 
-    	// Events common for all compilation schemes.
+    @Override
+    public List<Event> compile(Arch target) {
+        List<Event> events;
+
+        // Events common for all compilation schemes.
         Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
         Label casEnd = newLabel("CAS_end");
@@ -67,11 +67,11 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                 Store store = newRMWStore(load, address, value, mo);
 
                 events = eventSequence(
-                		// Indentation shows the branching structure
+                        // Indentation shows the branching structure
                         load,
                         casCmpResult,
                         branchOnCasCmpResult,
-                        	store,
+                        store,
                         casEnd
                 );
                 break;
@@ -94,13 +94,13 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                 }
                 // --- Add success events ---
                 events = eventSequence(
-                		// Indentation shows the branching structure
+                        // Indentation shows the branching structure
                         optionalMemoryBarrier,
                         load,
                         casCmpResult,
                         branchOnCasCmpResult,
-                        	store,
-                        	optionalISyncBarrier,
+                        store,
+                        optionalISyncBarrier,
                         casEnd
                 );
                 break;
@@ -108,6 +108,7 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+        return events;
     }
+
 }

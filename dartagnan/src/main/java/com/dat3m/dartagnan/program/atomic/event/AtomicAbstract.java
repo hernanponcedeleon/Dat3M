@@ -8,9 +8,10 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
+
+import java.util.List;
 
 public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegReaderData {
 
@@ -48,8 +49,10 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
+
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+    public List<Event> compile(Arch target) {
         throw new RuntimeException("Compilation to " + target + " is not supported for " + getClass().getName() + " " + mo);
     }
+
 }

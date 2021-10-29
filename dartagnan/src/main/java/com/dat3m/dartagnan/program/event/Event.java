@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.base.Preconditions;
@@ -62,17 +61,17 @@ public abstract class Event implements Comparable<Event> {
 	public int getUId(){
 		return uId;
 	}
-	public void setUId(int nextId) { this.uId = nextId; }
+	public void setUId(int id) { this.uId = id; }
 
 	public int getCId() {
 		return cId;
 	}
+	public void setCId(int id) { cId = id; }
 
 	public int getFId() { return this.fId; }
-	public void setFId(int nextId) {
-		this.fId = nextId;
+	public void setFId(int id) {
+		this.fId = id;
 	}
-
 
 	public int getCLine() { return cLine; }
 	public void setCLine(int line) { this.cLine = line; }
@@ -80,26 +79,13 @@ public abstract class Event implements Comparable<Event> {
 	public Event getSuccessor(){
 		return successor;
 	}
+	public void setSuccessor(Event event){ successor = event; }
 
-	public void setSuccessor(Event event){
-		successor = event;
-		if (successor != null) {
-			successor.setThread(this.thread);
-		}
-	}
-
-	public Thread getThread() {
-		return thread;
-	}
+	public Thread getThread() { return thread; }
 
 	public void setThread(Thread thread) {
-		if (thread != null && !thread.equals(this.thread)) {
-			this.thread = thread;
-			if (successor != null) {
-				//TODO: Get rid of this recursion completely
-				successor.setThread(thread);
-			}
-		}
+		Preconditions.checkNotNull(thread, "The thread must be non-null.");
+		this.thread = thread;
 	}
 
 	public final List<Event> getSuccessors(){
@@ -162,52 +148,17 @@ public abstract class Event implements Comparable<Event> {
 		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
 	}
 
-
-    // Compilation
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public final int compile(Arch target, int nextId, Event predecessor) {
-		return compileRecursive(target, nextId, predecessor, 0).execute();
-    }
-
-	protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-		cId = nextId++;
-		if(successor != null){
-			if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
-				return successor.compileRecursive(target, nextId, this, depth + 1);
-			} else {
-				int finalNextId = nextId;
-				return RecursiveFunction.call(() -> successor.compileRecursive(target, finalNextId, this, 0));
-			}
-		}
-		return RecursiveFunction.done(nextId);
-	}
-
-	protected RecursiveFunction<Integer> compileSequenceRecursive(Arch target, int nextId, Event predecessor, List<Event> sequence, int depth){
-		for(Event e : sequence){
-			e.oId = oId;
-			e.uId = uId;
-			e.cId = nextId++;
-			predecessor.setSuccessor(e);
-			predecessor = e;
-		}
-		if(successor != null){
-			predecessor.successor = successor;
-			if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
-				return successor.compileRecursive(target, nextId, predecessor, depth + 1);
-			} else {
-				Event finalPredecessor = predecessor;
-				int finalNextId = nextId;
-				return RecursiveFunction.call(() -> successor.compileRecursive(target, finalNextId, finalPredecessor, 0));
-			}
-		}
-		return RecursiveFunction.done(nextId);
-	}
-
 	public void delete(Event pred) {
 		if (pred != null) {
 			pred.successor = this.successor;
 		}
+	}
+
+    // Compilation
+    // -----------------------------------------------------------------------------------------------------------------
+
+	public List<Event> compile(Arch target) {
+		return Collections.singletonList(this);
 	}
 
 

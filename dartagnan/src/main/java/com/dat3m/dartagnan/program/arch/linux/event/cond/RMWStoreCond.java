@@ -43,7 +43,4 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
 		return bmgr.equivalence(execVar, bmgr.and(cfVar, ((RMWReadCond)loadEvent).getCond()));
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
 }

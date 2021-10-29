@@ -82,7 +82,28 @@ public class Compilation implements ProgramProcessor {
     }
 
     private int compileThread(Thread thread, int nextId) {
-        nextId = thread.getEntry().compile(target, nextId, null);
+        Event pred = thread.getEntry();
+        Event toBeCompiled = pred.getSuccessor();
+
+        int fId = 0;
+        pred.setFId(fId++);
+        pred.setCId(nextId++);
+
+        while (toBeCompiled != null) {
+            List<Event> compiledEvents = toBeCompiled.compile(target);
+            for (Event e : compiledEvents) {
+                pred.setFId(fId++);
+                e.setOId(toBeCompiled.getOId());
+                e.setUId(toBeCompiled.getUId());
+                e.setCId(nextId++);
+                e.setThread(thread);
+                pred.setSuccessor(e);
+                pred = e;
+            }
+
+            toBeCompiled = toBeCompiled.getSuccessor();
+        }
+
         thread.updateExit(thread.getEntry());
         thread.clearCache();
         return nextId;

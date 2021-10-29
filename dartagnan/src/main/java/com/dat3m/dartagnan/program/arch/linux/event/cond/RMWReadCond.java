@@ -47,8 +47,4 @@ public abstract class RMWReadCond extends Load implements RegWriter, RegReaderDa
 
     public abstract String condToString();
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
-
 }

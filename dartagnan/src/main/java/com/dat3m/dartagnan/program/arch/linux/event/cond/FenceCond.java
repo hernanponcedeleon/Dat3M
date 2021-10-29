@@ -41,7 +41,4 @@ public class FenceCond extends Fence {
 		return bmgr.equivalence(execVar, bmgr.and(cfVar, loadEvent.getCond()));
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
 }

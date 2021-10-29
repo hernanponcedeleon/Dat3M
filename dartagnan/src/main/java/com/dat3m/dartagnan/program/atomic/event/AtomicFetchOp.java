@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import java.util.List;
@@ -50,11 +49,12 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
+
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-    	Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
-    	List<Event> events;
+    public List<Event> compile(Arch target) {
+        Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+        Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+        List<Event> events;
 
         switch(target) {
             case NONE: case TSO: {
@@ -72,7 +72,7 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
                 String loadMo = extractLoadMo(mo);
                 String storeMo = extractStoreMo(mo);
 
-            	Load load = newRMWLoadExclusive(resultRegister, address, loadMo);
+                Load load = newRMWLoadExclusive(resultRegister, address, loadMo);
                 Store store = newRMWStoreExclusive(address, dummyReg, storeMo, true);
                 Label label = newLabel("FakeDep");
                 Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
@@ -88,7 +88,7 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
                             : storeMo.equals(REL) ? Power.newLwSyncBarrier()
                             : null;
                 }
-                
+
                 // All events for POWER and ARM8
                 events = eventSequence(
                         optionalMemoryBarrier,
@@ -104,6 +104,7 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
                 String tag = mo != null ? "_explicit" : "";
                 throw new RuntimeException("Compilation of atomic_fetch_" + op.toLinuxName() + tag + " is not implemented for " + target);
         }
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);        
+        return events;
     }
+
 }

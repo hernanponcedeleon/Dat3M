@@ -46,7 +46,4 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
     	return ctx.getFormulaManager().getBooleanFormulaManager().implication(execVar, cfVar);
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
 }

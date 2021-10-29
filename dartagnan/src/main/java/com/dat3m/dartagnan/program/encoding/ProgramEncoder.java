@@ -86,7 +86,7 @@ public class ProgramEncoder implements Encoder {
     }
 
     private void initEvent(Event e, VerificationTask task, SolverContext ctx){
-        Preconditions.checkState(e.getCId() >= 0,"Event cID is not set for %s. Event was not compiled yet?", this);
+        Preconditions.checkState(e.getCId() >= 0,"Event cID is negative for %s. Event was not compiled yet?", e);
         FormulaManager fmgr = ctx.getFormulaManager();
 
         boolean mergeVars = shouldMergeCFVars && !shouldAllowPartialExecutions;
@@ -146,6 +146,7 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeFinalRegisterValues(SolverContext ctx){
         Preconditions.checkState(task != null, "The encoder needs to get initialized for encoding first.");
+        logger.info("Encoding final register values");
 
         FormulaManager fmgr = ctx.getFormulaManager();
         BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
@@ -208,6 +209,8 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeAssertions(SolverContext ctx) {
         Preconditions.checkState(task != null, "The encoder needs to get initialized for encoding first.");
+
+        logger.info("Encoding assertions");
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 
         BooleanFormula assertionEncoding = program.getAss().encode(ctx);
