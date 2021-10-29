@@ -391,23 +391,28 @@ public class Refinement {
         // Changes a reasoning <literal> based on a given permutation <perm> and translates the result
         // into a BooleanFormula for Refinement.
         private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm) {
+            BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+            BooleanFormula enc;
             if (literal instanceof EventLiteral) {
                 EventLiteral lit = (EventLiteral) literal;
-                return perm.apply(lit.getEventData().getEvent()).exec();
+                enc =  perm.apply(lit.getEventData().getEvent()).exec();
             } else if (literal instanceof AddressLiteral) {
                 AddressLiteral loc = (AddressLiteral) literal;
-                MemEvent e1 = (MemEvent) perm.apply(loc.getEdge().getFirst().getEvent());
-                MemEvent e2 = (MemEvent) perm.apply(loc.getEdge().getSecond().getEvent());
-                return generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), context);
+                MemEvent e1 = (MemEvent) perm.apply(loc.getFirst().getEvent());
+                MemEvent e2 = (MemEvent) perm.apply(loc.getSecond().getEvent());
+                enc =  generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), context);
             } else if (literal instanceof EdgeLiteral) {
                 EdgeLiteral lit = (EdgeLiteral) literal;
                 Relation rel = task.getMemoryModel().getRelationRepository().getRelation(lit.getName());
-                return rel.getSMTVar(
+                enc =  rel.getSMTVar(
                         perm.apply(lit.getEdge().getFirst().getEvent()),
                         perm.apply(lit.getEdge().getSecond().getEvent()),
                         context);
+            } else {
+                throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
             }
-            throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
+
+            return literal.isNegated() ? bmgr.not(enc) : enc;
         }
 
     }

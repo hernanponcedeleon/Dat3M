@@ -6,29 +6,22 @@ import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.RelationGra
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.binary.DifferenceGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.constraints.AcyclicityConstraint;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.constraints.Constraint;
-import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.stat.CoherenceGraph;
 import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.stat.FenceGraph;
-import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.stat.LocationGraph;
-import com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.stat.ReadFromGraph;
 import com.dat3m.dartagnan.analysis.saturation.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.saturation.logic.DNF;
 import com.dat3m.dartagnan.analysis.saturation.logic.SortedCubeSet;
 import com.dat3m.dartagnan.analysis.saturation.util.EdgeDirection;
 import com.dat3m.dartagnan.analysis.saturation.util.GraphVisitor;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.google.common.collect.BiMap;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.dat3m.dartagnan.analysis.saturation.graphs.relationGraphs.utils.PathAlgorithm.findShortestPath;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 
 //TODO: Check the usage of derivation length
@@ -38,14 +31,21 @@ public class Reasoner {
     private final BranchEquivalence eq;
     private final BiMap<RelationGraph, Relation> graphRelMap;
     private final boolean useMinTupleReasoning;
-    private final Relation co;
     private final Visitor visitor = new Visitor();
+
+    private final Set<RelationGraph> reasoningCut = new HashSet<>();
 
     public Reasoner(ExecutionGraph execGraph, boolean useMinTupleReasoning) {
         this.eq = execGraph.getVerificationTask().getBranchEquivalence();
-        this.co = execGraph.getVerificationTask().getMemoryModel().getRelationRepository().getRelation(CO);
         this.graphRelMap = execGraph.getRelationGraphMap().inverse();
         this.useMinTupleReasoning = useMinTupleReasoning;
+
+        reasoningCut.add(execGraph.getRelationGraphByName(RF));
+        reasoningCut.add(execGraph.getRelationGraphByName(CO));
+    }
+
+    public Set<RelationGraph> getReasoningCut() {
+        return reasoningCut;
     }
 
     public DNF<CoreLiteral> computeViolationReasons(Constraint constraint) {
@@ -93,6 +93,10 @@ public class Reasoner {
             return reason;
         }
 
+        if (reasoningCut.contains(graph)) {
+            return new Conjunction<>(new EdgeLiteral(graph.getName(), edge));
+        }
+
         reason = graph.accept(visitor, edge, null);
         assert !reason.isFalse();
         return simplifyReason(reason);
@@ -116,37 +120,6 @@ public class Reasoner {
             }
         }
         return null;
-    }
-
-    private Conjunction<CoreLiteral> getRfReason(Edge e) {
-        if (!e.getFirst().isWrite() || !e.getSecond().isRead()) {
-            return Conjunction.FALSE();
-        } else {
-            return new Conjunction<>(new RfLiteral(e));
-        }
-    }
-
-    private Conjunction<CoreLiteral> getCoherenceReason(Edge e) {
-        if (e.getFirst().isInit() && e.getSecond().isWrite()) {
-            return getAddressReason(e);
-        }
-        if (!e.getFirst().isWrite() || !e.getSecond().isWrite()) {
-            return Conjunction.FALSE();
-        }
-        return new Conjunction<>(new CoLiteral(e));
-    }
-
-    private Conjunction<CoreLiteral> getAddressReason(Edge e) {
-        if (!e.getFirst().isMemoryEvent() || !e.getSecond().isMemoryEvent()) {
-            return Conjunction.FALSE();
-        }
-        MemEvent e1 = (MemEvent) e.getFirst().getEvent();
-        MemEvent e2 = (MemEvent) e.getSecond().getEvent();
-        if (e1.getMaxAddressSet().size() == 1 && e1.getMaxAddressSet().equals(e2.getMaxAddressSet())) {
-            return getExecReason(e);
-        } else {
-            return new Conjunction<>(new AddressLiteral(e)).and(getExecReason(e));
-        }
     }
 
     private Conjunction<CoreLiteral> getExecReason(Edge edge) {
@@ -183,23 +156,22 @@ public class Reasoner {
             final BranchEquivalence eq = this.eq;
             EventLiteral eventLit = (EventLiteral) literal;
             Event e = eventLit.getEventData().getEvent();
-            return e.cfImpliesExec() && clause.getLiterals().stream().anyMatch(x -> {
-                if (x instanceof AddressLiteral || x instanceof EventLiteral) {
-                    return false;
-                }
+            return e.cfImpliesExec() && clause.getLiterals().stream().filter(x -> x instanceof EdgeLiteral).anyMatch(x -> {
                 Edge edge = ((EdgeLiteral) x).getEdge();
                 return eq.isImplied(edge.getFirst().getEvent(), e) || eq.isImplied(edge.getSecond().getEvent(), e);
             });
         } else if (literal instanceof AddressLiteral) {
             // AddressLiterals may be implied by co or rf literals
-            Edge e = ((AddressLiteral)literal).getEdge();
+            AddressLiteral lit = (AddressLiteral)literal;
+            Edge e = new Edge(lit.getFirst(), lit.getSecond());
             Edge eOpp = e.inverse();
-            return clause.getLiterals().stream().anyMatch( x -> {
-                if (x instanceof EdgeLiteral && !(x instanceof AddressLiteral)) {
-                    Edge e2 = ((EdgeLiteral)x).getEdge();
-                    return e.equals(e2) || eOpp.equals(e2);
+            return clause.getLiterals().stream().filter(x -> x instanceof EdgeLiteral).anyMatch( x -> {
+                EdgeLiteral edgeLit = (EdgeLiteral)x;
+                if (edgeLit.getName().equals(RF) || edgeLit.getName().equals(CO)) {
+                    return e.equals(edgeLit.getEdge()) || eOpp.equals(edgeLit.getEdge());
+                } else {
+                    return false;
                 }
-                return false;
             });
         }
 
@@ -293,14 +265,21 @@ public class Reasoner {
         @Override
         public Conjunction<CoreLiteral> visitDifference(RelationGraph graph, Edge edge, Void unused) {
             DifferenceGraph difGraph = (DifferenceGraph)graph;
+            RelationGraph rhs = difGraph.getSecond();
             //TODO: This is only correct as long as the second operand of the difference
             // is a static relation. For now we work with this assumption and check it here.
-            if (!graphRelMap.get(difGraph.getSecond()).isStaticRelation()) {
-                throw new IllegalStateException("The difference graph" + difGraph + " has a non-static second operand");
-            }
+
             Conjunction<CoreLiteral> reason = computeReason(difGraph.getFirst(), edge);
             assert !reason.isFalse();
-            return reason;
+
+            if (!graphRelMap.get(rhs).getMaxTupleSet().contains(edge.toTuple())) {
+                return reason;
+            } else if (reasoningCut.contains(rhs)) {
+                return reason.and(new Conjunction<>(new EdgeLiteral(rhs.getName(), edge).getOpposite()));
+            } else {
+                throw new IllegalStateException(String.format("Cannot compute reason of edge %s in difference graph %s because its right-hand side %s " +
+                        "is non-basic and edge containment cannot be statically excluded.", edge, difGraph, rhs ));
+            }
         }
 
         @Override
@@ -365,49 +344,24 @@ public class Reasoner {
 
         @Override
         public Conjunction<CoreLiteral> visitBase(RelationGraph graph, Edge edge, Void unused) {
-            if (graph instanceof ReadFromGraph) {
-                return visitRf(graph, edge, unused);
-            } else if (graph instanceof CoherenceGraph) {
-                return visitCo(graph, edge, unused);
-            } else if (graph instanceof LocationGraph) {
-                return visitLoc(graph, edge, unused);
+
+            if (graph.getName().equals(RF) || graph.getName().equals(CO)) {
+                // This is a fallback as RF and CO should be part of the cut by default
+                return new Conjunction<>(new EdgeLiteral(graph.getName(), edge));
+            } else if (graph.getName().equals(LOC)) {
+                return new Conjunction<>(new AddressLiteral(edge)).and(getExecReason(edge));
             } else if (graph instanceof FenceGraph) {
-                return visitFence(graph, edge, unused);
+                FenceGraph fenceGraph = (FenceGraph) graph;
+                EventData fence = fenceGraph.getNextFence(edge.getFirst());
+
+                return getExecReason(edge).and(new Conjunction<>(new EventLiteral(fence)));
             } else {
-                return visitStatic(graph, edge, unused);
-            }
-        }
-
-        private Conjunction<CoreLiteral> visitFence(RelationGraph graph, Edge edge, Void unused) {
-            FenceGraph fenceGraph = (FenceGraph) graph;
-            EventData fence = fenceGraph.getNextFence(edge.getFirst());
-
-            return getExecReason(edge).and(new Conjunction<>(new EventLiteral(fence)));
-        }
-
-        private Conjunction<CoreLiteral> visitRf(RelationGraph graph, Edge edge, Void unused) {
-            return getRfReason(edge);
-        }
-
-        private Conjunction<CoreLiteral> visitCo(RelationGraph graph, Edge edge, Void unused) {
-            // We still use minTupleSets for Co for now, even if minTupleReasoning is disabled
-            if (co.getMinTupleSet().contains(edge.toTuple())) {
+                //TODO: We might have to treat Data, Addr and Ctrl differently,
+                // potentially adding new base literals for those
                 return getExecReason(edge);
-            } else if (!co.getMaxTupleSet().contains(edge.toTuple().getInverse())) {
-                return getAddressReason(edge);
             }
-            return getCoherenceReason(edge);
         }
 
-        private Conjunction<CoreLiteral> visitLoc(RelationGraph graph, Edge edge, Void unused) {
-            return getAddressReason(edge);
-        }
-
-        private Conjunction<CoreLiteral> visitStatic(RelationGraph graph, Edge edge, Void unused) {
-            //TODO: We might have to treat Data, Addr and Ctrl differently,
-            // potentially adding new base literals for those
-            return getExecReason(edge);
-        }
     }
 
 

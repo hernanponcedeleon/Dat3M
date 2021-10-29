@@ -140,6 +140,10 @@ public class ExecutionGraph {
         return relationGraphMap.get(rel);
     }
 
+    public RelationGraph getRelationGraphByName(String name) {
+        return getRelationGraph(verificationTask.getMemoryModel().getRelationRepository().getRelation(name));
+    }
+
     public Collection<RelationGraph> getRelationGraphs() {
         return graphHierarchy.getGraphList();
     }
