@@ -91,6 +91,9 @@ public class Thread {
         cache = null;
     }
 
+    // TODO: This function is quite unintuitive and does more than
+    //  needed for most use cases. We should check its usages and see if we can
+    //  simplify anything.
     public void updateExit(Event event){
         exit = event;
         Event next = exit.getSuccessor();
