@@ -88,7 +88,7 @@ public abstract class AbstractDartagnanTest {
             long solvingTime = System.currentTimeMillis() - start;
             writer.append(expected.toString()).append(", ").append(Long.toString(solvingTime));
         } catch (Exception e){
-        	System.out.println(e.getMessage());
+        	System.out.println(String.format("%s failed with the following msg: %s", path, e.getMessage()));
         }
     }
 
@@ -110,7 +110,7 @@ public abstract class AbstractDartagnanTest {
             long solvingTime = System.currentTimeMillis() - start;
             writer.append(expected.toString()).append(", ").append(Long.toString(solvingTime));
         } catch (Exception e){
-        	System.out.println(e.getMessage());
+        	System.out.println(String.format("%s failed with the following msg: %s", path, e.getMessage()));
         }
     }
 }
