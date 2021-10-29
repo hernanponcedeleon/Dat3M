@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.utils.dependable;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -66,9 +67,10 @@ public class DependencyGraph<T> {
     // ====================================================================
 
     private DependencyGraph(final Collection<? extends T> items, final Function<? super T, ? extends Collection<? extends T>> dependencyMap) {
+        Preconditions.checkNotNull(items, "items must be non-null.");
+        this.dependencyMap = Preconditions.checkNotNull(dependencyMap, "dependencyMap must be non-null");
         nodeMap = new HashMap<>();
         sccs = new ArrayList<>();
-        this.dependencyMap = dependencyMap;
 
         items.forEach(this::getNodeInternal);
         initializeNodes();

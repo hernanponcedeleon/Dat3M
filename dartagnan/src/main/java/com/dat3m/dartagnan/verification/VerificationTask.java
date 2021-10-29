@@ -19,7 +19,6 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
-import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -29,6 +28,9 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.List;
 import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 /*
 Represents a verification task.
@@ -52,11 +54,11 @@ public class VerificationTask {
 
     protected VerificationTask(Program program, Wmm memoryModel, WitnessGraph witness,
                             Arch target, Settings settings, Configuration config) {
-        this.program = program;
-        this.memoryModel = memoryModel;
-        this.witness = witness;
-        this.target = target;
-        this.settings = settings;
+        this.program = checkNotNull(program);
+        this.memoryModel = checkNotNull(memoryModel);
+        this.witness = checkNotNull(witness);
+        this.target = checkNotNull(target);
+        this.settings = checkNotNull(settings);
 
         try {
             //TODO: This should be a parameter and <target> as well as <settings> should directly be integrated
@@ -69,6 +71,8 @@ public class VerificationTask {
             progEncoder = ProgramEncoder.fromConfig(config);
             memoryEncoder = MemoryEncoder.fromConfig(config);
         } catch (InvalidConfigurationException ex) {
+            // TODO: We throw a RuntimeException for now to avoid forcing the calling code
+            //  to be adapted (we convert from checked exception to unchecked exception)
             throw new RuntimeException(ex);
         }
     }
@@ -86,26 +90,22 @@ public class VerificationTask {
         protected VerificationTaskBuilder() { }
 
         public VerificationTaskBuilder withWitness(WitnessGraph witness) {
-            Preconditions.checkNotNull(witness, "Witness may not be null.");
-            this.witness = witness;
+            this.witness = checkNotNull(witness, "Witness may not be null.");
             return this;
         }
 
         public VerificationTaskBuilder withTarget(Arch target) {
-            Preconditions.checkNotNull(target, "Target architecture may not be null");
-            this.target = target;
+            this.target = checkNotNull(target, "Target architecture may not be null");
             return this;
         }
 
         public VerificationTaskBuilder withSettings(Settings settings) {
-            Preconditions.checkNotNull(settings, "Settings may not be null");
-            this.settings = settings;
+            this.settings = checkNotNull(settings, "Settings may not be null");
             return this;
         }
 
         public VerificationTaskBuilder withConfig(Configuration config) {
-            Preconditions.checkNotNull(config, "Config may not be null");
-            this.config = config;
+            this.config = checkNotNull(config, "Config may not be null");
             return this;
         }
 
@@ -156,7 +156,7 @@ public class VerificationTask {
 
     public ThreadSymmetry getThreadSymmetry() {
         if (threadSymmetry == null) {
-            Preconditions.checkState(program.isCompiled(), "Thread symmetry can only be computed after compilation.");
+            checkState(program.isCompiled(), "Thread symmetry can only be computed after compilation.");
             threadSymmetry = new ThreadSymmetry(program);
         }
         return threadSymmetry;

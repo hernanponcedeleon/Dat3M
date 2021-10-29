@@ -72,7 +72,7 @@ public abstract class BaseOptions extends Options {
         		"The SMT solver to be used: " + supported_smtsolvers));
     }
 
-    public void parse(String[] args) throws ParseException, RuntimeException {
+    public void parse(String[] args) throws ParseException {
         CommandLine cmd = new DefaultParser().parse(this, args);
         parseSettings(cmd);
 
@@ -107,7 +107,7 @@ public abstract class BaseOptions extends Options {
                 smtsolver = Z3;
                 break;
             default:
-                throw new UnsupportedOperationException("Unrecognized SMT solver: " + solverString);
+                throw new IllegalArgumentException("Unrecognized SMT solver: " + solverString);
         }
     }
 
@@ -144,14 +144,14 @@ public abstract class BaseOptions extends Options {
             try {
                 bound = Math.max(1, Integer.parseInt(cmd.getOptionValue("unroll")));
             } catch (NumberFormatException e){
-                throw new UnsupportedOperationException("Illegal unroll value");
+                throw new UnsupportedOperationException("Illegal unroll value: " + cmd.getOptionValue("unroll"));
             }
         }
         if(cmd.hasOption(SMTSOLVER_TIMEOUT_OPTION)){
             try {
             	solver_timeout = Math.max(1, Integer.parseInt(cmd.getOptionValue(SMTSOLVER_TIMEOUT_OPTION)));
             } catch (NumberFormatException e){
-                throw new UnsupportedOperationException("Illegal solver_timeout value");
+                throw new IllegalArgumentException("Illegal solver_timeout value: " + cmd.getOptionValue(SMTSOLVER_TIMEOUT_OPTION));
             }
         }
         settings = new Settings(alias, bound, solver_timeout);

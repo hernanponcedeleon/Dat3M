@@ -21,14 +21,14 @@ import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 public class RelationRepository {
 
@@ -77,7 +77,7 @@ public class RelationRepository {
     public void updateRelation(Relation relation){
         if(relation.getIsNamed()){
             if(relationMap.get(relation.getName()) != null){
-                throw new RuntimeException("Relation " + relation.getName() + " is already declared");
+                throw new IllegalArgumentException("Relation " + relation.getName() + " is already declared");
             }
             relationMap.put(relation.getName(), relation);
         }

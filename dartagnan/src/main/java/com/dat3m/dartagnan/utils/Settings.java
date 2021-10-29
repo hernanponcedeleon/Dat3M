@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.utils;
 
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
+import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -51,16 +52,12 @@ public class Settings {
     }
 
     public boolean getFlag(int flag){
-        if(!flags.containsKey(flag)){
-            throw new UnsupportedOperationException("Unrecognized settings flag");
-        }
+        Preconditions.checkArgument(flags.containsKey(flag), "Unrecognized settings flag");
         return flags.get(flag);
     }
 
     public void setFlag(int flag, boolean value){
-        if(!flags.containsKey(flag)){
-            throw new UnsupportedOperationException("Unrecognized settings flag");
-        }
+        Preconditions.checkArgument(flags.containsKey(flag), "Unrecognized settings flag");
         flags.put(flag, value);
     }
 

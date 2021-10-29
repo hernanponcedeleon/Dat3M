@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -82,9 +83,8 @@ public class Wmm {
 
     public void addRecursiveGroup(Set<RecursiveRelation> recursiveGroup){
         int id = 1 << recursiveGroups.size();
-        if(id < 0){
-            throw new RuntimeException("Exceeded maximum number of recursive relations");
-        }
+        Preconditions.checkState(id >= 0, "Exceeded maximum number of recursive relations");
+
         recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
     }
 
@@ -118,9 +118,7 @@ public class Wmm {
     // It also triggers the computation of may and active sets!
     // It does NOT encode the axioms nor any non-base relation yet!
     private BooleanFormula encodeBase(SolverContext ctx) {
-        if (this.task == null) {
-            throw new IllegalStateException("The WMM needs to get initialised first.");
-        }
+        Preconditions.checkState(task != null, "The WMM needs to get initialised before encoding.");
 
         for (RecursiveGroup recursiveGroup : recursiveGroups) {
             recursiveGroup.initMaxTupleSets();
@@ -171,9 +169,8 @@ public class Wmm {
 
     // Encodes all axioms. This should be called after <encodeRelations>
     public BooleanFormula encodeConsistency(SolverContext ctx) {
-        if(!relationsAreEncoded){
-            throw new IllegalStateException("Wmm relations must be encoded before the consistency predicate.");
-        }
+        Preconditions.checkState(relationsAreEncoded, "Wmm relations must be encoded before the consistency predicate.");
+
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula expr = bmgr.makeTrue();
         for (Axiom ax : axioms) {

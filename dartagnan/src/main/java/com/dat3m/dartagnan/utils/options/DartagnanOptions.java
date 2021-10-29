@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.utils.options;
 
 import com.dat3m.dartagnan.analysis.Analysis;
-import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -12,8 +11,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static com.dat3m.dartagnan.analysis.Analysis.REACHABILITY;
 
 public class DartagnanOptions extends BaseOptions {
 
@@ -51,10 +48,10 @@ public class DartagnanOptions extends BaseOptions {
         		"Path to the machine readable witness file."));
         }
     
-    public void parse(String[] args) throws ParseException, RuntimeException {
+    public void parse(String[] args) throws ParseException {
     	super.parse(args);
         if(supportedFormats.stream().noneMatch(f -> programFilePath.endsWith(f))) {
-            throw new RuntimeException("Unrecognized program format");
+            throw new IllegalArgumentException("Unrecognized program format");
         }
         CommandLine cmd = new DefaultParser().parse(this, args);
 
