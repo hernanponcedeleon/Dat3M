@@ -36,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 public abstract class AbstractDartagnanTest {
 
 	static final int SOLVER_TIMEOUT = 60;
-    static final int TIMEOUT = 5000;
+    static final int TIMEOUT = 10000;
 	
     static Iterable<Object[]> buildParameters(String litmusPath, String cat, Arch target) throws IOException {
     	int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
