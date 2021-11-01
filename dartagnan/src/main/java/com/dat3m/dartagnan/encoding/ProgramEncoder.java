@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.encoding;
+package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -92,7 +92,6 @@ public class ProgramEncoder implements Encoder {
         boolean mergeVars = shouldMergeCFVars && !shouldAllowPartialExecutions;
         String repr = mergeVars ? task.getBranchEquivalence().getRepresentative(e).repr() : e.repr();
         e.setCfVar(fmgr.makeVariable(BooleanType, "cf(" + repr + ")"));
-        e.getListeners().removeIf(x -> x.getCId() < 0);
 
         e.initialise(task, ctx);
     }

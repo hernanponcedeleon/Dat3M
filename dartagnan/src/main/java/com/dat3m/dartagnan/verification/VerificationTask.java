@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.verification;
 
 import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.encoding.MemoryEncoder;
+import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.encoding.MemoryEncoder;
-import com.dat3m.dartagnan.program.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;

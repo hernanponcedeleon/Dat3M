@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.encoding;
+package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Memory;

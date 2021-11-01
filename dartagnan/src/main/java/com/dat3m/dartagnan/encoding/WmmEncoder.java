@@ -1,106 +1,76 @@
-package com.dat3m.dartagnan.wmm;
+package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
-/**
- *
- * @author Florian Furbach
- */
-public class Wmm {
+public class WmmEncoder implements Encoder {
 
     private final static ImmutableSet<String> baseRelations = ImmutableSet.of(CO, RF, IDD, ADDRDIRECT);
 
-    private final List<Axiom> axioms = new ArrayList<>();
-    private final Map<String, FilterAbstract> filters = new HashMap<>();
-    private final RelationRepository relationRepository;
-    private final List<RecursiveGroup> recursiveGroups = new ArrayList<>();
+    private static final Logger logger = LogManager.getLogger(WmmEncoder.class);
 
-    public List<Axiom> getAxioms() { return axioms; }
+    // =========================== Configurables ===========================
 
-    public List<RecursiveGroup> getRecursiveGroups() { return recursiveGroups; }
 
-    public boolean isLocallyConsistent() {
-        // For now we return a preset value. Ideally, we would like to
-        // find this property automatically.
-        return GlobalSettings.getInstance().shouldWmmAssumeLocalConsistency();
+
+    // =====================================================================
+
+    private WmmEncoder(Configuration config) throws InvalidConfigurationException {
+        config.inject(this);
     }
 
-    public boolean doesRespectAtomicBlocks() {
-        // For now we return a preset value. Ideally, we would like to
-        // find this property automatically. This is currently only relevant for SVCOMP
-        return GlobalSettings.getInstance().doesWmmRespectAtomicBlocks();
+    public static WmmEncoder fromConfig(Configuration config) throws InvalidConfigurationException {
+        return new WmmEncoder(config);
     }
-
 
     private VerificationTask task;
-    private boolean relationsAreEncoded = false;
+    private Wmm memoryModel;
+    private RelationRepository relationRepository;
 
+    private boolean relationsAreEncoded = false;
     private boolean encodeCo = true;
 
-    public void setEncodeCo(boolean encodeCO) {
-        this.encodeCo = encodeCO;
-    }
-
-    public Wmm() {
-        relationRepository = new RelationRepository();
-    }
-
-    public void addAxiom(Axiom ax) {
-        axioms.add(ax);
-    }
-
-    public void addFilter(FilterAbstract filter) {
-        filters.put(filter.getName(), filter);
-    }
-
-    public FilterAbstract getFilter(String name){
-        return filters.computeIfAbsent(name, FilterBasic::get);
-    }
-
-    public RelationRepository getRelationRepository(){
-        return relationRepository;
-    }
-
-
-    public void addRecursiveGroup(Set<RecursiveRelation> recursiveGroup){
-        int id = 1 << recursiveGroups.size();
-        Preconditions.checkState(id >= 0, "Exceeded maximum number of recursive relations: %s", recursiveGroup.size());
-
-        recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
+    public void setEncodeCo(boolean value) {
+        this.encodeCo = value;
     }
 
     public void initialise(VerificationTask task, SolverContext ctx) {
         this.task = task;
+        this.memoryModel = task.getMemoryModel();
+        this.relationRepository = memoryModel.getRelationRepository();
+
+        //TODO: Once we have abstracted the AliasAnalysis into an interface,
+        // we should move this to a similar place as BranchEquivalence
         new AliasAnalysis().calculateLocationSets(task.getProgram(), task.getSettings().getAlias());
 
         for(String relName : baseRelations){
             relationRepository.getRelation(relName);
         }
 
-        for (Axiom ax : axioms) {
+        for (Axiom ax : memoryModel.getAxioms()) {
             ax.getRelation().updateRecursiveGroupId(ax.getRelation().getRecursiveGroupId());
         }
 
-        for(RecursiveGroup recursiveGroup : recursiveGroups){
+        for(RecursiveGroup recursiveGroup : memoryModel.getRecursiveGroups()){
             recursiveGroup.setDoRecurse();
         }
 
@@ -108,7 +78,7 @@ public class Wmm {
             relation.initialise(task, ctx);
         }
 
-        for (Axiom axiom : axioms) {
+        for (Axiom axiom : memoryModel.getAxioms()) {
             axiom.initialise(task, ctx);
         }
     }
@@ -119,6 +89,9 @@ public class Wmm {
     // It does NOT encode the axioms nor any non-base relation yet!
     private BooleanFormula encodeBase(SolverContext ctx) {
         Preconditions.checkState(task != null, "The WMM needs to get initialised before encoding.");
+
+        List<RecursiveGroup> recursiveGroups = memoryModel.getRecursiveGroups();
+        List<Axiom> axioms = memoryModel.getAxioms();
 
         for (RecursiveGroup recursiveGroup : recursiveGroups) {
             recursiveGroup.initMaxTupleSets();
@@ -143,7 +116,7 @@ public class Wmm {
         }
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
+        BooleanFormula enc = bmgr.makeTrue();
         for(String relName : baseRelations){
             if (!encodeCo && relName.equals(CO)) {
                 continue;
@@ -159,9 +132,9 @@ public class Wmm {
     // NOTE: It avoids encoding relations that do NOT affect the axioms, i.e. unused relations
     public BooleanFormula encodeRelations(SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-    	BooleanFormula enc = encodeBase(ctx);
-        for (Axiom ax : axioms) {
-			enc = bmgr.and(enc, ax.getRelation().encode(ctx));
+        BooleanFormula enc = encodeBase(ctx);
+        for (Axiom ax : memoryModel.getAxioms()) {
+            enc = bmgr.and(enc, ax.getRelation().encode(ctx));
         }
         relationsAreEncoded = true;
         return enc;
@@ -172,42 +145,10 @@ public class Wmm {
         Preconditions.checkState(relationsAreEncoded, "Wmm relations must be encoded before the consistency predicate.");
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula expr = bmgr.makeTrue();
-        for (Axiom ax : axioms) {
+        BooleanFormula expr = bmgr.makeTrue();
+        for (Axiom ax : memoryModel.getAxioms()) {
             expr = bmgr.and(expr, ax.consistent(ctx));
         }
         return expr;
-    }
-
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-
-        for (Axiom axiom : axioms) {
-            sb.append(axiom).append("\n");
-        }
-
-        for (Relation relation : relationRepository.getRelations()) {
-            if(relation.getIsNamed()){
-                sb.append(relation).append("\n");
-            }
-        }
-
-        for (Map.Entry<String, FilterAbstract> filter : filters.entrySet()){
-            sb.append(filter.getValue()).append("\n");
-        }
-
-        return sb.toString();
-    }
-
-
-    // ====================== Utility Methods ====================
-    
-    private DependencyGraph<Relation> relationDependencyGraph;
-    
-    public DependencyGraph<Relation> getRelationDependencyGraph() {
-        if (relationDependencyGraph == null) {
-            relationDependencyGraph = DependencyGraph.from(relationRepository.getRelations());
-        }
-        return relationDependencyGraph;
     }
 }

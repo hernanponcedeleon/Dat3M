@@ -75,9 +75,6 @@ public abstract class Relation implements Dependent<Relation> {
         encodeTupleSet = new TupleSet();
     }
 
-    /*
-    TODO: getMinTupleSet is no yet used extensively
-     */
     public abstract TupleSet getMinTupleSet();
 
     public abstract TupleSet getMaxTupleSet();

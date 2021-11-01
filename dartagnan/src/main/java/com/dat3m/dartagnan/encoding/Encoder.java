@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.encoding;
+package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.sosy_lab.java_smt.api.SolverContext;
