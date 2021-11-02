@@ -20,8 +20,15 @@ public class EdgeLiteral extends AbstractLiteral {
     }
 
     @Override
+    public EdgeLiteral getOpposite() {
+        EdgeLiteral opp = new EdgeLiteral(name, edge);
+        opp.negated = !negated;
+        return opp;
+    }
+
+    @Override
     public int hashCode() {
-        return edge.hashCode() + 31*name.hashCode();
+        return edge.hashCode() + 31*name.hashCode() + 3*Boolean.hashCode(negated);
     }
 
     @Override
@@ -32,11 +39,12 @@ public class EdgeLiteral extends AbstractLiteral {
             return false;
         }
         EdgeLiteral other = (EdgeLiteral)obj;
-        return  this.name.equals(other.name) && this.edge.equals(other.edge);
+        return this.negated == other.negated && this.name.equals(other.name) && this.edge.equals(other.edge);
     }
 
     @Override
     public String toString() {
-        return String.format("%s(%s,%s)", name, getEdge().getFirst(), edge.getSecond());
+        return String.format("%s%s(%s,%s)", negated ? "~" : "", name, getEdge().getFirst(), edge.getSecond());
     }
+
 }

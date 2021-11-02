@@ -30,8 +30,6 @@ public final class SimpleGraph extends AbstractRelationGraph {
     private int numEvents = 0;
 
     private final HashMap<Edge, Edge> edgeMap = new HashMap<>();
-    // TODO: This should in theory be better but we have some benchmarks where this is problematic
-    //private final EdgeSet edgeMap = new EdgeSet(400);
 
     @Override
     public List<RelationGraph> getDependencies() {
@@ -122,7 +120,6 @@ public final class SimpleGraph extends AbstractRelationGraph {
 
     public boolean contains(Edge e) {
         return edgeMap.containsKey(e);
-        //return edgeMap.contains(e);
     }
 
     public boolean contains(EventData a, EventData b) {
@@ -130,7 +127,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
     }
 
     public boolean add(Edge e) {
-        if (edgeMap.putIfAbsent(e, e) != null/*!edgeMap.add(e)*/) {
+        if (edgeMap.putIfAbsent(e, e) != null) {
             return false;
         }
         int firstId = e.getFirst().getId();
@@ -208,7 +205,7 @@ public final class SimpleGraph extends AbstractRelationGraph {
     public void constructFromModel(ExecutionModel model) {
         numEvents = model.getEventList().size();
         if (numEvents > outgoing.length) {
-            final int newCapacity = numEvents + 20;
+            final int newCapacity = numEvents + 20; // We give a buffer of 20 extra events
             outgoing = Arrays.copyOf(outgoing, newCapacity);
             ingoing = Arrays.copyOf(ingoing, newCapacity);
         }
@@ -218,14 +215,11 @@ public final class SimpleGraph extends AbstractRelationGraph {
 
     private final class DataItem implements Iterable<Edge> {
         final List<Edge> edgeList;
-        //final List<Edge> reversedList;
         final boolean deleteFromMap;
         int maxTime;
 
         public DataItem(boolean deleteFromMap) {
-            //edgeList = new ArrayList<>(20);
             edgeList = new EdgeList(20);
-            //reversedList = Lists.reverse(edgeList);
             this.deleteFromMap = deleteFromMap;
             maxTime = 0;
         }
@@ -259,9 +253,10 @@ public final class SimpleGraph extends AbstractRelationGraph {
         }
 
         public void backtrackTo(int time) {
+            //NOTE: We use the fact that the edge list
+            // should be sorted by timestamp (since edges with higher timestamp get added later)
             if (maxTime > time) {
                 final List<Edge> edgeList = this.edgeList;
-                //final EdgeSet edgeMap = SimpleGraph.this.edgeMap;
                 final Map<Edge, Edge> edgeMap = SimpleGraph.this.edgeMap;
                 int i = edgeList.size();
                 while (--i >= 0) {

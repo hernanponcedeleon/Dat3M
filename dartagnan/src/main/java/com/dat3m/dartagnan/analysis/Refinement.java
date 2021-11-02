@@ -209,7 +209,9 @@ public class Refinement {
             veriResult = FAIL;
         }
 
-        logSummary(statList, iterationCount, totalSolvingTime, boundCheckTime);
+        if (logger.isInfoEnabled()) {
+            logger.info(generateSummary(statList, iterationCount, totalSolvingTime, boundCheckTime));
+        }
 
         veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;
         logger.info("Verification finished with result " + veriResult);
@@ -219,12 +221,8 @@ public class Refinement {
 
     // -------------------- Printing -----------------------------
 
-    private static void logSummary(List<SolverStatistics> statList, int iterationCount,
+    private static CharSequence generateSummary(List<SolverStatistics> statList, int iterationCount,
                                    long totalSolvingTime, long boundCheckTime) {
-        if (!logger.isInfoEnabled()) {
-            return;
-        }
-
         long totalModelTime = 0;
         long totalConsistencyCheckTime = 0;
         long totalReasonComputationTime = 0;
@@ -262,12 +260,15 @@ public class Refinement {
         }
         message.append("Bound check time(ms): ").append(boundCheckTime);
 
-        logger.info(message);
+        return message;
     }
 
+    //TODO: This code is very specific to visualize the core reasons found
+    // in refinement iterations. We might want to generalize this.
+    // TODO(2): Sometimes the automatic pdf-generation doesn't work properly
     private static void generateGraphvizFiles(RefinementTask task, ExecutionModel model, int iterationCount, DNF<CoreLiteral> reasons) {
         //   =============== Visualization code ==================
-        // The edgeFilter filters those co/rf that belong to some violation
+        // The edgeFilter filters those co/rf that belong to some violation reason
         BiPredicate<EventData, EventData> edgeFilter = (e1, e2) -> {
             for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
                 for (CoreLiteral lit : cube.getLiterals()) {
@@ -390,23 +391,28 @@ public class Refinement {
         // Changes a reasoning <literal> based on a given permutation <perm> and translates the result
         // into a BooleanFormula for Refinement.
         private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm) {
+            BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+            BooleanFormula enc;
             if (literal instanceof EventLiteral) {
                 EventLiteral lit = (EventLiteral) literal;
-                return perm.apply(lit.getEventData().getEvent()).exec();
+                enc =  perm.apply(lit.getEventData().getEvent()).exec();
             } else if (literal instanceof AddressLiteral) {
                 AddressLiteral loc = (AddressLiteral) literal;
-                MemEvent e1 = (MemEvent) perm.apply(loc.getEdge().getFirst().getEvent());
-                MemEvent e2 = (MemEvent) perm.apply(loc.getEdge().getSecond().getEvent());
-                return generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), context);
+                MemEvent e1 = (MemEvent) perm.apply(loc.getFirst().getEvent());
+                MemEvent e2 = (MemEvent) perm.apply(loc.getSecond().getEvent());
+                enc =  generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), context);
             } else if (literal instanceof EdgeLiteral) {
                 EdgeLiteral lit = (EdgeLiteral) literal;
                 Relation rel = task.getMemoryModel().getRelationRepository().getRelation(lit.getName());
-                return rel.getSMTVar(
+                enc =  rel.getSMTVar(
                         perm.apply(lit.getEdge().getFirst().getEvent()),
                         perm.apply(lit.getEdge().getSecond().getEvent()),
                         context);
+            } else {
+                throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
             }
-            throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
+
+            return literal.isNegated() ? bmgr.not(enc) : enc;
         }
 
     }

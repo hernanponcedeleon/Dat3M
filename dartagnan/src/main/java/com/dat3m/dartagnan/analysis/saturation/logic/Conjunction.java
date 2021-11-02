@@ -4,7 +4,6 @@ import com.google.common.collect.Iterables;
 
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 // A formal minimal conjunction of ground literals of type T
 // The class is immutable
@@ -70,7 +69,7 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
     }
 
     protected void reduce() {
-        if (literals.stream().anyMatch(lit -> lit.hasOpposite() && literals.contains(lit.getOpposite()))) {
+        if (literals.stream().anyMatch(lit -> literals.contains(lit.getOpposite()))) {
             unsat = true;
             literals.clear();
         }
@@ -160,9 +159,7 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
 
     // Note: returns null, if there is no resolvent
     public Conjunction<T> resolveOn(Conjunction<T> other, T literal) {
-        if (!literal.hasOpposite()) {
-            return FALSE(); // Maybe throw argument exception?
-        } else if (this.isFalse() || other.isFalse()) {
+        if (this.isFalse() || other.isFalse()) {
             return FALSE();
         }
 
@@ -179,6 +176,9 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
     }
 
     public Conjunction<T> removeIf(Predicate<T> pred) {
+        if (this.isFalse() || this.isTrue()) {
+            return this;
+        }
         HashSet<T> result = new HashSet<>(this.getSize());
         literals.stream().filter(Predicate.not(pred)).forEach(result::add);
         return new Conjunction<>(result, false);
@@ -202,7 +202,7 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
 
         Set<T> bLits = b.getLiterals();
         return a.getLiterals().stream()
-                .filter(lit -> lit.hasOpposite() && bLits.contains(lit.getOpposite()))
+                .filter(lit -> bLits.contains(lit.getOpposite()))
                 .findFirst()
                 .map(lit -> resolveOn(other, lit))
                 .orElse(FALSE());
@@ -217,19 +217,12 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
         }
 
         Set<T> bLits = b.getLiterals();
-        return a.getLiterals().stream().anyMatch(lit -> lit.hasOpposite() && bLits.contains(lit.getOpposite()));
+        return a.getLiterals().stream().anyMatch(lit -> bLits.contains(lit.getOpposite()));
     }
 
     public List<T> toList() {
         return new ArrayList<>(literals);
     }
 
-    public int getResolutionComplexity() {
-        return (int)literals.stream().filter(Literal::hasOpposite).count();
-    }
-
-    public Set<T> getResolvableLiterals() {
-        return literals.stream().filter(Literal::hasOpposite).collect(Collectors.toSet());
-    }
 
 }

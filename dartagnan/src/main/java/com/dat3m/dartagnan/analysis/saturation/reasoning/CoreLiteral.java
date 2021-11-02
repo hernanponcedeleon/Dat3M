@@ -8,5 +8,6 @@ import com.dat3m.dartagnan.analysis.saturation.logic.Literal;
     - An address equality/inequality
 */
 public interface CoreLiteral extends Literal<CoreLiteral> {
+    boolean isNegated();
 }
 

@@ -31,12 +31,18 @@ public class EventLiteral extends AbstractLiteral {
         }
 
         EventLiteral other = (EventLiteral) obj;
-        return this.eventData.equals(other.eventData);
+        return this.negated == other.negated && this.eventData.equals(other.eventData);
     }
 
     @Override
     public String toString() {
-        return eventData.toString();
+        return (negated ? "~" : "") + eventData.toString();
     }
 
+    @Override
+    public EventLiteral getOpposite() {
+        EventLiteral opp = new EventLiteral(eventData);
+        opp.negated = !negated;
+        return opp;
+    }
 }
