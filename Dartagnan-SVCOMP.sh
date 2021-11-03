@@ -23,7 +23,7 @@ else
     export DAT3M_HOME=$(pwd)
     export PATH=$PATH:$DAT3M_HOME/smack/bin
 
-    FLAGS="-method incremental -step 5 -umax 26"
+    FLAGS="-method incremental -step 7 -umax 27"
     if ! grep -q "pthread" $PROGRAMPATH; then
         FLAGS+=" -o O3 -e bit-vector -cat cat/sc.cat"
     else
