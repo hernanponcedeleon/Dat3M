@@ -81,6 +81,7 @@ public class Nidhugg {
         		unroll(path, bound);
         		
             	String output = "";
+            	String wOutput = "";
             	ArrayList<String> cmd = new ArrayList<String>();
             	cmd.add("nidhugg");
             	cmd.add("--tso");
@@ -89,8 +90,13 @@ public class Nidhugg {
 
             	long start = System.currentTimeMillis();
 	           	Process proc = processBuilder.start();
+	           	// Warnings are not captured by the input stream and we need them to decide if using !\ytick
+	           	BufferedReader readW = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
 	   			BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 	   			proc.waitFor();
+	   			while(readW.ready()) {
+	   				wOutput = wOutput + readW.readLine();
+	   			}
 	   			while(read.ready()) {
 	   				output = output + read.readLine();
 	   			}
@@ -101,10 +107,8 @@ public class Nidhugg {
 	   				}
 	   			}
 	   			long solvingTime = System.currentTimeMillis() - start;
-                String result = output.contains("interpreted as sequentially consistent") ? 
-                					"!\\ytick" : 
-                					output.contains("No errors were detected") ? 
-                							"\\gtick" : 
+                String result = output.contains("No errors were detected") ? 
+                							wOutput.contains("WARNING") ? "!\\ytick" : "\\gtick" : 
                 							"\\redcross";
 
                 writer.append(result).append(", ").append(Long.toString(solvingTime));
