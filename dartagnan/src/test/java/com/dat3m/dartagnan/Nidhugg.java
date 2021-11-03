@@ -101,7 +101,11 @@ public class Nidhugg {
 	   				}
 	   			}
 	   			long solvingTime = System.currentTimeMillis() - start;
-                String result = output.contains("No errors were detected") ? "\\gtick" : "\\redcross";
+                String result = output.contains("interpreted as sequentially consistent") ? 
+                					"!\\ytick" : 
+                					output.contains("No errors were detected") ? 
+                							"\\gtick" : 
+                							"\\redcross";
 
                 writer.append(result).append(", ").append(Long.toString(solvingTime));
            } catch (Exception e){
