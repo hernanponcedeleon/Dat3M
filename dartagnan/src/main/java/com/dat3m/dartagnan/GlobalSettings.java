@@ -42,7 +42,7 @@ public class GlobalSettings {
     public static final int REFINEMENT_BASELINE_WMM = EMPTY;
 
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
-    public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.NONE;
+    public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.FULL;
 
     // ==== Saturation ====
     public static boolean SATURATION_ENABLE_DEBUG = false;
