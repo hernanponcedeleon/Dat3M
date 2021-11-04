@@ -117,7 +117,8 @@ public class SVCOMPRunner {
 				System.out.println("PASS");
 				break;
 			}
-			bound = bound + options.getStep();
+			// We always do iterations 1 and 2 and then use the step
+			bound = bound == 1 ? 2 : bound + options.getStep();
 	        tmp = new SVCOMPSanitizer(file).run(bound);
 		}
 
