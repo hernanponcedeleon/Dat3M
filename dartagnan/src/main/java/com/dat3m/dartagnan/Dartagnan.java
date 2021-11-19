@@ -1,22 +1,24 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Analysis;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.options.DartagnanOptions;
+import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
@@ -24,6 +26,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
+import java.util.Arrays;
 
 import static com.dat3m.dartagnan.analysis.Analysis.RACES;
 import static com.dat3m.dartagnan.analysis.Base.*;
@@ -32,64 +35,67 @@ import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisSaturationSolve
 import static com.dat3m.dartagnan.utils.GitInfo.createGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 
-public class Dartagnan {
+@Options
+public class Dartagnan extends BaseOptions {
+
+	public static final String ANALYSIS = "analysis";
+	public static final String WITNESS = "verifyWitness";
+
+	@Option(
+		description="Analysis to be performed.",
+		secure=true,
+		toUppercase=true)
+	private Analysis analysis = Analysis.getDefault();
+
+	@Option(
+		description="Path to read witness from.",
+		secure=true)
+	private File verifyWitness;
 
 	private static final Logger logger = LogManager.getLogger(Dartagnan.class);  
 	
     public static void main(String[] args) throws Exception {
     	
     	createGitInfo();
-        Configuration config = Configuration.defaultConfiguration(); // TODO: We don't parse configs yet
+		String[] argKeyword = Arrays.stream(args)
+		.filter(s->s.startsWith("-"))
+		.toArray(String[]::new);
+		Configuration config = Configuration.fromCmdLineArguments(argKeyword); // TODO: We don't parse configs yet
     	GlobalSettings.initializeFromConfig(config);
     	GlobalSettings.log();
-    	
-        DartagnanOptions options = new DartagnanOptions();
-        try {
-            options.parse(args);
-        } catch (Exception e){
-            if(e instanceof UnsupportedOperationException){
-                System.out.println(e.getMessage());
-            }
-            new HelpFormatter().printHelp("DARTAGNAN", options);
-            System.exit(1);
-            return;
-        }        
-        
-        Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
-        Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
+		Dartagnan o = new Dartagnan();
+		config.recursiveInject(o);
 
-        Arch target = p.getArch();
-        if(target == null){
-            target = options.getTarget();
-        }
+		String[] argPositional = Arrays.stream(args)
+		.filter(s->!s.startsWith("-"))
+		.toArray(String[]::new);
+		File fileModel = new File(argPositional[0]);
+		File fileProgram = new File(argPositional[1]);
+		logger.info("Program path: " + fileProgram);
+		logger.info("CAT file path: " + fileModel);
 
-        logger.info("Program path: " + options.getProgramFilePath());
-        logger.info("CAT file path: " + options.getTargetModelFilePath());
-        logger.info("Bound: " + options.getBound());
-        logger.info("Alias Analysis: " + options.getAlias());
-        logger.info("Target: " + target);
+		//TODO help information
+
+        Wmm mcm = new ParserCat().parse(fileModel);
+        Program p = new ProgramParser().parse(fileProgram);
 
         WitnessGraph witness = new WitnessGraph();
-        if(options.getWitnessPath() != null) {
-        	logger.info("Witness path: " + options.getWitnessPath());
-        	witness = new ParserWitness().parse(new File(options.getWitnessPath()));
+        if(o.verifyWitness != null) {
+        	logger.info("Witness path: " + o.verifyWitness);
+        	witness = new ParserWitness().parse(o.verifyWitness);
         }        
 
         VerificationTask task = VerificationTask.builder()
                 .withConfig(config)
                 .withWitness(witness)
-                .withBound(options.getBound())
-                .withAlias(options.getAlias())
-                .withSolverTimeout(options.getSolverTimeout())
-                .withTarget(target)
                 .build(p, mcm);
 
         ShutdownManager sdm = ShutdownManager.create();
     	Thread t = new Thread(() -> {
 			try {
-				if(options.getSolverTimeout() > 0) {
+				if(o.timeout > 0) {
 					// Converts timeout from secs to millisecs
-					Thread.sleep(1000L * options.getSolverTimeout());
+					Thread.sleep(1000L * o.timeout);
 					sdm.requestShutdown("Shutdown Request");
 					logger.warn("Shutdown Request");
 				}
@@ -106,16 +112,16 @@ public class Dartagnan {
                     solverConfig,
                     BasicLogManager.create(solverConfig),
                     sdm.getNotifier(),
-                    options.getSMTSolver());
+                    o.solver);
                  ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
             {
                 Result result;
-                switch (options.getAnalysis()) {
+                switch (o.analysis) {
                     case RACES:
                         result = checkForRaces(ctx, task);
                         break;
                     case REACHABILITY:
-                        switch (options.getMethod()) {
+                        switch (o.method) {
                             case TWO:
                                 try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
                                     result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
@@ -132,17 +138,17 @@ public class Dartagnan {
                                         RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
                                 break;
                             default:
-                                throw new RuntimeException("Unrecognized method mode: " + options.getMethod());
+                                throw new RuntimeException("Unrecognized method mode: " + o.method);
                         }
                         break;
                     default:
-                        throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
+                        throw new RuntimeException("Unrecognized analysis: " + o.analysis);
                 }
 
                 // Verification ended, we can interrupt the timeout Thread
                 t.interrupt();
 
-                if (options.getProgramFilePath().endsWith(".litmus")) {
+                if (fileProgram.getName().endsWith(".litmus")) {
                     if (p.getAssFilter() != null) {
                         System.out.println("Filter " + (p.getAssFilter()));
                     }
@@ -152,8 +158,13 @@ public class Dartagnan {
                     System.out.println(result);
                 }
 
-                if (options.createWitness() != null && options.getAnalysis() != RACES) {
-                    new WitnessBuilder(p, ctx, prover, result, options).write();
+                if (o.analysis != RACES) {
+					try {
+						WitnessBuilder w = new WitnessBuilder(p, ctx, prover, result);
+						config.inject(w);
+						w.write();
+					} catch(InvalidConfigurationException ignore) {
+					}
                 }
             }
         } catch (InterruptedException e){

@@ -23,14 +23,16 @@ else
     export DAT3M_HOME=$(pwd)
     export PATH=$PATH:$DAT3M_HOME/smack/bin
 
-    FLAGS="-method assume"
+    FLAGS="--method=assume"
     if ! grep -q "pthread" $PROGRAMPATH; then
-        FLAGS+=" -o O3 -e bit-vector -cat cat/sc.cat"
+        FLAGS+=" --optimization=O3 --integerEncoding=bit-vector"
+        CAT=sc
     else
-        FLAGS+=" -step 5 -umax 27 -cat cat/svcomp.cat"
+        FLAGS+=" --step=5 --umax=27"
+        CAT=svcomp
     fi
 
-    cmd="java -jar svcomp/target/svcomp-"$VERSION".jar "$FLAGS" -property "$PROPERTYPATH" -i "$PROGRAMPATH" "$WITNESS
+    cmd="java -jar svcomp/target/svcomp-"$VERSION".jar cat/"$CAT".cat "$PROGRAMPATH" "$FLAGS" --property="$PROPERTYPATH" "$WITNESS
     echo $cmd
     $cmd
 fi

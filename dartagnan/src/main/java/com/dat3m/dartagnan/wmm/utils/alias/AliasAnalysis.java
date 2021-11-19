@@ -28,6 +28,7 @@ import java.util.*;
 @Options(prefix="program.analysis")
 public class AliasAnalysis {
 
+	public static final String ALIAS = "program.analysis.alias";
 	@Option(
 		description="Type of alias analysis to perform",
 		secure=true,

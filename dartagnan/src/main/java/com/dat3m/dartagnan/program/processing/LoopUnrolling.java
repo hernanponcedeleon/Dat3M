@@ -15,6 +15,8 @@ import org.sosy_lab.common.configuration.*;
 @Options(prefix = "program.processing")
 public class LoopUnrolling implements ProgramProcessor {
 
+	public static final String BOUND = "program.processing.loopBound";
+
     private static final Logger logger = LogManager.getLogger(LoopUnrolling.class);
 
     // =========================== Configurables ===========================

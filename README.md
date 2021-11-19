@@ -75,24 +75,16 @@ There are three possible results for the verification:
 You can also run Dartagnan from the console:
 
 ```
-java -jar dartagnan/target/dartagnan-3.0.0.jar -cat <CAT file> [-t <target>] -i <program file> [options]
+java -jar dartagnan/target/dartagnan-3.0.0.jar <CAT file> <program file>
 ```
-The `-cat` option specifies the path to the CAT file.
 
-For programs written in `.c` and `.bpl`, `<target>` specifies the architectures to which the program will be compiled. It must be one of the following: 
-- none
-- tso
-- power
-- arm
-- arm8
-
-Program written in `.litmus` format do not require such option.
-
-Other optional arguments include:
-- `-a, --alias`: specifies the alias-analysis used. Option `andersen` (the default one) uses a control-flow-insensitive method. Option `cfs` uses a control-flow-sensitive method. Option `none` performs no alias analysis.
-- `-unroll`: unrolling bound for the BMC (default is 1).
-- `-solver`: specifies which SMT solver to use as a backend. Since we use [JavaSMT](https://github.com/sosy-lab/java-smt), several SMT solvers are supported depending on the OS and the used SMT logic (default is Z3).
-- `-method`: specifies which solving method to use. Options `incremental` (the default one) and `assume` solve a monolithic formula using incremental/assume-based SMT solving. Option `refinement` uses a customized solver for memory consistency.  
+Options take the form `--key=value` and are listed here.
+- `program.processing.compilationTarget` is required for programs written in `.c` and `.bpl`. It specifies the architectures to which the program will be compiled. It must be one of `none`, `tso`, `power`, `arm` or `arm8`. Program written in `.litmus` format do not require such option.
+- `program.analysis.alias`: specifies the alias-analysis used. Option `andersen` (the default one) uses a control-flow-insensitive method. Option `cfs` uses a control-flow-sensitive method. Option `none` performs no alias analysis.
+- `program.processing.loopUnroll`: unrolling bound for the BMC (default is 1).
+- `solver`: specifies which SMT solver to use as a backend. Since we use [JavaSMT](https://github.com/sosy-lab/java-smt), several SMT solvers are supported depending on the OS and the used SMT logic (default is Z3).
+- `method`: specifies which solving method to use. Options `incremental` (the default one) and `assume` solve a monolithic formula using incremental/assume-based SMT solving. Option `refinement` uses a customized solver for memory consistency.
+- `timeout` accepts the number of seconds for the solving process.
 
 Dartagnan supports input non-determinism, assumptions and assertions using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) commands `__VERIFIER_nondet_X`, `__VERIFIER_assume` and `__VERIFIER_assert`.
 

@@ -11,17 +11,15 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import java.io.BufferedReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.math.BigInteger;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -37,25 +35,45 @@ import static com.dat3m.dartagnan.witness.GraphAttributes.*;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 import static java.lang.String.valueOf;
 
+@Options
 public class WitnessBuilder {
-	
+
+	public static final String PATH = "createWitness";
+
 	private final WitnessGraph graph;
 	private final Program program;
 	private final SolverContext ctx;
 	private final ProverEnvironment prover;
 	private final String type ;
-	private final String path;
-	
+
 	private final Map<Event, Integer> eventThreadMap = new HashMap<>();
-	
-	public WitnessBuilder(Program program, SolverContext ctx, ProverEnvironment prover, Result result, DartagnanOptions options) {
+
+	@Option(
+		name="createWitness",
+		description="Path to source file to write a witness for.",
+		secure=true,
+		required=true)
+	private void path(String f) {
+		graph.addAttribute(PROGRAMFILE.toString(),f);
+		graph.addAttribute(PROGRAMHASH.toString(),checksum(f));
+	}
+
+	@Option(
+		name="program.processing.loopBound",
+		description="Unrolls loops up to loopBound many times.",
+		secure=true,
+		required=true)
+	private void unroll(String k) {
+		graph.addAttribute(UNROLLBOUND.toString(),k);
+	}
+
+	public WitnessBuilder(Program program, SolverContext ctx, ProverEnvironment prover, Result result) {
 		this.graph = new WitnessGraph();
-		this.graph.addAttribute(UNROLLBOUND.toString(), valueOf(options.getBound()));
 		this.program = program;
 		this.ctx = ctx;
 		this.prover = prover;
 		this.type = result.equals(FAIL) ? "violation" : "correctness";
-		this.path = options.createWitness();
+		//TODO omit if required options are not present
 		buildGraph();
 	}
 	
@@ -79,9 +97,7 @@ public class WitnessBuilder {
 		graph.addAttribute(SOURCECODELANG.toString(), "C");
 		graph.addAttribute(PRODUCER.toString(), "Dartagnan");
 		graph.addAttribute(SPECIFICATION.toString(), "CHECK( init(main()), LTL(G ! call(reach_error())))");
-		graph.addAttribute(PROGRAMFILE.toString(), path);
 		graph.addAttribute(ARCHITECTURE.toString(), "32bit");
-		graph.addAttribute(PROGRAMHASH.toString(), checksum());
 		
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 		df.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -210,7 +226,7 @@ public class WitnessBuilder {
 		return result;
 	}
 	
-	private String checksum() {
+	private String checksum(String path) {
 		String output = "";
 		try {
 			Process proc = Runtime.getRuntime().exec("sha256sum " + path);

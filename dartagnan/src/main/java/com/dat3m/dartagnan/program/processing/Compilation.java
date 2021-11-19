@@ -25,6 +25,8 @@ import java.util.List;
 @Options(prefix = "program.processing")
 public class Compilation implements ProgramProcessor {
 
+	public static final String TARGET = "program.processing.compilationTarget";
+
     private static final Logger logger = LogManager.getLogger(Compilation.class);
 
     // =========================== Configurables ===========================
