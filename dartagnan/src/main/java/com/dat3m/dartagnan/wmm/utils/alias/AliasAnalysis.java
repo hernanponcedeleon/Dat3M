@@ -16,6 +16,8 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 
@@ -23,7 +25,14 @@ import java.util.*;
  *
  * @author flo
  */
+@Options(prefix="program.analysis")
 public class AliasAnalysis {
+
+	@Option(
+		description="Type of alias analysis to perform",
+		secure=true,
+		toUppercase=true)
+	private Alias alias = Alias.CFIS;
 
     private final List<Object> variables = new LinkedList<>(); // TODO: Use a queue
     private ImmutableSet<Address> maxAddressSet;
@@ -43,7 +52,7 @@ public class AliasAnalysis {
 		return x.getMaxAddressSet().size() == 1 && x.getMaxAddressSet().equals(y.getMaxAddressSet());
 	}
 
-    public void calculateLocationSets(Program program, Alias alias) {
+    public void calculateLocationSets(Program program) {
         if(alias == Alias.NONE){
             calculateLocationSetsNoAlias(program);
         } else if (alias == Alias.CFS){

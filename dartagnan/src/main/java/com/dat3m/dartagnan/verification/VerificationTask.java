@@ -176,7 +176,12 @@ public class VerificationTask {
         }
 
 		aliasAnalysis = new AliasAnalysis();
-		aliasAnalysis.calculateLocationSets(program, Alias.get(config.getProperty("program.analysis.alias")));
+		try {
+			config.inject(aliasAnalysis);
+		} catch(InvalidConfigurationException e) {
+			logger.warn(e.getMessage());
+		}
+		aliasAnalysis.calculateLocationSets(program);
 
         if (GlobalSettings.getInstance().shouldDebugPrintProgram()) {
             for (Thread t : program.getThreads()) {
