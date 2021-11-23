@@ -288,19 +288,40 @@ public class Refinement {
 
         String directoryName = String.format("%s/dartagnan/output/refinement/", System.getenv("DAT3M_HOME"));
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
-        File file = new File(directoryName + fileNameBase + ".dot");
-        file.getParentFile().mkdirs();
-        try (FileWriter writer = new FileWriter(file)) {
+        File fileVio = new File(directoryName + fileNameBase + ".dot");
+        fileVio.getParentFile().mkdirs();
+        try (FileWriter writer = new FileWriter(fileVio)) {
             // Create .dot file
             new ExecutionGraphVisualizer()
                     .setReadFromFilter(edgeFilter)
                     .setCoherenceFilter(edgeFilter)
                     .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
 
+            writer.flush();
             // Convert .dot file to pdf
             Process p = new ProcessBuilder()
                     .directory(new File(directoryName))
-                    .command("dot", "-Tpdf", fileNameBase + ".dot", ">", fileNameBase + ".pdf")
+                    .command("dot", "-Tpdf", fileNameBase + ".dot", "-o", fileNameBase + ".pdf")
+                    .start();
+            p.waitFor(1000, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            logger.error(e);
+        }
+
+        fileNameBase += "-full";
+        File fileFull = new File(directoryName + fileNameBase + ".dot");
+        try (FileWriter writer = new FileWriter(fileFull)) {
+            // Create .dot file
+            new ExecutionGraphVisualizer()
+                    //.setReadFromFilter(edgeFilter)
+                    //.setCoherenceFilter(edgeFilter)
+                    .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
+
+            writer.flush();
+            // Convert .dot file to pdf
+            Process p = new ProcessBuilder()
+                    .directory(new File(directoryName))
+                    .command("dot", "-Tpdf", fileNameBase + ".dot", "-o", fileNameBase + ".pdf")
                     .start();
             p.waitFor(1000, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
