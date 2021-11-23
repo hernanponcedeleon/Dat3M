@@ -95,7 +95,6 @@ public class RefinementTask extends VerificationTask {
         return new RefinementTaskBuilder()
                 .withBaselineWMM(createDefaultWmm())
                 .withWitness(task.getWitness())
-                .withTarget(task.getTarget())
                 .withSettings(task.getSettings())
                 .withConfig(task.getConfig())
                 .build(task.getProgram(),task.getMemoryModel());

@@ -44,7 +44,6 @@ public class VerificationTask {
     private final Program program;
     private final Wmm memoryModel;
     private final WitnessGraph witness;
-    private final Arch target;
     private final Settings settings;
     private final Configuration config;
     private BranchEquivalence branchEquivalence;
@@ -57,17 +56,13 @@ public class VerificationTask {
         this.program = checkNotNull(program);
         this.memoryModel = checkNotNull(memoryModel);
         this.witness = checkNotNull(builder.witness);
-        this.target = checkNotNull(builder.target);
         this.settings = checkNotNull(builder.settings);
 
         try {
-            //TODO: This should be a parameter and <target> as well as <settings> should directly be integrated
+            //TODO: This should be a parameter and <settings> should directly be integrated
             // But for now we will use the VerificationTask as the point where different settings are merged into
             // a config. From here on, all algorithms should be able to purely rely on configs.
-            this.config = Configuration.builder()
-                    .copyFrom(settings.applyToConfig(builder.config.build()))
-                    .setOption("program.processing.compilationTarget", target.toString())
-                    .build();
+            this.config = settings.applyToConfig(builder.config.build());
             progEncoder = ProgramEncoder.fromConfig(config);
             memoryEncoder = MemoryEncoder.fromConfig(config);
         } catch (InvalidConfigurationException ex) {
@@ -83,7 +78,6 @@ public class VerificationTask {
 
     public static class VerificationTaskBuilder {
         protected WitnessGraph witness = new WitnessGraph();
-        protected Arch target = Arch.NONE;
         protected Settings settings = new Settings(Alias.CFIS, 1, 0);
         protected ConfigurationBuilder config = Configuration.builder();
 
@@ -95,7 +89,7 @@ public class VerificationTask {
         }
 
         public VerificationTaskBuilder withTarget(Arch target) {
-            this.target = checkNotNull(target, "Target architecture may not be null");
+            this.config.setOption("program.processing.compilationTarget", target.toString());
             return this;
         }
 
@@ -128,10 +122,6 @@ public class VerificationTask {
     
     public WitnessGraph getWitness() {
     	return witness;
-    }
-    
-    public Arch getTarget() {
-    	return target;
     }
 
     public Settings getSettings() {
