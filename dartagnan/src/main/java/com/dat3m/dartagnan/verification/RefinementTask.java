@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.verification;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
@@ -46,12 +45,6 @@ public class RefinementTask extends VerificationTask {
         @Override
         public RefinementTaskBuilder withTarget(Arch target) {
             super.withTarget(target);
-            return this;
-        }
-
-        @Override
-        public RefinementTaskBuilder withSettings(Settings settings) {
-            super.withSettings(settings);
             return this;
         }
 

@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.symmetry.SymmetryBreaking;
@@ -45,7 +44,6 @@ public class VerificationTask {
     private final Program program;
     private final Wmm memoryModel;
     private final WitnessGraph witness;
-    private final Settings settings;
     private final Configuration config;
     private BranchEquivalence branchEquivalence;
 	private AliasAnalysis aliasAnalysis;
@@ -58,13 +56,9 @@ public class VerificationTask {
         this.program = checkNotNull(program);
         this.memoryModel = checkNotNull(memoryModel);
         this.witness = checkNotNull(builder.witness);
-        this.settings = checkNotNull(builder.settings);
 
         try {
-            //TODO: This should be a parameter and <settings> should directly be integrated
-            // But for now we will use the VerificationTask as the point where different settings are merged into
-            // a config. From here on, all algorithms should be able to purely rely on configs.
-            this.config = settings.applyToConfig(builder.config.build());
+            this.config = builder.config.build();
             progEncoder = ProgramEncoder.fromConfig(config);
             memoryEncoder = MemoryEncoder.fromConfig(config);
         } catch (InvalidConfigurationException ex) {
@@ -80,7 +74,6 @@ public class VerificationTask {
 
     public static class VerificationTaskBuilder {
         protected WitnessGraph witness = new WitnessGraph();
-        protected Settings settings = new Settings(Alias.CFIS, 1, 0);
         protected ConfigurationBuilder config = Configuration.builder();
 
         protected VerificationTaskBuilder() { }
@@ -92,11 +85,6 @@ public class VerificationTask {
 
         public VerificationTaskBuilder withTarget(Arch target) {
             this.config.setOption("program.processing.compilationTarget", target.toString());
-            return this;
-        }
-
-        public VerificationTaskBuilder withSettings(Settings settings) {
-            this.settings = checkNotNull(settings, "Settings may not be null");
             return this;
         }
 
@@ -181,7 +169,7 @@ public class VerificationTask {
         }
 
 		aliasAnalysis = new AliasAnalysis();
-		aliasAnalysis.calculateLocationSets(program,settings.getAlias());
+		aliasAnalysis.calculateLocationSets(program, Alias.get(config.getProperty("program.analysis.alias")));
 
         if (GlobalSettings.getInstance().shouldDebugPrintProgram()) {
             for (Thread t : program.getThreads()) {
