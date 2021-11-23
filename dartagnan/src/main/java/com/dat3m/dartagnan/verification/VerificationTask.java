@@ -100,6 +100,14 @@ public class VerificationTask {
             return this;
         }
 
+		public VerificationTaskBuilder withSettings(int k, Alias a, int t) {
+			this.config
+			.setOption("program.processing.loopBound",Integer.toString(k))
+			.setOption("program.analysis.alias",a.toString())
+			.setOption("verification.timeout",Integer.toString(t));
+			return this;
+		}
+
         public VerificationTaskBuilder withConfig(Configuration config) {
             this.config.copyFrom(config);
             return this;
@@ -124,10 +132,6 @@ public class VerificationTask {
     
     public WitnessGraph getWitness() {
     	return witness;
-    }
-
-    public Settings getSettings() {
-    	return settings;
     }
 
     public Set<Relation> getRelations() {

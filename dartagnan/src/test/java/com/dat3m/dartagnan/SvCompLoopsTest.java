@@ -2,9 +2,7 @@ package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -23,12 +21,12 @@ public class SvCompLoopsTest extends AbstractSvCompTest {
     public static Iterable<Object[]> data() throws IOException {
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/sc.cat"));
 
-        Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
-        Settings s2 = new Settings(Alias.CFIS, 2, TIMEOUT);
-        Settings s3 = new Settings(Alias.CFIS, 3, TIMEOUT);
-        Settings s4 = new Settings(Alias.CFIS, 4, TIMEOUT);
-        Settings s5 = new Settings(Alias.CFIS, 5, TIMEOUT);
-        Settings s11 = new Settings(Alias.CFIS,11, TIMEOUT);
+        int s1 = 1;
+        int s2 = 2;
+        int s3 = 3;
+        int s4 = 4;
+        int s5 = 5;
+        int s11 = 11;
 
     	// We want the files to be created every time we run the unit tests
         initialiseCSVFile(SvCompLoopsTest.class, "two-solvers");
@@ -164,7 +162,7 @@ public class SvCompLoopsTest extends AbstractSvCompTest {
         return data;
     }
 
-    public SvCompLoopsTest(String path, Wmm wmm, Settings settings) {
-    	super(path, wmm, settings);
+    public SvCompLoopsTest(String path, Wmm wmm, int bound) {
+    	super(path, wmm, bound);
     }
 }

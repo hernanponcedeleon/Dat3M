@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.analysis.Refinement;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -22,6 +21,7 @@ import static com.dat3m.dartagnan.analysis.Base.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.wmm.utils.alias.Alias.CFIS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -32,13 +32,13 @@ public abstract class AbstractSvCompTest {
 
     private final String path;
     private final Wmm wmm;
-    private final Settings settings;
+    private final int bound;
     private Result expected;
 
-    public AbstractSvCompTest(String path, Wmm wmm, Settings settings) {
+    public AbstractSvCompTest(String path, Wmm wmm, int bound) {
         this.path = path;
         this.wmm = wmm;
-        this.settings = settings;
+        this.bound = bound;
     }
 
     //@Test(timeout = TIMEOUT)
@@ -52,7 +52,7 @@ public abstract class AbstractSvCompTest {
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withSettings(settings)
+                    .withSettings(bound,CFIS,TIMEOUT)
                     .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
@@ -74,7 +74,7 @@ public abstract class AbstractSvCompTest {
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withSettings(settings)
+                    .withSettings(bound,CFIS,TIMEOUT)
                     .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisIncrementalSolver(ctx, prover, task));
@@ -96,7 +96,7 @@ public abstract class AbstractSvCompTest {
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withSettings(settings)
+                    .withSettings(bound,CFIS,TIMEOUT)
                     .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
@@ -118,7 +118,7 @@ public abstract class AbstractSvCompTest {
             expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withSettings(settings)
+                    .withSettings(bound,CFIS,TIMEOUT)
                     .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,

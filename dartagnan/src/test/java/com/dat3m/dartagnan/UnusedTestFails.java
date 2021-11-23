@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -39,14 +38,12 @@ public class UnusedTestFails {
     private final String path;
     private final Wmm wmm;
     private final Arch target;
-    private final Settings settings;
     private final Result expected;
 
-    public UnusedTestFails(String path, Wmm wmm, Arch target, Settings settings, Result expected) {
+    public UnusedTestFails(String path, Wmm wmm, Arch target, Result expected) {
         this.path = path;
         this.wmm = wmm;
         this.target = target;
-        this.settings = settings;
         this.expected = expected;
     }
 
@@ -55,14 +52,12 @@ public class UnusedTestFails {
         String cat_file = GlobalSettings.getInstance().shouldParseAtomicBlockAsLocks()  ? "cat/svcomp-locks.cat" : "cat/svcomp.cat";
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat_file));
 
-        Settings s2 = new Settings(Alias.CFIS, 1, TIMEOUT);
-
         List<Object[]> data = new ArrayList<>();
-        //data.add(new Object[]{"../lfds/ms_datCAS-O0.bpl", wmm, s2});
-        //data.add(new Object[]{"../lfds/ms-O0.bpl", wmm, s2});
-        //data.add(new Object[]{"../output/ms-test-O0.bpl", wmm, s2});
-        //data.add(new Object[]{"../output/ttas-5-O0.bpl", wmm, s2});
-        //data.add(new Object[]{"../output/mutex-4-O0.bpl", wmm, s2});
+        //data.add(new Object[]{"../lfds/ms_datCAS-O0.bpl", wmm});
+        //data.add(new Object[]{"../lfds/ms-O0.bpl", wmm});
+        //data.add(new Object[]{"../output/ms-test-O0.bpl", wmm});
+        //data.add(new Object[]{"../output/ttas-5-O0.bpl", wmm});
+        //data.add(new Object[]{"../output/mutex-4-O0.bpl", wmm});
 
         return data;
     }
@@ -74,7 +69,7 @@ public class UnusedTestFails {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withSettings(settings).withTarget(target)
+                    .withSettings(1,Alias.CFIS,TIMEOUT).withTarget(target)
                     .build(program, wmm);
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
         } catch (Exception e){
@@ -89,7 +84,7 @@ public class UnusedTestFails {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withSettings(settings).withTarget(target)
+                    .withSettings(1,Alias.CFIS,TIMEOUT).withTarget(target)
                     .build(program, wmm);
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));

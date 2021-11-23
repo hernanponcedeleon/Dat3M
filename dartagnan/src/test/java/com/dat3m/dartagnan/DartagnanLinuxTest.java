@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.junit.runner.RunWith;
@@ -24,7 +23,7 @@ public class DartagnanLinuxTest extends AbstractDartagnanTest {
         return buildParameters("litmus/C/", "cat/linux-kernel.cat", Arch.NONE);
     }
 
-    public DartagnanLinuxTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
-        super(path, expected, target, wmm, settings);
+    public DartagnanLinuxTest(String path, Result expected, Arch target, Wmm wmm) {
+        super(path, expected, target, wmm);
     }
 }

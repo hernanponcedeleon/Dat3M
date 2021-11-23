@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -43,7 +42,7 @@ public class CLocksTest {
     private final String path;
     private final Wmm wmm;
     private final Arch target;
-    private final Settings settings;
+    private final int bound;
     private final Result expected;
 
 	@Parameterized.Parameters(name = "{index}: {0} target={2}")
@@ -52,7 +51,7 @@ public class CLocksTest {
         Wmm power = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/power.cat"));
         Wmm arm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat"));
 
-        Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
+        int s1 = 1;
 
     	// We want the files to be created every time we run the unit tests
         initialiseCSVFile(CLocksTest.class, "two-solvers");
@@ -159,11 +158,11 @@ public class CLocksTest {
         return data;
     }
 
-    public CLocksTest(String path, Wmm wmm, Arch target, Settings settings, Result expected) {
+    public CLocksTest(String path, Wmm wmm, Arch target, int bound, Result expected) {
         this.path = path;
         this.wmm = wmm;
         this.target = target;
-        this.settings = settings;
+        this.bound = bound;
         this.expected = expected;
     }
 
@@ -175,7 +174,7 @@ public class CLocksTest {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withSettings(settings).withTarget(target)
+                    .withSettings(bound,Alias.CFIS,TIMEOUT).withTarget(target)
                     .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
@@ -195,7 +194,7 @@ public class CLocksTest {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withSettings(settings).withTarget(target)
+                    .withSettings(bound,Alias.CFIS,TIMEOUT).withTarget(target)
                     .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,

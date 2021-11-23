@@ -2,9 +2,7 @@ package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -25,9 +23,9 @@ public class SvCompControlFlowTest extends AbstractSvCompTest {
     public static Iterable<Object[]> data() throws IOException {
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/sc.cat"));
 
-        Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
-        Settings s4 = new Settings(Alias.CFIS, 4, TIMEOUT);
-        Settings s6 = new Settings(Alias.CFIS, 6, TIMEOUT);
+        int s1 = 1;
+        int s4 = 4;
+        int s6 = 6;
 
         Files.deleteIfExists(Paths.get(getCSVFileName(SvCompControlFlowTest.class, "two-solvers")));
         Files.deleteIfExists(Paths.get(getCSVFileName(SvCompControlFlowTest.class, "incremental")));
@@ -63,7 +61,7 @@ public class SvCompControlFlowTest extends AbstractSvCompTest {
         return data;
     }
 
-    public SvCompControlFlowTest(String path, Wmm wmm, Settings settings) {
-    	super(path, wmm, settings);
+    public SvCompControlFlowTest(String path, Wmm wmm, int bound) {
+    	super(path, wmm, bound);
     }
 }

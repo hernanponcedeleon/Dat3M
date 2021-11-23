@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -43,7 +42,6 @@ public abstract class AbstractDartagnanTest {
         Map<String, Result> expectationMap = ResourceHelper.getExpectedResults();
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat));
 
-        Settings s1 = new Settings(Alias.CFIS, 1, SOLVER_TIMEOUT);
         try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))) {
             return fileStream
                     .filter(Files::isRegularFile)
@@ -52,7 +50,7 @@ public abstract class AbstractDartagnanTest {
                     .filter(f -> expectationMap.containsKey(f.substring(n)))
                     .map(f -> new Object[]{f, expectationMap.get(f.substring(n))})
                     .collect(ArrayList::new,
-                            (l, f) -> l.add(new Object[]{f[0], f[1], target, wmm, s1}), ArrayList::addAll);
+                            (l, f) -> l.add(new Object[]{f[0], f[1], target, wmm}), ArrayList::addAll);
         }
     }
 
@@ -60,14 +58,12 @@ public abstract class AbstractDartagnanTest {
     private final Result expected;
     private final Arch target;
     private final Wmm wmm;
-    private final Settings settings;
 
-    AbstractDartagnanTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
+    AbstractDartagnanTest(String path, Result expected, Arch target, Wmm wmm) {
         this.path = path;
         this.expected = expected;
         this.target = target;
         this.wmm = wmm;
-        this.settings = settings;
     }
 
     //@Test(timeout = TIMEOUT)
@@ -87,7 +83,7 @@ public abstract class AbstractDartagnanTest {
             if (program.getAss() != null) {
                 program.setAss(program.getAss().removeLocAssertions(REPLACE_BY_TRUE));
                 VerificationTask task = VerificationTask.builder()
-                        .withSettings(settings).withTarget(target)
+                        .withSettings(1,Alias.CFIS,SOLVER_TIMEOUT).withTarget(target)
                         .build(program, wmm);
                 res = runAnalysisTwoSolvers(ctx, prover1, prover2, task);
             }
@@ -103,7 +99,7 @@ public abstract class AbstractDartagnanTest {
             if (program.getAss() != null) {
                 program.setAss(program.getAss().removeLocAssertions(REPLACE_BY_TRUE));
                 VerificationTask task = VerificationTask.builder()
-                        .withSettings(settings).withTarget(target)
+                        .withSettings(1,Alias.CFIS,SOLVER_TIMEOUT).withTarget(target)
                         .build(program, wmm);
                 assertEquals(res, Refinement.runAnalysisSaturationSolver(ctx, prover,
                         RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
@@ -123,7 +119,7 @@ public abstract class AbstractDartagnanTest {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 VerificationTask task = VerificationTask.builder()
-                        .withSettings(settings).withTarget(target)
+                        .withSettings(1,Alias.CFIS,SOLVER_TIMEOUT).withTarget(target)
                         .build(program, wmm);
                 long start = System.currentTimeMillis();
                 assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
@@ -151,7 +147,7 @@ public abstract class AbstractDartagnanTest {
                     return;
                 }
                 VerificationTask task = VerificationTask.builder()
-                        .withSettings(settings).withTarget(target)
+                        .withSettings(1,Alias.CFIS,SOLVER_TIMEOUT).withTarget(target)
                         .build(program, wmm);
                 long start = System.currentTimeMillis();
                 assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,

@@ -2,9 +2,7 @@ package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -26,7 +24,7 @@ public class SvCompTestLarge extends AbstractSvCompTest {
         String cat_file = GlobalSettings.getInstance().shouldParseAtomicBlockAsLocks() ? "cat/svcomp-locks.cat" : "cat/svcomp.cat";
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat_file));
 
-        Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
+        int s1 = 1;
 
         Files.deleteIfExists(Paths.get(getCSVFileName(SvCompTestLarge.class, "two-solvers")));
         Files.deleteIfExists(Paths.get(getCSVFileName(SvCompTestLarge.class, "incremental")));
@@ -89,7 +87,7 @@ public class SvCompTestLarge extends AbstractSvCompTest {
         return data;
     }
 
-	public SvCompTestLarge(String path, Wmm wmm, Settings settings) {
-		super(path, wmm, settings);
+	public SvCompTestLarge(String path, Wmm wmm, int bound) {
+		super(path, wmm, bound);
 	}
 }

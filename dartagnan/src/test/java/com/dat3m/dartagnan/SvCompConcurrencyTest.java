@@ -2,9 +2,7 @@ package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -24,11 +22,11 @@ public class SvCompConcurrencyTest extends AbstractSvCompTest {
     	String cat_file = GlobalSettings.getInstance().shouldParseAtomicBlockAsLocks()  ? "cat/svcomp-locks.cat" : "cat/svcomp.cat";
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat_file));
 
-        Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
-        Settings s2 = new Settings(Alias.CFIS, 2, TIMEOUT);
-        Settings s3 = new Settings(Alias.CFIS, 3, TIMEOUT);
-        Settings s6 = new Settings(Alias.CFIS, 6, TIMEOUT);
-        Settings s7 = new Settings(Alias.CFIS, 7, TIMEOUT);
+        int s1 = 1;
+        int s2 = 2;
+        int s3 = 3;
+        int s6 = 6;
+        int s7 = 7;
         
     	// We want the files to be created every time we run the unit tests
         initialiseCSVFile(SvCompConcurrencyTest.class, "two-solvers");
@@ -78,7 +76,7 @@ public class SvCompConcurrencyTest extends AbstractSvCompTest {
         return data;
     }
 
-	public SvCompConcurrencyTest(String path, Wmm wmm, Settings settings) {
-		super(path, wmm, settings);
+	public SvCompConcurrencyTest(String path, Wmm wmm, int bound) {
+		super(path, wmm, bound);
 	}
 }
