@@ -5,8 +5,8 @@ import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterIntersection;
@@ -15,6 +15,9 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
@@ -27,7 +30,20 @@ import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
+@Options(prefix="wmm.rf")
 public class RelRf extends Relation {
+
+	@Option(
+		description="Do not require that each read event is satisfied by some write.",
+		name="allowUninitialized",
+		secure = true)
+	private boolean canAccessUninitializedMemory = false;
+
+	@Option(
+		description="Exclude multiple satisfaction by explicit clauses for each pair instead of using new variables.",
+		name="naiveMutex",
+		secure=true)
+	private boolean naiveMutex = false;
 
 	private static final Logger logger = LogManager.getLogger(RelRf.class);
 
@@ -35,6 +51,16 @@ public class RelRf extends Relation {
         term = RF;
         forceDoEncode = true;
     }
+
+	@Override
+	public void initialise(VerificationTask task, SolverContext ctx) {
+		super.initialise(task,ctx);
+		try {
+			task.getConfig().inject(this);
+		} catch(InvalidConfigurationException e) {
+			logger.warn(e.getMessage());
+		}
+	}
 
     @Override
     public TupleSet getMinTupleSet(){
@@ -79,9 +105,6 @@ public class RelRf extends Relation {
         Map<MemEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
         Map<MemEvent, BooleanFormula> memInitMap = new HashMap<>();
 
-        boolean canAccNonInitMem = task.getSettings().getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY);
-        boolean useSeqEncoding = task.getSettings().getFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF);
-
         for(Tuple tuple : maxTupleSet){
             MemEvent w = (MemEvent) tuple.getFirst();
             MemEvent r = (MemEvent) tuple.getSecond();
@@ -96,16 +119,16 @@ public class RelRf extends Relation {
             BooleanFormula sameValue = imgr.equal(v1, v2);
 
             edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(edge);
-            if(canAccNonInitMem && w.is(INIT)){
+            if(canAccessUninitializedMemory && w.is(INIT)){
                 memInitMap.put(r, bmgr.or(memInitMap.getOrDefault(r, bmgr.makeFalse()), sameAddress));
             }
             enc = bmgr.and(enc, bmgr.implication(edge, bmgr.and(getExecPair(w, r, ctx), sameAddress, sameValue)));
         }
 
         for(MemEvent r : edgeMap.keySet()){
-            enc = bmgr.and(enc, useSeqEncoding
-                    ? encodeEdgeSeq(r, memInitMap.get(r), edgeMap.get(r), ctx)
-                    : encodeEdgeNaive(r, memInitMap.get(r), edgeMap.get(r), ctx));
+            enc = bmgr.and(enc, naiveMutex
+                    ? encodeEdgeNaive(r, memInitMap.get(r), edgeMap.get(r), ctx)
+                    : encodeEdgeSeq(r, memInitMap.get(r), edgeMap.get(r), ctx));
         }
         return enc;
     }
@@ -122,7 +145,7 @@ public class RelRf extends Relation {
             }
         }
 
-        if(task.getSettings().getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY)) {
+        if(canAccessUninitializedMemory) {
             atLeastOne = bmgr.implication(bmgr.and(read.exec(), isMemInit), atLeastOne);
         } else {
             atLeastOne = bmgr.implication(read.exec(), atLeastOne);
@@ -147,7 +170,7 @@ public class RelRf extends Relation {
         }
         BooleanFormula atLeastOne = bmgr.or(newSeqVar, edges.get(edges.size() - 1));
 
-        if(task.getSettings().getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY)) {
+        if(canAccessUninitializedMemory) {
             atLeastOne = bmgr.implication(bmgr.and(read.exec(), isMemInit), atLeastOne);
         } else {
             atLeastOne = bmgr.implication(read.exec(), atLeastOne);
