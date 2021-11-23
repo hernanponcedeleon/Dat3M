@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -59,7 +58,7 @@ public class DartagnanArrayValidTest {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withSettings(1,Alias.CFIS,60)
+                    .withSolverTimeout(60)
                     .build(program, wmm);
             assertEquals(runAnalysisTwoSolvers(ctx, prover1, prover2, task), FAIL);
         } catch (Exception e){

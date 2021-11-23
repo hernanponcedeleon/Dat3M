@@ -174,7 +174,9 @@ public class CLocksTest {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withSettings(bound,Alias.CFIS,TIMEOUT).withTarget(target)
+                    .withBound(bound)
+                    .withSolverTimeout(TIMEOUT)
+                    .withTarget(target)
                     .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
@@ -194,7 +196,9 @@ public class CLocksTest {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withSettings(bound,Alias.CFIS,TIMEOUT).withTarget(target)
+                    .withBound(bound)
+                    .withSolverTimeout(TIMEOUT)
+                    .withTarget(target)
                     .build(program, wmm);
             long start = System.currentTimeMillis();
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,

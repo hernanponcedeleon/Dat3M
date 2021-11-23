@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -97,7 +96,7 @@ public class DartagnanBranchTest {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withSettings(1,Alias.CFIS,60)
+                    .withSolverTimeout(60)
                     .build(program, wmm);
             assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
         } catch (Exception e){

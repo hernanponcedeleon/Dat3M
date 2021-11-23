@@ -88,11 +88,18 @@ public class VerificationTask {
             return this;
         }
 
-		public VerificationTaskBuilder withSettings(int k, Alias a, int t) {
-			this.config
-			.setOption("program.processing.loopBound",Integer.toString(k))
-			.setOption("program.analysis.alias",a.toString())
-			.setOption("verification.timeout",Integer.toString(t));
+		public VerificationTaskBuilder withBound(int k) {
+			this.config.setOption("program.processing.loopBound",Integer.toString(k));
+			return this;
+		}
+
+		public VerificationTaskBuilder withAlias(Alias a) {
+			this.config.setOption("program.analysis.alias",a.toString());
+			return this;
+		}
+
+		public VerificationTaskBuilder withSolverTimeout(int t) {
+			this.config.setOption("verification.timeout",Integer.toString(t));
 			return this;
 		}
 

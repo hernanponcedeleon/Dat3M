@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
@@ -69,7 +68,8 @@ public class UnusedTestFails {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withSettings(1,Alias.CFIS,TIMEOUT).withTarget(target)
+                    .withSolverTimeout(TIMEOUT)
+                    .withTarget(target)
                     .build(program, wmm);
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
         } catch (Exception e){
@@ -84,7 +84,8 @@ public class UnusedTestFails {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withSettings(1,Alias.CFIS,TIMEOUT).withTarget(target)
+                    .withSolverTimeout(TIMEOUT)
+                    .withTarget(target)
                     .build(program, wmm);
             assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));

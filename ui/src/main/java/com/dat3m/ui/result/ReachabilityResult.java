@@ -42,7 +42,10 @@ public class ReachabilityResult {
         if(validate()){
             Arch arch = program.getArch() != null ? program.getArch() : options.getTarget();
             VerificationTask task = VerificationTask.builder()
-                    .withSettings(options.getBound(),options.getAlias(),options.getTimeout()).withTarget(arch)
+                    .withBound(options.getBound())
+                    .withAlias(options.getAlias())
+                    .withSolverTimeout(options.getTimeout())
+                    .withTarget(arch)
                     .build(program, wmm);
             Result result = Result.UNKNOWN;
 

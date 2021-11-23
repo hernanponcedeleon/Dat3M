@@ -78,7 +78,9 @@ public class Dartagnan {
         VerificationTask task = VerificationTask.builder()
                 .withConfig(config)
                 .withWitness(witness)
-                .withSettings(options.getBound(),options.getAlias(),options.getSolverTimeout())
+                .withBound(options.getBound())
+                .withAlias(options.getAlias())
+                .withSolverTimeout(options.getSolverTimeout())
                 .withTarget(target)
                 .build(p, mcm);
 

@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.junit.Test;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -83,7 +82,8 @@ public abstract class AbstractDartagnanTest {
             if (program.getAss() != null) {
                 program.setAss(program.getAss().removeLocAssertions(REPLACE_BY_TRUE));
                 VerificationTask task = VerificationTask.builder()
-                        .withSettings(1,Alias.CFIS,SOLVER_TIMEOUT).withTarget(target)
+                        .withSolverTimeout(SOLVER_TIMEOUT)
+                        .withTarget(target)
                         .build(program, wmm);
                 res = runAnalysisTwoSolvers(ctx, prover1, prover2, task);
             }
@@ -99,7 +99,8 @@ public abstract class AbstractDartagnanTest {
             if (program.getAss() != null) {
                 program.setAss(program.getAss().removeLocAssertions(REPLACE_BY_TRUE));
                 VerificationTask task = VerificationTask.builder()
-                        .withSettings(1,Alias.CFIS,SOLVER_TIMEOUT).withTarget(target)
+                        .withSolverTimeout(SOLVER_TIMEOUT)
+                        .withTarget(target)
                         .build(program, wmm);
                 assertEquals(res, Refinement.runAnalysisSaturationSolver(ctx, prover,
                         RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
@@ -119,7 +120,8 @@ public abstract class AbstractDartagnanTest {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 VerificationTask task = VerificationTask.builder()
-                        .withSettings(1,Alias.CFIS,SOLVER_TIMEOUT).withTarget(target)
+                        .withSolverTimeout(SOLVER_TIMEOUT)
+                        .withTarget(target)
                         .build(program, wmm);
                 long start = System.currentTimeMillis();
                 assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
@@ -147,7 +149,8 @@ public abstract class AbstractDartagnanTest {
                     return;
                 }
                 VerificationTask task = VerificationTask.builder()
-                        .withSettings(1,Alias.CFIS,SOLVER_TIMEOUT).withTarget(target)
+                        .withSolverTimeout(SOLVER_TIMEOUT)
+                        .withTarget(target)
                         .build(program, wmm);
                 long start = System.currentTimeMillis();
                 assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
