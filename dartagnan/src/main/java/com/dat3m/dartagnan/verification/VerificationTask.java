@@ -22,6 +22,7 @@ import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -52,20 +53,19 @@ public class VerificationTask {
     private final ProgramEncoder progEncoder;
     private final MemoryEncoder memoryEncoder;
 
-    protected VerificationTask(Program program, Wmm memoryModel, WitnessGraph witness,
-                            Arch target, Settings settings, Configuration config) {
+    protected VerificationTask(Program program, Wmm memoryModel, VerificationTaskBuilder builder) {
         this.program = checkNotNull(program);
         this.memoryModel = checkNotNull(memoryModel);
-        this.witness = checkNotNull(witness);
-        this.target = checkNotNull(target);
-        this.settings = checkNotNull(settings);
+        this.witness = checkNotNull(builder.witness);
+        this.target = checkNotNull(builder.target);
+        this.settings = checkNotNull(builder.settings);
 
         try {
             //TODO: This should be a parameter and <target> as well as <settings> should directly be integrated
             // But for now we will use the VerificationTask as the point where different settings are merged into
             // a config. From here on, all algorithms should be able to purely rely on configs.
             this.config = Configuration.builder()
-                    .copyFrom(settings.applyToConfig(config))
+                    .copyFrom(settings.applyToConfig(builder.config.build()))
                     .setOption("program.processing.compilationTarget", target.toString())
                     .build();
             progEncoder = ProgramEncoder.fromConfig(config);
@@ -85,7 +85,7 @@ public class VerificationTask {
         protected WitnessGraph witness = new WitnessGraph();
         protected Arch target = Arch.NONE;
         protected Settings settings = new Settings(Alias.CFIS, 1, 0);
-        protected Configuration config = Configuration.defaultConfiguration();
+        protected ConfigurationBuilder config = Configuration.builder();
 
         protected VerificationTaskBuilder() { }
 
@@ -105,12 +105,12 @@ public class VerificationTask {
         }
 
         public VerificationTaskBuilder withConfig(Configuration config) {
-            this.config = checkNotNull(config, "Config may not be null");
+            this.config.copyFrom(config);
             return this;
         }
 
         public VerificationTask build(Program program, Wmm memoryModel) {
-            return new VerificationTask(program, memoryModel, witness, target, settings, config);
+            return new VerificationTask(program,memoryModel,this);
         }
     }
 
@@ -133,7 +133,7 @@ public class VerificationTask {
     public Arch getTarget() {
     	return target;
     }
-    
+
     public Settings getSettings() {
     	return settings;
     }

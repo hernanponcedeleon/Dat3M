@@ -28,9 +28,8 @@ public class RefinementTask extends VerificationTask {
 
     private final Wmm baselineModel;
 
-    private RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, WitnessGraph witness, Arch target,
-                          Settings settings, Configuration config) {
-        super(program, targetMemoryModel, witness, target, settings, config);
+    private RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, RefinementTaskBuilder builder) {
+        super(program,targetMemoryModel,builder);
         this.baselineModel = baselineModel;
     }
 
@@ -70,7 +69,7 @@ public class RefinementTask extends VerificationTask {
         @Override
         public RefinementTask build(Program program, Wmm memoryModel) {
             Wmm baseline = baselineModel == null ? createDefaultWmm() : baselineModel;
-            return new RefinementTask(program, memoryModel, baseline, witness, target, settings, config);
+            return new RefinementTask(program, memoryModel, baseline, this);
         }
     }
 
@@ -93,15 +92,13 @@ public class RefinementTask extends VerificationTask {
     }
 
     public static RefinementTask fromVerificationTaskWithDefaultBaselineWMM(VerificationTask task) {
-        return new RefinementTask(
-                task.getProgram(),
-                task.getMemoryModel(),
-                createDefaultWmm(),
-                task.getWitness(),
-                task.getTarget(),
-                task.getSettings(),
-                task.getConfig()
-        );
+        return new RefinementTaskBuilder()
+                .withBaselineWMM(createDefaultWmm())
+                .withWitness(task.getWitness())
+                .withTarget(task.getTarget())
+                .withSettings(task.getSettings())
+                .withConfig(task.getConfig())
+                .build(task.getProgram(),task.getMemoryModel());
     }
 
     private static Wmm createDefaultWmm() {
