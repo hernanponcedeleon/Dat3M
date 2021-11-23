@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -66,8 +65,8 @@ public class Dartagnan {
 
         logger.info("Program path: " + options.getProgramFilePath());
         logger.info("CAT file path: " + options.getTargetModelFilePath());
-        logger.info("Bound: " + options.getSettings().getBound());
-        logger.info("Alias Analysis: " + options.getSettings().getAlias());
+        logger.info("Bound: " + options.getBound());
+        logger.info("Alias Analysis: " + options.getAlias());
         logger.info("Target: " + target);
 
         WitnessGraph witness = new WitnessGraph();
@@ -76,17 +75,19 @@ public class Dartagnan {
         	witness = new ParserWitness().parse(new File(options.getWitnessPath()));
         }        
 
-        Settings settings = options.getSettings();
         VerificationTask task = VerificationTask.builder()
-                .withConfig(config).withWitness(witness).withSettings(settings).withTarget(target)
+                .withConfig(config)
+                .withWitness(witness)
+                .withSettings(options.getBound(),options.getAlias(),options.getSolverTimeout())
+                .withTarget(target)
                 .build(p, mcm);
 
         ShutdownManager sdm = ShutdownManager.create();
     	Thread t = new Thread(() -> {
 			try {
-				if(options.getSettings().getSolverTimeout() > 0) {
+				if(options.getSolverTimeout() > 0) {
 					// Converts timeout from secs to millisecs
-					Thread.sleep(1000L * options.getSettings().getSolverTimeout());
+					Thread.sleep(1000L * options.getSolverTimeout());
 					sdm.requestShutdown("Shutdown Request");
 					logger.warn("Shutdown Request");
 				}
@@ -140,7 +141,6 @@ public class Dartagnan {
                 t.interrupt();
 
                 if (options.getProgramFilePath().endsWith(".litmus")) {
-                    System.out.println("Settings: " + options.getSettings());
                     if (p.getAssFilter() != null) {
                         System.out.println("Filter " + (p.getAssFilter()));
                     }

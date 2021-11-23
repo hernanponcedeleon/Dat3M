@@ -1,7 +1,6 @@
 package com.dat3m.ui.options;
 
 import com.dat3m.dartagnan.analysis.Method;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.ui.button.ClearButton;
@@ -98,16 +97,13 @@ public class OptionsPane extends JPanel implements ActionListener {
     }
 
     public UiOptions getOptions(){
-        Settings settings = new Settings(
-                (Alias)aliasPane.getSelectedItem(),
-                Integer.parseInt(boundField.getText()),
-                Integer.parseInt(timeoutField.getText())
-        );
-
+        Alias alias = (Alias)aliasPane.getSelectedItem();
+        int bound = Integer.parseInt(boundField.getText());
+        int timeout = Integer.parseInt(timeoutField.getText());
         Arch target = (Arch)targetPane.getSelectedItem();
         Method method = (Method)methodPane.getSelectedItem();
         Solvers solver = (Solvers)solverPane.getSelectedItem();
-        return new UiOptions(target, method, solver, settings);
+        return new UiOptions(target, method, bound, alias, solver, timeout);
     }
 
     private int getIconHeight(){

@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.utils.options;
 
 import com.dat3m.dartagnan.analysis.Method;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.google.common.collect.ImmutableSet;
@@ -23,8 +22,10 @@ public abstract class BaseOptions extends Options {
 	
     protected String programFilePath;
     protected String targetModelFilePath;
-    protected Settings settings;
     protected Arch target;
+	protected int bound;
+	protected Alias alias;
+	protected int timeout;
 
     protected Method method;
     protected Solvers smtsolver;
@@ -127,19 +128,27 @@ public abstract class BaseOptions extends Options {
         return targetModelFilePath;
     }
 
-    public Settings getSettings(){
-        return settings;
-    }
+	public int getBound() {
+		return bound;
+	}
+
+	public Alias getAlias() {
+		return alias;
+	}
+
+	public int getSolverTimeout() {
+		return timeout;
+	}
 
     public Arch getTarget(){
         return target;
     }
 
     protected void parseSettings(CommandLine cmd){
-        Alias alias = Alias.get(cmd.getOptionValue("alias", Alias.getDefault().asStringOption()));
+        alias = Alias.get(cmd.getOptionValue("alias", Alias.getDefault().asStringOption()));
 
-        int bound = 1;
-        int solver_timeout = 0;
+        bound = 1;
+        timeout = 0;
         if(cmd.hasOption("unroll")){
             try {
                 bound = Math.max(1, Integer.parseInt(cmd.getOptionValue("unroll")));
@@ -149,11 +158,10 @@ public abstract class BaseOptions extends Options {
         }
         if(cmd.hasOption(SMTSOLVER_TIMEOUT_OPTION)){
             try {
-            	solver_timeout = Math.max(1, Integer.parseInt(cmd.getOptionValue(SMTSOLVER_TIMEOUT_OPTION)));
+            	timeout = Math.max(1, Integer.parseInt(cmd.getOptionValue(SMTSOLVER_TIMEOUT_OPTION)));
             } catch (NumberFormatException e){
                 throw new IllegalArgumentException("Illegal solver_timeout value: " + cmd.getOptionValue(SMTSOLVER_TIMEOUT_OPTION));
             }
         }
-        settings = new Settings(alias, bound, solver_timeout);
     }
 }

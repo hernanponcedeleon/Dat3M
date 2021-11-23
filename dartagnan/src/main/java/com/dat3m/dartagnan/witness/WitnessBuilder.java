@@ -50,7 +50,7 @@ public class WitnessBuilder {
 	
 	public WitnessBuilder(Program program, SolverContext ctx, ProverEnvironment prover, Result result, DartagnanOptions options) {
 		this.graph = new WitnessGraph();
-		this.graph.addAttribute(UNROLLBOUND.toString(), valueOf(options.getSettings().getBound()));
+		this.graph.addAttribute(UNROLLBOUND.toString(), valueOf(options.getBound()));
 		this.program = program;
 		this.ctx = ctx;
 		this.prover = prover;
