@@ -58,10 +58,6 @@ public class SVCOMPRunner {
 
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN")) {
-			if(bound > options.getUMax()) {
-				System.out.println("PASS");
-				break;
-			}
 			compile(tmp, options, true);
 	        // If not removed here, file is not removed when we reach the timeout
 	        // File can be safely deleted since it was created by the SVCOMPSanitizer
@@ -117,7 +113,12 @@ public class SVCOMPRunner {
 				System.out.println(e.getMessage());
 				System.exit(0);
 			}
-			bound = bound + options.getStep();
+			if(bound > options.getUMax()) {
+				System.out.println("PASS");
+				break;
+			}
+			// We always do iterations 1 and 2 and then use the step
+			bound = bound == 1 ? 2 : bound + options.getStep();
 	        tmp = new SVCOMPSanitizer(file).run(bound);
 		}
 
