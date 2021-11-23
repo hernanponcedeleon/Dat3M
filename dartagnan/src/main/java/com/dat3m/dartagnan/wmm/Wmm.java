@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
-import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -90,7 +89,6 @@ public class Wmm {
 
     public void initialise(VerificationTask task, SolverContext ctx) {
         this.task = task;
-        new AliasAnalysis().calculateLocationSets(task.getProgram(), task.getSettings().getAlias());
 
         for(String relName : baseRelations){
             relationRepository.getRelation(relName);

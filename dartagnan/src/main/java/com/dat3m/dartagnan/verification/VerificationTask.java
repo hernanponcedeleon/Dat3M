@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
+import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -47,6 +48,7 @@ public class VerificationTask {
     private final Settings settings;
     private final Configuration config;
     private BranchEquivalence branchEquivalence;
+	private AliasAnalysis aliasAnalysis;
     private ThreadSymmetry threadSymmetry;
 
     private final ProgramEncoder progEncoder;
@@ -140,6 +142,10 @@ public class VerificationTask {
         return branchEquivalence;
     }
 
+	public AliasAnalysis getAliasAnalysis() {
+		return aliasAnalysis;
+	}
+
     public DependencyGraph<Relation> getRelationDependencyGraph() {
         return memoryModel.getRelationDependencyGraph();
     }
@@ -169,6 +175,9 @@ public class VerificationTask {
         } catch (InvalidConfigurationException ex) {
             logger.warn("Configuration error when processing program. Some processing steps may have been skipped.");
         }
+
+		aliasAnalysis = new AliasAnalysis();
+		aliasAnalysis.calculateLocationSets(program,settings.getAlias());
 
         if (GlobalSettings.getInstance().shouldDebugPrintProgram()) {
             for (Thread t : program.getThreads()) {

@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
-import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
@@ -57,10 +56,6 @@ public class WmmEncoder implements Encoder {
         this.task = task;
         this.memoryModel = task.getMemoryModel();
         this.relationRepository = memoryModel.getRelationRepository();
-
-        //TODO: Once we have abstracted the AliasAnalysis into an interface,
-        // we should move this to a similar place as BranchEquivalence
-        new AliasAnalysis().calculateLocationSets(task.getProgram(), task.getSettings().getAlias());
 
         for(String relName : baseRelations){
             relationRepository.getRelation(relName);
