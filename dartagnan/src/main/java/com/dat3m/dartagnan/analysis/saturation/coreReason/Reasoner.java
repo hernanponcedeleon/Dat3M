@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.Maps;
 
@@ -35,6 +36,7 @@ public class Reasoner {
 
     private final ExecutionGraph execGraph;
     private final BranchEquivalence eq;
+    private final AliasAnalysis aliasAnalysis;
     private final BiMap<RelationGraph, Relation> graphRelMap;
     private final boolean useMinTupleReasoning;
     private final Relation co;
@@ -51,6 +53,7 @@ public class Reasoner {
     public Reasoner(ExecutionGraph execGraph, boolean useMinTupleReasoning) {
         this.execGraph = execGraph;
         this.eq = execGraph.getVerificationTask().getBranchEquivalence();
+        this.aliasAnalysis = execGraph.getVerificationTask().getAliasAnalysis();
         this.co = execGraph.getVerificationTask().getMemoryModel().getRelationRepository().getRelation(CO);
         this.graphRelMap = execGraph.getRelationGraphMap().inverse();
         this.useMinTupleReasoning = useMinTupleReasoning;
@@ -140,7 +143,7 @@ public class Reasoner {
         }
         MemEvent e1 = (MemEvent) e.getFirst().getEvent();
         MemEvent e2 = (MemEvent) e.getSecond().getEvent();
-        if (e1.getMaxAddressSet().size() == 1 && e1.getMaxAddressSet().equals(e2.getMaxAddressSet())) {
+        if (aliasAnalysis.mustAlias(e1,e2)) {
             return getExecReason(e);
         } else {
             return new Conjunction<>(new AddressLiteral(e)).and(getExecReason(e));

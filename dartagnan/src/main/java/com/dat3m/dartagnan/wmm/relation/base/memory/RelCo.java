@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
@@ -51,6 +52,7 @@ public class RelCo extends Relation {
         if(maxTupleSet == null){
         	logger.info("Computing maxTupleSet for " + getName());
             maxTupleSet = new TupleSet();
+            AliasAnalysis a = task.getAliasAnalysis();
             List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
             List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
                     FilterBasic.get(WRITE),
@@ -59,7 +61,7 @@ public class RelCo extends Relation {
 
             for(Event e1 : eventsInit){
                 for(Event e2 : eventsStore){
-                    if(MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent)e2)){
+                    if(a.mayAlias((MemEvent)e1,(MemEvent)e2)){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
@@ -67,7 +69,7 @@ public class RelCo extends Relation {
 
             for(Event e1 : eventsStore){
                 for(Event e2 : eventsStore){
-                    if(e1.getCId() != e2.getCId() && MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent)e2)){
+                    if(e1.getCId() != e2.getCId() && a.mayAlias((MemEvent)e1,(MemEvent)e2)){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
@@ -160,13 +162,14 @@ public class RelCo extends Relation {
 
     private void applyLocalConsistencyMinSet() {
         if (task.getMemoryModel().isLocallyConsistent()) {
+            AliasAnalysis a = task.getAliasAnalysis();
             for (Tuple t : getMaxTupleSet()) {
                 MemEvent w1 = (MemEvent) t.getFirst();
                 MemEvent w2 = (MemEvent) t.getSecond();
 
                 if (w2.is(INIT)) {
                     continue;
-                } else if (w1.getMaxAddressSet().size() != 1 || w2.getMaxAddressSet().size() != 1) {
+                } else if (!a.mustAlias(w1,w2)) {
                     continue;
                 }
 

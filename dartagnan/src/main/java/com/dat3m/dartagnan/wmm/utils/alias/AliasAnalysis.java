@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import java.util.*;
 
@@ -29,6 +30,18 @@ public class AliasAnalysis {
     private Map<Register, Map<Event, Integer>> ssaMap;
 
     private final Graph graph = new Graph();
+
+	public boolean mayAlias(MemEvent x, MemEvent y) {
+		return !Sets.intersection(x.getMaxAddressSet(),y.getMaxAddressSet()).isEmpty();
+	}
+
+	public boolean hasMustAlias(MemEvent x) {
+		return x.getMaxAddressSet().size() == 1;
+	}
+
+	public boolean mustAlias(MemEvent x, MemEvent y) {
+		return x.getMaxAddressSet().size() == 1 && x.getMaxAddressSet().equals(y.getMaxAddressSet());
+	}
 
     public void calculateLocationSets(Program program, Alias alias) {
         if(alias == Alias.NONE){

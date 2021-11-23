@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
+import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
@@ -39,7 +40,7 @@ public class DataRaces {
 			prover.addConstraint(task.encodeWmmRelations(ctx));
 	        prover.addConstraint(task.encodeWmmConsistency(ctx));
 	        prover.push();
-	        prover.addConstraint(encodeRaces(task.getProgram(), ctx));
+	        prover.addConstraint(encodeRaces(task.getProgram(),task.getAliasAnalysis(),ctx));
 	        
 			BooleanFormula noBoundEventExec = task.getProgramEncoder().encodeNoBoundEventExec(ctx);
 			
@@ -57,7 +58,7 @@ public class DataRaces {
 		return UNKNOWN;
     }
     
-    private static BooleanFormula encodeRaces(Program p, SolverContext ctx) {
+    private static BooleanFormula encodeRaces(Program p, AliasAnalysis a, SolverContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
     	IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
     	
@@ -81,7 +82,7 @@ public class DataRaces {
     					if(m.getMemValue() instanceof BConst && !((BConst)m.getMemValue()).getValue()) {
     						continue;
     					}
-    					if(w.canRace() && m.canRace() && MemEvent.canAddressTheSameLocation(w, m)) {
+    					if(w.canRace() && m.canRace() && a.mayAlias(w,m)) {
     						BooleanFormula conflict = bmgr.and(m.exec(), w.exec(), imgr.equal(
     								(IntegerFormula)w.getMemAddressExpr(), 
     								(IntegerFormula)m.getMemAddressExpr()), 

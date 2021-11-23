@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
@@ -27,10 +28,11 @@ public class RelLoc extends Relation {
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             minTupleSet = new TupleSet();
+            AliasAnalysis a = task.getAliasAnalysis();
             for (Tuple t : getMaxTupleSet()) {
                 MemEvent e1 = (MemEvent) t.getFirst();
                 MemEvent e2 = (MemEvent) t.getSecond();
-                if (e1.getMaxAddressSet().size() == 1 && e2.getMaxAddressSet().size() == 1) {
+                if (a.mustAlias(e1,e2)) {
                     minTupleSet.add(t);
                 }
             }
@@ -43,11 +45,12 @@ public class RelLoc extends Relation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             Collection<Event> events = task.getProgram().getCache().getEvents(FilterBasic.get(MEMORY));
+            AliasAnalysis a = task.getAliasAnalysis();
             for(Event e1 : events){
                 for(Event e2 : events){
                     //TODO: loc should be reflexive according to
                     // "Syntax and semantics of the weak consistency model specification language cat"
-                    if(e1.getCId() != e2.getCId() && MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent)e2)){
+                    if(e1.getCId() != e2.getCId() && a.mayAlias((MemEvent) e1, (MemEvent)e2)){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }

@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.wmm.filter.FilterIntersection;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -78,10 +79,11 @@ public class RelRf extends Relation {
 
             List<Event> loadEvents = task.getProgram().getCache().getEvents(FilterBasic.get(READ));
             List<Event> storeEvents = task.getProgram().getCache().getEvents(FilterBasic.get(WRITE));
+			AliasAnalysis a = task.getAliasAnalysis();
 
             for(Event e1 : storeEvents){
                 for(Event e2 : loadEvents){
-                    if(MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent) e2)){
+                    if(a.mayAlias((MemEvent) e1, (MemEvent) e2)){
                     	maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
@@ -189,10 +191,11 @@ public class RelRf extends Relation {
 
             // Remove past reads
             BranchEquivalence eq = task.getBranchEquivalence();
+            AliasAnalysis a = task.getAliasAnalysis();
             Set<Tuple> deletedTuples = new HashSet<>();
             for (Event read: task.getProgram().getCache().getEvents(FilterBasic.get(READ))) {
                 // TODO: remove this restriction?
-                if (((MemEvent)read).getMaxAddressSet().size() != 1) {
+                if (!a.hasMustAlias((MemEvent)read)) {
                     continue;
                 }
 
@@ -203,8 +206,8 @@ public class RelRf extends Relation {
                         .collect(Collectors.toList());
                 Set<MemEvent> deletedWrites = new HashSet<>();
 
-                if (((MemEvent)read).getMaxAddressSet().size() == 1){
-                    List<Event> impliedWrites = possibleWrites.stream().filter(x -> x.getMaxAddressSet().size() == 1 && eq.isImplied(read, x) && x.cfImpliesExec()).collect(Collectors.toList());
+                if (a.hasMustAlias((MemEvent)read)){
+                    List<Event> impliedWrites = possibleWrites.stream().filter(x -> a.hasMustAlias(x) && eq.isImplied(read, x) && x.cfImpliesExec()).collect(Collectors.toList());
                     if (!impliedWrites.isEmpty()) {
                         Event lastImplied = impliedWrites.get(impliedWrites.size() - 1);
                         if (!lastImplied.is(INIT)) {
@@ -217,7 +220,7 @@ public class RelRf extends Relation {
                 //TODO: If a read can read from multiple addresses, we have to make sure that
                 // we don't let writes of different addresses override each other
                 List<MemEvent> canOverride = possibleWrites.stream()
-                        .filter(x -> !x.is(INIT) && x.cfImpliesExec() && x.getMaxAddressSet().size() == 1)
+                        .filter(x -> !x.is(INIT) && x.cfImpliesExec() && a.hasMustAlias(x))
                         .collect(Collectors.toList());
                 possibleWrites.stream().filter(x ->
                         (x.is(INIT) && canOverride.stream().anyMatch(y -> eq.isImplied(x ,y)))
@@ -240,6 +243,7 @@ public class RelRf extends Relation {
 
         // Atomics blocks: BeginAtomic -> EndAtomic
         BranchEquivalence eq = task.getBranchEquivalence();
+        AliasAnalysis a = task.getAliasAnalysis();
         FilterAbstract filter = FilterIntersection.get(FilterBasic.get(RMW), FilterBasic.get(SVCOMPATOMIC));
         for(Event end : task.getProgram().getCache().getEvents(filter)){
             List<Store> writes = new ArrayList<>();
@@ -254,12 +258,12 @@ public class RelRf extends Relation {
             }
 
             for (Load read : reads) {
-                if (read.getMaxAddressSet().size() != 1) {
+                if (!a.hasMustAlias(read)) {
                     continue;
                 }
 
                 List<Store> ownWrites = writes.stream()
-                        .filter(x -> x.getCId() < read.getCId() && x.getMaxAddressSet().equals(read.getMaxAddressSet()))
+                        .filter(x -> x.getCId() < read.getCId() && a.mustAlias(x,read))
                         .collect(Collectors.toList());
                 boolean hasImpliedWrites = ownWrites.stream().anyMatch(x -> eq.isImplied(read, x) && x.cfImpliesExec());
                 if (hasImpliedWrites) {
