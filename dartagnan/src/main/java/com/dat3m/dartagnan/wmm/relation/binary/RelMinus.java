@@ -87,7 +87,7 @@ public class RelMinus extends BinaryRelation {
 
             BooleanFormula opt1 = r1.getSMTVar(tuple, ctx);
             BooleanFormula opt2 = bmgr.not(r2.getSMTVar(tuple, ctx));
-            if (Relation.PostFixApprox) {
+            if(task.postfixApproximation()) {
                 enc = bmgr.and(enc, bmgr.implication(bmgr.and(opt1, opt2), this.getSMTVar(tuple, ctx)));
             } else {
                 enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), bmgr.and(opt1, opt2)));

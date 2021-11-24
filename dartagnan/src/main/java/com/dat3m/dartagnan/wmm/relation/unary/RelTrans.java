@@ -119,7 +119,7 @@ public class RelTrans extends UnaryRelation {
                 }
             }
 
-            if(Relation.PostFixApprox) {
+            if(task.postfixApproximation()) {
                 enc = bmgr.and(enc, bmgr.implication(orClause, this.getSMTVar(tuple, ctx)));
             } else {
                 enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), orClause));

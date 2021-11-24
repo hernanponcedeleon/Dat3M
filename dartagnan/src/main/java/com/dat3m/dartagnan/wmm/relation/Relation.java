@@ -25,8 +25,6 @@ import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
  */
 public abstract class Relation implements Dependent<Relation> {
 
-    public static boolean PostFixApprox = false;
-
     protected String name;
     protected String term;
 

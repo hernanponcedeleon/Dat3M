@@ -24,6 +24,8 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -36,7 +38,7 @@ import static com.google.common.base.Preconditions.checkState;
 /*
 Represents a verification task.
  */
-
+@Options
 public class VerificationTask {
 
     private static final Logger logger = LogManager.getLogger(VerificationTask.class);
@@ -52,6 +54,12 @@ public class VerificationTask {
     private final ProgramEncoder progEncoder;
     private final MemoryEncoder memoryEncoder;
 
+	@Option(
+		name="wmm.postfix",
+		description="The execution may contain arbitrary edges without meeting their preconditions.",
+		secure=true)
+	private boolean postfix = false;
+
     protected VerificationTask(Program program, Wmm memoryModel, VerificationTaskBuilder builder) {
         this.program = checkNotNull(program);
         this.memoryModel = checkNotNull(memoryModel);
@@ -59,6 +67,7 @@ public class VerificationTask {
 
         try {
             this.config = builder.config.build();
+            config.inject(this);
             progEncoder = ProgramEncoder.fromConfig(config);
             memoryEncoder = MemoryEncoder.fromConfig(config);
         } catch (InvalidConfigurationException ex) {
@@ -112,6 +121,10 @@ public class VerificationTask {
             return new VerificationTask(program,memoryModel,this);
         }
     }
+
+	public boolean postfixApproximation() {
+		return postfix;
+	}
 
     public Configuration getConfig() {
         return this.config;
