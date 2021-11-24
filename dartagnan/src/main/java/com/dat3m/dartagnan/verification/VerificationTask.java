@@ -41,6 +41,8 @@ Represents a verification task.
 @Options
 public class VerificationTask {
 
+	public static final String OPTION_POSTFIX = "encoding.postfix";
+
     private static final Logger logger = LogManager.getLogger(VerificationTask.class);
 
     private final Program program;
@@ -55,7 +57,7 @@ public class VerificationTask {
     private final MemoryEncoder memoryEncoder;
 
 	@Option(
-		name="wmm.postfix",
+		name=OPTION_POSTFIX,
 		description="The execution may contain arbitrary edges without meeting their preconditions.",
 		secure=true)
 	private boolean postfix = false;
@@ -68,6 +70,7 @@ public class VerificationTask {
         try {
             this.config = builder.config.build();
             config.inject(this);
+            logger.info("{}: {}",OPTION_POSTFIX,postfix);
             progEncoder = ProgramEncoder.fromConfig(config);
             memoryEncoder = MemoryEncoder.fromConfig(config);
         } catch (InvalidConfigurationException ex) {

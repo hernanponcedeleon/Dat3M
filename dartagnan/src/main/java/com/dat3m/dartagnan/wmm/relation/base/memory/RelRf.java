@@ -31,18 +31,21 @@ import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
-@Options(prefix="wmm.rf")
+@Options
 public class RelRf extends Relation {
 
+	public static final String OPTION_UNINITIALIZED = "wmm.rf.allowUninitialized";
+	public static final String OPTION_NAIVE = "wmm.rf.naiveMutex";
+
 	@Option(
+		name=OPTION_UNINITIALIZED,
 		description="Do not require that each read event is satisfied by some write.",
-		name="allowUninitialized",
 		secure = true)
 	private boolean canAccessUninitializedMemory = false;
 
 	@Option(
+		name=OPTION_NAIVE,
 		description="Exclude multiple satisfaction by explicit clauses for each pair instead of using new variables.",
-		name="naiveMutex",
 		secure=true)
 	private boolean naiveMutex = false;
 
@@ -58,6 +61,8 @@ public class RelRf extends Relation {
 		super.initialise(task,ctx);
 		try {
 			task.getConfig().inject(this);
+			logger.info("{}: {}",OPTION_UNINITIALIZED,canAccessUninitializedMemory);
+			logger.info("{}: {}",OPTION_NAIVE,naiveMutex);
 		} catch(InvalidConfigurationException e) {
 			logger.warn(e.getMessage());
 		}

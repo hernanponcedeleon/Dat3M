@@ -34,10 +34,12 @@ import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 @Options
 public class RelCo extends Relation {
 
+	public static final String OPTION_ANTISYMMETRY = "encoding.antiSymmCo";
+
 	private static final Logger logger = LogManager.getLogger(RelCo.class);
 
 	@Option(
-		name="encoding.antiSymmCo",
+		name=OPTION_ANTISYMMETRY,
 		description="Encodes the antisymmetry of coherences explicitly.",
 		secure=true)
 	private boolean antisymmetry = false;
@@ -52,6 +54,7 @@ public class RelCo extends Relation {
 		super.initialise(task,ctx);
 		try {
 			task.getConfig().inject(this);
+			logger.info("{}: {}",OPTION_ANTISYMMETRY,antisymmetry);
 		}
 		catch(InvalidConfigurationException e) {
 			logger.warn(e.getMessage());
