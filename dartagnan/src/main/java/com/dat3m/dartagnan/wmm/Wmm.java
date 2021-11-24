@@ -12,6 +12,8 @@ import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -24,6 +26,7 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
  *
  * @author Florian Furbach
  */
+@Options(prefix="wmm")
 public class Wmm {
 
     private final static ImmutableSet<String> baseRelations = ImmutableSet.of(CO, RF, IDD, ADDRDIRECT);
@@ -33,6 +36,16 @@ public class Wmm {
     private final RelationRepository relationRepository;
     private final List<RecursiveGroup> recursiveGroups = new ArrayList<>();
 
+	@Option(
+		description="Assumes local consistency for all created wmms.",
+		secure=true)
+	private boolean assumeLocalConsistency = true;
+
+	@Option(
+		description="Assumes the WMM respects atomic blocks for optimization (only the case for SVCOMP right now).",
+		secure=true)
+	private boolean respectsAtomicBlocks = true;
+
     public List<Axiom> getAxioms() { return axioms; }
 
     public List<RecursiveGroup> getRecursiveGroups() { return recursiveGroups; }
@@ -40,13 +53,13 @@ public class Wmm {
     public boolean isLocallyConsistent() {
         // For now we return a preset value. Ideally, we would like to
         // find this property automatically.
-        return GlobalSettings.getInstance().shouldWmmAssumeLocalConsistency();
+        return assumeLocalConsistency;
     }
 
     public boolean doesRespectAtomicBlocks() {
         // For now we return a preset value. Ideally, we would like to
         // find this property automatically. This is currently only relevant for SVCOMP
-        return GlobalSettings.getInstance().doesWmmRespectAtomicBlocks();
+        return respectsAtomicBlocks;
     }
 
 

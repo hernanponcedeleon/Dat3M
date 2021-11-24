@@ -51,23 +51,6 @@ public class GlobalSettings {
     public boolean isSymmetryBreakingEnabled() { return symmetryBreakingEnabled ; }
     public void setIsSymmetryBreakingEnabled(boolean value) { symmetryBreakingEnabled  = value; }
 
-    @Option(name = "wmm.assumeLocalConsistency",
-            description = "Assumes local consistency for all created wmms.",
-            secure = true)
-    private boolean shouldWmmAssumeLocalConsistency = true;
-
-    public boolean shouldWmmAssumeLocalConsistency() { return shouldWmmAssumeLocalConsistency; }
-    public void setShouldWmmAssumeLocalConsistency(boolean value) { shouldWmmAssumeLocalConsistency = value; }
-
-    @Option(name = "wmm.respectsAtomicBlocks",
-            description = "Assumes the WMM respects atomic blocks for optimization (only the case for SVCOMP right now).",
-            secure = true)
-    private boolean doesWmmRespectAtomicBlocks = true;
-
-    public boolean doesWmmRespectAtomicBlocks() { return doesWmmRespectAtomicBlocks; }
-    public void setDoesWmmRespectAtomicBlocks(boolean value) { doesWmmRespectAtomicBlocks = value; }
-
-
     //TODO: The following options get replaced when the new Refinement branch gets merged.
     @Option(name = "refinement.assumeLocallyConsistentWMM",
             description = "Refinement will start from a locally consistent baseline WMM instead of the empty one.",

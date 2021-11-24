@@ -81,6 +81,7 @@ public class Dartagnan extends BaseOptions {
 		logger.info("CAT file path: " + fileModel);
 
         Wmm mcm = new ParserCat().parse(fileModel);
+		config.inject(mcm);
         Program p = new ProgramParser().parse(fileProgram);
 
         WitnessGraph witness = new WitnessGraph();
