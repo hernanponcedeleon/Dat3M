@@ -34,6 +34,7 @@ import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
 import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisSaturationSolver;
 import static com.dat3m.dartagnan.utils.GitInfo.createGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static org.sosy_lab.common.configuration.OptionCollector.collectOptions;
 
 @Options
 public class Dartagnan extends BaseOptions {
@@ -52,11 +53,16 @@ public class Dartagnan extends BaseOptions {
 		secure=true)
 	private File verifyWitness;
 
-	private static final Logger logger = LogManager.getLogger(Dartagnan.class);  
-	
-    public static void main(String[] args) throws Exception {
-    	
-    	createGitInfo();
+	private static final Logger logger = LogManager.getLogger(Dartagnan.class);
+
+	public static void main(String[] args) throws Exception {
+
+		if(Arrays.asList(args).contains("--help")) {
+			collectOptions(false,false,System.out);
+			return;
+		}
+
+		createGitInfo();
 		String[] argKeyword = Arrays.stream(args)
 		.filter(s->s.startsWith("-"))
 		.toArray(String[]::new);
@@ -73,8 +79,6 @@ public class Dartagnan extends BaseOptions {
 		File fileProgram = new File(argPositional[1]);
 		logger.info("Program path: " + fileProgram);
 		logger.info("CAT file path: " + fileModel);
-
-		//TODO help information
 
         Wmm mcm = new ParserCat().parse(fileModel);
         Program p = new ProgramParser().parse(fileProgram);
