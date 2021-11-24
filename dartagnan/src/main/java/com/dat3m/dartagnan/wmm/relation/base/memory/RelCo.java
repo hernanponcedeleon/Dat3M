@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -12,6 +12,9 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
@@ -28,15 +31,32 @@ import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
+@Options
 public class RelCo extends Relation {
 
 	private static final Logger logger = LogManager.getLogger(RelCo.class);
+
+	@Option(
+		name="encoding.antiSymmCo",
+		description="Encodes the antisymmetry of coherences explicitly.",
+		secure=true)
+	private boolean antisymmetry = false;
 
     public RelCo(){
         term = CO;
         forceDoEncode = true;
     }
 
+	@Override
+	public void initialise(VerificationTask task, SolverContext ctx) {
+		super.initialise(task,ctx);
+		try {
+			task.getConfig().inject(this);
+		}
+		catch(InvalidConfigurationException e) {
+			logger.warn(e.getMessage());
+		}
+	}
 
     @Override
     public TupleSet getMinTupleSet(){
@@ -189,7 +209,7 @@ public class RelCo extends Relation {
     
     @Override
     public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
-        if(!GlobalSettings.getInstance().shouldEncodeAntiSymmCo()) {
+        if(!antisymmetry) {
             return super.getSMTVar(edge, ctx);
         }
 
