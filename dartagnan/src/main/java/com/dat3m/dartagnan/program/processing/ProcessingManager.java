@@ -51,6 +51,8 @@ public class ProcessingManager implements ProgramProcessor {
 
     public void run(Program program) {
         try {
+			AtomicAsLock.fromConfig(config).run(program);
+
             if (performDCE) {
                 DeadCodeElimination.fromConfig(config).run(program);
             }

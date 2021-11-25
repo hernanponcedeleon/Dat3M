@@ -48,8 +48,8 @@ public class UnusedTestFails {
 
 	@Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
-        String cat_file = GlobalSettings.getInstance().shouldParseAtomicBlockAsLocks()  ? "cat/svcomp-locks.cat" : "cat/svcomp.cat";
-        Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat_file));
+		Wmm m0 = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+"cat/svcomp.cat"));
+		//Wmm m1 = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+"cat/svcomp-locks.cat"));
 
         List<Object[]> data = new ArrayList<>();
         //data.add(new Object[]{"../lfds/ms_datCAS-O0.bpl", wmm});

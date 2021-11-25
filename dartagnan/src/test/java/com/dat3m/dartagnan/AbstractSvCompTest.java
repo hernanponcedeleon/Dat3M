@@ -11,6 +11,8 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -18,6 +20,7 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import java.io.*;
 
 import static com.dat3m.dartagnan.analysis.Base.*;
+import static com.dat3m.dartagnan.program.processing.LoopUnrolling.BOUND;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
@@ -31,14 +34,25 @@ public abstract class AbstractSvCompTest {
 
     private final String path;
     private final Wmm wmm;
-    private final int bound;
+    private final Configuration config;
     private Result expected;
 
     public AbstractSvCompTest(String path, Wmm wmm, int bound) {
         this.path = path;
         this.wmm = wmm;
-        this.bound = bound;
+		try {
+			config = Configuration.builder().setOption(BOUND,String.valueOf(bound)).build();
+		}
+		catch(InvalidConfigurationException e) {
+			throw new IllegalArgumentException(e);
+		}
     }
+
+	public AbstractSvCompTest(String p, Wmm m, Configuration c) {
+		path = p;
+		wmm = m;
+		config = c;
+	}
 
     //@Test(timeout = TIMEOUT)
     public void test() {
@@ -51,7 +65,7 @@ public abstract class AbstractSvCompTest {
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withBound(bound)
+                    .withConfig(config)
                     .withSolverTimeout(TIMEOUT)
                     .build(program, wmm);
             long start = System.currentTimeMillis();
@@ -74,7 +88,7 @@ public abstract class AbstractSvCompTest {
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withBound(bound)
+                    .withConfig(config)
                     .withSolverTimeout(TIMEOUT)
                     .build(program, wmm);
             long start = System.currentTimeMillis();
@@ -97,7 +111,7 @@ public abstract class AbstractSvCompTest {
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withBound(bound)
+                    .withConfig(config)
                     .withSolverTimeout(TIMEOUT)
                     .build(program, wmm);
             long start = System.currentTimeMillis();
@@ -120,7 +134,7 @@ public abstract class AbstractSvCompTest {
             expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
-                    .withBound(bound)
+                    .withConfig(config)
                     .withSolverTimeout(TIMEOUT)
                     .build(program, wmm);
             long start = System.currentTimeMillis();

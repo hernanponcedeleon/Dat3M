@@ -1,20 +1,16 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.utils.EType;
 
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
@@ -50,18 +46,10 @@ public class SvcompProcedures {
 			__VERIFIER_assume(visitor, ctx);
 			break;
 		case "__VERIFIER_atomic_begin":
-			if(GlobalSettings.getInstance().shouldParseAtomicBlockAsLocks()) {
-				__VERIFIER_atomic(visitor, true);
-			} else {
-				__VERIFIER_atomic_begin(visitor);	
-			}
+			__VERIFIER_atomic_begin(visitor);
 			break;
 		case "__VERIFIER_atomic_end":
-			if(GlobalSettings.getInstance().shouldParseAtomicBlockAsLocks()) {
-				__VERIFIER_atomic(visitor, false);
-			} else {
-				__VERIFIER_atomic_end(visitor);
-			}
+			__VERIFIER_atomic_end(visitor);
 			break;
 		case "__VERIFIER_nondet_bool":
 			__VERIFIER_nondet_bool(visitor, ctx);
@@ -102,20 +90,6 @@ public class SvcompProcedures {
        	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newAssume(expr));
 	}
 
-	public static void __VERIFIER_atomic(VisitorBoogie visitor, boolean begin) {
-        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
-        Address lockAddress = visitor.programBuilder.getOrCreateLocation("__VERIFIER_atomic", -1).getAddress();
-       	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-		LinkedList<Event> events = new LinkedList<>();
-        events.add(EventFactory.newLoad(register, lockAddress, null));
-        events.add(EventFactory.newJump(new Atom(register, NEQ, new IConst(begin ? BigInteger.ZERO : BigInteger.ONE, -1)), label));
-        events.add(EventFactory.newStore(lockAddress, new IConst(begin ? BigInteger.ONE : BigInteger.ZERO, -1), null));
-        for(Event e : events) {
-        	e.addFilters(EType.LOCK, EType.RMW);
-        	visitor.programBuilder.addChild(visitor.threadCount, e);
-        }
-	}
-	
 	private static void __VERIFIER_atomic_begin(VisitorBoogie visitor) {
 		visitor.currentBeginAtomic = EventFactory.Svcomp.newBeginAtomic();
 		visitor.programBuilder.addChild(visitor.threadCount, visitor.currentBeginAtomic);	

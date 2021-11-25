@@ -32,6 +32,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.List;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.program.processing.LoopUnrolling.BOUND;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -101,7 +102,7 @@ public class VerificationTask {
         }
 
 		public VerificationTaskBuilder withBound(int k) {
-			this.config.setOption("program.processing.loopBound",Integer.toString(k));
+			this.config.setOption(BOUND,Integer.toString(k));
 			return this;
 		}
 

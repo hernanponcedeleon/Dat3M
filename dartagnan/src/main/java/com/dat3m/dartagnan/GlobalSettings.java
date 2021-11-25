@@ -34,14 +34,6 @@ public class GlobalSettings {
 
     // =========================== Configurables ===========================
 
-    @Option(name = "program.parsing.atomicBlocksAsLocks",
-            description = "Transforms atomic blocks by adding global locks.",
-            secure = true)
-    private boolean shouldParseAtomicBlockAsLocks = false;
-
-    public boolean shouldParseAtomicBlockAsLocks() { return shouldParseAtomicBlockAsLocks; }
-    public void setShouldParseAtomicBlockAsLocks(boolean value) { shouldParseAtomicBlockAsLocks = value; }
-
     @Option(name = "encoding.enableSymmetryBreaking",
             description = "Adds a symmetry breaking formula to the encoding. " +
                     "This is unsound if the program contains assertions that distinguish symmetric threads.",
@@ -127,7 +119,6 @@ public class GlobalSettings {
     private void logPrivate() {
         //TODO: This is temporary code that will get removed once all
         // options are moved to their appropriate classes
-        logger.info("ATOMIC_AS_LOCK: " + shouldParseAtomicBlockAsLocks);
         logger.info("ENABLE_SYMMETRY_BREAKING: " + symmetryBreakingEnabled);
         logger.info("MAX_RECURSION_DEPTH: " + maxRecursionDepth);
         logger.info("ENABLE_DEBUG_OUTPUT: " + shouldDebugPrintProgram);

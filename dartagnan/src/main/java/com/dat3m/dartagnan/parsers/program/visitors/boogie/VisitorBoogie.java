@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.boogie.Function;
 import com.dat3m.dartagnan.boogie.FunctionCall;
 import com.dat3m.dartagnan.boogie.PthreadPool;
@@ -365,12 +364,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(name.contains("__VERIFIER_atomic_")) {
 			atomicMode = ctx;
-			if(GlobalSettings.getInstance().shouldParseAtomicBlockAsLocks()) {
-				SvcompProcedures.__VERIFIER_atomic(this, true);	
-			} else {
-				currentBeginAtomic = EventFactory.Svcomp.newBeginAtomic();
-				programBuilder.addChild(threadCount, currentBeginAtomic);
-			}
+			currentBeginAtomic = EventFactory.Svcomp.newBeginAtomic();
+			programBuilder.addChild(threadCount, currentBeginAtomic);
 		}
 		// TODO: double check this 
 		// Some procedures might have an empty implementation.
@@ -393,16 +388,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
 			atomicMode = null;
-			if(GlobalSettings.getInstance().shouldParseAtomicBlockAsLocks()) {
-				SvcompProcedures.__VERIFIER_atomic(this, false);	
-			} else {
-				if(currentBeginAtomic == null) {
-		            throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
-				}
-				programBuilder.addChild(threadCount, EventFactory.Svcomp.newEndAtomic(currentBeginAtomic));
-				currentBeginAtomic = null;				
+			if(currentBeginAtomic == null) {
+				throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
 			}
-			
+			programBuilder.addChild(threadCount, EventFactory.Svcomp.newEndAtomic(currentBeginAtomic));
+			currentBeginAtomic = null;
+
 		}
 		Event ret = EventFactory.newFunctionReturn(name, call.getCLine());
 		programBuilder.addChild(threadCount, ret);
