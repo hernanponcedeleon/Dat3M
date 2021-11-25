@@ -1,24 +1,18 @@
 package com.dat3m.dartagnan.analysis;
 
-import com.dat3m.dartagnan.analysis.saturation.SaturationSolver;
-import com.dat3m.dartagnan.analysis.saturation.SolverResult;
-import com.dat3m.dartagnan.analysis.saturation.SolverStatistics;
-import com.dat3m.dartagnan.analysis.saturation.SolverStatus;
-import com.dat3m.dartagnan.analysis.saturation.logic.Conjunction;
-import com.dat3m.dartagnan.analysis.saturation.logic.DNF;
-import com.dat3m.dartagnan.analysis.saturation.reasoning.AddressLiteral;
-import com.dat3m.dartagnan.analysis.saturation.reasoning.CoreLiteral;
-import com.dat3m.dartagnan.analysis.saturation.reasoning.EdgeLiteral;
-import com.dat3m.dartagnan.analysis.saturation.reasoning.EventLiteral;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.solver.caat.CAATSolver;
+import com.dat3m.dartagnan.solver.caatBridge.*;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
+import com.dat3m.dartagnan.utils.logic.Conjunction;
+import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
 import com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer;
 import com.dat3m.dartagnan.verification.RefinementTask;
@@ -40,9 +34,9 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.*;
-import static com.dat3m.dartagnan.analysis.saturation.SolverStatus.INCONCLUSIVE;
-import static com.dat3m.dartagnan.analysis.saturation.SolverStatus.INCONSISTENT;
 import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONCLUSIVE;
+import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
 
 /*
@@ -58,12 +52,7 @@ public class Refinement {
 
     private static final Logger logger = LogManager.getLogger(Refinement.class);
 
-    //TODO: Currently, we pop the complete refinement before performing the bound check
-    // This may lead to situations where a bound is only reachable because
-    // we don't have a memory model and thus the bound check is imprecise.
-    // We may even want to perform refinement to check the bounds (we envision a case where the
-    // refinement is accurate enough to verify the assertions but not accurate enough to check the bounds)
-    //TODO 2: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
+    //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
     public static Result runAnalysisSaturationSolver(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
             throws InterruptedException, SolverException {
@@ -88,9 +77,10 @@ public class Refinement {
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Program program = task.getProgram();
-        SaturationSolver saturationSolver = new SaturationSolver(task, true);
+        //CAATSolver CAATSolver = new CAATSolver(task, true);
+        BMCSolver solver = new BMCSolver(task);
         Refiner refiner = new Refiner(task, ctx);
-        SolverStatus status = INCONSISTENT;
+        CAATSolver.Status status = INCONSISTENT;
 
         prover.addConstraint(task.encodeProgram(ctx));
         prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
@@ -105,7 +95,7 @@ public class Refinement {
 
         //  ------ Just for statistics ------
         List<DNF<CoreLiteral>> foundCoreReasons = new ArrayList<>();
-        List<SolverStatistics> statList = new ArrayList<>();
+        List<BMCSolver.Statistics> statList = new ArrayList<>();
         int iterationCount = 0;
         long lastTime = System.currentTimeMillis();
         long curTime;
@@ -122,15 +112,15 @@ public class Refinement {
                             " ===== Iteration: {} =====\n" +
                             "Solving time(ms): {}", iterationCount, curTime - lastTime);
 
-            SolverResult solverResult;
+            BMCSolver.Result solverResult;
             try (Model model = prover.getModel()) {
-                solverResult = saturationSolver.check(model, ctx);
+                solverResult = solver.check(model, ctx);
             } catch (SolverException e) {
                 logger.error(e);
                 throw e;
             }
 
-            SolverStatistics stats = solverResult.getStatistics();
+            BMCSolver.Statistics stats = solverResult.getStatistics();
             statList.add(stats);
             logger.debug("Refinement iteration:\n{}", stats);
 
@@ -142,7 +132,7 @@ public class Refinement {
                 prover.addConstraint(refiner.refine(reasons));
 
                 if (REFINEMENT_GENERATE_GRAPHVIZ_FILES) {
-                    generateGraphvizFiles(task, saturationSolver.getCurrentModel(), iterationCount, reasons);
+                    generateGraphvizFiles(task, solver.getCurrentModel(), iterationCount, reasons);
                 }
 
                 if (logger.isTraceEnabled()) {
@@ -180,7 +170,7 @@ public class Refinement {
                     message = "Bounded safety proven.";
                     break;
                 default:
-                    throw new IllegalStateException("Unknown result type returned by SaturationSolver.");
+                    throw new IllegalStateException("Unknown result type returned by CAATSolver.");
             }
             logger.info(message);
         }
@@ -211,6 +201,7 @@ public class Refinement {
 
         if (logger.isInfoEnabled()) {
             logger.info(generateSummary(statList, iterationCount, totalSolvingTime, boundCheckTime));
+            //logger.info("Base reasoning time: " + CAATSolver.baseReasoningTime);
         }
 
         veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;
@@ -221,8 +212,8 @@ public class Refinement {
 
     // -------------------- Printing -----------------------------
 
-    private static CharSequence generateSummary(List<SolverStatistics> statList, int iterationCount,
-                                   long totalSolvingTime, long boundCheckTime) {
+    private static CharSequence generateSummary(List<BMCSolver.Statistics> statList, int iterationCount,
+                                                long totalSolvingTime, long boundCheckTime) {
         long totalModelTime = 0;
         long totalConsistencyCheckTime = 0;
         long totalReasonComputationTime = 0;
@@ -232,7 +223,7 @@ public class Refinement {
         long minModelSize = Long.MAX_VALUE;
         long maxModelSize = Long.MIN_VALUE;
 
-        for (SolverStatistics stats : statList) {
+        for (BMCSolver.Statistics stats : statList) {
             totalModelTime += stats.getModelConstructionTime();
             totalConsistencyCheckTime += stats.getConsistencyCheckTime();
             totalReasonComputationTime += stats.getReasonComputationTime();
@@ -265,16 +256,15 @@ public class Refinement {
 
     //TODO: This code is very specific to visualize the core reasons found
     // in refinement iterations. We might want to generalize this.
-    // TODO(2): Sometimes the automatic pdf-generation doesn't work properly
     private static void generateGraphvizFiles(RefinementTask task, ExecutionModel model, int iterationCount, DNF<CoreLiteral> reasons) {
         //   =============== Visualization code ==================
         // The edgeFilter filters those co/rf that belong to some violation reason
         BiPredicate<EventData, EventData> edgeFilter = (e1, e2) -> {
             for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
                 for (CoreLiteral lit : cube.getLiterals()) {
-                    if (lit instanceof EdgeLiteral) {
-                        EdgeLiteral edgeLit = (EdgeLiteral) lit;
-                        if (edgeLit.getEdge().getFirst() == e1 && edgeLit.getEdge().getSecond() == e2) {
+                    if (lit instanceof RelLiteral) {
+                        RelLiteral edgeLit = (RelLiteral) lit;
+                        if (model.getData(edgeLit.getData().getFirst()).get() == e1 && model.getData(edgeLit.getData().getSecond()).get() == e2) {
                             return true;
                         }
                     }
@@ -416,24 +406,24 @@ public class Refinement {
             BooleanFormula enc;
             if (literal instanceof EventLiteral) {
                 EventLiteral lit = (EventLiteral) literal;
-                enc =  perm.apply(lit.getEventData().getEvent()).exec();
+                enc =  perm.apply(lit.getData()).exec();
             } else if (literal instanceof AddressLiteral) {
                 AddressLiteral loc = (AddressLiteral) literal;
-                MemEvent e1 = (MemEvent) perm.apply(loc.getFirst().getEvent());
-                MemEvent e2 = (MemEvent) perm.apply(loc.getSecond().getEvent());
+                MemEvent e1 = (MemEvent) perm.apply(loc.getFirst());
+                MemEvent e2 = (MemEvent) perm.apply(loc.getSecond());
                 enc =  generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), context);
-            } else if (literal instanceof EdgeLiteral) {
-                EdgeLiteral lit = (EdgeLiteral) literal;
+            } else if (literal instanceof RelLiteral) {
+                RelLiteral lit = (RelLiteral) literal;
                 Relation rel = task.getMemoryModel().getRelationRepository().getRelation(lit.getName());
                 enc =  rel.getSMTVar(
-                        perm.apply(lit.getEdge().getFirst().getEvent()),
-                        perm.apply(lit.getEdge().getSecond().getEvent()),
+                        perm.apply(lit.getData().getFirst()),
+                        perm.apply(lit.getData().getSecond()),
                         context);
             } else {
                 throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
             }
 
-            return literal.isNegated() ? bmgr.not(enc) : enc;
+            return literal.isNegative() ? bmgr.not(enc) : enc;
         }
 
     }
