@@ -11,7 +11,8 @@ import com.dat3m.dartagnan.utils.logic.Literal;
     - 12 name bits (index into name table)
     - 2 x 24 event index bits (indices into an event table)
  */
-// TODO: Due to our current use-case, we only need EdgeLiterals.
+//TODO: Due to our current use-case, we only need EdgeLiterals.
+// We do not yet have SetLiterals or CompareLiterals
 public interface CAATLiteral extends Literal<CAATLiteral> {
     default Conjunction<CAATLiteral> toSingletonReason() {
         return new Conjunction<>(this);
