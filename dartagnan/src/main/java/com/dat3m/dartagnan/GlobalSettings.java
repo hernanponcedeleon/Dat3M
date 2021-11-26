@@ -84,14 +84,6 @@ public class GlobalSettings {
     public int getMaxRecursionDepth() { return maxRecursionDepth; }
     public void setMaxRecursionDepth(int value) { maxRecursionDepth = value; }
 
-    @Option(name = "program.debugPrint",
-            description = "Prints the program after all processing steps and before verification for debug purposes.",
-            secure = true)
-    private boolean shouldDebugPrintProgram = false;
-
-    public boolean shouldDebugPrintProgram () { return shouldDebugPrintProgram ; }
-    public void setShouldDebugPrintProgram(boolean value) { shouldDebugPrintProgram  = value; }
-
     // =====================================================================
 
     public static void log() {
@@ -102,7 +94,6 @@ public class GlobalSettings {
         //TODO: This is temporary code that will get removed once all
         // options are moved to their appropriate classes
         logger.info("MAX_RECURSION_DEPTH: " + maxRecursionDepth);
-        logger.info("ENABLE_DEBUG_OUTPUT: " + shouldDebugPrintProgram);
 
         // Refinement settings
         logger.info("REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM: " + shouldRefinementUseLocallyConsistentBaselineWmm);

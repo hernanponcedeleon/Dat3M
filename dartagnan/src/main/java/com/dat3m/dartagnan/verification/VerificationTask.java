@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.verification;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.encoding.MemoryEncoder;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.program.Program;
@@ -43,6 +42,7 @@ Represents a verification task.
 public class VerificationTask {
 
 	public static final String OPTION_POSTFIX = "encoding.postfix";
+	public static final String OPTION_DEBUG_PRINT = "program.debugPrint";
 
     private static final Logger logger = LogManager.getLogger(VerificationTask.class);
 
@@ -62,6 +62,11 @@ public class VerificationTask {
 		description="The execution may contain arbitrary edges without meeting their preconditions.",
 		secure=true)
 	private boolean postfix = false;
+
+	@Option(name=OPTION_DEBUG_PRINT,
+		description="Prints the program after all processing steps and before verification for debug purposes.",
+		secure=true)
+	private boolean debugPrint;
 
     protected VerificationTask(Program program, Wmm memoryModel, VerificationTaskBuilder builder) {
         this.program = checkNotNull(program);
@@ -200,7 +205,7 @@ public class VerificationTask {
 		}
 		aliasAnalysis.calculateLocationSets(program);
 
-        if (GlobalSettings.getInstance().shouldDebugPrintProgram()) {
+        if (debugPrint) {
             for (Thread t : program.getThreads()) {
                 System.out.println("========== Thread " + t.getId() + " ==============");
                 for (Event e : t.getEntry().getSuccessors()) {
