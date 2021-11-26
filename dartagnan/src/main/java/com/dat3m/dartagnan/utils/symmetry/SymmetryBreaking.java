@@ -7,6 +7,9 @@ import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -20,22 +23,34 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 
 
 // A first rough implementation for symmetry breaking
+@Options
 public class SymmetryBreaking {
+
+	public static final String OPTION_SYMMETRY_BREAKING = "encoding.enableSymmetryBreaking";
 
     private static final int LEX_LEADER_SIZE = 1000;
 
     private final ThreadSymmetry symm;
     private final Relation rf;
 
-    public SymmetryBreaking(VerificationTask task) {
+	@Option(name=OPTION_SYMMETRY_BREAKING,
+		description="Adds a symmetry breaking formula to the encoding. "
+			+ "This is unsound if the program contains assertions that distinguish symmetric threads.",
+		secure=true)
+	private boolean enable = false;
+
+    public SymmetryBreaking(VerificationTask task) throws InvalidConfigurationException {
         this.symm = task.getThreadSymmetry();
         this.rf = task.getMemoryModel().getRelationRepository().getRelation(RF);
-
+		task.getConfig().inject(this);
     }
 
     public BooleanFormula encode(SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
+		if(!enable) {
+			return enc;
+		}
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
             enc = bmgr.and(enc, encode(symmClass, ctx));
         }

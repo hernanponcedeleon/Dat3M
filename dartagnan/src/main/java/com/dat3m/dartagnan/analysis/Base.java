@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.analysis;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -33,9 +32,7 @@ public class Base {
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
         prover.addConstraint(task.encodeWitness(ctx));
-        if (GlobalSettings.getInstance().isSymmetryBreakingEnabled()) {
-            prover.addConstraint(task.encodeSymmetryBreaking(ctx));
-        }
+        prover.addConstraint(task.encodeSymmetryBreaking(ctx));
         logger.info("Starting push()");
         prover.push();
         prover.addConstraint(task.encodeAssertions(ctx));
@@ -72,10 +69,8 @@ public class Base {
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
         prover.addConstraint(task.encodeWitness(ctx));
-        if (GlobalSettings.getInstance().isSymmetryBreakingEnabled()) {
-            prover.addConstraint(task.encodeSymmetryBreaking(ctx));
-        }
-        
+        prover.addConstraint(task.encodeSymmetryBreaking(ctx));
+
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_assertion_assumption");
         BooleanFormula assumedAssertion = bmgr.implication(assumptionLiteral, task.encodeAssertions(ctx));
@@ -125,11 +120,9 @@ public class Base {
 		prover1.addConstraint(encodeWitness);
         prover2.addConstraint(encodeWitness);
 
-        if (GlobalSettings.getInstance().isSymmetryBreakingEnabled()) {
-            prover1.addConstraint(task.encodeSymmetryBreaking(ctx));
-            prover2.addConstraint(task.encodeSymmetryBreaking(ctx));
-        }
-        
+        prover1.addConstraint(task.encodeSymmetryBreaking(ctx));
+        prover2.addConstraint(task.encodeSymmetryBreaking(ctx));
+
         prover1.addConstraint(task.encodeAssertions(ctx));
 
         logger.info("Starting first solver.check()");

@@ -89,9 +89,7 @@ public class Refinement {
         prover.addConstraint(task.encodeProgram(ctx));
         prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
         prover.addConstraint(task.encodeBaselineWmmConsistency(ctx));
-        if (GlobalSettings.getInstance().isSymmetryBreakingEnabled()) {
-            prover.addConstraint(task.encodeSymmetryBreaking(ctx));
-        }
+        prover.addConstraint(task.encodeSymmetryBreaking(ctx));
 
         prover.push();
         prover.addConstraint(task.encodeAssertions(ctx));

@@ -34,15 +34,6 @@ public class GlobalSettings {
 
     // =========================== Configurables ===========================
 
-    @Option(name = "encoding.enableSymmetryBreaking",
-            description = "Adds a symmetry breaking formula to the encoding. " +
-                    "This is unsound if the program contains assertions that distinguish symmetric threads.",
-            secure = true)
-    private boolean symmetryBreakingEnabled = false;
-
-    public boolean isSymmetryBreakingEnabled() { return symmetryBreakingEnabled ; }
-    public void setIsSymmetryBreakingEnabled(boolean value) { symmetryBreakingEnabled  = value; }
-
     //TODO: The following options get replaced when the new Refinement branch gets merged.
     @Option(name = "refinement.assumeLocallyConsistentWMM",
             description = "Refinement will start from a locally consistent baseline WMM instead of the empty one.",
@@ -119,7 +110,6 @@ public class GlobalSettings {
     private void logPrivate() {
         //TODO: This is temporary code that will get removed once all
         // options are moved to their appropriate classes
-        logger.info("ENABLE_SYMMETRY_BREAKING: " + symmetryBreakingEnabled);
         logger.info("MAX_RECURSION_DEPTH: " + maxRecursionDepth);
         logger.info("ENABLE_DEBUG_OUTPUT: " + shouldDebugPrintProgram);
 

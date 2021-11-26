@@ -232,9 +232,15 @@ public class VerificationTask {
         return memoryModel.encodeConsistency(ctx);
     }
 
-    public BooleanFormula encodeSymmetryBreaking(SolverContext ctx) {
-        return new SymmetryBreaking(this).encode(ctx);
-    }
+	public BooleanFormula encodeSymmetryBreaking(SolverContext ctx) {
+		try {
+			return new SymmetryBreaking(this).encode(ctx);
+		}
+		catch(InvalidConfigurationException e) {
+			logger.warn(e.getMessage());
+			return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
+		}
+	}
 
     public BooleanFormula encodeAssertions(SolverContext ctx) {
         return progEncoder.encodeAssertions(ctx);
