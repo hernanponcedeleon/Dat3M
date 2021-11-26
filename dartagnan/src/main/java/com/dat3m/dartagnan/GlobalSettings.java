@@ -34,21 +34,6 @@ public class GlobalSettings {
 
     // =========================== Configurables ===========================
 
-    //TODO: The following options get replaced when the new Refinement branch gets merged.
-
-
-    public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
-    @Option(name = "refinement.symmetryLearning",
-            description = "Refinement will learn symmetries if possible.",
-            secure = true,
-            toUppercase = true)
-    private SymmetryLearning refinementSymmetryLearning = SymmetryLearning.FULL;
-
-    public SymmetryLearning getRefinementSymmetryLearning() { return refinementSymmetryLearning; }
-    public void setRefinementSymmetryLearning(SymmetryLearning value) { refinementSymmetryLearning = value; }
-
-    //TODO: End of options that will be replaced
-
     // TODO: This option does not need to be exposed. Setting some value we are comfortable with should be enough.
     @Option(name = "general.maxRecursion",
             description = "Sets the maximal recursion depth before the call stack gets cleared." +
@@ -70,9 +55,6 @@ public class GlobalSettings {
         //TODO: This is temporary code that will get removed once all
         // options are moved to their appropriate classes
         logger.info("MAX_RECURSION_DEPTH: " + maxRecursionDepth);
-
-        // Refinement settings
-        logger.info("REFINEMENT_SYMMETRY_LEARNING: " + refinementSymmetryLearning.name());
     }
 
 }

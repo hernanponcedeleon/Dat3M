@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.analysis;
 
-import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.GlobalSettings.SymmetryLearning;
 import com.dat3m.dartagnan.analysis.saturation.SaturationSolver;
 import com.dat3m.dartagnan.analysis.saturation.SolverResult;
 import com.dat3m.dartagnan.analysis.saturation.SolverStatistics;
@@ -26,6 +24,9 @@ import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
 import java.util.ArrayList;
@@ -261,21 +262,34 @@ public class Refinement {
         logger.info(message);
     }
 
-
+	public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
 
     /*
         This class handles the computation of refinement clauses from violations found by the saturation procedure.
         Furthermore, it incorporates symmetry reasoning if possible.
      */
+	@Options
     private static class Refiner {
         private final RefinementTask task;
         private final SolverContext context;
         private final List<Function<Event, Event>> symmPermutations;
 
+		@Option(name="refinement.symmetryLearning",
+			description="Refinement will learn symmetries if possible.",
+			secure=true,
+			toUppercase=true)
+		private SymmetryLearning symmetryLearning = SymmetryLearning.FULL;
+
         public Refiner(RefinementTask task, SolverContext ctx) {
             this.task = task;
             this.context = ctx;
-            symmPermutations = computeSymmetryPermutations(GlobalSettings.getInstance().getRefinementSymmetryLearning());
+            symmPermutations = computeSymmetryPermutations(symmetryLearning);
+			try {
+				task.getConfig().inject(this);
+			}
+			catch(InvalidConfigurationException e) {
+				logger.warn(e.getMessage());
+			}
         }
 
 
