@@ -35,21 +35,6 @@ public class GlobalSettings {
     // =========================== Configurables ===========================
 
     //TODO: The following options get replaced when the new Refinement branch gets merged.
-    @Option(name = "refinement.assumeLocallyConsistentWMM",
-            description = "Refinement will start from a locally consistent baseline WMM instead of the empty one.",
-            secure = true)
-    private boolean shouldRefinementUseLocallyConsistentBaselineWmm = false;
-
-    public boolean shouldRefinementUseLocallyConsistentBaselineWMM() { return shouldRefinementUseLocallyConsistentBaselineWmm; }
-    public void setShouldRefinementUseLocallyConsistentBaselineWMM(boolean value) { shouldRefinementUseLocallyConsistentBaselineWmm = value; }
-
-    @Option(name = "refinement.assumeNoOOTA",
-            description = "Refinement will start from a baseline WMM that does not allow Out-Of-Thin-Air behaviour.",
-            secure = true)
-    private boolean shouldRefinementUseNoOOTABaselineWMM = false;
-
-    public boolean shouldRefinementUseNoOOTABaselineWMM() { return shouldRefinementUseNoOOTABaselineWMM; }
-    public void setShouldRefinementUseNoOOTABaselineWMM(boolean value) { shouldRefinementUseNoOOTABaselineWMM = value; }
 
 
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
@@ -87,8 +72,6 @@ public class GlobalSettings {
         logger.info("MAX_RECURSION_DEPTH: " + maxRecursionDepth);
 
         // Refinement settings
-        logger.info("REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM: " + shouldRefinementUseLocallyConsistentBaselineWmm);
-        logger.info("REFINEMENT_ADD_ACYCLIC_DEP_RF: " + shouldRefinementUseNoOOTABaselineWMM);
         logger.info("REFINEMENT_SYMMETRY_LEARNING: " + refinementSymmetryLearning.name());
     }
 

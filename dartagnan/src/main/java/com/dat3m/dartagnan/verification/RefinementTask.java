@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.verification;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -10,6 +9,8 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -23,13 +24,27 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
  */
 //TODO: We don't make SaturationDepth etc. an option, because
 // this class gets reworked in the Experimental branch!
+@Options
 public class RefinementTask extends VerificationTask {
+
+	public static final String OPTION_LOCAL_CONSISTENCY = "refinement.assumeLocallyConsistentWMM";
+	public static final String OPTION_NO_OUT_OF_THIN_AIR = "refinement.assumeNoOOTA";
 
     private final Wmm baselineModel;
 
+	@Option(name=OPTION_LOCAL_CONSISTENCY,
+		description="Refinement will start from a locally consistent baseline WMM instead of the empty one.",
+		secure=true)
+	private boolean useLocallyConsistentBaselineWmm = false;
+
+	@Option(name=OPTION_NO_OUT_OF_THIN_AIR,
+		description="Refinement will start from a baseline WMM that does not allow Out-Of-Thin-Air behaviour.",
+		secure=true)
+	private boolean useNoOOTABaselineWMM = false;
+
     private RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, RefinementTaskBuilder builder) {
         super(program,targetMemoryModel,builder);
-        this.baselineModel = baselineModel;
+        this.baselineModel = baselineModel != null ? baselineModel : createDefaultWmm();
     }
 
     public static class RefinementTaskBuilder extends VerificationTaskBuilder {
@@ -61,8 +76,7 @@ public class RefinementTask extends VerificationTask {
 
         @Override
         public RefinementTask build(Program program, Wmm memoryModel) {
-            Wmm baseline = baselineModel == null ? createDefaultWmm() : baselineModel;
-            return new RefinementTask(program, memoryModel, baseline, this);
+            return new RefinementTask(program, memoryModel, baselineModel, this);
         }
     }
 
@@ -86,19 +100,16 @@ public class RefinementTask extends VerificationTask {
 
     public static RefinementTask fromVerificationTaskWithDefaultBaselineWMM(VerificationTask task) {
         return new RefinementTaskBuilder()
-                .withBaselineWMM(createDefaultWmm())
                 .withWitness(task.getWitness())
                 .withConfig(task.getConfig())
                 .build(task.getProgram(),task.getMemoryModel());
     }
 
-    private static Wmm createDefaultWmm() {
+    private Wmm createDefaultWmm() {
         Wmm baseline = new Wmm();
         baseline.setEncodeCo(false);
 
-        GlobalSettings gSet = GlobalSettings.getInstance();
-
-        if (!gSet.shouldRefinementUseLocallyConsistentBaselineWMM()) {
+        if (!useLocallyConsistentBaselineWmm) {
             return baseline;
         }
 
@@ -113,7 +124,7 @@ public class RefinementTask extends VerificationTask {
         baseline.addAxiom(new Acyclic(porf));
 
         // ---- acyclic (dep | rf) ----
-        if (gSet.shouldRefinementUseNoOOTABaselineWMM()) {
+        if (useNoOOTABaselineWMM) {
             Relation data = repo.getRelation(DATA);
             Relation ctrl = repo.getRelation(CTRL);
             Relation addr = repo.getRelation(ADDR);

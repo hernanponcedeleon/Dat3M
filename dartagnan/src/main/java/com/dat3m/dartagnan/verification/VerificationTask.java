@@ -75,7 +75,7 @@ public class VerificationTask {
 
         try {
             this.config = builder.config.build();
-            config.inject(this);
+            config.recursiveInject(this);
             logger.info("{}: {}",OPTION_POSTFIX,postfix);
             progEncoder = ProgramEncoder.fromConfig(config);
             memoryEncoder = MemoryEncoder.fromConfig(config);
