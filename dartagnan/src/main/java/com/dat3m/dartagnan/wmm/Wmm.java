@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;

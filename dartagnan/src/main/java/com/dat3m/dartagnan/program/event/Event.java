@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -16,6 +15,7 @@ import java.util.*;
 public abstract class Event implements Comparable<Event> {
 
 	public static final int PRINT_PAD_EXTRA = 50;
+	public static final int MAX_RECURSION_DEPTH = 200;
 
 	protected int oId = -1;		// ID after parsing (original)
 	protected int uId = -1;		// ID after unrolling
@@ -97,7 +97,7 @@ public abstract class Event implements Comparable<Event> {
 	protected RecursiveAction getSuccessorsRecursive(List<Event> list, int depth) {
 		list.add(this);
 		if (successor != null) {
-			if (depth < GlobalSettings.getInstance().getMaxRecursionDepth()) {
+			if (depth < MAX_RECURSION_DEPTH) {
 				return successor.getSuccessorsRecursive(list, depth + 1);
 			} else {
 				return RecursiveAction.call(() -> successor.getSuccessorsRecursive(list, 0));

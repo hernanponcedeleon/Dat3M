@@ -67,8 +67,6 @@ public class Dartagnan extends BaseOptions {
 		.filter(s->s.startsWith("-"))
 		.toArray(String[]::new);
 		Configuration config = Configuration.fromCmdLineArguments(argKeyword); // TODO: We don't parse configs yet
-    	GlobalSettings.initializeFromConfig(config);
-    	GlobalSettings.log();
 		Dartagnan o = new Dartagnan();
 		config.recursiveInject(o);
 
