@@ -115,7 +115,7 @@ public class Refinement {
 
             SolverResult solverResult;
             try (Model model = prover.getModel()) {
-                solverResult = saturationSolver.check(model, ctx, GlobalSettings.getInstance().getSaturationMaxDepth());
+                solverResult = saturationSolver.check(model, ctx);
             }
 
             SolverStatistics stats = solverResult.getStatistics();

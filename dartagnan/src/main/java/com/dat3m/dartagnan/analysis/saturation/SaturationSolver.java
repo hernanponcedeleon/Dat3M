@@ -22,6 +22,7 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import org.sosy_lab.common.configuration.IntegerOption;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -74,6 +75,7 @@ public class SaturationSolver {
     // ================== Fields ==================
 
 	public static final String OPTION_DEBUG = "saturation.enableDebug";
+	public static final String OPTION_MAX_DEPTH = "saturation.maxDepth";
 
     // --------------- Static data ----------------
     private final VerificationTask task;
@@ -89,6 +91,12 @@ public class SaturationSolver {
 		description="Enables debugging of the Saturation algorithm.",
 		secure=true)
 	private boolean debug = false;
+
+	@Option(name=OPTION_MAX_DEPTH,
+		description="Sets the maximal saturation depth.",
+		secure=true)
+	@IntegerOption(min=0)
+	private int maxDepth = 3;
 
     // ============================================
 
@@ -204,6 +212,10 @@ public class SaturationSolver {
     // ====================================================
 
     // ==============  Core functionality  =================
+
+	public SolverResult check(Model model, SolverContext ctx) {
+		return check(model,ctx,maxDepth);
+	}
 
     /*
         <check> performs a sequence of k-Saturations, starting from 0 up to <maxSaturationDepth>

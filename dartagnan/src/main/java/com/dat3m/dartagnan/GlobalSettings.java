@@ -62,15 +62,6 @@ public class GlobalSettings {
     public SymmetryLearning getRefinementSymmetryLearning() { return refinementSymmetryLearning; }
     public void setRefinementSymmetryLearning(SymmetryLearning value) { refinementSymmetryLearning = value; }
 
-    @Option(name = "saturation.maxDepth",
-            description = "Sets the maximal saturation depth.",
-            secure = true)
-    @IntegerOption(min = 0)
-    private int saturationMaxDepth = 3;
-
-    public int getSaturationMaxDepth() { return saturationMaxDepth; }
-    public void setSaturationMaxDepth(int value) { saturationMaxDepth = value; }
-
     //TODO: End of options that will be replaced
 
     // TODO: This option does not need to be exposed. Setting some value we are comfortable with should be enough.
@@ -99,9 +90,6 @@ public class GlobalSettings {
         logger.info("REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM: " + shouldRefinementUseLocallyConsistentBaselineWmm);
         logger.info("REFINEMENT_ADD_ACYCLIC_DEP_RF: " + shouldRefinementUseNoOOTABaselineWMM);
         logger.info("REFINEMENT_SYMMETRY_LEARNING: " + refinementSymmetryLearning.name());
-
-        // Saturation settings
-        logger.info("SATURATION_MAX_DEPTH: " + saturationMaxDepth);
     }
 
 }
