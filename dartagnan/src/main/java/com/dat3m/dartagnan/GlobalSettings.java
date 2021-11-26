@@ -62,15 +62,6 @@ public class GlobalSettings {
     public SymmetryLearning getRefinementSymmetryLearning() { return refinementSymmetryLearning; }
     public void setRefinementSymmetryLearning(SymmetryLearning value) { refinementSymmetryLearning = value; }
 
-    @Option(name = "saturation.enableDebug",
-            description = "Enables debugging of the Saturation algorithm.",
-            secure = true)
-    private boolean saturationDebugEnabled = false;
-
-    public boolean isSaturationDebugEnabled() { return saturationDebugEnabled; }
-    public void setIsSaturationDebugEnabled(boolean value) { saturationDebugEnabled = value; }
-
-
     @Option(name = "saturation.maxDepth",
             description = "Sets the maximal saturation depth.",
             secure = true)
@@ -119,7 +110,6 @@ public class GlobalSettings {
         logger.info("REFINEMENT_SYMMETRY_LEARNING: " + refinementSymmetryLearning.name());
 
         // Saturation settings
-        logger.info("SATURATION_ENABLE_DEBUG: " + saturationDebugEnabled);
         logger.info("SATURATION_MAX_DEPTH: " + saturationMaxDepth);
     }
 

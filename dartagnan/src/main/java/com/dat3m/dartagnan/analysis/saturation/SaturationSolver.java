@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.analysis.saturation;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.analysis.saturation.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.saturation.coreReason.Reasoner;
 import com.dat3m.dartagnan.analysis.saturation.graphs.ExecutionGraph;
@@ -23,6 +22,9 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -67,8 +69,11 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
         - The reason computation is handled by Reasoner.
         - The resolution is handled by TreeResolution.
  */
+@Options
 public class SaturationSolver {
     // ================== Fields ==================
+
+	public static final String OPTION_DEBUG = "saturation.enableDebug";
 
     // --------------- Static data ----------------
     private final VerificationTask task;
@@ -79,6 +84,11 @@ public class SaturationSolver {
     //TODO: We might want to take an external executionModel to perform refinement on!
     private final ExecutionModel executionModel;
     private SolverStatistics stats;  // Statistics of the last call to kSearch
+
+	@Option(name=OPTION_DEBUG,
+		description="Enables debugging of the Saturation algorithm.",
+		secure=true)
+	private boolean debug = false;
 
     // ============================================
 
@@ -105,6 +115,12 @@ public class SaturationSolver {
         this.execGraph = new ExecutionGraph(task);
         this.executionModel = new ExecutionModel(task);
         this.reasoner = new Reasoner(execGraph, true);
+		try {
+			task.getConfig().inject(this);
+		}
+		catch(InvalidConfigurationException ignore) {
+			//TODO log
+		}
     }
 
     // ----------------------------------------------
@@ -112,7 +128,7 @@ public class SaturationSolver {
     private void populateFromModel(Model model, SolverContext ctx) {
         executionModel.initialize(model, ctx, false);
         execGraph.initializeFromModel(executionModel);
-        if (GlobalSettings.getInstance().isSaturationDebugEnabled()) {
+        if (debug) {
             testIteration();
             testStaticGraphs();
         }
@@ -240,7 +256,7 @@ public class SaturationSolver {
         // ==============================
 
         stats.searchTime = System.currentTimeMillis() - curTime;
-        if (GlobalSettings.getInstance().isSaturationDebugEnabled() && result.getStatus() == CONSISTENT) {
+        if (debug && result.getStatus() == CONSISTENT) {
             testCoherence();
         }
         return result;
