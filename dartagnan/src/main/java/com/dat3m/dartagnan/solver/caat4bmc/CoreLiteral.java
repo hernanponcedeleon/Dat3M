@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.solver.caatBridge;
+package com.dat3m.dartagnan.solver.caat4bmc;
 
 import com.dat3m.dartagnan.utils.logic.Literal;
 
