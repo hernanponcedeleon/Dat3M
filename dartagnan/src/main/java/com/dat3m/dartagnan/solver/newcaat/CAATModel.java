@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.solver.newcaat;
 import com.dat3m.dartagnan.solver.newcaat.constraints.Constraint;
 import com.dat3m.dartagnan.solver.newcaat.domain.Domain;
 import com.dat3m.dartagnan.solver.newcaat.predicates.CAATPredicate;
+import com.dat3m.dartagnan.solver.newcaat.predicates.PredicateHierarchy;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 

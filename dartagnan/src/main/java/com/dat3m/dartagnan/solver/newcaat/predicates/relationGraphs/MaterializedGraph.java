@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs;
 
 import com.dat3m.dartagnan.solver.newcaat.domain.Domain;
 import com.dat3m.dartagnan.solver.newcaat.misc.EdgeDirection;
+import com.dat3m.dartagnan.solver.newcaat.predicates.AbstractPredicate;
 import com.dat3m.dartagnan.solver.newcaat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.newcaat.predicates.Derivable;
 
@@ -14,7 +15,7 @@ import java.util.stream.Stream;
     MaterializedGraph simply encapsulates a SimpleGraph and delegates all its methods
     to the underlying SimpleGraph (similar to a forwarding decorator).
  */
-public abstract class MaterializedGraph extends BaseGraph {
+public abstract class MaterializedGraph extends AbstractPredicate implements RelationGraph {
 
     protected final SimpleGraph simpleGraph;
 

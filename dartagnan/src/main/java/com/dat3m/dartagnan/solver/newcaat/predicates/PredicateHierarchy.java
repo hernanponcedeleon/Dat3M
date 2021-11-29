@@ -1,9 +1,8 @@
-package com.dat3m.dartagnan.solver.newcaat;
+package com.dat3m.dartagnan.solver.newcaat.predicates;
 
 import com.dat3m.dartagnan.solver.newcaat.domain.Domain;
-import com.dat3m.dartagnan.solver.newcaat.predicates.CAATPredicate;
-import com.dat3m.dartagnan.solver.newcaat.predicates.Derivable;
 import com.dat3m.dartagnan.solver.newcaat.predicates.misc.PredicateListener;
+import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.derived.RecursiveGraph;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 
 import java.util.*;
@@ -77,11 +76,11 @@ public class PredicateHierarchy {
 
                 // For all recursive relations, initialize the propagation
                 //TODO: Fix, once we have recursive graphs again
-                /*recGrp.stream().filter(x -> x instanceof RecursiveGraph).forEach(x -> {
+                recGrp.stream().filter(x -> x instanceof RecursiveGraph).forEach(x -> {
                     for(CAATPredicate dep : x.getDependencies()) {
                         createPropagationTask(dep, x, new ArrayList<>(dep.setView()), 0);
                     }
-                });*/
+                });
 
                 // Propagate within this recursive group
                 while (!tasks.isEmpty()) {
@@ -101,10 +100,10 @@ public class PredicateHierarchy {
             return;
         }
         //TODO: Fix as soon as we have Recursive predicates again
-        /*if (pred instanceof RecursiveGraph) {
+        if (pred instanceof RecursiveGraph) {
             pred.repopulate();
             initialized.add(pred);
-        }*/
+        }
         for (CAATPredicate dep : pred.getDependencies()) {
             populateRecursively(dep, recGroup, initialized);
         }

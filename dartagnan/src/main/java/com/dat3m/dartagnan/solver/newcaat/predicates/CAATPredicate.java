@@ -22,7 +22,10 @@ public interface CAATPredicate extends Dependent<CAATPredicate> {
     Domain<?> getDomain();
     void initializeToDomain(Domain<?> domain);
 
+    // We only require a stream implementation because it is the easiest to provide
     Stream<? extends Derivable> valueStream();
+
+    // Gets the metadata associated with <value> or null, if there is none
     Derivable get(Derivable value);
 
     <TRet, TData, TContext> TRet accept(PredicateVisitor<TRet, TData, TContext> visitor, TData data, TContext context);
@@ -34,9 +37,18 @@ public interface CAATPredicate extends Dependent<CAATPredicate> {
             - Perform initialization work for base predicates (e.g. set up data structures for virtual predicates)
      */
     void repopulate();
+
+    /*
+        Changes to <changedSource> have propagated to this predicate. This means:
+            - This predicate should update its content based on the propagated changes
+            - It should return the changes it made for further propagation
+     */
     Collection<? extends Derivable> forwardPropagate(CAATPredicate changedSource, Collection<? extends Derivable> added);
+
+    // Backtracks to the state at time <time>
     void backtrackTo(int time);
 
+    // Gives a view on this predicate as a Set<Derivable>
     Set<? extends Derivable> setView();
 
 

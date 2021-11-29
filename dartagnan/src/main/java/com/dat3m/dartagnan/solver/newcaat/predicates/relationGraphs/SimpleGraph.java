@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.solver.newcaat.misc.EdgeDirection;
 import com.dat3m.dartagnan.solver.newcaat.misc.EdgeList;
 import com.dat3m.dartagnan.solver.newcaat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.newcaat.predicates.Derivable;
+import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.base.AbstractBaseGraph;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -14,7 +15,7 @@ import java.util.stream.Stream;
     This is a simple graph that allows adding edges directly.
     It is mostly used as an internal implementation for many event graphs.
  */
-public final class SimpleGraph extends BaseGraph {
+public final class SimpleGraph extends AbstractBaseGraph {
     private DataItem[] outgoing = new DataItem[0];
     private DataItem[] ingoing = new DataItem[0];
     private int maxTime = 0;

@@ -1,13 +1,14 @@
-package com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs;
+package com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.base;
 
 import com.dat3m.dartagnan.solver.newcaat.predicates.AbstractPredicate;
 import com.dat3m.dartagnan.solver.newcaat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.newcaat.predicates.misc.PredicateVisitor;
+import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.RelationGraph;
 
 import java.util.Collections;
 import java.util.List;
 
-public abstract class BaseGraph extends AbstractPredicate implements RelationGraph {
+public abstract class AbstractBaseGraph extends AbstractPredicate implements RelationGraph {
 
     @Override
     public List<? extends CAATPredicate> getDependencies() {

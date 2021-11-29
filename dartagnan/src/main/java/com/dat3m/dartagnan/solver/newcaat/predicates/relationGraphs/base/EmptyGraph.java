@@ -1,8 +1,9 @@
-package com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs;
+package com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.base;
 
 import com.dat3m.dartagnan.solver.newcaat.misc.EdgeDirection;
 import com.dat3m.dartagnan.solver.newcaat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.newcaat.predicates.Derivable;
+import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.Edge;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -10,7 +11,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public class EmptyGraph extends BaseGraph {
+public class EmptyGraph extends AbstractBaseGraph {
 
     @Override
     public void backtrackTo(int time) { }

@@ -7,8 +7,8 @@ import com.dat3m.dartagnan.solver.newcaat.misc.ObjectPool;
 import com.dat3m.dartagnan.solver.newcaat.misc.PathAlgorithm;
 import com.dat3m.dartagnan.solver.newcaat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.newcaat.predicates.Derivable;
+import com.dat3m.dartagnan.solver.newcaat.predicates.misc.MaterializedSubgraphView;
 import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.Edge;
-import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.MaterializedSubgraph;
 import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.RelationGraph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
@@ -64,7 +64,7 @@ public class AcyclicityConstraint extends AbstractConstraint {
         // (2) remove all nodes in C from the search space (those nodes are likely to give the same cycle)
         // (3) remove chords and normalize cycle order (starting from element with smallest id)
         for (Set<Integer> scc : violatingSccs) {
-            MaterializedSubgraph subgraph = new MaterializedSubgraph(constrainedGraph, scc);
+            MaterializedSubgraphView subgraph = new MaterializedSubgraphView(constrainedGraph, scc);
             Set<Integer> nodes = new HashSet<>(Sets.intersection(scc, markedNodes));
             while (!nodes.isEmpty()) {
                 //TODO: Most cycles have chords, so a specialized algorithm that avoids
