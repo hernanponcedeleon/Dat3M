@@ -52,7 +52,6 @@ We provide a set of unit tests that can be run by
 ```
 mvn test
 ```
-**Note:** there are almost 40K tests, running them can take several hs.
 
 Usage
 ======
