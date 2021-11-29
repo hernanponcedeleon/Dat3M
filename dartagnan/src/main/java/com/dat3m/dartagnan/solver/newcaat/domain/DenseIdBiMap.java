@@ -30,7 +30,7 @@ public class DenseIdBiMap<T> {
         return new DenseIdBiMap<>(expectedMaxId, new IdentityHashMap<>(4 * expectedMaxId / 3));
     }
 
-    public Set<T> getAllObjects() {
+    public Set<T> getKeys() {
         return objToIdMap.keySet();
     }
 

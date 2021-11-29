@@ -10,13 +10,6 @@ import java.util.*;
 import java.util.stream.Stream;
 
 
-//TODO: Do not recreate all DataItem items each run but only add new ones if a larger model is found.
-// If the DataItems are reused, no time is spent on the usual resizing operations.
-// We shouldn't use ArrayList for this resizing, cause it may use up to twice as many entries as needed
-// Also it might be reasonable to always create all DataItems to avoid checks during runtime
-//TODO 2: Check if it is worth to maintain an extra array per DataItem for iteration.
-// This might be relevant in particular with the first idea
-
 /*
     This is a simple graph that allows adding edges directly.
     It is mostly used as an internal implementation for many event graphs.
@@ -207,7 +200,6 @@ public final class SimpleGraph extends BaseGraph {
         public int size() {
             return edgeList.size();
         }
-
         public boolean isEmpty() {
             return edgeList.isEmpty();
         }
@@ -222,7 +214,6 @@ public final class SimpleGraph extends BaseGraph {
         public Iterator<Edge> iterator() {
             return edgeList.iterator();
         }
-
         public Stream<Edge> stream() {
             return edgeList.stream();
         }

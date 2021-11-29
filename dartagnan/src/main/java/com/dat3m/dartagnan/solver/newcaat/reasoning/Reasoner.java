@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.solver.newcaat.reasoning;
 
+import com.dat3m.dartagnan.solver.newcaat.constraints.AcyclicityConstraint;
 import com.dat3m.dartagnan.solver.newcaat.constraints.Constraint;
 import com.dat3m.dartagnan.solver.newcaat.misc.EdgeDirection;
 import com.dat3m.dartagnan.solver.newcaat.predicates.CAATPredicate;
@@ -12,9 +13,7 @@ import com.dat3m.dartagnan.solver.newcaat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 import static com.dat3m.dartagnan.solver.newcaat.misc.PathAlgorithm.findShortestPath;
 
@@ -27,12 +26,6 @@ public class Reasoner {
     public Reasoner() {
     }
 
-    // ========================== Cuts ==========================
-    // NOTE: Usually, a cut would be performed on the memory model directly.
-    // However, we allow the use of the original WMM with a separate cut
-
-
-
     // ========================== Reason computation ==========================
 
     public DNF<CAATLiteral> computeViolationReasons(Constraint constraint) {
@@ -44,28 +37,28 @@ public class Reasoner {
         Collection<? extends Collection<? extends Derivable>> violations = constraint.getViolations();
         List<Conjunction<CAATLiteral>> reasonList = new ArrayList<>(violations.size());
 
-        /*
         if (constraint instanceof AcyclicityConstraint) {
             // For acyclicity constraints, it is likely that we encounter the same
             // edge multiple times (as it can be part of different cycles)
             // so we memoize the computed reasons and reuse them if possible.
+            final RelationGraph constrainedGraph = (RelationGraph) pred;
             final int mapSize = violations.stream().mapToInt(Collection::size).sum() * 4 / 3;
             final Map<Edge, Conjunction<CAATLiteral>> reasonMap = new HashMap<>(mapSize);
 
-            for (Collection<Edge> violation : violations) {
+            for (Collection<Edge> violation : (Collection<Collection<Edge>>)violations) {
                 Conjunction<CAATLiteral> reason = violation.stream()
                         .map(edge -> reasonMap.computeIfAbsent(edge, key -> computeReason(constrainedGraph, key)))
                         .reduce(Conjunction.TRUE(), Conjunction::and);
                 reasonList.add(reason);
             }
-        } else {*/
+        } else {
             for (Collection<? extends Derivable> violation : violations) {
                 Conjunction<CAATLiteral> reason = violation.stream()
                         .map(edge -> computeReason(pred, edge))
                         .reduce(Conjunction.TRUE(), Conjunction::and);
                 reasonList.add(reason);
             }
-       // }
+        }
 
         return new DNF<>(reasonList);
     }
@@ -283,6 +276,7 @@ public class Reasoner {
                     min = e;
                 }
             }
+
             if (next == set) {
                 throw new IllegalStateException("Did not find a reason for " + ele + " in " + set.getName());
             }
@@ -309,9 +303,8 @@ public class Reasoner {
             SetPredicate rhs = set.getDependencies().get(1);
 
             if (rhs.getDependencies().size() > 0) {
-                throw new IllegalStateException(
-                        String.format("Cannot compute reason of element %s in set difference %s because its right-hand side %s " +
-                                "is derived.", ele, set, rhs));
+                throw new IllegalStateException(String.format("Cannot compute reason of element %s in " +
+                        "set difference %s because its right-hand side %s is derived.", ele, set, rhs));
             }
 
             Conjunction<CAATLiteral> reason = computeReason(lhs, ele)

@@ -9,7 +9,6 @@ import java.util.function.Predicate;
 
 public class PathAlgorithm {
 
-    //TODO: A integer-based queue would be better, e.g. a RingBuffer
     private final static Queue<Integer> queue1 = new ArrayDeque<>();
     private final static Queue<Integer> queue2 = new ArrayDeque<>();
 
@@ -96,8 +95,6 @@ public class PathAlgorithm {
             return Collections.emptyList();
         }
 
-        //TODO: Find a way to efficiently get rid of the linked list
-        // Maybe convert to an ArrayList when returning?
         LinkedList<Edge> path = new LinkedList<>();
         int e = cur;
         do {

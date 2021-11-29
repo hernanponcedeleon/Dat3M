@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs;
 
-import com.dat3m.dartagnan.solver.newcaat.misc.DomainSet;
+import com.dat3m.dartagnan.solver.newcaat.misc.DenseIntegerSet;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -33,7 +33,7 @@ public class MaterializedSubgraph extends MaterializedGraph {
         }
     }
 
-    public MaterializedSubgraph(RelationGraph source, DomainSet events) {
+    public MaterializedSubgraph(RelationGraph source, DenseIntegerSet events) {
         sourceGraph = source;
         simpleGraph.initializeToDomain(domain);
 

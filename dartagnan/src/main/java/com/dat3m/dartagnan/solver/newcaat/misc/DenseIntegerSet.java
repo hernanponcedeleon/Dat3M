@@ -5,16 +5,16 @@ import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class DomainSet implements Set<Integer> {
+public class DenseIntegerSet implements Set<Integer> {
 
     private boolean[] elements = new boolean[0];
     int size = 0;
 
-    public DomainSet() {
+    public DenseIntegerSet() {
         this(20);
     }
 
-    public DomainSet(int capacity) {
+    public DenseIntegerSet(int capacity) {
         ensureCapacity(capacity);
     }
 
@@ -27,7 +27,6 @@ public class DomainSet implements Set<Integer> {
     public int size() {
         return size;
     }
-
     public boolean isEmpty() {
         return size == 0;
     }
@@ -45,12 +44,10 @@ public class DomainSet implements Set<Integer> {
     public Iterator<Integer> iterator() {
         return intIterator();
     }
-
     public PrimitiveIterator.OfInt intIterator() { return new SetIterator(elements, size); }
 
     @Override
     public Stream<Integer> stream() { return intStream().boxed(); }
-
     public IntStream intStream() { return IntStream.range(0, elements.length).filter(i -> elements[i]); }
 
     @Override

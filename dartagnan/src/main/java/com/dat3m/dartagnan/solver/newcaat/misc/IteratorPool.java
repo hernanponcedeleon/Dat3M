@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Function;
 
+//TODO: We probably do not need this anymore
 public class IteratorPool<T, V extends Collection<T>> {
 
     private final ArrayList<ReusableIterator<T, V>> iteratorPool;

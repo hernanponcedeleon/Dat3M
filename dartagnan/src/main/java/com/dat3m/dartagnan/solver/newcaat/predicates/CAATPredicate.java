@@ -33,9 +33,9 @@ public interface CAATPredicate extends Dependent<CAATPredicate> {
             - Perform initial population of derived predicates
             - Perform initialization work for base predicates (e.g. set up data structures for virtual predicates)
      */
+    void repopulate();
     Collection<? extends Derivable> forwardPropagate(CAATPredicate changedSource, Collection<? extends Derivable> added);
     void backtrackTo(int time);
-    void repopulate();
 
     Set<? extends Derivable> setView();
 

@@ -3,9 +3,6 @@ package com.dat3m.dartagnan.solver.newcaat.misc;
 import java.util.ArrayList;
 import java.util.function.Supplier;
 
-/*
-    TODO: We can generalize this to any object pool (there is nothing that makes use of collections)
- */
 public class ObjectPool<V> implements Supplier<V> {
 
     private final ArrayList<V> collections;

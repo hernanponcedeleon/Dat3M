@@ -37,7 +37,7 @@ public class IdentityGraph extends BaseGraph {
     public Edge getById(int id1, int id2) { return containsById(id1, id2) ? edges.get(id1) : null; }
 
     @Override
-    public int size() { return domain.size(); }
+    public int size() { return edges.size(); }
 
     @Override
     public int size(int e, EdgeDirection dir) { return 1; }

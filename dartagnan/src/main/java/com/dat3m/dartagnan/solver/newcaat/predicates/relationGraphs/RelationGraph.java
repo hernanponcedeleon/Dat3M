@@ -16,7 +16,6 @@ public interface RelationGraph extends CAATPredicate {
     @Override
     Collection<Edge> forwardPropagate(CAATPredicate changedSource, Collection<? extends Derivable> added);
 
-    // Returns the edge that is stored in this graph, including all its metadata
     Edge get(Edge edge);
 
     int size(int e, EdgeDirection dir);

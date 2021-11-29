@@ -21,7 +21,7 @@ public class GenericDomain<T> implements Domain<T> {
 
     @Override
     public Set<T> getElements() {
-        return domainMap.getAllObjects();
+        return domainMap.getKeys();
     }
 
     @Override
