@@ -27,6 +27,7 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import java.io.File;
 
 import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
+import static com.dat3m.dartagnan.analysis.Analysis.RACES;
 import static com.dat3m.dartagnan.analysis.Base.*;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
 import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisSaturationSolver;
@@ -147,7 +148,7 @@ public class Dartagnan {
                     System.out.println(result);
                 }
 
-                if (options.createWitness() != null) {
+                if (options.createWitness() != null && options.getAnalysis() != RACES) {
                     new WitnessBuilder(p, ctx, prover, result, options).write();
                 }
             }
