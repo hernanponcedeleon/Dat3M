@@ -119,10 +119,8 @@ public class Reasoner {
                     min = e;
                 }
             }
-            if (next == graph) {
-                throw new IllegalStateException("Did not find a reason for " + edge + " in " + graph.getName());
-            }
 
+            assert next != graph;
             Conjunction<CAATLiteral> reason = computeReason(next, min);
             assert !reason.isFalse();
             return reason;
@@ -177,6 +175,17 @@ public class Reasoner {
         }
 
         @Override
+        public Conjunction<CAATLiteral> visitCartesian(RelationGraph graph, Edge edge, Void unused) {
+            SetPredicate lhs = (SetPredicate) graph.getDependencies().get(0);
+            SetPredicate rhs = (SetPredicate) graph.getDependencies().get(1);
+
+            Conjunction<CAATLiteral> reason = computeReason(lhs, lhs.getById(edge.getFirst()))
+                    .and(computeReason(rhs, rhs.getById(edge.getSecond())));
+            assert !reason.isFalse();
+            return reason;
+        }
+
+        @Override
         public Conjunction<CAATLiteral> visitGraphDifference(RelationGraph graph, Edge edge, Void unused) {
             RelationGraph lhs = (RelationGraph) graph.getDependencies().get(0);
             RelationGraph rhs = (RelationGraph) graph.getDependencies().get(1);
@@ -224,8 +233,6 @@ public class Reasoner {
             if (edge.isLoop()) {
                 return Conjunction.TRUE();
             } else {
-                //TODO: Make sure that we can simply delegate the edge through.
-                // The reflexive closure right now does NOT change the derivation length
                 Conjunction<CAATLiteral> reason = computeReason((RelationGraph) graph.getDependencies().get(0), edge);
                 assert !reason.isFalse();
                 return reason;
@@ -236,9 +243,6 @@ public class Reasoner {
         public Conjunction<CAATLiteral> visitTransitiveClosure(RelationGraph graph, Edge edge, Void unused) {
             RelationGraph inner = (RelationGraph) graph.getDependencies().get(0);
             Conjunction<CAATLiteral> reason = Conjunction.TRUE();
-            //TODO: Here might be a problem with the derivation length.
-            // Depending on the implementation of findShortestPath, there might be an off-by-one error
-            // The path we look for should have strictly smaller derivation length on each edge
             List<Edge> path = findShortestPath(inner, edge.getFirst(), edge.getSecond(), edge.getDerivationLength() - 1);
             for (Edge e : path) {
                 reason = reason.and(computeReason(inner, e));
@@ -277,9 +281,7 @@ public class Reasoner {
                 }
             }
 
-            if (next == set) {
-                throw new IllegalStateException("Did not find a reason for " + ele + " in " + set.getName());
-            }
+            assert next != set;
 
             Conjunction<CAATLiteral> reason = computeReason(next, min);
             assert !reason.isFalse();

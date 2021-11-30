@@ -6,7 +6,7 @@ public class Element extends AbstractDerivable implements Comparable<Element> {
 
     protected final int dId;
 
-    public int getElement() { return dId; }
+    public int getId() { return dId; }
 
     public Element(int id, int time, int derivLength) {
         super(time, derivLength);

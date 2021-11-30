@@ -31,7 +31,7 @@ public interface SetPredicate extends CAATPredicate {
 
     default Element getById(int id) { return get(new Element(id)); }
     default boolean contains(Element e) { return get(e) != null; }
-    default boolean containsById(int id) { return contains(new Element(id)); }
+    default boolean containsById(int id) { return getById(id) != null; }
 
     default Iterator<Element> elementIterator() { return elementStream().iterator(); }
     default Iterable<Element> elements() { return OneTimeIterable.create(elementIterator()); }

@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.solver.newcaat.misc.EdgeDirection;
 import com.dat3m.dartagnan.solver.newcaat.predicates.AbstractPredicate;
 import com.dat3m.dartagnan.solver.newcaat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.newcaat.predicates.Derivable;
+import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.base.SimpleGraph;
 
 import java.util.Collection;
 import java.util.Iterator;

@@ -1,11 +1,12 @@
-package com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs;
+package com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.base;
 
 import com.dat3m.dartagnan.solver.newcaat.domain.Domain;
 import com.dat3m.dartagnan.solver.newcaat.misc.EdgeDirection;
 import com.dat3m.dartagnan.solver.newcaat.misc.EdgeList;
 import com.dat3m.dartagnan.solver.newcaat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.newcaat.predicates.Derivable;
-import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.base.AbstractBaseGraph;
+import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.Edge;
+import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.RelationGraph;
 
 import java.util.*;
 import java.util.stream.Stream;
