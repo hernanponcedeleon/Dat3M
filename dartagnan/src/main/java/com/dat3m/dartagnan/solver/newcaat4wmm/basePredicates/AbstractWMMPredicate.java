@@ -1,7 +1,8 @@
-package com.dat3m.dartagnan.solver.newcaat4wmm;
+package com.dat3m.dartagnan.solver.newcaat4wmm.basePredicates;
 
 import com.dat3m.dartagnan.solver.newcaat.domain.Domain;
 import com.dat3m.dartagnan.solver.newcaat.predicates.AbstractPredicate;
+import com.dat3m.dartagnan.solver.newcaat4wmm.EventDomain;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.google.common.base.Preconditions;

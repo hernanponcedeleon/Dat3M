@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.solver.newcaat4wmm;
+package com.dat3m.dartagnan.solver.newcaat4wmm.basePredicates;
 
 import com.dat3m.dartagnan.solver.newcaat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.newcaat.predicates.Derivable;

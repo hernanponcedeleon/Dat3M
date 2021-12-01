@@ -1,14 +1,14 @@
-package com.dat3m.dartagnan.solver.newcaat4wmm.base;
+package com.dat3m.dartagnan.solver.newcaat4wmm.basePredicates;
 
 import com.dat3m.dartagnan.verification.model.EventData;
 
 import java.util.Map;
 import java.util.Set;
 
-public class AddrDepGraph extends DepGraph {
+public  class DataDepGraph extends DepGraph {
 
     @Override
     protected Map<EventData, Set<EventData>> getDependencyMap() {
-        return model.getAddrDepMap();
+        return model.getDataDepMap();
     }
 }

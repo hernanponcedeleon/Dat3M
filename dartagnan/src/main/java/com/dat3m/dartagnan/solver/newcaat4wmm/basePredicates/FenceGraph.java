@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.solver.newcaat4wmm.base;
+package com.dat3m.dartagnan.solver.newcaat4wmm.basePredicates;
 
 
 import com.dat3m.dartagnan.program.Thread;

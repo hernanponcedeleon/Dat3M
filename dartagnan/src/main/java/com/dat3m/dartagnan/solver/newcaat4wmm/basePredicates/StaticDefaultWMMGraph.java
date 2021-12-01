@@ -1,8 +1,7 @@
-package com.dat3m.dartagnan.solver.newcaat4wmm.base;
+package com.dat3m.dartagnan.solver.newcaat4wmm.basePredicates;
 
 import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.RelationGraph;
-import com.dat3m.dartagnan.solver.newcaat4wmm.MaterializedWMMGraph;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;

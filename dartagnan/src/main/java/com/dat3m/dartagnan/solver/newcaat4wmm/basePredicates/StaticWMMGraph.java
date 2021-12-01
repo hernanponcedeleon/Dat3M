@@ -1,9 +1,8 @@
-package com.dat3m.dartagnan.solver.newcaat4wmm.base;
+package com.dat3m.dartagnan.solver.newcaat4wmm.basePredicates;
 
 import com.dat3m.dartagnan.solver.newcaat.domain.Domain;
 import com.dat3m.dartagnan.solver.newcaat.misc.EdgeDirection;
 import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.Edge;
-import com.dat3m.dartagnan.solver.newcaat4wmm.AbstractWMMGraph;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 

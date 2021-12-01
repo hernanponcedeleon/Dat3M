@@ -1,8 +1,7 @@
-package com.dat3m.dartagnan.solver.newcaat4wmm.base;
+package com.dat3m.dartagnan.solver.newcaat4wmm.basePredicates;
 
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.Edge;
-import com.dat3m.dartagnan.solver.newcaat4wmm.MaterializedWMMGraph;
 import com.dat3m.dartagnan.verification.model.EventData;
 
 import java.util.Collection;

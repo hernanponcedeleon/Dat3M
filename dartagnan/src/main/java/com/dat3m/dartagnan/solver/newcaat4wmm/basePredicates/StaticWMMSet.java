@@ -1,11 +1,10 @@
-package com.dat3m.dartagnan.solver.newcaat4wmm.base;
+package com.dat3m.dartagnan.solver.newcaat4wmm.basePredicates;
 
 import com.dat3m.dartagnan.solver.newcaat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.newcaat.predicates.Derivable;
 import com.dat3m.dartagnan.solver.newcaat.predicates.misc.PredicateVisitor;
 import com.dat3m.dartagnan.solver.newcaat.predicates.sets.Element;
 import com.dat3m.dartagnan.solver.newcaat.predicates.sets.SetPredicate;
-import com.dat3m.dartagnan.solver.newcaat4wmm.AbstractWMMPredicate;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 
 import java.util.Collection;

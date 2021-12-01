@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.solver.newcaat4wmm.base;
+package com.dat3m.dartagnan.solver.newcaat4wmm.basePredicates;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.solver.newcaat.misc.EdgeDirection;
@@ -11,26 +11,23 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class ExternalGraph extends StaticWMMGraph {
+public class InternalGraph extends StaticWMMGraph {
     private Map<Thread, List<EventData>> threadEventsMap;
 
     @Override
     public boolean containsById(int id1, int id2) {
-        EventData a = getEvent(id1);
-        EventData b = getEvent(id2);
-        return a.getThread() != b.getThread();
+        return getEvent(id1).getThread() == getEvent(id2).getThread();
     }
 
     @Override
     public int size(int id, EdgeDirection dir) {
-        return model.getEventList().size() - threadEventsMap.get(getEvent(id).getThread()).size();
+        return threadEventsMap.get(getEvent(id).getThread()).size();
     }
 
     @Override
     public Stream<Edge> edgeStream() {
         return IntStream.range(0, domain.size())
-                .mapToObj(e -> edgeStream(e, EdgeDirection.OUTGOING))
-                .flatMap(s -> s);
+                .mapToObj(i -> edgeStream(i, EdgeDirection.OUTGOING)).flatMap(s -> s);
     }
 
     @Override
@@ -39,20 +36,14 @@ public class ExternalGraph extends StaticWMMGraph {
         Function<EventData, Edge> edgeMapping = dir == EdgeDirection.OUTGOING ?
                 (x -> new Edge(id, x.getId())) : (x -> new Edge(x.getId(), id));
 
-        return threadEventsMap.entrySet().stream()
-                .filter(x -> x.getKey() != e.getThread())
-                .flatMap(x -> x.getValue().stream())
-                .map(edgeMapping);
+        return threadEventsMap.get(e.getThread()).stream().map(edgeMapping);
     }
 
     @Override
     public void repopulate() {
         threadEventsMap = model.getThreadEventsMap();
-        int totalSize = model.getEventList().size();
-        for (List<EventData> threadEvents : threadEventsMap.values()) {
-            int threadSize = threadEvents.size();
-            size += (totalSize - threadSize) * threadSize;
-        }
+        size = threadEventsMap.values().stream().mapToInt(x -> x.size() * x.size()).sum();
     }
+
 
 }

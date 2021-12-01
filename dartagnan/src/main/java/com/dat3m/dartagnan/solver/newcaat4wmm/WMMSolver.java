@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.newcaat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.newcaat.reasoning.EdgeLiteral;
 import com.dat3m.dartagnan.solver.newcaat.reasoning.ElementLiteral;
-import com.dat3m.dartagnan.solver.newcaat4wmm.base.FenceGraph;
+import com.dat3m.dartagnan.solver.newcaat4wmm.basePredicates.FenceGraph;
 import com.dat3m.dartagnan.solver.newcaat4wmm.coreReasoning.*;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
@@ -40,8 +40,6 @@ public class WMMSolver {
     private final CAATSolver solver;
     private final Wmm memoryModel;
     private final BranchEquivalence eq;
-
-
 
     public WMMSolver(VerificationTask task) {
         this.task = task;
@@ -213,14 +211,18 @@ public class WMMSolver {
         CAATSolver.Statistics caatStats;
         long modelExtractionTime;
         int modelSize;
+        int numComputedCoreReasons;
+        int numComputedReducedCoreReasons;
 
         public long getModelExtractionTime() { return modelExtractionTime; }
         public long getPopulationTime() { return caatStats.getPopulationTime(); }
         public long getReasonComputationTime() { return caatStats.getReasonComputationTime(); }
         public long getConsistencyCheckTime() { return caatStats.getConsistencyCheckTime(); }
         public int getModelSize() { return modelSize; }
-        public int getNumComputedReasons() { return caatStats.getNumComputedReasons(); }
-        public int getNumComputedReducedReasons() { return caatStats.getNumComputedReducedReasons(); }
+        public int getNumComputedBaseReasons() { return caatStats.getNumComputedReasons(); }
+        public int getNumComputedReducedBaseReasons() { return caatStats.getNumComputedReducedReasons(); }
+        public int getNumComputedCoreReasons() { return numComputedCoreReasons; }
+        public int getNumComputedReducedCoreReasons() { return numComputedReducedCoreReasons; }
 
         public String toString() {
             StringBuilder str = new StringBuilder();
@@ -229,8 +231,10 @@ public class WMMSolver {
             str.append("Consistency check time(ms): ").append(getConsistencyCheckTime()).append("\n");
             str.append("Reason computation time(ms): ").append(getReasonComputationTime()).append("\n");
             str.append("Model size (#events): ").append(getModelSize()).append("\n");
-            str.append("#Computed reasons: ").append(getNumComputedReasons()).append("\n");
-            str.append("#Computed reduced reasons: ").append(getNumComputedReducedReasons()).append("\n");
+            str.append("#Computed reasons (base/core): ").append(getNumComputedBaseReasons())
+                    .append("/").append(getNumComputedCoreReasons()).append("\n");
+            str.append("#Computed reduced reasons (base/core): ").append(getNumComputedReducedBaseReasons())
+                    .append("/").append(getNumComputedReducedCoreReasons()).append("\n");
             return str.toString();
         }
     }

@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.base.EmptyGr
 import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.base.IdentityGraph;
 import com.dat3m.dartagnan.solver.newcaat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.newcaat.predicates.sets.SetPredicate;
-import com.dat3m.dartagnan.solver.newcaat4wmm.base.*;
+import com.dat3m.dartagnan.solver.newcaat4wmm.basePredicates.*;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
