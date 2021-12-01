@@ -33,7 +33,7 @@ public class CAATModel {
         }
     }
 
-    public static CAATModel from(Collection<CAATPredicate> predicates, Collection<Constraint> constraints) {
+    public static CAATModel from(Collection<? extends CAATPredicate> predicates, Collection< ? extends Constraint> constraints) {
         Set<Constraint> consts = new HashSet<>(constraints);
         Set<CAATPredicate> preds = new HashSet<>(predicates);
         consts.forEach(c -> preds.add(c.getConstrainedPredicate()));
@@ -42,7 +42,7 @@ public class CAATModel {
         return new CAATModel(hierarchy, consts);
     }
 
-    public static CAATModel fromConstraints(Collection<Constraint> constraints) {
+    public static CAATModel fromConstraints(Collection<? extends Constraint> constraints) {
         return from(Collections.emptyList(), constraints);
     }
 

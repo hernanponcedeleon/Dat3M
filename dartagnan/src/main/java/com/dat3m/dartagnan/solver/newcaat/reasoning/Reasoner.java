@@ -211,10 +211,17 @@ public class Reasoner {
         }
 
         @Override
+        public Conjunction<CAATLiteral> visitSetIdentity(RelationGraph graph, Edge edge, Void unused) {
+            assert edge.isLoop();
+
+            SetPredicate inner = (SetPredicate) graph.getDependencies().get(0);
+            Element e = inner.getById(edge.getFirst());
+            return computeReason(inner, e);
+        }
+
+        @Override
         public Conjunction<CAATLiteral> visitRangeIdentity(RelationGraph graph, Edge edge, Void unused) {
-            if (!edge.isLoop()) {
-                throw new IllegalArgumentException(edge + " is no loop in " + graph.getName());
-            }
+            assert edge.isLoop();
 
             RelationGraph inner = (RelationGraph) graph.getDependencies().get(0);
             for (Edge inEdge : inner.inEdges(edge.getSecond())) {

@@ -29,6 +29,10 @@ public class CAATSolver {
         this.reasoner = new Reasoner();
     }
 
+    public static CAATSolver create() {
+        return new CAATSolver();
+    }
+
     // ======================================== Accessors ==============================================
 
     public Reasoner getReasoner() { return reasoner; }
