@@ -1,0 +1,60 @@
+package com.dat3m.dartagnan.solver.newcaat4wmm.coreReasoning;
+
+
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.logic.AbstractLiteral;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
+
+public class AddressLiteral extends AbstractLiteral<CoreLiteral> implements CoreLiteral {
+
+    protected Event e1;
+    protected Event e2;
+
+    public Event getFirst() { return e1; }
+    public Event getSecond() { return e2; }
+
+    //TODO: This normalization is ugly. We should use a literal factory at some point
+    // which should perform such normalization.
+    public AddressLiteral(Event e1, Event e2, boolean isNegative) {
+        super("addr", isNegative);
+        if (e1.getCId() > e2.getCId()) {
+            // We normalize the direction, because loc is symmetric
+            this.e1 = e2;
+            this.e2 = e1;
+        } else {
+            this.e1 = e1;
+            this.e2 = e2;
+        }
+    }
+
+    public AddressLiteral(Tuple e, boolean isNegative) {
+        this(e.getFirst(), e.getSecond(), isNegative);
+    }
+
+    @Override
+    public int hashCode() {
+        return baseHashCode() + 31*e1.hashCode() + e2.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        } else if (obj == null || obj.getClass() != getClass()) {
+            return false;
+        }
+
+        AddressLiteral addrLit = (AddressLiteral) obj;
+        return baseEquals(addrLit) && addrLit.e1.equals(e1) && addrLit.e2.equals(e2);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("(addr(%s) %s addr(%s))", e1, isNegative ? "!=" : "==", e2);
+    }
+
+    @Override
+    public AddressLiteral negated() {
+        return new AddressLiteral(e1, e2, !isNegative);
+    }
+}
