@@ -90,6 +90,9 @@ public class CoreReasoner {
     }
 
     private void minimize(List<CoreLiteral> reason) {
+        //TODO: Make sure that his is correct for exclusive events
+        // Their execution variable can only be removed if it is contained in some
+        // RelLiteral but not if it gets cf-implied!
         reason.removeIf( lit -> {
             if (!(lit instanceof ExecLiteral)) {
                 return false;

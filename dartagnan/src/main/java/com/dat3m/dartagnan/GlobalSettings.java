@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,7 +26,7 @@ public class GlobalSettings {
     public static final boolean ALLOW_PARTIAL_MODELS = false;
     public static final boolean MERGE_CF_VARS = true; // ONLY has effect if ALLOW_PARTIAL_MODELS is 'false'
     public static final boolean ANTISYMM_CO = false;
-    public static final boolean ENABLE_SYMMETRY_BREAKING = false;
+    public static final boolean ENABLE_SYMMETRY_BREAKING = true;
 
     // === BranchEquivalence ===
     public static final boolean MERGE_BRANCHES = true;
@@ -35,14 +36,13 @@ public class GlobalSettings {
     public static final boolean PERFORM_DEAD_CODE_ELIMINATION = true;
     public static final boolean PERFORM_REORDERING = true;
     public static final boolean DETERMINISTIC_REORDERING = true;
-    public static final boolean ENABLE_SYMMETRY_REDUCTION = false;
+    public static final boolean ENABLE_SYMMETRY_REDUCTION = true;
 
     // ==== Refinement ====
     public static final boolean REFINEMENT_GENERATE_GRAPHVIZ_FILES = false;
     public static final int REFINEMENT_BASELINE_WMM = EMPTY;
 
-    public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
-    public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.FULL;
+    public static final Refiner.SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = Refiner.SymmetryLearning.FULL;
 
     // --------------------
 

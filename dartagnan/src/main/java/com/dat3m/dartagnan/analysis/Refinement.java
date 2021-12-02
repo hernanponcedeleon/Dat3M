@@ -2,25 +2,18 @@ package com.dat3m.dartagnan.analysis;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
+import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
-import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.AddressLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
-import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.ExecLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
-import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
 import com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.wmm.relation.Relation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
@@ -28,15 +21,12 @@ import org.sosy_lab.java_smt.api.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
-import java.util.function.Function;
 
-import static com.dat3m.dartagnan.GlobalSettings.*;
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.GlobalSettings.ENABLE_SYMMETRY_BREAKING;
+import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_FILES;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONCLUSIVE;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
@@ -44,6 +34,7 @@ import static com.dat3m.dartagnan.utils.Result.*;
 /*
     Refinement is a custom solving procedure that starts from a weak memory model (possibly the empty model)
     and iteratively refines it to perform a verification task.
+    It can be understood as a lazy offline-SMT solver.
     More concretely, it iteratively:
         - Finds some assertion-violating execution w.r.t. to some (very weak) baseline memory model
         - Checks the consistency of this execution using a custom theory solver
@@ -68,6 +59,7 @@ public class Refinement {
         task.initialiseEncoding(ctx);
 
         // ======= Some preprocessing to use a visible representative for each branch ========
+        //TODO: This seems to no not be necessary anymore
         /*for (BranchEquivalence.Class c : task.getBranchEquivalence().getAllEquivalenceClasses()) {
             c.stream().sorted().filter(e -> e.is(EType.VISIBLE) && e.cfImpliesExec())
                     .findFirst().ifPresent(c::setRepresentative);
@@ -80,7 +72,7 @@ public class Refinement {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Program program = task.getProgram();
         WMMSolver solver = new WMMSolver(task);
-        Refiner refiner = new Refiner(task, ctx);
+        Refiner refiner = new Refiner(task);
         CAATSolver.Status status = INCONSISTENT;
 
         task.getMemoryModel().performRelationalAnalysis(false);
@@ -132,7 +124,7 @@ public class Refinement {
 
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 foundCoreReasons.add(reasons);
-                prover.addConstraint(refiner.refine(reasons));
+                prover.addConstraint(refiner.refine(reasons, ctx));
 
                 if (REFINEMENT_GENERATE_GRAPHVIZ_FILES) {
                     generateGraphvizFiles(task, solver.getExecution(), iterationCount, reasons);
@@ -194,7 +186,7 @@ public class Refinement {
             prover.addConstraint(bmgr.not(program.encodeNoBoundEventExec(ctx)));
             // Add back the constraints found during Refinement (TODO: We might need to perform a second refinement)
             for (DNF<CoreLiteral> reason : foundCoreReasons) {
-                prover.addConstraint(refiner.refine(reason));
+                prover.addConstraint(refiner.refine(reason, ctx));
             }
             veriResult = !prover.isUnsat() ? UNKNOWN : PASS;
             boundCheckTime = System.currentTimeMillis() - lastTime;
@@ -309,8 +301,6 @@ public class Refinement {
         try (FileWriter writer = new FileWriter(fileFull)) {
             // Create .dot file
             new ExecutionGraphVisualizer()
-                    //.setReadFromFilter(edgeFilter)
-                    //.setCoherenceFilter(edgeFilter)
                     .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
 
             writer.flush();
@@ -325,113 +315,5 @@ public class Refinement {
         }
     }
 
-
-
-
-    /*
-        This class handles the computation of refinement clauses from violations found by the saturation procedure.
-        Furthermore, it incorporates symmetry reasoning if possible.
-     */
-    private static class Refiner {
-        private final RefinementTask task;
-        private final SolverContext context;
-        private final List<Function<Event, Event>> symmPermutations;
-
-        public Refiner(RefinementTask task, SolverContext ctx) {
-            this.task = task;
-            this.context = ctx;
-            symmPermutations = computeSymmetryPermutations(REFINEMENT_SYMMETRY_LEARNING);
-        }
-
-
-        // This method computes a refinement clause from a set of violations.
-        // Furthermore, it computes symmetric violations if symmetry learning is enabled.
-        public BooleanFormula refine(DNF<CoreLiteral> coreReasons) {
-            BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
-            BooleanFormula refinement = bmgr.makeTrue();
-            // For each symmetry permutation, we will create refinement clauses
-            for (Function<Event, Event> perm : symmPermutations) {
-                for (Conjunction<CoreLiteral> reason : coreReasons.getCubes()) {
-                    BooleanFormula permutedClause = reason.getLiterals().stream()
-                            .map(lit -> bmgr.not(permuteAndConvert(lit, perm)))
-                            .reduce(bmgr.makeFalse(), bmgr::or);
-                    refinement = bmgr.and(refinement, permutedClause);
-                }
-            }
-            return refinement;
-        }
-
-        // Computes a list of permutations allowed by the program.
-        // Depending on the <learningOption>, the set of computed permutations differs.
-        // In particular, for the option NONE, only the identity permutation will be returned.
-        private List<Function<Event, Event>> computeSymmetryPermutations(SymmetryLearning learningOption) {
-            ThreadSymmetry symm = task.getThreadSymmetry();
-            Set<? extends EquivalenceClass<Thread>> symmClasses = symm.getNonTrivialClasses();
-            List<Function<Event, Event>> perms = new ArrayList<>();
-            perms.add(Function.identity());
-
-            for (EquivalenceClass<Thread> c : symmClasses) {
-                List<Thread> threads = new ArrayList<>(c);
-                threads.sort(Comparator.comparingInt(Thread::getId));
-
-                switch (learningOption) {
-                    case NONE:
-                        break;
-                    case LINEAR:
-                        for (int i = 0; i < threads.size(); i++) {
-                            int j = (i + 1) % threads.size();
-                            perms.add(symm.createTransposition(threads.get(i), threads.get(j)));
-                        }
-                        break;
-                    case QUADRATIC:
-                        for (int i = 0; i < threads.size(); i++) {
-                            for (int j = i + 1; j < threads.size(); j++) {
-                                perms.add(symm.createTransposition(threads.get(i), threads.get(j)));
-                            }
-                        }
-                        break;
-                    case FULL:
-                        List<Function<Event, Event>> allPerms = symm.createAllPermutations(c);
-                        allPerms.remove(Function.identity()); // We avoid adding multiple identities
-                        perms.addAll(allPerms);
-                        break;
-                    default:
-                        throw new UnsupportedOperationException("Symmetry learning option: "
-                                + learningOption.name() + " is not recognized.");
-                }
-            }
-
-            return perms;
-        }
-
-
-        // Changes a reasoning <literal> based on a given permutation <perm> and translates the result
-        // into a BooleanFormula for Refinement.
-        private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm) {
-            BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
-            BooleanFormula enc;
-            if (literal instanceof ExecLiteral) {
-                ExecLiteral lit = (ExecLiteral) literal;
-                enc =  perm.apply(lit.getData()).exec();
-            } else if (literal instanceof AddressLiteral) {
-                AddressLiteral loc = (AddressLiteral) literal;
-                MemEvent e1 = (MemEvent) perm.apply(loc.getFirst());
-                MemEvent e2 = (MemEvent) perm.apply(loc.getSecond());
-                enc =  generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), context);
-            } else if (literal instanceof RelLiteral) {
-                RelLiteral lit = (RelLiteral) literal;
-                Relation rel = task.getMemoryModel().getRelationRepository().getRelation(lit.getName());
-                enc =  rel.getSMTVar(
-                        perm.apply(lit.getData().getFirst()),
-                        perm.apply(lit.getData().getSecond()),
-                        context);
-            } else {
-                throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
-            }
-
-            return literal.isNegative() ? bmgr.not(enc) : enc;
-        }
-
-    }
 
 }
