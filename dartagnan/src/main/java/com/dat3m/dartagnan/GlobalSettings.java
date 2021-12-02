@@ -44,9 +44,6 @@ public class GlobalSettings {
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
     public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.FULL;
 
-    // ==== Saturation ====
-    public static boolean SATURATION_ENABLE_DEBUG = false;
-
     // --------------------
 
     // === Recursion depth ===
@@ -80,8 +77,5 @@ public class GlobalSettings {
         logger.info("REFINEMENT_GENERATE_GRAPHVIZ_FILES: " + REFINEMENT_GENERATE_GRAPHVIZ_FILES);
     	logger.info("REFINEMENT_BASELINE_WMM: " + REFINEMENT_BASELINE_WMM);
     	logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());
-
-    	// Saturation settings
-        logger.info("SATURATION_ENABLE_DEBUG: " + SATURATION_ENABLE_DEBUG);
     }
 }

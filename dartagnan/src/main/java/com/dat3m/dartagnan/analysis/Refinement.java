@@ -5,12 +5,12 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.solver.newcaat.CAATSolver;
-import com.dat3m.dartagnan.solver.newcaat4wmm.WMMSolver;
-import com.dat3m.dartagnan.solver.newcaat4wmm.coreReasoning.AddressLiteral;
-import com.dat3m.dartagnan.solver.newcaat4wmm.coreReasoning.CoreLiteral;
-import com.dat3m.dartagnan.solver.newcaat4wmm.coreReasoning.ExecLiteral;
-import com.dat3m.dartagnan.solver.newcaat4wmm.coreReasoning.RelLiteral;
+import com.dat3m.dartagnan.solver.caat.CAATSolver;
+import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
+import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.AddressLiteral;
+import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
+import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.ExecLiteral;
+import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
@@ -37,8 +37,8 @@ import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.*;
 import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
-import static com.dat3m.dartagnan.solver.newcaat.CAATSolver.Status.INCONCLUSIVE;
-import static com.dat3m.dartagnan.solver.newcaat.CAATSolver.Status.INCONSISTENT;
+import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONCLUSIVE;
+import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
 
 /*
