@@ -17,7 +17,6 @@ import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Label;
-import com.dat3m.dartagnan.program.memory.Location;
 import org.antlr.v4.runtime.misc.Interval;
 import static com.dat3m.dartagnan.program.arch.linux.utils.EType.*;
 import static com.dat3m.dartagnan.program.arch.linux.utils.Mo.*;
@@ -116,22 +115,24 @@ public class VisitorLitmusLISA
 	@Override
 	public Object visitLoad(LitmusLISAParser.LoadContext ctx) {
         Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
-        Location loc = programBuilder.getOrCreateLocation(ctx.location().getText(), -1);
+        IExpr address = (IExpr) ctx.expression().accept(this);
         String mo = ctx.mo() != null ? ctx.mo().getText() : "NA";
         switch(mo) {
         	case "acquire":
         		mo = ACQUIRE;
         		break;
         	case "deref":
+        	case "lderef":
         		mo = RELAXED;
         		break;
         	case "once":
         		mo = "Once";
         		break;
         	default:
-        		throw new ParsingException(String.format("Store ordering %s not recognized", mo));
+        		mo = "NA";
+        		break;
         }
-        return programBuilder.addChild(mainThread, EventFactory.newLoad(reg, loc.getAddress(), mo));
+        return programBuilder.addChild(mainThread, EventFactory.newLoad(reg, address, mo));
 	}
 
 	@Override
@@ -144,7 +145,7 @@ public class VisitorLitmusLISA
 	@Override
 	public Object visitStore(LitmusLISAParser.StoreContext ctx) {
 		IExpr value = (IExpr) ctx.value().accept(this);
-        Location loc = programBuilder.getOrCreateLocation(ctx.location().getText(), -1);
+        IExpr address = (IExpr) ctx.expression().accept(this);
         String mo = ctx.mo() != null ? ctx.mo().getText() : "NA";
         switch(mo) {
         	case "release":
@@ -155,9 +156,10 @@ public class VisitorLitmusLISA
         		mo = "Once";
         		break;
         	default:
-        		throw new ParsingException(String.format("Store ordering %s not recognized", mo));
+        		mo = "NA";
+        		break;
         }
-        return programBuilder.addChild(mainThread, EventFactory.newStore(loc.getAddress(), value, mo));
+        return programBuilder.addChild(mainThread, EventFactory.newStore(address, value, mo));
 	}
 	
 	@Override
@@ -167,6 +169,12 @@ public class VisitorLitmusLISA
 		switch(name) {
 			case "mb":
 				child = EventFactory.Linux.newMemoryBarrier();
+				break;
+			case "rmb":
+				child = EventFactory.newFence(RMB);
+				break;
+			case "wmb":
+				child = EventFactory.newFence(WMB);
 				break;
 			case "rcu_read_lock":
 				child = EventFactory.newFence(RCU_LOCK);
@@ -192,7 +200,7 @@ public class VisitorLitmusLISA
 
 	@Override
 	public Object visitJump(LitmusLISAParser.JumpContext ctx) {
-        Label label = programBuilder.getOrCreateLabel(ctx.Label().getText());
+        Label label = programBuilder.getOrCreateLabel(ctx.labelName().getText());
         Register reg = (Register) ctx.register().accept(this);
         // TODO check if this is the semantics
         Atom cond = new Atom(reg, COpBin.EQ, IConst.ZERO);
@@ -201,6 +209,11 @@ public class VisitorLitmusLISA
 
 	// Other
 	
+	@Override
+	public Object visitLocation(LitmusLISAParser.LocationContext ctx) {
+		return programBuilder.getOrCreateLocation(ctx.getText(), -1).getAddress();
+	}
+
 	@Override
 	public Object visitRegister(LitmusLISAParser.RegisterContext ctx) {
 		return programBuilder.getOrCreateRegister(mainThread, ctx.getText(), -1);

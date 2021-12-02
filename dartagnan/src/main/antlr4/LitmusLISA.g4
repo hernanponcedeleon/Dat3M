@@ -69,15 +69,19 @@ instruction
     ;
     
 jump
-    :   Jump LBracket RBracket register Label
+    :   Jump LBracket RBracket register labelName
     ;
 
 label
-    :   Label Colon
+    :   labelName Colon
+    ;
+
+labelName
+    :   Identifier
     ;
 
 load
-    :   Load LBracket mo? RBracket register location
+    :   Load LBracket mo? RBracket register expression
     ;
 
 local
@@ -85,7 +89,7 @@ local
     ;
 
 store
-    :   Store LBracket mo? RBracket location value
+    :   Store LBracket mo? RBracket expression value
     ;
 
 fence
@@ -103,6 +107,7 @@ location
 
 expression
     :   value
+    |	location
     |	add
     |	eq
     |	neq
@@ -163,11 +168,6 @@ Jump
 	:   'b'
     ;
 
-Label
-    :   'CTRL' DigitSequence
-    | 	'LC' DigitSequence
-    ;
-
 LitmusLanguage
     :   'LISA'
     ;
@@ -194,6 +194,8 @@ Mo
 
 Mofence
     :   'mb'
+    |   'rmb'
+    |   'wmb'
     |   'rcu_read_lock'
     |   'rcu_read_unlock'
     |   'sync'

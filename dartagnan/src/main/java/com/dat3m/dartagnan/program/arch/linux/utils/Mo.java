@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.program.arch.linux.utils;
 public class Mo {
 
     public static final String MB       = "Mb";
+    public static final String RMB      = "Rmb";
+    public static final String WMB      = "Wmb";
     public static final String RELAXED  = "Relaxed";
     public static final String RELEASE  = "Release";
     public static final String ACQUIRE  = "Acquire";
