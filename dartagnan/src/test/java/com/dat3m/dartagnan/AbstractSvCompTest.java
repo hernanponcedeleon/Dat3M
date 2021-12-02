@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
@@ -62,7 +63,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    //@Test(timeout = TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void testIncremental() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
