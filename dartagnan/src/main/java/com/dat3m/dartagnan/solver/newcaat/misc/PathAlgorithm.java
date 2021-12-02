@@ -9,6 +9,7 @@ import java.util.function.Predicate;
 
 public class PathAlgorithm {
 
+    //TODO: We need custom data datastructures that work with primitive integers
     private final static Queue<Integer> queue1 = new ArrayDeque<>();
     private final static Queue<Integer> queue2 = new ArrayDeque<>();
 

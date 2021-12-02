@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.solver.caat.graphs.relationGraphs.utils;
+package com.dat3m.dartagnan.utils.collections;
 
 import java.util.Iterator;
 

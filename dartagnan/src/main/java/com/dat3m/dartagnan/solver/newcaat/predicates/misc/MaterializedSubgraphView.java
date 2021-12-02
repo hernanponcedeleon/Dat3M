@@ -25,7 +25,7 @@ public class MaterializedSubgraphView extends MaterializedGraph {
 
     public MaterializedSubgraphView(RelationGraph source, Collection<Integer> elements) {
         sourceGraph = source;
-        simpleGraph.initializeToDomain(domain);
+        simpleGraph.initializeToDomain(source.getDomain());
 
         for (Integer e : elements) {
             sourceGraph.outEdgeStream(e)

@@ -67,14 +67,14 @@ public class AcyclicityConstraint extends AbstractConstraint {
             MaterializedSubgraphView subgraph = new MaterializedSubgraphView(constrainedGraph, scc);
             Set<Integer> nodes = new HashSet<>(Sets.intersection(scc, markedNodes));
             while (!nodes.isEmpty()) {
-                //TODO: Most cycles have chords, so a specialized algorithm that avoids
-                // chords altogether would be great
                 int e = nodes.stream().findAny().get();
 
                 List<Edge> cycle = PathAlgorithm.findShortestPath(subgraph, e, e);
                 cycle = new ArrayList<>(cycle);
 
                 cycle.forEach(edge -> nodes.remove(edge.getFirst()));
+                //TODO: Most cycles have chords, so a specialized algorithm that avoids
+                // chords altogether would be great
                 reduceChordsAndNormalize(cycle);
                 if (!cycles.contains(cycle)) {
                     cycles.add(cycle);
@@ -86,7 +86,7 @@ public class AcyclicityConstraint extends AbstractConstraint {
     }
 
     private void reduceChordsAndNormalize(List<Edge> cycle) {
-        // Reduce chords by iteratively merging first and last edge if possible
+        // Reduces chords by iteratively merging first and last edge if possible
         // Note that edges in the middle should not have chords since
         // we start with a shortest cycle rooted at some node <e>
         //TODO: after the first merge, the two nodes of the merged edge

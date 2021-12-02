@@ -5,11 +5,13 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.solver.caat.CAATSolver;
-import com.dat3m.dartagnan.solver.caat4bmc.*;
+import com.dat3m.dartagnan.solver.newcaat.CAATSolver;
+import com.dat3m.dartagnan.solver.newcaat4wmm.WMMSolver;
+import com.dat3m.dartagnan.solver.newcaat4wmm.coreReasoning.AddressLiteral;
+import com.dat3m.dartagnan.solver.newcaat4wmm.coreReasoning.CoreLiteral;
+import com.dat3m.dartagnan.solver.newcaat4wmm.coreReasoning.ExecLiteral;
+import com.dat3m.dartagnan.solver.newcaat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
@@ -35,8 +37,8 @@ import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.*;
 import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
-import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONCLUSIVE;
-import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
+import static com.dat3m.dartagnan.solver.newcaat.CAATSolver.Status.INCONCLUSIVE;
+import static com.dat3m.dartagnan.solver.newcaat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
 
 /*
@@ -54,7 +56,7 @@ public class Refinement {
 
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
-    public static Result runAnalysisSaturationSolver(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
+    public static Result runAnalysisWMMSolver(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
             throws InterruptedException, SolverException {
 
         task.unrollAndCompile();
@@ -66,21 +68,22 @@ public class Refinement {
         task.initialiseEncoding(ctx);
 
         // ======= Some preprocessing to use a visible representative for each branch ========
-        for (BranchEquivalence.Class c : task.getBranchEquivalence().getAllEquivalenceClasses()) {
+        /*for (BranchEquivalence.Class c : task.getBranchEquivalence().getAllEquivalenceClasses()) {
             c.stream().sorted().filter(e -> e.is(EType.VISIBLE) && e.cfImpliesExec())
                     .findFirst().ifPresent(c::setRepresentative);
             // NOTE: If the branch has no visible events, Refinement will never care about it.
             // If all visible branch events have cf != exec, then Refinement should never try
             // to make use of any representative.
-        }
+        }*/
         // =====================================================================================
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Program program = task.getProgram();
-        //CAATSolver CAATSolver = new CAATSolver(task, true);
-        BMCSolver solver = new BMCSolver(task);
+        WMMSolver solver = new WMMSolver(task);
         Refiner refiner = new Refiner(task, ctx);
         CAATSolver.Status status = INCONSISTENT;
+
+        task.getMemoryModel().performRelationalAnalysis(false);
 
         prover.addConstraint(task.encodeProgram(ctx));
         prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
@@ -95,7 +98,7 @@ public class Refinement {
 
         //  ------ Just for statistics ------
         List<DNF<CoreLiteral>> foundCoreReasons = new ArrayList<>();
-        List<BMCSolver.Statistics> statList = new ArrayList<>();
+        List<WMMSolver.Statistics> statList = new ArrayList<>();
         int iterationCount = 0;
         long lastTime = System.currentTimeMillis();
         long curTime;
@@ -112,7 +115,7 @@ public class Refinement {
                             " ===== Iteration: {} =====\n" +
                             "Solving time(ms): {}", iterationCount, curTime - lastTime);
 
-            BMCSolver.Result solverResult;
+            WMMSolver.Result solverResult;
             try (Model model = prover.getModel()) {
                 solverResult = solver.check(model, ctx);
             } catch (SolverException e) {
@@ -120,7 +123,7 @@ public class Refinement {
                 throw e;
             }
 
-            BMCSolver.Statistics stats = solverResult.getStatistics();
+            WMMSolver.Statistics stats = solverResult.getStatistics();
             statList.add(stats);
             logger.debug("Refinement iteration:\n{}", stats);
 
@@ -132,7 +135,7 @@ public class Refinement {
                 prover.addConstraint(refiner.refine(reasons));
 
                 if (REFINEMENT_GENERATE_GRAPHVIZ_FILES) {
-                    generateGraphvizFiles(task, solver.getCurrentModel(), iterationCount, reasons);
+                    generateGraphvizFiles(task, solver.getExecution(), iterationCount, reasons);
                 }
 
                 if (logger.isTraceEnabled()) {
@@ -212,9 +215,10 @@ public class Refinement {
 
     // -------------------- Printing -----------------------------
 
-    private static CharSequence generateSummary(List<BMCSolver.Statistics> statList, int iterationCount,
+    private static CharSequence generateSummary(List<WMMSolver.Statistics> statList, int iterationCount,
                                                 long totalSolvingTime, long boundCheckTime) {
-        long totalModelTime = 0;
+        long totalModelExtractTime = 0;
+        long totalPopulationTime = 0;
         long totalConsistencyCheckTime = 0;
         long totalReasonComputationTime = 0;
         long totalNumReasons = 0;
@@ -223,12 +227,13 @@ public class Refinement {
         long minModelSize = Long.MAX_VALUE;
         long maxModelSize = Long.MIN_VALUE;
 
-        for (BMCSolver.Statistics stats : statList) {
-            totalModelTime += stats.getModelConstructionTime();
+        for (WMMSolver.Statistics stats : statList) {
+            totalModelExtractTime += stats.getModelExtractionTime();
+            totalPopulationTime += stats.getPopulationTime();
             totalConsistencyCheckTime += stats.getConsistencyCheckTime();
-            totalReasonComputationTime += stats.getReasonComputationTime();
-            totalNumReasons += stats.getNumComputedReasons();
-            totalNumReducedReasons += stats.getNumComputedReducedReasons();
+            totalReasonComputationTime += stats.getBaseReasonComputationTime() + stats.getCoreReasonComputationTime();
+            totalNumReasons += stats.getNumComputedCoreReasons();
+            totalNumReducedReasons += stats.getNumComputedReducedCoreReasons();
 
             totalModelSize += stats.getModelSize();
             minModelSize = Math.min(stats.getModelSize(), minModelSize);
@@ -239,11 +244,12 @@ public class Refinement {
                 .append(" ======== Summary ========").append("\n")
                 .append("Number of iterations: ").append(iterationCount).append("\n")
                 .append("Total solving time(ms): ").append(totalSolvingTime).append("\n")
-                .append("Total model construction time(ms): ").append(totalModelTime).append("\n")
+                .append("Total model extraction time(ms): ").append(totalModelExtractTime).append("\n")
+                .append("Total population time(ms): ").append(totalPopulationTime).append("\n")
                 .append("Total consistency check time(ms): ").append(totalConsistencyCheckTime).append("\n")
                 .append("Total reason computation time(ms): ").append(totalReasonComputationTime).append("\n")
-                .append("Total #computed reasons: ").append(totalNumReasons).append("\n")
-                .append("Total #computed reduced reasons: ").append(totalNumReducedReasons).append("\n");
+                .append("Total #computed core reasons: ").append(totalNumReasons).append("\n")
+                .append("Total #computed core reduced reasons: ").append(totalNumReducedReasons).append("\n");
         if (statList.size() > 0) {
             message.append("Min model size (#events): ").append(minModelSize).append("\n")
                     .append("Average model size (#events): ").append(totalModelSize / statList.size()).append("\n")
@@ -264,7 +270,8 @@ public class Refinement {
                 for (CoreLiteral lit : cube.getLiterals()) {
                     if (lit instanceof RelLiteral) {
                         RelLiteral edgeLit = (RelLiteral) lit;
-                        if (model.getData(edgeLit.getData().getFirst()).get() == e1 && model.getData(edgeLit.getData().getSecond()).get() == e2) {
+                        if (model.getData(edgeLit.getData().getFirst()).get() == e1 &&
+                                model.getData(edgeLit.getData().getSecond()).get() == e2) {
                             return true;
                         }
                     }
@@ -404,8 +411,8 @@ public class Refinement {
         private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm) {
             BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
             BooleanFormula enc;
-            if (literal instanceof EventLiteral) {
-                EventLiteral lit = (EventLiteral) literal;
+            if (literal instanceof ExecLiteral) {
+                ExecLiteral lit = (ExecLiteral) literal;
                 enc =  perm.apply(lit.getData()).exec();
             } else if (literal instanceof AddressLiteral) {
                 AddressLiteral loc = (AddressLiteral) literal;

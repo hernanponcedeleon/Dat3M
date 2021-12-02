@@ -20,4 +20,9 @@ public class ExecLiteral extends AbstractDataLiteral<CoreLiteral, Event> impleme
     public ExecLiteral negated() {
         return new ExecLiteral(data, !isNegative());
     }
+
+    @Override
+    public String toString() {
+        return toStringBase() + "(" + data.getCId() + ")";
+    }
 }

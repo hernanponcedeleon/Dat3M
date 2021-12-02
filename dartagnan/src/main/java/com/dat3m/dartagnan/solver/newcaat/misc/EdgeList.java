@@ -9,7 +9,7 @@ import java.util.stream.StreamSupport;
 
 import static java.util.Spliterator.*;
 
-//TODO: Right now, this is almost identical to ArrayList<Edge> but with reversed iteration order
+// NOTE: Right now, this is almost identical to ArrayList<Edge> but with reversed iteration order
 // But we use it to allow the possibility of changing implementations later
 public class EdgeList implements List<Edge> {
 

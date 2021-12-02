@@ -157,7 +157,7 @@ public class ExecutionGraph {
     // ==================== Analysis ======================
 
     public boolean checkInconsistency() {
-        return getConstraints().stream().anyMatch(Constraint::checkForViolations);
+        return caatModel.checkInconsistency();
     }
 
     // =======================================================
@@ -307,7 +307,7 @@ public class ExecutionGraph {
         }
 
         SetPredicate set = new StaticWMMSet(filter);
-        set.setName(filter.getName());
+        set.setName(filter.toString());
         filterSetMap.put(filter, set);
         return set;
 

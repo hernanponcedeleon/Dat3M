@@ -194,7 +194,7 @@ public class CLocksTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
             long start = System.currentTimeMillis();
-            assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
+            assertEquals(expected, Refinement.runAnalysisWMMSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
             long solvingTime = System.currentTimeMillis() - start;
             writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));

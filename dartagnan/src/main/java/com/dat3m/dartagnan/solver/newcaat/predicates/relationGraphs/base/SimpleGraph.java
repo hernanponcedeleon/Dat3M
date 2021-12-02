@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 
 /*
     This is a simple graph that allows adding edges directly.
-    It is mostly used as an internal implementation for many event graphs.
+    It is mostly used as an internal implementation for many relationgraphs.
  */
 public final class SimpleGraph extends AbstractBaseGraph {
     private DataItem[] outgoing = new DataItem[0];
@@ -22,7 +22,7 @@ public final class SimpleGraph extends AbstractBaseGraph {
     private int maxTime = 0;
     private int numEvents = 0;
 
-    private final HashMap<Edge, Edge> edgeMap = new HashMap<>();
+    private final HashMap<Edge, Edge> edgeMap = new HashMap<>(100);
 
     @Override
     public List<RelationGraph> getDependencies() {
@@ -186,6 +186,11 @@ public final class SimpleGraph extends AbstractBaseGraph {
             outgoing = Arrays.copyOf(outgoing, newCapacity);
             ingoing = Arrays.copyOf(ingoing, newCapacity);
         }
+    }
+
+    @Override
+    public String toString() {
+        return name != null ? name : SimpleGraph.class.getSimpleName() + ": " + size();
     }
 
     private final class DataItem implements Iterable<Edge> {

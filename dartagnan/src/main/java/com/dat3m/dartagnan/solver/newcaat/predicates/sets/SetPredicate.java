@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.solver.newcaat.predicates.sets;
 
-import com.dat3m.dartagnan.solver.caat.graphs.relationGraphs.utils.OneTimeIterable;
 import com.dat3m.dartagnan.solver.newcaat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.newcaat.predicates.Derivable;
 import com.dat3m.dartagnan.solver.newcaat.predicates.misc.AbstractPredicateSetView;
+import com.dat3m.dartagnan.utils.collections.OneTimeIterable;
 
 import java.util.Collection;
 import java.util.Iterator;

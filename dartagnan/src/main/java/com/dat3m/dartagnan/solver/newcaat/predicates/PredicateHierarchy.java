@@ -61,7 +61,9 @@ public class PredicateHierarchy {
         this.domain = domain;
         for (CAATPredicate pred : getPredicateList()) {
             pred.initializeToDomain(domain);
-            listenersMap.get(pred).forEach(listener -> listener.onDomainInit(pred, domain));
+            for (PredicateListener listener : listenersMap.get(pred)) {
+                listener.onDomainInit(pred, domain);
+            }
         }
     }
 
@@ -75,7 +77,6 @@ public class PredicateHierarchy {
                 populateRecursively(recGrp.stream().findAny().get(), recGrp, new HashSet<>());
 
                 // For all recursive relations, initialize the propagation
-                //TODO: Fix, once we have recursive graphs again
                 recGrp.stream().filter(x -> x instanceof RecursiveGraph).forEach(x -> {
                     for(CAATPredicate dep : x.getDependencies()) {
                         createPropagationTask(dep, x, new ArrayList<>(dep.setView()), 0);
@@ -90,7 +91,9 @@ public class PredicateHierarchy {
 
             // Notify listeners about population
             for (CAATPredicate pred : getPredicateList()) {
-                listenersMap.get(pred).forEach(listener -> listener.onPopulation(pred));
+                for (PredicateListener listener : listenersMap.get(pred)) {
+                    listener.onPopulation(pred);
+                }
             }
         }
     }
@@ -99,7 +102,7 @@ public class PredicateHierarchy {
         if (initialized.contains(pred) || !recGroup.contains(pred)) {
             return;
         }
-        //TODO: Fix as soon as we have Recursive predicates again
+
         if (pred instanceof RecursiveGraph) {
             pred.repopulate();
             initialized.add(pred);

@@ -63,7 +63,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    @Test(timeout = TIMEOUT)
+    //@Test(timeout = TIMEOUT)
     public void testIncremental() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
@@ -103,7 +103,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    //@Test(timeout = TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
@@ -114,7 +114,7 @@ public abstract class AbstractSvCompTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             long start = System.currentTimeMillis();
-            assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
+            assertEquals(expected, Refinement.runAnalysisWMMSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
             long solvingTime = System.currentTimeMillis() - start;
             writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
@@ -123,6 +123,7 @@ public abstract class AbstractSvCompTest {
             fail(e.getMessage());
         }
     }
+
 
 	private Result readExpected(String property) {
 		try (BufferedReader br = new BufferedReader(new FileReader(property))) {

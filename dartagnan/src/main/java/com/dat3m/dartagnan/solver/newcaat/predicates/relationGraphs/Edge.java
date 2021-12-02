@@ -22,7 +22,7 @@ public class Edge extends AbstractDerivable implements Comparable<Edge> {
 
 
     @Override
-    public Edge with(int time, int derivationLength) { return new Edge(dId1, dId2, time, derivLength); }
+    public Edge with(int time, int derivationLength) { return new Edge(dId1, dId2, time, derivationLength); }
     @Override
     public Edge withTime(int time) { return with(time, derivLength); }
     @Override

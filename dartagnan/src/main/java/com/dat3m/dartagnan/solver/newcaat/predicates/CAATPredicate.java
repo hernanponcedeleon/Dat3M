@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.solver.newcaat.predicates;
 
-import com.dat3m.dartagnan.solver.caat.graphs.relationGraphs.utils.OneTimeIterable;
 import com.dat3m.dartagnan.solver.newcaat.domain.Domain;
 import com.dat3m.dartagnan.solver.newcaat.predicates.misc.PredicateVisitor;
+import com.dat3m.dartagnan.utils.collections.OneTimeIterable;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 
 import java.util.Collection;

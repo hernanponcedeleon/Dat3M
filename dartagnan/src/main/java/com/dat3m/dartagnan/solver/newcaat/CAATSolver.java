@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.solver.newcaat;
 
 
 import com.dat3m.dartagnan.solver.newcaat.constraints.Constraint;
+import com.dat3m.dartagnan.solver.newcaat.misc.PathAlgorithm;
 import com.dat3m.dartagnan.solver.newcaat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.newcaat.reasoning.Reasoner;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
@@ -44,7 +45,7 @@ public class CAATSolver {
     /*
         <check> assumes the following:
             - The CAATModel <model> has been initialized to some domain (<model.initializeToDomain>)
-            - All base predicates are populated (some may implicitly populate themselves)
+            - All base predicates are populated or will populate themselves.
 
         <check> will:
             - Populate the derived predicates in <model>
@@ -54,8 +55,9 @@ public class CAATSolver {
      */
     public Result check(CAATModel model) {
         Result result = new Result();
-        stats = result.stats;
+        stats = result.getStatistics();
 
+        PathAlgorithm.ensureCapacity(model.getDomain().size());
         // ============== Populate derived predicates ===============
         long curTime = System.currentTimeMillis();
         model.populate();
@@ -97,18 +99,16 @@ public class CAATSolver {
     public static class Result {
         private Status status;
         private DNF<CAATLiteral> baseReasons;
-        private Statistics stats;
+        private final Statistics stats;
 
         public Status getStatus() { return status; }
         public DNF<CAATLiteral> getBaseReasons() { return baseReasons; }
         public Statistics getStatistics() { return stats; }
 
         void setStatus(Status status) { this.status = status; }
-
         void setBaseReasons(DNF<CAATLiteral> reasons) {
             this.baseReasons = reasons;
         }
-        void setStats(Statistics stats) { this.stats = stats; }
 
         public Result() {
             stats = new Statistics();

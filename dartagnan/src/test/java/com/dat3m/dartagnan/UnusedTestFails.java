@@ -91,7 +91,7 @@ public class UnusedTestFails {
         {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
-            assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
+            assertEquals(expected, Refinement.runAnalysisWMMSolver(ctx, prover,
                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
         } catch (Exception e){
             fail(e.getMessage());

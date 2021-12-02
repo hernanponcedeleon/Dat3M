@@ -11,7 +11,8 @@ public class ReadFromGraph extends StaticWMMGraph {
 
     @Override
     public boolean containsById(int id1, int id2) {
-        return getEvent(id2).getReadFrom().getId() == id1;
+        EventData e = getEvent(id2).getReadFrom();
+        return e != null && e.getId() == id1;
     }
 
     @Override

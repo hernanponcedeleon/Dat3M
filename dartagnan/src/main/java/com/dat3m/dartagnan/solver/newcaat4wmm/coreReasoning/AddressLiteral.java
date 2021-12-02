@@ -50,7 +50,7 @@ public class AddressLiteral extends AbstractLiteral<CoreLiteral> implements Core
 
     @Override
     public String toString() {
-        return String.format("(addr(%s) %s addr(%s))", e1, isNegative ? "!=" : "==", e2);
+        return String.format("(addr(%s) %s addr(%s))", e1.getCId(), isNegative ? "!=" : "==", e2.getCId());
     }
 
     @Override
