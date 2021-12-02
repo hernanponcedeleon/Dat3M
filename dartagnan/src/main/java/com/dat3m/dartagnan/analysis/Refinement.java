@@ -46,9 +46,9 @@ import static com.dat3m.dartagnan.utils.Result.*;
     and iteratively refines it to perform a verification task.
     More concretely, it iteratively:
         - Finds some assertion-violating execution w.r.t. to some (very weak) baseline memory model
-        - Checks the consistency of this execution using a Saturation-based solver
+        - Checks the consistency of this execution using a custom theory solver
         - Refines the used memory model if the found execution was inconsistent, using the explanations
-          provided by the Saturation-based solver.
+          provided by the theory solver.
  */
 public class Refinement {
 
@@ -204,7 +204,6 @@ public class Refinement {
 
         if (logger.isInfoEnabled()) {
             logger.info(generateSummary(statList, iterationCount, totalSolvingTime, boundCheckTime));
-            //logger.info("Base reasoning time: " + CAATSolver.baseReasoningTime);
         }
 
         veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;
