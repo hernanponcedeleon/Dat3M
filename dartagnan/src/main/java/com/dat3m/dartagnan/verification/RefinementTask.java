@@ -42,12 +42,8 @@ public class RefinementTask extends VerificationTask {
         return GlobalSettings.SATURATION_MAX_DEPTH;
     }
 
-    public BooleanFormula encodeBaselineWmmRelations(SolverContext ctx) {
-        return baselineModel.encodeRelations(ctx);
-    }
-
-    public BooleanFormula encodeBaselineWmmConsistency(SolverContext ctx) {
-        return baselineModel.encodeConsistency(ctx);
+    public BooleanFormula encodeBaselineWmm(SolverContext ctx) {
+        return baselineModel.encode(ctx);
     }
 
     @Override

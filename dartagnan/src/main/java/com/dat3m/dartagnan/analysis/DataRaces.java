@@ -37,8 +37,7 @@ public class DataRaces {
 		
 		try (ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
 			prover.addConstraint(task.encodeProgram(ctx));
-			prover.addConstraint(task.encodeWmmRelations(ctx));
-	        prover.addConstraint(task.encodeWmmConsistency(ctx));
+			prover.addConstraint(task.encodeWmm(ctx));
 	        prover.push();
 	        prover.addConstraint(encodeRaces(task.getProgram(), ctx));
 	        

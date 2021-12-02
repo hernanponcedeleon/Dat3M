@@ -35,7 +35,6 @@ public class Wmm {
     private final List<RecursiveGroup> recursiveGroups = new ArrayList<>();
 
     private VerificationTask task;
-    private boolean relationsAreEncoded = false;
 
     private boolean encodeCo = true;
 
@@ -81,6 +80,17 @@ public class Wmm {
         recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
     }
 
+	/**
+	Associates this parsed model with a program and additional information.
+	Computes the may set.
+	Computes the must and must-not set.
+	Computes the active set.
+	<p>
+	Once associated with a task, {@link #encode(SolverContext)} is enabled.
+	@param task
+	Pair of program and memory model to be tested for a certain property.
+	{@link VerificationTask#getMemoryModel()} could refer to a different model.
+	*/
     public void initialise(VerificationTask task, SolverContext ctx) {
         this.task = task;
         new AliasAnalysis().calculateLocationSets(task.getProgram(), task.getSettings().getAlias());
@@ -104,26 +114,16 @@ public class Wmm {
         for (Axiom axiom : axioms) {
             axiom.initialise(task, ctx);
         }
-    }
 
-    // This methods initializes all relations and encodes all base relations
-    // and recursive groups (why recursive groups?)
-    // It also triggers the computation of may and active sets!
-    // It does NOT encode the axioms nor any non-base relation yet!
-    private BooleanFormula encodeBase(SolverContext ctx) {
-        if (this.task == null) {
-            throw new IllegalStateException("The WMM needs to get initialised first.");
-        }
+		//fixed point of may set
+		for(RecursiveGroup recursiveGroup : recursiveGroups) {
+			recursiveGroup.initMaxTupleSets();
+		}
+		for(Axiom ax : axioms) {
+			ax.getRelation().getMaxTupleSet();
+		}
 
-        for (RecursiveGroup recursiveGroup : recursiveGroups) {
-            recursiveGroup.initMaxTupleSets();
-        }
-
-        for (Axiom ax : axioms) {
-            ax.getRelation().getMaxTupleSet();
-        }
-
-		//fixed point of minimal and disabled
+		//fixed point of must and must-not set
 		for(boolean changed = true; changed;) {
 			changed = false;
 			for(RecursiveGroup g : recursiveGroups)
@@ -134,54 +134,49 @@ public class Wmm {
 				changed = g.initDisableTupleSets() || changed;
 		}
 
-        for(String relName : baseRelations){
-            relationRepository.getRelation(relName).getMaxTupleSet();
-        }
+		//make sure to encode the dataflow-relevant information, as well as the communications
+		for(String relName : baseRelations) {
+			relationRepository.getRelation(relName).getMaxTupleSet();
+		}
 
-        for (Axiom ax : axioms) {
-            ax.getRelation().addEncodeTupleSet(ax.getEncodeTupleSet());
-        }
-
-        for(RecursiveGroup recursiveGroup : reverse(recursiveGroups)){
-            recursiveGroup.updateEncodeTupleSets();
-        }
-
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
-        for(String relName : baseRelations){
-            if (!encodeCo && relName.equals(CO)) {
-                continue;
-            }
-            enc = bmgr.and(enc, relationRepository.getRelation(relName).encode(ctx));
-        }
-
-        return enc;
+		//fixed point of active set
+		for(Axiom ax : axioms) {
+			ax.getRelation().addEncodeTupleSet(ax.getEncodeTupleSet());
+		}
+		for(RecursiveGroup recursiveGroup : reverse(recursiveGroups)) {
+			recursiveGroup.updateEncodeTupleSets();
+		}
     }
 
-    // Initalizes everything just like encodeBase but also encodes all
-    // relations that are needed for the axioms (but does NOT encode the axioms themselves yet)
-    // NOTE: It avoids encoding relations that do NOT affect the axioms, i.e. unused relations
-    public BooleanFormula encodeRelations(SolverContext ctx) {
+	/**
+	Translates this model into an SMT formula.
+	@param ctx
+	Builder of expressions.
+	@return
+	Models consistent executions roughly of the associated program.
+	Misses control-flow information and parts of intra-thread data-flow information.
+	@throws IllegalStateException
+	This model is parsed but uninitialized.
+	*/
+	public final BooleanFormula encode(SolverContext ctx) {
+		if(task == null) {
+			throw new IllegalStateException("The WMM needs to get initialised first.");
+		}
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-    	BooleanFormula enc = encodeBase(ctx);
+		BooleanFormula enc = bmgr.makeTrue();
+		for(String relName : baseRelations) {
+			if (!encodeCo && relName.equals(CO)) {
+				continue;
+			}
+			enc = bmgr.and(enc, relationRepository.getRelation(relName).encode(ctx));
+		}
         for (Axiom ax : axioms) {
 			enc = bmgr.and(enc, ax.getRelation().encode(ctx));
         }
-        relationsAreEncoded = true;
-        return enc;
-    }
-
-    // Encodes all axioms. This should be called after <encodeRelations>
-    public BooleanFormula encodeConsistency(SolverContext ctx) {
-        if(!relationsAreEncoded){
-            throw new IllegalStateException("Wmm relations must be encoded before the consistency predicate.");
-        }
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula expr = bmgr.makeTrue();
         for (Axiom ax : axioms) {
-            expr = bmgr.and(expr, ax.consistent(ctx));
+            enc = bmgr.and(enc, ax.consistent(ctx));
         }
-        return expr;
+        return enc;
     }
 
     public String toString() {

@@ -28,8 +28,7 @@ public class Base {
 
         logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(task.encodeProgram(ctx));
-        prover.addConstraint(task.encodeWmmRelations(ctx));
-        prover.addConstraint(task.encodeWmmConsistency(ctx));
+        prover.addConstraint(task.encodeWmm(ctx));
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
         prover.addConstraint(task.encodeWitness(ctx));
@@ -67,8 +66,7 @@ public class Base {
 
         logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(task.encodeProgram(ctx));
-        prover.addConstraint(task.encodeWmmRelations(ctx));
-        prover.addConstraint(task.encodeWmmConsistency(ctx));
+        prover.addConstraint(task.encodeWmm(ctx));
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
         prover.addConstraint(task.encodeWitness(ctx));
@@ -111,11 +109,7 @@ public class Base {
         prover1.addConstraint(encodeCF);
         prover2.addConstraint(encodeCF);
         
-        BooleanFormula encodeWmm = task.encodeWmmRelations(ctx);
-		prover1.addConstraint(encodeWmm);
-        prover2.addConstraint(encodeWmm);
-        
-        BooleanFormula encodeConsistency = task.encodeWmmConsistency(ctx);
+        BooleanFormula encodeConsistency = task.encodeWmm(ctx);
 		prover1.addConstraint(encodeConsistency);
         prover2.addConstraint(encodeConsistency);
        	

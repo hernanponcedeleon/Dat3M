@@ -86,8 +86,7 @@ public class Refinement {
         SolverStatus status = INCONSISTENT;
 
         prover.addConstraint(task.encodeProgram(ctx));
-        prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
-        prover.addConstraint(task.encodeBaselineWmmConsistency(ctx));
+        prover.addConstraint(task.encodeBaselineWmm(ctx));
         if (ENABLE_SYMMETRY_BREAKING) {
             prover.addConstraint(task.encodeSymmetryBreaking(ctx));
         }
