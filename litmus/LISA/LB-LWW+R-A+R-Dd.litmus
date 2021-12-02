@@ -1,0 +1,13 @@
+LISA auto/LB-LWW+R-A+R-Dd
+(*
+ * Result: Never
+ * 
+ *)
+{
+ 1:r3=u0; x2=y2;
+}
+ P0              | P1               | P2             ;
+ w[once] u0 3    | r[acquire] r1 x1 | r[deref] r1 x2 ;
+ w[release] x1 1 | w[release] x2 r3 | w[once] r1 1   ;
+exists
+(u0=3 /\ 1:r1=1 /\ 2:r1=u0)

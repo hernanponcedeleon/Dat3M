@@ -1,0 +1,22 @@
+LISA TC13
+(*
+ * Result: Never
+ *
+ * http://www.cs.umd.edu/~pugh/java/memoryModel/unifiedProposal/testcases.html
+ *
+ * Decision: Disallowed. In all sequentially consistent executions,
+ *	no writes to x or y occur and the program is correctly
+ *	synchronized. The only SC behavior is r1 == r2 == 0.
+ *)
+{
+x = 0;
+y = 0;
+}
+ P0                | P1                ;
+ r[once] r1 x      | r[once] r2 y      ;
+ mov r9 (neq r1 1) | mov r9 (neq r2 1) ;
+ b[] r9 SKIP0      | b[] r9 SKIP1      ;
+ w[once] y 1       | w[once] x 1       ;
+ SKIP0:            | SKIP1:            ;
+exists (0:r1=1 /\ 1:r2=1)
+

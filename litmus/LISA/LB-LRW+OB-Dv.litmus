@@ -1,0 +1,13 @@
+LISA auto/LB-LRW+OB-Dv
+(*
+ * Result: Never
+ * 
+ *)
+{
+}
+ P0            | P1             ;
+ r[once] r1 u0 | r[deref] r1 x1 ;
+ f[mb]         | w[once] u0 r1  ;
+ w[once] x1 1  |                ;
+exists
+(0:r1=1 /\ 1:r1=1)

@@ -1,0 +1,18 @@
+LISA LISA2R1G
+(*
+ * Result: Sometimes
+ *
+ * One RCU grace period with a pair of RCU read-side critical sections.
+ * These critical sections can therefore overlap.  Cycle allowed.
+ *)
+{
+x0 = 0;
+x1 = 0;
+x2 = 0;
+}
+ P0                 | P1            | P2                 ;
+ f[rcu_read_lock]   | r[once] r1 x1 | f[rcu_read_lock]   ;
+ r[once] r2 x0      | f[sync]       | r[once] r2 x2      ;
+ w[once] x1 1       | w[once] x2 1  | w[once] x0 1       ;
+ f[rcu_read_unlock] |               | f[rcu_read_unlock] ;
+exists (1:r1=1 /\ 2:r2=1 /\ 0:r2=1)

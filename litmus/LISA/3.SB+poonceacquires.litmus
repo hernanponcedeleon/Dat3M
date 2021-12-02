@@ -1,0 +1,15 @@
+LISA 3.SB+poonceacquires
+"PodWROnceAcquire FreAcquireOnce PodWROnceAcquire FreAcquireOnce PodWROnceAcquire FreAcquireOnce"
+Cycle=FreAcquireOnce PodWROnceAcquire FreAcquireOnce PodWROnceAcquire FreAcquireOnce PodWROnceAcquire
+Relax=FreAcquireOnce
+Safe=PodWROnceAcquire
+Prefetch=0:x=F,0:y=T,1:y=F,1:z=T,2:z=F,2:x=T
+Com=Fr Fr Fr
+Orig=PodWROnceAcquire FreAcquireOnce PodWROnceAcquire FreAcquireOnce PodWROnceAcquire FreAcquireOnce
+{
+}
+ P0              | P1              | P2              ;
+ w[once] x 1     | w[once] y 1     | w[once] z 1     ;
+ r[acquire] r0 y | r[acquire] r0 z | r[acquire] r0 x ;
+exists
+(0:r0=0 /\ 1:r0=0 /\ 2:r0=0)

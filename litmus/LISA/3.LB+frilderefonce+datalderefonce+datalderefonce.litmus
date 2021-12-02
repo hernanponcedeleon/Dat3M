@@ -1,0 +1,14 @@
+LISA 3.LB+frilderefonce+datalderefonce+datalderefonce
+"FriLderefOnce RfeOnceLderef DpDatadWLderefOnce RfeOnceLderef DpDatadWLderefOnce RfeOnceLderef"
+Prefetch=1:x=F,1:y=W,2:y=F,2:x=W
+Com=Rf Rf Rf
+Orig=FriLderefOnce RfeOnceLderef DpDatadWLderefOnce RfeOnceLderef DpDatadWLderefOnce RfeOnceLderef
+{
+}
+ P0             | P1                 | P2                 ;
+ r[lderef] r0 x | r[lderef] r0 x     | r[lderef] r0 y     ;
+ w[once] x 2    | mov r1 (xor r0 r0) | mov r1 (xor r0 r0) ;
+                | mov r1 (add r1 1)  | mov r1 (add r1 1)  ;
+                | w[once] y r1       | w[once] x r1       ;
+exists
+(x=2 /\ 0:r0=1 /\ 1:r0=2 /\ 2:r0=1)

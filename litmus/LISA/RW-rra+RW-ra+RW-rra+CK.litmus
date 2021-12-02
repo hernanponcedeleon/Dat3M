@@ -1,0 +1,13 @@
+LISA RW-rra+RW-ra+RW-rra+CK
+(*
+ * Result: Free choice.  "Allow" for simpler ruleset, "Forbid" for
+ * tighter ordering.  I -think- that this is forbidden on Power...
+ *)
+{
+}
+ P0               | P1               | P2               | P3            ;
+ r[once] r2 y     | r[acquire] r1 x1 | r[acquire] r1 x2 | w[once] z 1   ;
+ w[release] x1 1  | w[release] x2 1  | r[once] r2 z     | f[mb]         ;
+                  |                  |                  | w[once] y 1   ;
+exists
+(1:r1=1 /\ 2:r1=1 /\ 0:r2=1 /\ 2:r2=0)

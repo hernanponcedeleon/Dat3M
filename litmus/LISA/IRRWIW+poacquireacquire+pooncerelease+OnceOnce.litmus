@@ -1,0 +1,15 @@
+LISA IRRWIW+poacquireacquire+pooncerelease+OnceOnce
+"RfeOnceAcquire PodRRAcquireAcquire FreAcquireOnce RfeOnceOnce PodRWOnceRelease WseReleaseOnce"
+Cycle=PodRRAcquireAcquire FreAcquireOnce RfeOnceOnce PodRWOnceRelease WseReleaseOnce RfeOnceAcquire
+Relax=FreAcquireOnce RfeOnceAcquire WseReleaseOnce
+Safe=PodRRAcquireAcquire RfeOnceOnce PodRWOnceRelease
+Prefetch=1:x=F,1:y=T,3:y=F,3:x=W
+Com=Rf Fr Rf Ws
+Orig=RfeOnceAcquire PodRRAcquireAcquire FreAcquireOnce RfeOnceOnce PodRWOnceRelease WseReleaseOnce
+{
+}
+ P0          | P1              | P2          | P3             ;
+ w[once] x 2 | r[acquire] r0 x | w[once] y 1 | r[once] r0 y   ;
+             | r[acquire] r1 y |             | w[release] x 1 ;
+exists
+(x=2 /\ 1:r0=2 /\ 1:r1=0 /\ 3:r0=1)

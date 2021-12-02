@@ -1,0 +1,27 @@
+LISA TC8
+(*
+ * Result: Sometimes (but requires modeling the compiler)
+ *
+ * http://www.cs.umd.edu/~pugh/java/memoryModel/unifiedProposal/testcases.html
+ *
+ * Decision: Allowed. Interthread analysis could determine that x and y
+ *	are always either 0 or 1, and thus determine that r2 is always 1.
+ *	Once this determination is made, the write of 1 to y could be
+ *	moved early in thread 1.
+ *
+ * Note: I used a different deterministic computation, but r2==1.
+ *	I also modified their condition, but it should be equivalent.
+ *)
+{
+x = 0;
+y = 0;
+0:r2 = 1;
+}
+ P0                 | P1           ;
+ r[once] r1 x       | r[once] r3 y ;
+ mov r2 (xor r1 r2) | w[once] x r3 ;
+ mov r2 (xor r1 r2) |              ;
+ w[once] y r2       |              ;
+locations [0:r2]
+exists (0:r1=1 /\ 1:r3=1)
+

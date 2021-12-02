@@ -1,0 +1,16 @@
+LISA IRRWIW+fencembonceonce+poacquireonce+OnceOnce
+"RfeOnceOnce FenceMbdRROnceOnce FreOnceOnce RfeOnceAcquire PodRWAcquireOnce WseOnceOnce"
+Cycle=PodRWAcquireOnce WseOnceOnce RfeOnceOnce FenceMbdRROnceOnce FreOnceOnce RfeOnceAcquire
+Relax=RfeOnceAcquire
+Safe=PodRWAcquireOnce RfeOnceOnce FreOnceOnce WseOnceOnce FenceMbdRROnceOnce
+Prefetch=1:x=F,1:y=T,3:y=F,3:x=W
+Com=Rf Fr Rf Ws
+Orig=RfeOnceOnce FenceMbdRROnceOnce FreOnceOnce RfeOnceAcquire PodRWAcquireOnce WseOnceOnce
+{
+}
+ P0          | P1           | P2          | P3              ;
+ w[once] x 2 | r[once] r0 x | w[once] y 1 | r[acquire] r0 y ;
+             | f[mb]        |             | w[once] x 1     ;
+             | r[once] r1 y |             |                 ;
+exists
+(x=2 /\ 1:r0=2 /\ 1:r1=0 /\ 3:r0=1)

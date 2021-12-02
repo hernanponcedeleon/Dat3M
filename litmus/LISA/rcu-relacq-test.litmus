@@ -1,0 +1,13 @@
+LISA cris-crossing read-side critical sections
+(*
+ * Result: Sometimes
+ *)
+{
+}
+ P0                 | P1            | P2            ;
+ f[rcu_read_lock]   | r[once] r1 y  | r[once] r2 z  ;
+ w[once] x 1        | w[once] z r1  | f[rmb]        ;
+ f[rcu_read_unlock] |               | r[once] r3 x  ;
+ f[wmb]             |               |               ;
+ w[once] y 1        |               |               ;
+exists (1:r1=1 /\ 2:r2=1 /\ 2:r3=0)

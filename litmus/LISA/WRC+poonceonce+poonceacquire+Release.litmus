@@ -1,0 +1,15 @@
+LISA WRC+poonceonce+poonceacquire+Release
+"RfeReleaseOnce PodRWOnceOnce RfeOnceOnce PodRROnceAcquire FreAcquireRelease"
+Cycle=FreAcquireRelease RfeReleaseOnce PodRWOnceOnce RfeOnceOnce PodRROnceAcquire
+Relax=FreAcquireRelease RfeReleaseOnce
+Safe=PodRROnceAcquire RfeOnceOnce PodRWOnceOnce
+Prefetch=1:x=F,1:y=W,2:y=F,2:x=T
+Com=Rf Rf Fr
+Orig=RfeReleaseOnce PodRWOnceOnce RfeOnceOnce PodRROnceAcquire FreAcquireRelease
+{
+}
+ P0             | P1           | P2              ;
+ w[release] x 1 | r[once] r0 x | r[once] r0 y    ;
+                | w[once] y 1  | r[acquire] r1 x ;
+exists
+(1:r0=1 /\ 2:r0=1 /\ 2:r1=0)

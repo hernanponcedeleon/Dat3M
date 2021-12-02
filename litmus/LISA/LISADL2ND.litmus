@@ -1,0 +1,24 @@
+LISA LISADL2ND
+(*
+ * Result: DEADLOCK
+ *
+ * Simple RCU case with a single grace period within an RCU read-side
+ * critical section.  Deadlock case, but non-determistic.
+ *)
+{
+x0 = 0;
+x1 = 0;
+x2 = 0;
+}
+ P0                 | P1           ;
+ f[rcu_read_lock]   | w[once] x2 1 ;
+ w[once] x0 1       |              ;
+ r[once] r3 x2      |              ;
+ b[] r3 NODL        |              ;
+ f[sync]            |              ;
+ NODL:              |              ;
+ w[once] x1 1       |              ;
+ f[rcu_read_unlock] |              ;
+ r[once] r1 x0      |              ;
+ r[once] r2 x1      |              ;
+exists (0:r1=1 \/ 0:r2=1)

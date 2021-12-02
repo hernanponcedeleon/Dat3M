@@ -1,0 +1,22 @@
+LISA TC10
+(*
+ * Result: Never
+ *
+ * http://www.cs.umd.edu/~pugh/java/memoryModel/unifiedProposal/testcases.html
+ *
+ * Decision: Forbidden. This is the same as test case 5, except using
+ *	control dependences rather than data dependences.
+ *)
+{
+x = 0;
+y = 0;
+z = 0;
+}
+ P0                | P1                | P2          | P3                ;
+ r[once] r1 x      | r[once] r2 y      | w[once] z 1 | r[once] r3 z      ;
+ mov r9 (neq r1 1) | mov r9 (neq r2 1) |             | mov r9 (neq r3 1) ;
+ b[] r9 SKIP0      | b[] r9 SKIP1      |             | b[] r9 SKIP3      ;
+ w[once] y 1       | w[once] x 1       |             | w[once] x 1       ;
+ SKIP0:            | SKIP1:            |             | SKIP3:            ;
+exists (0:r1=1 /\ 1:r2=1 /\ 3:r3=0)
+

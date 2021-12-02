@@ -1,0 +1,28 @@
+LISA TC1
+(*
+ * Result: Sometimes
+ *
+ * http://www.cs.umd.edu/~pugh/java/memoryModel/unifiedProposal/testcases.html
+ *
+ * Decision: Allowed, since interthread compiler analysis could determine that
+ *	x and y are always non-negative, allowing simplification of r1 >= 0
+ *	to true, and allowing write y = 1 to be moved early.
+ *
+ * Note: TC1 has >=, but I don't know how to say that in herd, hence the
+ *	compound test.
+ *)
+{
+x = 0;
+y = 0;
+}
+ P0                | P1           ;
+ r[once] r1 x      | r[once] r2 y ;
+ mov r3 (eq r1 0)  | w[once] x r2 ;
+ b[] r3 SKIP0      |              ;
+ mov r3 (neq r1 1) |              ;
+ b[] r3 SKIP1      |              ;
+ SKIP0:            |              ;
+ w[once] y 1       |              ;
+ SKIP1:            |              ;
+exists (0:r1=1 /\ 1:r2=1)
+

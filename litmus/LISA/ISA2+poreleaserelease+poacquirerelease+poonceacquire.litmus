@@ -1,0 +1,15 @@
+LISA ISA2+poreleaserelease+poacquirerelease+poonceacquire
+"PodWWReleaseRelease RfeReleaseAcquire PodRWAcquireRelease RfeReleaseOnce PodRROnceAcquire FreAcquireRelease"
+Cycle=FreAcquireRelease PodWWReleaseRelease RfeReleaseAcquire PodRWAcquireRelease RfeReleaseOnce PodRROnceAcquire
+Relax=FreAcquireRelease RfeReleaseAcquire RfeReleaseOnce
+Safe=PodRWAcquireRelease PodRROnceAcquire PodWWReleaseRelease
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:x=T
+Com=Rf Rf Fr
+Orig=PodWWReleaseRelease RfeReleaseAcquire PodRWAcquireRelease RfeReleaseOnce PodRROnceAcquire FreAcquireRelease
+{
+}
+ P0             | P1              | P2              ;
+ w[release] x 1 | r[acquire] r0 y | r[once] r0 z    ;
+ w[release] y 1 | w[release] z 1  | r[acquire] r1 x ;
+exists
+(1:r0=1 /\ 2:r0=1 /\ 2:r1=0)

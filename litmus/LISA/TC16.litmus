@@ -1,0 +1,19 @@
+LISA TC16
+(*
+ * Result: Never
+ *
+ * http://www.cs.umd.edu/~pugh/java/memoryModel/unifiedProposal/testcases.html
+ *
+ * Decision: Allowed.
+ *
+ * Note: Maybe for Java, but relaxed atomics in C11 prohibit violating
+ *	cache coherence.  Adjusted result accordingly.
+ *)
+{
+x = 0;
+}
+ P0           | P1           ;
+ r[once] r1 x | r[once] r2 x ;
+ w[once] x 1  | w[once] x 2  ;
+exists (0:r1=2 /\ 1:r2=1)
+

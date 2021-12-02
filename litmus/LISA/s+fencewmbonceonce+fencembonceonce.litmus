@@ -1,0 +1,16 @@
+LISA s+fencewmbonceonce+fencembonceonce
+"FenceWmbdWWOnceOnce RfeOnceOnce FenceMbdRWOnceOnce WseOnceOnce"
+Cycle=RfeOnceOnce FenceMbdRWOnceOnce WseOnceOnce FenceWmbdWWOnceOnce
+Relax=FenceWmbdWW
+Safe=FenceMbdRW RfeOnceOnce WseOnceOnce
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Ws
+Orig=FenceWmbdWWOnceOnce RfeOnceOnce FenceMbdRWOnceOnce WseOnceOnce
+{
+}
+ P0          | P1           ;
+ w[once] x 2 | r[once] r0 y ;
+ f[wmb]      | f[mb]        ;
+ w[once] y 1 | w[once] x 1  ;
+exists
+(x=2 /\ 1:r0=1)

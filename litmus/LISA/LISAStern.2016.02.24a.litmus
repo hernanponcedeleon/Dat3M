@@ -1,0 +1,19 @@
+LISA  LISAStern.2016.02.24a
+(*
+ * Result: Sometimes
+ *
+ * Alan Stern test with code preceding an RCU read-side critical section
+ * and a one-sided grace period.
+ *)
+{
+x0 = 0;
+x1 = 0;
+x3 = 0;
+}
+ P0                 | P1            | P2            ;
+ w[once] x0 1       | f[sync]       | r[once] r2 x1 ;
+ f[rcu_read_lock]   | w[once] x2 1  | f[rmb]        ;
+ w[once] x1 1       |               | r[once] r3 x0 ;
+ r[once] r1 x2      |               |               ;
+ f[rcu_read_unlock] |               |               ;
+exists (0:r1=1 /\ 2:r2=1 /\ 2:r3=0)

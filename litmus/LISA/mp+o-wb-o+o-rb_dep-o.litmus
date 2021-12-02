@@ -1,0 +1,12 @@
+LISA MP+o-wb-o+o-rb-dep-o
+(* Allowed: No actual dependency in P1. *)
+{
+x = 2;
+p = a;
+0:r0=x;
+}
+ P0           | P1             ;
+ w[once] x 4  | r[once] r1 p   ;
+ f[wmb]       | f[rb_dep]      ;
+ w[once] p r0 | r[once] r2 x   ;
+exists (1:r1 = x /\ 1:r2 = 2)

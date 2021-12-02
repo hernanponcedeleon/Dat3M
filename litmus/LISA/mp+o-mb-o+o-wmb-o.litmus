@@ -1,0 +1,12 @@
+LISA MP+o-mb-o+o-wmb-o
+(* Allow, wmb orders only reads. *)
+{
+x = 0;
+y = 0;
+}
+ P0           | P1            ;
+ w[once] y 1  | r[once] r1 x  ;
+ f[mb]        | f[wmb]        ;
+ w[once] x 1  | r[once] r2 y  ;
+exists (1:r1=1 /\ 1:r2=0)
+

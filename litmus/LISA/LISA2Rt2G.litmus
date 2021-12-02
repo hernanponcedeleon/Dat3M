@@ -1,0 +1,23 @@
+LISA LISA2Rt2G
+(*
+ * Result: Never
+ *
+ * Two RCU grace periods and two RCU read-side critical sections on a
+ * single process.  Both cycles prohibited.
+ *)
+{
+x0 = 0;
+x1 = 0;
+x2 = 0;
+x3 = 0;
+}
+ P0                 | P1            | P2            ;
+ f[rcu_read_lock]   | r[once] r1 x1 | r[once] r3 x3 ;
+ w[once] x0 1       | f[sync]       | f[sync]       ;
+ w[once] x1 1       | r[once] r2 x0 | r[once] r4 x2 ;
+ f[rcu_read_unlock] |               |               ;
+ f[rcu_read_lock]   |               |               ;
+ w[once] x2 1       |               |               ;
+ w[once] x3 1       |               |               ;
+ f[rcu_read_unlock] |               |               ;
+exists (1:r1=1 /\ 1:r2=0 /\ 2:r3=1 /\ 2:r4=0)

@@ -1,0 +1,21 @@
+LISA LISA2Rf1G
+(*
+ * Result: Never
+ *
+ * One RCU grace period and two RCU read-side critical sections, which
+ * would normally allow the cycle.  However, P2's RCU read-side critical
+ * section has a memory barrier that forces the entire critical section
+ * to follow the grace period.  Cycle prohibited.
+ *)
+{
+x0 = 0;
+x1 = 0;
+x2 = 0;
+}
+ P0                 | P1            | P2                 ;
+ f[rcu_read_lock]   | r[once] r1 x1 | f[rcu_read_lock]   ;
+ r[once] r2 x0      | f[sync]       | r[once] r2 x2      ;
+ w[once] x1 1       | w[once] x2 1  | f[mb]              ;
+ f[rcu_read_unlock] |               | w[once] x0 1       ;
+                    |               | f[rcu_read_unlock] ;
+exists (1:r1=1 /\ 2:r2=1 /\ 0:r2=1)

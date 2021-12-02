@@ -1,0 +1,10 @@
+LISA rel-seq4
+""
+{
+}
+ P0             | P1          | P2              ;
+ w[once] x 1    | w[once] y 2 | r[acquire] r1 y ;
+ w[release] y 1 |             | r[once] r2 x    ;
+ r[once] r1 y   |             |                 ;
+ w[once] y 3    |             |                 ;
+exists (0:r1=2 /\ 2:r1=3 /\ 2:r2=0)

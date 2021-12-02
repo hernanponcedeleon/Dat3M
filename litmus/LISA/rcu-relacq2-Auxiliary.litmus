@@ -1,0 +1,18 @@
+LISA rcu-relacq2-Auxiliary
+""
+{
+}
+ P0                          | P1                        | P2             ;
+ r[once] r0 x                | w[once] y 2               | w[once] u 1    ;
+ w[once] y r0                | (* GP #1 *)               | w[release] x 1 ;
+ (* preamble #1 *)           | f[mb]                     |                ;
+ r[acquire] r50101 gpstart01 | w[release] gpstart01 1    |                ;
+ (* end preamble #1 *)       | f[mb]                     |                ;
+ r[once] r1 u                | r[acquire] r60101 csend01 |                ;
+ r[once] r2 v                | f[mb]                     |                ;
+ (* postamble #1 *)          | (* end GP #1 *)           |                ;
+ w[release] csend01 1        | w[once] v 1               |                ;
+ (* end postamble #1 *)      |                           |                ;
+exists ((0:r0=1 /\ 0:r1=0 /\ 0:r2=1 /\ y=2)
+ /\ (0:r50101=1 \/ 1:r60101=1) )
+

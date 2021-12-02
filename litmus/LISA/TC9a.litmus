@@ -1,0 +1,29 @@
+LISA TC9a
+(*
+ * Result: Sometimes (but requires modeling the compiler)
+ *
+ * http://www.cs.umd.edu/~pugh/java/memoryModel/unifiedProposal/testcases.html
+ *
+ * Decision: Allowed. Similar to test case 8, except that the x is not
+ *	always 0 or 1. However, a compiler might determine that thread
+ *	3 will always execute before thread 1, and that therefore the
+ *	initial value of 2 will not be visible to the read of x in
+ *	thread 1.  Thus, the compiler can determine that r1 will always
+ *	be 0 or 1.
+ *
+ * Note: I used a different deterministic computation, but r2==1.
+ *	I also modified their condition, but it should be equivalent.
+ *)
+{
+x = 2;
+y = 0;
+0:r2 = 1;
+}
+ P0                 | P1           | P2          ;
+ r[once] r1 x       | r[once] r3 y | w[once] x 0 ;
+ mov r2 (xor r1 r2) | w[once] x r3 |             ;
+ mov r2 (xor r1 r2) |              |             ;
+ w[once] y r2       |              |             ;
+locations [0:r2]
+exists (0:r1=1 /\ 1:r3=1)
+

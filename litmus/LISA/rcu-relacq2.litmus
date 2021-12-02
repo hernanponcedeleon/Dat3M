@@ -1,0 +1,12 @@
+LISA rcu-relacq2
+""
+{
+}
+ P0                 | P1          | P2             ;
+ r[once] r0 x       | w[once] y 2 | w[once] u 1    ;
+ w[once] y r0       | f[sync]     | w[release] x 1 ;
+ f[rcu_read_lock]   | w[once] v 1 |                ;
+ r[once] r1 u       |             |                ;
+ r[once] r2 v       |             |                ;
+ f[rcu_read_unlock] |             |                ;
+exists (0:r0=1 /\ 0:r1=0 /\ 0:r2=1 /\ y=2)

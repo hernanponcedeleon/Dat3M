@@ -1,0 +1,38 @@
+LISA auto/RW-G+RW-R+RW-G+RW-R+RW-G+RW-R+RW-G+RW-R+RW-G+RW-R+RW-G+RW-R-Auxiliary
+{
+}
+ P0                        | P1                          | P2                        | P3                          | P4                        | P5                          | P6                        | P7                          | P8                        | P9                          | P10                       | P11                         ;
+ r[once] r1 x0             | (* preamble #1 *)           | r[once] r1 x2             | (* preamble #2 *)           | r[once] r1 x4             | (* preamble #3 *)           | r[once] r1 x6             | (* preamble #4 *)           | r[once] r1 x8             | (* preamble #5 *)           | r[once] r1 x10            | (* preamble #6 *)           ;
+ (* GP #1 *)               | r[acquire] r50101 gpstart01 | (* GP #2 *)               | r[acquire] r50102 gpstart01 | (* GP #3 *)               | r[acquire] r50103 gpstart01 | (* GP #4 *)               | r[acquire] r50104 gpstart01 | (* GP #5 *)               | r[acquire] r50105 gpstart01 | (* GP #6 *)               | r[acquire] r50106 gpstart01 ;
+ f[mb]                     | r[acquire] r50201 gpstart02 | f[mb]                     | r[acquire] r50202 gpstart02 | f[mb]                     | r[acquire] r50203 gpstart02 | f[mb]                     | r[acquire] r50204 gpstart02 | f[mb]                     | r[acquire] r50205 gpstart02 | f[mb]                     | r[acquire] r50206 gpstart02 ;
+ w[release] gpstart01 1    | r[acquire] r50301 gpstart03 | w[release] gpstart02 1    | r[acquire] r50302 gpstart03 | w[release] gpstart03 1    | r[acquire] r50303 gpstart03 | w[release] gpstart04 1    | r[acquire] r50304 gpstart03 | w[release] gpstart05 1    | r[acquire] r50305 gpstart03 | w[release] gpstart06 1    | r[acquire] r50306 gpstart03 ;
+ f[mb]                     | r[acquire] r50401 gpstart04 | f[mb]                     | r[acquire] r50402 gpstart04 | f[mb]                     | r[acquire] r50403 gpstart04 | f[mb]                     | r[acquire] r50404 gpstart04 | f[mb]                     | r[acquire] r50405 gpstart04 | f[mb]                     | r[acquire] r50406 gpstart04 ;
+ r[acquire] r60101 csend01 | r[acquire] r50501 gpstart05 | r[acquire] r60102 csend01 | r[acquire] r50502 gpstart05 | r[acquire] r60103 csend01 | r[acquire] r50503 gpstart05 | r[acquire] r60104 csend01 | r[acquire] r50504 gpstart05 | r[acquire] r60105 csend01 | r[acquire] r50505 gpstart05 | r[acquire] r60106 csend01 | r[acquire] r50506 gpstart05 ;
+ r[acquire] r60201 csend02 | r[acquire] r50601 gpstart06 | r[acquire] r60202 csend02 | r[acquire] r50602 gpstart06 | r[acquire] r60203 csend02 | r[acquire] r50603 gpstart06 | r[acquire] r60204 csend02 | r[acquire] r50604 gpstart06 | r[acquire] r60205 csend02 | r[acquire] r50605 gpstart06 | r[acquire] r60206 csend02 | r[acquire] r50606 gpstart06 ;
+ r[acquire] r60301 csend03 | (* end preamble #1 *)       | r[acquire] r60302 csend03 | (* end preamble #2 *)       | r[acquire] r60303 csend03 | (* end preamble #3 *)       | r[acquire] r60304 csend03 | (* end preamble #4 *)       | r[acquire] r60305 csend03 | (* end preamble #5 *)       | r[acquire] r60306 csend03 | (* end preamble #6 *)       ;
+ r[acquire] r60401 csend04 | r[once] r1 x1               | r[acquire] r60402 csend04 | r[once] r1 x3               | r[acquire] r60403 csend04 | r[once] r1 x5               | r[acquire] r60404 csend04 | r[once] r1 x7               | r[acquire] r60405 csend04 | r[once] r1 x9               | r[acquire] r60406 csend04 | r[once] r1 x11              ;
+ r[acquire] r60501 csend05 | w[once] x2 1                | r[acquire] r60502 csend05 | w[once] x4 1                | r[acquire] r60503 csend05 | w[once] x6 1                | r[acquire] r60504 csend05 | w[once] x8 1                | r[acquire] r60505 csend05 | w[once] x10 1               | r[acquire] r60506 csend05 | w[once] x0 1                ;
+ r[acquire] r60601 csend06 | (* postamble #1 *)          | r[acquire] r60602 csend06 | (* postamble #2 *)          | r[acquire] r60603 csend06 | (* postamble #3 *)          | r[acquire] r60604 csend06 | (* postamble #4 *)          | r[acquire] r60605 csend06 | (* postamble #5 *)          | r[acquire] r60606 csend06 | (* postamble #6 *)          ;
+ f[mb]                     | w[release] csend01 1        | f[mb]                     | w[release] csend02 1        | f[mb]                     | w[release] csend03 1        | f[mb]                     | w[release] csend04 1        | f[mb]                     | w[release] csend05 1        | f[mb]                     | w[release] csend06 1        ;
+ (* end GP #1 *)           | (* end postamble #1 *)      | (* end GP #2 *)           | (* end postamble #2 *)      | (* end GP #3 *)           | (* end postamble #3 *)      | (* end GP #4 *)           | (* end postamble #4 *)      | (* end GP #5 *)           | (* end postamble #5 *)      | (* end GP #6 *)           | (* end postamble #6 *)      ;
+ w[once] x1 1              |                             | w[once] x3 1              |                             | w[once] x5 1              |                             | w[once] x7 1              |                             | w[once] x9 1              |                             | w[once] x11 1             |                             ;
+exists ( (0:r1=1 /\ 1:r1=1 /\ 2:r1=1 /\ 3:r1=1 /\ 4:r1=1 /\ 5:r1=1 /\ 6:r1=1 /\ 7:r1=1 /\ 8:r1=1 /\ 9:r1=1 /\ 10:r1=1 /\ 11:r1=1)
+ /\ (1:r50101=1 \/ 0:r60101=1) /\ (3:r50102=1 \/ 0:r60201=1)
+ /\ (5:r50103=1 \/ 0:r60301=1) /\ (7:r50104=1 \/ 0:r60401=1)
+ /\ (9:r50105=1 \/ 0:r60501=1) /\ (11:r50106=1 \/ 0:r60601=1)
+ /\ (1:r50201=1 \/ 2:r60102=1) /\ (3:r50202=1 \/ 2:r60202=1)
+ /\ (5:r50203=1 \/ 2:r60302=1) /\ (7:r50204=1 \/ 2:r60402=1)
+ /\ (9:r50205=1 \/ 2:r60502=1) /\ (11:r50206=1 \/ 2:r60602=1)
+ /\ (1:r50301=1 \/ 4:r60103=1) /\ (3:r50302=1 \/ 4:r60203=1)
+ /\ (5:r50303=1 \/ 4:r60303=1) /\ (7:r50304=1 \/ 4:r60403=1)
+ /\ (9:r50305=1 \/ 4:r60503=1) /\ (11:r50306=1 \/ 4:r60603=1)
+ /\ (1:r50401=1 \/ 6:r60104=1) /\ (3:r50402=1 \/ 6:r60204=1)
+ /\ (5:r50403=1 \/ 6:r60304=1) /\ (7:r50404=1 \/ 6:r60404=1)
+ /\ (9:r50405=1 \/ 6:r60504=1) /\ (11:r50406=1 \/ 6:r60604=1)
+ /\ (1:r50501=1 \/ 8:r60105=1) /\ (3:r50502=1 \/ 8:r60205=1)
+ /\ (5:r50503=1 \/ 8:r60305=1) /\ (7:r50504=1 \/ 8:r60405=1)
+ /\ (9:r50505=1 \/ 8:r60505=1) /\ (11:r50506=1 \/ 8:r60605=1)
+ /\ (1:r50601=1 \/ 10:r60106=1) /\ (3:r50602=1 \/ 10:r60206=1)
+ /\ (5:r50603=1 \/ 10:r60306=1) /\ (7:r50604=1 \/ 10:r60406=1)
+ /\ (9:r50605=1 \/ 10:r60506=1) /\ (11:r50606=1 \/ 10:r60606=1) )
+

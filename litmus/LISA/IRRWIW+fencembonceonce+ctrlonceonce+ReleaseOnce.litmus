@@ -1,0 +1,18 @@
+LISA IRRWIW+fencembonceonce+ctrlonceonce+ReleaseOnce
+"RfeReleaseOnce FenceMbdRROnceOnce FreOnceOnce RfeOnceOnce DpCtrldWOnceOnce WseOnceRelease"
+Cycle=RfeOnceOnce DpCtrldWOnceOnce WseOnceRelease RfeReleaseOnce FenceMbdRROnceOnce FreOnceOnce
+Relax=WseOnceRelease RfeReleaseOnce
+Safe=RfeOnceOnce FreOnceOnce FenceMbdRROnceOnce DpCtrldWOnceOnce
+Prefetch=1:x=F,1:y=T,3:y=F,3:x=W
+Com=Rf Fr Rf Ws
+Orig=RfeReleaseOnce FenceMbdRROnceOnce FreOnceOnce RfeOnceOnce DpCtrldWOnceOnce WseOnceRelease
+{
+}
+ P0             | P1           | P2          | P3               ;
+ w[release] x 2 | r[once] r0 x | w[once] y 1 | r[once] r0 y     ;
+                | f[mb]        |             | mov r1 (eq r0 0) ;
+                | r[once] r1 y |             | b[] r1 LC00      ;
+                |              |             | LC00:            ;
+                |              |             | w[once] x 1      ;
+exists
+(x=2 /\ 1:r0=2 /\ 1:r1=0 /\ 3:r0=1)

@@ -1,0 +1,15 @@
+LISA R+pooncerelease+poreleaseonce
+"PodWWOnceRelease WseReleaseRelease PodWRReleaseOnce FreOnceOnce"
+Cycle=FreOnceOnce PodWWOnceRelease WseReleaseRelease PodWRReleaseOnce
+Relax=WseReleaseRelease
+Safe=FreOnceOnce PodWWOnceRelease PodWRReleaseOnce
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Ws Fr
+Orig=PodWWOnceRelease WseReleaseRelease PodWRReleaseOnce FreOnceOnce
+{
+}
+ P0             | P1             ;
+ w[once] x 1    | w[release] y 2 ;
+ w[release] y 1 | r[once] r0 x   ;
+exists
+(y=2 /\ 1:r0=0)

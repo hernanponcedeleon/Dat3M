@@ -1,0 +1,21 @@
+LISA TC7
+(*
+ * Result: Sometimes
+ *
+ * http://www.cs.umd.edu/~pugh/java/memoryModel/unifiedProposal/testcases.html
+ *
+ * Decision: Allowed. Intrathread transformations could move r1 = z to
+ *	after the last statement in thread 1, and x = 1 to before the
+ *	first statement in thread 2.
+ *)
+{
+x = 0;
+y = 0;
+z = 0;
+}
+ P0                 | P1           ;
+ r[once] r1 z       | r[once] r3 y ;
+ r[once] r2 x       | w[once] z r3 ;
+ w[once] y r2       | w[once] x 1  ;
+exists (0:r1=1 /\ 0:r2=1 /\ 1:r3=1)
+

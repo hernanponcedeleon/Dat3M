@@ -1,0 +1,16 @@
+LISA Z6.3+fencembonceonce+pooncerelease+fencembonceonce
+"FenceMbdWWOnceOnce WseOnceOnce PodWWOnceRelease RfeReleaseOnce FenceMbdRROnceOnce FreOnceOnce"
+Cycle=FreOnceOnce FenceMbdWWOnceOnce WseOnceOnce PodWWOnceRelease RfeReleaseOnce FenceMbdRROnceOnce
+Relax=RfeReleaseOnce
+Safe=FreOnceOnce WseOnceOnce FenceMbdWWOnceOnce FenceMbdRROnceOnce PodWWOnceRelease
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:x=T
+Com=Ws Rf Fr
+Orig=FenceMbdWWOnceOnce WseOnceOnce PodWWOnceRelease RfeReleaseOnce FenceMbdRROnceOnce FreOnceOnce
+{
+}
+ P0          | P1             | P2           ;
+ w[once] x 1 | w[once] y 2    | r[once] r0 z ;
+ f[mb]       | w[release] z 1 | f[mb]        ;
+ w[once] y 1 |                | r[once] r1 x ;
+exists
+(y=2 /\ 2:r0=1 /\ 2:r1=0)

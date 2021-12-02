@@ -1,0 +1,18 @@
+LISA MP+fencembonceonce+[frlderefonce-rf]oncelderef-ctrllderefonce-rfioncelderef-posldereflderef
+"FenceMbdWWOnceOnce RfeOnceLderef FrLeaveLderefOnce RfBackOnceLderef DpCtrldWLderefOnce RfiOnceLderef PosRRLderefLderef FreLderefOnce"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr Rf
+Orig=FenceMbdWWOnceOnce RfeOnceLderef FrLeaveLderefOnce RfBackOnceLderef DpCtrldWLderefOnce RfiOnceLderef PosRRLderefLderef FreLderefOnce
+{
+}
+ P0          | P1               | P2          ;
+ w[once] x 2 | r[lderef] r0 y   | w[once] y 2 ;
+ f[mb]       | r[lderef] r1 y   |             ;
+ w[once] y 1 | mov r2 (eq r1 0) |             ;
+             | b[] r2 LC00      |             ;
+             | LC00:            |             ;
+             | w[once] x 1      |             ;
+             | r[lderef] r3 x   |             ;
+             | r[lderef] r4 x   |             ;
+exists
+(x=2 /\ y=2 /\ 1:r0=1 /\ 1:r1=2 /\ 1:r3=1 /\ 1:r4=1)

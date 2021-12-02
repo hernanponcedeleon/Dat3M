@@ -1,0 +1,16 @@
+LISA Z6.5+poonceonce+fencembonceonce+poreleaseacquire
+"PodWWOnceOnce WseOnceOnce FenceMbdWWOnceOnce WseOnceRelease PodWRReleaseAcquire FreAcquireOnce"
+Cycle=FreAcquireOnce PodWWOnceOnce WseOnceOnce FenceMbdWWOnceOnce WseOnceRelease PodWRReleaseAcquire
+Relax=FreAcquireOnce WseOnceRelease
+Safe=WseOnceOnce PodWWOnceOnce FenceMbdWWOnceOnce PodWRReleaseAcquire
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:x=T
+Com=Ws Ws Fr
+Orig=PodWWOnceOnce WseOnceOnce FenceMbdWWOnceOnce WseOnceRelease PodWRReleaseAcquire FreAcquireOnce
+{
+}
+ P0          | P1          | P2              ;
+ w[once] x 1 | w[once] y 2 | w[release] z 2  ;
+ w[once] y 1 | f[mb]       | r[acquire] r0 x ;
+             | w[once] z 1 |                 ;
+exists
+(y=2 /\ z=2 /\ 2:r0=0)

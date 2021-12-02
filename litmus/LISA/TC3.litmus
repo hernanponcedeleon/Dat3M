@@ -1,0 +1,22 @@
+LISA TC3
+(*
+ * Result: Sometimes (but requires modeling the compiler)
+ *
+ * http://www.cs.umd.edu/~pugh/java/memoryModel/unifiedProposal/testcases.html
+ *
+ * Decision: Allowed, since redundant read elimination could result in
+ *	simplification of r1 == r2 to true, allowing y = 1 to be moved early.
+ *)
+{
+x = 0;
+y = 0;
+}
+ P0                 | P1           | P2          ;
+ r[once] r1 x       | r[once] r3 y | w[once] x 2 ;
+ r[once] r2 x       | w[once] x r3 |             ;
+ mov r4 (neq r1 r2) |              |             ;
+ b[] r4 SKIP0       |              |             ;
+ w[once] y 1        |              |             ;
+ SKIP0:             |              |             ;
+exists (0:r1=1 /\ 0:r2=1 /\ 1:r3=1)
+

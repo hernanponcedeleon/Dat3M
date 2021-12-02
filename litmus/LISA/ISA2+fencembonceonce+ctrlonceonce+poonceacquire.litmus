@@ -1,0 +1,18 @@
+LISA ISA2+fencembonceonce+ctrlonceonce+poonceacquire
+"FenceMbdWWOnceOnce RfeOnceOnce DpCtrldWOnceOnce RfeOnceOnce PodRROnceAcquire FreAcquireOnce"
+Cycle=FreAcquireOnce FenceMbdWWOnceOnce RfeOnceOnce DpCtrldWOnceOnce RfeOnceOnce PodRROnceAcquire
+Relax=FreAcquireOnce
+Safe=PodRROnceAcquire RfeOnceOnce FenceMbdWWOnceOnce DpCtrldWOnceOnce
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:x=T
+Com=Rf Rf Fr
+Orig=FenceMbdWWOnceOnce RfeOnceOnce DpCtrldWOnceOnce RfeOnceOnce PodRROnceAcquire FreAcquireOnce
+{
+}
+ P0          | P1               | P2              ;
+ w[once] x 1 | r[once] r0 y     | r[once] r0 z    ;
+ f[mb]       | mov r1 (eq r0 0) | r[acquire] r1 x ;
+ w[once] y 1 | b[] r1 LC00      |                 ;
+             | LC00:            |                 ;
+             | w[once] z 1      |                 ;
+exists
+(1:r0=1 /\ 2:r0=1 /\ 2:r1=0)

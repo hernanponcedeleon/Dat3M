@@ -1,0 +1,20 @@
+LISA LISA1xR1GM
+(*
+ * Result: Sometimes
+ *
+ * One RCU grace period and one RCU read-side critical section, but set
+ * up to verify that RCU read-side critical sections provide no ordering
+ * even when interacting with an earlier grace period.  Cycle allowed.
+ *)
+{
+x0 = 0;
+x1 = 0;
+x2 = 0;
+}
+ P0            | P1                 | P2            ;
+ f[sync]       | r[once] r1 x0      | r[once] r2 x2 ;
+ w[once] x0 1  | w[once] x1 1       | f[mb]         ;
+               | f[rcu_read_lock]   | r[once] r3 x1 ;
+               | w[once] x2 1       |               ;
+               | f[rcu_read_unlock] |               ;
+exists (1:r1=1 /\ 2:r2=1 /\ 2:r3=0)

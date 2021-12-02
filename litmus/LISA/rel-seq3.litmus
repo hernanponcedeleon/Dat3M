@@ -1,0 +1,8 @@
+LISA rel-seq3
+""
+{
+}
+ P0             | P1           | P2               | P3              ;
+ w[once] x 1    | r[once] r1 y | rmw[once] r1 3 y | r[acquire] r1 y ;
+ w[release] y 1 | w[once] y 2  |                  | r[once] r2 x    ;
+exists (1:r1=1 /\ 2:r1=2 /\ 3:r1=3 /\ 3:r2=0)

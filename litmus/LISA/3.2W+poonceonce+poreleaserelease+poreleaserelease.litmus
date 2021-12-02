@@ -1,0 +1,15 @@
+LISA 3.2W+poonceonce+poreleaserelease+poreleaserelease
+"PodWWOnceOnce WseOnceRelease PodWWReleaseRelease WseReleaseRelease PodWWReleaseRelease WseReleaseOnce"
+Cycle=PodWWOnceOnce WseOnceRelease PodWWReleaseRelease WseReleaseRelease PodWWReleaseRelease WseReleaseOnce
+Relax=WseOnceRelease WseReleaseOnce WseReleaseRelease
+Safe=PodWWOnceOnce PodWWReleaseRelease
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:x=W
+Com=Ws Ws Ws
+Orig=PodWWOnceOnce WseOnceRelease PodWWReleaseRelease WseReleaseRelease PodWWReleaseRelease WseReleaseOnce
+{
+}
+ P0          | P1             | P2             ;
+ w[once] x 2 | w[release] y 2 | w[release] z 2 ;
+ w[once] y 1 | w[release] z 1 | w[release] x 1 ;
+exists
+(x=2 /\ y=2 /\ z=2)

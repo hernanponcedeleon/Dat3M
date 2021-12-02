@@ -1,0 +1,17 @@
+LISA S+fencembonceonce+dataoncerelease-wsireleaseonce-rfionceonce-frionceonce
+"FenceMbdWWOnceOnce RfeOnceOnce DpDatadWOnceRelease WsiReleaseOnce RfiOnceOnce FriOnceOnce WseOnceOnce"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Ws
+Orig=FenceMbdWWOnceOnce RfeOnceOnce DpDatadWOnceRelease WsiReleaseOnce RfiOnceOnce FriOnceOnce WseOnceOnce
+{
+}
+ P0          | P1                 ;
+ w[once] x 4 | r[once] r0 y       ;
+ f[mb]       | mov r1 (xor r0 r0) ;
+ w[once] y 1 | mov r1 (add r1 1)  ;
+             | w[release] x r1    ;
+             | w[once] x 2        ;
+             | r[once] r2 x       ;
+             | w[once] x 3        ;
+exists
+(x=4 /\ 1:r0=1 /\ 1:r2=2)

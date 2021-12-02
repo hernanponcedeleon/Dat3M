@@ -1,0 +1,9 @@
+LISA rel-seq1
+""
+{
+}
+ P0             | P1              ;
+ w[once] x 1    | r[acquire] r1 y ;
+ w[release] y 1 | r[once] r2 x    ;
+ w[once] y 2    |                 ;
+exists (1:r1=2 /\ 1:r2=0)
