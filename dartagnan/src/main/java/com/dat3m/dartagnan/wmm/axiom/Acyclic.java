@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
@@ -50,8 +51,10 @@ public class Acyclic extends Axiom {
         }
 
         logger.info("encodeTupleSet size " + result.size());
-        reduceWithMinSets(result);
-        logger.info("reduced encodeTupleSet size " + result.size());
+        if (GlobalSettings.REDUCE_ACYCLICITY_ENCODE_SETS) {
+            reduceWithMinSets(result);
+            logger.info("reduced encodeTupleSet size " + result.size());
+        }
         return result;
     }
 

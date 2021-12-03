@@ -33,6 +33,7 @@ public class GlobalSettings {
     public static final boolean PERFORM_REORDERING = true;
     public static final boolean DETERMINISTIC_REORDERING = true;
     public static final boolean ENABLE_SYMMETRY_REDUCTION = true;
+    public static final boolean REDUCE_ACYCLICITY_ENCODE_SETS = true;
 
     // ==== Refinement ====
     public static final boolean REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM = true; // Uses acyclic(po-loc + rf) as baseline
