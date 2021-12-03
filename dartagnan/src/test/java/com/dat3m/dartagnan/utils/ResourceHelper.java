@@ -48,6 +48,6 @@ public class ResourceHelper {
     }
 
     public static String getCSVFileName(Class<?> testingClass, String name) {
-        return String.format("%s/output/%s-%s.csv", System.getenv("DAT3M_HOME"), testingClass.getSimpleName(), name);
+        return String.format("%s/output/%s-%s.csv", System.getenv("DAT3M_HOME"), testingClass.getSimpleName().toLowerCase(), name.toLowerCase());
     }
 }
