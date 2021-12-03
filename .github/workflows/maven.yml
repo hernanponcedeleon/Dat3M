@@ -13,8 +13,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-          DAT3M_HOME: "${GITHUB_WORKSPACE}" 
 
     steps:
     - name: Checkout
@@ -32,10 +30,13 @@ jobs:
         java-version: '11'
         distribution: 'adopt'
 
+    - name: Set up DAT3M_HOME 
+      run: export DAT3M_HOME:"${GITHUB_WORKSPACE}"
+
     - name: Build with Maven
       run: mvn install
 
-    - name: Generate JaCoCo Badge
+- name: Generate JaCoCo Badge
       id: jacoco
       uses: cicirello/jacoco-badge-generator@v2
       with:
