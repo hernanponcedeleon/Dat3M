@@ -66,7 +66,7 @@ public class Acyclic extends Axiom {
                     - For this, we assume that must(rel) is mostly transitive per thread.
                       If it is not, we won't get a full reduction but still a good one
                     - For any pair (a, c) in must(rel) mod thread, we look for some b such that
-                      (a, b) and (b, c) is in must(rel) and c is implied by either a or b
+                      (a, b) and (b, c) is in must(rel) and b is implied by either a or c
                 (2) We compute the (must) transitive closure of must(rel) (not of the reduction!!!)
                     - Any edge in "must(rel)+ \ red(must(rel))" can be removed from the encodeSet
                     - We might want to optimize this by finding the cross-thread must edges
