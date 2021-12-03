@@ -114,6 +114,16 @@ public class RelComposition extends BinaryRelation {
 		return r2.disable(t2) || b;
 	}
 
+	@Override
+	public void initEncodeTupleSet() {
+		TupleSet set = new TupleSet();
+		set.addAll(Sets.difference(disableTupleSet,r1.getMaxTupleSet().postComposition(r2.getMaxTupleSet(),
+				(a,b)->r1.getDisableTupleSet().contains(a)||r2.getDisableTupleSet().contains(b))));
+		if(!set.isEmpty()) {
+			addEncodeTupleSet(set);
+		}
+	}
+
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
         Set<Tuple> activeSet = new HashSet<>(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));

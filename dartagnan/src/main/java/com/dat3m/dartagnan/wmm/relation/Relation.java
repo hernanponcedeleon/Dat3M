@@ -128,6 +128,15 @@ public abstract class Relation implements Dependent<Relation> {
         return encodeTupleSet;
     }
 
+	/**
+	 * Activates all must-not relationships that still have support.
+	 * The support has to be encoded, and constrained accordingly.
+	 * For unions and differences, this does nothing.
+	 * For intersections and compositions, this is crucial.
+	 */
+	public void initEncodeTupleSet() {
+	}
+
     public void addEncodeTupleSet(TupleSet tuples){
         encodeTupleSet.addAll(Sets.intersection(tuples, maxTupleSet));
     }

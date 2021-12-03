@@ -80,6 +80,15 @@ public class RelIntersection extends BinaryRelation {
 		return r2.disable(t2) || b;
 	}
 
+	@Override
+	public void initEncodeTupleSet() {
+		TupleSet set = new TupleSet();
+		set.addAll(Sets.difference(disableTupleSet,Sets.intersection(r1.getDisableTupleSet(),r2.getDisableTupleSet())));
+		if(!set.isEmpty()) {
+			addEncodeTupleSet(set);
+		}
+	}
+
     @Override
     public BooleanFormula encodeApprox(SolverContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();

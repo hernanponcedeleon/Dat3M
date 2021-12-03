@@ -112,6 +112,14 @@ public class RelTrans extends UnaryRelation {
 		return r1.disable(t1);
 	}
 
+	@Override
+	public void initEncodeTupleSet() {
+		//TODO filter tuples with remaining support
+		if(!disableTupleSet.isEmpty()) {
+			addEncodeTupleSet(disableTupleSet);
+		}
+	}
+
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
         TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));

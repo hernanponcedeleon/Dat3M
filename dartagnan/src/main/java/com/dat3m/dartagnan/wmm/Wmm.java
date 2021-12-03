@@ -140,6 +140,13 @@ public class Wmm {
 		}
 
 		//fixed point of active set
+		HashSet<Relation> relations = new HashSet<>();
+		for(Axiom ax : axioms) {
+			ax.getRelation().collect(relations);
+		}
+		for(Relation r : relations) {
+			r.initEncodeTupleSet();
+		}
 		for(Axiom ax : axioms) {
 			ax.getRelation().addEncodeTupleSet(ax.getEncodeTupleSet());
 		}
