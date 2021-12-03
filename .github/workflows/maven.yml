@@ -14,7 +14,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-          DAT3M_HOME: ${{ GITHUB_WORKSPACE }}
+          DAT3M_HOME: ${{ $GITHUB_WORKSPACE }}
 
     steps:
     - name: Checkout
