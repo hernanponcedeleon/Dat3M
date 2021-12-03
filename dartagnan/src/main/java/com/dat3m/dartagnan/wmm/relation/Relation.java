@@ -114,13 +114,13 @@ public abstract class Relation implements Dependent<Relation> {
 	/**
 	 * Marks relationships as impossible due to some axiom of the associated model.
 	 * @param tuples
-	 * Subset of this relation's may set.
+	 * Tuples to be marked if contained by the may-set.
 	 * Retains all newly-marked relationships.
 	 * @return
 	 * Detected some new minimal tuples.
 	 */
 	public boolean disable(TupleSet tuples) {
-		tuples.removeIf(t -> !disableTupleSet.add(t));
+		tuples.removeIf(t -> !maxTupleSet.contains(t) || !disableTupleSet.add(t));
 		return false;
 	}
 
