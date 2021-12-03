@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
@@ -17,12 +16,10 @@ public class Irreflexive extends Axiom {
         super(rel);
     }
 
-    @Override
-    public TupleSet getEncodeTupleSet(){
-        TupleSet set = new TupleSet();
-        rel.getMaxTupleSet().stream().filter(Tuple::isLoop).forEach(set::add);
-        return set;
-    }
+	@Override
+	public TupleSet getEncodeTupleSet(){
+		return new TupleSet();
+	}
 
 	@Override
 	public TupleSet getDisabledSet() {
@@ -31,17 +28,10 @@ public class Irreflexive extends Axiom {
 		return set;
 	}
 
-    @Override
-    public BooleanFormula consistent(SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
-        for(Tuple tuple : rel.getEncodeTupleSet()){
-            if(tuple.isLoop()){
-                enc = bmgr.and(enc, bmgr.not(rel.getSMTVar(tuple, ctx)));
-            }
-        }
-        return enc;
-    }
+	@Override
+	public BooleanFormula consistent(SolverContext ctx) {
+		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
+	}
 
     @Override
     public String toString() {

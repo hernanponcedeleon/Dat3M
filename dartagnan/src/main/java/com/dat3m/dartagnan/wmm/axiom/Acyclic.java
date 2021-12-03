@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.dat3m.dartagnan.wmm.utils.Utils;
+import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
@@ -31,7 +32,7 @@ public class Acyclic extends Axiom {
         logger.info("Computing encodeTupleSet for " + this);
         // ====== Construct [Event -> Successor] mapping ======
         Map<Event, Collection<Event>> succMap = new HashMap<>();
-        TupleSet relMaxTuple = rel.getMaxTupleSet();
+        Set<Tuple> relMaxTuple = Sets.difference(rel.getMaxTupleSet(),rel.getDisableTupleSet());
         for (Tuple t : relMaxTuple) {
             succMap.computeIfAbsent(t.getFirst(), key -> new ArrayList<>()).add(t.getSecond());
         }
@@ -148,6 +149,8 @@ public class Acyclic extends Axiom {
         IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 
         BooleanFormula enc = bmgr.makeTrue();
+		//TODO this has not to coincide with this.getEncodeTupleSet()
+		//as long as rel instanceof RelUnion, it does
         for(Tuple tuple : rel.getEncodeTupleSet()){
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
