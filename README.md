@@ -9,10 +9,10 @@
 
 Requirements
 ======
-* [Maven](https://maven.apache.org/) (if you want to build the tools. If not see the [release](https://github.com/hernanponcedeleon/Dat3M/releases) section)
-* [Java 8](https://openjdk.java.net/projects/jdk/16/) or above (if you want to compile from source)
-* [Smack 2.5.0](https://github.com/smackers/smack) or above (only to verify C programs)
-* [Clang](https://clang.llvm.org) the concrete version depends on your `smack` version
+* [Maven](https://maven.apache.org/)
+* [Java](https://openjdk.java.net/projects/jdk/16/) 8 or above
+* [Smack](https://github.com/smackers/smack) 2.5.0 or above (only to verify C programs)
+* [Clang](https://clang.llvm.org) the concrete version depends on Smack (only to verify C programs)
 
 Installation
 ======
@@ -52,7 +52,6 @@ We provide a set of unit tests that can be run by
 ```
 mvn test
 ```
-**Note:** there are almost 40K tests, running them can take several hs.
 
 Usage
 ======
