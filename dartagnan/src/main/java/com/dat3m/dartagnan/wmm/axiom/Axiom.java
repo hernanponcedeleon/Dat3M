@@ -38,10 +38,6 @@ public abstract class Axiom implements Dependent<Relation> {
         return rel;
     }
 
-    public BooleanFormula encodeRelAndConsistency(SolverContext ctx) {
-    	return ctx.getFormulaManager().getBooleanFormulaManager().and(rel.encode(ctx), consistent(ctx));
-    }
-    
     @Override
     public abstract String toString();
 
