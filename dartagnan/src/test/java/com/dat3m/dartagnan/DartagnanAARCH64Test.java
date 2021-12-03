@@ -16,14 +16,14 @@ public class DartagnanAARCH64Test extends AbstractDartagnanTest {
     @Parameterized.Parameters(name = "{index}: {0} {4}")
     public static Iterable<Object[]> data() throws IOException {
     	// We want the files to be created every time we run the unit tests
-		initialiseCSVFile(DartagnanAARCH64Test.class, "two-solvers");
-        initialiseCSVFile(DartagnanAARCH64Test.class, "incremental");
-        initialiseCSVFile(DartagnanAARCH64Test.class, "assume");
-        initialiseCSVFile(DartagnanAARCH64Test.class, "refinement");
+    	initialiseCSVFile(DartagnanAARCH64Test.class, "two-solvers");
+    	initialiseCSVFile(DartagnanAARCH64Test.class, "incremental");
+    	initialiseCSVFile(DartagnanAARCH64Test.class, "assume");
+    	initialiseCSVFile(DartagnanAARCH64Test.class, "refinement");
 
         return buildParameters("litmus/AARCH64/", "cat/aarch64.cat", Arch.ARM8);
     }
-    
+
     public DartagnanAARCH64Test(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
         super(path, expected, target, wmm, settings);
     }
