@@ -14,7 +14,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-          DAT3M_HOME: "${GITHUB_WORKSPACE}"
+          DAT3M_HOME: "${GITHUB_WORKSPACE}" 
 
     steps:
     - name: Checkout
@@ -33,7 +33,7 @@ jobs:
         distribution: 'adopt'
 
     - name: Build with Maven
-      run: echo $DAT3M_HOME
+      run: mvn install
 
     - name: Generate JaCoCo Badge
       id: jacoco
