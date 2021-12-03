@@ -33,7 +33,6 @@ public class RelCo extends Relation {
 
     public RelCo(){
         term = CO;
-        forceDoEncode = true;
     }
 
 

@@ -153,17 +153,8 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public BooleanFormula encode(SolverContext ctx) {
-        if(isEncoded){
-            return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
-        }
-        isEncoded = true;
-        return r1.encode(ctx);
-    }
-
-    @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
-        return r1.encodeApprox(ctx);
+		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
     }
 
 }

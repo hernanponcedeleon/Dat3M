@@ -32,8 +32,6 @@ public abstract class Relation implements Dependent<Relation> {
 
     protected VerificationTask task;
 
-    protected boolean isEncoded;
-
     protected TupleSet minTupleSet;
     protected TupleSet maxTupleSet;
     protected TupleSet encodeTupleSet;
@@ -42,7 +40,6 @@ public abstract class Relation implements Dependent<Relation> {
     protected int recursiveGroupId = 0;
     protected boolean forceUpdateRecursiveGroupId = false;
     protected boolean isRecursive = false;
-    protected boolean forceDoEncode = false;
 
     public Relation() {}
 
@@ -82,7 +79,6 @@ public abstract class Relation implements Dependent<Relation> {
         this.task = task;
         this.minTupleSet = null;
         this.maxTupleSet = null;
-        this.isEncoded = false;
         encodeTupleSet = new TupleSet();
 		disableTupleSet = new TupleSet();
     }
@@ -164,22 +160,20 @@ public abstract class Relation implements Dependent<Relation> {
         return getName().equals(((Relation)obj).getName());
     }
 
-    public BooleanFormula encode(SolverContext ctx) {
-        if(isEncoded){
-            return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
-        }
-        isEncoded = true;
-        return doEncode(ctx);
-    }
+	/**
+	 * Transforms this relation into an SMT formula by constraining pairs in this relation.
+	 * Only includes relationships marked as active with {@link #addEncodeTupleSet(TupleSet)}.
+	 * This method is not recursive.
+	 * @param ctx
+	 * Builder of formulas.
+	 * @return
+	 * Models executions where all event pairs in this relation satisfy the direct constraints of this relation.
+	 */
+	public BooleanFormula encode(SolverContext ctx) {
+		return encodeApprox(ctx);
+	}
 
     protected abstract BooleanFormula encodeApprox(SolverContext ctx);
-
-    protected BooleanFormula doEncode(SolverContext ctx){
-        if(!encodeTupleSet.isEmpty() || forceDoEncode){
-        	return encodeApprox(ctx);
-        }
-        return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
-    }
 
     public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
         return !getMaxTupleSet().contains(edge) || disableTupleSet.contains(edge) ?

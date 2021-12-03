@@ -7,8 +7,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
@@ -60,15 +58,5 @@ public abstract class UnaryRelation extends Relation {
         if(recursiveGroupId > 0){
             throw new RuntimeException("Recursion is not implemented for " + this.getClass().getName());
         }
-    }
-
-    @Override
-    public BooleanFormula encode(SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        if(isEncoded){
-            return bmgr.makeTrue();
-        }
-        isEncoded = true;
-        return bmgr.and(r1.encode(ctx), doEncode(ctx));
     }
 }

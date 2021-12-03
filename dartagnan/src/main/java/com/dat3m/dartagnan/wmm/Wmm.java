@@ -164,15 +164,19 @@ public class Wmm {
 		}
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
+		LinkedHashSet<Relation> relations = new LinkedHashSet<>();
 		for(String relName : baseRelations) {
 			if (!encodeCo && relName.equals(CO)) {
 				continue;
 			}
-			enc = bmgr.and(enc, relationRepository.getRelation(relName).encode(ctx));
+			relations.add(relationRepository.getRelation(relName));
 		}
         for (Axiom ax : axioms) {
-			enc = bmgr.and(enc, ax.getRelation().encode(ctx));
+			ax.getRelation().collect(relations);
         }
+		for(Relation r : relations) {
+			enc = bmgr.and(enc,r.encode(ctx));
+		}
         for (Axiom ax : axioms) {
             enc = bmgr.and(enc, ax.consistent(ctx));
         }
