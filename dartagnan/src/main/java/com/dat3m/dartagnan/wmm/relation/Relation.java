@@ -90,6 +90,19 @@ public abstract class Relation implements Dependent<Relation> {
 
     public abstract TupleSet getMaxTupleSet();
 
+	/**
+	 * @return
+	 * Read-only subset of the may-set marked as must-not.
+	 */
+	public final TupleSet getDisableTupleSet() {
+		return disableTupleSet;
+	}
+
+	/**
+	 * Updates the must- and must-not-sets of this relation.
+	 * @return
+	 * Updated version of {@code getMinTupleSet()}.
+	 */
     public TupleSet getMinTupleSetRecursive(){
         return getMinTupleSet();
     }

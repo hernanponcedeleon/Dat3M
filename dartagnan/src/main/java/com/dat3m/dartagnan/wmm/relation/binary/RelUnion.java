@@ -49,6 +49,12 @@ public class RelUnion extends BinaryRelation {
     public TupleSet getMinTupleSetRecursive(){
         if(recursiveGroupId > 0 && minTupleSet != null){
             minTupleSet.addAll(Sets.union(r1.getMinTupleSetRecursive(), r2.getMinTupleSetRecursive()));
+			disableTupleSet.addAll(Sets.difference(
+					r1.getDisableTupleSet(),
+					Sets.difference(r2.getMaxTupleSet(),r2.getDisableTupleSet())));
+			disableTupleSet.addAll(Sets.difference(
+					r2.getDisableTupleSet(),
+					Sets.difference(r1.getMaxTupleSet(),r1.getDisableTupleSet())));
             return minTupleSet;
         }
         return getMinTupleSet();

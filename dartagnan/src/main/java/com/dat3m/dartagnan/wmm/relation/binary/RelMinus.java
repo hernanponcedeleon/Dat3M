@@ -59,6 +59,7 @@ public class RelMinus extends BinaryRelation {
     public TupleSet getMinTupleSetRecursive(){
         if(recursiveGroupId > 0 && minTupleSet != null){
             minTupleSet.addAll(Sets.difference(r1.getMinTupleSetRecursive(), r2.getMaxTupleSetRecursive()));
+			disableTupleSet.addAll(Sets.intersection(r1.getDisableTupleSet(),maxTupleSet));
             return minTupleSet;
         }
         return getMinTupleSet();

@@ -62,6 +62,12 @@ public class RelComposition extends BinaryRelation {
                     (t1, t2) -> t1.getSecond().cfImpliesExec() &&
                             (eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond())));
             removeMutuallyExclusiveTuples(minTupleSet);
+			disableTupleSet.addAll(Sets.difference(
+					Sets.union(
+							r1.getDisableTupleSet().postComposition(r2.getMaxTupleSet()),
+							r1.getMaxTupleSet().postComposition(r2.getDisableTupleSet())),
+					r1.getMaxTupleSet().postComposition(r2.getMaxTupleSet(),
+							(a,b)->!r1.getDisableTupleSet().contains(a)&&!r2.getDisableTupleSet().contains(b))));
             return minTupleSet;
         }
         return getMinTupleSet();
