@@ -30,9 +30,10 @@ jobs:
         java-version: '11'
         distribution: 'adopt'
 
+    - name: Set DAT3M_HOME
+      run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
+    
     - name: Build with Maven
-      env:
-        DAT3M_HOME: .
       run: mvn install
        
     - name: Generate JaCoCo Badge
