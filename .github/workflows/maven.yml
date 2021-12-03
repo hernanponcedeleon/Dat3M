@@ -32,9 +32,9 @@ jobs:
         java-version: '11'
         distribution: 'adopt'
 
-    - name: Test
-      run: echo $GITHUB_WORKSPACE
-
+    - name: Build with Maven
+      run: mvn install
+       
     - name: Generate JaCoCo Badge
       id: jacoco
       uses: cicirello/jacoco-badge-generator@v2
