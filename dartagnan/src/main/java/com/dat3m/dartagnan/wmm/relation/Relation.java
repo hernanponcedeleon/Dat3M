@@ -68,6 +68,16 @@ public abstract class Relation implements Dependent<Relation> {
         return recursiveGroupId;
     }
 
+	/**
+	 * Adds this relation and all its descendants to a set.
+	 * This is a recursive and overridden method.
+	 * @param result
+	 * Receives the relations.
+	 */
+	public void collect(Set<?super Relation> result) {
+		result.add(this);
+	}
+
     public void initialise(VerificationTask task, SolverContext ctx){
         this.task = task;
         this.minTupleSet = null;

@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -57,6 +58,14 @@ public abstract class BinaryRelation extends Relation {
         }
         return recursiveGroupId;
     }
+
+	@Override
+	public void collect(Set<?super Relation> result) {
+		if(result.add(this)) {
+			r1.collect(result);
+			r2.collect(result);
+		}
+	}
 
     @Override
     public void initialise(VerificationTask task, SolverContext ctx){

@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -35,6 +36,13 @@ public class RecursiveRelation extends Relation {
     public static String makeTerm(String name){
         return name;
     }
+
+	@Override
+	public void collect(Set<?super Relation> result) {
+		if(result.add(this)) {
+			r1.collect(result);
+		}
+	}
 
     public void initialise(VerificationTask task, SolverContext ctx){
         if(doRecurse){
