@@ -13,8 +13,19 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-public class ShutdownRule implements TestRule {
+/*
+    DESC: The ShutdownRule runs a separate thread that notifies the main-thread (the one that executes the test)
+    to terminate after a certain timeout.
 
+    USAGE: This Rule should be the last in a RuleChain.
+
+    NOTE: Unlike a Timeout Rule, the termination via a ShutdownRule is cooperative and
+    the test thread is not forced to terminate. In particular, the notified thread may run substantially
+    longer until it eventually terminates.
+    Furthermore, unlike the Timeout Rule, the whole test is run inside the main-thread (only the timeout is external)
+    while a Timeout Rule would cause the test to run inside a separate thread that gets interrupted from the main-thread.
+ */
+public class ShutdownRule implements TestRule {
 
     private static final ExecutorService pool = Executors.newFixedThreadPool(2);
     private final Supplier<ShutdownManager> shutdownManagerSupplier;

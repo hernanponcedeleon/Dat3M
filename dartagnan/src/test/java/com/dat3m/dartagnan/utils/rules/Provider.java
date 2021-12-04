@@ -28,4 +28,8 @@ public interface Provider<T> extends Supplier<T>, TestRule {
         };
     }
 
+    static <V> Provider<V> fromSupplier(UncheckedSupplier<V> supplier) {
+        return fromSupplier((Supplier<V>) supplier);
+    }
+
 }

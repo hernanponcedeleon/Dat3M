@@ -7,6 +7,11 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+/*
+    This Provider can be used to provide information based on the executed test method
+    as opposed to the current test instance.
+    This has limited use cases at it can mostly only respond based on the NAME of the executed test.
+ */
 public class MethodSpecificProvider<T> extends TestWatcher implements Supplier<T> {
 
     private final Function<Description, T> mapping;

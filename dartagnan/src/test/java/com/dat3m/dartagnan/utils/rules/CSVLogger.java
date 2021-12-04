@@ -18,6 +18,26 @@ import java.util.function.Supplier;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 
+/*
+    DESC: The CSVLogger creates for each annotated test method a .csv file that contains
+        - timing information if successful
+        - error/timeout information if an error/a timeout occurred
+
+    USAGE: - Add the ClassRule <CSVLogger.Initialization> to the test class (this creates the .csv files)
+           - Create a CSVLogger Rule in a RuleChain and put it as close to the actual test execution
+             as possible, to get the most accurate timings. The rule populates the created .csv files.
+           - Annotate test methods with the @CSVLogger.FileName Attribute. e.g.
+                @CSVLogger.FileName("csv/mytest")
+             which will cause the creation of a .csv file "DAT3M_HOME/output/csv/<TESTCLASS>-mytest.csv"
+             ( See ResourceHelper.getCSVFileName for details)
+           - The <nameSupplier> is used to name the entry inside the .csv file
+
+    NOTE: To properly work with a Timeout Rule, the CSVLogger needs to be put before the Timeout Rule.
+          As a Timeout Rule runs the test in a separate thread, this may force some initialization code
+          to be moved AFTER the Timeout rule (cause some resources can only be used by the thread that created
+          it, which is, e.g., the case for Z3's Context and Solver objects).
+          Overall, this forces some setup code to be measured by the Logger (which is usually not that crucial)
+ */
 public class CSVLogger extends TestWatcher {
 
     private final Supplier<String> nameSupplier;
