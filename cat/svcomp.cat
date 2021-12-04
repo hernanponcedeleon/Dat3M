@@ -7,8 +7,5 @@ include "cos.cat"
 let com = (rf | fr | co)
 
 (* Sequential consistency *)
-let hb = po | com
+let hb = po | (com & int) | (rmw^-1? ; (com & ext))
 acyclic hb as sc
-
-(* Atomicity *)
-acyclic (rmw^-1 | (com & ext) | (po \ rmw))
