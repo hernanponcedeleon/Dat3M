@@ -43,8 +43,12 @@ public class CSVLogger extends TestWatcher {
     private final Supplier<String> nameSupplier;
     private long startTime;
 
-    public CSVLogger(Supplier<String> nameSupplier) {
+    private CSVLogger(Supplier<String> nameSupplier) {
         this.nameSupplier = nameSupplier;
+    }
+
+    public static CSVLogger create(Supplier<String> nameSupplier) {
+        return new CSVLogger(nameSupplier);
     }
 
     @Override
@@ -76,10 +80,17 @@ public class CSVLogger extends TestWatcher {
     @Override
     protected void failed(Throwable e, Description description) {
         String message = e instanceof TestTimedOutException ? "Timeout" : "Error";
+        message += ": " + (System.currentTimeMillis() - startTime);
         logCSVLine(description, nameSupplier.get(), message);
     }
 
     public static class Initialization extends TestWatcher {
+        private Initialization() { }
+
+        public static Initialization create() {
+            return new Initialization();
+        }
+
         @Override
         protected void starting(Description description) {
             Class<?> testClass = description.getTestClass();

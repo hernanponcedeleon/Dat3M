@@ -43,7 +43,7 @@ public class CLocksTestAlternative {
     private final Result expected;
 
     @ClassRule
-    public static CSVLogger.Initialization csvInit = new CSVLogger.Initialization();
+    public static CSVLogger.Initialization csvInit = CSVLogger.Initialization.create();
 
     // Provider rules
     private final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
@@ -58,23 +58,28 @@ public class CLocksTestAlternative {
 
     // Special rules
     private final Timeout timeout = Timeout.millis(60000);
-    private final CSVLogger csvLogger = new CSVLogger(() -> String.format("%s-%s", name, target));
+    private final CSVLogger csvLogger = CSVLogger.create(() -> String.format("%s-%s", name, target));
     private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
-
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(filePathProvider)
             .around(shutdownManagerProvider)
             .around(shutdownOnError)
-            .around(csvLogger)
-            .around(timeout)
             .around(settingsProvider)
             .around(programProvider)
             .around(wmmProvider)
             .around(taskProvider)
+            .around(csvLogger)
+            .around(timeout)
+            // Context/Prover need to be created inside test-thread spawned by <timeout>
             .around(contextProvider)
             .around(proverProvider);
 
+    public CLocksTestAlternative(String name, Arch target, Result expected) {
+        this.name = name;
+        this.target = target;
+        this.expected = expected;
+    }
 
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
@@ -147,12 +152,6 @@ public class CLocksTestAlternative {
                 {"mutex_musl-3-rel2rx-unlock", POWER, FAIL}
         });
 
-    }
-
-    public CLocksTestAlternative(String name, Arch target, Result expected) {
-        this.name = name;
-        this.target = target;
-        this.expected = expected;
     }
 
     @Test
