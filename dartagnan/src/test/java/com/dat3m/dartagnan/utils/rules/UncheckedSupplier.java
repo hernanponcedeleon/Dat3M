@@ -7,6 +7,7 @@ import java.util.function.Supplier;
     It is used to create Suppliers using lambdas that throw checked exceptions.
     It does so by wrapping the checked exception into an unchecked RuntimeException.
  */
+@FunctionalInterface
 public interface UncheckedSupplier<T> extends Supplier<T> {
 
     T getChecked() throws Throwable;
