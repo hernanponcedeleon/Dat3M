@@ -17,6 +17,30 @@ typedef struct {
 } cna_lock_t ;
 
 cna_node_t* find_successor(cna_node_t *me) {
+    cna_node_t *next = me->next;
+    int mySocket = me->socket;
+    
+//    if (mySocket == -1) mySocket = current_numa_node();
+    if (next->socket == mySocket) return next;
+    
+    cna_node_t *secHead = next;
+    cna_node_t *secTail = next;
+    cna_node_t *cur = atomic_load_explicit(&next->next, memory_order_acquire);
+    
+    while(cur) {
+        if(cur->socket == mySocket) {
+            if(me->spin > 1) {
+                ((cna_node_t *)(me->spin))->secTail->next = secHead;
+            } else {
+                me->spin = (uintptr_t) secHead;
+            }
+            secTail->next = NULL;
+            ((cna_node_t *)(me->spin))->secTail = secTail;
+            return cur;
+        }
+        secTail = cur;
+        cur = atomic_load_explicit(&cur->next, memory_order_acquire);
+    }
     return NULL;
 }
 
@@ -94,7 +118,12 @@ int main()
 
     pthread_create(&t0, NULL, thread_n, (void *) 0);
     pthread_create(&t1, NULL, thread_n, (void *) 1);
-    pthread_create(&t2, NULL, thread_n, (void *) 2);
+//    pthread_create(&t2, NULL, thread_n, (void *) 2);
     
+    pthread_join(t0, NULL);
+    pthread_join(t1, NULL);
+//    pthread_join(t2, NULL);
+    
+    assert(shared == 3);
     return 0;
 }
