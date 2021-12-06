@@ -3,8 +3,6 @@ package com.dat3m.dartagnan.utils;
 import com.google.common.collect.ImmutableMap;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashMap;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -36,8 +34,12 @@ public class ResourceHelper {
     }
 
     public static void initialiseCSVFile(Class<?> testingClass, String name) throws IOException {
-        Files.deleteIfExists(Paths.get(getCSVFileName(testingClass, name)));
-    	try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(testingClass, name), false))) {
+        File file = new File(getCSVFileName(testingClass, name));
+        file.delete();
+        if (file.getParentFile() != null) {
+            file.getParentFile().mkdirs();
+        }
+    	try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, false))) {
             writer.append("benchmark, time");
             writer.newLine();    		
     	}
