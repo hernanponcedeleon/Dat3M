@@ -144,19 +144,19 @@ public class CLocksTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3.bpl", power, POWER, s1, UNKNOWN});
 
         // These expected result were obtained from refinement. Cannot guarantee they are correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-futex.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-futex.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-futex.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-lock.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-lock.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-lock.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-futex.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-futex.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-futex.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-unlock.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx_futex.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx_futex.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx_futex.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx_lock.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx_lock.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx_lock.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx_futex.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx_futex.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx_futex.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx_unlock.bpl", tso, TSO, s1, UNKNOWN});
         // This two I expect to be correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-unlock.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-unlock.bpl", power, POWER, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx_unlock.bpl", arm, ARM8, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx_unlock.bpl", power, POWER, s1, FAIL});
 
         return data;
     }
