@@ -33,6 +33,5 @@ public class RequestShutdownOnError extends TestWatcher {
     @Override
     protected void failed(Throwable e, Description description) {
         shutdownManagerSupplier.get().requestShutdown(e.toString());
-        System.out.println("Shutdown");
     }
 }

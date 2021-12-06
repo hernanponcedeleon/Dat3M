@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.utils.rules;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -39,6 +40,10 @@ public class Providers {
 
     public static Provider<Wmm> createWmmFromPath(Supplier<String> pathSupplier) {
         return createWmmFromFile(() -> new File(pathSupplier.get()));
+    }
+
+    public static Provider<Wmm> createWmmFromName(Supplier<String> nameSupplier) {
+        return createWmmFromPath(() -> ResourceHelper.CAT_RESOURCE_PATH + "cat/" + nameSupplier.get() + ".cat");
     }
 
     // =========================== Program providers ==============================
