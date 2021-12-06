@@ -57,7 +57,7 @@ public class SvCompLoopsTest extends AbstractSvCompTest {
                 {"sum01-2", 1},
                 {"sum03-1", 11},
                 {"sum03-2", 1},
-                {"sum04-1-", 1},
+                {"sum04-1", 1},
                 {"sum04-2", 1},
                 {"terminator_01", 1},
                 {"terminator_02-1", 1},

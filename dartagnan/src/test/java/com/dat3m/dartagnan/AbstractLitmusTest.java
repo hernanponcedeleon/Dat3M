@@ -124,7 +124,7 @@ public abstract class AbstractLitmusTest {
         }
     }
 
-    @Test
+    //@Test
     @CSVLogger.FileName("csv/refinement")
     public void testRefinement() throws Exception {
         if (programProvider.get().getAss() != null && programProvider.get().getAss().getLocs().isEmpty()) {

@@ -37,7 +37,7 @@ public class ResourceHelper {
 
     public static void initialiseCSVFile(Class<?> testingClass, String name) throws IOException {
         Files.deleteIfExists(Paths.get(getCSVFileName(testingClass, name)));
-    	try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(testingClass, name), true))) {
+    	try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(testingClass, name), false))) {
             writer.append("benchmark, time");
             writer.newLine();    		
     	}
