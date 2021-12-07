@@ -77,9 +77,9 @@ public class Acyclic extends Axiom {
 			Event y = t.getSecond();
 			if(!result.add(new Tuple(y, x)))
 				continue;
-			if(eq.isImplied(x, y))
+			if(y.cfImpliesExec() && eq.isImplied(x, y))
 				left.computeIfAbsent(y, k->new HashSet<>()).add(x);
-			if(eq.isImplied(y, x))
+			if(x.cfImpliesExec() && eq.isImplied(y, x))
 				right.computeIfAbsent(x, k->new HashSet<>()).add(y);
 			for(Event z : right.getOrDefault(y, new HashSet<>()))
 				queue.add(new Tuple(x, z));
