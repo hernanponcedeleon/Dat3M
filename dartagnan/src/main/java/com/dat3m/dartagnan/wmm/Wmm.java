@@ -37,6 +37,7 @@ public class Wmm {
     private final List<RecursiveGroup> recursiveGroups = new ArrayList<>();
 
     private VerificationTask task;
+    private boolean relationsAreEncoded = false;
 
     private boolean encodeCo = true;
 
@@ -84,11 +85,8 @@ public class Wmm {
 
 	/**
 	Associates this parsed model with a program and additional information.
-	Computes the may set.
-	Computes the must and must-not set.
-	Computes the active set.
 	<p>
-	Once associated with a task, {@link #encode(SolverContext)} is enabled.
+	Once associated with a task, {@link #encodeRelations(SolverContext)} is enabled.
 	@param task
 	Pair of program and memory model to be tested for a certain property.
 	{@link VerificationTask#getMemoryModel()} could refer to a different model.
@@ -116,6 +114,26 @@ public class Wmm {
         for (Axiom axiom : axioms) {
             axiom.initialise(task, ctx);
         }
+    }
+
+	/**
+	 * Translates the relations of this model into an SMT formula.
+	 * This always includes Read-From, Memory-Order, and Dependencies.
+	 * Computes the may set.
+	 * Computes the must and must-not set.
+	 * Computes the active set.
+	 * @param ctx
+	 * Builder of expressions.
+	 * @return
+	 * Models executions roughly of the associated program.
+	 * Misses control-flow information and parts of intra-thread data-flow information.
+	 * @throws IllegalStateException
+	 * This model has to be invoked with {@link #initialise(VerificationTask, SolverContext)} first.
+	 */
+	public BooleanFormula encodeRelations(SolverContext ctx) {
+		if(task == null) {
+			throw new IllegalStateException("The WMM needs to get initialised first.");
+		}
 
 		//fixed point of may set
 		for(RecursiveGroup recursiveGroup : recursiveGroups) {
@@ -141,11 +159,15 @@ public class Wmm {
 			relationRepository.getRelation(relName).getMaxTupleSet();
 		}
 
-		//fixed point of active set
-		HashSet<Relation> relations = new HashSet<>();
-		for(Axiom ax : axioms) {
-			ax.getRelation().collect(relations);
+		LinkedHashSet<Relation> relations = new LinkedHashSet<>();
+		for(String relName : baseRelations) {
+			relations.add(relationRepository.getRelation(relName));
 		}
+		for(Axiom a : axioms) {
+			a.getRelation().collect(relations);
+		}
+
+		//fixed point of active set
 		for(Relation r : relations) {
 			r.initEncodeTupleSet();
 		}
@@ -155,7 +177,18 @@ public class Wmm {
 		for(RecursiveGroup recursiveGroup : reverse(recursiveGroups)) {
 			recursiveGroup.updateEncodeTupleSets();
 		}
-    }
+
+		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
+		for(Relation r : relations) {
+			if (!encodeCo && r.getName().equals(CO)) {
+				continue;
+			}
+			enc = bmgr.and(enc,r.encode(ctx));
+		}
+		relationsAreEncoded = true;
+		return enc;
+	}
 
 	/**
 	Translates this model into an SMT formula.
@@ -163,13 +196,13 @@ public class Wmm {
 	Builder of expressions.
 	@return
 	Models consistent executions roughly of the associated program.
-	Misses control-flow information and parts of intra-thread data-flow information.
+	Misses relation encoding.
 	@throws IllegalStateException
-	This model is parsed but uninitialized.
+	This model's relations were not encoded with {@link #encodeRelations(SolverContext)} before.
 	*/
-	public final BooleanFormula encode(SolverContext ctx) {
-		if(task == null) {
-			throw new IllegalStateException("The WMM needs to get initialised first.");
+	public final BooleanFormula encodeConsistency(SolverContext ctx) {
+		if(!relationsAreEncoded) {
+			throw new IllegalStateException("Wmm relations must be encoded before the consistency predicate.");
 		}
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
@@ -183,9 +216,6 @@ public class Wmm {
         for (Axiom ax : axioms) {
 			ax.getRelation().collect(relations);
         }
-		for(Relation r : relations) {
-			enc = bmgr.and(enc,r.encode(ctx));
-		}
         for (Axiom ax : axioms) {
             enc = bmgr.and(enc, ax.consistent(ctx));
         }

@@ -144,8 +144,12 @@ public class VerificationTask {
         return ctx.getFormulaManager().getBooleanFormulaManager().and(cfEncoding, finalRegValueEncoding);
     }
 
-    public BooleanFormula encodeWmm(SolverContext ctx) {
-        return memoryModel.encode(ctx);
+    public BooleanFormula encodeWmmRelations(SolverContext ctx) {
+        return memoryModel.encodeRelations(ctx);
+    }
+
+    public BooleanFormula encodeWmmConsistency(SolverContext ctx) {
+        return memoryModel.encodeConsistency(ctx);
     }
 
     public BooleanFormula encodeSymmetryBreaking(SolverContext ctx) {
