@@ -32,7 +32,7 @@ jobs:
         cache: maven
 
     - name: Set DYLD_LIBRARY_PATH
-      run: echo "DYLD_LIBRARY_PATH=$(echo $GITHUB_WORKSPACE)/dartagnan/target/dependency/" >> $GITHUB_ENV
+      run: echo "DYLD_LIBRARY_PATH=$(echo $GITHUB_WORKSPACE)/dartagnan/target/dependency" >> $GITHUB_ENV
     
     - name: Set DAT3M_HOME
       run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
