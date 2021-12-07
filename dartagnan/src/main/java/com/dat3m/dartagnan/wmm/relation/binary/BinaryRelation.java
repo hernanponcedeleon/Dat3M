@@ -1,16 +1,14 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.google.common.collect.Sets;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-
-import java.util.Arrays;
-import java.util.List;
-
+import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  *
@@ -20,8 +18,6 @@ public abstract class BinaryRelation extends Relation {
 
     protected Relation r1;
     protected Relation r2;
-
-    int lastEncodedIteration = -1;
 
     BinaryRelation(Relation r1, Relation r2) {
         this.r1 = r1;
@@ -56,12 +52,6 @@ public abstract class BinaryRelation extends Relation {
             recursiveGroupId |= (r1Id | r2Id) & parentId;
         }
         return recursiveGroupId;
-    }
-
-    @Override
-    public void initialise(VerificationTask task, SolverContext ctx){
-        super.initialise(task, ctx);
-        lastEncodedIteration = -1;
     }
 
     @Override
