@@ -10,8 +10,10 @@ import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -187,6 +189,12 @@ public class Wmm {
         for (Axiom ax : axioms) {
             enc = bmgr.and(enc, ax.consistent(ctx));
         }
+		for(Relation r : relations) {
+			Set<Tuple> d = r.getDisableTupleSet();
+			for(Tuple t : baseRelations.contains(r.getName()) ? d : Sets.intersection(d,r.getEncodeTupleSet())) {
+				enc = bmgr.and(enc, bmgr.not(r.getSMTVar(t,ctx)));
+			}
+		}
         return enc;
     }
 
