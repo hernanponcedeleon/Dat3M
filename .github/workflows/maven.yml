@@ -29,7 +29,7 @@ jobs:
       with:
         java-version: '11'
         distribution: 'adopt'
-	cache: maven
+        cache: maven
 
     - name: Set DAT3M_HOME
       run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
