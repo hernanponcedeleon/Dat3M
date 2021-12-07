@@ -31,14 +31,20 @@ jobs:
         distribution: 'adopt'
         cache: maven
 
-    - name: Set DYLD_LIBRARY_PATH
-      run: echo "DYLD_LIBRARY_PATH=$(echo $GITHUB_WORKSPACE)/dartagnan/target/dependency" >> $GITHUB_ENV
+    - name: Build with Maven
+      run: mvn --batch-mode --update-snapshots install -DskipTests
+
+    - name: Copy libz3 libraries to avoid issue 294 in z3-repo
+      run: cp /Users/runner/work/Dat3M/Dat3M/dartagnan/target/dependency/libz3.dylib ~/lib
+    
+    - name: Copy libz3java libraries to avoid issue 294 in z3-repo
+      run: cp /Users/runner/work/Dat3M/Dat3M/dartagnan/target/dependency/libz3java.dylib ~/lib
     
     - name: Set DAT3M_HOME
       run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
     
     - name: Build with Maven
-      run: mvn --batch-mode --update-snapshots install
+      run: mvn --batch-mode --update-snapshots test
        
     - name: Generate JaCoCo Badge
       id: jacoco
