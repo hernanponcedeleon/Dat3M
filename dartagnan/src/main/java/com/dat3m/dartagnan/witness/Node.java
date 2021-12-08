@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.witness;
 
-import static java.lang.Integer.compare;
-import static java.lang.Integer.parseInt;
-
 public class Node extends ElemWithAttributes implements Comparable<Node> {
 
 	private final String id;
@@ -35,7 +32,6 @@ public class Node extends ElemWithAttributes implements Comparable<Node> {
 	
 	@Override
 	public int compareTo(Node other) {
-		// We get rid of the 'N'
-		return compare(parseInt(getId().substring(1)), parseInt(other.getId().substring(1)));
+		return getId().compareTo(other.getId());
 	}
 }

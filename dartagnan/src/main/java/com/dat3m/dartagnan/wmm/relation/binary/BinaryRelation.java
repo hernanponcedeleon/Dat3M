@@ -1,15 +1,12 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.google.common.collect.Sets;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.collect.Sets;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-
-import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -19,8 +16,6 @@ public abstract class BinaryRelation extends Relation {
 
     protected Relation r1;
     protected Relation r2;
-
-    int lastEncodedIteration = -1;
 
     BinaryRelation(Relation r1, Relation r2) {
         this.r1 = r1;
@@ -64,12 +59,6 @@ public abstract class BinaryRelation extends Relation {
 			r2.collect(result);
 		}
 	}
-
-    @Override
-    public void initialise(VerificationTask task, SolverContext ctx){
-        super.initialise(task, ctx);
-        lastEncodedIteration = -1;
-    }
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){ // Not valid for composition
