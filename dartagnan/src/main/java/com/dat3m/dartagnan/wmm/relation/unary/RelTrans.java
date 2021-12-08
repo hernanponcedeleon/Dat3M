@@ -22,6 +22,7 @@ public class RelTrans extends UnaryRelation {
 
     Map<Event, Set<Event>> transitiveReachabilityMap;
     private TupleSet fullEncodeTupleSet;
+    private TupleSet minSetReduct;
 
     public static String makeTerm(Relation r1){
         return r1.getName() + "^+";
@@ -42,6 +43,7 @@ public class RelTrans extends UnaryRelation {
         super.initialise(task, ctx);
         fullEncodeTupleSet = new TupleSet();
         transitiveReachabilityMap = null;
+        minSetReduct = null;
     }
 
     @Override
@@ -60,9 +62,11 @@ public class RelTrans extends UnaryRelation {
                 size = minTupleSet.size();
             } while (changed);
             removeMutuallyExclusiveTuples(minTupleSet);
+            minSetReduct = TupleSet.approximateTransitiveMustReduction(eq, minTupleSet);
         }
         return minTupleSet;
     }
+
 
     @Override
     public TupleSet getMaxTupleSet(){
@@ -85,6 +89,7 @@ public class RelTrans extends UnaryRelation {
         encodeTupleSet.addAll(activeSet);
 
         TupleSet fullActiveSet = getFullEncodeTupleSet(activeSet);
+        fullActiveSet.removeIf(t -> minTupleSet.contains(t) && !minSetReduct.contains(t));
         if(fullEncodeTupleSet.addAll(fullActiveSet)){
             r1.addEncodeTupleSet(fullActiveSet);
         }

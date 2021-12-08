@@ -13,6 +13,7 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -60,54 +61,63 @@ public class Acyclic extends Axiom {
 
     private void reduceWithMinSets(TupleSet encodeSet) {
         /*
-            Assumption: MinSet is acyclic!
-            Overall idea:
-                (1) We compute a (must) transitive reduction of must(rel) per thread.
-                    - For this, we assume that must(rel) is mostly transitive per thread.
-                      If it is not, we won't get a full reduction but still a good one
-                    - For any pair (a, c) in must(rel) mod thread, we look for some b such that
-                      (a, b) and (b, c) is in must(rel) and b is implied by either a or c
-                (2) We compute the (must) transitive closure of must(rel) (not of the reduction!!!)
-                    - Any edge in "must(rel)+ \ red(must(rel))" can be removed from the encodeSet
-                    - We might want to optimize this by finding the cross-thread must edges
-                      and only compute reachability wrt to those, as we assume that must(rel) is already
-                      transitive within threads.
-
+            ASSUMPTION: MinSet is acyclic!
+            IDEA:
+                Edges that are (must-)transitively implied do not need to get encoded.
+                For this, we compute a (must-)transitive closure and a (must-)transitive reduction of must(rel).
+                The difference "must(rel)+ \ red(must(rel))" does not net to be encoded.
+                Note that it this is sound if the closure gets underapproximated and/or the reduction
+                gets over approximated.
+            COMPUTATION:
+                (1) We compute an approximative (must-)transitive closure of must(rel)
+                    - must(rel) is likely to be already transitive per thread (due to mostly coming from po)
+                      Hence, we get a reasonable approximation by closing transitively over thread-crossing edges only.
+                (2) We compute a (must) transitive reduction of the transitively closed must(rel)+.
+                    - Since must(rel)+ is transitive, it suffice to check for each edge (a, c) if there
+                      is an intermediate event b such that (a, b) and (b, c) are in must(rel)+
+                      and b is implied by either a or c.
+                    - It is possible to reduce must(rel) but that may give a less precise result.
          */
         BranchEquivalence eq = task.getBranchEquivalence();
         TupleSet minSet = rel.getMinTupleSet();
-        // (1) Reduction
-        TupleSet reduct = new TupleSet();
-        Map<Event, Collection<Event>> predMap = new HashMap<>();
-        for (Tuple t : minSet) {
-            predMap.computeIfAbsent(t.getSecond(), key -> new ArrayList<>()).add(t.getFirst());
-        }
-        DependencyGraph<Event> depGraph = DependencyGraph.from(predMap.keySet(), predMap);
-        for (DependencyGraph<Event>.Node start : depGraph.getNodes()) {
-            Event e1 = start.getContent();
-            List<DependencyGraph<Event>.Node> deps = start.getDependents();
-            for (int i = deps.size() - 1; i >= 0; i--) {
-                DependencyGraph<Event>.Node end = deps.get(i);
-                Event e3 = end.getContent();
-                boolean redundant = false;
-                for (DependencyGraph<Event>.Node mid : deps.subList(0, i)) {
-                    Event e2 = mid.getContent();
-                    if (e2.cfImpliesExec() && (eq.isImplied(e1, e2) || eq.isImplied(e3, e2))) {
-                        if (minSet.contains(new Tuple(e2, e3))) {
-                            redundant = true;
-                            break;
-                        }
-                    }
-                }
-                if (!redundant) {
-                    reduct.add(new Tuple(e1, e3));
+
+        // (1) Approximate transitive closure of minSet (only gets computed when crossEdges are available)
+        List<Tuple> crossEdges = minSet.stream().filter(Tuple::isCrossThread).collect(Collectors.toList());;
+        TupleSet transMinSet = crossEdges.isEmpty() ? minSet : new TupleSet(minSet);
+        for (Tuple crossEdge : crossEdges) {
+            Event e1 = crossEdge.getFirst();
+            Event e2 = crossEdge.getSecond();
+
+            List<Event> ingoing = new ArrayList<>();
+            ingoing.add(e1); // ingoing events + self
+            if (e1.cfImpliesExec()) {
+                minSet.getBySecond(e1).stream().map(Tuple::getFirst)
+                        .filter(e -> eq.isImplied(e, e1))
+                        .forEach(ingoing::add);
+            }
+
+            List<Event> outgoing = new ArrayList<>();
+            outgoing.add(e2); // outgoing edges + self
+            if (e2.cfImpliesExec()) {
+                minSet.getByFirst(e2).stream().map(Tuple::getSecond)
+                        .filter(e -> eq.isImplied(e, e2))
+                        .forEach(outgoing::add);
+            }
+
+            for (Event in : ingoing) {
+                for (Event out : outgoing) {
+                    transMinSet.add(new Tuple(in, out));
                 }
             }
         }
 
-        //TODO (2): Will only be relevant once we have cross-thread must-edges
+        // (2) Approximate reduction of transitive must-set: red(must(r)+).
+        // Note: We reduce the transitive closure which may have more edges
+        // that can be used to perform reduction
+        TupleSet reduct = TupleSet.approximateTransitiveMustReduction(eq, transMinSet);
 
-        encodeSet.removeIf(t -> minSet.contains(t) && !reduct.contains(t));
+        // Remove (must(r)+ \ red(must(r)+)
+        encodeSet.removeIf(t -> transMinSet.contains(t) && !reduct.contains(t));
     }
 
     @Override

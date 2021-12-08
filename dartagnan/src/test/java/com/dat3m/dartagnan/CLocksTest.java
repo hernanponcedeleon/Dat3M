@@ -109,13 +109,13 @@ public class CLocksTest extends AbstractCTest {
         });
     }
 
-	//@Test
+	@Test
 	@CSVLogger.FileName("csv/assume")
 	public void testAssume() throws Exception {
 		assertEquals(expected, runAnalysisAssumeSolver(contextProvider.get(), proverProvider.get(), taskProvider.get()));
 	}
 
-	@Test
+	//@Test
 	@CSVLogger.FileName("csv/refinement")
 	public void testRefinement() throws Exception {
 		assertEquals(expected, Refinement.runAnalysisSaturationSolver(contextProvider.get(), proverProvider.get(),
