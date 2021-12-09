@@ -20,7 +20,7 @@ public class Compilation {
 
     	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("smack", "-q", "-t", "--no-memory-splitting"));
-        cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -fno-vectorize -fno-slp-vectorize -I" + System.getenv().get("DAT3M_HOME") + "/include/");    		    		
+        cmd.add("--clang-options=" + System.getenv().get("CFLAGS"));
     	cmd.addAll(asList("-bpl", System.getenv().get("DAT3M_HOME") + "/output/" + name + ".bpl"));
     	cmd.add(file.getAbsolutePath());
     	
@@ -44,7 +44,7 @@ public class Compilation {
 
 	public static void compileWithClang(File file) throws Exception {
     	ArrayList<String> cmd = new ArrayList<String>();
-    	cmd.addAll(asList("clang", "-S", "-o"));
+    	cmd.addAll(asList("clang", "-S", System.getenv().get("CFLAGS"), "-o"));
     	cmd.add(System.getenv().get("DAT3M_HOME") + "/output/test.s");
     	cmd.add(file.getAbsolutePath());
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
@@ -55,7 +55,6 @@ public class Compilation {
     		String errorString = CharStreams.toString(new InputStreamReader(proc.getErrorStream(), Charsets.UTF_8));
 			throw new Exception(errorString);
     	}
-    	// TODO(HP): Can this be removed?
     	File testFile = new File(System.getenv().get("DAT3M_HOME") + "/output/test.s");
     	testFile.delete();
 	}	
