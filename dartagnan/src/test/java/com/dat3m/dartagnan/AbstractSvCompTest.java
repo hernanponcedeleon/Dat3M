@@ -1,141 +1,140 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.analysis.Refinement;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
-import com.dat3m.dartagnan.utils.TestHelper;
+import com.dat3m.dartagnan.utils.rules.CSVLogger;
+import com.dat3m.dartagnan.utils.rules.Provider;
+import com.dat3m.dartagnan.utils.rules.Providers;
+import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
+import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
 
 import static com.dat3m.dartagnan.analysis.Base.*;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
-@RunWith(Parameterized.class)
 public abstract class AbstractSvCompTest {
 
-	public static final int TIMEOUT = 180000;
+    protected String name;
+    protected int bound;
 
-    private final String path;
-    private final Wmm wmm;
-    private final Settings settings;
-    private Result expected;
-
-    public AbstractSvCompTest(String path, Wmm wmm, Settings settings) {
-        this.path = path;
-        this.wmm = wmm;
-        this.settings = settings;
+    public AbstractSvCompTest(String name, int bound) {
+        this.name = name;
+        this.bound = bound;
     }
 
-    //@Test(timeout = TIMEOUT)
-    public void test() {
-        try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "two-solvers"), true)))
-        {
-        	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-        	expected = readExpected(property);
-            Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            long start = System.currentTimeMillis();
-            assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
-            long solvingTime = System.currentTimeMillis() - start;
-            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
-            writer.newLine();
-        } catch (Exception e){
-            fail(e.getMessage());
-        }
+    // =================== Modifiable behavior ====================
+
+    protected abstract Provider<String> getProgramPathProvider();
+
+    protected long getTimeout() { return 180000; }
+
+    protected Provider<Settings> getSettingsProvider() {
+        return Provider.fromSupplier(() -> new Settings(Alias.CFIS, bound, 0));
     }
 
-    @Test(timeout = TIMEOUT)
-    public void testIncremental() {
-        try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "incremental"), true)))
-        {
-        	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-        	expected = readExpected(property);
-            Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            long start = System.currentTimeMillis();
-            assertEquals(expected, runAnalysisIncrementalSolver(ctx, prover, task));
-            long solvingTime = System.currentTimeMillis() - start;
-            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
-            writer.newLine();
-        } catch (Exception e){
-            fail(e.getMessage());
-        }
-    }
-    
-    //@Test(timeout = TIMEOUT)
-    public void testAssume() {
-        try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "assume"), true)))
-        {
-        	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-        	expected = readExpected(property);
-            Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            long start = System.currentTimeMillis();
-            assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
-            long solvingTime = System.currentTimeMillis() - start;
-            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
-            writer.newLine();
-        } catch (Exception e){
-            fail(e.getMessage());
-        }
+    protected Provider<Wmm> getWmmProvider() {
+        return GlobalSettings.ATOMIC_AS_LOCK ?
+                Providers.createWmmFromName(() -> "svcomp-locks") :
+                Providers.createWmmFromName(() -> "svcomp");
     }
 
-    //@Test(timeout = TIMEOUT)
-    public void testRefinement() {
-        try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement"), true)))
-        {
-            String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-            expected = readExpected(property);
-            Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            long start = System.currentTimeMillis();
-            assertEquals(expected, Refinement.runAnalysisWMMSolver(ctx, prover,
-                    RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
-            long solvingTime = System.currentTimeMillis() - start;
-            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ").append(Long.toString(solvingTime));
-            writer.newLine();
-        } catch (Exception e){
-            fail(e.getMessage());
-        }
-    }
+    @ClassRule
+    public static CSVLogger.Initialization csvInit = CSVLogger.Initialization.create();
+
+    // Provider rules
+    protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
+    protected final Provider<Arch> targetProvider = () -> Arch.NONE;
+    protected final Provider<String> filePathProvider = getProgramPathProvider();
+    protected final Provider<Settings> settingsProvider = getSettingsProvider();
+    protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
+    protected final Provider<Wmm> wmmProvider = getWmmProvider();
+    protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
+            readExpected(filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf("-")) + ".yml"));
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, targetProvider, settingsProvider);
+    protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
+    protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
+    protected final Provider<ProverEnvironment> prover2Provider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
+
+    // Special rules
+    protected final Timeout timeout = Timeout.millis(getTimeout());
+    protected final CSVLogger csvLogger = CSVLogger.create(() -> name);
+    protected final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
+
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
+            .around(shutdownOnError)
+            .around(filePathProvider)
+            .around(settingsProvider)
+            .around(programProvider)
+            .around(wmmProvider)
+            .around(taskProvider)
+            .around(expectedResultProvider)
+            .around(csvLogger)
+            .around(timeout)
+            // Context/Prover need to be created inside test-thread spawned by <timeout>
+            .around(contextProvider)
+            .around(proverProvider)
+            .around(prover2Provider);
 
 
-	private Result readExpected(String property) {
-		try (BufferedReader br = new BufferedReader(new FileReader(property))) {
-		    while (!(br.readLine()).contains("unreach-call.prp")) {
-		       continue;
-		    }
-		    return br.readLine().contains("false") ? FAIL : PASS;
+    private Result readExpected(String property) {
+        try (BufferedReader br = new BufferedReader(new FileReader(property))) {
+            while (!(br.readLine()).contains("unreach-call.prp")) {
+                continue;
+            }
+            return br.readLine().contains("false") ? FAIL : PASS;
 
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
             System.exit(0);
-		}
-		return null;
-	}
+        }
+        return null;
+    }
+
+
+    //@Test
+    @CSVLogger.FileName("csv/two-solvers")
+    public void testTwoSolvers() throws Exception {
+        assertEquals(expectedResultProvider.get(),
+                runAnalysisTwoSolvers(contextProvider.get(), proverProvider.get(), prover2Provider.get(), taskProvider.get()));
+    }
+
+    //@Test
+    @CSVLogger.FileName("csv/assume")
+    public void testAssume() throws Exception {
+        assertEquals(expectedResultProvider.get(),
+                runAnalysisAssumeSolver(contextProvider.get(), proverProvider.get(), taskProvider.get()));
+    }
+
+    @Test
+    @CSVLogger.FileName("csv/incremental")
+    public void testIncremental() throws Exception {
+        assertEquals(expectedResultProvider.get(),
+                runAnalysisIncrementalSolver(contextProvider.get(), proverProvider.get(), taskProvider.get()));
+    }
+
+    //@Test
+    @CSVLogger.FileName("csv/refinement")
+    public void testRefinement() throws Exception {
+        assertEquals(expectedResultProvider.get(), Refinement.runAnalysisWMMSolver(contextProvider.get(), proverProvider.get(),
+                RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(taskProvider.get())));
+    }
 }

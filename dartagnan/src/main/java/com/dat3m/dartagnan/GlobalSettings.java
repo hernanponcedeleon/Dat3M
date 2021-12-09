@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
+import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 
 import static com.dat3m.dartagnan.verification.RefinementTask.BaselineWMM.EMPTY;
 
@@ -26,7 +28,11 @@ public class GlobalSettings {
     public static final boolean ALLOW_PARTIAL_MODELS = false;
     public static final boolean MERGE_CF_VARS = true; // ONLY has effect if ALLOW_PARTIAL_MODELS is 'false'
     public static final boolean ANTISYMM_CO = false;
+    // ------ Symm breaking ------
     public static final boolean ENABLE_SYMMETRY_BREAKING = true;
+    public static final boolean BREAK_SYMMETRY_BY_SYNC_DEGREE = true;
+    public static final String BREAK_SYMMETRY_ON_RELATION = RelationNameRepository.RF;
+    public static final int LEX_LEADER_SIZE = 1000;
 
     // === BranchEquivalence ===
     public static final boolean MERGE_BRANCHES = true;
@@ -37,6 +43,7 @@ public class GlobalSettings {
     public static final boolean PERFORM_REORDERING = true;
     public static final boolean DETERMINISTIC_REORDERING = true;
     public static final boolean ENABLE_SYMMETRY_REDUCTION = true;
+    public static final boolean REDUCE_ACYCLICITY_ENCODE_SETS = true;
 
     // ==== Refinement ====
     public static final boolean REFINEMENT_GENERATE_GRAPHVIZ_FILES = false;
@@ -69,6 +76,11 @@ public class GlobalSettings {
     	logger.info("PERFORM_DEAD_CODE_ELIMINATION: " + PERFORM_DEAD_CODE_ELIMINATION);
     	logger.info("PERFORM_REORDERING: " + PERFORM_REORDERING);
     	logger.info("ENABLE_SYMMETRY_BREAKING: " + ENABLE_SYMMETRY_BREAKING);
+    	if (ENABLE_SYMMETRY_BREAKING) {
+            logger.info("-- Breaking on Relation: " + BREAK_SYMMETRY_ON_RELATION);
+            logger.info("-- Break by sync-degree: " + BREAK_SYMMETRY_BY_SYNC_DEGREE);
+            logger.info("-- Lex leader size: " + LEX_LEADER_SIZE);
+        }
         logger.info("ENABLE_SYMMETRY_REDUCTION: " + ENABLE_SYMMETRY_REDUCTION);
     	logger.info("MAX_RECURSION_DEPTH: " + MAX_RECURSION_DEPTH);
     	logger.info("ENABLE_DEBUG_OUTPUT: " + ENABLE_DEBUG_OUTPUT);
