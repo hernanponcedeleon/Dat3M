@@ -17,11 +17,10 @@ public class Compilation {
 	
 	public static void compileWithSmack(File file) throws Exception {
 		String name = file.getName().substring(0, file.getName().lastIndexOf('.'));
-		String clangFlags = System.getenv().get("CFLAGS") != null ? System.getenv().get("CFLAGS") : "";
 		
     	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("smack", "-q", "-t", "--no-memory-splitting"));
-        cmd.add("--clang-options=-I" + System.getenv("DAT3M_HOME") + "/include/ " + clangFlags);
+        cmd.add("--clang-options=-I" + System.getenv("DAT3M_HOME") + "/include/ " + System.getenv().getOrDefault("CFLAGS", ""));
     	cmd.addAll(asList("-bpl", System.getenv("DAT3M_HOME") + "/output/" + name + ".bpl"));
     	cmd.add(file.getAbsolutePath());
     	
@@ -44,10 +43,8 @@ public class Compilation {
 	}	
 
 	public static void compileWithClang(File file) throws Exception {
-		String clangFlags = System.getenv("CFLAGS") != null ? System.getenv("CFLAGS") : "";
-		
     	ArrayList<String> cmd = new ArrayList<String>();
-    	cmd.addAll(asList("clang", "-S", clangFlags, "-o"));
+    	cmd.addAll(asList("clang", "-S", System.getenv().getOrDefault("CFLAGS", ""), "-o"));
     	cmd.add(System.getenv("DAT3M_HOME") + "/output/test.s");
     	cmd.add(file.getAbsolutePath());
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
