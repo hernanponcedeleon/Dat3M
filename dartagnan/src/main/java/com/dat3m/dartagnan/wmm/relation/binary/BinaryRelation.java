@@ -6,7 +6,6 @@ import com.google.common.collect.Sets;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 /**
  *
@@ -51,14 +50,6 @@ public abstract class BinaryRelation extends Relation {
         }
         return recursiveGroupId;
     }
-
-	@Override
-	public void collect(Set<?super Relation> result) {
-		if(result.add(this)) {
-			r1.collect(result);
-			r2.collect(result);
-		}
-	}
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){ // Not valid for composition

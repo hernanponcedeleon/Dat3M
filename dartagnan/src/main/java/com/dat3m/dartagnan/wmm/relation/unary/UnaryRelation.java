@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -44,13 +43,6 @@ public abstract class UnaryRelation extends Relation {
         }
         return recursiveGroupId;
     }
-
-	@Override
-	public void collect(Set<?super Relation> result) {
-		if(result.add(this)) {
-			r1.collect(result);
-		}
-	}
 
     @Override
     public void initialise(VerificationTask task, SolverContext ctx){

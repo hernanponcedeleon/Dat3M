@@ -65,16 +65,6 @@ public abstract class Relation implements Dependent<Relation> {
         return recursiveGroupId;
     }
 
-	/**
-	 * Adds this relation and all its descendants to a set.
-	 * This is a recursive and overridden method.
-	 * @param result
-	 * Receives the relations.
-	 */
-	public void collect(Set<?super Relation> result) {
-		result.add(this);
-	}
-
     public void initialise(VerificationTask task, SolverContext ctx){
         this.task = task;
         this.minTupleSet = null;
@@ -91,6 +81,10 @@ public abstract class Relation implements Dependent<Relation> {
     public abstract TupleSet getMaxTupleSet();
 
 	/**
+	 * Accesses the current must-not-set associated with the task.
+	 * <p>
+	 * This relation has to be analysed up to this point,
+	 * with {@link com.dat3m.dartagnan.wmm.Wmm#encodeRelations(SolverContext)}.
 	 * @return
 	 * Read-only subset of the may-set marked as must-not.
 	 */

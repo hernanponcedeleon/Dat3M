@@ -78,13 +78,13 @@ public class Wmm {
     }
 
 	/**
-	Associates this parsed model with a program and additional information.
-	<p>
-	Once associated with a task, {@link #encodeRelations(SolverContext)} is enabled.
-	@param task
-	Pair of program and memory model to be tested for a certain property.
-	{@link VerificationTask#getMemoryModel()} could refer to a different model.
-	*/
+	 * Associates this parsed model with a program and additional information.
+	 * <p>
+	 * Once associated with a task, {@link #encodeRelations(SolverContext)} is enabled.
+	 * @param task
+	 * Pair of program and memory model to be tested for a certain property.
+	 * {@link VerificationTask#getMemoryModel()} could refer to a different model.
+	 */
     public void initialise(VerificationTask task, SolverContext ctx) {
         this.task = task;
         new AliasAnalysis().calculateLocationSets(task.getProgram(), task.getSettings().getAlias());
@@ -154,15 +154,7 @@ public class Wmm {
 
 		// ===== Active sets =====
 		if (computedActiveSets) {
-			LinkedHashSet<Relation> relations = new LinkedHashSet<>();
-			for(String relName : baseRelations) {
-				relations.add(relationRepository.getRelation(relName));
-			}
-			for(Axiom a : axioms) {
-				a.getRelation().collect(relations);
-			}
-
-			for (Relation r : relations) {
+			for (Relation r : relationRepository.getRelations()) {
 				r.initEncodeTupleSet();
 			}
 			for (Axiom ax : axioms) {
@@ -198,17 +190,9 @@ public class Wmm {
 
 		performRelationAnalysis(GlobalSettings.COMPUTE_MUSTNOT_SETS, true);
 
-		LinkedHashSet<Relation> relations = new LinkedHashSet<>();
-		for(String relName : baseRelations) {
-			relations.add(relationRepository.getRelation(relName));
-		}
-		for(Axiom a : axioms) {
-			a.getRelation().collect(relations);
-		}
-
 		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
-		for(Relation r : relations) {
+		for(Relation r : relationRepository.getRelations()) {
 			enc = bmgr.and(enc,r.encode(ctx));
 		}
 		relationsAreEncoded = true;
@@ -216,32 +200,26 @@ public class Wmm {
 	}
 
 	/**
-	Translates this model into an SMT formula.
-	@param ctx
-	Builder of expressions.
-	@return
-	Models consistent executions roughly of the associated program.
-	Misses relation encoding.
-	@throws IllegalStateException
-	This model's relations were not encoded with {@link #encodeRelations(SolverContext)} before.
-	*/
+	 * Translates this model into an SMT formula.
+	 * @param ctx
+	 * Builder of expressions.
+	 * @return
+	 * Models consistent executions roughly of the associated program.
+	 * Misses relation encoding.
+	 * @throws IllegalStateException
+	 * This model's relations were not encoded with {@link #encodeRelations(SolverContext)} before.
+	 */
 	public final BooleanFormula encodeConsistency(SolverContext ctx) {
 		if(!relationsAreEncoded) {
 			throw new IllegalStateException("Wmm relations must be encoded before the consistency predicate.");
 		}
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
-		LinkedHashSet<Relation> relations = new LinkedHashSet<>();
-		for(String relName : baseRelations) {
-			relations.add(relationRepository.getRelation(relName));
-		}
-        for (Axiom ax : axioms) {
-			ax.getRelation().collect(relations);
-        }
         for (Axiom ax : axioms) {
             enc = bmgr.and(enc, ax.consistent(ctx));
         }
-		for(Relation r : relations) {
+		for(Relation r : relationRepository.getRelations()) {
+			//NOTE relationRepository does not contain any RecursiveRelation#r1
 			Set<Tuple> d = r.getDisableTupleSet();
 			for(Tuple t : baseRelations.contains(r.getName()) ? d : Sets.intersection(d,r.getEncodeTupleSet())) {
 				enc = bmgr.and(enc, bmgr.not(r.getSMTVar(t,ctx)));
@@ -277,6 +255,7 @@ public class Wmm {
     
     public DependencyGraph<Relation> getRelationDependencyGraph() {
         if (relationDependencyGraph == null) {
+			//Does this work properly? RecursiveRelation#r1 is not contained in getRelations()
             relationDependencyGraph = DependencyGraph.from(relationRepository.getRelations());
         }
         return relationDependencyGraph;

@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -36,13 +35,6 @@ public class RecursiveRelation extends Relation {
     public static String makeTerm(String name){
         return name;
     }
-
-	@Override
-	public void collect(Set<?super Relation> result) {
-		if(result.add(this)) {
-			r1.collect(result);
-		}
-	}
 
     public void initialise(VerificationTask task, SolverContext ctx){
         if(doRecurse){
@@ -119,6 +111,12 @@ public class RecursiveRelation extends Relation {
 		return r1.disable(new TupleSet(disableTupleSet));
 	}
 
+	@Override
+	public void initEncodeTupleSet() {
+		//Wmm#relationRepository does not contain r1
+		r1.initEncodeTupleSet();
+	}
+
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
         if(encodeTupleSet != tuples){
@@ -152,9 +150,10 @@ public class RecursiveRelation extends Relation {
         return recursiveGroupId;
     }
 
-    @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
-		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
-    }
+	@Override
+	protected BooleanFormula encodeApprox(SolverContext ctx) {
+		//Wmm#relationRepository does not contain r1
+		return r1.encodeApprox(ctx);
+	}
 
 }
