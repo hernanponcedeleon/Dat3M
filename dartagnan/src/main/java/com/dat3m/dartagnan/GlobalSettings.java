@@ -1,10 +1,9 @@
 package com.dat3m.dartagnan;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import static com.dat3m.dartagnan.verification.RefinementTask.BaselineWMM.EMPTY;
 
@@ -46,9 +45,14 @@ public class GlobalSettings {
     public static final boolean REDUCE_ACYCLICITY_ENCODE_SETS = true;
 
     // ==== Refinement ====
-    public static final boolean REFINEMENT_GENERATE_GRAPHVIZ_FILES = false;
-    public static final int REFINEMENT_BASELINE_WMM = EMPTY;
+    /*
+        This option causes Refinement to generate many .dot and .png files
+        that describe EACH iteration. It is very expensive and should only be used
+        for debugging purposes
+    */
+    public static final boolean REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES = false;
 
+    public static final int REFINEMENT_BASELINE_WMM = EMPTY;
     public static final Refiner.SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = Refiner.SymmetryLearning.FULL;
 
     // --------------------
@@ -86,7 +90,7 @@ public class GlobalSettings {
     	logger.info("ENABLE_DEBUG_OUTPUT: " + ENABLE_DEBUG_OUTPUT);
 
     	// Refinement settings
-        logger.info("REFINEMENT_GENERATE_GRAPHVIZ_FILES: " + REFINEMENT_GENERATE_GRAPHVIZ_FILES);
+        logger.info("REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES: " + REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES);
     	logger.info("REFINEMENT_BASELINE_WMM: " + REFINEMENT_BASELINE_WMM);
     	logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());
     }

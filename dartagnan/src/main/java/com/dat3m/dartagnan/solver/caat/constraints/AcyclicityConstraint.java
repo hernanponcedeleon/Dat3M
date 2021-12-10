@@ -15,7 +15,6 @@ import com.google.common.collect.Sets;
 
 import java.util.*;
 
-@SuppressWarnings("unchecked")
 public class AcyclicityConstraint extends AbstractConstraint {
 
     private final RelationGraph constrainedGraph;
@@ -123,6 +122,7 @@ public class AcyclicityConstraint extends AbstractConstraint {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void onChanged(CAATPredicate predicate, Collection<? extends Derivable> added) {
         ((Collection<Edge>)added).forEach(e -> markedNodes.add(e.getFirst()));
     }

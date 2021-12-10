@@ -120,9 +120,6 @@ public class Reasoner {
                 }
             }
 
-            if (next == graph) {
-                int i = 5;
-            }
             assert next != graph;
             Conjunction<CAATLiteral> reason = computeReason(next, min);
             assert !reason.isFalse();

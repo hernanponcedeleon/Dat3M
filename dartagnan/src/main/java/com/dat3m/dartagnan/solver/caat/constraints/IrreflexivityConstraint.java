@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@SuppressWarnings("unchecked")
 public class IrreflexivityConstraint extends AbstractConstraint {
 
     private final RelationGraph constrainedGraph;
@@ -51,6 +50,7 @@ public class IrreflexivityConstraint extends AbstractConstraint {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void onChanged(CAATPredicate predicate, Collection<? extends Derivable> added) {
         ((Collection<Edge>)added).stream().filter(Edge::isLoop).forEach(violatingEdges::add);
     }

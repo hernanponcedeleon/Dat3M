@@ -20,14 +20,12 @@ import java.util.List;
 */
 public class WMMSolver {
 
-    private final VerificationTask task;
     private final ExecutionGraph executionGraph;
     private final ExecutionModel executionModel;
     private final CAATSolver solver;
     private final CoreReasoner reasoner;
 
     public WMMSolver(VerificationTask task) {
-        this.task = task;
         this.executionGraph = new ExecutionGraph(task, true);
         this.executionModel = new ExecutionModel(task);
         this.reasoner = new CoreReasoner(task, executionGraph);
@@ -36,6 +34,13 @@ public class WMMSolver {
         task.getMemoryModel().performRelationalAnalysis(false);
     }
 
+    public ExecutionModel getExecution() {
+        return executionModel;
+    }
+
+    public ExecutionGraph getExecutionGraph() {
+        return executionGraph;
+    }
 
     public Result check(Model model, SolverContext ctx) {
         // ============ Extract ExecutionModel ==============
@@ -65,14 +70,6 @@ public class WMMSolver {
         }
 
         return result;
-    }
-
-    public ExecutionModel getExecution() {
-        return executionModel;
-    }
-
-    public ExecutionGraph getExecutionGraph() {
-        return executionGraph;
     }
 
 

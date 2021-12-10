@@ -26,13 +26,11 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 // The CoreReasoner transforms base reasons of the CAATSolver to core reason of the WMMSolver
 public class CoreReasoner {
 
-    private final VerificationTask task;
     private final ExecutionGraph executionGraph;
     private final Wmm memoryModel;
     private final BranchEquivalence eq;
 
     public CoreReasoner(VerificationTask task, ExecutionGraph executionGraph) {
-        this.task = task;
         this.executionGraph = executionGraph;
         this.memoryModel = task.getMemoryModel();
         this.eq = task.getBranchEquivalence();

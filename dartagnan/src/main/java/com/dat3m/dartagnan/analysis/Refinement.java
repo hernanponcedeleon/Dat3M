@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.GlobalSettings.ENABLE_SYMMETRY_BREAKING;
-import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_FILES;
+import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONCLUSIVE;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
@@ -57,17 +57,6 @@ public class Refinement {
         }
 
         task.initialiseEncoding(ctx);
-
-        // ======= Some preprocessing to use a visible representative for each branch ========
-        //TODO: This seems to no not be necessary anymore
-        /*for (BranchEquivalence.Class c : task.getBranchEquivalence().getAllEquivalenceClasses()) {
-            c.stream().sorted().filter(e -> e.is(EType.VISIBLE) && e.cfImpliesExec())
-                    .findFirst().ifPresent(c::setRepresentative);
-            // NOTE: If the branch has no visible events, Refinement will never care about it.
-            // If all visible branch events have cf != exec, then Refinement should never try
-            // to make use of any representative.
-        }*/
-        // =====================================================================================
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Program program = task.getProgram();
@@ -126,7 +115,7 @@ public class Refinement {
                 foundCoreReasons.add(reasons);
                 prover.addConstraint(refiner.refine(reasons, ctx));
 
-                if (REFINEMENT_GENERATE_GRAPHVIZ_FILES) {
+                if (REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES) {
                     generateGraphvizFiles(task, solver.getExecution(), iterationCount, reasons);
                 }
 
@@ -251,8 +240,9 @@ public class Refinement {
         return message;
     }
 
-    //TODO: This code is very specific to visualize the core reasons found
-    // in refinement iterations. We might want to generalize this.
+    // This code is pure debugging code that will generate graphical representations
+    // of each refinement iteration.
+    // Generate .dot files and .png files per iteration
     private static void generateGraphvizFiles(RefinementTask task, ExecutionModel model, int iterationCount, DNF<CoreLiteral> reasons) {
         //   =============== Visualization code ==================
         // The edgeFilter filters those co/rf that belong to some violation reason
@@ -273,9 +263,15 @@ public class Refinement {
 
         String programName = task.getProgram().getName();
         programName = programName.substring(0, programName.lastIndexOf("."));
-
-        String directoryName = String.format("%s/dartagnan/output/refinement/", System.getenv("DAT3M_HOME"));
+        String directoryName = String.format("%s/output/refinement/%s-%s-debug/", System.getenv("DAT3M_HOME"), programName, task.getTarget());
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
+        // File with reason edges only
+        generateGraphvizFile(model, iterationCount, edgeFilter, directoryName, fileNameBase);
+        // File with all edges
+        generateGraphvizFile(model, iterationCount, (x,y) -> true, directoryName, fileNameBase + "-full");
+    }
+
+    private static void generateGraphvizFile(ExecutionModel model, int iterationCount, BiPredicate<EventData, EventData> edgeFilter, String directoryName, String fileNameBase) {
         File fileVio = new File(directoryName + fileNameBase + ".dot");
         fileVio.getParentFile().mkdirs();
         try (FileWriter writer = new FileWriter(fileVio)) {
@@ -289,25 +285,7 @@ public class Refinement {
             // Convert .dot file to pdf
             Process p = new ProcessBuilder()
                     .directory(new File(directoryName))
-                    .command("dot", "-Tpdf", fileNameBase + ".dot", "-o", fileNameBase + ".pdf")
-                    .start();
-            p.waitFor(1000, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            logger.error(e);
-        }
-
-        fileNameBase += "-full";
-        File fileFull = new File(directoryName + fileNameBase + ".dot");
-        try (FileWriter writer = new FileWriter(fileFull)) {
-            // Create .dot file
-            new ExecutionGraphVisualizer()
-                    .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
-
-            writer.flush();
-            // Convert .dot file to pdf
-            Process p = new ProcessBuilder()
-                    .directory(new File(directoryName))
-                    .command("dot", "-Tpdf", fileNameBase + ".dot", "-o", fileNameBase + ".pdf")
+                    .command("dot", "-Tpng", fileNameBase + ".dot", "-o", fileNameBase + ".png")
                     .start();
             p.waitFor(1000, TimeUnit.MILLISECONDS);
         } catch (Exception e) {

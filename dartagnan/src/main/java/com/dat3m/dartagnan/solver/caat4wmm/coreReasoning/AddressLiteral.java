@@ -7,6 +7,8 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 public class AddressLiteral extends AbstractLiteral<CoreLiteral> implements CoreLiteral {
 
+    private static final String NAME = "memAddr";
+
     protected Event e1;
     protected Event e2;
 
@@ -16,7 +18,7 @@ public class AddressLiteral extends AbstractLiteral<CoreLiteral> implements Core
     //TODO: This normalization is ugly. We should use a literal factory at some point
     // which should perform such normalization.
     public AddressLiteral(Event e1, Event e2, boolean isNegative) {
-        super("addr", isNegative);
+        super(NAME, isNegative);
         if (e1.getCId() > e2.getCId()) {
             // We normalize the direction, because loc is symmetric
             this.e1 = e2;
@@ -50,7 +52,7 @@ public class AddressLiteral extends AbstractLiteral<CoreLiteral> implements Core
 
     @Override
     public String toString() {
-        return String.format("(addr(%s) %s addr(%s))", e1.getCId(), isNegative ? "!=" : "==", e2.getCId());
+        return String.format("(%s(%s) %s %s(%s))", NAME, e1.getCId(), isNegative ? "!=" : "==", NAME, e2.getCId());
     }
 
     @Override

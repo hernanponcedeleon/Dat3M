@@ -13,8 +13,6 @@ import static java.util.Spliterator.*;
 // But we use it to allow the possibility of changing implementations later
 public class EdgeList implements List<Edge> {
 
-    private final static IteratorPool<Edge, EdgeList> ITERATOR_POOL = new IteratorPool<>(EdgeIterator::new, 10);
-
     private final ArrayList<Edge> edgeList;
 
     public EdgeList() {
@@ -51,7 +49,8 @@ public class EdgeList implements List<Edge> {
 
     @Override
     public Iterator<Edge> iterator() {
-        return ITERATOR_POOL.get(this);
+        //return ITERATOR_POOL.get(this);
+        return new EdgeIterator();
     }
 
     @Override
@@ -155,43 +154,17 @@ public class EdgeList implements List<Edge> {
                 SIZED | DISTINCT | SUBSIZED | NONNULL | SUBSIZED), false);
     }
 
+    private final class EdgeIterator implements Iterator<Edge> {
+        private int index = edgeList.size();
 
-    private final static class EdgeIterator extends ReusableIterator<Edge, EdgeList> {
-        private int index;
-        private EdgeList edgeList;
-
-        public EdgeIterator(IteratorPool<Edge, EdgeList> pool) {
-            super(pool);
-        }
-
-        @Override
-        public void reuseFor(EdgeList collection) {
-            this.edgeList = collection;
-            this.index = edgeList.size();
-        }
-
-        /*
-           TODO: Ideally, this would not cause a closing by itself
-            and we would instead call close (using try-finally) from the calling code
-        */
         @Override
         public boolean hasNext() {
-            boolean hasNext = index > 0;
-            if (!hasNext) {
-                close();
-            }
-            return hasNext;
+            return index > 0;
         }
 
         @Override
         public Edge next() {
             return edgeList.get(--index);
-        }
-
-        @Override
-        public void close() {
-            edgeList = null;
-            super.close();
         }
     }
 }
