@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.axiom;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -69,7 +70,7 @@ public class Acyclic extends Axiom {
                 Note that it this is sound if the closure gets underapproximated and/or the reduction
                 gets over approximated.
             COMPUTATION:
-                (1) We compute an approximative (must-)transitive closure of must(rel)
+                (1) We compute an approximate (must-)transitive closure of must(rel)
                     - must(rel) is likely to be already transitive per thread (due to mostly coming from po)
                       Hence, we get a reasonable approximation by closing transitively over thread-crossing edges only.
                 (2) We compute a (must) transitive reduction of the transitively closed must(rel)+.
@@ -82,7 +83,9 @@ public class Acyclic extends Axiom {
         TupleSet minSet = rel.getMinTupleSet();
 
         // (1) Approximate transitive closure of minSet (only gets computed when crossEdges are available)
-        List<Tuple> crossEdges = minSet.stream().filter(Tuple::isCrossThread).collect(Collectors.toList());;
+        List<Tuple> crossEdges = minSet.stream()
+                .filter(t -> t.isCrossThread() && !t.getFirst().is(EType.INIT))
+                .collect(Collectors.toList());
         TupleSet transMinSet = crossEdges.isEmpty() ? minSet : new TupleSet(minSet);
         for (Tuple crossEdge : crossEdges) {
             Event e1 = crossEdge.getFirst();
