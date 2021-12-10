@@ -11,7 +11,7 @@ public class BoogieSan {
 
     public static void write(String boogieFileName) {
     	try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/boogiesan.bpl"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("DAT3M_HOME") + "/output/boogiesan.bpl"));
             try (Stream<String> stream = Files.lines(Paths.get(boogieFileName))) {
                 stream.filter(s -> !skip(s)).forEach(s -> {
     					try {

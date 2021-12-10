@@ -39,6 +39,11 @@ export DAT3M_HOME=<Dat3M's root>
 export PATH=$DAT3M_HOME/:$PATH
 ```
 
+At least the following compiler flag needs to be set, further can be added  
+```
+export CFLAGS="-I$DAT3M_HOME/include"
+```
+
 If you are verifying C code, be sure both `clang` and `smack` are in your `PATH`.
 
 To build the tool run
