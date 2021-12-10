@@ -21,8 +21,8 @@ public class Compilation {
 		
     	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("smack", "-q", "-t", "--no-memory-splitting"));
-        cmd.add("--clang-options=-I" + System.getenv().get("DAT3M_HOME") + "/include/ " + clangFlags);
-    	cmd.addAll(asList("-bpl", System.getenv().get("DAT3M_HOME") + "/output/" + name + ".bpl"));
+        cmd.add("--clang-options=-I" + System.getenv("DAT3M_HOME") + "/include/ " + clangFlags);
+    	cmd.addAll(asList("-bpl", System.getenv("DAT3M_HOME") + "/output/" + name + ".bpl"));
     	cmd.add(file.getAbsolutePath());
     	
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
@@ -44,11 +44,11 @@ public class Compilation {
 	}	
 
 	public static void compileWithClang(File file) throws Exception {
-		String clangFlags = System.getenv().get("CFLAGS") != null ? System.getenv().get("CFLAGS") : "";
+		String clangFlags = System.getenv("CFLAGS") != null ? System.getenv("CFLAGS") : "";
 		
     	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("clang", "-S", clangFlags, "-o"));
-    	cmd.add(System.getenv().get("DAT3M_HOME") + "/output/test.s");
+    	cmd.add(System.getenv("DAT3M_HOME") + "/output/test.s");
     	cmd.add(file.getAbsolutePath());
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
     	logger.info("Compiling with clang");
@@ -58,7 +58,7 @@ public class Compilation {
     		String errorString = CharStreams.toString(new InputStreamReader(proc.getErrorStream(), Charsets.UTF_8));
 			throw new Exception(errorString);
     	}
-    	File testFile = new File(System.getenv().get("DAT3M_HOME") + "/output/test.s");
+    	File testFile = new File(System.getenv("DAT3M_HOME") + "/output/test.s");
     	testFile.delete();
 	}	
 

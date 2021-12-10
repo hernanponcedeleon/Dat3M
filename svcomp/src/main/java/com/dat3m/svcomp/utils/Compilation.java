@@ -26,12 +26,12 @@ public class Compilation {
     	cmd.addAll(asList("--integer-encoding", opt.getEncoding()));
     	if(ownAtomics) {
         	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + opt.getOptimization() + 
-        			" -fno-vectorize -fno-slp-vectorize -I" + System.getenv().get("DAT3M_HOME") + "/include/");    		    		
+        			" -fno-vectorize -fno-slp-vectorize -I" + System.getenv("DAT3M_HOME") + "/include/");    		    		
     	} else {
         	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + opt.getOptimization() + 
         			" -fno-vectorize -fno-slp-vectorize");    		
     	}
-    	cmd.addAll(asList("-bpl", System.getenv().get("DAT3M_HOME") + "/output/" + name + "-" + opt.getOptimization() + ".bpl"));
+    	cmd.addAll(asList("-bpl", System.getenv("DAT3M_HOME") + "/output/" + name + "-" + opt.getOptimization() + ".bpl"));
     	cmd.add(file.getAbsolutePath());
     	
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
