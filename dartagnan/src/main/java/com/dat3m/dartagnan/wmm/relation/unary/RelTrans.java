@@ -89,8 +89,8 @@ public class RelTrans extends UnaryRelation {
         encodeTupleSet.addAll(activeSet);
 
         TupleSet fullActiveSet = getFullEncodeTupleSet(activeSet);
-        fullActiveSet.removeIf(t -> minTupleSet.contains(t) && !minSetReduct.contains(t));
         if(fullEncodeTupleSet.addAll(fullActiveSet)){
+            fullActiveSet.removeIf(t -> minTupleSet.contains(t) && !minSetReduct.contains(t));
             r1.addEncodeTupleSet(fullActiveSet);
         }
     }
