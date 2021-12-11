@@ -81,7 +81,7 @@ public class ReachabilityResult {
                                 result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
                             }
                             break;
-                        case REFINEMENT:
+                        case CAAT:
                             result = runAnalysisWMMSolver(ctx, prover,
                                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
                             break;

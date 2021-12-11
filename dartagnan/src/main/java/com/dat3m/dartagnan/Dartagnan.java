@@ -122,7 +122,7 @@ public class Dartagnan {
                             case ASSUME:
                                 result = runAnalysisAssumeSolver(ctx, prover, task);
                                 break;
-                            case REFINEMENT:
+                            case CAAT:
                                 result = runAnalysisWMMSolver(ctx, prover,
                                         RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
                                 break;

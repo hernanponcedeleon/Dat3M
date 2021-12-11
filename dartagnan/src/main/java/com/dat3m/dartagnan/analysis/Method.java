@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.analysis;
 import java.util.Arrays;
 
 public enum Method {
-	ASSUME, INCREMENTAL, TWO, REFINEMENT;
+	ASSUME, INCREMENTAL, TWO, CAAT;
 	
 	public static Method get(String s) {
         if(s != null){
@@ -15,8 +15,8 @@ public enum Method {
                     return INCREMENTAL;
                 case "assume":
                     return ASSUME;
-				case "refinement":
-					return REFINEMENT;
+				case "caat":
+					return CAAT;
             }
         }
         throw new UnsupportedOperationException("Unrecognized analysis " + s);
@@ -31,8 +31,8 @@ public enum Method {
         		return "incremental";
         	case ASSUME:
         		return "assume";
-			case REFINEMENT:
-				return "refinement";
+			case CAAT:
+				return "caat";
         }
         throw new UnsupportedOperationException("Unrecognized analysis " + this);
 	}
@@ -47,8 +47,8 @@ public enum Method {
 				return "Incremental Solver";
 			case ASSUME:
             	return "Solver with Assumption";
-            case REFINEMENT:
-            	return "Saturation-based Refinement";
+            case CAAT:
+            	return "CAAT Solver";
         }
         throw new UnsupportedOperationException("Unrecognized analysis " + this);
 	}
@@ -59,7 +59,7 @@ public enum Method {
 	
 	// Used to decide the order shown by the selector in the UI
 	public static Method[] orderedValues() {
-		Method[] order = { INCREMENTAL, ASSUME, TWO, REFINEMENT };
+		Method[] order = { INCREMENTAL, ASSUME, TWO, CAAT};
 		// Be sure no element is missing
 		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;
