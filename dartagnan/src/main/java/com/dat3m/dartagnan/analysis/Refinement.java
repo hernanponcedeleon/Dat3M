@@ -37,7 +37,7 @@ import static com.dat3m.dartagnan.utils.Result.*;
     It can be understood as a lazy offline-SMT solver.
     More concretely, it iteratively:
         - Finds some assertion-violating execution w.r.t. to some (very weak) baseline memory model
-        - Checks the consistency of this execution using a custom theory solver
+        - Checks the consistency of this execution using a custom theory solver (CAAT-Solver)
         - Refines the used memory model if the found execution was inconsistent, using the explanations
           provided by the theory solver.
  */
@@ -83,19 +83,21 @@ public class Refinement {
         int iterationCount = 0;
         long lastTime = System.currentTimeMillis();
         long curTime;
-        long totalSolvingTime = 0;
+        long totalNativeSolvingTime = 0;
+        long totalCaatTime = 0;
         //  ---------------------------------
 
         logger.info("Refinement procedure started.");
         while (!prover.isUnsat()) {
             iterationCount++;
             curTime = System.currentTimeMillis();
-            totalSolvingTime += (curTime - lastTime);
+            totalNativeSolvingTime += (curTime - lastTime);
 
             logger.debug("Solver iteration: \n" +
                             " ===== Iteration: {} =====\n" +
                             "Solving time(ms): {}", iterationCount, curTime - lastTime);
 
+            curTime = System.currentTimeMillis();
             WMMSolver.Result solverResult;
             try (Model model = prover.getModel()) {
                 solverResult = solver.check(model, ctx);
@@ -110,7 +112,6 @@ public class Refinement {
 
             status = solverResult.getStatus();
             if (status == INCONSISTENT) {
-
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 foundCoreReasons.add(reasons);
                 prover.addConstraint(refiner.refine(reasons, ctx));
@@ -118,7 +119,6 @@ public class Refinement {
                 if (REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES) {
                     generateGraphvizFiles(task, solver.getExecution(), iterationCount, reasons);
                 }
-
                 if (logger.isTraceEnabled()) {
                     // Some statistics
                     StringBuilder message = new StringBuilder().append("Found inconsistency reasons:");
@@ -131,21 +131,22 @@ public class Refinement {
                 // No violations found, we can't refine
                 break;
             }
+            totalCaatTime += (System.currentTimeMillis() - curTime);
             lastTime = System.currentTimeMillis();
         }
         iterationCount++;
         curTime = System.currentTimeMillis();
-        totalSolvingTime += (curTime - lastTime);
+        totalNativeSolvingTime += (curTime - lastTime);
 
         logger.debug("Final solver iteration:\n" +
                         " ===== Final Iteration: {} =====\n" +
-                        "Solving/Proof time(ms): {}", iterationCount, curTime - lastTime);
+                        "Native Solving/Proof time(ms): {}", iterationCount, curTime - lastTime);
 
         if (logger.isInfoEnabled()) {
             String message;
             switch (status) {
                 case INCONCLUSIVE:
-                    message = "Refinement procedure was inconclusive.";
+                    message = "CAAT Solver was inconclusive (bug?).";
                     break;
                 case CONSISTENT:
                     message = "Violation verified.";
@@ -154,13 +155,13 @@ public class Refinement {
                     message = "Bounded safety proven.";
                     break;
                 default:
-                    throw new IllegalStateException("Unknown result type returned by CAATSolver.");
+                    throw new IllegalStateException("Unknown result type returned by CAAT Solver.");
             }
             logger.info(message);
         }
 
         if (status == INCONCLUSIVE) {
-            // Saturation got no result, so we cannot proceed further.
+            // CAATSolver got no result (should not be able to happen), so we cannot proceed further.
             return UNKNOWN;
         }
 
@@ -184,7 +185,7 @@ public class Refinement {
         }
 
         if (logger.isInfoEnabled()) {
-            logger.info(generateSummary(statList, iterationCount, totalSolvingTime, boundCheckTime));
+            logger.info(generateSummary(statList, iterationCount, totalNativeSolvingTime, totalCaatTime, boundCheckTime));
         }
 
         veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;
@@ -196,7 +197,7 @@ public class Refinement {
     // -------------------- Printing -----------------------------
 
     private static CharSequence generateSummary(List<WMMSolver.Statistics> statList, int iterationCount,
-                                                long totalSolvingTime, long boundCheckTime) {
+                                                long totalNativeSolvingTime, long totalCaatTime, long boundCheckTime) {
         long totalModelExtractTime = 0;
         long totalPopulationTime = 0;
         long totalConsistencyCheckTime = 0;
@@ -223,19 +224,20 @@ public class Refinement {
         StringBuilder message = new StringBuilder().append("Summary").append("\n")
                 .append(" ======== Summary ========").append("\n")
                 .append("Number of iterations: ").append(iterationCount).append("\n")
-                .append("Total solving time(ms): ").append(totalSolvingTime).append("\n")
-                .append("Total model extraction time(ms): ").append(totalModelExtractTime).append("\n")
-                .append("Total population time(ms): ").append(totalPopulationTime).append("\n")
-                .append("Total consistency check time(ms): ").append(totalConsistencyCheckTime).append("\n")
-                .append("Total reason computation time(ms): ").append(totalReasonComputationTime).append("\n")
-                .append("Total #computed core reasons: ").append(totalNumReasons).append("\n")
-                .append("Total #computed core reduced reasons: ").append(totalNumReducedReasons).append("\n");
+                .append("Total native solving time(ms): ").append(totalNativeSolvingTime + boundCheckTime).append("\n")
+                .append("   -- Bound check time(ms): ").append(boundCheckTime).append("\n")
+                .append("Total CAAT solving time(ms): ").append(totalCaatTime).append("\n")
+                .append("   -- Model extraction time(ms): ").append(totalModelExtractTime).append("\n")
+                .append("   -- Population time(ms): ").append(totalPopulationTime).append("\n")
+                .append("   -- Consistency check time(ms): ").append(totalConsistencyCheckTime).append("\n")
+                .append("   -- Reason computation time(ms): ").append(totalReasonComputationTime).append("\n")
+                .append("   -- #Computed core reasons: ").append(totalNumReasons).append("\n")
+                .append("   -- #Computed core reduced reasons: ").append(totalNumReducedReasons).append("\n");
         if (statList.size() > 0) {
-            message.append("Min model size (#events): ").append(minModelSize).append("\n")
-                    .append("Average model size (#events): ").append(totalModelSize / statList.size()).append("\n")
-                    .append("Max model size (#events): ").append(maxModelSize).append("\n");
+            message.append("   -- Min model size (#events): ").append(minModelSize).append("\n")
+                    .append("   -- Average model size (#events): ").append(totalModelSize / statList.size()).append("\n")
+                    .append("   -- Max model size (#events): ").append(maxModelSize).append("\n");
         }
-        message.append("Bound check time(ms): ").append(boundCheckTime);
 
         return message;
     }
