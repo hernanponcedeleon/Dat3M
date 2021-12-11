@@ -1,11 +1,15 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static com.dat3m.dartagnan.verification.RefinementTask.BaselineWMM.EMPTY;
+
 public class GlobalSettings {
-	
+
+
 	private static final Logger logger = LogManager.getLogger(GlobalSettings.class);
 
     // === Parsing ===
@@ -41,15 +45,15 @@ public class GlobalSettings {
     public static final boolean REDUCE_ACYCLICITY_ENCODE_SETS = true;
 
     // ==== Refinement ====
-    public static final boolean REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM = true; // Uses acyclic(po-loc + rf) as baseline
-    public static final boolean REFINEMENT_ADD_ACYCLIC_DEP_RF = false; // Only takes effect if USE_BASELINE_WMM is set to TRUE
+    /*
+        This option causes Refinement to generate many .dot and .png files
+        that describe EACH iteration. It is very expensive and should only be used
+        for debugging purposes
+    */
+    public static final boolean REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES = false;
 
-    public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
-    public static final SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = SymmetryLearning.FULL;
-
-    // ==== Saturation ====
-    public static boolean SATURATION_ENABLE_DEBUG = false;
-    public static final int SATURATION_MAX_DEPTH = 3;
+    public static final int REFINEMENT_BASELINE_WMM = EMPTY;
+    public static final Refiner.SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = Refiner.SymmetryLearning.FULL;
 
     // --------------------
 
@@ -58,6 +62,9 @@ public class GlobalSettings {
 
     // === Debug ===
     public static final boolean ENABLE_DEBUG_OUTPUT = false;
+
+    // === Testing ===
+    public static final boolean SKIP_TIMINGOUT_LITMUS = false;
 
     public static void LogGlobalSettings() {
         // General settings
@@ -83,12 +90,8 @@ public class GlobalSettings {
     	logger.info("ENABLE_DEBUG_OUTPUT: " + ENABLE_DEBUG_OUTPUT);
 
     	// Refinement settings
-    	logger.info("REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM: " + REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM);
-    	logger.info("REFINEMENT_ADD_ACYCLIC_DEP_RF: " + REFINEMENT_ADD_ACYCLIC_DEP_RF);
+        logger.info("REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES: " + REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES);
+    	logger.info("REFINEMENT_BASELINE_WMM: " + REFINEMENT_BASELINE_WMM);
     	logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());
-
-    	// Saturation settings
-        logger.info("SATURATION_ENABLE_DEBUG: " + SATURATION_ENABLE_DEBUG);
-        logger.info("SATURATION_MAX_DEPTH: " + SATURATION_MAX_DEPTH);
     }
 }

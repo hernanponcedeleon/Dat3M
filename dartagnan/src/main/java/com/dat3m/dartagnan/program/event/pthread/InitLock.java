@@ -7,8 +7,7 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.program.EventFactory.eventSequence;
-import static com.dat3m.dartagnan.program.EventFactory.newStore;
+import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 
 public class InitLock extends Event {
@@ -51,6 +50,7 @@ public class InitLock extends Event {
         List<Event> events = eventSequence(
                 newStore(address, value, SC)
         );
+        setCLineForAll(events, this.cLine);
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 

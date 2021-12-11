@@ -118,7 +118,7 @@ public class CLocksTestLarge extends AbstractCTest {
     @Test
     @CSVLogger.FileName("csv/refinement")
     public void testRefinement() throws Exception {
-        assertEquals(expected, Refinement.runAnalysisSaturationSolver(contextProvider.get(), proverProvider.get(),
+        assertEquals(expected, Refinement.runAnalysisWMMSolver(contextProvider.get(), proverProvider.get(),
                 RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(taskProvider.get())));
     }
 }

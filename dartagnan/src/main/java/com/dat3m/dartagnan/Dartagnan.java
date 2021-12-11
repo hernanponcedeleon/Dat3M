@@ -30,7 +30,7 @@ import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.analysis.Analysis.RACES;
 import static com.dat3m.dartagnan.analysis.Base.*;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
-import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisSaturationSolver;
+import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisWMMSolver;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 
@@ -122,8 +122,8 @@ public class Dartagnan {
                             case ASSUME:
                                 result = runAnalysisAssumeSolver(ctx, prover, task);
                                 break;
-                            case REFINEMENT:
-                                result = runAnalysisSaturationSolver(ctx, prover,
+                            case CAAT:
+                                result = runAnalysisWMMSolver(ctx, prover,
                                         RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
                                 break;
                             default:

@@ -21,7 +21,6 @@ public class SvCompConcurrencyTest extends AbstractSvCompTest {
         return () -> TEST_RESOURCE_PATH + "boogie/concurrency/" + name + "-O0.bpl";
     }
 
-
     @Parameterized.Parameters(name = "{index}: {0}, bound={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][] {

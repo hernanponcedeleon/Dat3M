@@ -45,9 +45,7 @@ public class RelLoc extends Relation {
             Collection<Event> events = task.getProgram().getCache().getEvents(FilterBasic.get(MEMORY));
             for(Event e1 : events){
                 for(Event e2 : events){
-                    //TODO: loc should be reflexive according to
-                    // "Syntax and semantics of the weak consistency model specification language cat"
-                    if(e1.getCId() != e2.getCId() && MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent)e2)){
+                    if(MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent)e2)){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }

@@ -17,7 +17,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import static com.dat3m.dartagnan.analysis.Base.*;
-import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisSaturationSolver;
+import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisWMMSolver;
 
 public class ReachabilityResult {
 
@@ -81,8 +81,8 @@ public class ReachabilityResult {
                                 result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
                             }
                             break;
-                        case REFINEMENT:
-                            result = runAnalysisSaturationSolver(ctx, prover,
+                        case CAAT:
+                            result = runAnalysisWMMSolver(ctx, prover,
                                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
                             break;
                     }
