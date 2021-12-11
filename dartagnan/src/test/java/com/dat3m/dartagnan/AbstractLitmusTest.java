@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Refinement;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
@@ -8,6 +9,7 @@ import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
+import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -127,8 +129,7 @@ public abstract class AbstractLitmusTest {
     //@Test
     @CSVLogger.FileName("csv/refinement")
     public void testRefinement() throws Exception {
-        if (programProvider.get().getAss() != null && programProvider.get().getAss().getLocs().isEmpty()) {
-            assertEquals(expected, runAnalysisTwoSolvers(contextProvider.get(), proverProvider.get(), prover2Provider.get(), taskProvider.get()));
-        }
+        assertEquals(expected, Refinement.runAnalysisSaturationSolver(contextProvider.get(), proverProvider.get(),
+                RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(taskProvider.get())));
     }
 }

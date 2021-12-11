@@ -90,8 +90,6 @@ public class CoSymmetryBreaking {
         infoMap = new HashMap<>();
     }
 
-    // Computes data for symmetry breaking and must-set generation
-    // Returns TRUE, if must-sets can be generated
     public void initialize() {
         infoMap.clear();
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
@@ -154,6 +152,10 @@ public class CoSymmetryBreaking {
         info.writes = writes;
     }
 
+    /*
+        Computes co must-edges that are implied by this symmetry breaking
+        May return an empty list.
+    */
     public List<Tuple> computeMustEdges() {
         List<Tuple> mustEdges = new ArrayList<>();
 
