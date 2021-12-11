@@ -1,6 +1,9 @@
 package com.dat3m.dartagnan.wmm.utils;
 
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.google.common.collect.Iterables;
 
 import java.util.*;
 import java.util.function.BiPredicate;
@@ -232,5 +235,36 @@ public class TupleSet implements Set<Tuple>{
         TupleSet result = new TupleSet();
         tuples.stream().map(mapping).forEach(result::add);
         return result;
+    }
+
+    // =============== Static utility functions =================
+
+    public static TupleSet approximateTransitiveMustReduction(BranchEquivalence eq, TupleSet minSet) {
+        // Approximative must-transitive reduction of minSet:
+        TupleSet reduct = new TupleSet();
+        Iterable<Event> codomain = Iterables.transform(minSet, Tuple::getSecond);
+        DependencyGraph<Event> depGraph = DependencyGraph.from(codomain, e -> Iterables.transform(minSet.getBySecond(e), Tuple::getFirst));
+        for (DependencyGraph<Event>.Node start : depGraph.getNodes()) {
+            Event e1 = start.getContent();
+            List<DependencyGraph<Event>.Node> deps = start.getDependents();
+            for (int i = deps.size() - 1; i >= 0; i--) {
+                DependencyGraph<Event>.Node end = deps.get(i);
+                Event e3 = end.getContent();
+                boolean redundant = false;
+                for (DependencyGraph<Event>.Node mid : deps.subList(0, i)) {
+                    Event e2 = mid.getContent();
+                    if (e2.cfImpliesExec() && (eq.isImplied(e1, e2) || eq.isImplied(e3, e2))) {
+                        if (minSet.contains(new Tuple(e2, e3))) {
+                            redundant = true;
+                            break;
+                        }
+                    }
+                }
+                if (!redundant) {
+                    reduct.add(new Tuple(e1, e3));
+                }
+            }
+        }
+        return reduct;
     }
 }
