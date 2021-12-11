@@ -74,7 +74,7 @@ public class SVCOMPOptions extends BaseOptions {
                 " [default: unbounded-integer]"));
 
         addOption(new Option(BOOGIESAN, false,
-                "Generates (also) a sanitised boogie file saved as /output/boogiesan.bpl"));
+                "Generates (also) a sanitised boogie file saved as /output/X-sanitised.bpl"));
 }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
