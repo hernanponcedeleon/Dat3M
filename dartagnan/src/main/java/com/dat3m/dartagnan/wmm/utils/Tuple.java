@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.wmm.utils;
 
 import com.dat3m.dartagnan.program.event.Event;
 
+import java.util.function.Function;
+
 public class Tuple implements Comparable<Tuple> {
 
     private final Event first;
@@ -57,6 +59,10 @@ public class Tuple implements Comparable<Tuple> {
     // ================== Utility/Convenience methods ================
     public Tuple getInverse() {
     	return new Tuple(second, first);
+    }
+
+    public Tuple permute(Function<Event, Event> p) {
+        return new Tuple(p.apply(first), p.apply(second));
     }
 
     public boolean isCrossThread() {

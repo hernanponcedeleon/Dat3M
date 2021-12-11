@@ -11,7 +11,7 @@ public class DependencyGraph<T> {
     private final Map<T, Node> nodeMap;
     private List<Node> nodeList;
     private final List<Set<Node>> sccs;
-    private final Function<? super T, ? extends Collection<? extends T>> dependencyMap;
+    private final Function<? super T, ? extends Iterable<? extends T>> dependencyMap;
 
     public Node get(T item) {
         return nodeMap.get(item);
@@ -39,23 +39,23 @@ public class DependencyGraph<T> {
 
     // ================= Public construction methods =================
 
-    public static <V> DependencyGraph<V> from(final Collection<? extends V> items, final Function<? super V, ? extends Collection<? extends V>> dependencyMap) {
+    public static <V> DependencyGraph<V> from(final Iterable<? extends V> items, final Function<? super V, ? extends Iterable<? extends V>> dependencyMap) {
         return new DependencyGraph<>(items, dependencyMap);
     }
 
-    public static <V> DependencyGraph<V> fromSingleton(final V item, final Function<? super V, ? extends Collection<? extends V>> dependencyMap) {
+    public static <V> DependencyGraph<V> fromSingleton(final V item, final Function<? super V, ? extends Iterable<? extends V>> dependencyMap) {
         return from(Collections.singletonList(item), dependencyMap);
     }
 
-    public static <V> DependencyGraph<V> from(final Collection<? extends V> items, final Map<? super  V, ? extends Collection<? extends V>> dependencyMap) {
+    public static <V> DependencyGraph<V> from(final Iterable<? extends V> items, final Map<? super  V, ? extends Iterable<? extends V>> dependencyMap) {
         return new DependencyGraph<>(items, x -> dependencyMap.containsKey(x) ? dependencyMap.get(x) : Collections.emptyList());
     }
 
-    public static <V> DependencyGraph<V> fromSingleton(final V item, final Map<? super V, ? extends Collection<? extends V>> dependencyMap) {
+    public static <V> DependencyGraph<V> fromSingleton(final V item, final Map<? super V, ? extends Iterable<? extends V>> dependencyMap) {
         return from(Collections.singletonList(item), dependencyMap);
     }
 
-    public static <V extends Dependent<? extends V>> DependencyGraph<V> from(final Collection<? extends V> items) {
+    public static <V extends Dependent<? extends V>> DependencyGraph<V> from(final Iterable<? extends V> items) {
         return new DependencyGraph<>(items, Dependent::getDependencies);
     }
 
@@ -65,7 +65,7 @@ public class DependencyGraph<T> {
 
     // ====================================================================
 
-    private DependencyGraph(final Collection<? extends T> items, final Function<? super T, ? extends Collection<? extends T>> dependencyMap) {
+    private DependencyGraph(final Iterable<? extends T> items, final Function<? super T, ? extends Iterable<? extends T>> dependencyMap) {
         nodeMap = new HashMap<>();
         sccs = new ArrayList<>();
         this.dependencyMap = dependencyMap;
@@ -76,13 +76,7 @@ public class DependencyGraph<T> {
     }
 
     private Node getNodeInternal(T item) {
-        if (nodeMap.containsKey(item)) {
-            return nodeMap.get(item);
-        }
-        Node node = new Node(item);
-        nodeMap.put(item, node);
-
-        return node;
+        return nodeMap.computeIfAbsent(item, Node::new);
     }
 
     private void initializeNodes() {
