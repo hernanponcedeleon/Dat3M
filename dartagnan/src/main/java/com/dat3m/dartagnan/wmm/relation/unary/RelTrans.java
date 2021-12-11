@@ -65,6 +65,7 @@ public class RelTrans extends UnaryRelation {
         return minTupleSet;
     }
 
+
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
@@ -127,6 +128,7 @@ public class RelTrans extends UnaryRelation {
 
         TupleSet fullActiveSet = getFullEncodeTupleSet(activeSet);
         if(fullEncodeTupleSet.addAll(fullActiveSet)){
+            fullActiveSet.removeAll(getMinTupleSet());
             r1.addEncodeTupleSet(fullActiveSet);
         }
     }
@@ -140,7 +142,11 @@ public class RelTrans extends UnaryRelation {
         TupleSet r1Max = r1.getMaxTupleSet();
         for(Tuple tuple : fullEncodeTupleSet){
             if (minSet.contains(tuple)) {
-                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
+                if(Relation.PostFixApprox) {
+                    enc = bmgr.and(enc, bmgr.implication(getExecPair(tuple, ctx), this.getSMTVar(tuple, ctx)));
+                } else {
+                    enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
+                }
                 continue;
             }
 
@@ -156,7 +162,8 @@ public class RelTrans extends UnaryRelation {
             for(Tuple t : r1Max.getByFirst(e1)){
                 Event e3 = t.getSecond();
                 if(e3.getCId() != e1.getCId() && e3.getCId() != e2.getCId() && transitiveReachabilityMap.get(e3).contains(e2)){
-                    orClause = bmgr.or(orClause, bmgr.and(r1.getSMTVar(t, ctx), this.getSMTVar(e3, e2, ctx)));
+                    BooleanFormula tVar = minSet.contains(t) ? this.getSMTVar(t, ctx) : r1.getSMTVar(t, ctx);
+                    orClause = bmgr.or(orClause, bmgr.and(tVar, this.getSMTVar(e3, e2, ctx)));
                 }
             }
 

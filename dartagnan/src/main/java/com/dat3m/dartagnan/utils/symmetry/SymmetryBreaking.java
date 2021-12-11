@@ -9,8 +9,8 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -19,10 +19,10 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.GlobalSettings.*;
+import static com.dat3m.dartagnan.GlobalSettings.BREAK_SYMMETRY_BY_SYNC_DEGREE;
+import static com.dat3m.dartagnan.GlobalSettings.BREAK_SYMMETRY_ON_RELATION;
 
 
-// A first rough implementation for symmetry breaking
 public class SymmetryBreaking {
 
     private final VerificationTask task;
@@ -65,24 +65,29 @@ public class SymmetryBreaking {
         //IMPORTANT: Each thread writes to its own special location for the purpose of starting/terminating threads
         // These need to get skipped!
         Thread t1 = symmThreads.get(0);
-        List<Tuple> r1 = new ArrayList<>();
+        List<Tuple> r1Tuples = new ArrayList<>();
         for (Tuple t : rel.getMaxTupleSet()) {
             Event a = t.getFirst();
             Event b = t.getSecond();
             if (!a.is(EType.PTHREAD) && !b.is(EType.PTHREAD) && a.getThread() == t1) {
-                r1.add(t);
+                r1Tuples.add(t);
             }
         }
-        sort(r1);
+        sort(r1Tuples);
 
         // Construct symmetric rows
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
             Function<Event, Event> p = symm.createTransposition(t1, t2);
-            List<Tuple> r2 = r1.stream().map(t -> mapTuple(t, p)).collect(Collectors.toList());
-            enc = bmgr.and(enc, encodeLexLeader(rep, i, r1, r2, ctx));
+            List<Tuple> r2Tuples = r1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
+
+            List<BooleanFormula> r1 = Lists.transform(r1Tuples, t -> rel.getSMTVar(t, ctx));
+            List<BooleanFormula> r2 = Lists.transform(r2Tuples, t -> rel.getSMTVar(t, ctx));
+            final String id = "_" + rep.getId() + "_" + i;
+            enc = bmgr.and(enc, encodeLexLeader(id, r2, r1, ctx)); // r1 >= r2
+
             t1 = t2;
-            r1 = r2;
+            r1Tuples = r2Tuples;
         }
 
         return enc;
@@ -90,13 +95,14 @@ public class SymmetryBreaking {
 
     private void sort(List<Tuple> row) {
         if (!BREAK_SYMMETRY_BY_SYNC_DEGREE) {
+            // ===== Natural order =====
             row.sort(Comparator.naturalOrder());
             return;
         }
 
+        // ====== Sync-degree based order ======
+
         // Setup of data structures
-        Map<Axiom, Map<Event, Integer>> inDegrees = new HashMap<>();
-        Map<Axiom, Map<Event, Integer>> outDegrees = new HashMap<>();
         Set<Event> inEvents = new HashSet<>();
         Set<Event> outEvents = new HashSet<>();
         for (Tuple t : row) {
@@ -104,71 +110,75 @@ public class SymmetryBreaking {
             outEvents.add(t.getSecond());
         }
 
-        // Compute sync degrees per axiom
-        for (Axiom ax : task.getAxioms()) {
-            TupleSet mustSet = ax.getRelation().getMinTupleSet();
-            Map<Event, Integer> in = inDegrees.computeIfAbsent(ax, key -> new HashMap<>());
-            Map<Event, Integer> out = outDegrees.computeIfAbsent(ax, key -> new HashMap<>());
-
-            for (Event e : inEvents) {
-                in.put(e, mustSet.getBySecond(e).size());
-            }
-            for (Event e : outEvents) {
-                out.put(e, mustSet.getByFirst(e).size());
-            }
-        }
-
-        // Combine sync degrees of axioms
         Map<Event, Integer> combInDegree = new HashMap<>(inEvents.size());
         Map<Event, Integer> combOutDegree = new HashMap<>(outEvents.size());
-        for (Axiom ax : task.getAxioms()) {
-            for (Map.Entry<Event, Integer> entry : inDegrees.get(ax).entrySet()) {
-                combInDegree.compute(entry.getKey(), (k, v) -> Math.max(v == null ? -1 : v, entry.getValue()));
-            }
-            for (Map.Entry<Event, Integer> entry : outDegrees.get(ax).entrySet()) {
-                combOutDegree.compute(entry.getKey(), (k, v) -> Math.max(v == null ? -1 : v, entry.getValue()));
-            }
+
+        List<Axiom> axioms = task.getAxioms();
+        for (Event e : inEvents) {
+            int syncDeg = axioms.stream()
+                    .mapToInt(ax -> ax.getRelation().getMinTupleSet().getBySecond(e).size() + 1).max().orElse(0);
+            combInDegree.put(e, syncDeg);
+        }
+        for (Event e : outEvents) {
+            int syncDec = axioms.stream()
+                    .mapToInt(ax -> ax.getRelation().getMinTupleSet().getByFirst(e).size() + 1).max().orElse(0);
+            combOutDegree.put(e, syncDec);
         }
 
         // Sort by sync degrees
         row.sort(Comparator.<Tuple>comparingInt(t -> combInDegree.get(t.getFirst()) * combOutDegree.get(t.getSecond())).reversed());
     }
 
+    // ========================= Static utility ===========================
+
+
     /*
-    Used variables:
-    - y0, ..., y(n-1)
-    - x1, ..., xn
-    with a suffix for the involved symmetry class.
-     */
-    private BooleanFormula encodeLexLeader(Thread rep, int index, List<Tuple> r1, List<Tuple> r2, SolverContext ctx) {
+        Encodes that any assignment obeys "r1 <= r2" where the order is
+        the lexicographic order based on "false < true".
+        In other words, for all assignments to the variables of r1/r2,
+        the first time r1(i) and r2(i) get different truth values,
+        we will have r1(i) = FALSE and r2(i) = TRUE.
+
+        NOTE: Creates extra variables named "yi_<uniqueIdent>" which can cause conflicts if
+              <uniqueIdent> is not uniquely used.
+    */
+    public static BooleanFormula encodeLexLeader(String uniqueIdent, List<BooleanFormula> r1, List<BooleanFormula> r2, SolverContext ctx) {
+        Preconditions.checkArgument(r1.size() == r2.size());
+
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        int size = Math.min(r1.size(), LEX_LEADER_SIZE);
-        String suffix = "_" + rep.getId() + "_" + index;
-        BooleanFormula ylast = bmgr.makeVariable("y0" + suffix);
+        final int size = r1.size();
+        final String suffix = "_" + uniqueIdent;
+
+        // We interpret the variables of <ri> as x1(ri), ..., xn(ri).
+        // We create helper variables y0_suffix, ..., y(n-1)_suffix (note the index shift compared to xi)
+        // xi gets related to y(i-1) and yi
+
+        BooleanFormula ylast = bmgr.makeVariable("y0" + suffix); // y(i-1)
         BooleanFormula enc = bmgr.equivalence(ylast, bmgr.makeTrue());
         // From x1 to x(n-1)
         for (int i = 1; i < size; i++) {
-            BooleanFormula y = bmgr.makeVariable("y" + i + suffix);
-            BooleanFormula orig = rel.getSMTVar(r1.get(i-1), ctx);
-            BooleanFormula perm = rel.getSMTVar(r2.get(i-1), ctx);
+            BooleanFormula y = bmgr.makeVariable("y" + i + suffix); // yi
+            BooleanFormula a = r1.get(i-1); // xi(r1)
+            BooleanFormula b = r2.get(i-1); // xi(r2)
             enc = bmgr.and(
                     enc,
-                    bmgr.or(y, bmgr.not(ylast), bmgr.not(orig)),
-                    bmgr.or(y, bmgr.not(ylast), perm),
-                    bmgr.or(bmgr.not(ylast), bmgr.not(orig), perm)
+                    bmgr.or(y, bmgr.not(ylast), bmgr.not(a)), // (see below)
+                    bmgr.or(y, bmgr.not(ylast), b),           // "y(i-1) implies ((xi(r1) >= xi(r2))  =>  yi)"
+                    bmgr.or(bmgr.not(ylast), bmgr.not(a), b)  // "y(i-1) implies (xi(r1) <= xi(r2))"
+                    // NOTE: yi = TRUE means the prefixes (x1, x2, ..., xi) of the rows r1/r2 are equal
+                    //       yi = FALSE means that no conditions are imposed on xi
+                    // The first point, where y(i-1) is TRUE but yi is FALSE, is the breaking point
+                    // where xi(r1) < xi(r2) holds (afterwards all yj (j >= i+1) are unconstrained and can be set to
+                    // FALSE by the solver)
             );
             ylast = y;
         }
-        // Final iteration is handled differently
-        BooleanFormula orig = rel.getSMTVar(r1.get(size-1), ctx);
-        BooleanFormula perm = rel.getSMTVar(r2.get(size-1), ctx);
-        enc = bmgr.and(enc, bmgr.or(bmgr.not(ylast), bmgr.not(orig), perm));
+        // Final iteration for xn is handled differently as there is no variable yn anymore.
+        BooleanFormula a = r1.get(size-1);
+        BooleanFormula b = r2.get(size-1);
+        enc = bmgr.and(enc, bmgr.or(bmgr.not(ylast), bmgr.not(a), b));
 
 
         return enc;
-    }
-
-    private Tuple mapTuple(Tuple t, Function<Event, Event> p) {
-        return new Tuple(p.apply(t.getFirst()), p.apply(t.getSecond()));
     }
 }

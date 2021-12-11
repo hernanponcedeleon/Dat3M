@@ -109,7 +109,7 @@ public class CLocksTestLarge extends AbstractCTest {
         });
     }
 
-    @Test
+    //@Test
     @CSVLogger.FileName("csv/assume")
     public void testAssume() throws Exception {
         assertEquals(expected, runAnalysisAssumeSolver(contextProvider.get(), proverProvider.get(), taskProvider.get()));

@@ -1,21 +1,20 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.google.common.collect.Sets;
-import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.collect.Sets;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -72,6 +71,9 @@ public class RelTransRef extends RelTrans {
         return maxTupleSet;
     }
 
+    //TODO: This is ugly code that produces encodeSets which are too large
+    // However, the encoding does not care about the encodeSet and instead encodes (transEncode + identityEncode)
+    // which is what the encodeSet of this relation should be
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
         TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
