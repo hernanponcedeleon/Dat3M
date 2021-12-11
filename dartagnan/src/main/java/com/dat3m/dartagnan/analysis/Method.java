@@ -54,7 +54,7 @@ public enum Method {
 	}
 
 	public static Method getDefault() {
-		return INCREMENTAL;
+		return CAAT;
 	}
 	
 	// Used to decide the order shown by the selector in the UI
