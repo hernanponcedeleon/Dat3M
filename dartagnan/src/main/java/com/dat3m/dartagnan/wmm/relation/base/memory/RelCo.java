@@ -110,12 +110,12 @@ public class RelCo extends Relation {
         ));
 
 		for(Event e : eventsInit) {
-            enc = bmgr.and(enc, imgr.equal(intVar(term, e, ctx), imgr.makeNumber(BigInteger.ZERO)));
+            enc = bmgr.and(enc, imgr.equal(getIntVar(e, ctx), imgr.makeNumber(BigInteger.ZERO)));
         }
 
         List<IntegerFormula> intVars = new ArrayList<>();
         for(Event w : eventsStore) {
-        	IntegerFormula coVar = intVar(term, w, ctx);
+        	IntegerFormula coVar = getIntVar(w, ctx);
             enc = bmgr.and(enc, imgr.greaterThan(coVar, imgr.makeNumber(BigInteger.ZERO)));
             intVars.add(coVar);
         }
@@ -140,7 +140,7 @@ public class RelCo extends Relation {
                 IntegerFormula a2 = convertToIntegerFormula(w2.getMemAddressExpr(), ctx);
                 BooleanFormula sameAddress = imgr.equal(a1, a2);
                 enc = bmgr.and(enc, bmgr.equivalence(relation,
-                        bmgr.and(execPair, sameAddress, imgr.lessThan(intVar(term, w1, ctx), intVar(term, w2, ctx))
+                        bmgr.and(execPair, sameAddress, imgr.lessThan(getIntVar(w1, ctx), getIntVar(w2, ctx))
                 )));
 
                 // ============ Local consistency optimizations ============
@@ -218,5 +218,12 @@ public class RelCo extends Relation {
     					bmgr.ifThenElse(bmgr.and(getExecPair(edge, ctx), eqAdd),
     							bmgr.not(getSMTVar(edge.getInverse(), ctx)),
     							bmgr.makeFalse());
+    }
+
+    public IntegerFormula getIntVar(Event write, SolverContext ctx) {
+        if (!write.is(WRITE)) {
+            throw new IllegalArgumentException("Cannot get an int-var for non-writes.");
+        }
+        return intVar(term, write, ctx);
     }
 }

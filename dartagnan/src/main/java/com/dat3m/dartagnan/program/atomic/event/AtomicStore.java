@@ -108,6 +108,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
+        setCLineForAll(events, this.cLine);
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }

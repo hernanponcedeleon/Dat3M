@@ -56,9 +56,6 @@ public abstract class AbstractSvCompTest {
                 Providers.createWmmFromName(() -> "svcomp");
     }
 
-    // =============================================================
-
-
     @ClassRule
     public static CSVLogger.Initialization csvInit = CSVLogger.Initialization.create();
 
@@ -137,7 +134,7 @@ public abstract class AbstractSvCompTest {
     //@Test
     @CSVLogger.FileName("csv/refinement")
     public void testRefinement() throws Exception {
-        assertEquals(expectedResultProvider.get(), Refinement.runAnalysisSaturationSolver(contextProvider.get(), proverProvider.get(),
+        assertEquals(expectedResultProvider.get(), Refinement.runAnalysisWMMSolver(contextProvider.get(), proverProvider.get(),
                 RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(taskProvider.get())));
     }
 }

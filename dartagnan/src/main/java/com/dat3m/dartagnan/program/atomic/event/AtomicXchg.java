@@ -89,6 +89,7 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
+        setCLineForAll(events, this.cLine);
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }

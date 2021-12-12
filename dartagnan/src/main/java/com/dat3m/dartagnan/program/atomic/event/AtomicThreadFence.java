@@ -70,6 +70,7 @@ public class AtomicThreadFence extends Fence {
         events = eventSequence(
                 fence
         );
+        setCLineForAll(events, this.cLine);
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }

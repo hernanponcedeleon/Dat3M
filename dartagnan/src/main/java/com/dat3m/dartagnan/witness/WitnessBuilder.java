@@ -165,6 +165,7 @@ public class WitnessBuilder {
 	
 	private List<Event> getSCExecutionOrder(Model model) {
 		List<Event> execEvents = new ArrayList<>();
+		// TODO: we recently added many cline to many events and this might affect the witness generation.
 		Predicate<Event> executedCEvents = e -> e.wasExecuted(model) &&  e.getCLine() > - 1;
 		execEvents.addAll(program.getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(executedCEvents).collect(Collectors.toList()));
 		execEvents.addAll(program.getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));

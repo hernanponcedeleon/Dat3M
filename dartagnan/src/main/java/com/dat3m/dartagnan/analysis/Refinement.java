@@ -1,64 +1,53 @@
 package com.dat3m.dartagnan.analysis;
 
-import com.dat3m.dartagnan.analysis.saturation.SaturationSolver;
-import com.dat3m.dartagnan.analysis.saturation.SolverResult;
-import com.dat3m.dartagnan.analysis.saturation.SolverStatistics;
-import com.dat3m.dartagnan.analysis.saturation.SolverStatus;
-import com.dat3m.dartagnan.analysis.saturation.coreReason.AbstractEdgeLiteral;
-import com.dat3m.dartagnan.analysis.saturation.coreReason.AddressLiteral;
-import com.dat3m.dartagnan.analysis.saturation.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.saturation.coreReason.EventLiteral;
-import com.dat3m.dartagnan.analysis.saturation.logic.Conjunction;
-import com.dat3m.dartagnan.analysis.saturation.logic.DNF;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.solver.caat.CAATSolver;
+import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
+import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
+import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
+import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
-import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
-import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
+import com.dat3m.dartagnan.utils.logic.Conjunction;
+import com.dat3m.dartagnan.utils.logic.DNF;
+import com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer;
 import com.dat3m.dartagnan.verification.RefinementTask;
-import com.dat3m.dartagnan.wmm.utils.Utils;
+import com.dat3m.dartagnan.verification.model.EventData;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BiPredicate;
 
-import static com.dat3m.dartagnan.GlobalSettings.*;
-import static com.dat3m.dartagnan.analysis.saturation.SolverStatus.INCONCLUSIVE;
-import static com.dat3m.dartagnan.analysis.saturation.SolverStatus.INCONSISTENT;
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.GlobalSettings.ENABLE_SYMMETRY_BREAKING;
+import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
+import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONCLUSIVE;
+import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
 
 /*
     Refinement is a custom solving procedure that starts from a weak memory model (possibly the empty model)
     and iteratively refines it to perform a verification task.
+    It can be understood as a lazy offline-SMT solver.
     More concretely, it iteratively:
         - Finds some assertion-violating execution w.r.t. to some (very weak) baseline memory model
-        - Checks the consistency of this execution using a Saturation-based solver
+        - Checks the consistency of this execution using a custom theory solver (CAAT-Solver)
         - Refines the used memory model if the found execution was inconsistent, using the explanations
-          provided by the Saturation-based solver.
+          provided by the theory solver.
  */
 public class Refinement {
 
     private static final Logger logger = LogManager.getLogger(Refinement.class);
 
-    //TODO: Currently, we pop the complete refinement before performing the bound check
-    // This may lead to situations where a bound is only reachable because
-    // we don't have a memory model and thus the bound check is imprecise.
-    // We may even want to perform refinement to check the bounds (we envision a case where the
-    // refinement is accurate enough to verify the assertions but not accurate enough to check the bounds)
-    //TODO 2: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
+    //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
-    public static Result runAnalysisSaturationSolver(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
+    public static Result runAnalysisWMMSolver(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
             throws InterruptedException, SolverException {
 
         task.unrollAndCompile();
@@ -69,25 +58,18 @@ public class Refinement {
 
         task.initialiseEncoding(ctx);
 
-        // ======= Some preprocessing to use a visible representative for each branch ========
-        for (BranchEquivalence.Class c : task.getBranchEquivalence().getAllEquivalenceClasses()) {
-            c.stream().sorted().filter(e -> e.is(EType.VISIBLE) && e.cfImpliesExec())
-                    .findFirst().ifPresent(c::setRepresentative);
-            // NOTE: If the branch has no visible events, Refinement will never care about it.
-            // If all visible branch events have cf != exec, then Refinement should never try
-            // to make use of any representative.
-        }
-        // =====================================================================================
-
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Program program = task.getProgram();
-        SaturationSolver saturationSolver = new SaturationSolver(task);
-        Refiner refiner = new Refiner(task, ctx);
-        SolverStatus status = INCONSISTENT;
+        WMMSolver solver = new WMMSolver(task);
+        Refiner refiner = new Refiner(task);
+        CAATSolver.Status status = INCONSISTENT;
+
+        task.getMemoryModel().performRelationalAnalysis(false);
 
         prover.addConstraint(task.encodeProgram(ctx));
         prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
         prover.addConstraint(task.encodeBaselineWmmConsistency(ctx));
+
         if (ENABLE_SYMMETRY_BREAKING) {
             prover.addConstraint(task.encodeSymmetryBreaking(ctx));
         }
@@ -97,29 +79,34 @@ public class Refinement {
 
         //  ------ Just for statistics ------
         List<DNF<CoreLiteral>> foundCoreReasons = new ArrayList<>();
-        List<SolverStatistics> statList = new ArrayList<>();
+        List<WMMSolver.Statistics> statList = new ArrayList<>();
         int iterationCount = 0;
         long lastTime = System.currentTimeMillis();
         long curTime;
-        long totalSolvingTime = 0;
+        long totalNativeSolvingTime = 0;
+        long totalCaatTime = 0;
         //  ---------------------------------
 
         logger.info("Refinement procedure started.");
         while (!prover.isUnsat()) {
             iterationCount++;
             curTime = System.currentTimeMillis();
-            totalSolvingTime += (curTime - lastTime);
+            totalNativeSolvingTime += (curTime - lastTime);
 
             logger.debug("Solver iteration: \n" +
                             " ===== Iteration: {} =====\n" +
                             "Solving time(ms): {}", iterationCount, curTime - lastTime);
 
-            SolverResult solverResult;
+            curTime = System.currentTimeMillis();
+            WMMSolver.Result solverResult;
             try (Model model = prover.getModel()) {
-                solverResult = saturationSolver.check(model, ctx, task.getMaxSaturationDepth());
+                solverResult = solver.check(model, ctx);
+            } catch (SolverException e) {
+                logger.error(e);
+                throw e;
             }
 
-            SolverStatistics stats = solverResult.getStatistics();
+            WMMSolver.Statistics stats = solverResult.getStatistics();
             statList.add(stats);
             logger.debug("Refinement iteration:\n{}", stats);
 
@@ -127,15 +114,16 @@ public class Refinement {
             if (status == INCONSISTENT) {
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 foundCoreReasons.add(reasons);
-                prover.addConstraint(refiner.refine(reasons));
+                prover.addConstraint(refiner.refine(reasons, ctx));
 
+                if (REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES) {
+                    generateGraphvizFiles(task, solver.getExecution(), iterationCount, reasons);
+                }
                 if (logger.isTraceEnabled()) {
                     // Some statistics
                     StringBuilder message = new StringBuilder().append("Found inconsistency reasons:");
                     for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
-                        message.append("\n")
-                                .append("Reason size: ").append(cube.getSize()).append("\n")
-                                .append(cube);
+                        message.append("\n").append(cube);
                     }
                     logger.trace(message);
                 }
@@ -143,21 +131,22 @@ public class Refinement {
                 // No violations found, we can't refine
                 break;
             }
+            totalCaatTime += (System.currentTimeMillis() - curTime);
             lastTime = System.currentTimeMillis();
         }
         iterationCount++;
         curTime = System.currentTimeMillis();
-        totalSolvingTime += (curTime - lastTime);
+        totalNativeSolvingTime += (curTime - lastTime);
 
         logger.debug("Final solver iteration:\n" +
                         " ===== Final Iteration: {} =====\n" +
-                        "Solving/Proof time(ms): {}", iterationCount, curTime - lastTime);
+                        "Native Solving/Proof time(ms): {}", iterationCount, curTime - lastTime);
 
         if (logger.isInfoEnabled()) {
             String message;
             switch (status) {
                 case INCONCLUSIVE:
-                    message = "Refinement procedure was inconclusive.";
+                    message = "CAAT Solver was inconclusive (bug?).";
                     break;
                 case CONSISTENT:
                     message = "Violation verified.";
@@ -166,13 +155,13 @@ public class Refinement {
                     message = "Bounded safety proven.";
                     break;
                 default:
-                    throw new IllegalStateException("Unknown result type returned by SaturationSolver.");
+                    throw new IllegalStateException("Unknown result type returned by CAAT Solver.");
             }
             logger.info(message);
         }
 
         if (status == INCONCLUSIVE) {
-            // Saturation got no result, so we cannot proceed further.
+            // CAATSolver got no result (should not be able to happen), so we cannot proceed further.
             return UNKNOWN;
         }
 
@@ -187,7 +176,7 @@ public class Refinement {
             prover.addConstraint(bmgr.not(program.encodeNoBoundEventExec(ctx)));
             // Add back the constraints found during Refinement (TODO: We might need to perform a second refinement)
             for (DNF<CoreLiteral> reason : foundCoreReasons) {
-                prover.addConstraint(refiner.refine(reason));
+                prover.addConstraint(refiner.refine(reason, ctx));
             }
             veriResult = !prover.isUnsat() ? UNKNOWN : PASS;
             boundCheckTime = System.currentTimeMillis() - lastTime;
@@ -195,45 +184,37 @@ public class Refinement {
             veriResult = FAIL;
         }
 
-        logSummary(statList, iterationCount, totalSolvingTime, boundCheckTime);
+        if (logger.isInfoEnabled()) {
+            logger.info(generateSummary(statList, iterationCount, totalNativeSolvingTime, totalCaatTime, boundCheckTime));
+        }
 
         veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;
         logger.info("Verification finished with result " + veriResult);
         return veriResult;
     }
-
-
     // ======================= Helper Methods ======================
 
     // -------------------- Printing -----------------------------
 
-    private static void logSummary(List<SolverStatistics> statList, int iterationCount,
-                                   long totalSolvingTime, long boundCheckTime) {
-        if (!logger.isInfoEnabled()) {
-            return;
-        }
-
-        long totalModelTime = 0;
-        long totalSearchTime = 0;
+    private static CharSequence generateSummary(List<WMMSolver.Statistics> statList, int iterationCount,
+                                                long totalNativeSolvingTime, long totalCaatTime, long boundCheckTime) {
+        long totalModelExtractTime = 0;
+        long totalPopulationTime = 0;
+        long totalConsistencyCheckTime = 0;
         long totalReasonComputationTime = 0;
-        long totalResolutionTime = 0;
-        long totalNumGuesses = 0;
         long totalNumReasons = 0;
-        long totalNumCoreReasons = 0;
+        long totalNumReducedReasons = 0;
         long totalModelSize = 0;
         long minModelSize = Long.MAX_VALUE;
         long maxModelSize = Long.MIN_VALUE;
-        int satDepth = 0;
 
-        for (SolverStatistics stats : statList) {
-            totalModelTime += stats.getModelConstructionTime();
-            totalSearchTime += stats.getSearchTime();
-            totalReasonComputationTime += stats.getReasonComputationTime();
-            totalResolutionTime += stats.getResolutionTime();
-            totalNumGuesses += stats.getNumGuessedCoherences();
-            totalNumReasons += stats.getNumComputedReasons();
-            totalNumCoreReasons += stats.getNumComputedCoreReasons();
-            satDepth = Math.max(satDepth, stats.getSaturationDepth());
+        for (WMMSolver.Statistics stats : statList) {
+            totalModelExtractTime += stats.getModelExtractionTime();
+            totalPopulationTime += stats.getPopulationTime();
+            totalConsistencyCheckTime += stats.getConsistencyCheckTime();
+            totalReasonComputationTime += stats.getBaseReasonComputationTime() + stats.getCoreReasonComputationTime();
+            totalNumReasons += stats.getNumComputedCoreReasons();
+            totalNumReducedReasons += stats.getNumComputedReducedCoreReasons();
 
             totalModelSize += stats.getModelSize();
             minModelSize = Math.min(stats.getModelSize(), minModelSize);
@@ -243,126 +224,76 @@ public class Refinement {
         StringBuilder message = new StringBuilder().append("Summary").append("\n")
                 .append(" ======== Summary ========").append("\n")
                 .append("Number of iterations: ").append(iterationCount).append("\n")
-                .append("Total solving time(ms): ").append(totalSolvingTime).append("\n")
-                .append("Total model construction time(ms): ").append(totalModelTime).append("\n");
+                .append("Total native solving time(ms): ").append(totalNativeSolvingTime + boundCheckTime).append("\n")
+                .append("   -- Bound check time(ms): ").append(boundCheckTime).append("\n")
+                .append("Total CAAT solving time(ms): ").append(totalCaatTime).append("\n")
+                .append("   -- Model extraction time(ms): ").append(totalModelExtractTime).append("\n")
+                .append("   -- Population time(ms): ").append(totalPopulationTime).append("\n")
+                .append("   -- Consistency check time(ms): ").append(totalConsistencyCheckTime).append("\n")
+                .append("   -- Reason computation time(ms): ").append(totalReasonComputationTime).append("\n")
+                .append("   -- #Computed core reasons: ").append(totalNumReasons).append("\n")
+                .append("   -- #Computed core reduced reasons: ").append(totalNumReducedReasons).append("\n");
         if (statList.size() > 0) {
-            message.append("Min model size (#events): ").append(minModelSize).append("\n")
-                    .append("Average model size (#events): ").append(totalModelSize / statList.size()).append("\n")
-                    .append("Max model size (#events): ").append(maxModelSize).append("\n");
+            message.append("   -- Min model size (#events): ").append(minModelSize).append("\n")
+                    .append("   -- Average model size (#events): ").append(totalModelSize / statList.size()).append("\n")
+                    .append("   -- Max model size (#events): ").append(maxModelSize).append("\n");
         }
-        message.append("Total reason computation time(ms): ").append(totalReasonComputationTime).append("\n")
-                .append("Total resolution time(ms): ").append(totalResolutionTime).append("\n")
-                .append("Total search time(ms): ").append(totalSearchTime).append("\n")
-                .append("Total #guessings: ").append(totalNumGuesses).append("\n")
-                .append("Total #computed reasons: ").append(totalNumReasons).append("\n")
-                .append("Total #computed core reasons: ").append(totalNumCoreReasons).append("\n")
-                .append("Max Saturation Depth: ").append(satDepth).append("\n")
-                .append("Bound check time(ms): ").append(boundCheckTime);
 
-        logger.info(message);
+        return message;
     }
 
-
-
-    /*
-        This class handles the computation of refinement clauses from violations found by the saturation procedure.
-        Furthermore, it incorporates symmetry reasoning if possible.
-     */
-    private static class Refiner {
-        private final RefinementTask task;
-        private final SolverContext context;
-        private final List<Function<Event, Event>> symmPermutations;
-
-        public Refiner(RefinementTask task, SolverContext ctx) {
-            this.task = task;
-            this.context = ctx;
-            symmPermutations = computeSymmetryPermutations(REFINEMENT_SYMMETRY_LEARNING);
-        }
-
-
-        // This method computes a refinement clause from a set of violations.
-        // Furthermore, it computes symmetric violations if symmetry learning is enabled.
-        public BooleanFormula refine(DNF<CoreLiteral> coreReasons) {
-            BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
-            BooleanFormula refinement = bmgr.makeTrue();
-            // For each symmetry permutation, we will create refinement clauses
-            for (Function<Event, Event> perm : symmPermutations) {
-                for (Conjunction<CoreLiteral> reason : coreReasons.getCubes()) {
-                    BooleanFormula permutedClause = reason.getLiterals().stream()
-                            .map(lit -> bmgr.not(permuteAndConvert(lit, perm)))
-                            .reduce(bmgr.makeFalse(), bmgr::or);
-                    refinement = bmgr.and(refinement, permutedClause);
+    // This code is pure debugging code that will generate graphical representations
+    // of each refinement iteration.
+    // Generate .dot files and .png files per iteration
+    private static void generateGraphvizFiles(RefinementTask task, ExecutionModel model, int iterationCount, DNF<CoreLiteral> reasons) {
+        //   =============== Visualization code ==================
+        // The edgeFilter filters those co/rf that belong to some violation reason
+        BiPredicate<EventData, EventData> edgeFilter = (e1, e2) -> {
+            for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
+                for (CoreLiteral lit : cube.getLiterals()) {
+                    if (lit instanceof RelLiteral) {
+                        RelLiteral edgeLit = (RelLiteral) lit;
+                        if (model.getData(edgeLit.getData().getFirst()).get() == e1 &&
+                                model.getData(edgeLit.getData().getSecond()).get() == e2) {
+                            return true;
+                        }
+                    }
                 }
             }
-            return refinement;
-        }
+            return false;
+        };
 
-
-
-        // Computes a list of permutations allowed by the program.
-        // Depending on the <learningOption>, the set of computed permutations differs.
-        // In particular, for the option NONE, only the identity permutation will be returned.
-        private List<Function<Event, Event>> computeSymmetryPermutations(SymmetryLearning learningOption) {
-            ThreadSymmetry symm = task.getThreadSymmetry();
-            Set<? extends EquivalenceClass<Thread>> symmClasses = symm.getNonTrivialClasses();
-            List<Function<Event, Event>> perms = new ArrayList<>();
-            perms.add(Function.identity());
-
-            for (EquivalenceClass<Thread> c : symmClasses) {
-                List<Thread> threads = new ArrayList<>(c);
-                threads.sort(Comparator.comparingInt(Thread::getId));
-
-                switch (learningOption) {
-                    case NONE:
-                        break;
-                    case LINEAR:
-                        for (int i = 0; i < threads.size(); i++) {
-                            int j = (i + 1) % threads.size();
-                            perms.add(symm.createTransposition(threads.get(i), threads.get(j)));
-                        }
-                        break;
-                    case QUADRATIC:
-                        for (int i = 0; i < threads.size(); i++) {
-                            for (int j = i + 1; j < threads.size(); j++) {
-                                perms.add(symm.createTransposition(threads.get(i), threads.get(j)));
-                            }
-                        }
-                        break;
-                    case FULL:
-                        List<Function<Event, Event>> allPerms = symm.createAllPermutations(c);
-                        allPerms.remove(Function.identity()); // We avoid adding multiple identities
-                        perms.addAll(allPerms);
-                        break;
-                    default:
-                        throw new UnsupportedOperationException("Symmetry learning option: "
-                                + learningOption.name() + " is not recognized.");
-                }
-            }
-
-            return perms;
-        }
-
-
-        // Changes a reasoning <literal> based on a given permutation <perm> and translates the result
-        // into a BooleanFormula for Refinement.
-        private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm) {
-            if (literal instanceof EventLiteral) {
-                EventLiteral lit = (EventLiteral) literal;
-                return perm.apply(lit.getEventData().getEvent()).exec();
-            } else if (literal instanceof AddressLiteral) {
-                AddressLiteral loc = (AddressLiteral) literal;
-                MemEvent e1 = (MemEvent) perm.apply(loc.getEdge().getFirst().getEvent());
-                MemEvent e2 = (MemEvent) perm.apply(loc.getEdge().getSecond().getEvent());
-                return generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), context);
-            } else if (literal instanceof AbstractEdgeLiteral) {
-                AbstractEdgeLiteral lit = (AbstractEdgeLiteral) literal;
-                return Utils.edge(lit.getName(),
-                        perm.apply(lit.getEdge().getFirst().getEvent()),
-                        perm.apply(lit.getEdge().getSecond().getEvent()), context);
-            }
-            throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
-        }
-
+        String programName = task.getProgram().getName();
+        programName = programName.substring(0, programName.lastIndexOf("."));
+        String directoryName = String.format("%s/output/refinement/%s-%s-debug/", System.getenv("DAT3M_HOME"), programName, task.getTarget());
+        String fileNameBase = String.format("%s-%d", programName, iterationCount);
+        // File with reason edges only
+        generateGraphvizFile(model, iterationCount, edgeFilter, directoryName, fileNameBase);
+        // File with all edges
+        generateGraphvizFile(model, iterationCount, (x,y) -> true, directoryName, fileNameBase + "-full");
     }
+
+    private static void generateGraphvizFile(ExecutionModel model, int iterationCount, BiPredicate<EventData, EventData> edgeFilter, String directoryName, String fileNameBase) {
+        File fileVio = new File(directoryName + fileNameBase + ".dot");
+        fileVio.getParentFile().mkdirs();
+        try (FileWriter writer = new FileWriter(fileVio)) {
+            // Create .dot file
+            new ExecutionGraphVisualizer()
+                    .setReadFromFilter(edgeFilter)
+                    .setCoherenceFilter(edgeFilter)
+                    .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
+
+            writer.flush();
+            // Convert .dot file to pdf
+            Process p = new ProcessBuilder()
+                    .directory(new File(directoryName))
+                    .command("dot", "-Tpng", fileNameBase + ".dot", "-o", fileNameBase + ".png")
+                    .start();
+            p.waitFor(1000, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            logger.error(e);
+        }
+    }
+
 
 }
