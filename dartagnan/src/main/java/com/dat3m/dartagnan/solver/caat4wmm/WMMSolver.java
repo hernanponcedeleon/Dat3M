@@ -31,7 +31,7 @@ public class WMMSolver {
         this.reasoner = new CoreReasoner(task, executionGraph);
         this.solver = CAATSolver.create();
 
-        task.getMemoryModel().performRelationalAnalysis(false);
+        task.getMemoryModel().performRelationAnalysis(false, false);
     }
 
     public ExecutionModel getExecution() {

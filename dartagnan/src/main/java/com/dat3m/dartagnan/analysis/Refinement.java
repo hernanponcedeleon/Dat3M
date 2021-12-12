@@ -64,8 +64,6 @@ public class Refinement {
         Refiner refiner = new Refiner(task);
         CAATSolver.Status status = INCONSISTENT;
 
-        task.getMemoryModel().performRelationalAnalysis(false);
-
         prover.addConstraint(task.encodeProgram(ctx));
         prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
         prover.addConstraint(task.encodeBaselineWmmConsistency(ctx));

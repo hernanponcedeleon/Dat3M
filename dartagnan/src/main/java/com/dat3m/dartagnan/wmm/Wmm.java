@@ -39,12 +39,6 @@ public class Wmm {
     private VerificationTask task;
     private boolean relationsAreEncoded = false;
 
-    private boolean encodeCo = true;
-
-    public void setEncodeCo(boolean encodeCO) {
-        this.encodeCo = encodeCO;
-    }
-
     public Wmm() {
         relationRepository = new RelationRepository();
     }
@@ -117,6 +111,73 @@ public class Wmm {
     }
 
 	/**
+	 * Computes the may-sets, must-sets and possibly also must-not and active sets.
+	 * @param computeMustNotSets Whether must-not sets get computed.
+	 * @param computedActiveSets Whether active sets get computed.
+	 */
+	public void performRelationAnalysis(boolean computeMustNotSets, boolean computedActiveSets) {
+
+    	// ===== Compute may sets =====
+		for(RecursiveGroup recursiveGroup : recursiveGroups) {
+			recursiveGroup.initMaxTupleSets();
+		}
+		for(Axiom ax : axioms) {
+			ax.getRelation().getMaxTupleSet();
+		}
+		// Needed in case some baseRelation is not used in the Wmm definition
+		for(String relName : baseRelations) {
+			relationRepository.getRelation(relName).getMaxTupleSet();
+		}
+
+		// ===== Compute must (and must-not) sets =====
+		boolean changed = true;
+		while (changed) {
+			changed = false;
+			// ----- Must-set -----
+			for (RecursiveGroup g : recursiveGroups) {
+				g.initMinTupleSets();
+			}
+			for(Axiom ax : axioms) {
+				ax.getRelation().getMinTupleSet();
+			}
+
+			// ----- Must-not set -----
+			if (computeMustNotSets) {
+				for (Axiom a : axioms) {
+					changed |= a.getRelation().disable(a.getDisabledSet());
+				}
+				for (RecursiveGroup g : reverse(recursiveGroups)) {
+					changed |= g.initDisableTupleSets();
+				}
+			}
+		}
+
+		// ===== Active sets =====
+		if (computedActiveSets) {
+			LinkedHashSet<Relation> relations = new LinkedHashSet<>();
+			for(String relName : baseRelations) {
+				relations.add(relationRepository.getRelation(relName));
+			}
+			for(Axiom a : axioms) {
+				a.getRelation().collect(relations);
+			}
+
+			for (Relation r : relations) {
+				r.initEncodeTupleSet();
+			}
+			for (Axiom ax : axioms) {
+				ax.getRelation().addEncodeTupleSet(ax.getEncodeTupleSet());
+			}
+			for (RecursiveGroup recursiveGroup : reverse(recursiveGroups)) {
+				recursiveGroup.updateEncodeTupleSets();
+			}
+		}
+
+
+
+	}
+
+	/**
 	 * Translates the relations of this model into an SMT formula.
 	 * This always includes Read-From, Memory-Order, and Dependencies.
 	 * Computes the may set.
@@ -135,29 +196,7 @@ public class Wmm {
 			throw new IllegalStateException("The WMM needs to get initialised first.");
 		}
 
-		//fixed point of may set
-		for(RecursiveGroup recursiveGroup : recursiveGroups) {
-			recursiveGroup.initMaxTupleSets();
-		}
-		for(Axiom ax : axioms) {
-			ax.getRelation().getMaxTupleSet();
-		}
-
-		//fixed point of must and must-not set
-		for(boolean changed = true; changed;) {
-			changed = false;
-			for(RecursiveGroup g : recursiveGroups)
-				g.initMinTupleSets();
-			for(Axiom a : axioms)
-				changed = a.getRelation().disable(a.getDisabledSet()) || changed;
-			for(RecursiveGroup g : reverse(recursiveGroups))
-				changed = g.initDisableTupleSets() || changed;
-		}
-
-		//make sure to encode the dataflow-relevant information, as well as the communications
-		for(String relName : baseRelations) {
-			relationRepository.getRelation(relName).getMaxTupleSet();
-		}
+		performRelationAnalysis(GlobalSettings.COMPUTE_MUSTNOT_SETS, true);
 
 		LinkedHashSet<Relation> relations = new LinkedHashSet<>();
 		for(String relName : baseRelations) {
@@ -167,23 +206,9 @@ public class Wmm {
 			a.getRelation().collect(relations);
 		}
 
-		//fixed point of active set
-		for(Relation r : relations) {
-			r.initEncodeTupleSet();
-		}
-		for(Axiom ax : axioms) {
-			ax.getRelation().addEncodeTupleSet(ax.getEncodeTupleSet());
-		}
-		for(RecursiveGroup recursiveGroup : reverse(recursiveGroups)) {
-			recursiveGroup.updateEncodeTupleSets();
-		}
-
 		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
 		for(Relation r : relations) {
-			if (!encodeCo && r.getName().equals(CO)) {
-				continue;
-			}
 			enc = bmgr.and(enc,r.encode(ctx));
 		}
 		relationsAreEncoded = true;
@@ -208,9 +233,6 @@ public class Wmm {
 		BooleanFormula enc = bmgr.makeTrue();
 		LinkedHashSet<Relation> relations = new LinkedHashSet<>();
 		for(String relName : baseRelations) {
-			if (!encodeCo && relName.equals(CO)) {
-				continue;
-			}
 			relations.add(relationRepository.getRelation(relName));
 		}
         for (Axiom ax : axioms) {

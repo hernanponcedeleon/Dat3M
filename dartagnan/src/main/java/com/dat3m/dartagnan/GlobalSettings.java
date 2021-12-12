@@ -27,6 +27,9 @@ public class GlobalSettings {
     public static final boolean ALLOW_PARTIAL_MODELS = false;
     public static final boolean MERGE_CF_VARS = true; // ONLY has effect if ALLOW_PARTIAL_MODELS is 'false'
     public static final boolean ANTISYMM_CO = false;
+    public static final boolean REDUCE_ACYCLICITY_ENCODE_SETS = true;
+    public static final boolean COMPUTE_MUSTNOT_SETS = true;
+
     // ------ Symm breaking ------
     public static final boolean ENABLE_SYMMETRY_BREAKING = true;
     public static final boolean BREAK_SYMMETRY_BY_SYNC_DEGREE = true;
@@ -42,7 +45,6 @@ public class GlobalSettings {
     public static final boolean PERFORM_REORDERING = true;
     public static final boolean DETERMINISTIC_REORDERING = true;
     public static final boolean ENABLE_SYMMETRY_REDUCTION = true;
-    public static final boolean REDUCE_ACYCLICITY_ENCODE_SETS = true;
 
     // ==== Refinement ====
     /*
