@@ -50,11 +50,13 @@ public class RelRangeIdentity extends UnaryRelation {
 	@Override
 	public boolean disable(TupleSet t) {
 		super.disable(t);
-		if(t.isEmpty())
+		if(t.isEmpty()) {
 			return false;
+		}
 		TupleSet t1 = new TupleSet();
-		for(Tuple tuple : t)
+		for(Tuple tuple : t) {
 			t1.addAll(r1.getMaxTupleSet().getBySecond(tuple.getFirst()));
+		}
 		return r1.disable(t1);
 	}
 

@@ -66,7 +66,8 @@ public class RecursiveGroup {
 	 */
 	public boolean initDisableTupleSets() {
 		boolean news = false;
-		for(boolean changed = true; changed;) {
+		boolean changed = true;
+		while(changed) {
 			changed = false;
 			for(RecursiveRelation r : relations) {
 				r.setDoRecurse();

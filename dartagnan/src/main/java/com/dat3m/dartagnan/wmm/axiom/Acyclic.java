@@ -77,16 +77,21 @@ public class Acyclic extends Axiom {
 			assert !t.isLoop();
 			Event x = t.getFirst();
 			Event y = t.getSecond();
-			if(!result.add(new Tuple(y, x)))
+			if(!result.add(new Tuple(y, x))) {
 				continue;
-			if(y.cfImpliesExec() && eq.isImplied(x, y))
+			}
+			if(y.cfImpliesExec() && eq.isImplied(x, y)) {
 				left.computeIfAbsent(y, k->new HashSet<>()).add(x);
-			if(x.cfImpliesExec() && eq.isImplied(y, x))
+			}
+			if(x.cfImpliesExec() && eq.isImplied(y, x)) {
 				right.computeIfAbsent(x, k->new HashSet<>()).add(y);
-			for(Event z : right.getOrDefault(y, new HashSet<>()))
+			}
+			for(Event z : right.getOrDefault(y, new HashSet<>())) {
 				queue.add(new Tuple(x, z));
-			for(Event w : left.getOrDefault(x, new HashSet<>()))
+			}
+			for(Event w : left.getOrDefault(x, new HashSet<>())) {
 				queue.add(new Tuple(w, y));
+			}
 		}
 		result.retainAll(rel.getMaxTupleSet());
 		return result;

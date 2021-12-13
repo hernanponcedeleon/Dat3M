@@ -68,8 +68,9 @@ public class RelIntersection extends BinaryRelation {
 	@Override
 	public boolean disable(TupleSet t) {
 		super.disable(t);
-		if(t.isEmpty())
+		if(t.isEmpty()) {
 			return false;
+		}
 		TupleSet t1 = new TupleSet();
 		t1.addAll(t);
 		t1.retainAll(r2.getMinTupleSet());

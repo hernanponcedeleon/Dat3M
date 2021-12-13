@@ -84,8 +84,9 @@ public class RelTrans extends UnaryRelation {
 	@Override
 	public boolean disable(TupleSet t) {
 		super.disable(t);
-		if(t.isEmpty())
+		if(t.isEmpty()) {
 			return false;
+		}
 		BranchEquivalence eq = task.getBranchEquivalence();
 		TupleSet t1 = new TupleSet();
 		LinkedList<Tuple> q = new LinkedList<>(t);
@@ -93,7 +94,7 @@ public class RelTrans extends UnaryRelation {
 			Tuple tuple = q.remove();
 			Event x = tuple.getFirst();
 			Event z = tuple.getSecond();
-			if(z.cfImpliesExec())
+			if(z.cfImpliesExec()) {
 				r1.getMinTupleSet().getByFirst(x).stream()
 				.map(Tuple::getSecond)
 				.filter(y -> eq.isImplied(y, z))
@@ -101,7 +102,8 @@ public class RelTrans extends UnaryRelation {
 				.filter(r1.getMaxTupleSet()::contains)
 				.filter(t1::add)
 				.forEach(q::add);
-			if(x.cfImpliesExec())
+			}
+			if(x.cfImpliesExec()) {
 				r1.getMinTupleSet().getBySecond(z).stream()
 				.map(Tuple::getFirst)
 				.filter(y -> eq.isImplied(y, x))
@@ -109,6 +111,7 @@ public class RelTrans extends UnaryRelation {
 				.filter(r1.getMaxTupleSet()::contains)
 				.filter(t1::add)
 				.forEach(q::add);
+			}
 		}
 		return r1.disable(t1);
 	}
