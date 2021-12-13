@@ -74,6 +74,18 @@ public class RelMinus extends BinaryRelation {
         return getMaxTupleSet();
     }
 
+	@Override
+	public boolean disable(TupleSet set) {
+		super.disable(set);
+		//NOTE if r2 detects disabled tuples, those are ignored for monotony purposes
+		return r1.disable(new TupleSet(Sets.difference(set, r2.getMaxTupleSet())));
+	}
+
+	@Override
+	public void initEncodeTupleSet() {
+		encodeTupleSet.addAll(Sets.difference(disableTupleSet, r1.getDisableTupleSet()));
+	}
+
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
