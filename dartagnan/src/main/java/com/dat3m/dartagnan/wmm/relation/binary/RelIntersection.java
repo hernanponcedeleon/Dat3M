@@ -49,8 +49,7 @@ public class RelIntersection extends BinaryRelation {
     public TupleSet getMinTupleSetRecursive(){
         if(recursiveGroupId > 0 && minTupleSet != null){
             minTupleSet.addAll(Sets.intersection(r1.getMinTupleSetRecursive(), r2.getMinTupleSetRecursive()));
-			disableTupleSet.addAll(r1.getDisableTupleSet());
-			disableTupleSet.addAll(r2.getDisableTupleSet());
+			disableTupleSet.addAll(Sets.union(r1.getDisableTupleSet(),r2.getDisableTupleSet()));
             return minTupleSet;
         }
         return getMinTupleSet();

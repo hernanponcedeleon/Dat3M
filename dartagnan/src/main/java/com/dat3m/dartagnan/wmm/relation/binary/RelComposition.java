@@ -96,20 +96,22 @@ public class RelComposition extends BinaryRelation {
 		for(Tuple tuple : t) {
 			Event x = tuple.getFirst();
 			Event z = tuple.getSecond();
-			if(z.cfImpliesExec()) {
+			if(x.cfImpliesExec()) {
+				//disable r2-tuples (y,z) that imply t
 				r1.getMinTupleSet().getByFirst(x).stream()
 				.map(Tuple::getSecond)
-				.filter(y -> eq.isImplied(y, z))
+				.filter(eq.isImplied(z, x) ? y -> true : y -> eq.isImplied(y, x))
 				.map(y -> new Tuple(y, z))
 				.filter(r2.getMaxTupleSet()::contains)
 				.forEach(t2::add);
 			}
-			if(x.cfImpliesExec()) {
+			if(z.cfImpliesExec()) {
+				//disable r1-tuples (x,y) that imply t
 				r2.getMinTupleSet().getBySecond(z).stream()
 				.map(Tuple::getFirst)
-				.filter(y -> eq.isImplied(y, x))
+				.filter(eq.isImplied(x, z) ? y -> true : y -> eq.isImplied(y, z))
 				.map(y -> new Tuple(x, y))
-				.filter(r2.getMaxTupleSet()::contains)
+				.filter(r1.getMaxTupleSet()::contains)
 				.forEach(t1::add);
 			}
 		}

@@ -88,25 +88,27 @@ public class RelTrans extends UnaryRelation {
 			return false;
 		}
 		BranchEquivalence eq = task.getBranchEquivalence();
-		TupleSet t1 = new TupleSet();
+		TupleSet t1 = new TupleSet(t);
 		LinkedList<Tuple> q = new LinkedList<>(t);
 		while(!q.isEmpty()) {
 			Tuple tuple = q.remove();
 			Event x = tuple.getFirst();
 			Event z = tuple.getSecond();
-			if(z.cfImpliesExec()) {
+			if(x.cfImpliesExec()) {
+				//disable (y,z) that imply t
 				r1.getMinTupleSet().getByFirst(x).stream()
 				.map(Tuple::getSecond)
-				.filter(y -> eq.isImplied(y, z))
+				.filter(eq.isImplied(z, x) ? y -> true : y -> eq.isImplied(y, x))
 				.map(y -> new Tuple(y, z))
 				.filter(r1.getMaxTupleSet()::contains)
 				.filter(t1::add)
 				.forEach(q::add);
 			}
-			if(x.cfImpliesExec()) {
+			if(z.cfImpliesExec()) {
+				//disable (x,y) that imply t
 				r1.getMinTupleSet().getBySecond(z).stream()
 				.map(Tuple::getFirst)
-				.filter(y -> eq.isImplied(y, x))
+				.filter(eq.isImplied(x, z) ? y -> true : y -> eq.isImplied(y, z))
 				.map(y -> new Tuple(x, y))
 				.filter(r1.getMaxTupleSet()::contains)
 				.filter(t1::add)
