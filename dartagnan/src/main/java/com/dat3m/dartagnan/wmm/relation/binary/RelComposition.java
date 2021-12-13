@@ -141,13 +141,15 @@ public class RelComposition extends BinaryRelation {
 
             TupleSet r1Max = r1.getMaxTupleSet();
             TupleSet r2Max = r2.getMaxTupleSet();
+			TupleSet r1Dis = r1.getDisableTupleSet();
+			TupleSet r2Dis = r2.getDisableTupleSet();
             for (Tuple t : activeSet) {
                 Event e1 = t.getFirst();
                 Event e3 = t.getSecond();
-                for (Tuple t1 : r1Max.getByFirst(e1)) {
+                for (Tuple t1 : Sets.difference(r1Max.getByFirst(e1),r1Dis)) {
                     Event e2 = t1.getSecond();
                     Tuple t2 = new Tuple(e2, e3);
-                    if (r2Max.contains(t2)) {
+                    if (r2Max.contains(t2) && !r2Dis.contains(t2)) {
                         r1Set.add(t1);
                         r2Set.add(t2);
                     }
@@ -166,6 +168,8 @@ public class RelComposition extends BinaryRelation {
 
         TupleSet r1Set = r1.getEncodeTupleSet();
         TupleSet r2Set = r2.getEncodeTupleSet();
+		TupleSet r1Dis = r1.getDisableTupleSet();
+		TupleSet r2Dis = r2.getDisableTupleSet();
         TupleSet minSet = getMinTupleSet();
 
         for(Tuple tuple : encodeTupleSet) {
@@ -173,9 +177,9 @@ public class RelComposition extends BinaryRelation {
             if (minSet.contains(tuple)) {
                 expr = getExecPair(tuple, ctx);
             } else {
-                for (Tuple t1 : r1Set.getByFirst(tuple.getFirst())) {
+                for (Tuple t1 : Sets.difference(r1Set.getByFirst(tuple.getFirst()),r1Dis)) {
                     Tuple t2 = new Tuple(t1.getSecond(), tuple.getSecond());
-                    if (r2Set.contains(t2)) {
+                    if (r2Set.contains(t2) && !r2Dis.contains(t2)) {
                         expr = bmgr.or(expr, bmgr.and(r1.getSMTVar(t1, ctx), r2.getSMTVar(t2, ctx)));
                     }
                 }
