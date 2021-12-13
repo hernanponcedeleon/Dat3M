@@ -43,7 +43,13 @@ public abstract class Axiom implements Dependent<Relation> {
 
     public abstract TupleSet getEncodeTupleSet();
 
-	public abstract TupleSet getDisabledSet();
+	/**
+	 * Marks relationships that directly or indirectly violate this axiom.
+	 * Could lead to new minimal tuples, as well.
+	 * @return
+	 * Some new minimal tuples were detected.
+	 */
+	public abstract boolean applyDisableSet();
 
     public abstract BooleanFormula consistent(SolverContext ctx);
 

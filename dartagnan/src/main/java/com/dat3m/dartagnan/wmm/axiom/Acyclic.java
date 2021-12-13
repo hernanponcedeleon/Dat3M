@@ -62,7 +62,7 @@ public class Acyclic extends Axiom {
     }
 
 	@Override
-	public TupleSet getDisabledSet() {
+	public boolean applyDisableSet() {
 		BranchEquivalence eq = task.getProgram().getBranchEquivalence();
 		//each domain-side event to related events that imply it
 		HashMap<Event,HashSet<Event>> left = new HashMap<>();
@@ -93,8 +93,7 @@ public class Acyclic extends Axiom {
 				queue.add(new Tuple(w, y));
 			}
 		}
-		result.retainAll(rel.getMaxTupleSet());
-		return result;
+		return rel.disable(result);
 	}
 
     private void reduceWithMinSets(TupleSet encodeSet) {

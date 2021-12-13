@@ -144,7 +144,7 @@ public class Wmm {
 			// ----- Must-not set -----
 			if (computeMustNotSets) {
 				for (Axiom a : axioms) {
-					changed |= a.getRelation().disable(a.getDisabledSet());
+					changed |= a.applyDisableSet();
 				}
 				for (RecursiveGroup g : reverse(recursiveGroups)) {
 					changed |= g.initDisableTupleSets();

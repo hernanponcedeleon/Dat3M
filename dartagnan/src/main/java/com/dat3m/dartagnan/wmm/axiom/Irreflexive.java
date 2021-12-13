@@ -22,10 +22,10 @@ public class Irreflexive extends Axiom {
 	}
 
 	@Override
-	public TupleSet getDisabledSet() {
+	public boolean applyDisableSet() {
 		TupleSet set = new TupleSet();
 		rel.getMaxTupleSet().stream().filter(Tuple::isLoop).forEach(set::add);
-		return set;
+		return rel.disable(set);
 	}
 
 	@Override

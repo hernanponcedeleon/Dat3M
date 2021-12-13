@@ -17,8 +17,9 @@ public class Empty extends Axiom {
 	}
 
 	@Override
-	public TupleSet getDisabledSet() {
-		return new TupleSet(rel.getMaxTupleSet());
+	public boolean applyDisableSet() {
+		//NOTE modifiable copy for disable(TupleSet)
+		return rel.disable(new TupleSet(rel.getMaxTupleSet()));
 	}
 
 	@Override
