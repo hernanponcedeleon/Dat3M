@@ -168,7 +168,7 @@ public class Acyclic extends Axiom {
         BooleanFormula enc = bmgr.makeTrue();
 		//TODO this has not to coincide with this.getEncodeTupleSet()
 		//as long as rel instanceof RelUnion, it does
-        for(Tuple tuple : rel.getEncodeTupleSet()){
+        for(Tuple tuple : Sets.difference(rel.getEncodeTupleSet(),rel.getDisableTupleSet())){
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
 			enc = bmgr.and(enc, bmgr.implication(rel.getSMTVar(tuple, ctx), 

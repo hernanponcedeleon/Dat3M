@@ -3,7 +3,9 @@ package com.dat3m.dartagnan.wmm.axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
@@ -18,7 +20,8 @@ public class Irreflexive extends Axiom {
 
 	@Override
 	public TupleSet getEncodeTupleSet(){
-		return new TupleSet();
+		//NOTE if applyDisableSet was called, this axiom is embedded into rel and its descendants
+		return new TupleSet(Sets.difference(Sets.filter(rel.getMaxTupleSet(), Tuple::isLoop), rel.getDisableTupleSet()));
 	}
 
 	@Override
@@ -30,7 +33,16 @@ public class Irreflexive extends Axiom {
 
 	@Override
 	public BooleanFormula consistent(SolverContext ctx) {
-		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
+		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
+		//NOTE if applyDisableSet was called, the reflexive difference is empty
+		for(Tuple t : Sets.difference(rel.getEncodeTupleSet(), rel.getDisableTupleSet())) {
+			//NOTE t might be encoded by another axiom
+			if(t.isLoop()) {
+				enc = bmgr.and(enc, bmgr.not(rel.getSMTVar(t, ctx)));
+			}
+		}
+		return enc;
 	}
 
     @Override
