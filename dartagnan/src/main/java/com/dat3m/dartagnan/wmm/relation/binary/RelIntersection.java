@@ -83,7 +83,7 @@ public class RelIntersection extends BinaryRelation {
 	@Override
 	public void initEncodeTupleSet() {
 		TupleSet set = new TupleSet();
-		set.addAll(Sets.difference(disableTupleSet,Sets.intersection(r1.getDisableTupleSet(),r2.getDisableTupleSet())));
+		set.addAll(Sets.difference(disableTupleSet,Sets.union(r1.getDisableTupleSet(),r2.getDisableTupleSet())));
 		if(!set.isEmpty()) {
 			addEncodeTupleSet(set);
 		}
