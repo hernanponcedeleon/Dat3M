@@ -15,18 +15,10 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CRIT;
 
 public class RelCrit extends StaticRelation {
     //TODO: We can optimize this a lot by using branching analysis
+	//TODO minTupleSet
 
     public RelCrit(){
         term = CRIT;
-    }
-
-    @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-            // Todo
-        }
-        return minTupleSet;
     }
 
     @Override

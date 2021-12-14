@@ -47,17 +47,6 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            super.getMinTupleSet();
-            for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(EType.VISIBLE))){
-                minTupleSet.add(new Tuple(e, e));
-            }
-        }
-        return minTupleSet;
-    }
-
-    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             super.getMaxTupleSet();
@@ -70,6 +59,14 @@ public class RelTransRef extends RelTrans {
         }
         return maxTupleSet;
     }
+
+	@Override
+	public void fetchMinTupleSet() {
+		super.fetchMinTupleSet();
+		for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(EType.VISIBLE))) {
+			minTupleSet.add(new Tuple(e, e));
+		}
+	}
 
     //TODO: This is ugly code that produces encodeSets which are too large
     // However, the encoding does not care about the encodeSet and instead encodes (transEncode + identityEncode)

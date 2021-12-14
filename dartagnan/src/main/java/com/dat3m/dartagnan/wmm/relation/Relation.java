@@ -67,18 +67,39 @@ public abstract class Relation implements Dependent<Relation> {
 
     public void initialise(VerificationTask task, SolverContext ctx){
         this.task = task;
-        this.minTupleSet = null;
+        this.minTupleSet = new TupleSet();
         this.maxTupleSet = null;
         encodeTupleSet = new TupleSet();
 		disableTupleSet = new TupleSet();
     }
 
-    /*
-    TODO: getMinTupleSet is no yet used extensively
-     */
-    public abstract TupleSet getMinTupleSet();
-
     public abstract TupleSet getMaxTupleSet();
+
+	/**
+	 * Under-approximates relationships with minimal preconditions.
+	 * Such relationships hold in all consistent runs that execute both participating events.
+	 * @return
+	 * Current collection of minimal event pairs in this relation.
+	 * @see #fetchMinTupleSet()
+	 */
+	public final TupleSet getMinTupleSet() {
+		if(minTupleSet.isEmpty()) {
+			fetchMinTupleSet();
+		}
+		return minTupleSet;
+	}
+
+	/**
+	 * Recomputes the set of minimal tuples in this relation.
+	 * Does not remove existing minimal tuples.
+	 * Also fetches disabled tuples.
+	 * <p>
+	 * This method is recursive:
+	 * All composed relations except {@link RecursiveRelation} always recur.
+	 * @see #getMinTupleSet()
+	 */
+	public void fetchMinTupleSet() {
+	}
 
 	/**
 	 * Accesses the current must-not-set associated with the task.
@@ -91,15 +112,6 @@ public abstract class Relation implements Dependent<Relation> {
 	public final TupleSet getDisableTupleSet() {
 		return disableTupleSet;
 	}
-
-	/**
-	 * Updates the must- and must-not-sets of this relation.
-	 * @return
-	 * Updated version of {@code getMinTupleSet()}.
-	 */
-    public TupleSet getMinTupleSetRecursive(){
-        return getMinTupleSet();
-    }
 
     public TupleSet getMaxTupleSetRecursive(){
         return getMaxTupleSet();

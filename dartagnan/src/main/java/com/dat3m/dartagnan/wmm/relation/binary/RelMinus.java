@@ -39,36 +39,26 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = new TupleSet(Sets.difference(r1.getMinTupleSet(), r2.getMaxTupleSet()));
-        }
-        return minTupleSet;
-    }
-
-    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
+			//FIXME the first min-iteration has not yet started, the result is not well-defined
             maxTupleSet = new TupleSet(Sets.difference(r1.getMaxTupleSet(), r2.getMinTupleSet()));
             r2.getMaxTupleSet();
         }
         return maxTupleSet;
     }
 
-    @Override
-    public TupleSet getMinTupleSetRecursive(){
-        if(recursiveGroupId > 0 && minTupleSet != null){
-            minTupleSet.addAll(Sets.difference(r1.getMinTupleSetRecursive(), r2.getMaxTupleSetRecursive()));
-			disableTupleSet.addAll(Sets.intersection(r1.getDisableTupleSet(),maxTupleSet));
-            return minTupleSet;
-        }
-        return getMinTupleSet();
-    }
+	@Override
+	public void fetchMinTupleSet(){
+		r1.fetchMinTupleSet();
+		minTupleSet.addAll(Sets.difference(r1.getMinTupleSet(), r2.getMaxTupleSetRecursive()));
+		disableTupleSet.addAll(Sets.intersection(r1.getDisableTupleSet(),maxTupleSet));
+	}
 
     @Override
     public TupleSet getMaxTupleSetRecursive(){
         if(recursiveGroupId > 0 && maxTupleSet != null){
-            maxTupleSet.addAll(Sets.difference(r1.getMaxTupleSetRecursive(), r2.getMinTupleSetRecursive()));
+            maxTupleSet.addAll(Sets.difference(r1.getMaxTupleSetRecursive(), r2.getMinTupleSet()));
             return maxTupleSet;
         }
         return getMaxTupleSet();

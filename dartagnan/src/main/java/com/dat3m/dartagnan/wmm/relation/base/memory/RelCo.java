@@ -35,15 +35,12 @@ public class RelCo extends Relation {
         term = CO;
     }
 
-
-    @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-            applyLocalConsistencyMinSet();
-        }
-        return minTupleSet;
-    }
+	@Override
+	public void fetchMinTupleSet() {
+		if(minTupleSet.isEmpty()) {
+			applyLocalConsistencyMinSet();
+		}
+	}
 
 	@Override
 	public boolean disable(TupleSet tuples) {

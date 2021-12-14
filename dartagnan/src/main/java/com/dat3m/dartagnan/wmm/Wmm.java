@@ -138,7 +138,7 @@ public class Wmm {
 				g.initMinTupleSets();
 			}
 			for(Axiom ax : axioms) {
-				ax.getRelation().getMinTupleSet();
+				ax.getRelation().fetchMinTupleSet();
 			}
 
 			// ----- Must-not set -----

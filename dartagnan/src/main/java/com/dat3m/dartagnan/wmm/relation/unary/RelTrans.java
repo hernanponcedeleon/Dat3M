@@ -46,27 +46,6 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            //TODO: Make sure this is correct and efficient
-            BranchEquivalence eq = task.getBranchEquivalence();
-            minTupleSet = new TupleSet(r1.getMinTupleSet());
-            boolean changed;
-            int size = minTupleSet.size();
-            do {
-                minTupleSet.addAll(minTupleSet.postComposition(r1.getMinTupleSet(),
-                        (t1, t2) -> t1.getSecond().cfImpliesExec() &&
-                                (eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()))));
-                changed = minTupleSet.size() != size;
-                size = minTupleSet.size();
-            } while (changed);
-            removeMutuallyExclusiveTuples(minTupleSet);
-        }
-        return minTupleSet;
-    }
-
-
-    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             transitiveReachabilityMap = r1.getMaxTupleSet().transMap();
@@ -80,6 +59,24 @@ public class RelTrans extends UnaryRelation {
         }
         return maxTupleSet;
     }
+
+	@Override
+	public void fetchMinTupleSet() {
+		r1.fetchMinTupleSet();
+		minTupleSet.addAll(r1.getMinTupleSet());
+		//TODO: Make sure this is correct and efficient
+		BranchEquivalence eq = task.getBranchEquivalence();
+		boolean changed;
+		int size = minTupleSet.size();
+		do {
+			minTupleSet.addAll(minTupleSet.postComposition(r1.getMinTupleSet(),
+				(t1, t2) -> t1.getSecond().cfImpliesExec() &&
+					(eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()))));
+			changed = minTupleSet.size() != size;
+			size = minTupleSet.size();
+		} while (changed);
+		removeMutuallyExclusiveTuples(minTupleSet);
+	}
 
 	@Override
 	public boolean disable(TupleSet t) {

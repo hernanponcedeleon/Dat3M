@@ -34,18 +34,6 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            BranchEquivalence eq = task.getBranchEquivalence();
-            minTupleSet = r1.getMinTupleSet().postComposition(r2.getMinTupleSet(),
-                    (t1, t2) -> t1.getSecond().cfImpliesExec() &&
-                            (eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond())));
-            removeMutuallyExclusiveTuples(minTupleSet);
-        }
-        return minTupleSet;
-    }
-
-    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = r1.getMaxTupleSet().postComposition(r2.getMaxTupleSet());
@@ -54,24 +42,22 @@ public class RelComposition extends BinaryRelation {
         return maxTupleSet;
     }
 
-    @Override
-    public TupleSet getMinTupleSetRecursive(){
-        if(recursiveGroupId > 0 && maxTupleSet != null){
-            BranchEquivalence eq = task.getBranchEquivalence();
-            minTupleSet = r1.getMinTupleSetRecursive().postComposition(r2.getMinTupleSetRecursive(),
-                    (t1, t2) -> t1.getSecond().cfImpliesExec() &&
-                            (eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond())));
-            removeMutuallyExclusiveTuples(minTupleSet);
-			disableTupleSet.addAll(Sets.difference(
-					Sets.union(
-							r1.getDisableTupleSet().postComposition(r2.getMaxTupleSet()),
-							r1.getMaxTupleSet().postComposition(r2.getDisableTupleSet())),
-					r1.getMaxTupleSet().postComposition(r2.getMaxTupleSet(),
-							(a,b)->!r1.getDisableTupleSet().contains(a)&&!r2.getDisableTupleSet().contains(b))));
-            return minTupleSet;
-        }
-        return getMinTupleSet();
-    }
+	@Override
+	public void fetchMinTupleSet() {
+		r1.fetchMinTupleSet();
+		r2.fetchMinTupleSet();
+		BranchEquivalence eq = task.getBranchEquivalence();
+		minTupleSet.addAll(r1.getMinTupleSet().postComposition(r2.getMinTupleSet(),
+				(t1, t2) -> t1.getSecond().cfImpliesExec() &&
+						(eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()))));
+		removeMutuallyExclusiveTuples(minTupleSet);
+		disableTupleSet.addAll(Sets.difference(
+				Sets.union(
+						r1.getDisableTupleSet().postComposition(r2.getMaxTupleSet()),
+						r1.getMaxTupleSet().postComposition(r2.getDisableTupleSet())),
+				r1.getMaxTupleSet().postComposition(r2.getMaxTupleSet(),
+						(a,b)->!r1.getDisableTupleSet().contains(a)&&!r2.getDisableTupleSet().contains(b))));
+	}
 
     @Override
     public TupleSet getMaxTupleSetRecursive(){

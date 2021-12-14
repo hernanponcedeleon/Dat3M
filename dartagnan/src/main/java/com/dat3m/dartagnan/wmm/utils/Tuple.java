@@ -23,7 +23,10 @@ public class Tuple implements Comparable<Tuple> {
     }
 
     public String toString() {
-        return "(" + first + ", " + second + ")";
+        if(isSameThread()) {
+            return isForward() ? "forward" : "backward";
+        }
+        return "extern";
     }
 
     @Override

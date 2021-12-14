@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -29,11 +28,8 @@ public abstract class StaticRelation extends Relation {
     }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = getMaxTupleSet();
-        }
-        return minTupleSet;
+    public void fetchMinTupleSet(){
+        minTupleSet = getMaxTupleSet();
     }
 
     @Override

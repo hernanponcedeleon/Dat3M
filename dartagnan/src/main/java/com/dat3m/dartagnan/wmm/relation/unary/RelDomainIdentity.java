@@ -27,25 +27,22 @@ public class RelDomainIdentity extends UnaryRelation {
     }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            BranchEquivalence eq = task.getBranchEquivalence();
-            minTupleSet = new TupleSet();
-            r1.getMinTupleSet().stream()
-                    .filter(t -> t.getSecond().cfImpliesExec() && eq.isImplied(t.getFirst(), t.getSecond()))
-                    .map(t -> new Tuple(t.getFirst(), t.getFirst()))
-                    .forEach(minTupleSet::add);
-        }
-        return minTupleSet;
-    }
-
-    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = r1.getMaxTupleSet().mapped(t -> new Tuple(t.getFirst(), t.getFirst()));
         }
         return maxTupleSet;
     }
+
+	@Override
+	public void fetchMinTupleSet() {
+		r1.fetchMinTupleSet();
+		BranchEquivalence eq = task.getBranchEquivalence();
+		r1.getMinTupleSet().stream()
+				.filter(t -> t.getSecond().cfImpliesExec() && eq.isImplied(t.getFirst(), t.getSecond()))
+				.map(t -> new Tuple(t.getFirst(), t.getFirst()))
+				.forEach(minTupleSet::add);
+	}
 
 	@Override
 	public boolean disable(TupleSet t) {

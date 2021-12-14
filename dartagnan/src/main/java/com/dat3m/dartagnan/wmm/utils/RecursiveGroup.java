@@ -49,13 +49,12 @@ public class RecursiveGroup {
 
         while(changed){
             changed = false;
-            for(RecursiveRelation relation : relations){
-                relation.setDoRecurse();
-                int oldSize = relation.getMinTupleSet().size();
-                if(oldSize != relation.getMinTupleSetRecursive().size()){
-                    changed = true;
-                }
-            }
+			for(RecursiveRelation r : relations) {
+				r.getInner().fetchMinTupleSet();
+			}
+			for(RecursiveRelation r : relations) {
+				changed |= r.getMinTupleSet().addAll(r.getInner().getMinTupleSet());
+			}
         }
     }
 

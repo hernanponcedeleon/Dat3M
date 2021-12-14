@@ -21,14 +21,6 @@ public class RelAddrDirect extends BasicRegRelation {
     }
 
     @Override
-    public TupleSet getMinTupleSet() {
-        if(minTupleSet == null){
-            mkTupleSets(task.getProgram().getCache().getEvents(FilterBasic.get(EType.MEMORY)));
-        }
-        return minTupleSet;
-    }
-
-    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             mkTupleSets(task.getProgram().getCache().getEvents(FilterBasic.get(EType.MEMORY)));

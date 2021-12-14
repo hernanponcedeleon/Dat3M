@@ -27,25 +27,22 @@ public class RelRangeIdentity extends UnaryRelation {
     }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            BranchEquivalence eq = task.getBranchEquivalence();
-            minTupleSet = new TupleSet();
-            r1.getMinTupleSet().stream()
-                    .filter(t -> t.getFirst().cfImpliesExec() && eq.isImplied(t.getSecond(), t.getFirst()))
-                    .map(t -> new Tuple(t.getSecond(), t.getSecond()))
-                    .forEach(minTupleSet::add);
-        }
-        return minTupleSet;
-    }
-
-    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = r1.getMaxTupleSet().mapped(t -> new Tuple(t.getSecond(), t.getSecond()));
         }
         return maxTupleSet;
     }
+
+	@Override
+	public void fetchMinTupleSet(){
+		r1.fetchMinTupleSet();
+		BranchEquivalence eq = task.getBranchEquivalence();
+		r1.getMinTupleSet().stream()
+			.filter(t -> t.getFirst().cfImpliesExec() && eq.isImplied(t.getSecond(), t.getFirst()))
+			.map(t -> new Tuple(t.getSecond(), t.getSecond()))
+			.forEach(minTupleSet::add);
+	}
 
 	@Override
 	public boolean disable(TupleSet t) {

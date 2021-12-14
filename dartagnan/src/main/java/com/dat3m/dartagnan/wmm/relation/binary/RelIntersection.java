@@ -30,14 +30,6 @@ public class RelIntersection extends BinaryRelation {
     }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = new TupleSet(Sets.intersection(r1.getMinTupleSet(), r2.getMinTupleSet()));
-        }
-        return minTupleSet;
-    }
-
-    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet(Sets.intersection(r1.getMaxTupleSet(), r2.getMaxTupleSet()));
@@ -45,15 +37,13 @@ public class RelIntersection extends BinaryRelation {
         return maxTupleSet;
     }
 
-    @Override
-    public TupleSet getMinTupleSetRecursive(){
-        if(recursiveGroupId > 0 && minTupleSet != null){
-            minTupleSet.addAll(Sets.intersection(r1.getMinTupleSetRecursive(), r2.getMinTupleSetRecursive()));
-			disableTupleSet.addAll(Sets.union(r1.getDisableTupleSet(),r2.getDisableTupleSet()));
-            return minTupleSet;
-        }
-        return getMinTupleSet();
-    }
+	@Override
+	public void fetchMinTupleSet() {
+		r1.fetchMinTupleSet();
+		r2.fetchMinTupleSet();
+		minTupleSet.addAll(Sets.intersection(r1.getMinTupleSet(), r2.getMinTupleSet()));
+		disableTupleSet.addAll(Sets.union(r1.getDisableTupleSet(),r2.getDisableTupleSet()));
+	}
 
     @Override
     public TupleSet getMaxTupleSetRecursive(){

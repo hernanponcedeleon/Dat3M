@@ -35,10 +35,9 @@ public class RelFencerel extends StaticRelation {
     public String getFenceName() { return fenceName; }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
+    public void fetchMinTupleSet() {
+        if(minTupleSet.isEmpty()) {
             BranchEquivalence eq = task.getBranchEquivalence();
-            minTupleSet = new TupleSet();
             for(Thread t : task.getProgram().getThreads()){
                 List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));
                 List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(EType.MEMORY));
@@ -64,7 +63,6 @@ public class RelFencerel extends StaticRelation {
             }
             removeMutuallyExclusiveTuples(minTupleSet);
         }
-        return minTupleSet;
     }
 
     @Override
