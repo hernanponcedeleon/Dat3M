@@ -118,6 +118,17 @@ public abstract class Relation implements Dependent<Relation> {
 		return false;
 	}
 
+	/**
+	 * Tries to find new disabled tuples.
+	 * This method is specialised by compositions and intersections,
+	 * as later bottom-up minimal tuples are not allowed to eagerly trigger top-down disabling.
+	 * @return
+	 * Detected some new minimal tuples.
+	 */
+	public boolean continueDisableTupleSet() {
+		return false;
+	}
+
     public TupleSet getEncodeTupleSet(){
         return encodeTupleSet;
     }

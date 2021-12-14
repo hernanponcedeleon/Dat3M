@@ -70,6 +70,16 @@ public class RelIntersection extends BinaryRelation {
 		if(t.isEmpty()) {
 			return false;
 		}
+		return continueDisableTupleSet();
+	}
+
+	@Override
+	public boolean continueDisableTupleSet() {
+		//TODO manage disabled tuples with support
+		return continueDisableTupleSet(disableTupleSet);
+	}
+
+	private boolean continueDisableTupleSet(TupleSet t) {
 		TupleSet t1 = new TupleSet();
 		t1.addAll(t);
 		t1.retainAll(r2.getMinTupleSet());

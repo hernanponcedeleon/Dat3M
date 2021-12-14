@@ -146,6 +146,9 @@ public class Wmm {
 				for (Axiom a : axioms) {
 					changed |= a.applyDisableSet();
 				}
+				for(Relation r : relationRepository.getRelations()) {
+					changed |= r.continueDisableTupleSet();
+				}
 				for (RecursiveGroup g : reverse(recursiveGroups)) {
 					changed |= g.initDisableTupleSets();
 				}

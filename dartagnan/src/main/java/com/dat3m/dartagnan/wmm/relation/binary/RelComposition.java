@@ -90,6 +90,16 @@ public class RelComposition extends BinaryRelation {
 		if(t.isEmpty()) {
 			return false;
 		}
+		return continueDisableTupleSet(t);
+	}
+
+	@Override
+	public boolean continueDisableTupleSet() {
+		//TODO manage disabled tuples with support
+		return continueDisableTupleSet(disableTupleSet);
+	}
+
+	private boolean continueDisableTupleSet(TupleSet t) {
 		BranchEquivalence eq = task.getBranchEquivalence();
 		TupleSet t1 = new TupleSet();
 		TupleSet t2 = new TupleSet();
