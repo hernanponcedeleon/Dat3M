@@ -108,6 +108,11 @@ public class RelRMW extends StaticRelation {
         return maxTupleSet;
     }
 
+	@Override
+	public void fetchMinTupleSet() {
+		getMaxTupleSet();
+	}
+
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
         FormulaManager fmgr = ctx.getFormulaManager();
