@@ -38,7 +38,7 @@ public class RelDomainIdentity extends UnaryRelation {
 	public void fetchMinTupleSet() {
 		r1.fetchMinTupleSet();
 		BranchEquivalence eq = task.getBranchEquivalence();
-		r1.getMinTupleSet().stream()
+		r1NewMinTupleSet().stream()
 				.filter(t -> t.getSecond().cfImpliesExec() && eq.isImplied(t.getFirst(), t.getSecond()))
 				.map(t -> new Tuple(t.getFirst(), t.getFirst()))
 				.forEach(minTupleSet::add);

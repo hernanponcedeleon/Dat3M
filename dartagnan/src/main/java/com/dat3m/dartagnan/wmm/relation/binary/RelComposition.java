@@ -12,6 +12,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BiPredicate;
 
 /**
  *
@@ -47,14 +48,16 @@ public class RelComposition extends BinaryRelation {
 		r1.fetchMinTupleSet();
 		r2.fetchMinTupleSet();
 		BranchEquivalence eq = task.getBranchEquivalence();
-		minTupleSet.addAll(r1.getMinTupleSet().postComposition(r2.getMinTupleSet(),
-				(t1, t2) -> t1.getSecond().cfImpliesExec() &&
-						(eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()))));
+		BiPredicate<Tuple,Tuple> pred = (t1, t2) -> t1.getSecond().cfImpliesExec() &&
+			(eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()));
+		//FIXME in this version, the news are either full or empty. If both relations have news, the full set is computed twice
+		minTupleSet.addAll(r1NewMinTupleSet().postComposition(r2.getMinTupleSet(),pred));
+		minTupleSet.addAll(r1.getMinTupleSet().postComposition(r2NewMinTupleSet(),pred));
 		removeMutuallyExclusiveTuples(minTupleSet);
 		disableTupleSet.addAll(Sets.difference(
 				Sets.union(
-						r1.getDisableTupleSet().postComposition(r2.getMaxTupleSet()),
-						r1.getMaxTupleSet().postComposition(r2.getDisableTupleSet())),
+						r1NewDisableTupleSet().postComposition(r2.getMaxTupleSet()),
+						r1.getMaxTupleSet().postComposition(r2NewDisableTupleSet())),
 				r1.getMaxTupleSet().postComposition(r2.getMaxTupleSet(),
 						(a,b)->!r1.getDisableTupleSet().contains(a)&&!r2.getDisableTupleSet().contains(b))));
 	}

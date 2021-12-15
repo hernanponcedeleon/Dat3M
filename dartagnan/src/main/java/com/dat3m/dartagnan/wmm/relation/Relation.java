@@ -36,6 +36,7 @@ public abstract class Relation implements Dependent<Relation> {
     protected TupleSet maxTupleSet;
     protected TupleSet encodeTupleSet;
 	protected TupleSet disableTupleSet;
+	protected boolean fetchedMinTupleSet;
 
     protected int recursiveGroupId = 0;
     protected boolean forceUpdateRecursiveGroupId = false;
@@ -71,6 +72,7 @@ public abstract class Relation implements Dependent<Relation> {
         this.maxTupleSet = null;
         encodeTupleSet = new TupleSet();
 		disableTupleSet = new TupleSet();
+		fetchedMinTupleSet = false;
     }
 
     public abstract TupleSet getMaxTupleSet();
@@ -83,7 +85,8 @@ public abstract class Relation implements Dependent<Relation> {
 	 * @see #fetchMinTupleSet()
 	 */
 	public final TupleSet getMinTupleSet() {
-		if(minTupleSet.isEmpty()) {
+		if(!fetchedMinTupleSet) {
+			fetchedMinTupleSet = true;
 			fetchMinTupleSet();
 		}
 		return minTupleSet;

@@ -41,8 +41,10 @@ public class RelIntersection extends BinaryRelation {
 	public void fetchMinTupleSet() {
 		r1.fetchMinTupleSet();
 		r2.fetchMinTupleSet();
-		minTupleSet.addAll(Sets.intersection(r1.getMinTupleSet(), r2.getMinTupleSet()));
-		disableTupleSet.addAll(Sets.union(r1.getDisableTupleSet(),r2.getDisableTupleSet()));
+		minTupleSet.addAll(Sets.union(
+			Sets.intersection(r1NewMinTupleSet(),r2.getMinTupleSet()),
+			Sets.intersection(r2NewMinTupleSet(),r1.getMinTupleSet())));
+		disableTupleSet.addAll(Sets.union(r1NewDisableTupleSet(),r2NewDisableTupleSet()));
 	}
 
     @Override

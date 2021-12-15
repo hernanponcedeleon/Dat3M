@@ -41,8 +41,10 @@ public class RelUnion extends BinaryRelation {
 	public void fetchMinTupleSet() {
 		r1.fetchMinTupleSet();
 		r2.fetchMinTupleSet();
-		minTupleSet.addAll(Sets.union(r1.getMinTupleSet(), r2.getMinTupleSet()));
-		disableTupleSet.addAll(Sets.intersection(r1.getDisableTupleSet(), r2.getDisableTupleSet()));
+		minTupleSet.addAll(Sets.union(r1NewMinTupleSet(), r2NewMinTupleSet()));
+		disableTupleSet.addAll(Sets.union(
+			Sets.intersection(r1NewDisableTupleSet(),r2.getDisableTupleSet()),
+			Sets.intersection(r2NewDisableTupleSet(),r1.getDisableTupleSet())));
 	}
 
     @Override

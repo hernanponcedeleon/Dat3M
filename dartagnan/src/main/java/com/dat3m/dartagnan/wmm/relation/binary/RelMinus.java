@@ -51,8 +51,8 @@ public class RelMinus extends BinaryRelation {
 	@Override
 	public void fetchMinTupleSet(){
 		r1.fetchMinTupleSet();
-		minTupleSet.addAll(Sets.difference(r1.getMinTupleSet(), r2.getMaxTupleSetRecursive()));
-		disableTupleSet.addAll(Sets.intersection(r1.getDisableTupleSet(),maxTupleSet));
+		minTupleSet.addAll(Sets.difference(r1NewMinTupleSet(), r2.getMaxTupleSetRecursive()));
+		disableTupleSet.addAll(Sets.intersection(r1NewDisableTupleSet(),maxTupleSet));
 	}
 
     @Override

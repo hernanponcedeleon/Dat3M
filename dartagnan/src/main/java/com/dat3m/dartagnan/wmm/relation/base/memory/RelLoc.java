@@ -25,6 +25,9 @@ public class RelLoc extends Relation {
 
 	@Override
 	public void fetchMinTupleSet() {
+		if(!minTupleSet.isEmpty()) {
+			return;
+		}
 		for(Tuple t : getMaxTupleSet()) {
 			MemEvent e1 = (MemEvent) t.getFirst();
 			MemEvent e2 = (MemEvent) t.getSecond();

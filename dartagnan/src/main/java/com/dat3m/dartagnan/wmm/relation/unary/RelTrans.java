@@ -14,6 +14,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiPredicate;
 
 /**
  *
@@ -63,15 +64,18 @@ public class RelTrans extends UnaryRelation {
 	@Override
 	public void fetchMinTupleSet() {
 		r1.fetchMinTupleSet();
-		minTupleSet.addAll(r1.getMinTupleSet());
+		TupleSet news = new TupleSet(r1NewMinTupleSet());
+		news.removeAll(minTupleSet);
+		minTupleSet.addAll(news);
 		//TODO: Make sure this is correct and efficient
 		BranchEquivalence eq = task.getBranchEquivalence();
 		boolean changed;
 		int size = minTupleSet.size();
 		do {
-			minTupleSet.addAll(minTupleSet.postComposition(r1.getMinTupleSet(),
-				(t1, t2) -> t1.getSecond().cfImpliesExec() &&
-					(eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()))));
+			BiPredicate<Tuple,Tuple> pred = (t1, t2) -> t1.getSecond().cfImpliesExec() &&
+				(eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()));
+			minTupleSet.addAll(minTupleSet.postComposition(news,pred));
+			minTupleSet.addAll(news.postComposition(minTupleSet,pred));
 			changed = minTupleSet.size() != size;
 			size = minTupleSet.size();
 		} while (changed);

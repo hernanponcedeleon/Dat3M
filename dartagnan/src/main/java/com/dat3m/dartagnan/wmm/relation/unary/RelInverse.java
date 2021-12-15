@@ -41,8 +41,8 @@ public class RelInverse extends UnaryRelation {
 	@Override
 	public void fetchMinTupleSet() {
 		r1.fetchMinTupleSet();
-		minTupleSet.addAll(r1.getMinTupleSet().inverse());
-		disableTupleSet.addAll(r1.getDisableTupleSet().inverse());
+		minTupleSet.addAll(r1NewMinTupleSet().inverse());
+		disableTupleSet.addAll(r1NewDisableTupleSet().inverse());
 	}
 
 	@Override

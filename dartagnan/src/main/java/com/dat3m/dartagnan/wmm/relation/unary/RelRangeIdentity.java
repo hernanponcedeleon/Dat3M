@@ -38,7 +38,7 @@ public class RelRangeIdentity extends UnaryRelation {
 	public void fetchMinTupleSet(){
 		r1.fetchMinTupleSet();
 		BranchEquivalence eq = task.getBranchEquivalence();
-		r1.getMinTupleSet().stream()
+		r1NewMinTupleSet().stream()
 			.filter(t -> t.getFirst().cfImpliesExec() && eq.isImplied(t.getSecond(), t.getFirst()))
 			.map(t -> new Tuple(t.getSecond(), t.getSecond()))
 			.forEach(minTupleSet::add);
