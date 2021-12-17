@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.witness.WitnessGraph;
 
 import static com.dat3m.dartagnan.witness.GraphAttributes.*;
 
+import java.util.stream.Collectors;
+
 public class VisitorXML extends XMLParserBaseVisitor<Object> implements XMLParserVisitor<Object> {
 	
 	private final WitnessGraph graph = new WitnessGraph();
@@ -48,10 +50,12 @@ public class VisitorXML extends XMLParserBaseVisitor<Object> implements XMLParse
 				graph.addNode(name);
 			}
 			if(ctx.Name(0).getText().equals("edge")) {
-				String name = ctx.attribute(0).STRING().toString();
+				int idx = ctx.attribute().stream().map(a -> a.Name().toString()).collect(Collectors.toList()).indexOf("source");
+				String name = ctx.attribute(idx).STRING().toString();
 				name = name.substring(1, name.length()-1);
 				Node v0 = graph.hasNode(name) ? graph.getNode(name) : new Node(name);
-				name = ctx.attribute(1).STRING().toString();
+				idx = ctx.attribute().stream().map(a -> a.Name().toString()).collect(Collectors.toList()).indexOf("target");
+				name = ctx.attribute(idx).STRING().toString();
 				name = name.substring(1, name.length()-1);
 				Node v1 = graph.hasNode(name) ? graph.getNode(name) : new Node(name);
 				Edge edge = new Edge(v0, v1);
