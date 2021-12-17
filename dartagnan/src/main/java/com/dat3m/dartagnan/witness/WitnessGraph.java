@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.program.utils.EType.*;
 import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
-import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
+import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 public class WitnessGraph extends ElemWithAttributes {
 
@@ -84,7 +84,7 @@ public class WitnessGraph extends ElemWithAttributes {
 					.collect(Collectors.toList());
 			if(!previous.isEmpty() && !events.isEmpty()) {
 				enc = bmgr.and(enc, bmgr.or(Lists.cartesianProduct(previous, events).stream()
-						.map(p -> imgr.lessThan(intVar("hb", p.get(0), ctx), intVar("hb", p.get(1), ctx)))
+						.map(p -> edge("hb", p.get(0), p.get(1), ctx))
 						.toArray(BooleanFormula[]::new)));
 			}
 			if(!events.isEmpty()) {
