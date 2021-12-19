@@ -415,7 +415,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitAssign_cmd(Assign_cmdContext ctx) {
         ExprsContext exprs = ctx.def_body().exprs();
-    	if(exprs.expr().size() != 1 && exprs.expr().size() != ctx.Ident().size()) {
+    	if(ctx.Ident().size() != 1 && exprs.expr().size() != ctx.Ident().size()) {
             throw new ParsingException("There should be one expression per variable\nor only one expression for all in " + ctx.getText());
     	}
 		for(int i = 0; i < ctx.Ident().size(); i++) {
