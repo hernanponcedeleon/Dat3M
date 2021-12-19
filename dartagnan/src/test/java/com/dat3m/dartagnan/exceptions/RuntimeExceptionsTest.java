@@ -22,7 +22,7 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
-public class RuntimeExceptions {
+public class RuntimeExceptionsTest {
 
     @Test(expected = RuntimeException.class)
     public void noThread() throws Exception {

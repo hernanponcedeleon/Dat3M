@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RunWith(Parameterized.class)
-public class ProgramParsingExceptions {
+public class ProgramParsingExceptionsTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
@@ -31,7 +31,7 @@ public class ProgramParsingExceptions {
 
     private final String path;
 
-    public ProgramParsingExceptions(String path) {
+    public ProgramParsingExceptionsTest(String path) {
         this.path = path;
     }
 
