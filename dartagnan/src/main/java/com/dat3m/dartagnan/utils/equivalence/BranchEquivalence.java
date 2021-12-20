@@ -13,6 +13,8 @@ import com.google.common.collect.Sets;
 
 import java.util.*;
 
+import static com.dat3m.dartagnan.program.utils.EType.INIT;
+
 /* Procedure:
    (1) Find all simple branches using
         - Branching events (Jumps, ifs)
@@ -69,7 +71,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     public boolean isImplied(Event start, Event implied) {
-        return getEquivalenceClass(start).getImpliedClasses().contains(getEquivalenceClass(implied));
+        return implied.is(INIT) || getEquivalenceClass(start).getImpliedClasses().contains(getEquivalenceClass(implied));
     }
 
     public boolean isReachableFrom(Event start, Event target) {
