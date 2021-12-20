@@ -14,10 +14,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Skip;
 import org.junit.Test;
-import org.sosy_lab.common.ShutdownManager;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.log.BasicLogManager;
-import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -57,15 +53,8 @@ public class RuntimeExceptionsTest {
 
     @Test(expected = RuntimeException.class)
     public void noModelBNonDet() throws Exception {
-	    Configuration config = Configuration.builder()
-	            .setOption("solver.z3.usePhantomReferences", "true")
-	            .build();
-	    try (SolverContext ctx = SolverContextFactory.createSolverContext(
-	            config,
-	            BasicLogManager.create(config),
-	            ShutdownManager.create().getNotifier(),
-	            org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3);
-	         ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+	    try (SolverContext ctx = com.dat3m.dartagnan.utils.TestHelper.createContext();
+	    		ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
 	    {
 	    	BNonDet nonDet = new BNonDet(32);
 	    	nonDet.getBoolValue(null, prover.getModel(), ctx);
@@ -74,15 +63,8 @@ public class RuntimeExceptionsTest {
 
     @Test(expected = RuntimeException.class)
     public void noModelINonDet() throws Exception {
-	    Configuration config = Configuration.builder()
-	            .setOption("solver.z3.usePhantomReferences", "true")
-	            .build();
-	    try (SolverContext ctx = SolverContextFactory.createSolverContext(
-	            config,
-	            BasicLogManager.create(config),
-	            ShutdownManager.create().getNotifier(),
-	            org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3);
-	         ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+	    try (SolverContext ctx = com.dat3m.dartagnan.utils.TestHelper.createContext();
+	    		ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
 	    {
 	    	INonDet nonDet = new INonDet(INonDetTypes.INT, 32);
 	    	nonDet.getIntValue(null, prover.getModel(), ctx);
