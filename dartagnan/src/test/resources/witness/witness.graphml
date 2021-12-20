@@ -1,0 +1,633 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<key attr.name="architecture" attr.type="string" for="graph" id="architecture"/>
+<key attr.name="creationtime" attr.type="string" for="graph" id="creationtime"/>
+<key attr.name="producer" attr.type="string" for="graph" id="producer"/>
+<key attr.name="programfile" attr.type="string" for="graph" id="programfile"/>
+<key attr.name="programhash" attr.type="string" for="graph" id="programhash"/>
+<key attr.name="sourcecodelang" attr.type="string" for="graph" id="sourcecodelang"/>
+<key attr.name="specification" attr.type="string" for="graph" id="specification"/>
+<key attr.name="witness-type" attr.type="string" for="graph" id="witness-type"/>
+<key attr.name="unroll-bound" attr.type="string" for="graph" id="unroll-bound"/>
+<key attr.name="entry" attr.type="boolean" for="node" id="entry"/>
+<key attr.name="violation" attr.type="boolean" for="node" id="violation"/>
+<key attr.name="createThread" attr.type="string" for="edge" id="createThread"/>
+<key attr.name="threadId" attr.type="string" for="edge" id="threadId"/>
+<key attr.name="enterFunction" attr.type="string" for="edge" id="enterFunction"/>
+<key attr.name="startline" attr.type="string" for="edge" id="startline"/>
+<key attr.name="event-id" attr.type="string" for="edge" id="event-id"/>
+<key attr.name="loaded-value" attr.type="string" for="edge" id="loaded-value"/>
+<key attr.name="stored-value" attr.type="string" for="edge" id="stored-value"/>
+<graph edgedefault="directed">
+  <data key="architecture">32bit</data>
+  <data key="creationtime">2021-12-17T15:15:38Z</data>
+  <data key="producer">Dartagnan</data>
+  <data key="programfile">../sv-benchmarks/c/pthread-wmm/safe000_rmo.i</data>
+  <data key="programhash">8451e3cb8884fa2b6b1e99bbb0d2794206f3a8d471135f07f1c96b53a42300f5</data>
+  <data key="sourcecodelang">C</data>
+  <data key="specification">CHECK( init(main()), LTL(G ! call(reach_error())))</data>
+  <data key="unroll-bound">1</data>
+  <data key="witness-type">violation_witness</data>
+  <node id="N0">
+    <data key="entry">true</data>
+  </node>
+  <node id="N1">
+  </node>
+  <node id="N10">
+  </node>
+  <node id="N11">
+  </node>
+  <node id="N12">
+  </node>
+  <node id="N13">
+  </node>
+  <node id="N14">
+  </node>
+  <node id="N15">
+  </node>
+  <node id="N16">
+  </node>
+  <node id="N17">
+  </node>
+  <node id="N18">
+  </node>
+  <node id="N19">
+  </node>
+  <node id="N2">
+  </node>
+  <node id="N20">
+  </node>
+  <node id="N21">
+  </node>
+  <node id="N22">
+  </node>
+  <node id="N23">
+  </node>
+  <node id="N24">
+  </node>
+  <node id="N25">
+  </node>
+  <node id="N26">
+  </node>
+  <node id="N27">
+  </node>
+  <node id="N28">
+  </node>
+  <node id="N29">
+  </node>
+  <node id="N3">
+  </node>
+  <node id="N30">
+  </node>
+  <node id="N31">
+  </node>
+  <node id="N32">
+  </node>
+  <node id="N33">
+  </node>
+  <node id="N34">
+  </node>
+  <node id="N35">
+  </node>
+  <node id="N36">
+  </node>
+  <node id="N37">
+  </node>
+  <node id="N38">
+  </node>
+  <node id="N39">
+  </node>
+  <node id="N4">
+  </node>
+  <node id="N40">
+  </node>
+  <node id="N41">
+  </node>
+  <node id="N42">
+  </node>
+  <node id="N43">
+  </node>
+  <node id="N44">
+  </node>
+  <node id="N45">
+  </node>
+  <node id="N46">
+  </node>
+  <node id="N47">
+  </node>
+  <node id="N48">
+  </node>
+  <node id="N49">
+  </node>
+  <node id="N5">
+  </node>
+  <node id="N50">
+  </node>
+  <node id="N51">
+  </node>
+  <node id="N52">
+  </node>
+  <node id="N53">
+  </node>
+  <node id="N54">
+  </node>
+  <node id="N55">
+  </node>
+  <node id="N56">
+  </node>
+  <node id="N57">
+  </node>
+  <node id="N58">
+  </node>
+  <node id="N59">
+  </node>
+  <node id="N6">
+  </node>
+  <node id="N60">
+  </node>
+  <node id="N61">
+  </node>
+  <node id="N62">
+  </node>
+  <node id="N63">
+  </node>
+  <node id="N64">
+  </node>
+  <node id="N65">
+  </node>
+  <node id="N66">
+  </node>
+  <node id="N67">
+  </node>
+  <node id="N68">
+  </node>
+  <node id="N69">
+  </node>
+  <node id="N7">
+  </node>
+  <node id="N70">
+  </node>
+  <node id="N71">
+  </node>
+  <node id="N72">
+  </node>
+  <node id="N73">
+  </node>
+  <node id="N74">
+  </node>
+  <node id="N75">
+    <data key="violation">true</data>
+  </node>
+  <node id="N8">
+  </node>
+  <node id="N9">
+  </node>
+  <edge source="N0" target="N1">
+    <data key="createThread">0</data>
+  </edge>
+  <edge source="N1" target="N2">
+    <data key="enterFunction">main</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N2" target="N3">
+    <data key="createThread">1</data>
+    <data key="event-id">6</data>
+    <data key="startline">853</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N3" target="N4">
+    <data key="event-id">787</data>
+    <data key="startline">761</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N4" target="N5">
+    <data key="event-id">790</data>
+    <data key="startline">762</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N5" target="N6">
+    <data key="event-id">794</data>
+    <data key="startline">763</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N6" target="N7">
+    <data key="event-id">796</data>
+    <data key="startline">764</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N7" target="N8">
+    <data key="event-id">856</data>
+    <data key="startline">765</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N8" target="N9">
+    <data key="event-id">926</data>
+    <data key="startline">766</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N9" target="N10">
+    <data key="event-id">996</data>
+    <data key="startline">767</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N10" target="N11">
+    <data key="event-id">1073</data>
+    <data key="startline">768</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N11" target="N12">
+    <data key="event-id">1143</data>
+    <data key="startline">769</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N12" target="N13">
+    <data key="event-id">1220</data>
+    <data key="startline">770</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N13" target="N14">
+    <data key="event-id">1290</data>
+    <data key="startline">771</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N14" target="N15">
+    <data key="event-id">1291</data>
+    <data key="startline">772</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N15" target="N16">
+    <data key="event-id">1292</data>
+    <data key="startline">773</data>
+    <data key="stored-value">-6168</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N16" target="N17">
+    <data key="event-id">1294</data>
+    <data key="startline">774</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N17" target="N18">
+    <data key="event-id">1306</data>
+    <data key="startline">775</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N18" target="N19">
+    <data key="event-id">1307</data>
+    <data key="startline">776</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N19" target="N20">
+    <data key="createThread">2</data>
+    <data key="event-id">8</data>
+    <data key="startline">855</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N20" target="N21">
+    <data key="createThread">3</data>
+    <data key="event-id">10</data>
+    <data key="startline">857</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N21" target="N22">
+    <data key="event-id">1310</data>
+    <data key="startline">779</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N22" target="N23">
+    <data key="event-id">1508</data>
+    <data key="startline">811</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N23" target="N24">
+    <data key="event-id">1511</data>
+    <data key="startline">812</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N24" target="N25">
+    <data key="event-id">1515</data>
+    <data key="startline">813</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N25" target="N26">
+    <data key="event-id">1517</data>
+    <data key="startline">814</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N26" target="N27">
+    <data key="event-id">1577</data>
+    <data key="startline">815</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N27" target="N28">
+    <data key="event-id">1647</data>
+    <data key="startline">816</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N28" target="N29">
+    <data key="event-id">1717</data>
+    <data key="startline">817</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N29" target="N30">
+    <data key="event-id">1794</data>
+    <data key="startline">818</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N30" target="N31">
+    <data key="event-id">1864</data>
+    <data key="startline">819</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N31" target="N32">
+    <data key="event-id">1941</data>
+    <data key="startline">820</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N32" target="N33">
+    <data key="event-id">2011</data>
+    <data key="startline">821</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N33" target="N34">
+    <data key="event-id">2013</data>
+    <data key="startline">822</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N34" target="N35">
+    <data key="event-id">2025</data>
+    <data key="startline">823</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N35" target="N36">
+    <data key="event-id">2026</data>
+    <data key="startline">824</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N36" target="N37">
+    <data key="event-id">1326</data>
+    <data key="startline">791</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">2</data>
+  </edge>
+  <edge source="N37" target="N38">
+    <data key="event-id">1329</data>
+    <data key="startline">794</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">2</data>
+  </edge>
+  <edge source="N38" target="N39">
+    <data key="event-id">1369</data>
+    <data key="startline">797</data>
+    <data key="stored-value">2</data>
+    <data key="threadId">2</data>
+  </edge>
+  <edge source="N39" target="N40">
+    <data key="event-id">1393</data>
+    <data key="startline">798</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">2</data>
+  </edge>
+  <edge source="N40" target="N41">
+    <data key="event-id">1431</data>
+    <data key="startline">799</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">2</data>
+  </edge>
+  <edge source="N41" target="N42">
+    <data key="event-id">1455</data>
+    <data key="startline">800</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">2</data>
+  </edge>
+  <edge source="N42" target="N43">
+    <data key="event-id">1493</data>
+    <data key="startline">801</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">2</data>
+  </edge>
+  <edge source="N43" target="N44">
+    <data key="event-id">2029</data>
+    <data key="startline">827</data>
+    <data key="stored-value">2</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N44" target="N45">
+    <data key="event-id">1498</data>
+    <data key="startline">804</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">2</data>
+  </edge>
+  <edge source="N45" target="N46">
+    <data key="event-id">2069</data>
+    <data key="startline">830</data>
+    <data key="stored-value">2</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N46" target="N47">
+    <data key="event-id">2093</data>
+    <data key="startline">831</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N47" target="N48">
+    <data key="event-id">2131</data>
+    <data key="startline">832</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N48" target="N49">
+    <data key="event-id">2155</data>
+    <data key="startline">833</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N49" target="N50">
+    <data key="event-id">2193</data>
+    <data key="startline">834</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N50" target="N51">
+    <data key="event-id">1317</data>
+    <data key="startline">784</data>
+    <data key="stored-value">2</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N51" target="N52">
+    <data key="event-id">2198</data>
+    <data key="startline">837</data>
+    <data key="stored-value">3</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N52" target="N53">
+    <data key="event-id">15</data>
+    <data key="startline">859</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N53" target="N54">
+    <data key="event-id">17</data>
+    <data key="loaded-value">1</data>
+    <data key="startline">861</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N54" target="N55">
+    <data key="event-id">68</data>
+    <data key="startline">863</data>
+    <data key="stored-value">2</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N55" target="N56">
+    <data key="event-id">92</data>
+    <data key="startline">864</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N56" target="N57">
+    <data key="event-id">130</data>
+    <data key="startline">865</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N57" target="N58">
+    <data key="event-id">154</data>
+    <data key="startline">866</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N58" target="N59">
+    <data key="event-id">192</data>
+    <data key="startline">867</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N59" target="N60">
+    <data key="event-id">197</data>
+    <data key="startline">870</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N60" target="N61">
+    <data key="event-id">200</data>
+    <data key="startline">871</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N61" target="N62">
+    <data key="event-id">204</data>
+    <data key="startline">872</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N62" target="N63">
+    <data key="event-id">206</data>
+    <data key="startline">873</data>
+    <data key="stored-value">2</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N63" target="N64">
+    <data key="event-id">266</data>
+    <data key="startline">874</data>
+    <data key="stored-value">2</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N64" target="N65">
+    <data key="event-id">336</data>
+    <data key="startline">875</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N65" target="N66">
+    <data key="event-id">406</data>
+    <data key="startline">876</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N66" target="N67">
+    <data key="event-id">483</data>
+    <data key="startline">877</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N67" target="N68">
+    <data key="event-id">553</data>
+    <data key="startline">878</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N68" target="N69">
+    <data key="event-id">630</data>
+    <data key="startline">879</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N69" target="N70">
+    <data key="event-id">700</data>
+    <data key="startline">880</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N70" target="N71">
+    <data key="event-id">703</data>
+    <data key="startline">881</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N71" target="N72">
+    <data key="event-id">728</data>
+    <data key="startline">882</data>
+    <data key="stored-value">2</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N72" target="N73">
+    <data key="event-id">760</data>
+    <data key="startline">883</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N73" target="N74">
+    <data key="event-id">772</data>
+    <data key="startline">884</data>
+    <data key="stored-value">2</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N74" target="N75">
+    <data key="event-id">773</data>
+    <data key="startline">885</data>
+    <data key="stored-value">0</data>
+    <data key="threadId">0</data>
+  </edge>
+</graph></graphml>
