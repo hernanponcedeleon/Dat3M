@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan;
+package com.dat3m.dartagnan.miscellaneous;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RunWith(Parameterized.class)
-public class DartagnanLoop {
+public class Loop {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
@@ -33,7 +33,7 @@ public class DartagnanLoop {
 
     private final String path;
 
-    public DartagnanLoop(String path) {
+    public Loop(String path) {
         this.path = path;
     }
 

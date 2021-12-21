@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan;
+package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.utils.ResourceHelper;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RunWith(Parameterized.class)
-public class DartagnanArrayIllegalTest {
+public class ArrayIllegalTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
@@ -30,7 +30,7 @@ public class DartagnanArrayIllegalTest {
 
     private final String path;
 
-    public DartagnanArrayIllegalTest(String path) {
+    public ArrayIllegalTest(String path) {
         this.path = path;
     }
 
