@@ -13,6 +13,9 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Skip;
+
+import static com.dat3m.dartagnan.utils.TestHelper.createContext;
+
 import org.junit.Test;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -47,7 +50,7 @@ public class RuntimeExceptionsTest {
 
     @Test(expected = RuntimeException.class)
     public void noModelBNonDet() throws Exception {
-	    try (SolverContext ctx = com.dat3m.dartagnan.utils.TestHelper.createContext();
+	    try (SolverContext ctx = createContext();
 	    		ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
 	    {
 	    	BNonDet nonDet = new BNonDet(32);
@@ -57,7 +60,7 @@ public class RuntimeExceptionsTest {
 
     @Test(expected = RuntimeException.class)
     public void noModelINonDet() throws Exception {
-	    try (SolverContext ctx = com.dat3m.dartagnan.utils.TestHelper.createContext();
+	    try (SolverContext ctx = createContext();
 	    		ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
 	    {
 	    	INonDet nonDet = new INonDet(INonDetTypes.INT, 32);
