@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RunWith(Parameterized.class)
-public class Loop {
+public class LoopTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
@@ -32,7 +32,7 @@ public class Loop {
 
     private final String path;
 
-    public Loop(String path) {
+    public LoopTest(String path) {
         this.path = path;
     }
 
