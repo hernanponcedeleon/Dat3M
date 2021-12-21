@@ -58,7 +58,7 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        if(target == Arch.ARM || target == Arch.ARM8) {
+        if(target == Arch.ARM8) {
             RMWStoreExclusive store = newRMWStoreExclusive(address, value, mo);
             ExecutionStatus status = newExecutionStatus(register, store);
             List<Event> events = eventSequence(

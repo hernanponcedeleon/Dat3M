@@ -87,7 +87,6 @@ For programs written in `.c` and `.bpl`, `<target>` specifies the architectures 
 - none
 - tso
 - power
-- arm
 - arm8
 
 Program written in `.litmus` format do not require such option.
