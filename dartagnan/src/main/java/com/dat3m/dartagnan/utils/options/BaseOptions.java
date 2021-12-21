@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.utils.options;
 import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.cli.*;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
@@ -50,9 +49,6 @@ public abstract class BaseOptions extends Options {
 
         addOption(new Option("t", "target", true,
                 "Target architecture: " + supportedTargets));
-
-        addOption(new Option("alias", true,
-                "Type of alias analysis {none|andersen|cfs}"));
 
         addOption(new Option("u", "unroll", true,
                 "Unrolling bound <integer>"));
@@ -136,7 +132,6 @@ public abstract class BaseOptions extends Options {
     }
 
     protected void parseSettings(CommandLine cmd){
-        Alias alias = Alias.get(cmd.getOptionValue("alias", Alias.getDefault().asStringOption()));
 
         int bound = 1;
         int solver_timeout = 0;
@@ -154,6 +149,6 @@ public abstract class BaseOptions extends Options {
                 throw new UnsupportedOperationException("Illegal solver_timeout value");
             }
         }
-        settings = new Settings(alias, bound, solver_timeout);
+        settings = new Settings(bound, solver_timeout);
     }
 }

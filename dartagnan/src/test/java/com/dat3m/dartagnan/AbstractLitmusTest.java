@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -72,7 +71,7 @@ public abstract class AbstractLitmusTest {
     }
 
     protected Provider<Settings> settingsProvider() {
-        return Provider.fromSupplier(() -> new Settings(Alias.CFIS, 1, 0));
+        return Provider.fromSupplier(() -> new Settings(1, 0));
     }
 
     protected long getTimeout() { return 10000; }

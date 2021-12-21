@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.utils;
 
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,7 +11,6 @@ public class Settings {
     public static final int FLAG_USE_SEQ_ENCODING_REL_RF            = 1;
     public static final int FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY    = 2;
 
-    private final Alias alias;
     private final int bound;
     private final int solver_timeout;
 
@@ -26,14 +23,9 @@ public class Settings {
         return flags;
     }
 
-    public Settings(Alias alias, int bound, int solver_timeout){
-        this.alias = alias == null ? Alias.CFIS : alias;
+    public Settings(int bound, int solver_timeout){
         this.bound = Math.max(1, bound);
         this.solver_timeout = solver_timeout;
-    }
-
-    public Alias getAlias(){
-        return alias;
     }
 
     public int getBound(){
@@ -64,6 +56,6 @@ public class Settings {
 
     @Override
     public String toString(){
-        return " alias=" + alias + " bound=" + bound;
+        return " bound=" + bound;
     }
 }
