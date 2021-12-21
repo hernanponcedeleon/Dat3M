@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.miscellaneous;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.utils.printer.Printer;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,7 +39,6 @@ public class Loop {
     @Test
     public void test() throws Exception {
     	Program p = new ProgramParser().parse(new File(path));
-    	System.out.println(new Printer().print(p));
     	p.unroll(1, 0);
     }
 }
