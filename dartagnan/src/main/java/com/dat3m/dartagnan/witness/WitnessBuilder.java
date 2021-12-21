@@ -20,8 +20,6 @@ import org.sosy_lab.java_smt.api.SolverException;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.text.DateFormat;
@@ -40,49 +38,32 @@ import static java.lang.String.valueOf;
 
 public class WitnessBuilder {
 	
-	private final WitnessGraph graph;
 	private final Program program;
 	private final SolverContext ctx;
 	private final ProverEnvironment prover;
 	private final String type ;
-	private final String path;
 	
 	private final Map<Event, Integer> eventThreadMap = new HashMap<>();
 	
-	public WitnessBuilder(Program program, SolverContext ctx, ProverEnvironment prover, Result result, DartagnanOptions options) {
-		this.graph = new WitnessGraph();
-		this.graph.addAttribute(UNROLLBOUND.toString(), valueOf(options.getSettings().getBound()));
+	public WitnessBuilder(Program program, SolverContext ctx, ProverEnvironment prover, Result result) {
 		this.program = program;
 		this.ctx = ctx;
 		this.prover = prover;
 		this.type = result.equals(FAIL) ? "violation" : "correctness";
-		this.path = options.createWitness();
-		buildGraph();
 	}
 	
-	public void write() {
-		try (FileWriter fw = new FileWriter(System.getenv("DAT3M_HOME") + "/output/witness.graphml")) {
-			fw.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
-			fw.write("<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
-			for(GraphAttributes attr : GraphAttributes.values()) {fw.write("<key attr.name=\"" + attr.toString() + "\" attr.type=\"string\" for=\"graph\" id=\"" + attr + "\"/>\n");}
-			for(NodeAttributes attr : NodeAttributes.values()) {fw.write("<key attr.name=\"" + attr.toString() + "\" attr.type=\"boolean\" for=\"node\" id=\"" + attr + "\"/>\n");}
-			for(EdgeAttributes attr : EdgeAttributes.values()) {fw.write("<key attr.name=\"" + attr.toString() + "\" attr.type=\"string\" for=\"edge\" id=\"" + attr + "\"/>\n");}
-			fw.write(graph.toXML());
-			fw.write("</graphml>\n");
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}		
-	}
-
-	private void buildGraph() {
+	public WitnessGraph buildGraph(DartagnanOptions options) {
 		populateMap();
+
+		WitnessGraph graph = new WitnessGraph();
+		graph.addAttribute(UNROLLBOUND.toString(), valueOf(options.getSettings().getBound()));
 		graph.addAttribute(WITNESSTYPE.toString(), type + "_witness");
 		graph.addAttribute(SOURCECODELANG.toString(), "C");
 		graph.addAttribute(PRODUCER.toString(), "Dartagnan");
 		graph.addAttribute(SPECIFICATION.toString(), "CHECK( init(main()), LTL(G ! call(reach_error())))");
-		graph.addAttribute(PROGRAMFILE.toString(), path);
+		graph.addAttribute(PROGRAMFILE.toString(), options.createWitness());
 		graph.addAttribute(ARCHITECTURE.toString(), "32bit");
-		graph.addAttribute(PROGRAMHASH.toString(), getFileSHA256(new File(path)));
+		graph.addAttribute(PROGRAMHASH.toString(), getFileSHA256(new File(options.createWitness())));
 		
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 		df.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -107,7 +88,7 @@ public class WitnessBuilder {
 		int threads = 1;
 		
 		if(type.equals("correctness")) {
-			return;
+			return graph;
 		}
 
 		try (Model model = prover.getModel()) {
@@ -154,6 +135,7 @@ public class WitnessBuilder {
 			// The if above guarantees that if we reach this try, a Model exists
 		}
 		graph.getNode("N" + nextNode).addAttribute("violation", "true");
+		return graph;
 	}
 	
 	private void populateMap() {
@@ -188,7 +170,7 @@ public class WitnessBuilder {
         return exec.isEmpty() ? execEvents : exec;
 	}
 	
-	public List<Event> reOrderBasedOnAtomicity(Program program, List<Event> order) {
+	private List<Event> reOrderBasedOnAtomicity(Program program, List<Event> order) {
 		List<Event> result = new ArrayList<>();
 		Set<Event> processedEvents = new HashSet<>(); // Maintained for constant lookup time
 		// All the atomic blocks in the code that have to stay together in any execution
@@ -212,7 +194,7 @@ public class WitnessBuilder {
 		return result;
 	}
 	
-	private static String getFileSHA256(File file) {
+	private String getFileSHA256(File file) {
 		try {
 			MessageDigest digest = MessageDigest.getInstance("SHA-256");
 			

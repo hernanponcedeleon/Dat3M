@@ -149,7 +149,7 @@ public class Dartagnan {
                 }
 
                 if (options.createWitness() != null && options.getAnalysis() != RACES) {
-                    new WitnessBuilder(p, ctx, prover, result, options).write();
+                    new WitnessBuilder(p, ctx, prover, result).buildGraph(options).write();
                 }
             }
         } catch (InterruptedException e){
