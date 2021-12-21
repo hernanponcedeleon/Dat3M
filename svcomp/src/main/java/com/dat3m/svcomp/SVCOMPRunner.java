@@ -80,7 +80,6 @@ public class SVCOMPRunner {
 	    	cmd.addAll(asList("-i", boogieName));
 	    	cmd.addAll(asList("-cat", options.getTargetModelFilePath()));
 	    	cmd.addAll(asList("-t", options.getTarget().asStringOption()));
-	    	cmd.addAll(asList("-alias", options.getSettings().getAlias().asStringOption()));
 	    	cmd.addAll(asList("-unroll", String.valueOf(bound)));
 	    	cmd.addAll(asList("-" + ANALYSIS_OPTION, options.getAnalysis().asStringOption()));
 	    	cmd.addAll(asList("-" + METHOD_OPTION, options.getMethod().asStringOption()));

@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 
 import org.junit.Test;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
@@ -28,7 +27,7 @@ public class BuildWitnessTest {
     public void BuildWriteEncode() throws Exception {
     	Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-O0.bpl"));
     	Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat"));
-    	VerificationTask task = new VerificationTask(p, wmm, Arch.NONE, new Settings(Alias.CFIS, 0, 0));
+    	VerificationTask task = new VerificationTask(p, wmm, Arch.NONE, new Settings(0, 0));
     	
     	SolverContext ctx = TestHelper.createContext();
     	ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);

@@ -2,7 +2,6 @@ package com.dat3m.ui.options;
 
 import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.utils.Settings;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.ui.button.ClearButton;
 import com.dat3m.ui.button.TestButton;
@@ -35,7 +34,6 @@ public class OptionsPane extends JPanel implements ActionListener {
 	
     private final JLabel iconPane;
 
-    private final Selector<Alias> aliasPane;
     private final Selector<Method> methodPane;
     private final Selector<Solvers> solverPane;
     
@@ -52,12 +50,8 @@ public class OptionsPane extends JPanel implements ActionListener {
     public OptionsPane(){
         super(new GridLayout(1,0));
 
-        int height = Math.min(getIconHeight(), (int) Math.round(Toolkit.getDefaultToolkit().getScreenSize().getHeight()) * 7 / 18);
         iconPane = new JLabel();
 
-        aliasPane = new Selector<>(Alias.orderedValues(), ControlCode.ALIAS);
-        aliasPane.setSelectedItem(Alias.getDefault());
-        
         methodPane = new Selector<>(Method.orderedValues(), ControlCode.METHOD);
         methodPane.setSelectedItem(Method.getDefault());
         
@@ -99,7 +93,6 @@ public class OptionsPane extends JPanel implements ActionListener {
 
     public UiOptions getOptions(){
         Settings settings = new Settings(
-                (Alias)aliasPane.getSelectedItem(),
                 Integer.parseInt(boundField.getText()),
                 Integer.parseInt(timeoutField.getText())
         );
@@ -108,10 +101,6 @@ public class OptionsPane extends JPanel implements ActionListener {
         Method method = (Method)methodPane.getSelectedItem();
         Solvers solver = (Solvers)solverPane.getSelectedItem();
         return new UiOptions(target, method, solver, settings);
-    }
-
-    private int getIconHeight(){
-        return min(500, (int) round((Toolkit.getDefaultToolkit().getScreenSize().getHeight() / 2)));
     }
 
     private void mkGrid(){
@@ -135,7 +124,7 @@ public class OptionsPane extends JPanel implements ActionListener {
 
         JSplitPane graphPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         graphPane.setDividerSize(0);
-        JComponent[] panes = { targetPane, aliasPane, methodPane, solverPane, boundsPane, testButton, clearButton, graphPane, scrollConsole };
+        JComponent[] panes = { targetPane, methodPane, solverPane, boundsPane, testButton, clearButton, graphPane, scrollConsole };
         Iterator<JComponent> it = Arrays.asList(panes).iterator();
         JComponent current = iconPane;
         current.setBorder(emptyBorder);

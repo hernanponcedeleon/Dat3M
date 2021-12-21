@@ -67,7 +67,6 @@ public class Dartagnan {
         logger.info("Program path: " + options.getProgramFilePath());
         logger.info("CAT file path: " + options.getTargetModelFilePath());
         logger.info("Bound: " + options.getSettings().getBound());
-        logger.info("Alias Analysis: " + options.getSettings().getAlias());
         logger.info("Target: " + target);
 
         WitnessGraph witness = new WitnessGraph();

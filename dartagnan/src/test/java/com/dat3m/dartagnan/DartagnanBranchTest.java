@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.miscellaneous;
+package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -36,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-public class BranchTest {
+public class DartagnanBranchTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
@@ -86,7 +86,7 @@ public class BranchTest {
     private final Settings settings;
     private final Result expected;
 
-    public BranchTest(String path, Result expected, Wmm wmm, Settings settings) {
+    public DartagnanBranchTest(String path, Result expected, Wmm wmm, Settings settings) {
         this.path = path;
         this.expected = expected;
         this.wmm = wmm;

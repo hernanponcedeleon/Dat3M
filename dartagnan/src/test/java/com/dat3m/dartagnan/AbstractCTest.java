@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -37,7 +36,7 @@ public abstract class AbstractCTest {
     protected abstract long getTimeout();
 
     protected Provider<Settings> getSettingsProvider() {
-        return Provider.fromSupplier(() -> new Settings(Alias.CFIS,1, 0));
+        return Provider.fromSupplier(() -> new Settings(1, 0));
     }
 
     // =============================================================
