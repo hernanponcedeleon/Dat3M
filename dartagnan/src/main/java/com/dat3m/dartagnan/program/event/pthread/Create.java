@@ -67,10 +67,6 @@ public class Create extends Event {
             case POWER:
                 optionalBarrierBefore = Power.newSyncBarrier();
                 break;
-            case ARM:
-                optionalBarrierBefore = Arm.newISHBarrier();
-                optionalBarrierAfter = Arm.newISHBarrier();
-                break;
             case ARM8:
                 optionalBarrierBefore = Arm8.DMB.newISHBarrier();
                 optionalBarrierAfter = Arm8.DMB.newISHBarrier();

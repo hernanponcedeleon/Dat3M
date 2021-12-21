@@ -288,24 +288,13 @@ public class EventFactory {
     // =============================================================================================
     // ============================================ ARM ============================================
     // =============================================================================================
-    private static class ArmCommon {
-        private ArmCommon() {}
+
+    public static class Arm8 {
+        private Arm8() {}
 
         public static StoreExclusive newExclusiveStore(Register register, IExpr address, ExprInterface value, String mo) {
             return new StoreExclusive(register, address, value, mo);
         }
-    }
-
-    public static class Arm extends ArmCommon {
-        private Arm() {}
-
-        public static Fence newISHBarrier() {
-            return new Fence(ISH);
-        }
-    }
-
-    public static class Arm8 extends ArmCommon {
-        private Arm8() {}
 
         public static class DMB {
             private DMB() {}
