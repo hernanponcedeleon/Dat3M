@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
@@ -58,7 +57,7 @@ public class UnusedTestFails {
         Wmm power = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/power.cat"));
         Wmm arm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat"));
 
-        Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
+        Settings s1 = new Settings(1, TIMEOUT);
 
         List<Object[]> data = new ArrayList<>();
         //data.add(new Object[]{"../tests/mutex-2.c", tso, POWER, s1, UNKNOWN});

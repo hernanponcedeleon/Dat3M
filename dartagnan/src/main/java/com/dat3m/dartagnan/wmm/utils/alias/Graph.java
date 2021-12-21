@@ -15,7 +15,6 @@ public class Graph {
     private final Map<Object, Set<Object>> edges = new HashMap<>();
     private final Map<Object, Set<Address>> addresses = new HashMap<>();
     private final Map<Register, Set<MemEvent>> events = new HashMap<>();
-    private final Map<Register, Map<Integer, SSAReg>> ssa = new HashMap<>();
 
     boolean addEdge(Object v1, Object v2){
         return edges.computeIfAbsent(v1, key -> new HashSet<>()).add(v2);
@@ -43,11 +42,5 @@ public class Graph {
 
     Set<MemEvent> getEvents(Register r){
         return events.getOrDefault(r, ImmutableSet.of());
-    }
-
-    SSAReg getSSAReg(Register r, int i){
-        return ssa
-                .computeIfAbsent(r, key -> new HashMap<>())
-                .computeIfAbsent(i, key -> new SSAReg(i, r));
     }
 }

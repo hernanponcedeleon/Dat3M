@@ -81,7 +81,7 @@ public class Wmm {
 
     public void initialise(VerificationTask task, SolverContext ctx) {
         this.task = task;
-        new AliasAnalysis().calculateLocationSets(task.getProgram(), task.getSettings().getAlias());
+        new AliasAnalysis().calculateLocationSets(task.getProgram());
 
         for(String relName : baseRelations){
             relationRepository.getRelation(relName);

@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,7 +46,7 @@ public abstract class AbstractSvCompTest {
     protected long getTimeout() { return 180000; }
 
     protected Provider<Settings> getSettingsProvider() {
-        return Provider.fromSupplier(() -> new Settings(Alias.CFIS, bound, 0));
+        return Provider.fromSupplier(() -> new Settings(bound, 0));
     }
 
     protected Provider<Wmm> getWmmProvider() {
