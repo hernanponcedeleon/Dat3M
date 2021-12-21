@@ -40,15 +40,6 @@ public class CLocksTestLarge extends AbstractCTest {
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"ttas-5", TSO, UNKNOWN},
-                {"ttas-5", ARM8, UNKNOWN},
-                {"ttas-5", POWER, UNKNOWN},
-                {"ttas-5-acq2rx", TSO, UNKNOWN},
-                {"ttas-5-acq2rx", ARM8, UNKNOWN},
-                {"ttas-5-acq2rx", POWER, UNKNOWN},
-                {"ttas-5-rel2rx", TSO, UNKNOWN},
-                {"ttas-5-rel2rx", ARM8, FAIL},
-                {"ttas-5-rel2rx", POWER, FAIL},
                 {"ticketlock-6", TSO, UNKNOWN},
                 {"ticketlock-6", ARM8, UNKNOWN},
                 {"ticketlock-6", POWER, UNKNOWN},
@@ -88,24 +79,6 @@ public class CLocksTestLarge extends AbstractCTest {
                 {"mutex_musl-4-rel2rx_unlock", TSO, UNKNOWN},
                 {"mutex_musl-4-rel2rx_unlock", ARM8, FAIL},
                 {"mutex_musl-4-rel2rx_unlock", POWER, FAIL},
-                {"spinlock-5", TSO, UNKNOWN},
-                {"spinlock-5", ARM8, UNKNOWN},
-                {"spinlock-5", POWER, UNKNOWN},
-                {"spinlock-5-acq2rx", TSO, UNKNOWN},
-                {"spinlock-5-acq2rx", ARM8, UNKNOWN},
-                {"spinlock-5-acq2rx", POWER, UNKNOWN},
-                {"spinlock-5-rel2rx", TSO, UNKNOWN},
-                {"spinlock-5-rel2rx", ARM8, FAIL},
-                {"spinlock-5-rel2rx", POWER, FAIL},
-                {"linuxrwlock-3", TSO, UNKNOWN},
-                {"linuxrwlock-3", ARM8, UNKNOWN},
-                {"linuxrwlock-3", POWER, UNKNOWN},
-                {"linuxrwlock-3-acq2rx", TSO, UNKNOWN},
-                {"linuxrwlock-3-acq2rx", ARM8, FAIL},
-                {"linuxrwlock-3-acq2rx", POWER, FAIL},
-                {"linuxrwlock-3-rel2rx", TSO, UNKNOWN},
-                {"linuxrwlock-3-rel2rx", ARM8, FAIL},
-                {"linuxrwlock-3-rel2rx", POWER, FAIL}
         });
     }
 
