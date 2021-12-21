@@ -18,11 +18,12 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.math.BigInteger;
+import java.security.MessageDigest;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -81,7 +82,7 @@ public class WitnessBuilder {
 		graph.addAttribute(SPECIFICATION.toString(), "CHECK( init(main()), LTL(G ! call(reach_error())))");
 		graph.addAttribute(PROGRAMFILE.toString(), path);
 		graph.addAttribute(ARCHITECTURE.toString(), "32bit");
-		graph.addAttribute(PROGRAMHASH.toString(), checksum());
+		graph.addAttribute(PROGRAMHASH.toString(), getFileSHA256(new File(path)));
 		
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 		df.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -211,32 +212,42 @@ public class WitnessBuilder {
 		return result;
 	}
 	
-	private String checksum() {
-		String output = "";
+	private static String getFileSHA256(File file) {
 		try {
-			Process proc = Runtime.getRuntime().exec("sha256sum " + path);
-			try (BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
-				proc.waitFor();
-				while (read.ready()) {
-					output = read.readLine();
-				}
-				if (proc.exitValue() == 1) {
-					// No try-with-resources is needed as process will terminate anyways
-					BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
-					while (error.ready()) {
-						System.out.println(error.readLine());
-					}
-					System.exit(0);
-				}
-			}
-		} catch(IOException | InterruptedException e) {
-			System.out.println(e.getMessage());
-			System.exit(0);
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			
+		    //Get file input stream for reading the file content
+		    FileInputStream fis = new FileInputStream(file);
+		     
+		    //Create byte array to read data in chunks
+		    byte[] byteArray = new byte[1024];
+		    int bytesCount = 0; 
+		      
+		    //Read file data and update in message digest
+		    while ((bytesCount = fis.read(byteArray)) != -1) {
+		        digest.update(byteArray, 0, bytesCount);
+		    };
+		     
+		    //close the stream; We don't need it now.
+		    fis.close();
+		     
+		    //Get the hash's bytes
+		    byte[] bytes = digest.digest();
+		     
+		    //This bytes[] has bytes in decimal format;
+		    //Convert it to hexadecimal format
+		    StringBuilder sb = new StringBuilder();
+		    for(int i=0; i< bytes.length ;i++)
+		    {
+		        sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
+		    }
+		     
+		    //return complete hash
+		   return sb.toString();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-
-		output = output.substring(0, output.lastIndexOf(' '));
-		output = output.substring(0, output.lastIndexOf(' '));
-		return output;
+		return null;
 	}
-
+	
 }
