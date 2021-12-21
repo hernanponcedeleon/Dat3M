@@ -103,9 +103,9 @@ public class CLocksTestLarge extends AbstractCTest {
                 {"linuxrwlock-3-acq2rx", TSO, UNKNOWN},
                 {"linuxrwlock-3-acq2rx", ARM8, FAIL},
                 {"linuxrwlock-3-acq2rx", POWER, FAIL},
-                {"linuxrwlock-3-rel2rx.bpl", TSO, UNKNOWN},
-                {"linuxrwlock-3-rel2rx.bpl", ARM8, FAIL},
-                {"linuxrwlock-3-rel2rx.bpl", POWER, FAIL}
+                {"linuxrwlock-3-rel2rx", TSO, UNKNOWN},
+                {"linuxrwlock-3-rel2rx", ARM8, FAIL},
+                {"linuxrwlock-3-rel2rx", POWER, FAIL}
         });
     }
 
