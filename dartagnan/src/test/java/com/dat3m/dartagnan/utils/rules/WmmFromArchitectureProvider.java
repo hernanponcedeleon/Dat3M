@@ -28,7 +28,6 @@ public class WmmFromArchitectureProvider extends AbstractProvider<Wmm> {
     static {
         ARCH_WMM_MAP.put(Arch.TSO, () -> new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/tso.cat")));
         ARCH_WMM_MAP.put(Arch.ARM8, () -> new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/aarch64.cat")));
-        ARCH_WMM_MAP.put(Arch.ARM, () -> new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/arm.cat")));
         ARCH_WMM_MAP.put(Arch.POWER, () -> new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/power.cat")));
     }
 

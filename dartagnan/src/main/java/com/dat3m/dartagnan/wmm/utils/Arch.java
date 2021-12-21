@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.wmm.utils;
 import java.util.Arrays;
 
 public enum Arch {
-	NONE, ARM, ARM8, POWER, TSO;
+	NONE, ARM8, POWER, TSO;
 
     public static Arch get(String arch){
         if(arch != null){
@@ -11,8 +11,6 @@ public enum Arch {
             switch(arch){
                 case "none":
                     return NONE;
-                case "arm":
-                    return ARM;
                 case "arm8":
                     return ARM8;
                 case "power":
@@ -29,8 +27,6 @@ public enum Arch {
         switch(this){
         	case NONE:
         		return "none";
-        	case ARM:
-        		return "arm";
         	case ARM8:
         		return "arm8";
         	case POWER:
@@ -47,8 +43,6 @@ public enum Arch {
         switch(this){
             case NONE:
                 return "None";
-            case ARM:
-                return "ARM";
             case ARM8:
                 return "ARM8";
             case POWER:
@@ -65,7 +59,7 @@ public enum Arch {
 	
 	// Used to decide the order shown by the selector in the UI
 	public static Arch[] orderedValues() {
-		Arch[] order = { NONE, ARM, ARM8, POWER, TSO };
+		Arch[] order = { NONE, ARM8, POWER, TSO };
 		// Be sure no element is missing
 		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;
