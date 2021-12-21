@@ -38,6 +38,12 @@ public class RelCo extends Relation {
 	@Override
 	public void fetchMinTupleSet() {
 		if(minTupleSet.isEmpty()) {
+			//initialisations always write before all other writes
+			//enumerate loc.minTupleSet
+			maxTupleSet.stream()
+			.filter(t->t.getFirst().is(INIT))
+			.filter(t->((MemEvent)t.getSecond()).getMaxAddressSet().size()==1)
+			.forEach(minTupleSet::add);
 			applyLocalConsistencyMinSet();
 		}
 	}
@@ -181,7 +187,7 @@ public class RelCo extends Relation {
                     continue;
                 }
 
-                if (w1.is(INIT) || t.isForward()) {
+                if (t.isForward()) {
                     minTupleSet.add(t);
                 }
             }
