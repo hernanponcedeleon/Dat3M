@@ -37,13 +37,6 @@ public class IfExpr implements ExprInterface {
 	}
 
 	@Override
-	public Formula getLastValueExpr(SolverContext ctx) {
-		// In principle this method is only called by assertions 
-		// and thus it should never be called for this class
-        throw new RuntimeException("Problem with getLastValueExpr in " + this);
-	}
-
-	@Override
 	public BigInteger getIntValue(Event e, Model model, SolverContext ctx) {
 		return guard.getBoolValue(e, model, ctx) ? tbranch.getIntValue(e, model, ctx) : fbranch.getIntValue(e, model, ctx);
 	}

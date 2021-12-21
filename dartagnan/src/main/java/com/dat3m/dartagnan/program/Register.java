@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
@@ -12,7 +13,7 @@ import java.math.BigInteger;
 import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
 import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
-public class Register extends IExpr implements ExprInterface {
+public class Register extends IExpr implements ExprInterface, LastValueInterface {
 
 	private static int dummyCount = 0;
 

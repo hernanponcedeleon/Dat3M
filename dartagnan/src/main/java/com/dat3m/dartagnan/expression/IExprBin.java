@@ -30,11 +30,6 @@ public class IExprBin extends IExpr implements ExprInterface {
     }
 
     @Override
-    public Formula getLastValueExpr(SolverContext ctx){
-        return op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx);
-    }
-
-    @Override
     public ImmutableSet<Register> getRegs() {
         return new ImmutableSet.Builder<Register>().addAll(lhs.getRegs()).addAll(rhs.getRegs()).build();
     }

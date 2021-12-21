@@ -40,12 +40,6 @@ public class RuntimeExceptionsTest {
     }
 
     @Test(expected = RuntimeException.class)
-    public void lastValueIfExpr() throws Exception {
-    	IfExpr ifE = new IfExpr(BConst.TRUE, new Register("a", 0, 32), new Register("b", 0, 64));
-    	ifE.getLastValueExpr(null);
-    }
-
-    @Test(expected = RuntimeException.class)
     public void diffPrecisionIfExpr() throws Exception {
     	IfExpr ifE = new IfExpr(BConst.TRUE, new Register("a", 0, 32), new Register("b", 0, 64));
     	ifE.getPrecision();

@@ -11,7 +11,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 
-public class IConst extends IExpr implements ExprInterface {
+public class IConst extends IExpr implements ExprInterface, LastValueInterface {
 
 	// TODO(TH): not sure where this are used, but why do you set the precision to 0?
 	// TH: This was a temporary try for integer logic only

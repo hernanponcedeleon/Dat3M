@@ -4,9 +4,11 @@ import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
 
@@ -34,7 +36,12 @@ public class AssertBasic extends AbstractAssert {
 
     @Override
     public BooleanFormula encode(SolverContext ctx) {
-        return op.encode(e1.getLastValueExpr(ctx), e2.getLastValueExpr(ctx), ctx);
+    	Formula f1 = e1 instanceof LastValueInterface ? ((LastValueInterface)e1).getLastValueExpr(ctx) : null;
+    	Formula f2 = e2 instanceof LastValueInterface ? ((LastValueInterface)e2).getLastValueExpr(ctx) : null;
+    	if(f1 == null || f2 == null) {
+    		throw new RuntimeException("AssertBasic can only relate LastValueInterface objects: " + this);
+    	}
+        return op.encode(f1, f2, ctx);
     }
 
     @Override

@@ -7,9 +7,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-
-import java.math.BigInteger;
 
 public class BExprUn extends BExpr {
 
@@ -32,19 +29,6 @@ public class BExprUn extends BExpr {
     @Override
     public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
         return op.encode(b.toBoolFormula(e, ctx), ctx);
-    }
-
-    @Override
-    public Formula getLastValueExpr(SolverContext ctx){
-    	FormulaManager fmgr = ctx.getFormulaManager();
-		
-		BooleanFormula expr = b.getLastValueExpr(ctx) instanceof BitvectorFormula ? 
-				fmgr.getBitvectorFormulaManager().greaterThan((BitvectorFormula)b.getLastValueExpr(ctx), fmgr.getBitvectorFormulaManager().makeBitvector(b.getPrecision(), (BigInteger.ONE)), false):
-				fmgr.getIntegerFormulaManager().greaterThan((IntegerFormula)b.getLastValueExpr(ctx), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE));
-        
-		return fmgr.getBooleanFormulaManager().ifThenElse(op.encode(expr, ctx), 
-				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE), 
-				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
     }
 
     @Override

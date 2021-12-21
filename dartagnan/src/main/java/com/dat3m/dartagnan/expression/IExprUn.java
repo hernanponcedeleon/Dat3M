@@ -36,11 +36,6 @@ public class IExprUn extends IExpr {
 	}
 
 	@Override
-	public Formula getLastValueExpr(SolverContext ctx) {
-        return op.encode(b.getLastValueExpr(ctx), ctx);
-	}
-
-	@Override
 	public BigInteger getIntValue(Event e, Model model, SolverContext ctx) {
         return b.getIntValue(e, model, ctx).negate();
 	}

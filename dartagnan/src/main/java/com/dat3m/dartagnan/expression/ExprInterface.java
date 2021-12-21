@@ -21,8 +21,6 @@ public interface ExprInterface {
 
     BooleanFormula toBoolFormula(Event e, SolverContext ctx);
 
-    Formula getLastValueExpr(SolverContext ctx);
-
     BigInteger getIntValue(Event e, Model model, SolverContext ctx);
 
     boolean getBoolValue(Event e, Model model, SolverContext ctx);
