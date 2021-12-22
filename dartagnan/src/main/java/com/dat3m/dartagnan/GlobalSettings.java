@@ -20,7 +20,6 @@ public class GlobalSettings {
     public static final boolean PERFORM_ATOMIC_BLOCK_OPTIMIZATION = true;
 
     // === Encoding ===
-    public static final boolean FIXED_MEMORY_ENCODING = true;
     // NOTE: ALLOW_PARTIAL_MODELS does NOT work on Litmus tests due to their different assertion condition
     //TODO: This is not used right now. Some previous merge with the JavaSMT branch removed its usage
     // We will fix this later or remove this option completely.
@@ -68,7 +67,6 @@ public class GlobalSettings {
 
     public static void LogGlobalSettings() {
         // General settings
-    	logger.info("FIXED_MEMORY_ENCODING: " + FIXED_MEMORY_ENCODING);
     	logger.info("ATOMIC_AS_LOCK: " + ATOMIC_AS_LOCK);
     	logger.info("ASSUME_LOCAL_CONSISTENCY: " + ASSUME_LOCAL_CONSISTENCY);
     	logger.info("PERFORM_ATOMIC_BLOCK_OPTIMIZATION: " + PERFORM_ATOMIC_BLOCK_OPTIMIZATION);
