@@ -19,66 +19,66 @@ public class PrinterTest {
 	@Test()
 	public void PrintBpl1() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench-1-O0.bpl"));
-		new Printer().print(p);
+		assert(new Printer().print(p) != null);
 		p.unroll(1, 0);
 		p.compile(Arch.NONE, 0);
-		new Printer().print(p);
+		assert(new Printer().print(p) != null);
 	}
 
 	@Test()
 	public void PrintBpl2() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "locks/linuxrwlock-3.bpl"));
-		new Printer().print(p);
+		assert(new Printer().print(p) != null);
 		p.unroll(1, 0);
 		p.compile(Arch.NONE, 0);
-		new Printer().print(p);
+		assert(new Printer().print(p) != null);
 	}
 
 	@Test()
 	public void PrintX86() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "litmus/MP+mfence-rmw+rmw-mfence.litmus"));
-		new Printer().print(p);
+		assert(new Printer().print(p) != null);
 	}
 
 	@Test()
 	public void PrintPPC() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "litmus/MP+lwsync+data-wsi-rfi-ctrlisync.litmus"));
-		new Printer().print(p);
+		assert(new Printer().print(p) != null);
 	}
 
 	@Test()
 	public void PrintAARCH64() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "litmus/MP+popl+poap.litmus"));
-		new Printer().print(p);
+		assert(new Printer().print(p) != null);
 	}
 
 	@Test()
 	public void PrintLinux() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "litmus/C-rcu-link-after.litmus"));
-		new Printer().print(p);
+		assert(new Printer().print(p) != null);
 	}
 
 	@Test()
 	public void TSOtoString() throws Exception {
 		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/tso.cat"));
-		cat.toString();
+		assert(cat.toString() != null);
 	}
 
 	@Test()
 	public void AARCH64toString() throws Exception {
 		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/aarch64.cat"));
-		cat.toString();
+		assert(cat.toString() != null);
 	}
 
 	@Test()
 	public void PowertoString() throws Exception {
 		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/power.cat"));
-		cat.toString();
+		assert(cat.toString() != null);
 	}
 
 	@Test()
 	public void LinuxtoString() throws Exception {
 		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/linux-kernel.cat"));
-		cat.toString();
+		assert(cat.toString() != null);
 	}
 }
