@@ -37,8 +37,6 @@ public class GlobalSettings {
     public static final boolean ALWAYS_SPLIT_ON_JUMP = false;
 
     // === Static analysis ===
-    public static final boolean PERFORM_REORDERING = true;
-    public static final boolean DETERMINISTIC_REORDERING = true;
     public static final boolean ENABLE_SYMMETRY_REDUCTION = true;
     public static final boolean REDUCE_ACYCLICITY_ENCODE_SETS = true;
 
@@ -74,7 +72,6 @@ public class GlobalSettings {
     	logger.info("ANTISYMM_CO: " + ANTISYMM_CO);
     	logger.info("MERGE_BRANCHES: " + MERGE_BRANCHES);
     	logger.info("ALWAYS_SPLIT_ON_JUMP: " + ALWAYS_SPLIT_ON_JUMP);
-    	logger.info("PERFORM_REORDERING: " + PERFORM_REORDERING);
     	logger.info("ENABLE_SYMMETRY_BREAKING: " + ENABLE_SYMMETRY_BREAKING);
     	if (ENABLE_SYMMETRY_BREAKING) {
             logger.info("-- Breaking on Relation: " + BREAK_SYMMETRY_ON_RELATION);
