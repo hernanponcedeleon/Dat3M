@@ -64,7 +64,8 @@ public class Printer {
             return true;
         }
         Event firstEvent = thread.getEntry().getSuccessor();
-        return firstEvent != null && !(firstEvent instanceof Init);
+        // Thread always have at least two events, Skip and end Label
+        return firstEvent.getSuccessor() != null && !(firstEvent instanceof Init);
     }
 
     private void appendThread(Thread thread){
