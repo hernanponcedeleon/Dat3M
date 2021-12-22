@@ -9,9 +9,10 @@ import com.dat3m.dartagnan.expression.INonDetTypes;
 import com.dat3m.dartagnan.expression.IfExpr;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.utils.*;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.CondJump;
+import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Skip;
 
 import static com.dat3m.dartagnan.utils.TestHelper.createContext;
@@ -23,26 +24,26 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 public class RuntimeExceptionsTest {
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = BuildException.class)
     public void noThread() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	// Thread 1 does not exists
     	pb.addChild(1, new Skip());
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = TypeException.class)
     public void diffPrecisionAtom() throws Exception {
     	Atom atom = new Atom(new Register("a", 0, 32), COpBin.EQ, new Register("b", 0, 64));
     	atom.getPrecision();
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = TypeException.class)
     public void diffPrecisionInt() throws Exception {
     	IExprBin bin = new IExprBin(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
     	bin.getPrecision();
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = TypeException.class)
     public void diffPrecisionIfExpr() throws Exception {
     	IfExpr ifE = new IfExpr(BConst.TRUE, new Register("a", 0, 32), new Register("b", 0, 64));
     	ifE.getPrecision();
@@ -68,11 +69,20 @@ public class RuntimeExceptionsTest {
 	    }
     }
     
-    @Test(expected = RuntimeException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void JumpWithNullLabel() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
     	pb.addChild(0, new CondJump(BConst.FALSE, null));
+    	pb.build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void JumpWithNullExpr() throws Exception {
+    	ProgramBuilder pb = new ProgramBuilder();
+    	pb.initThread(0);
+    	Label end = pb.getOrCreateLabel("END");
+    	pb.addChild(0, new CondJump(null, end));
     	pb.build();
     }
 }
