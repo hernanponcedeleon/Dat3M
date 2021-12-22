@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.arch.aarch64.event;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.parsers.program.exception.CallMethodOrderException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.ExecutionStatus;
@@ -67,7 +68,7 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
             );
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }
-        throw new RuntimeException("Compilation of StoreExclusive is not implemented for " + target);
+        throw new UnsupportedOperationException("Compilation of StoreExclusive is not implemented for " + target);
     }
 
 
@@ -76,6 +77,6 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
 
     @Override
     public BooleanFormula encodeCF(SolverContext ctx, BooleanFormula cond) {
-        throw new RuntimeException("StoreExclusive event must be compiled before encoding");
+        throw new CallMethodOrderException("StoreExclusive event must be compiled before encoding");
     }
 }

@@ -50,6 +50,6 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        throw new RuntimeException("Compilation to " + target + " is not supported for " + getClass().getName() + " " + mo);
+        throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName() + " " + mo);
     }
 }

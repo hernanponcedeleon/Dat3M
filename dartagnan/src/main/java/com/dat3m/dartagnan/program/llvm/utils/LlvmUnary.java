@@ -132,7 +132,7 @@ public class LlvmUnary {
 		}
 
 		if(op == null) {
-			throw new RuntimeException("Problem with " + name + " method");
+			throw new UnsupportedOperationException("Problem with " + name + " method");
 		}
 		return new IExprUn(op, (ExprInterface)callParams.get(0));
 	}

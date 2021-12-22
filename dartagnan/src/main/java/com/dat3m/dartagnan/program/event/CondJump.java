@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
+import com.dat3m.dartagnan.parsers.program.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -176,7 +177,7 @@ public class CondJump extends Event implements RegReaderData {
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(successor == null){
-            throw new RuntimeException("Malformed CondJump event");
+            throw new MalformedProgramException("Malformed CondJump event");
         }
         return super.compileRecursive(target, nextId, predecessor, depth);
     }

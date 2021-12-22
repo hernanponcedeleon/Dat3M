@@ -50,7 +50,7 @@ public abstract class UnaryRelation extends Relation {
     public void initialise(VerificationTask task, SolverContext ctx){
         super.initialise(task, ctx);
         if(recursiveGroupId > 0){
-            throw new RuntimeException("Recursion is not implemented for " + this.getClass().getName());
+            throw new UnsupportedOperationException("Recursion is not implemented for " + this.getClass().getName());
         }
     }
 

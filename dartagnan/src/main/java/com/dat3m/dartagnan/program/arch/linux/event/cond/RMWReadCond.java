@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.arch.linux.event.cond;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.parsers.program.exception.CallMethodOrderException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Load;
@@ -39,7 +40,7 @@ public abstract class RMWReadCond extends Load implements RegWriter, RegReaderDa
         if(formulaCond != null){
             return formulaCond;
         }
-        throw new RuntimeException("formulaCond is requested before it has been initialised in " + this.getClass().getName());
+        throw new CallMethodOrderException("formulaCond is requested before it has been initialised in " + this.getClass().getName());
     }
 
     @Override

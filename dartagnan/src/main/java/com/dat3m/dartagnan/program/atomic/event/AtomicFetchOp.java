@@ -102,7 +102,7 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
                 break;
             default:
                 String tag = mo != null ? "_explicit" : "";
-                throw new RuntimeException("Compilation of atomic_fetch_" + op.toLinuxName() + tag + " is not implemented for " + target);
+                throw new UnsupportedOperationException("Compilation of atomic_fetch_" + op.toLinuxName() + tag + " is not implemented for " + target);
         }
         setCLineForAll(events, this.cLine);
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);        
