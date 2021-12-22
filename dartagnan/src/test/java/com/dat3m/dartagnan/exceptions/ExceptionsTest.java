@@ -29,26 +29,26 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 public class ExceptionsTest {
 
-    @Test(expected = BuildException.class)
+    @Test(expected = MalformedProgramException.class)
     public void noThread() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	// Thread 1 does not exists
     	pb.addChild(1, new Skip());
     }
 
-    @Test(expected = TypeException.class)
+    @Test(expected = ExprTypeMismatchException.class)
     public void diffPrecisionAtom() throws Exception {
     	Atom atom = new Atom(new Register("a", 0, 32), COpBin.EQ, new Register("b", 0, 64));
     	atom.getPrecision();
     }
 
-    @Test(expected = TypeException.class)
+    @Test(expected = ExprTypeMismatchException.class)
     public void diffPrecisionInt() throws Exception {
     	IExprBin bin = new IExprBin(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
     	bin.getPrecision();
     }
 
-    @Test(expected = TypeException.class)
+    @Test(expected = ExprTypeMismatchException.class)
     public void diffPrecisionIfExpr() throws Exception {
     	IfExpr ifE = new IfExpr(BConst.TRUE, new Register("a", 0, 32), new Register("b", 0, 64));
     	ifE.getPrecision();
@@ -91,22 +91,22 @@ public class ExceptionsTest {
     	pb.build();
     }
     
-    @Test(expected = BuildException.class)
-    public void AtomicEndWithoutBegin() throws Exception {
+    @Test(expected = MalformedProgramException.class)
+    public void DuplicatedLabel() throws Exception {
     	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/DuplicatedLabel.litmus"));
     }
 
-    @Test(expected = BuildException.class)
+    @Test(expected = MalformedProgramException.class)
     public void IllegalJump() throws Exception {
     	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/IllegalJump.litmus"));
     }
 
-    @Test(expected = BuildException.class)
+    @Test(expected = UninitialisedVariableException.class)
     public void LocationNotInitialized() throws Exception {
     	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/LocationNotInitialized.litmus"));
     }
 
-    @Test(expected = BuildException.class)
+    @Test(expected = UninitialisedVariableException.class)
     public void RegisterNotInitialized() throws Exception {
     	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/RegisterNotInitialized.litmus"));
     }
