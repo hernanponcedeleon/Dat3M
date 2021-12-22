@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.parsers.program.exception.ParsingException;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Local;

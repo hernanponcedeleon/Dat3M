@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.utils;
+package com.dat3m.dartagnan.parsers.program.exception;
 
 import org.antlr.v4.runtime.ConsoleErrorListener;
 import org.antlr.v4.runtime.RecognitionException;

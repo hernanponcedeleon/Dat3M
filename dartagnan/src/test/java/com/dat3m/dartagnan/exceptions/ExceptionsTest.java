@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.expression.INonDetTypes;
 import com.dat3m.dartagnan.expression.IfExpr;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.parsers.program.exception.*;
 import com.dat3m.dartagnan.parsers.program.utils.*;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.CondJump;
@@ -22,7 +23,7 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
-public class RuntimeExceptionsTest {
+public class ExceptionsTest {
 
     @Test(expected = BuildException.class)
     public void noThread() throws Exception {

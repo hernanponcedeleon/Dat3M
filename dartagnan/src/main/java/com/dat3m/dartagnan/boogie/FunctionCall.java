@@ -5,7 +5,7 @@ import java.util.stream.IntStream;
 
 import com.dat3m.dartagnan.parsers.BoogieParser.Var_exprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Var_or_typeContext;
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.parsers.program.exception.ParsingException;
 
 public class FunctionCall {
 

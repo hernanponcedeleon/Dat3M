@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.parsers.cat;
 import com.dat3m.dartagnan.parsers.CatLexer;
 import com.dat3m.dartagnan.parsers.CatParser;
 import com.dat3m.dartagnan.parsers.cat.visitors.VisitorBase;
-import com.dat3m.dartagnan.parsers.program.utils.ParserErrorListener;
+import com.dat3m.dartagnan.parsers.program.exception.ParserErrorListener;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;

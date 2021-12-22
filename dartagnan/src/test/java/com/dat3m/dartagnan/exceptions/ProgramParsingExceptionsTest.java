@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.parsers.program.exception.ParsingException;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
