@@ -116,7 +116,7 @@ public abstract class AbstractSvCompTest {
                 runAnalysisTwoSolvers(contextProvider.get(), proverProvider.get(), prover2Provider.get(), taskProvider.get()));
     }
 
-    @Test
+//    @Test
     @CSVLogger.FileName("csv/assume")
     public void testAssume() throws Exception {
         assertEquals(expectedResultProvider.get(),
