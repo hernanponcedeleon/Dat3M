@@ -103,10 +103,8 @@ public class VerificationTask {
 
     public void unrollAndCompile() {
         logger.info("#Events: " + program.getEvents().size());
-        if (GlobalSettings.PERFORM_DEAD_CODE_ELIMINATION) {
-            program.eliminateDeadCode();
-            logger.info("#Events after DCE: " + program.getEvents().size());
-        }
+        program.eliminateDeadCode();
+        logger.info("#Events after DCE: " + program.getEvents().size());
         if (GlobalSettings.PERFORM_REORDERING) {
             program.reorder();
             logger.info("Events reordered");
