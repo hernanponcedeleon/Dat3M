@@ -132,11 +132,6 @@
       	    <groupId>org.jacoco</groupId>
       		<artifactId>jacoco-maven-plugin</artifactId>
       		<version>0.8.7</version>
-      		<configuration>
-        	  <excludes>
-            	<exclude>${project.build.directory}/generated-sources/antlr4/com/dat3m/dartagnan/parsers/*</exclude>
-        	  </excludes>
-     		</configuration>
       		<executions>
         	  <execution>
           		<goals>
