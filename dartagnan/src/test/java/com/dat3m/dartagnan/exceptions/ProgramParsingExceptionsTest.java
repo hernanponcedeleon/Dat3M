@@ -23,7 +23,7 @@ public class ProgramParsingExceptionsTest {
         try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/"))) {
             return fileStream
                     .filter(Files::isRegularFile)
-                    .filter(f -> (f.toString().endsWith("litmus") || f.toString().endsWith("bpl")))
+                    .filter(f -> (f.toString().endsWith("bpl")))
                     .map(f -> new Object[]{f.toString()})
                     .collect(Collectors.toList());
         }

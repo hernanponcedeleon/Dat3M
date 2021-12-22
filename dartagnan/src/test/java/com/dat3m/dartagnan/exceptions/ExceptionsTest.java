@@ -9,14 +9,18 @@ import com.dat3m.dartagnan.expression.INonDetTypes;
 import com.dat3m.dartagnan.expression.IfExpr;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.exception.*;
 import com.dat3m.dartagnan.parsers.program.utils.*;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Skip;
+import com.dat3m.dartagnan.utils.ResourceHelper;
 
 import static com.dat3m.dartagnan.utils.TestHelper.createContext;
+
+import java.io.File;
 
 import org.junit.Test;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
@@ -85,5 +89,25 @@ public class ExceptionsTest {
     	Label end = pb.getOrCreateLabel("END");
     	pb.addChild(0, new CondJump(null, end));
     	pb.build();
+    }
+    
+    @Test(expected = BuildException.class)
+    public void AtomicEndWithoutBegin() throws Exception {
+    	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/DuplicatedLabel.litmus"));
+    }
+
+    @Test(expected = BuildException.class)
+    public void IllegalJump() throws Exception {
+    	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/IllegalJump.litmus"));
+    }
+
+    @Test(expected = BuildException.class)
+    public void LocationNotInitialized() throws Exception {
+    	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/LocationNotInitialized.litmus"));
+    }
+
+    @Test(expected = BuildException.class)
+    public void RegisterNotInitialized() throws Exception {
+    	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/RegisterNotInitialized.litmus"));
     }
 }
