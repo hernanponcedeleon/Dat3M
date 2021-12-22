@@ -28,27 +28,28 @@ public class BuildWitnessTest {
     	Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-O0.bpl"));
     	Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat"));
     	VerificationTask task = new VerificationTask(p, wmm, Arch.NONE, new Settings(0, 0));
-    	
-    	SolverContext ctx = TestHelper.createContext();
-    	ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-    	
-		Result res = runAnalysisIncrementalSolver(ctx, prover, task);
-	    String[] sOptions = new String[8];
-	    sOptions[0] = "-i";
-	    sOptions[1] = "ignore.bpl";
-	    sOptions[2] = "-cat";
-	    sOptions[3] = "ignore";
-	    sOptions[4] = "-unroll";
-	    sOptions[5] = "1";
-	    sOptions[6] = "-create_witness";
-	    sOptions[7] = ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-O0.bpl";
-	    DartagnanOptions option = new DartagnanOptions();
-	    option.parse(sOptions);
-	    
-		WitnessGraph graph = new WitnessBuilder(p, ctx, prover, res).buildGraph(option);
-		// Write to file
-		graph.write();
-		// Create encoding
-		graph.encode(p, ctx);
+
+    	try (SolverContext ctx = TestHelper.createContext();
+    			ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+    	{
+    		Result res = runAnalysisIncrementalSolver(ctx, prover, task);
+    	    String[] sOptions = new String[8];
+    	    sOptions[0] = "-i";
+    	    sOptions[1] = "ignore.bpl";
+    	    sOptions[2] = "-cat";
+    	    sOptions[3] = "ignore";
+    	    sOptions[4] = "-unroll";
+    	    sOptions[5] = "1";
+    	    sOptions[6] = "-create_witness";
+    	    sOptions[7] = ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-O0.bpl";
+    	    DartagnanOptions option = new DartagnanOptions();
+    	    option.parse(sOptions);
+    	    
+    		WitnessGraph graph = new WitnessBuilder(p, ctx, prover, res).buildGraph(option);
+    		// Write to file
+    		graph.write();
+    		// Create encoding
+    		graph.encode(p, ctx);
+    	}
     }
 }
