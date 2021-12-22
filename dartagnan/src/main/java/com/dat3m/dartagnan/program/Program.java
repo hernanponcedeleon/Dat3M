@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.asserts.AssertTrue;
-import com.dat3m.dartagnan.parsers.program.exception.CallMethodOrderException;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
@@ -213,7 +212,7 @@ public class Program {
 
     public BooleanFormula encodeCF(SolverContext ctx) {
         if (this.task == null) {
-            throw new CallMethodOrderException("The program needs to get initialised first.");
+            throw new IllegalStateException("The program needs to get initialised first.");
         }
 
         BooleanFormula enc = memory.fixedMemoryEncoding(ctx);
@@ -228,7 +227,7 @@ public class Program {
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 
         if (this.task == null) {
-            throw new CallMethodOrderException("The program needs to get initialised first.");
+            throw new IllegalStateException("The program needs to get initialised first.");
         }
 
         Map<Register, List<Event>> eMap = new HashMap<>();
@@ -279,7 +278,7 @@ public class Program {
     
     public BooleanFormula encodeNoBoundEventExec(SolverContext ctx){
         if (this.task == null) {
-            throw new CallMethodOrderException("The program needs to get initialised first.");
+            throw new IllegalStateException("The program needs to get initialised first.");
         }
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();

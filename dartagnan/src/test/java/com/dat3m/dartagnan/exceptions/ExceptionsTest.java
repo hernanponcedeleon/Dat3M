@@ -12,11 +12,14 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.exception.*;
 import com.dat3m.dartagnan.parsers.program.utils.*;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Skip;
 import com.dat3m.dartagnan.utils.ResourceHelper;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import static com.dat3m.dartagnan.utils.TestHelper.createContext;
 
@@ -34,6 +37,24 @@ public class ExceptionsTest {
     	ProgramBuilder pb = new ProgramBuilder();
     	// Thread 1 does not exists
     	pb.addChild(1, new Skip());
+    }
+
+    @Test(expected = AlreadyExistentVariableException.class)
+    public void RegisterAlreadyExist() throws Exception {
+    	ProgramBuilder pb = new ProgramBuilder();
+    	pb.initThread(0);
+    	Program p = pb.build();
+    	Thread t = p.getThreads().get(0);
+    	t.addRegister("r1", -1);
+    	t.addRegister("r1", -1);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void CallMethodOrderException() throws Exception {
+    	ProgramBuilder pb = new ProgramBuilder();
+    	pb.initThread(0);
+    	Program p = pb.build();
+    	p.compile(Arch.NONE, 0);
     }
 
     @Test(expected = ExprTypeMismatchException.class)
@@ -79,7 +100,6 @@ public class ExceptionsTest {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
     	pb.addChild(0, new CondJump(BConst.FALSE, null));
-    	pb.build();
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -88,7 +108,6 @@ public class ExceptionsTest {
     	pb.initThread(0);
     	Label end = pb.getOrCreateLabel("END");
     	pb.addChild(0, new CondJump(null, end));
-    	pb.build();
     }
     
     @Test(expected = MalformedProgramException.class)

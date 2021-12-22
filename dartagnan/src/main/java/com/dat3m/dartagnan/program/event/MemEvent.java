@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.parsers.program.exception.CallMethodOrderException;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.ImmutableSet;
@@ -46,21 +45,21 @@ public abstract class MemEvent extends Event {
         if(memAddressExpr != null){
             return memAddressExpr;
         }
-        throw new CallMethodOrderException("Attempt to access not initialised address expression in " + this);
+        throw new IllegalStateException("Attempt to access not initialised address expression in " + this);
     }
 
     public Formula getMemValueExpr(){
         if(memValueExpr != null){
             return memValueExpr;
         }
-        throw new CallMethodOrderException("Attempt to access not initialised value expression in " + this);
+        throw new IllegalStateException("Attempt to access not initialised value expression in " + this);
     }
 
     public ImmutableSet<Address> getMaxAddressSet(){
         if(maxAddressSet != null){
             return maxAddressSet;
         }
-        throw new CallMethodOrderException("Location set has not been initialised for memory event " + this);
+        throw new IllegalStateException("Location set has not been initialised for memory event " + this);
     }
 
     public void setMaxAddressSet(ImmutableSet<Address> maxAddressSet){

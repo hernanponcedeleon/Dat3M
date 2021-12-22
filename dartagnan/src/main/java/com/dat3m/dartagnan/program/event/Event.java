@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.parsers.program.exception.CallMethodOrderException;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
@@ -316,7 +315,7 @@ public abstract class Event implements Comparable<Event> {
 
 	public void initialise(VerificationTask task, SolverContext ctx){
 		if(cId < 0){
-			throw new CallMethodOrderException("Event ID is not set in " + this);
+			throw new IllegalStateException("Event ID is not set in " + this);
 		}
 		this.symmId = getThread().getName() + "-" + fId;
 		this.task = task;
