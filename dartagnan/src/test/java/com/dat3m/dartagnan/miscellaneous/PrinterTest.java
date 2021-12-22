@@ -17,8 +17,17 @@ public class PrinterTest {
 	// Test to call toString() of most events
 	
 	@Test()
-	public void PrintBpl() throws Exception {
+	public void PrintBpl1() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench-1-O0.bpl"));
+		new Printer().print(p);
+		p.unroll(1, 0);
+		p.compile(Arch.NONE, 0);
+		new Printer().print(p);
+	}
+
+	@Test()
+	public void PrintBpl2() throws Exception {
+		Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "locks/linuxrwlock-3.bpl"));
 		new Printer().print(p);
 		p.unroll(1, 0);
 		p.compile(Arch.NONE, 0);
