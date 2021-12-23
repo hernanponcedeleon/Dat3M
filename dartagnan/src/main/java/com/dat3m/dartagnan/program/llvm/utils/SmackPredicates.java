@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BExprBin;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IfExpr;
 import com.dat3m.dartagnan.parsers.program.exception.ParsingException;
@@ -27,7 +28,7 @@ public class SmackPredicates {
 	public static Object smackPredicate(String name, List<Object> callParams) {
 		String min = "0";
 		String max = "1";
-		ExprInterface var = (ExprInterface)callParams.get(0);
+		IExpr var = (IExpr)callParams.get(0);
 		if(name.startsWith("$tou.")) {
 			switch(name.substring(name.lastIndexOf(".")+1)) {
 			case "i1":

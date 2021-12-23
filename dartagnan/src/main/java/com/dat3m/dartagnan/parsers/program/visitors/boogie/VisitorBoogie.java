@@ -431,7 +431,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
 			}
 			if(initMode) {
-				programBuilder.initLocEqConst(name, ((Redusable)value).reduce());
+				programBuilder.initLocEqConst(name, ((IExpr)value).reduce());
 				continue;
 			}
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
@@ -567,7 +567,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitMinus_expr(Minus_exprContext ctx) {
-		ExprInterface v = (ExprInterface)ctx.unary_expr().accept(this);
+		IExpr v = (IExpr)ctx.unary_expr().accept(this);
 		return new IExprUn(IOpUn.MINUS, v);
 	}
 
@@ -616,7 +616,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		ExprInterface v2;
 		for(int i = 0; i < ctx.factor().size()-1; i++) {
 			v2 = (ExprInterface)ctx.factor(i+1).accept(this);
-			v1 = new IExprBin(v1, ctx.add_op(i).op, v2);
+			v1 = new IExprBin((IExpr)v1, ctx.add_op(i).op, (IExpr)v2);
 		}
 		return v1;
 	}
@@ -627,7 +627,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		ExprInterface v2 ;
 		for(int i = 0; i < ctx.power().size()-1; i++) {
 			v2 = (ExprInterface)ctx.power(i+1).accept(this);
-			v1 = new IExprBin(v1, ctx.mul_op(i).op, v2);
+			v1 = new IExprBin((IExpr)v1, ctx.mul_op(i).op, (IExpr)v2);
 		}
 		return v1;
 	}
@@ -682,7 +682,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				ExprInterface lhs = address;
 				BigInteger rhs = BigInteger.ZERO;
 				while(lhs instanceof IExprBin) {
-					rhs = rhs.add(((Redusable)((IExprBin)lhs).getRHS()).reduce().getIntValue());
+					rhs = rhs.add(((IExprBin)lhs).getRHS().reduce().getIntValue());
 					lhs = ((IExprBin)lhs).getLHS();
 				}
 				String text = ctx.expr(1).getText();				

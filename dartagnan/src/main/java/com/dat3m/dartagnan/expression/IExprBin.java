@@ -15,11 +15,11 @@ import java.math.BigInteger;
 
 public class IExprBin extends IExpr implements ExprInterface {
 
-    private final ExprInterface lhs;
-    private final ExprInterface rhs;
+    private final IExpr lhs;
+    private final IExpr rhs;
     private final IOpBin op;
 
-    public IExprBin(ExprInterface lhs, IOpBin op, ExprInterface rhs) {
+    public IExprBin(IExpr lhs, IOpBin op, IExpr rhs) {
         this.lhs = lhs;
         this.rhs = rhs;
         this.op = op;
@@ -52,8 +52,8 @@ public class IExprBin extends IExpr implements ExprInterface {
     
     @Override
 	public IConst reduce() {
-    	BigInteger v1 = ((Redusable)lhs).reduce().getIntValue();
-    	BigInteger v2 = ((Redusable)rhs).reduce().getIntValue();
+    	BigInteger v1 = lhs.reduce().getIntValue();
+    	BigInteger v2 = rhs.reduce().getIntValue();
 		return new IConst(op.combine(v1, v2), lhs.getPrecision());
 	}
 
@@ -74,22 +74,22 @@ public class IExprBin extends IExpr implements ExprInterface {
 	public IExpr simplify() {
 		if(op.equals(IOpBin.PLUS) && lhs instanceof IExprBin && ((IExprBin)lhs).getOp().equals(IOpBin.PLUS)) {
 			if(new IExprBin(((IExprBin)lhs).getRHS(), IOpBin.PLUS, rhs).reduce().equals(IConst.ZERO)) {
-				return (IExpr) ((IExprBin)lhs).getLHS();
+				return ((IExprBin)lhs).getLHS();
 			}
 			return new IExprBin(((IExprBin)lhs).getLHS(), IOpBin.PLUS, new IExprBin(((IExprBin)lhs).getRHS(), IOpBin.PLUS, rhs).reduce());
 		}
-		return new IExprBin(lhs, op, ((Redusable)lhs).reduce());
+		return new IExprBin(lhs, op, lhs.reduce());
 	}
 	
 	public IOpBin getOp() {
 		return op;
 	}
 	
-	public ExprInterface getRHS() {
+	public IExpr getRHS() {
 		return rhs;
 	}
 
-	public ExprInterface getLHS() {
+	public IExpr getLHS() {
 		return lhs;
 	}
 

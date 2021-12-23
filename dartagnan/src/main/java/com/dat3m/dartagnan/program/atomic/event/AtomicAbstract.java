@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.linux.utils.EType;
@@ -15,10 +14,10 @@ import com.google.common.collect.ImmutableSet;
 public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegReaderData {
 
     protected final Register resultRegister;
-    protected final ExprInterface value;
+    protected final IExpr value;
     protected ImmutableSet<Register> dataRegs;
 
-    AtomicAbstract(IExpr address, Register register, ExprInterface value, String mo) {
+    AtomicAbstract(IExpr address, Register register, IExpr value, String mo) {
         super(address, mo);
         this.resultRegister = register;
         this.value = value;

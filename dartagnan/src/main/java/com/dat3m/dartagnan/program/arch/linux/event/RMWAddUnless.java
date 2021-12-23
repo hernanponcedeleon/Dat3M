@@ -26,7 +26,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
 
     private final ExprInterface cmp;
 
-    public RMWAddUnless(IExpr address, Register register, ExprInterface cmp, ExprInterface value) {
+    public RMWAddUnless(IExpr address, Register register, ExprInterface cmp, IExpr value) {
         super(address, register, value, Mo.MB);
         dataRegs = new ImmutableSet.Builder<Register>().addAll(value.getRegs()).addAll(cmp.getRegs()).build();
         this.cmp = cmp;

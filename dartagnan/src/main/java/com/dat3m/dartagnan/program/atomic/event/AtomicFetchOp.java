@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
@@ -22,7 +21,7 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
 
     private final IOpBin op;
 
-    public AtomicFetchOp(Register register, IExpr address, ExprInterface value, IOpBin op, String mo) {
+    public AtomicFetchOp(Register register, IExpr address, IExpr value, IOpBin op, String mo) {
         super(address, register, value, mo);
         this.op = op;
     }

@@ -14,10 +14,10 @@ import java.math.BigInteger;
 
 public class IExprUn extends IExpr {
 
-	private final ExprInterface b;
+	private final IExpr b;
 	private final IOpUn op;
 
-    public IExprUn(IOpUn op, ExprInterface b) {
+    public IExprUn(IOpUn op, IExpr b) {
         this.b = b;
         this.op = op;
     }
@@ -26,7 +26,7 @@ public class IExprUn extends IExpr {
 		return op;
 	}
 
-	public ExprInterface getInner() {
+	public IExpr getInner() {
 		return b;
 	}
 
@@ -56,7 +56,7 @@ public class IExprUn extends IExpr {
 
     @Override
 	public IConst reduce() {
-		IConst inner = ((Redusable)b).reduce();
+		IConst inner = b.reduce();
         switch(op){
 			case MINUS:
 			return new IConst(inner.getIntValue().negate(), b.getPrecision());

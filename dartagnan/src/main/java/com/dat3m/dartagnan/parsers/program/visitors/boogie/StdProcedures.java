@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.Redusable;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.program.exception.ParsingException;
 import com.dat3m.dartagnan.program.EventFactory;
@@ -103,7 +103,7 @@ public class StdProcedures {
 	private static void alloc(VisitorBoogie visitor, Call_cmdContext ctx) {
 		int size;
 		try {
-			size = ((Redusable)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getIntValue().intValue();
+			size = ((IExpr)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getIntValue().intValue();
 		} catch (Exception e) {
 			String tmp = ctx.call_params().getText();
 			tmp = tmp.contains(",") ? tmp.substring(0, tmp.indexOf(',')) : tmp.substring(0, tmp.indexOf(')')); 
