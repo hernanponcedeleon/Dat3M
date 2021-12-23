@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.arch.linux.event.cond;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.parsers.program.exception.UnrollException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Load;
@@ -55,6 +56,6 @@ public abstract class RMWReadCond extends Load implements RegWriter, RegReaderDa
 
     @Override
     protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
-        throw new RuntimeException("RMWReadCond cannot be unrolled: event must be generated during compilation");
+        throw new UnrollException("RMWReadCond cannot be unrolled: event must be generated during compilation");
     }
 }

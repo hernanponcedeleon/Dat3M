@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.rmw;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.parsers.program.exception.UnrollException;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Store;
@@ -31,6 +32,6 @@ public class RMWStore extends Store implements RegReaderData {
 
     @Override
     protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
-        throw new RuntimeException("RMWStore cannot be unrolled: event must be generated during compilation");
+        throw new UnrollException("RMWStore cannot be unrolled: event must be generated during compilation");
     }
 }
