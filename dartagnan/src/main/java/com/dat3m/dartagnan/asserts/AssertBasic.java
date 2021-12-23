@@ -29,11 +29,6 @@ public class AssertBasic extends AbstractAssert {
     }
 
     @Override
-    public AbstractAssert removeLocAssertions(boolean replaceByTrue) {
-        return getLocs().isEmpty() ? this : (replaceByTrue ? new AssertTrue() :  new AssertNot(new AssertTrue()));
-    }
-
-    @Override
     public BooleanFormula encode(SolverContext ctx) {
         return op.encode(e1.getLastValueExpr(ctx), e2.getLastValueExpr(ctx), ctx);
     }
