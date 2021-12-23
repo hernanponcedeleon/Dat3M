@@ -26,9 +26,8 @@ public abstract class IExpr implements ExprInterface, Redusable {
         return getIntValue(e, model, ctx).signum() == 1;
     }
 
-	@Override
 	public IExpr getBase() {
-		return this;
+		throw new UnsupportedOperationException("getBase() not supported for " + this);
 	}
 	
 	@Override

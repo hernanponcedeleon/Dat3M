@@ -31,8 +31,6 @@ public interface ExprInterface {
     
     int getPrecision();
     
-    IExpr getBase();
-
     <T> T visit(ExpressionVisitor<T> visitor);
 
     //default ExprInterface simplify() { return visit(ExprSimplifier.SIMPLIFIER); }

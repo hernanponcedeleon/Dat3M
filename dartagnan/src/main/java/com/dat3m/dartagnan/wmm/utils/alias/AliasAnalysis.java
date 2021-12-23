@@ -76,7 +76,7 @@ public class AliasAnalysis {
                 if (expr instanceof Register) {
                     // r1 = r2 -> add edge r2 --> r1
                     graph.addEdge(expr, register);
-                } else if (expr instanceof IExprBin && expr.getBase() instanceof Register) {
+                } else if (expr instanceof IExprBin && ((IExprBin)expr).getBase() instanceof Register) {
                 	graph.addAllAddresses(register, maxAddressSet);
                     variables.add(register);
                 } else if (expr instanceof Address) {
@@ -145,7 +145,7 @@ public class AliasAnalysis {
     			bases.put(reg, (Address)exp);
                 offsets.put(reg, 0);
             } else if(exp instanceof IExprBin) {
-    			IExpr base = exp.getBase();
+    			IExpr base = ((IExprBin)exp).getBase();
     			if(base instanceof Address) {
     				bases.put(reg, (Address)base);
     				if(((IExprBin) exp).getRHS() instanceof IConst) {

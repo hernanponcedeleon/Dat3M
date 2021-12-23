@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
@@ -117,10 +116,5 @@ public class Location implements ExprInterface, LastValueInterface {
 	@Override
 	public int getPrecision() {
 		return address.getPrecision();
-	}
-
-	@Override
-	public IExpr getBase() {
-		throw new UnsupportedOperationException("getBase not supported for " + this);
 	}
 }
