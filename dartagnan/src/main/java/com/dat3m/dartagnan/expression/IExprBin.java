@@ -78,7 +78,7 @@ public class IExprBin extends IExpr implements ExprInterface {
 			}
 			return new IExprBin(((IExprBin)lhs).getLHS(), IOpBin.PLUS, new IExprBin(((IExprBin)lhs).getRHS(), IOpBin.PLUS, rhs).reduce());
 		}
-		return new IExprBin(lhs, op, lhs.reduce());
+		return new IExprBin(lhs, op, rhs.reduce());
 	}
 	
 	public IOpBin getOp() {
