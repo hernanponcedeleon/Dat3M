@@ -81,6 +81,11 @@ public class IConst extends IExpr implements ExprInterface, LastValueInterface {
 		return this;
 	}
 	
+	@Override
+	public IExpr getBase() {
+		return this;
+	}
+	
 	public BigInteger getValue() {
 		return value;
 	}

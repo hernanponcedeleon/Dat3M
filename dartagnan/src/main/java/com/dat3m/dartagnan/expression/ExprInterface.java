@@ -29,8 +29,6 @@ public interface ExprInterface {
     	return ImmutableSet.of();
     }
     
-    int getPrecision();
-    
     <T> T visit(ExpressionVisitor<T> visitor);
 
     //default ExprInterface simplify() { return visit(ExprSimplifier.SIMPLIFIER); }

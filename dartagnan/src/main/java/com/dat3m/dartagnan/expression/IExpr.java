@@ -30,6 +30,10 @@ public abstract class IExpr implements ExprInterface, Redusable {
 		throw new UnsupportedOperationException("getBase() not supported for " + this);
 	}
 	
+	public int getPrecision() {
+		throw new UnsupportedOperationException("getPrecision() not supported for " + this);
+	}
+	
 	@Override
 	public IConst reduce() {
 		throw new UnsupportedOperationException("Reduce not supported for " + this);

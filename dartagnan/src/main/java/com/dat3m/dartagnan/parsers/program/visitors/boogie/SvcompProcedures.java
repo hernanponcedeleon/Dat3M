@@ -84,7 +84,7 @@ public class SvcompProcedures {
 	}
 
 	private static void __VERIFIER_assert(VisitorBoogie visitor, Call_cmdContext ctx) {
-    	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
+    	IExpr expr = (IExpr)ctx.call_params().exprs().accept(visitor);
     	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, expr.getPrecision());
     	visitor.assertionIndex++;
     	if(expr instanceof IConst && ((IConst)expr).getIntValue().equals(BigInteger.ONE)) {

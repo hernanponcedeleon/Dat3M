@@ -26,11 +26,6 @@ public abstract class BExpr implements ExprInterface {
         return getBoolValue(e, model, ctx) ? BigInteger.ONE : BigInteger.ZERO;
     }
     
-	@Override
-	public int getPrecision() {
-		throw new UnsupportedOperationException("getPrecision() not supported for " + this);
-	}
-	
 	public boolean isTrue() {
 		return this.equals(BConst.TRUE);
 	}

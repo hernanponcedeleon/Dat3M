@@ -112,9 +112,4 @@ public class Location implements ExprInterface, LastValueInterface {
 	public <T> T visit(ExpressionVisitor<T> visitor) {
 		return visitor.visit(this);
 	}
-
-	@Override
-	public int getPrecision() {
-		return address.getPrecision();
-	}
 }

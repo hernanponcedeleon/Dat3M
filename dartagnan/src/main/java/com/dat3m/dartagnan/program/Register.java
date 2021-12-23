@@ -112,4 +112,9 @@ public class Register extends IExpr implements ExprInterface, LastValueInterface
 	public int getPrecision() {
     	return precision;
     }
+
+	@Override
+	public IExpr getBase() {
+    	return this;
+    }
 }

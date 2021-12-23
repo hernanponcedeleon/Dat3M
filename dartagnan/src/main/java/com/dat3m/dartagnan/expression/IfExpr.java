@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.parsers.program.exception.ExprTypeMismatchException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Location;
@@ -74,14 +73,6 @@ public class IfExpr implements ExprInterface {
 		return fbranch;
 	}
 
-	@Override
-	public int getPrecision() {
-		if(fbranch.getPrecision() != tbranch.getPrecision()) {
-            throw new ExprTypeMismatchException("The type of " + tbranch + " and " + fbranch + " does not match");
-		}
-		return tbranch.getPrecision();
-	}
-	
 	@Override
 	public <T> T visit(ExpressionVisitor<T> visitor) {
 		return visitor.visit(this);

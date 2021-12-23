@@ -297,7 +297,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	// we cannot just add the expression to the AbstractAssertion.
     	// We need to create an event carrying the value of the expression 
     	// and see if this event can be executed.
-    	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
+    	IExpr expr = (IExpr)ctx.proposition().expr().accept(this);
     	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, expr.getPrecision());
     	assertionIndex++;
     	Local event = EventFactory.newLocal(ass, expr, currentLine);

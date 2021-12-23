@@ -1,13 +1,10 @@
 package com.dat3m.dartagnan.exceptions;
 
-import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BNonDet;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.expression.INonDetTypes;
-import com.dat3m.dartagnan.expression.IfExpr;
-import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.exception.*;
@@ -58,21 +55,9 @@ public class ExceptionsTest {
     }
 
     @Test(expected = ExprTypeMismatchException.class)
-    public void diffPrecisionAtom() throws Exception {
-    	Atom atom = new Atom(new Register("a", 0, 32), COpBin.EQ, new Register("b", 0, 64));
-    	atom.getPrecision();
-    }
-
-    @Test(expected = ExprTypeMismatchException.class)
     public void diffPrecisionInt() throws Exception {
     	IExprBin bin = new IExprBin(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
     	bin.getPrecision();
-    }
-
-    @Test(expected = ExprTypeMismatchException.class)
-    public void diffPrecisionIfExpr() throws Exception {
-    	IfExpr ifE = new IfExpr(BConst.TRUE, new Register("a", 0, 32), new Register("b", 0, 64));
-    	ifE.getPrecision();
     }
 
     @Test(expected = RuntimeException.class)

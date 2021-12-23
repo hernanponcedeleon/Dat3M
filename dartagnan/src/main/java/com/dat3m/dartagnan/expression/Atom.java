@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.parsers.program.exception.ExprTypeMismatchException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Location;
@@ -57,14 +56,6 @@ public class Atom extends BExpr implements ExprInterface {
     public ExprInterface getRHS() {
     	return rhs;
     }
-
-	@Override
-	public int getPrecision() {
-		if(lhs.getPrecision() != rhs.getPrecision()) {
-            throw new ExprTypeMismatchException("The type of " + lhs + " and " + rhs + " does not match");
-		}
-		return lhs.getPrecision();
-	}
 
 	@Override
 	public <T> T visit(ExpressionVisitor<T> visitor) {
