@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
@@ -113,11 +112,6 @@ public class Location implements ExprInterface, LastValueInterface {
 	@Override
 	public <T> T visit(ExpressionVisitor<T> visitor) {
 		return visitor.visit(this);
-	}
-
-	@Override
-	public IConst reduce() {
-		throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
 
 	@Override

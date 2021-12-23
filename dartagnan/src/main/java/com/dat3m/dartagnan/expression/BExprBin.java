@@ -58,19 +58,6 @@ public class BExprBin extends BExpr {
     }
 
     @Override
-	public BConst reduce() {
-    	boolean v1 = ((BConst)b1.reduce()).getValue();
-    	boolean v2 = ((BConst)b2.reduce()).getValue();
-		switch(op) {
-        case AND:
-        	return new BConst(v1 && v2);
-        case OR:
-        	return new BConst(v1 || v2);
-        }
-        throw new UnsupportedOperationException("Reduce not supported for " + this);
-	}
-
-    @Override
     public <T> T visit(ExpressionVisitor<T> visitor) {
         return visitor.visit(this);
     }

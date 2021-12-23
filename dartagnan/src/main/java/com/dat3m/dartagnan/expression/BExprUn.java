@@ -51,11 +51,6 @@ public class BExprUn extends BExpr {
         return op.combine(b.getBoolValue(e, model, ctx));
     }
 
-	@Override
-	public BConst reduce() {
-		return new BConst(!((BConst)b.reduce()).getValue());
-	}
-
     @Override
     public <T> T visit(ExpressionVisitor<T> visitor) {
         return visitor.visit(this);

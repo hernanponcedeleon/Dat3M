@@ -62,11 +62,6 @@ public class IfExpr implements ExprInterface {
         return "(if " + guard + " then " + tbranch + " else " + fbranch + ")";
     }
 
-	@Override
-	public ExprInterface reduce() {
-		return guard.reduce().getValue() ? tbranch.reduce() : fbranch.reduce();
-	}
-	
 	public BExpr getGuard() {
 		return guard;
 	}

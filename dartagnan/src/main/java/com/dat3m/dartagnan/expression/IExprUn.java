@@ -56,7 +56,7 @@ public class IExprUn extends IExpr {
 
     @Override
 	public IConst reduce() {
-		IConst inner = (IConst)b.reduce();
+		IConst inner = ((Redusable)b).reduce();
         switch(op){
 			case MINUS:
 			return new IConst(inner.getIntValue().negate(), b.getPrecision());

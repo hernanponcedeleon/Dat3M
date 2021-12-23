@@ -9,8 +9,6 @@ import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
-import java.math.BigInteger;
-
 public class Atom extends BExpr implements ExprInterface {
 	
 	private final ExprInterface lhs;
@@ -59,49 +57,6 @@ public class Atom extends BExpr implements ExprInterface {
     public ExprInterface getRHS() {
     	return rhs;
     }
-
-    @Override
-	public BConst reduce() {
-    	// Reduction for IExpr
-    	if(lhs instanceof IExpr && rhs instanceof IExpr) {
-        	BigInteger v1 = ((IExpr)lhs).reduce().getIntValue();
-        	BigInteger v2 = ((IExpr)lhs).reduce().getIntValue();
-            switch(op) {
-            	case EQ:
-            		return new BConst(v1.compareTo(v2) == 0);
-            	case NEQ:
-            		return new BConst(v1.compareTo(v2) != 0);
-	            case LT:
-	            case ULT:
-	                return new BConst(v1.compareTo(v2) < 0);
-	            case LTE:
-	            case ULTE:
-	                return new BConst(v1.compareTo(v2) <= 0);
-	            case GT:
-	            case UGT:
-	                return new BConst(v1.compareTo(v2) > 0);
-	            case GTE:
-	            case UGTE:
-	                return new BConst(v1.compareTo(v2) >= 0);
-	            default:
-	                throw new UnsupportedOperationException("Reduce not supported for " + this);
-            }            
-    	}
-    	// Reduction for BExpr
-    	if(lhs instanceof BConst && rhs instanceof BConst) {
-    		boolean v1 = ((BConst)lhs).reduce().getValue();
-    		boolean v2 = ((BConst)lhs).reduce().getValue();
-            switch(op) {
-	            case EQ:
-	            	return new BConst(v1 == v2);
-	            case NEQ:
-	            	return new BConst(v1 != v2);
-	            default:
-	                throw new UnsupportedOperationException("Reduce not supported for " + this);
-            }
-    	}
-        throw new UnsupportedOperationException("Reduce not supported for " + this);
-	}
 
 	@Override
 	public int getPrecision() {
