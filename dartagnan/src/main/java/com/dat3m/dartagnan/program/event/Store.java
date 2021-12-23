@@ -44,11 +44,6 @@ public class Store extends MemEvent implements RegReaderData {
     }
 
     @Override
-    public String label(){
-        return "W" + (mo != null ? "_" + mo : "");
-    }
-
-    @Override
     public ExprInterface getMemValue(){
         return value;
     }

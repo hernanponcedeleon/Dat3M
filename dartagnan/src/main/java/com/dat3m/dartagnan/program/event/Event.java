@@ -127,10 +127,6 @@ public abstract class Event implements Comparable<Event> {
 		return RecursiveAction.done();
 	}
 
-	public String label(){
-		return repr() + " " + getClass().getSimpleName();
-	}
-
 	public boolean is(String param){
 		return param != null && (filter.contains(param));
 	}
