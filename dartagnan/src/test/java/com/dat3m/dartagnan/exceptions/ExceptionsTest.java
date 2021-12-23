@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.expression.INonDetTypes;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.exception.*;
 import com.dat3m.dartagnan.parsers.program.utils.*;
@@ -16,6 +17,10 @@ import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Skip;
 import com.dat3m.dartagnan.utils.ResourceHelper;
+import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.TestHelper;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import static com.dat3m.dartagnan.utils.TestHelper.createContext;
@@ -47,11 +52,75 @@ public class ExceptionsTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void CallMethodOrderException() throws Exception {
+    public void performRelationalAnalysisException() throws Exception {
+		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/tso.cat"));
+		cat.performRelationalAnalysis(true);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void encodeConsistencyException() throws Exception {
+		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/tso.cat"));
+		cat.encodeConsistency(TestHelper.createContext());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void compileBeforeUnrollException() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
     	Program p = pb.build();
     	p.compile(Arch.NONE, 0);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void unrollBeforeReorderException() throws Exception {
+    	ProgramBuilder pb = new ProgramBuilder();
+    	pb.initThread(0);
+    	Program p = pb.build();
+    	p.unroll(1, 0);
+    	p.reorder();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void initializedBeforeCompileException() throws Exception {
+    	ProgramBuilder pb = new ProgramBuilder();
+    	pb.initThread(0);
+    	Program p = pb.build();
+		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/tso.cat"));
+    	VerificationTask task = new VerificationTask(p, cat, Arch.TSO, new Settings(1, 10));
+    	p.initialise(task, TestHelper.createContext());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void unrollBeforeDCEException() throws Exception {
+    	ProgramBuilder pb = new ProgramBuilder();
+    	pb.initThread(0);
+    	Program p = pb.build();
+    	p.unroll(1, 0);
+    	p.eliminateDeadCode();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void encodeCFException() throws Exception {
+    	ProgramBuilder pb = new ProgramBuilder();
+    	pb.initThread(0);
+    	Program p = pb.build();
+    	p.encodeCF(TestHelper.createContext());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void encodeFinalRegisterValuesException() throws Exception {
+    	ProgramBuilder pb = new ProgramBuilder();
+    	pb.initThread(0);
+    	Program p = pb.build();
+    	p.encodeFinalRegisterValues(TestHelper.createContext());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void encodeNoBoundEventExecException() throws Exception {
+    	ProgramBuilder pb = new ProgramBuilder();
+    	pb.initThread(0);
+    	Program p = pb.build();
+    	p.encodeNoBoundEventExec(TestHelper.createContext());
     }
 
     @Test(expected = ExprTypeMismatchException.class)
