@@ -23,9 +23,4 @@ public class Settings {
     public boolean hasSolverTimeout(){
         return solver_timeout > 0;
     }
-
-    @Override
-    public String toString(){
-        return " bound=" + bound;
-    }
 }

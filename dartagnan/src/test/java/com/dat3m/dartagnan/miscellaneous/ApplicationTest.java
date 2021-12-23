@@ -8,16 +8,19 @@ import com.dat3m.dartagnan.analysis.Analysis;
 import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 
-import static com.dat3m.dartagnan.analysis.Analysis.RACES;
-import static com.dat3m.dartagnan.analysis.Analysis.REACHABILITY;
-import static com.dat3m.dartagnan.analysis.Method.ASSUME;
-import static com.dat3m.dartagnan.analysis.Method.CAAT;
-import static com.dat3m.dartagnan.analysis.Method.INCREMENTAL;
-import static com.dat3m.dartagnan.utils.options.BaseOptions.METHOD_OPTION;
-import static com.dat3m.dartagnan.utils.options.BaseOptions.SMTSOLVER_OPTION;
+import static com.dat3m.dartagnan.analysis.Analysis.*;
+import static com.dat3m.dartagnan.analysis.Method.*;
+import static com.dat3m.dartagnan.utils.options.BaseOptions.*;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.ANALYSIS_OPTION;
 
 public class ApplicationTest {
+
+    @Test
+    public void Two() throws Exception {
+	    String[] dartagnanOptions = new String[12];
+	    fillOptions(dartagnanOptions, REACHABILITY, TWO);
+    	Dartagnan.main(dartagnanOptions);
+    }
 
     @Test
     public void Assume() throws Exception {
