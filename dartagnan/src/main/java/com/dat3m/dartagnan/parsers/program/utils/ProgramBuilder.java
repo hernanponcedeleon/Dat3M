@@ -157,7 +157,7 @@ public class ProgramBuilder {
         if(locations.containsKey(name)){
             return locations.get(name);
         }
-        throw new MalformedProgramException("Location " + name + " has not been initialised");
+        throw new IllegalStateException("Location " + name + " has not been initialised");
     }
 
     public Register getRegister(int thread, String name){
