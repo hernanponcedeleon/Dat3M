@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsVisitor;
-import com.dat3m.dartagnan.parsers.program.exception.ParsingException;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.memory.Location;
 

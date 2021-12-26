@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.expression.INonDetTypes;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.parsers.program.exception.*;
+import com.dat3m.dartagnan.exception.*;
 import com.dat3m.dartagnan.parsers.program.utils.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -41,7 +41,7 @@ public class ExceptionsTest {
     	pb.addChild(1, new Skip());
     }
 
-    @Test(expected = AlreadyExistentVariableException.class)
+    @Test(expected = MalformedProgramException.class)
     public void RegisterAlreadyExist() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
@@ -123,7 +123,7 @@ public class ExceptionsTest {
     	p.encodeNoBoundEventExec(TestHelper.createContext());
     }
 
-    @Test(expected = ExprTypeMismatchException.class)
+    @Test(expected = MalformedProgramException.class)
     public void diffPrecisionInt() throws Exception {
     	IExprBin bin = new IExprBin(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
     	bin.getPrecision();
@@ -174,12 +174,12 @@ public class ExceptionsTest {
     	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/IllegalJump.litmus"));
     }
 
-    @Test(expected = UninitialisedVariableException.class)
+    @Test(expected = MalformedProgramException.class)
     public void LocationNotInitialized() throws Exception {
     	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/LocationNotInitialized.litmus"));
     }
 
-    @Test(expected = UninitialisedVariableException.class)
+    @Test(expected = MalformedProgramException.class)
     public void RegisterNotInitialized() throws Exception {
     	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/RegisterNotInitialized.litmus"));
     }

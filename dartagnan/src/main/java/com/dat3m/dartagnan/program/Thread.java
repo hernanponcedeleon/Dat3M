@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.parsers.program.exception.AlreadyExistentVariableException;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
@@ -79,7 +79,7 @@ public class Thread {
 
     public Register addRegister(String name, int precision){
         if(registers.containsKey(name)){
-            throw new AlreadyExistentVariableException("Register " + id + ":" + name + " already exists");
+            throw new MalformedProgramException("Register " + id + ":" + name + " already exists");
         }
         cache = null;
         Register register = new Register(name, id, precision);

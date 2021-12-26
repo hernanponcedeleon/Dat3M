@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser;
 import com.dat3m.dartagnan.parsers.LitmusCVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
-import com.dat3m.dartagnan.parsers.program.exception.ParsingException;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Program;

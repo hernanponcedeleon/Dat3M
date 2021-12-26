@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.parsers.program.exception.*;
+import com.dat3m.dartagnan.exception.*;
 import com.dat3m.dartagnan.parsers.program.utils.*;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.EventFactory.*;
@@ -17,7 +17,7 @@ import org.junit.Test;
 
 public class UnrollExceptionsTest {
 
-    @Test(expected = UnrollException.class)
+    @Test(expected = ProgramProcessingException.class)
     public void RMWStore() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
@@ -27,7 +27,7 @@ public class UnrollExceptionsTest {
     	pb.build().unroll(1, 0);
     }
 
-    @Test(expected = UnrollException.class)
+    @Test(expected = ProgramProcessingException.class)
     public void RMWStoreCon() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
@@ -37,7 +37,7 @@ public class UnrollExceptionsTest {
     	pb.build().unroll(1, 0);
     }
 
-    @Test(expected = UnrollException.class)
+    @Test(expected = ProgramProcessingException.class)
     public void RMWStoreExclusive() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
@@ -45,7 +45,7 @@ public class UnrollExceptionsTest {
     	pb.build().unroll(1, 0);
     }
 
-    @Test(expected = UnrollException.class)
+    @Test(expected = ProgramProcessingException.class)
     public void FenceCond() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
@@ -55,7 +55,7 @@ public class UnrollExceptionsTest {
     	pb.build().unroll(1, 0);
     }
 
-    @Test(expected = UnrollException.class)
+    @Test(expected = ProgramProcessingException.class)
     public void ExecutionStatus() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);

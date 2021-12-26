@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
-import com.dat3m.dartagnan.parsers.program.exception.MalformedProgramException;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;

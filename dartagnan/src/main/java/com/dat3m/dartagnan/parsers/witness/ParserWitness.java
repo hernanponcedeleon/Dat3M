@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.parsers.witness;
 
 import com.dat3m.dartagnan.parsers.XMLLexer;
 import com.dat3m.dartagnan.parsers.XMLParser;
-import com.dat3m.dartagnan.parsers.program.exception.ParserErrorListener;
+import com.dat3m.dartagnan.exception.ParserErrorListener;
 import com.dat3m.dartagnan.parsers.witness.visitors.VisitorXML;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import org.antlr.v4.runtime.CharStream;

@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.exception;
+package com.dat3m.dartagnan.exception;
 
 public class MalformedProgramException extends RuntimeException {
 

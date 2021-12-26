@@ -3,8 +3,7 @@ package com.dat3m.dartagnan.parsers.program.utils;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.parsers.program.exception.MalformedProgramException;
-import com.dat3m.dartagnan.parsers.program.exception.UninitialisedVariableException;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -158,7 +157,7 @@ public class ProgramBuilder {
         if(locations.containsKey(name)){
             return locations.get(name);
         }
-        throw new UninitialisedVariableException("Location " + name + " has not been initialised");
+        throw new MalformedProgramException("Location " + name + " has not been initialised");
     }
 
     public Register getRegister(int thread, String name){
@@ -185,7 +184,7 @@ public class ProgramBuilder {
                 return register;
             }
         }
-        throw new UninitialisedVariableException("Register " + thread + ":" + name + " is not initialised");
+        throw new MalformedProgramException("Register " + thread + ":" + name + " is not initialised");
     }
 
     public boolean hasLabel(String name) {

@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.parsers.LitmusPPCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusPPCParser;
 import com.dat3m.dartagnan.parsers.LitmusPPCVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
-import com.dat3m.dartagnan.parsers.program.exception.ParsingException;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;

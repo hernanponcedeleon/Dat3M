@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.parsers.cat.visitors;
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
 import com.dat3m.dartagnan.parsers.CatVisitor;
 import com.dat3m.dartagnan.parsers.CatParser;
-import com.dat3m.dartagnan.parsers.cat.utils.ParsingException;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.wmm.filter.*;
 
 public class VisitorFilter extends CatBaseVisitor<FilterAbstract> implements CatVisitor<FilterAbstract> {

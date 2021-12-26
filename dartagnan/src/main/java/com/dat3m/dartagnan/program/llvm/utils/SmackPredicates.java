@@ -14,7 +14,7 @@ import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IfExpr;
-import com.dat3m.dartagnan.parsers.program.exception.ParsingException;
+import com.dat3m.dartagnan.exception.ParsingException;
 
 public class SmackPredicates {
 

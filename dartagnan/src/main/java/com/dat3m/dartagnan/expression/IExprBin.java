@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.parsers.program.exception.ExprTypeMismatchException;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Location;
@@ -60,7 +60,7 @@ public class IExprBin extends IExpr implements ExprInterface {
 	@Override
 	public int getPrecision() {
 		if(lhs.getPrecision() != rhs.getPrecision()) {
-            throw new ExprTypeMismatchException("The type of " + lhs + " and " + rhs + " does not match");
+            throw new MalformedProgramException("The type of " + lhs + " and " + rhs + " does not match");
 		}
 		return lhs.getPrecision();
 	}
