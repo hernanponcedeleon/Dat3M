@@ -184,7 +184,7 @@ public class ProgramBuilder {
                 return register;
             }
         }
-        throw new MalformedProgramException("Register " + thread + ":" + name + " is not initialised");
+        throw new IllegalStateException("Register " + thread + ":" + name + " is not initialised");
     }
 
     public boolean hasLabel(String name) {
