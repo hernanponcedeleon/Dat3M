@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.expression;
 
-public interface Redusable extends ExprInterface {
+public interface Reducible extends ExprInterface {
 
 	IConst reduce();
 	

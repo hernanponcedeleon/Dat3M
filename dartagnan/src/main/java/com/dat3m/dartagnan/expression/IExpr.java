@@ -11,7 +11,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.program.event.Event;
 
-public abstract class IExpr implements ExprInterface, Redusable {
+public abstract class IExpr implements ExprInterface, Reducible {
 
     @Override
 	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
