@@ -174,12 +174,12 @@ public class ExceptionsTest {
     	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/IllegalJump.litmus"));
     }
 
-    @Test(expected = MalformedProgramException.class)
+    @Test(expected = IllegalStateException.class)
     public void LocationNotInitialized() throws Exception {
     	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/LocationNotInitialized.litmus"));
     }
 
-    @Test(expected = MalformedProgramException.class)
+    @Test(expected = IllegalStateException.class)
     public void RegisterNotInitialized() throws Exception {
     	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/RegisterNotInitialized.litmus"));
     }
