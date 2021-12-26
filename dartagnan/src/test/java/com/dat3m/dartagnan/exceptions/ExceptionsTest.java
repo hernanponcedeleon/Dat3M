@@ -123,7 +123,7 @@ public class ExceptionsTest {
     	p.encodeNoBoundEventExec(TestHelper.createContext());
     }
 
-    @Test(expected = MalformedProgramException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void diffPrecisionInt() throws Exception {
     	IExprBin bin = new IExprBin(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
     	bin.getPrecision();
