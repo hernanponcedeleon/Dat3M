@@ -21,15 +21,12 @@ import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
 
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.ResourceHelper.readExpected;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -72,7 +69,7 @@ public class DataRaceTest {
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
-            readExpected(filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf("-")) + ".yml"));
+    	readExpected(filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf("-")) + ".yml", "no-data-race.prp"));
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, targetProvider, settingsProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
@@ -97,20 +94,6 @@ public class DataRaceTest {
             .around(contextProvider)
             .around(proverProvider);
 
-
-    private Result readExpected(String property) {
-        try (BufferedReader br = new BufferedReader(new FileReader(property))) {
-            while (!(br.readLine()).contains("no-data-race.prp")) {
-                continue;
-            }
-            return br.readLine().contains("false") ? FAIL : PASS;
-
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            System.exit(0);
-        }
-        return null;
-    }
 
     @Parameterized.Parameters(name = "{index}: {0}, bound={1}")
     public static Iterable<Object[]> data() throws IOException {

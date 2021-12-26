@@ -21,12 +21,8 @@ import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-
 import static com.dat3m.dartagnan.analysis.Base.*;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.ResourceHelper.readExpected;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractSvCompTest {
@@ -66,7 +62,7 @@ public abstract class AbstractSvCompTest {
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
-            readExpected(filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf("-")) + ".yml"));
+    	readExpected(filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf("-")) + ".yml", "unreach-call.prp"));
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, targetProvider, settingsProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
@@ -92,21 +88,6 @@ public abstract class AbstractSvCompTest {
             .around(contextProvider)
             .around(proverProvider)
             .around(prover2Provider);
-
-
-    private Result readExpected(String property) {
-        try (BufferedReader br = new BufferedReader(new FileReader(property))) {
-            while (!(br.readLine()).contains("unreach-call.prp")) {
-                continue;
-            }
-            return br.readLine().contains("false") ? FAIL : PASS;
-
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            System.exit(0);
-        }
-        return null;
-    }
 
 
     //@Test
