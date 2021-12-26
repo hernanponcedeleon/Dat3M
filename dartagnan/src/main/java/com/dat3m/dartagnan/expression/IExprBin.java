@@ -2,10 +2,10 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Location;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.Model;
@@ -20,6 +20,7 @@ public class IExprBin extends IExpr implements ExprInterface {
     private final IOpBin op;
 
     public IExprBin(IExpr lhs, IOpBin op, IExpr rhs) {
+    	Preconditions.checkArgument(lhs.getPrecision() == rhs.getPrecision(), "The type of " + lhs + " and " + rhs + " does not match");
         this.lhs = lhs;
         this.rhs = rhs;
         this.op = op;
@@ -59,9 +60,6 @@ public class IExprBin extends IExpr implements ExprInterface {
 
 	@Override
 	public int getPrecision() {
-		if(lhs.getPrecision() != rhs.getPrecision()) {
-            throw new MalformedProgramException("The type of " + lhs + " and " + rhs + " does not match");
-		}
 		return lhs.getPrecision();
 	}
 	
