@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.boogie;
+package com.dat3m.dartagnan.parsers.program.boogie;
 
 import com.dat3m.dartagnan.program.Register;
 

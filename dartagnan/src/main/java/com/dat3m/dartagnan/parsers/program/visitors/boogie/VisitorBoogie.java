@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.boogie.Function;
-import com.dat3m.dartagnan.boogie.FunctionCall;
-import com.dat3m.dartagnan.boogie.PthreadPool;
-import com.dat3m.dartagnan.boogie.Scope;
+import com.dat3m.dartagnan.parsers.program.boogie.Function;
+import com.dat3m.dartagnan.parsers.program.boogie.FunctionCall;
+import com.dat3m.dartagnan.parsers.program.boogie.PthreadPool;
+import com.dat3m.dartagnan.parsers.program.boogie.Scope;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
