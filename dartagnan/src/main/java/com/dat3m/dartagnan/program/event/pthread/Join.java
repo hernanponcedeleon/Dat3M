@@ -72,7 +72,7 @@ public class Join extends Event {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Preconditions.checkArgument(target != null, "Compilation to " + target + " is not supported for " + this);
+    	Preconditions.checkArgument(target != null, "Target cannot be null");
 
         List<Event> events = new ArrayList<>();
         Load load = newLoad(reg, address, SC);
@@ -93,6 +93,8 @@ public class Join extends Event {
             case ARM8:
                 events.add(Arm8.DMB.newISHBarrier());
                 break;
+            default:
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
 
         events.add(newJumpUnless(new Atom(reg, EQ, IConst.ZERO), label));

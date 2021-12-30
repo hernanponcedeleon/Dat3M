@@ -43,17 +43,17 @@ public abstract class MemEvent extends Event {
     }
 
     public Formula getMemAddressExpr(){
-    	Preconditions.checkNotNull(memAddressExpr);
+    	Preconditions.checkState(memAddressExpr != null);
     	return memAddressExpr;
     }
 
     public Formula getMemValueExpr(){
-    	Preconditions.checkNotNull(memValueExpr);
+    	Preconditions.checkState(memValueExpr != null);
     	return memValueExpr;
     }
 
     public ImmutableSet<Address> getMaxAddressSet(){
-    	Preconditions.checkNotNull(maxAddressSet);
+    	Preconditions.checkState(maxAddressSet != null);
     	return maxAddressSet;
     }
 

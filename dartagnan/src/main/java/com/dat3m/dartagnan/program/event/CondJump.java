@@ -26,8 +26,8 @@ public class CondJump extends Event implements RegReaderData {
     private final ImmutableSet<Register> dataRegs;
 
     public CondJump(BExpr expr, Label label){
-    	Preconditions.checkArgument(label != null, "CondJump event requires non null label event");
-    	Preconditions.checkArgument(expr != null, "CondJump event requires non null expression");
+    	Preconditions.checkNotNull(label, "CondJump event requires non null label event");
+    	Preconditions.checkNotNull(expr, "CondJump event requires non null expression");
         this.label = label;
         this.label.addListener(this);
         this.thread = label.getThread();
@@ -164,7 +164,8 @@ public class CondJump extends Event implements RegReaderData {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Preconditions.checkNotNull(successor, "Malformed CondJump event");
+    	Preconditions.checkArgument(target != null, "Target cannot be null");
+    	Preconditions.checkState(successor != null, "Malformed CondJump event");
         return super.compileRecursive(target, nextId, predecessor, depth);
     }
 

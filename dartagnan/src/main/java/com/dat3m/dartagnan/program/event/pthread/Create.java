@@ -54,7 +54,7 @@ public class Create extends Event {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Preconditions.checkArgument(target != null, "Compilation to " + target + " is not supported for " + this);
+    	Preconditions.checkArgument(target != null, "Target cannot be null");
 
         Fence optionalBarrierBefore = null;
         Fence optionalBarrierAfter = null;
@@ -74,6 +74,8 @@ public class Create extends Event {
                 optionalBarrierBefore = Arm8.DMB.newISHBarrier();
                 optionalBarrierAfter = Arm8.DMB.newISHBarrier();
                 break;
+            default:
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
 
         List<Event> events = eventSequence(
