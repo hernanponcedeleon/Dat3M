@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.analysis.Analysis;
-import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
@@ -15,8 +13,6 @@ import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.google.common.base.Preconditions;
-
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,8 +25,6 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
-import java.util.Arrays;
-
 import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.analysis.Analysis.RACES;
 import static com.dat3m.dartagnan.analysis.Base.*;
@@ -109,15 +103,11 @@ public class Dartagnan {
                  ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
             {
                 Result result = Result.UNKNOWN;
-            	Preconditions.checkArgument(Arrays.asList(Analysis.values()).contains(options.getAnalysis()), 
-            			"Unrecognized analysis: " + options.getAnalysis());
                 switch (options.getAnalysis()) {
                     case RACES:
                         result = checkForRaces(ctx, task);
                         break;
                     case REACHABILITY:
-                    	Preconditions.checkArgument(Arrays.asList(Method.values()).contains(options.getMethod()), 
-                    			"Unrecognized method: " + options.getMethod());
                         switch (options.getMethod()) {
                             case TWO:
                                 try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
