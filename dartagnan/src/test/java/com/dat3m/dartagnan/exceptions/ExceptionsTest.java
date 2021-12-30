@@ -183,4 +183,19 @@ public class ExceptionsTest {
     public void RegisterNotInitialized() throws Exception {
     	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/RegisterNotInitialized.litmus"));
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void EmptyProcedure() throws Exception {
+    	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/EmptyProcedure.bpl"));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void FunctionNotDefined() throws Exception {
+    	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/FunctionNotDefined.bpl"));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void FunctionWithoutImplementation() throws Exception {
+    	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/FunctionWithoutImplementation.bpl"));
+    }
 }

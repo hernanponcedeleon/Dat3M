@@ -20,7 +20,7 @@ public class ProgramParsingExceptionsTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/"))) {
+        try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/parsing"))) {
             return fileStream
                     .filter(Files::isRegularFile)
                     .filter(f -> (f.toString().endsWith("bpl")))
