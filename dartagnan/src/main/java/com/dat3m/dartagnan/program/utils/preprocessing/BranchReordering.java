@@ -1,5 +1,4 @@
 package com.dat3m.dartagnan.program.utils.preprocessing;
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
@@ -119,14 +118,11 @@ public class BranchReordering {
         
         @Override
         public int hashCode() {
-            return GlobalSettings.DETERMINISTIC_REORDERING ? id : super.hashCode();
+            return id;
         }
 
         @Override
         public boolean equals(Object obj) {
-            if (!GlobalSettings.DETERMINISTIC_REORDERING) {
-                return super.equals(obj);
-            }
             if (obj == this) {
                 return true;
             }else if (obj == null || obj.getClass() != getClass()) {

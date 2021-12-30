@@ -37,13 +37,6 @@ public class IfExpr implements ExprInterface {
 	}
 
 	@Override
-	public Formula getLastValueExpr(SolverContext ctx) {
-		// In principle this method is only called by assertions 
-		// and thus it should never be called for this class
-        throw new RuntimeException("Problem with getLastValueExpr in " + this);
-	}
-
-	@Override
 	public BigInteger getIntValue(Event e, Model model, SolverContext ctx) {
 		return guard.getBoolValue(e, model, ctx) ? tbranch.getIntValue(e, model, ctx) : fbranch.getIntValue(e, model, ctx);
 	}
@@ -68,11 +61,6 @@ public class IfExpr implements ExprInterface {
         return "(if " + guard + " then " + tbranch + " else " + fbranch + ")";
     }
 
-	@Override
-	public ExprInterface reduce() {
-		return guard.reduce().getValue() ? tbranch.reduce() : fbranch.reduce();
-	}
-	
 	public BExpr getGuard() {
 		return guard;
 	}
@@ -83,19 +71,6 @@ public class IfExpr implements ExprInterface {
 
 	public ExprInterface getFalseBranch() {
 		return fbranch;
-	}
-
-	@Override
-	public int getPrecision() {
-		if(fbranch.getPrecision() != tbranch.getPrecision()) {
-            throw new RuntimeException("The type of " + tbranch + " and " + fbranch + " does not match");
-		}
-		return tbranch.getPrecision();
-	}
-	
-	@Override
-	public IExpr getBase() {
-		throw new UnsupportedOperationException("getBase not supported for " + this);
 	}
 
 	@Override

@@ -25,11 +25,6 @@ public class Fence extends Event {
 		return getName();
 	}
 
-	@Override
-	public String label(){
-		return getName();
-	}
-
 	// Unrolling
 	// -----------------------------------------------------------------------------------------------------------------
 

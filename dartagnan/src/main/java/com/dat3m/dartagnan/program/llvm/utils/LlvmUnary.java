@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.llvm.utils;
 
 import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprUn;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 
@@ -132,8 +133,8 @@ public class LlvmUnary {
 		}
 
 		if(op == null) {
-			throw new RuntimeException("Problem with " + name + " method");
+			throw new UnsupportedOperationException("Problem with " + name + " method");
 		}
-		return new IExprUn(op, (ExprInterface)callParams.get(0));
+		return new IExprUn(op, (IExpr)callParams.get(0));
 	}
 }

@@ -6,8 +6,6 @@ import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 
-import java.util.Stack;
-
 public class Printer {
 
     private StringBuilder result;
@@ -18,13 +16,10 @@ public class Printer {
     private IDType idType = IDType.AUTO;
 
     private final String paddingBase = "      ";
-    private final String paddingStep = "    ";
-    private int paddingSize;
 
     public String print(Program program){
         result = new StringBuilder();
         padding = new StringBuilder(paddingBase);
-        paddingSize = paddingStep.length();
 
         IDType origType = idType;
         idType = resolveIDType(program);
@@ -64,13 +59,11 @@ public class Printer {
             return true;
         }
         Event firstEvent = thread.getEntry().getSuccessor();
-        return firstEvent != null && !(firstEvent instanceof Init);
+        // Thread always have at least two events, Skip and end Label
+        return firstEvent.getSuccessor() != null && !(firstEvent instanceof Init);
     }
 
     private void appendThread(Thread thread){
-        Stack<Event> elseStack = new Stack<>();
-        Stack<Event> endStack = new Stack<>();
-
         try {
             Integer.parseInt(thread.getName());
             result.append("\nthread_").append(thread.getName()).append("\n");
@@ -78,23 +71,7 @@ public class Printer {
             result.append("\n").append(thread.getName()).append("\n");        	
         }
         for(Event e : thread.getCache().getEvents(FilterBasic.get(EType.ANY))){
-
             appendEvent(e);
-
-            while(!endStack.empty() && e.equals(endStack.peek())){
-                endStack.pop();
-                padding.delete(padding.length() - paddingSize, padding.length());
-                result.append(padding).append("}\n");
-            }
-
-            while(!elseStack.empty() && e.equals(elseStack.peek())){
-                elseStack.pop();
-                padding.delete(padding.length() - paddingSize, padding.length());
-                result.append(padding).append("}\n");
-                result.append(padding).append("else\n");
-                result.append(padding).append("{\n");
-                padding.append(paddingStep);
-            }
         }
     }
 

@@ -23,7 +23,7 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
 
     private final IOpBin op;
 
-    public RMWOpAndTest(IExpr address, Register register, ExprInterface value, IOpBin op) {
+    public RMWOpAndTest(IExpr address, Register register, IExpr value, IOpBin op) {
         super(address, register, value, Mo.MB);
         this.op = op;
     }

@@ -1,9 +1,7 @@
-package com.dat3m.dartagnan;
+package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.utils.ResourceHelper;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -16,10 +14,8 @@ import java.nio.file.Paths;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.fail;
-
 @RunWith(Parameterized.class)
-public class DartagnanArrayIllegalTest {
+public class ArrayIllegalTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
@@ -34,19 +30,12 @@ public class DartagnanArrayIllegalTest {
 
     private final String path;
 
-    public DartagnanArrayIllegalTest(String path) {
+    public ArrayIllegalTest(String path) {
         this.path = path;
     }
 
-    @Test
-    public void test() {
-        try{
-            new ProgramParser().parse(new File(path));
-            fail("Didn't throw an exception");
-        } catch(ParseCancellationException | ParsingException e){
-            // Test succeeded
-        } catch (Exception e){
-            fail("Missing resource file");
-        }
+    @Test(expected = RuntimeException.class)
+    public void test() throws Exception {
+    	new ProgramParser().parse(new File(path));
     }
 }

@@ -15,13 +15,9 @@ import com.dat3m.dartagnan.program.event.Event;
 
 public interface ExprInterface {
 
-	ExprInterface reduce();
-	
     Formula toIntFormula(Event e, SolverContext ctx);
 
     BooleanFormula toBoolFormula(Event e, SolverContext ctx);
-
-    Formula getLastValueExpr(SolverContext ctx);
 
     BigInteger getIntValue(Event e, Model model, SolverContext ctx);
 
@@ -33,10 +29,6 @@ public interface ExprInterface {
     	return ImmutableSet.of();
     }
     
-    int getPrecision();
-    
-    IExpr getBase();
-
     <T> T visit(ExpressionVisitor<T> visitor);
 
     //default ExprInterface simplify() { return visit(ExprSimplifier.SIMPLIFIER); }

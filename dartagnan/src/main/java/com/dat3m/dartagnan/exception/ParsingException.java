@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.utils;
+package com.dat3m.dartagnan.exception;
 
 public class ParsingException extends RuntimeException {
 

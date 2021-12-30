@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.analysis;
 
-import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
@@ -73,13 +72,6 @@ public class DataRaces {
     				for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.MEMORY), FilterBasic.get(EType.INIT)))) {
     					MemEvent m = (MemEvent)e2;
     					if(w.hasFilter(EType.RMW) && m.hasFilter(EType.RMW)) {
-    						continue;
-    					}
-    					// TODO improve this: these events correspond to return statements
-    					if(w.getMemValue() instanceof BConst && !((BConst)w.getMemValue()).getValue()) {
-    						continue;
-    					}
-    					if(m.getMemValue() instanceof BConst && !((BConst)m.getMemValue()).getValue()) {
     						continue;
     					}
     					if(w.canRace() && m.canRace() && MemEvent.canAddressTheSameLocation(w, m)) {

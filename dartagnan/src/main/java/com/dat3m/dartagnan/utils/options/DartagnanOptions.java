@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.utils.options;
 
 import com.dat3m.dartagnan.analysis.Analysis;
-import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -13,8 +12,6 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.analysis.Analysis.REACHABILITY;
-
 public class DartagnanOptions extends BaseOptions {
 
 	public static final String ANALYSIS_OPTION = "analysis";
@@ -24,9 +21,10 @@ public class DartagnanOptions extends BaseOptions {
     private final Set<String> supportedFormats = 
     		ImmutableSet.copyOf(Arrays.asList("litmus", "bpl", "c", "i"));
 
-    private final Set<Analysis> supportedAnalyses =
+    private final Set<String> supportedAnalyses =
     		ImmutableSet.copyOf(Arrays.stream(Analysis.values())
             .sorted(Comparator.comparing(Analysis::toString))
+            .map(Analysis::asStringOption)
     		.collect(Collectors.toList()));
 
     private Analysis analysis;

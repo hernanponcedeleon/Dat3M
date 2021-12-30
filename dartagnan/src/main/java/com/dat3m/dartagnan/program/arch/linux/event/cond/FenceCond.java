@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.arch.linux.event.cond;
 
+import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
@@ -48,6 +49,6 @@ public class FenceCond extends Fence {
 
     @Override
     protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
-        throw new RuntimeException("FenceCond cannot be unrolled: event must be generated during compilation");
+        throw new ProgramProcessingException("FenceCond cannot be unrolled: event must be generated during compilation");
     }
 }

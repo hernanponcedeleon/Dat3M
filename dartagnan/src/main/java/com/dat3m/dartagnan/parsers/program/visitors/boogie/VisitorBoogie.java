@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.boogie.Function;
-import com.dat3m.dartagnan.boogie.FunctionCall;
-import com.dat3m.dartagnan.boogie.PthreadPool;
-import com.dat3m.dartagnan.boogie.Scope;
+import com.dat3m.dartagnan.parsers.program.boogie.Function;
+import com.dat3m.dartagnan.parsers.program.boogie.FunctionCall;
+import com.dat3m.dartagnan.parsers.program.boogie.PthreadPool;
+import com.dat3m.dartagnan.parsers.program.boogie.Scope;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
@@ -12,7 +12,7 @@ import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.*;
 import com.dat3m.dartagnan.parsers.BoogieVisitor;
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
@@ -158,8 +158,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(exp instanceof Atom && ((Atom)exp).getLHS() instanceof Address && ((Atom)exp).getOp().equals(EQ)) {
  			Address add = (Address)((Atom)exp).getLHS();
- 			ExprInterface def = ((Atom)exp).getRHS();
- 			add.setConstantValue(((IConst)def.reduce()).getValue());
+ 			Reducible def = (Reducible) ((Atom)exp).getRHS();
+ 			add.setConstantValue(def.reduce().getValue());
  		}
 		return null;
 	}
@@ -297,7 +297,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	// we cannot just add the expression to the AbstractAssertion.
     	// We need to create an event carrying the value of the expression 
     	// and see if this event can be executed.
-    	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
+    	IExpr expr = (IExpr)ctx.proposition().expr().accept(this);
     	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, expr.getPrecision());
     	assertionIndex++;
     	Local event = EventFactory.newLocal(ass, expr, currentLine);
@@ -415,7 +415,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitAssign_cmd(Assign_cmdContext ctx) {
         ExprsContext exprs = ctx.def_body().exprs();
-    	if(exprs.expr().size() != 1 && exprs.expr().size() != ctx.Ident().size()) {
+    	if(ctx.Ident().size() != 1 && exprs.expr().size() != ctx.Ident().size()) {
             throw new ParsingException("There should be one expression per variable\nor only one expression for all in " + ctx.getText());
     	}
 		for(int i = 0; i < ctx.Ident().size(); i++) {
@@ -431,7 +431,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
 			}
 			if(initMode) {
-				programBuilder.initLocEqConst(name, (IConst)value.reduce());
+				programBuilder.initLocEqConst(name, ((IExpr)value).reduce());
 				continue;
 			}
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
@@ -567,7 +567,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitMinus_expr(Minus_exprContext ctx) {
-		ExprInterface v = (ExprInterface)ctx.unary_expr().accept(this);
+		IExpr v = (IExpr)ctx.unary_expr().accept(this);
 		return new IExprUn(IOpUn.MINUS, v);
 	}
 
@@ -616,7 +616,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		ExprInterface v2;
 		for(int i = 0; i < ctx.factor().size()-1; i++) {
 			v2 = (ExprInterface)ctx.factor(i+1).accept(this);
-			v1 = new IExprBin(v1, ctx.add_op(i).op, v2);
+			v1 = new IExprBin((IExpr)v1, ctx.add_op(i).op, (IExpr)v2);
 		}
 		return v1;
 	}
@@ -627,7 +627,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		ExprInterface v2 ;
 		for(int i = 0; i < ctx.power().size()-1; i++) {
 			v2 = (ExprInterface)ctx.power(i+1).accept(this);
-			v1 = new IExprBin(v1, ctx.mul_op(i).op, v2);
+			v1 = new IExprBin((IExpr)v1, ctx.mul_op(i).op, (IExpr)v2);
 		}
 		return v1;
 	}
@@ -682,7 +682,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				ExprInterface lhs = address;
 				BigInteger rhs = BigInteger.ZERO;
 				while(lhs instanceof IExprBin) {
-					rhs = rhs.add(((IConst)((IExprBin)lhs).getRHS().reduce()).getIntValue());
+					rhs = rhs.add(((IExprBin)lhs).getRHS().reduce().getIntValue());
 					lhs = ((IExprBin)lhs).getLHS();
 				}
 				String text = ctx.expr(1).getText();				

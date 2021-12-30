@@ -28,9 +28,10 @@ public abstract class BaseOptions extends Options {
     protected Method method;
     protected Solvers smtsolver;
 
-    private final Set<Method> supported_methods =
+    private final Set<String> supported_methods =
     		ImmutableSet.copyOf(Arrays.stream(Method.values())
             .sorted(Comparator.comparing(Method::toString))
+            .map(Method::asStringOption)
     		.collect(Collectors.toList()));
 
     private final Set<String> supportedTargets =

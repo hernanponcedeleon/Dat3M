@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 
 public class Local extends Event implements RegWriter, RegReaderData {
 	

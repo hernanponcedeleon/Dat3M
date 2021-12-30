@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
@@ -13,7 +14,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 
 public class ExecutionStatus extends Event implements RegWriter {
 
@@ -67,6 +68,6 @@ public class ExecutionStatus extends Event implements RegWriter {
 
     @Override
     protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
-        throw new RuntimeException("ExecutionStatus cannot be unrolled: event must be generated during compilation");
+        throw new ProgramProcessingException("ExecutionStatus cannot be unrolled: event must be generated during compilation");
     }
 }

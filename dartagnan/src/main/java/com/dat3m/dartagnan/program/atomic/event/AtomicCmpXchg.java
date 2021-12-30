@@ -23,7 +23,7 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
 
     private final IExpr expectedAddr;
 
-    public AtomicCmpXchg(Register register, IExpr address, IExpr expectedAddr, ExprInterface value, String mo, boolean strong) {
+    public AtomicCmpXchg(Register register, IExpr address, IExpr expectedAddr, IExpr value, String mo, boolean strong) {
         super(address, register, value, mo);
         this.expectedAddr = expectedAddr;
         if(strong) {

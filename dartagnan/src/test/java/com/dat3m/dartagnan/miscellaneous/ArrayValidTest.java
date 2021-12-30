@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan;
+package com.dat3m.dartagnan.miscellaneous;
 
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -30,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-public class DartagnanArrayValidTest {
+public class ArrayValidTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
@@ -49,7 +49,7 @@ public class DartagnanArrayValidTest {
     private final Wmm wmm;
     private final Settings settings;
 
-    public DartagnanArrayValidTest(String path, Wmm wmm, Settings settings) {
+    public ArrayValidTest(String path, Wmm wmm, Settings settings) {
         this.path = path;
         this.wmm = wmm;
         this.settings = settings;

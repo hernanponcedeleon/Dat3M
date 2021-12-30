@@ -1,10 +1,8 @@
-package com.dat3m.dartagnan;
+package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.utils.printer.Printer;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -18,14 +16,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RunWith(Parameterized.class)
-public class DartagnanLoop {
+public class ProgramParsingExceptionsTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "loops/"))) {
+        try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/"))) {
             return fileStream
                     .filter(Files::isRegularFile)
-                    .filter(f -> (f.toString().endsWith("litmus")))
+                    .filter(f -> (f.toString().endsWith("bpl")))
                     .map(f -> new Object[]{f.toString()})
                     .collect(Collectors.toList());
         }
@@ -33,14 +31,12 @@ public class DartagnanLoop {
 
     private final String path;
 
-    public DartagnanLoop(String path) {
+    public ProgramParsingExceptionsTest(String path) {
         this.path = path;
     }
 
-    @Test
+    @Test(expected = ParsingException.class)
     public void test() throws Exception {
-    	Program p = new ProgramParser().parse(new File(path));
-    	System.out.println(new Printer().print(p));
-    	p.unroll(1, 0);
+    	new ProgramParser().parse(new File(path));
     }
 }

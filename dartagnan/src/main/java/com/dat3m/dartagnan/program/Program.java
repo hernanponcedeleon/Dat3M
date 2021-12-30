@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program;
 
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
@@ -25,7 +24,7 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 
 import java.util.*;
 
@@ -213,10 +212,10 @@ public class Program {
 
     public BooleanFormula encodeCF(SolverContext ctx) {
         if (this.task == null) {
-            throw new RuntimeException("The program needs to get initialised first.");
+            throw new IllegalStateException("The program needs to get initialised first.");
         }
 
-        BooleanFormula enc = GlobalSettings.FIXED_MEMORY_ENCODING ? memory.fixedMemoryEncoding(ctx) : memory.encode(ctx);
+        BooleanFormula enc = memory.fixedMemoryEncoding(ctx);
         for(Thread t : threads){
             enc = ctx.getFormulaManager().getBooleanFormulaManager().and(enc, t.encodeCF(ctx));
         }
@@ -228,7 +227,7 @@ public class Program {
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 
         if (this.task == null) {
-            throw new RuntimeException("The program needs to get initialised first.");
+            throw new IllegalStateException("The program needs to get initialised first.");
         }
 
         Map<Register, List<Event>> eMap = new HashMap<>();
@@ -279,7 +278,7 @@ public class Program {
     
     public BooleanFormula encodeNoBoundEventExec(SolverContext ctx){
         if (this.task == null) {
-            throw new RuntimeException("The program needs to get initialised first.");
+            throw new IllegalStateException("The program needs to get initialised first.");
         }
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();

@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser;
 import com.dat3m.dartagnan.parsers.LitmusCVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Program;
@@ -220,7 +220,7 @@ public class VisitorLitmusC
     @Override
     public IExpr visitReAtomicOpReturn(LitmusCParser.ReAtomicOpReturnContext ctx){
         Register register = getReturnRegister(true);
-        ExprInterface value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
+        IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
         Event event = EventFactory.Linux.newRMWOpReturn(getAddress(ctx.address), register, value, ctx.op, ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -230,7 +230,7 @@ public class VisitorLitmusC
     @Override
     public IExpr visitReAtomicFetchOp(LitmusCParser.ReAtomicFetchOpContext ctx){
         Register register = getReturnRegister(true);
-        ExprInterface value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
+        IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
         Event event = EventFactory.Linux.newRMWFetchOp(getAddress(ctx.address), register, value, ctx.op, ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -239,7 +239,7 @@ public class VisitorLitmusC
     @Override
     public IExpr visitReAtomicOpAndTest(LitmusCParser.ReAtomicOpAndTestContext ctx){
         Register register = getReturnRegister(true);
-        ExprInterface value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
+        IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
         Event event = EventFactory.Linux.newRMWOpAndTest(getAddress(ctx.address), register, value, ctx.op);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -249,7 +249,7 @@ public class VisitorLitmusC
     @Override
     public IExpr visitReAtomicAddUnless(LitmusCParser.ReAtomicAddUnlessContext ctx){
         Register register = getReturnRegister(true);
-        ExprInterface value = (ExprInterface)ctx.value.accept(this);
+        IExpr value = (IExpr)ctx.value.accept(this);
         ExprInterface cmp = (ExprInterface)ctx.cmp.accept(this);
         programBuilder.addChild(currentThread, EventFactory.Linux.newRMWAddUnless(getAddress(ctx.address), register, cmp, value));
         return register;
@@ -258,7 +258,7 @@ public class VisitorLitmusC
     @Override
     public IExpr visitReXchg(LitmusCParser.ReXchgContext ctx){
         Register register = getReturnRegister(true);
-        ExprInterface value = (ExprInterface)ctx.value.accept(this);
+        IExpr value = (IExpr)ctx.value.accept(this);
         Event event = EventFactory.Linux.newRMWExchange(getAddress(ctx.address), register, value, ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -268,7 +268,7 @@ public class VisitorLitmusC
     public IExpr visitReCmpXchg(LitmusCParser.ReCmpXchgContext ctx){
         Register register = getReturnRegister(true);
         ExprInterface cmp = (ExprInterface)ctx.cmp.accept(this);
-        ExprInterface value = (ExprInterface)ctx.value.accept(this);
+        IExpr value = (IExpr)ctx.value.accept(this);
         Event event = EventFactory.Linux.newRMWCompareExchange(getAddress(ctx.address), register, cmp, value, ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -313,8 +313,8 @@ public class VisitorLitmusC
     @Override
     public ExprInterface visitReOpArith(LitmusCParser.ReOpArithContext ctx){
         Register register = getReturnRegister(false);
-        ExprInterface v1 = (ExprInterface)ctx.re(0).accept(this);
-        ExprInterface v2 = (ExprInterface)ctx.re(1).accept(this);
+        IExpr v1 = (IExpr)ctx.re(0).accept(this);
+        IExpr v2 = (IExpr)ctx.re(1).accept(this);
         IExpr result = new IExprBin(v1, ctx.opArith().op, v2);
         return assignToReturnRegister(register, result);
     }
@@ -377,7 +377,7 @@ public class VisitorLitmusC
 
     @Override
     public Object visitNreAtomicOp(LitmusCParser.NreAtomicOpContext ctx){
-        ExprInterface value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
+    	IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
         Register register = programBuilder.getOrCreateRegister(scope, null, -1);
         Event event = EventFactory.Linux.newRMWOp(getAddress(ctx.address), register, value, ctx.op);
         return programBuilder.addChild(currentThread, event);
@@ -474,8 +474,8 @@ public class VisitorLitmusC
         throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
 
-    private ExprInterface returnExpressionOrDefault(LitmusCParser.ReContext ctx, BigInteger defaultValue){
-        return ctx != null ? (ExprInterface)ctx.accept(this) : new IConst(defaultValue, -1);
+    private IExpr returnExpressionOrDefault(LitmusCParser.ReContext ctx, BigInteger defaultValue){
+        return ctx != null ? (IExpr)ctx.accept(this) : new IConst(defaultValue, -1);
     }
 
     private Register getReturnRegister(boolean createOnNull){

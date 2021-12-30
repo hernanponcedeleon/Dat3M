@@ -40,12 +40,12 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
 
     @Override
     public IExpr visit(IExprBin iBin) {
-        return new IExprBin(iBin.getLHS().visit(this), iBin.getOp(), iBin.getRHS().visit(this));
+        return new IExprBin((IExpr) iBin.getLHS().visit(this), iBin.getOp(), (IExpr) iBin.getRHS().visit(this));
     }
 
     @Override
     public IExpr visit(IExprUn iUn) {
-        return new IExprUn(iUn.getOp(), iUn.getInner().visit(this));
+        return new IExprUn(iUn.getOp(), (IExpr) iUn.getInner().visit(this));
     }
 
     @Override

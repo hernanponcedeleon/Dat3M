@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_SYMMETRY_LEARNING;
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 
 /*
     This class handles the computation of refinement clauses from violations found by the WMM-solver procedure.

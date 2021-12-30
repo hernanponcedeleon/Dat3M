@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.utils;
+package com.dat3m.dartagnan.exception;
 
 import org.antlr.v4.runtime.ConsoleErrorListener;
 import org.antlr.v4.runtime.RecognitionException;
@@ -13,8 +13,7 @@ public class ParserErrorListener extends ConsoleErrorListener {
             int charPositionInLine,
             String msg,
             RecognitionException e
-    ) throws RuntimeException {
-
-        throw new RuntimeException("line " + line + ":" + charPositionInLine + " " + msg);
+    ) throws ParsingException {
+        throw new ParsingException("line " + line + ":" + charPositionInLine + " " + msg);
     }
 }

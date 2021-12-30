@@ -7,16 +7,17 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
 
 public class AssertBasic extends AbstractAssert {
 
-    private final ExprInterface e1;
-    private final ExprInterface e2;
+    private final LastValueInterface e1;
+    private final LastValueInterface e2;
     private final COpBin op;
 
-    public AssertBasic(ExprInterface e1, COpBin op, ExprInterface e2){
+    public AssertBasic(LastValueInterface e1, COpBin op, LastValueInterface e2){
         this.e1 = e1;
         this.e2 = e2;
         this.op = op;
@@ -25,11 +26,6 @@ public class AssertBasic extends AbstractAssert {
     @Override
     public ImmutableSet<Location> getLocs() {
         return new ImmutableSet.Builder<Location>().addAll(e1.getLocs()).addAll(e2.getLocs()).build();
-    }
-
-    @Override
-    public AbstractAssert removeLocAssertions(boolean replaceByTrue) {
-        return getLocs().isEmpty() ? this : (replaceByTrue ? new AssertTrue() :  new AssertNot(new AssertTrue()));
     }
 
     @Override
