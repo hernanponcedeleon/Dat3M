@@ -134,7 +134,10 @@
       		<version>0.8.7</version>
 			<configuration>
         	  <excludes>
-            	<exclude>**/parsers/*</exclude>
+            	<exclude>**/parsers/*Parser.class</exclude>
+            	<exclude>**/parsers/*Lexer.class</exclude>
+            	<exclude>**/parsers/*Visitor.class</exclude>
+            	<exclude>**/parsers/*Context.class</exclude>
         	  </excludes>
     		</configuration>
       		<executions>
@@ -296,7 +299,10 @@
       		<version>0.8.7</version>
       		<configuration>
         	  <excludes>
-            	<exclude>**/parsers/*</exclude>
+            	<exclude>**/parsers/*Parser.class</exclude>
+            	<exclude>**/parsers/*Lexer.class</exclude>
+            	<exclude>**/parsers/*Visitor.class</exclude>
+            	<exclude>**/parsers/*Context.class</exclude>
         	  </excludes>
     		</configuration>
       		<executions>
