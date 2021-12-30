@@ -27,7 +27,7 @@ public class BuildWitnessTest {
 
     @Test
     public void BuildWriteEncode() throws Exception {
-    	Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-O0.bpl"));
+    	Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bpl"));
     	Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat"));
     	VerificationTask task = new VerificationTask(p, wmm, Arch.NONE, new Settings(0, 0));
 
@@ -46,14 +46,20 @@ public class BuildWitnessTest {
     	    sOptions[4] = "-unroll";
     	    sOptions[5] = "1";
     	    sOptions[6] = "-create_witness";
-    	    sOptions[7] = ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-O0.bpl";
+    	    sOptions[7] = ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bpl";
     	    DartagnanOptions option = new DartagnanOptions();
     	    option.parse(sOptions);
     	    
     		WitnessGraph graph = new WitnessBuilder(p, ctx, prover, res).buildGraph(option);
+    		File witnessFile = new File(System.getenv("DAT3M_HOME") + "/output/lazy01-for-witness.graphml");
+    		// The file should not exist
+    		assert(!witnessFile.exists());
     		// Write to file
     		graph.write();
-    		assert(new File(System.getenv("DAT3M_HOME") + "/output/witness.graphml").exists());
+    		// The file should exist now
+			assert(witnessFile.exists());
+			// Delete the file
+			witnessFile.delete();
     		// Create encoding
     		BooleanFormula enc = graph.encode(p, ctx);
     		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
