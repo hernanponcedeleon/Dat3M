@@ -149,14 +149,14 @@ public class ExceptionsTest {
 	    }
     }
     
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void JumpWithNullLabel() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
     	pb.addChild(0, new CondJump(BConst.FALSE, null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void JumpWithNullExpr() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
