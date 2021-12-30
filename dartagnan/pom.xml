@@ -138,6 +138,7 @@
             	<exclude>**/parsers/*Lexer.class</exclude>
             	<exclude>**/parsers/*Visitor.class</exclude>
             	<exclude>**/parsers/*Context.class</exclude>
+            	<exclude>**/parsers/*Listener.class</exclude>
         	  </excludes>
     		</configuration>
       		<executions>
@@ -303,6 +304,7 @@
             	<exclude>**/parsers/*Lexer.class</exclude>
             	<exclude>**/parsers/*Visitor.class</exclude>
             	<exclude>**/parsers/*Context.class</exclude>
+				<exclude>**/parsers/*Listener.class</exclude>
         	  </excludes>
     		</configuration>
       		<executions>
