@@ -54,7 +54,7 @@ public class ExceptionsTest {
     @Test(expected = IllegalStateException.class)
     public void performRelationalAnalysisException() throws Exception {
 		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/tso.cat"));
-		cat.performRelationalAnalysis(true);
+		cat.performRelationAnalysis(true, true);
     }
 
     @Test(expected = IllegalStateException.class)
