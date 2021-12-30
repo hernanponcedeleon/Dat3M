@@ -56,10 +56,6 @@ public class AtomicThreadFence extends Fence {
                 fence = mo.equals(ACQUIRE) || mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE) || mo.equals(SC) ?
                         Power.newLwSyncBarrier() : null;
                 break;
-            case ARM:
-                fence = mo.equals(ACQUIRE) || mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE) || mo.equals(SC) ?
-                        Arm.newISHBarrier() : null;
-                break;
             case ARM8:
                 fence = mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE) || mo.equals(SC) ? Arm8.DMB.newISHBarrier()
                         : mo.equals(ACQUIRE) ? Arm8.DSB.newISHLDBarrier() : null;

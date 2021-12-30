@@ -52,15 +52,6 @@ public class INonDet extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public Formula getLastValueExpr(SolverContext ctx) {
-		String name = Integer.toString(hashCode());
-		FormulaManager fmgr = ctx.getFormulaManager();
-		return precision > 0 ? 
-				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) : 
-				fmgr.getIntegerFormulaManager().makeVariable(name);
-	}
-
-	@Override
 	public BigInteger getIntValue(Event e, Model model, SolverContext ctx) {
 		Object value = model.evaluate(toIntFormula(e, ctx));
 		if(value != null) {

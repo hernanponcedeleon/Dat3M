@@ -53,7 +53,7 @@ public abstract class UnaryRelation extends Relation {
 		r1MinTupleCount = 0;
 		r1DisableTupleCount = 0;
         if(recursiveGroupId > 0){
-            throw new RuntimeException("Recursion is not implemented for " + this.getClass().getName());
+            throw new UnsupportedOperationException("Recursion is not implemented for " + this.getClass().getName());
         }
     }
 

@@ -24,7 +24,7 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
 
     private final ExprInterface expectedValue;
 
-    public Dat3mCAS(Register register, IExpr address, ExprInterface expectedVal, ExprInterface desiredValue, String mo) {
+    public Dat3mCAS(Register register, IExpr address, ExprInterface expectedVal, IExpr desiredValue, String mo) {
         super(address, register, desiredValue, mo);
         this.expectedValue = expectedVal;
     }

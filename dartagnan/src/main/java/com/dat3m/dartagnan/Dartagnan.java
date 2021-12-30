@@ -67,7 +67,6 @@ public class Dartagnan {
         logger.info("Program path: " + options.getProgramFilePath());
         logger.info("CAT file path: " + options.getTargetModelFilePath());
         logger.info("Bound: " + options.getSettings().getBound());
-        logger.info("Alias Analysis: " + options.getSettings().getAlias());
         logger.info("Target: " + target);
 
         WitnessGraph witness = new WitnessGraph();
@@ -149,7 +148,7 @@ public class Dartagnan {
                 }
 
                 if (options.createWitness() != null && options.getAnalysis() != RACES) {
-                    new WitnessBuilder(p, ctx, prover, result, options).write();
+                    new WitnessBuilder(p, ctx, prover, result).buildGraph(options).write();
                 }
             }
         } catch (InterruptedException e){

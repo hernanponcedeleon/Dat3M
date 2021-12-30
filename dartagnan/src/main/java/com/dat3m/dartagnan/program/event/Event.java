@@ -127,10 +127,6 @@ public abstract class Event implements Comparable<Event> {
 		return RecursiveAction.done();
 	}
 
-	public String label(){
-		return repr() + " " + getClass().getSimpleName();
-	}
-
 	public boolean is(String param){
 		return param != null && (filter.contains(param));
 	}
@@ -315,7 +311,7 @@ public abstract class Event implements Comparable<Event> {
 
 	public void initialise(VerificationTask task, SolverContext ctx){
 		if(cId < 0){
-			throw new RuntimeException("Event ID is not set in " + this);
+			throw new IllegalStateException("Event ID is not set in " + this);
 		}
 		this.symmId = getThread().getName() + "-" + fId;
 		this.task = task;

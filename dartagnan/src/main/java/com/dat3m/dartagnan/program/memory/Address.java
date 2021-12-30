@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -13,7 +14,7 @@ import java.math.BigInteger;
 import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
 import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
-public class Address extends IConst implements ExprInterface {
+public class Address extends IConst implements ExprInterface, LastValueInterface {
 
     private final int index;
     private BigInteger constantValue;

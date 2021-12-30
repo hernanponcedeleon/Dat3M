@@ -88,14 +88,6 @@ public class AtomicLoad extends MemEvent implements RegWriter {
                 );
                 break;
             }
-            case ARM:
-                Fence optionalISHBarrier =
-                        mo.equals(SC) || mo.equals(ACQUIRE) || mo.equals(CONSUME) ? Arm.newISHBarrier() : null;
-                events = eventSequence(
-                        load,
-                        optionalISHBarrier
-                );
-                break;
             case ARM8:
                 if (mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE)) {
                     throw new UnsupportedOperationException("AtomicLoad can not have memory order: " + mo);

@@ -6,8 +6,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
-import java.math.BigInteger;
-
 public class BConst extends BExpr implements ExprInterface {
 
 	public final static BConst TRUE = new BConst(true);
@@ -25,12 +23,6 @@ public class BConst extends BExpr implements ExprInterface {
 		return value ? bmgr.makeTrue() : bmgr.makeFalse();
 	}
 
-	@Override
-	public Formula getLastValueExpr(SolverContext ctx){
-		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
-		return value ? imgr.makeNumber(BigInteger.ONE) : imgr.makeNumber(BigInteger.ZERO);
-	}
-
     @Override
 	public ImmutableSet<Register> getRegs() {
 		return ImmutableSet.of();
@@ -46,11 +38,6 @@ public class BConst extends BExpr implements ExprInterface {
 		return value;
 	}
 
-	@Override
-	public BConst reduce() {
-		return this;
-	}
-	
 	public boolean getValue() {
 		return value;
 	}

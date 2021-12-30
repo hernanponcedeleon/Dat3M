@@ -87,9 +87,6 @@ public class Join extends Event {
                         Power.newISyncBarrier()
                 ));
                 break;
-            case ARM:
-                events.add(Arm.newISHBarrier());
-                break;
             case ARM8:
                 events.add(Arm8.DMB.newISHBarrier());
                 break;

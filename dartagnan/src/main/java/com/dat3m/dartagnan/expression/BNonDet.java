@@ -40,11 +40,6 @@ public class BNonDet extends BExpr implements ExprInterface {
 	}
 
 	@Override
-	public Formula getLastValueExpr(SolverContext ctx) {
-		throw new UnsupportedOperationException("getLastValueExpr not supported for " + this);
-	}
-
-	@Override
 	public boolean getBoolValue(Event e, Model model, SolverContext ctx) {
 		Boolean value = model.evaluate(toBoolFormula(e, ctx));
 		if(value != null) {

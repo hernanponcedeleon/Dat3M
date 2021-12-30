@@ -33,6 +33,20 @@ public class ResourceHelper {
         return expectedResults;
     }
 
+    public static Result readExpected(String filepath, String property) {
+        try (BufferedReader br = new BufferedReader(new FileReader(filepath))) {
+            while (!(br.readLine()).contains(property)) {
+                continue;
+            }
+            return br.readLine().contains("false") ? FAIL : PASS;
+
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            System.exit(0);
+        }
+        return null;
+    }
+
     public static void initialiseCSVFile(Class<?> testingClass, String name) throws IOException {
         File file = new File(getCSVFileName(testingClass, name));
         file.delete();

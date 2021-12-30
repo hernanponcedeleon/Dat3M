@@ -24,7 +24,7 @@ public enum EdgeAttributes {
 		case STOREDVALUE:
 			return "stored-value";
 		default:
-			throw new RuntimeException(this + " cannot be converted to String");
+			throw new UnsupportedOperationException(this + " cannot be converted to String");
 		}
 	}
 }

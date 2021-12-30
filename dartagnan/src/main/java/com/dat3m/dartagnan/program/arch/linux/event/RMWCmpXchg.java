@@ -23,7 +23,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
 
     private final ExprInterface cmp;
 
-    public RMWCmpXchg(IExpr address, Register register, ExprInterface cmp, ExprInterface value, String mo) {
+    public RMWCmpXchg(IExpr address, Register register, ExprInterface cmp, IExpr value, String mo) {
         super(address, register, value, mo);
         this.dataRegs = new ImmutableSet.Builder<Register>().addAll(value.getRegs()).addAll(cmp.getRegs()).build();
         this.cmp = cmp;

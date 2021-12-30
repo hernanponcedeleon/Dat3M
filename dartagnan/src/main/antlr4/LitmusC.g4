@@ -209,7 +209,7 @@ initConstantValue
     ;
 
 initArray
-    :   LBrace arrayElement (Comma arrayElement)* RBrace
+    :   LBrace arrayElement* (Comma arrayElement)* RBrace
     ;
 
 arrayElement

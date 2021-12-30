@@ -46,11 +46,6 @@ public class Load extends MemEvent implements RegWriter {
     }
 
     @Override
-    public String label(){
-        return "R" + (mo != null ? "_" + mo : "");
-    }
-
-    @Override
     public ExprInterface getMemValue(){
         return resultRegister;
     }

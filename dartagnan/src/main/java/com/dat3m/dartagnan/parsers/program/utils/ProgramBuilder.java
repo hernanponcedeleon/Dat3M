@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.parsers.program.utils;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -40,6 +41,11 @@ public class ProgramBuilder {
         buildInitThreads();
         for(Thread thread : threads.values()){
             validateLabels(thread);
+            // The boogie visitor creates the label by itself because it need it for EventFactory.Pthread.newStart
+            // thus we check if the label exists to avoid having it twice
+            if(!hasLabel("END_OF_T" + thread.getId())) {
+            	addChild(thread.getId(), getOrCreateLabel("END_OF_T" + thread.getId()));
+            }
             program.add(thread);
         }
         program.setAss(ass);
@@ -61,7 +67,7 @@ public class ProgramBuilder {
 
     public Event addChild(int thread, Event child){
         if(!threads.containsKey(thread)){
-            throw new RuntimeException("Thread " + thread + " is not initialised");
+            throw new MalformedProgramException("Thread " + thread + " is not initialised");
         }
         child.setOId(lastOrigId++);
         threads.get(thread).append(child);
@@ -151,7 +157,7 @@ public class ProgramBuilder {
         if(locations.containsKey(name)){
             return locations.get(name);
         }
-        throw new ParsingException("Location " + name + " has not been initialised");
+        throw new IllegalStateException("Location " + name + " has not been initialised");
     }
 
     public Register getRegister(int thread, String name){
@@ -178,7 +184,7 @@ public class ProgramBuilder {
                 return register;
             }
         }
-        throw new ParsingException("Register " + thread + ":" + name + " is not initialised");
+        throw new IllegalStateException("Register " + thread + ":" + name + " is not initialised");
     }
 
     public boolean hasLabel(String name) {
@@ -219,7 +225,7 @@ public class ProgramBuilder {
         }
     }
 
-    private void validateLabels(Thread thread) throws ParsingException {
+    private void validateLabels(Thread thread) throws MalformedProgramException {
         Map<String, Label> threadLabels = new HashMap<>();
         Set<String> referencedLabels = new HashSet<>();
         Event e = thread.getEntry();
@@ -229,7 +235,7 @@ public class ProgramBuilder {
             } else if(e instanceof Label){
                 Label label = labels.remove(((Label) e).getName());
                 if(label == null){
-                    throw new ParsingException("Duplicated label " + ((Label) e).getName());
+                    throw new MalformedProgramException("Duplicated label " + ((Label) e).getName());
                 }
                 threadLabels.put(label.getName(), label);
             }
@@ -238,7 +244,7 @@ public class ProgramBuilder {
 
         for(String labelName : referencedLabels){
             if(!threadLabels.containsKey(labelName)){
-                throw new ParsingException("Illegal jump to label " + labelName);
+                throw new MalformedProgramException("Illegal jump to label " + labelName);
             }
         }
     }

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.arch.linux.event;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
@@ -20,7 +19,7 @@ import static com.dat3m.dartagnan.program.EventFactory.*;
 
 public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
-    public RMWXchg(IExpr address, Register register, ExprInterface value, String mo) {
+    public RMWXchg(IExpr address, Register register, IExpr value, String mo) {
         super(address, register, value, mo);
     }
 

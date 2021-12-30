@@ -58,7 +58,7 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        if(target == Arch.ARM || target == Arch.ARM8) {
+        if(target == Arch.ARM8) {
             RMWStoreExclusive store = newRMWStoreExclusive(address, value, mo);
             ExecutionStatus status = newExecutionStatus(register, store);
             List<Event> events = eventSequence(
@@ -67,7 +67,7 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
             );
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }
-        throw new RuntimeException("Compilation of StoreExclusive is not implemented for " + target);
+        throw new UnsupportedOperationException("Compilation of StoreExclusive is not implemented for " + target);
     }
 
 
@@ -76,6 +76,6 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
 
     @Override
     public BooleanFormula encodeCF(SolverContext ctx, BooleanFormula cond) {
-        throw new RuntimeException("StoreExclusive event must be compiled before encoding");
+        throw new IllegalStateException("StoreExclusive event must be compiled before encoding");
     }
 }

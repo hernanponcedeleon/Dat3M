@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.parsers.program;
 
 import com.dat3m.dartagnan.parsers.BoogieLexer;
 import com.dat3m.dartagnan.parsers.BoogieParser;
-import com.dat3m.dartagnan.parsers.program.utils.ParserErrorListener;
+import com.dat3m.dartagnan.exception.ParserErrorListener;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.boogie.VisitorBoogie;
 import com.dat3m.dartagnan.program.Program;

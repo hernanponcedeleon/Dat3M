@@ -87,13 +87,11 @@ For programs written in `.c` and `.bpl`, `<target>` specifies the architectures 
 - none
 - tso
 - power
-- arm
 - arm8
 
 Program written in `.litmus` format do not require such option.
 
 Other optional arguments include:
-- `-a, --alias`: specifies the alias-analysis used. Option `andersen` (the default one) uses a control-flow-insensitive method. Option `cfs` uses a control-flow-sensitive method. Option `none` performs no alias analysis.
 - `-unroll`: unrolling bound for the BMC (default is 1).
 - `-solver`: specifies which SMT solver to use as a backend. Since we use [JavaSMT](https://github.com/sosy-lab/java-smt), several SMT solvers are supported depending on the OS and the used SMT logic (default is Z3).
 - `-method`: specifies which solving method to use. Option `caat` (the default one) uses a customized solver for memory consistency. Options `incremental` and `assume` solve a monolithic formula using incremental/assume-based SMT solving. 

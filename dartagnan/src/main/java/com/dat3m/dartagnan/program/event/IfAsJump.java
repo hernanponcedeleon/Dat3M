@@ -38,7 +38,7 @@ public class IfAsJump extends CondJump {
     		}
     		return events;
         }
-        throw new RuntimeException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
 	@Override

@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
@@ -63,8 +62,8 @@ public class Providers {
         return Provider.fromSupplier(() -> new VerificationTask(programSupplier.get(), wmmSupplier.get(), targetSupplier.get(), settingsSupplier.get()));
     }
 
-    public static Provider<Settings> createSettings(Supplier<Alias> aliasSupplier, Supplier<Integer> boundSupplier, Supplier<Integer> timeoutSupplier) {
-        return Provider.fromSupplier(() -> new Settings(aliasSupplier.get(), boundSupplier.get(), timeoutSupplier.get()));
+    public static Provider<Settings> createSettings(Supplier<Integer> boundSupplier, Supplier<Integer> timeoutSupplier) {
+        return Provider.fromSupplier(() -> new Settings(boundSupplier.get(), timeoutSupplier.get()));
     }
 
     // =========================== Solving related providers ==============================

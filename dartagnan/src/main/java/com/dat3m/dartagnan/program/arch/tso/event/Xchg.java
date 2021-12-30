@@ -82,6 +82,6 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
             );
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }
-        throw new RuntimeException("Compilation of xchg is not implemented for " + target);
+        throw new UnsupportedOperationException("Compilation of xchg is not implemented for " + target);
     }
 }

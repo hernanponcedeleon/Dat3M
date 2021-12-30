@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Location;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.Model;
@@ -14,11 +15,12 @@ import java.math.BigInteger;
 
 public class IExprBin extends IExpr implements ExprInterface {
 
-    private final ExprInterface lhs;
-    private final ExprInterface rhs;
+    private final IExpr lhs;
+    private final IExpr rhs;
     private final IOpBin op;
 
-    public IExprBin(ExprInterface lhs, IOpBin op, ExprInterface rhs) {
+    public IExprBin(IExpr lhs, IOpBin op, IExpr rhs) {
+    	Preconditions.checkArgument(lhs.getPrecision() == rhs.getPrecision(), "The type of " + lhs + " and " + rhs + " does not match");
         this.lhs = lhs;
         this.rhs = rhs;
         this.op = op;
@@ -27,11 +29,6 @@ public class IExprBin extends IExpr implements ExprInterface {
     @Override
     public Formula toIntFormula(Event e, SolverContext ctx) {
         return op.encode(lhs.toIntFormula(e, ctx), rhs.toIntFormula(e, ctx), ctx);
-    }
-
-    @Override
-    public Formula getLastValueExpr(SolverContext ctx){
-        return op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx);
     }
 
     @Override
@@ -56,16 +53,13 @@ public class IExprBin extends IExpr implements ExprInterface {
     
     @Override
 	public IConst reduce() {
-    	BigInteger v1 = ((IConst)lhs.reduce()).getIntValue();
-    	BigInteger v2 = ((IConst)rhs.reduce()).getIntValue();
+    	BigInteger v1 = lhs.reduce().getIntValue();
+    	BigInteger v2 = rhs.reduce().getIntValue();
 		return new IConst(op.combine(v1, v2), lhs.getPrecision());
 	}
 
 	@Override
 	public int getPrecision() {
-		if(lhs.getPrecision() != rhs.getPrecision()) {
-            throw new RuntimeException("The type of " + lhs + " and " + rhs + " does not match");
-		}
 		return lhs.getPrecision();
 	}
 	
@@ -78,7 +72,7 @@ public class IExprBin extends IExpr implements ExprInterface {
 	public IExpr simplify() {
 		if(op.equals(IOpBin.PLUS) && lhs instanceof IExprBin && ((IExprBin)lhs).getOp().equals(IOpBin.PLUS)) {
 			if(new IExprBin(((IExprBin)lhs).getRHS(), IOpBin.PLUS, rhs).reduce().equals(IConst.ZERO)) {
-				return (IExpr) ((IExprBin)lhs).getLHS();
+				return ((IExprBin)lhs).getLHS();
 			}
 			return new IExprBin(((IExprBin)lhs).getLHS(), IOpBin.PLUS, new IExprBin(((IExprBin)lhs).getRHS(), IOpBin.PLUS, rhs).reduce());
 		}
@@ -89,11 +83,11 @@ public class IExprBin extends IExpr implements ExprInterface {
 		return op;
 	}
 	
-	public ExprInterface getRHS() {
+	public IExpr getRHS() {
 		return rhs;
 	}
 
-	public ExprInterface getLHS() {
+	public IExpr getLHS() {
 		return lhs;
 	}
 

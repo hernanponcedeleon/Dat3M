@@ -6,18 +6,23 @@ import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.collect.Lists;
+import com.google.common.io.Files;
+
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.utils.EType.*;
-import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
+import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
+import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMFILE;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 public class WitnessGraph extends ElemWithAttributes {
@@ -53,7 +58,7 @@ public class WitnessGraph extends ElemWithAttributes {
 	}
 	
 	public String getProgram() {
-		return attributes.get("programfile");
+		return attributes.get(PROGRAMFILE.toString());
 	}
 	
 	public String toXML() {
@@ -104,5 +109,20 @@ public class WitnessGraph extends ElemWithAttributes {
 			}
 		}
 		return enc;
+	}
+	
+	public void write() {
+		try (FileWriter fw = new FileWriter(String.format("%s/output/%s.graphml", 
+				System.getenv("DAT3M_HOME"), Files.getNameWithoutExtension(getProgram())))) {
+			fw.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
+			fw.write("<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
+			for(GraphAttributes attr : GraphAttributes.values()) {fw.write("<key attr.name=\"" + attr.toString() + "\" attr.type=\"string\" for=\"graph\" id=\"" + attr + "\"/>\n");}
+			for(NodeAttributes attr : NodeAttributes.values()) {fw.write("<key attr.name=\"" + attr.toString() + "\" attr.type=\"boolean\" for=\"node\" id=\"" + attr + "\"/>\n");}
+			for(EdgeAttributes attr : EdgeAttributes.values()) {fw.write("<key attr.name=\"" + attr.toString() + "\" attr.type=\"string\" for=\"edge\" id=\"" + attr + "\"/>\n");}
+			fw.write(toXML());
+			fw.write("</graphml>\n");
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}		
 	}
 }

@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.llvm.utils;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.op.COpBin;
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.exception.ParsingException;
 
 import java.util.Arrays;
 import java.util.List;

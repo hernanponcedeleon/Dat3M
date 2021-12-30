@@ -38,11 +38,6 @@ public class Init extends MemEvent {
 	}
 
 	@Override
-	public String label(){
-		return "W";
-	}
-
-	@Override
 	public IConst getMemValue(){
 		return value;
 	}
