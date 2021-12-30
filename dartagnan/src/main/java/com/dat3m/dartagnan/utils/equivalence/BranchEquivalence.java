@@ -106,8 +106,8 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     public BranchEquivalence(Program program) {
+    	Preconditions.checkArgument(program.isCompiled(), "The program needs to be compiled first.");
         this.program = program;
-        Preconditions.checkState(program.isCompiled(), "The program needs to be compiled first.");
         Map<Thread, Map<Event, Branch>> threadBranches = new HashMap<>();
         for (Thread t : program.getThreads()) {
             // Step (1)

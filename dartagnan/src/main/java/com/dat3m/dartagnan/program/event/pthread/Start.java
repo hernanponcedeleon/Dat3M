@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
@@ -69,7 +68,8 @@ public class Start extends Event {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Preconditions.checkArgument(Arrays.asList(Arch.values()).contains(target), "Compilation to " + target + " is not supported for " + this);
+    	Preconditions.checkArgument(target != null, "Compilation to " + target + " is not supported for " + this);
+
         List<Event> events = new ArrayList<>();
         Load load = newLoad(reg, address, SC);
         events.add(load);

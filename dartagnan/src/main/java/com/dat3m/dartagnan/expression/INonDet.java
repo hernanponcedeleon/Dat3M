@@ -55,7 +55,7 @@ public class INonDet extends IExpr implements ExprInterface {
 	@Override
 	public BigInteger getIntValue(Event e, Model model, SolverContext ctx) {
 		Object value = model.evaluate(toIntFormula(e, ctx));
-		Preconditions.checkNotNull(value, "No value in the model for " + this);
+		Preconditions.checkArgument(value != null, "No value in the model for " + this);
 		return new BigInteger(value.toString());			
 	}
 

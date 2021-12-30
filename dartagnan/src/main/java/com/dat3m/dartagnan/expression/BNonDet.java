@@ -43,7 +43,7 @@ public class BNonDet extends BExpr implements ExprInterface {
 	@Override
 	public boolean getBoolValue(Event e, Model model, SolverContext ctx) {
 		Boolean value = model.evaluate(toBoolFormula(e, ctx));
-		Preconditions.checkNotNull(value, "No value in the model for " + this);
+		Preconditions.checkArgument(value != null, "No value in the model for " + this);
 		return value;
 	}
 

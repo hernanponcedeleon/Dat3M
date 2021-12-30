@@ -12,6 +12,7 @@ public class AssertNot extends AbstractAssert {
     private final AbstractAssert child;
 
     public AssertNot(AbstractAssert child){
+    	Preconditions.checkNotNull(child, "Empty assertion clause in " + this.getClass().getName());
         this.child = child;
     }
 
@@ -26,7 +27,6 @@ public class AssertNot extends AbstractAssert {
 
     @Override
     public BooleanFormula encode(SolverContext ctx) {
-    	Preconditions.checkNotNull(child, "Empty assertion clause in " + this.getClass().getName());
     	return ctx.getFormulaManager().getBooleanFormulaManager().not(child.encode(ctx));
     }
 
