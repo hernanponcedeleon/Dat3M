@@ -15,7 +15,7 @@ import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 
 public abstract class RMWReadCond extends Load implements RegWriter, RegReaderData {
 

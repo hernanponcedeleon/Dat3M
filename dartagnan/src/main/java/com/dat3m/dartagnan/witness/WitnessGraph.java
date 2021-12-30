@@ -18,7 +18,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.utils.EType.*;
-import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
+import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 

@@ -23,7 +23,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.utils.EType.*;
-import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
+import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 

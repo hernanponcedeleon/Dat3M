@@ -1,9 +1,7 @@
-package com.dat3m.dartagnan.program.utils;
+package com.dat3m.dartagnan.expression.utils;
 
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-
-import com.dat3m.dartagnan.exception.MalformedProgramException;
 
 public class Utils {
 
@@ -14,7 +12,7 @@ public class Utils {
 		} else if(f1 instanceof BitvectorFormula && f2 instanceof BitvectorFormula) {
 			return fmgr.getBitvectorFormulaManager().equal((BitvectorFormula)f1, (BitvectorFormula)f2);
 		}
-		throw new MalformedProgramException(String.format("Formulas %s and %s have different types or are of unsupported type for generalEqual", f1, f2));
+		throw new IllegalArgumentException(String.format("Formulas %s and %s have different types or are of unsupported type for generalEqual", f1, f2));
 	}
 	
     public static IntegerFormula convertToIntegerFormula(Formula f, SolverContext ctx) {

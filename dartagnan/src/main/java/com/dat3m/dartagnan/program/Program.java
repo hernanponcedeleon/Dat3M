@@ -24,7 +24,7 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 
 import java.util.*;
 

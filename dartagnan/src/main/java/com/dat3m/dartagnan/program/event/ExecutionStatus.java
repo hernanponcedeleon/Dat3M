@@ -14,7 +14,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 
 public class ExecutionStatus extends Event implements RegWriter {
 
