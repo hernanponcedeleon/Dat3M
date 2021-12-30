@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.equivalence.AbstractEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
 
 import java.util.*;
@@ -47,17 +48,14 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
     // ================= Public methods ===================
 
     public Event map(Event source, Thread target) {
-        if (!areEquivalent(source.getThread(), target)) {
-            throw new IllegalArgumentException("Target thread is not symmetric with source thread.");
-        }
-
+    	Preconditions.checkArgument(areEquivalent(source.getThread(), target), 
+    			"Target thread is not symmetric with source thread.");
         return symmMap.get(target).get(source.getSymmId());
     }
 
     public Function<Event, Event> createPermutation(List<Thread> orig, List<Thread> target) {
-        if (orig.size() != target.size()) {
-            throw new IllegalArgumentException("Target permutation has different size");
-        } else if (orig.equals(target)) {
+    	Preconditions.checkArgument(orig.size() == target.size(), "Target permutation has different size");
+        if (orig.equals(target)) {
             return Function.identity();
         }
 
@@ -80,10 +78,8 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
     }
 
     public List<Function<Event, Event>> createAllPermutations(EquivalenceClass<Thread> eqClass) {
-        if (eqClass.getEquivalence() != this) {
-            throw new IllegalArgumentException("<eqClass> is not a symmetry class of this symmetry equivalence.");
-        }
-
+    	Preconditions.checkArgument(eqClass.getEquivalence() == this, 
+    			"<eqClass> is not a symmetry class of this symmetry equivalence.");
         List<Thread> symmThreads = new ArrayList<>(eqClass);
         symmThreads.sort(Comparator.comparingInt(Thread::getId));
         return Collections2.permutations(symmThreads).stream()

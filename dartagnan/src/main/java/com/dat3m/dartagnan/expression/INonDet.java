@@ -25,6 +25,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.UnsignedInteger;
 import com.google.common.primitives.UnsignedLong;
@@ -54,10 +55,8 @@ public class INonDet extends IExpr implements ExprInterface {
 	@Override
 	public BigInteger getIntValue(Event e, Model model, SolverContext ctx) {
 		Object value = model.evaluate(toIntFormula(e, ctx));
-		if(value != null) {
-			return new BigInteger(value.toString());			
-		}
-        throw new RuntimeException("No value in the model for " + this);
+		Preconditions.checkNotNull(value, "No value in the model for " + this);
+		return new BigInteger(value.toString());			
 	}
 
 	@Override

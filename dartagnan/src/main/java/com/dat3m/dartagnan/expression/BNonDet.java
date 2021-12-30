@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
@@ -42,10 +43,8 @@ public class BNonDet extends BExpr implements ExprInterface {
 	@Override
 	public boolean getBoolValue(Event e, Model model, SolverContext ctx) {
 		Boolean value = model.evaluate(toBoolFormula(e, ctx));
-		if(value != null) {
-			return value;
-		}
-		throw new RuntimeException("No value in the model for " + this);
+		Preconditions.checkNotNull(value, "No value in the model for " + this);
+		return value;
 	}
 
 	@Override

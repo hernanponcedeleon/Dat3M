@@ -2,22 +2,23 @@ package com.dat3m.dartagnan.wmm.utils;
 
 import java.util.Arrays;
 
+import com.google.common.base.Preconditions;
+
 public enum Arch {
 	NONE, ARM8, POWER, TSO;
 
     public static Arch get(String arch){
-        if(arch != null){
-            arch = arch.trim();
-            switch(arch){
-                case "none":
-                    return NONE;
-                case "arm8":
-                    return ARM8;
-                case "power":
-                    return POWER;
-                case "tso":
-                    return TSO;
-            }
+    	Preconditions.checkNotNull(arch);
+        arch = arch.trim();
+        switch(arch){
+            case "none":
+                return NONE;
+            case "arm8":
+                return ARM8;
+            case "power":
+                return POWER;
+            case "tso":
+                return TSO;
         }
         throw new UnsupportedOperationException("Unrecognized architecture " + arch);
     }

@@ -4,6 +4,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.program.memory.Location;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 public class AssertNot extends AbstractAssert {
@@ -25,10 +26,8 @@ public class AssertNot extends AbstractAssert {
 
     @Override
     public BooleanFormula encode(SolverContext ctx) {
-        if(child != null){
-            return ctx.getFormulaManager().getBooleanFormulaManager().not(child.encode(ctx));
-        }
-        throw new RuntimeException("Empty assertion clause in " + this.getClass().getName());
+    	Preconditions.checkNotNull(child, "Empty assertion clause in " + this.getClass().getName());
+    	return ctx.getFormulaManager().getBooleanFormulaManager().not(child.encode(ctx));
     }
 
     @Override

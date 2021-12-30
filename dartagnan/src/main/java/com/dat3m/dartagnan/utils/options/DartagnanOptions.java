@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.utils.options;
 
 import com.dat3m.dartagnan.analysis.Analysis;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -51,11 +52,8 @@ public class DartagnanOptions extends BaseOptions {
     
     public void parse(String[] args) throws ParseException, RuntimeException {
     	super.parse(args);
-        if(supportedFormats.stream().noneMatch(f -> programFilePath.endsWith(f))) {
-            throw new RuntimeException("Unrecognized program format");
-        }
+    	Preconditions.checkArgument(supportedFormats.stream().anyMatch(f -> programFilePath.endsWith(f)), "Unrecognized program format");
         CommandLine cmd = new DefaultParser().parse(this, args);
-
         analysis = Analysis.get(cmd.getOptionValue(ANALYSIS_OPTION, Analysis.getDefault().asStringOption()));
         witness = cmd.hasOption(WITNESS_OPTION) ? cmd.getOptionValue(WITNESS_OPTION) : null;
         witnessFilePath = cmd.hasOption(WITNESS_PATH_OPTION) ? cmd.getOptionValue(WITNESS_PATH_OPTION) : null;

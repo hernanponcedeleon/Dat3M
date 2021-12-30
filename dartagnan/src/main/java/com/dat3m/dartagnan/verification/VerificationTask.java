@@ -16,6 +16,8 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -89,9 +91,7 @@ public class VerificationTask {
     }
 
     public ThreadSymmetry getThreadSymmetry() {
-        if (!program.isCompiled()) {
-            throw new IllegalStateException("ThreadSymmetry is only available after compilation");
-        }
+    	Preconditions.checkState(program.isCompiled(), "ThreadSymmetry is only available after compilation");
         if (threadSymmetry == null) {
             threadSymmetry = new ThreadSymmetry(program);
         }

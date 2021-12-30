@@ -7,7 +7,9 @@ import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.EventFactory.*;
@@ -44,6 +46,8 @@ public class End extends Event {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+    	Preconditions.checkArgument(Arrays.asList(Arch.values()).contains(target), "Compilation to " + target + " is not supported for " + this);
+
         Fence optionalBarrierBefore = null;
         Fence optionalBarrierAfter = null;
         Store store = newStore(address, IConst.ZERO, SC);
@@ -61,8 +65,6 @@ public class End extends Event {
                 optionalBarrierBefore = Arm8.DMB.newISHBarrier();
                 optionalBarrierAfter = Arm8.DMB.newISHBarrier();
                 break;
-            default:
-                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
 
         List<Event> events = eventSequence(

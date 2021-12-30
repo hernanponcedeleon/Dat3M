@@ -11,6 +11,7 @@ import org.apache.commons.cli.ParseException;
 
 import com.dat3m.dartagnan.analysis.Analysis;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 
@@ -79,10 +80,8 @@ public class SVCOMPOptions extends BaseOptions {
     
     public void parse(String[] args) throws ParseException, RuntimeException {
     	super.parse(args);
-        if(supported_formats.stream().map(f -> programFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
-            throw new RuntimeException("Unrecognized program format");
-        }
-
+    	Preconditions.checkArgument(supported_formats.stream().anyMatch(f -> programFilePath.endsWith(f)),
+    			"Unrecognized program format");
     	CommandLine cmd = new DefaultParser().parse(this, args);
         
     	optimization = cmd.hasOption(OPTIMIZATION_OPTION) ? cmd.getOptionValue(OPTIMIZATION_OPTION) : "O0";
@@ -93,9 +92,7 @@ public class SVCOMPOptions extends BaseOptions {
         step = cmd.hasOption(STEP) ? Integer.parseInt(cmd.getOptionValue(STEP)) : 1;
         
         encoding = cmd.hasOption(INTERGER_ENCODING_OPTION) ? cmd.getOptionValue(INTERGER_ENCODING_OPTION) : "unbounded-integer";
-        if(!supported_integer_encoding.contains(encoding)) {
-            throw new UnsupportedOperationException("Unrecognized encoding: " + encoding);        		
-        }
+        Preconditions.checkArgument(supported_integer_encoding.contains(encoding), "Unrecognized encoding: " + encoding);
         
         String property = Files.getNameWithoutExtension(cmd.getOptionValue(PROPERTY_OPTION));
         switch(property) {

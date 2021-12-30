@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.Formula;
@@ -42,24 +43,18 @@ public abstract class MemEvent extends Event {
     }
 
     public Formula getMemAddressExpr(){
-        if(memAddressExpr != null){
-            return memAddressExpr;
-        }
-        throw new IllegalStateException("Attempt to access not initialised address expression in " + this);
+    	Preconditions.checkNotNull(memAddressExpr);
+    	return memAddressExpr;
     }
 
     public Formula getMemValueExpr(){
-        if(memValueExpr != null){
-            return memValueExpr;
-        }
-        throw new IllegalStateException("Attempt to access not initialised value expression in " + this);
+    	Preconditions.checkNotNull(memValueExpr);
+    	return memValueExpr;
     }
 
     public ImmutableSet<Address> getMaxAddressSet(){
-        if(maxAddressSet != null){
-            return maxAddressSet;
-        }
-        throw new IllegalStateException("Location set has not been initialised for memory event " + this);
+    	Preconditions.checkNotNull(maxAddressSet);
+    	return maxAddressSet;
     }
 
     public void setMaxAddressSet(ImmutableSet<Address> maxAddressSet){
@@ -71,7 +66,7 @@ public abstract class MemEvent extends Event {
     }
 
     public ExprInterface getMemValue(){
-        throw new RuntimeException("MemValue is not available for event " + this.getClass().getName());
+        throw new UnsupportedOperationException("MemValue is not available for event " + this.getClass().getName());
     }
 
     public static boolean canAddressTheSameLocation(MemEvent e1, MemEvent e2){

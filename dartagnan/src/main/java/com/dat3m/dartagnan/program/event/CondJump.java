@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
-import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -12,6 +11,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -26,12 +26,8 @@ public class CondJump extends Event implements RegReaderData {
     private final ImmutableSet<Register> dataRegs;
 
     public CondJump(BExpr expr, Label label){
-        if(label == null){
-            throw new IllegalArgumentException("CondJump event requires non null label event");
-        }
-        if(expr == null){
-            throw new IllegalArgumentException("CondJump event requires non null expression");
-        }
+    	Preconditions.checkArgument(label != null, "CondJump event requires non null label event");
+    	Preconditions.checkArgument(expr != null, "CondJump event requires non null expression");
         this.label = label;
         this.label.addListener(this);
         this.thread = label.getThread();
@@ -168,9 +164,7 @@ public class CondJump extends Event implements RegReaderData {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        if(successor == null){
-            throw new MalformedProgramException("Malformed CondJump event");
-        }
+    	Preconditions.checkNotNull(successor, "Malformed CondJump event");
         return super.compileRecursive(target, nextId, predecessor, depth);
     }
 

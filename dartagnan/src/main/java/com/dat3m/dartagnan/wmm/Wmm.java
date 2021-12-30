@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -109,9 +110,7 @@ public class Wmm {
         of axiom-relevant relations.
      */
     public void performRelationalAnalysis(boolean computeEncodeSets) {
-        if (this.task == null) {
-            throw new IllegalStateException("The WMM needs to get initialised first.");
-        }
+    	Preconditions.checkState(task != null, "The WMM needs to get initialised first.");
 
         for (RecursiveGroup recursiveGroup : recursiveGroups) {
             recursiveGroup.initMaxTupleSets();
@@ -171,10 +170,8 @@ public class Wmm {
 
     // Encodes all axioms. This should be called after <encodeRelations>
     public BooleanFormula encodeConsistency(SolverContext ctx) {
-        if(!relationsAreEncoded){
-            //TODO: Actually, there are use-cases where it makes sense to encode axioms without the relations
-            throw new IllegalStateException("Wmm relations must be encoded before the consistency predicate.");
-        }
+        //TODO: Actually, there are use-cases where it makes sense to encode axioms without the relations
+    	Preconditions.checkState(relationsAreEncoded, "Wmm relations must be encoded before the consistency predicate.");
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula expr = bmgr.makeTrue();
         for (Axiom ax : axioms) {

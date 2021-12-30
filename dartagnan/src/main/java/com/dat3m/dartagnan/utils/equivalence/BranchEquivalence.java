@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
 import java.util.*;
@@ -106,9 +107,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     public BranchEquivalence(Program program) {
         this.program = program;
-        if (!program.isCompiled())
-            throw new IllegalArgumentException("The program needs to be compiled first.");
-
+        Preconditions.checkState(program.isCompiled(), "The program needs to be compiled first.");
         Map<Thread, Map<Event, Branch>> threadBranches = new HashMap<>();
         for (Thread t : program.getThreads()) {
             // Step (1)

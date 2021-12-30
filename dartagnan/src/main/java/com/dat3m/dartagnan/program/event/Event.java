@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
+
 import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
@@ -310,9 +312,7 @@ public abstract class Event implements Comparable<Event> {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void initialise(VerificationTask task, SolverContext ctx){
-		if(cId < 0){
-			throw new IllegalStateException("Event ID is not set in " + this);
-		}
+		Preconditions.checkState(cId >= 0, "Event ID is not set in " + this);
 		this.symmId = getThread().getName() + "-" + fId;
 		this.task = task;
 		FormulaManager fmgr = ctx.getFormulaManager();

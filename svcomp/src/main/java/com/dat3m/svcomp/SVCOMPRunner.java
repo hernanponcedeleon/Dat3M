@@ -24,6 +24,7 @@ import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.svcomp.options.SVCOMPOptions;
 import com.dat3m.svcomp.utils.BoogieSan;
 import com.dat3m.svcomp.utils.SVCOMPSanitizer;
+import com.google.common.base.Preconditions;
 
 public class SVCOMPRunner {
 
@@ -43,11 +44,10 @@ public class SVCOMPRunner {
         
         WitnessGraph witness = new WitnessGraph(); 
         if(options.getWitnessPath() != null) {
+        	Preconditions.checkArgument(Paths.get(options.getProgramFilePath()).getFileName().toString().
+					equals(Paths.get(witness.getProgram()).getFileName().toString()), 
+					"The witness was generated from a different program than " + options.getProgramFilePath());
         	witness = new ParserWitness().parse(new File(options.getWitnessPath()));
-			if(!Paths.get(options.getProgramFilePath()).getFileName().toString().
-					equals(Paths.get(witness.getProgram()).getFileName().toString())) {
-				throw new RuntimeException("The witness was generated from a different program than " + options.getProgramFilePath());
-			}
         }
         
         File file = new File(options.getProgramFilePath());

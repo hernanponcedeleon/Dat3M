@@ -8,6 +8,8 @@ import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.base.Preconditions;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
@@ -206,9 +208,7 @@ public class RelCo extends Relation {
     }
 
     public IntegerFormula getIntVar(Event write, SolverContext ctx) {
-        if (!write.is(WRITE)) {
-            throw new IllegalArgumentException("Cannot get an int-var for non-writes.");
-        }
+    	Preconditions.checkArgument(write.is(WRITE), "Cannot get an int-var for non-writes.");
         return intVar(term, write, ctx);
     }
 }

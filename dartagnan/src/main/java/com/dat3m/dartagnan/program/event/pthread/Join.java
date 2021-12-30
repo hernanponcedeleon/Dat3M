@@ -9,8 +9,10 @@ import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
@@ -71,6 +73,8 @@ public class Join extends Event {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+    	Preconditions.checkArgument(Arrays.asList(Arch.values()).contains(target), "Compilation to " + target + " is not supported for " + this);
+
         List<Event> events = new ArrayList<>();
         Load load = newLoad(reg, address, SC);
         load.addFilters(PTHREAD);
@@ -90,8 +94,6 @@ public class Join extends Event {
             case ARM8:
                 events.add(Arm8.DMB.newISHBarrier());
                 break;
-            default:
-                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
 
         events.add(newJumpUnless(new Atom(reg, EQ, IConst.ZERO), label));
