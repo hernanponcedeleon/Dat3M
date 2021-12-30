@@ -35,7 +35,9 @@ public class BuildWitnessTest {
     			ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
     	{
     		Result res = runAnalysisIncrementalSolver(ctx, prover, task);
-    		// This code just tests the parsing of witness options
+    		// This code mostly tests the parsing of witness options thus the "ignore"
+    		// The only parts that are needed to build the graph are the unrolling bound ([4] and [5])
+    		// and the file to compute the SHA256 value ([6] and [7]).
     	    String[] sOptions = new String[8];
     	    sOptions[0] = "-i";
     	    sOptions[1] = "ignore.bpl";
