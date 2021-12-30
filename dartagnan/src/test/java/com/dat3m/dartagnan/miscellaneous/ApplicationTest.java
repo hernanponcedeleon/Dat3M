@@ -17,40 +17,32 @@ public class ApplicationTest {
 
     @Test
     public void Two() throws Exception {
-	    String[] dartagnanOptions = new String[12];
-	    fillOptions(dartagnanOptions, REACHABILITY, TWO);
-    	Dartagnan.main(dartagnanOptions);
+    	Dartagnan.main(createandFillOptions(REACHABILITY, TWO));
     }
 
     @Test
     public void Assume() throws Exception {
-	    String[] dartagnanOptions = new String[12];
-	    fillOptions(dartagnanOptions, REACHABILITY, ASSUME);
-    	Dartagnan.main(dartagnanOptions);
+    	Dartagnan.main(createandFillOptions(REACHABILITY, ASSUME));
     }
 
     @Test
     public void Incremental() throws Exception {
-	    String[] dartagnanOptions = new String[12];
-	    fillOptions(dartagnanOptions, REACHABILITY, INCREMENTAL);
-    	Dartagnan.main(dartagnanOptions);
+    	Dartagnan.main(createandFillOptions(REACHABILITY, INCREMENTAL));
     }
 
     @Test
     public void CAAT() throws Exception {
-	    String[] dartagnanOptions = new String[12];
-	    fillOptions(dartagnanOptions, REACHABILITY, CAAT);
-    	Dartagnan.main(dartagnanOptions);
+    	Dartagnan.main(createandFillOptions(REACHABILITY, CAAT));
     }
 
     @Test
     public void Races() throws Exception {
-	    String[] dartagnanOptions = new String[12];
-	    fillOptions(dartagnanOptions, RACES, ASSUME);
-    	Dartagnan.main(dartagnanOptions);
+    	Dartagnan.main(createandFillOptions(RACES, ASSUME));
     }
 
-	private void fillOptions(String[] dartagnanOptions, Analysis analysis, Method method) {
+	private String[] createandFillOptions(Analysis analysis, Method method) {
+		String[] dartagnanOptions = new String[12];
+		
 		dartagnanOptions[0] = "-i";
 	    dartagnanOptions[1] = ResourceHelper.TEST_RESOURCE_PATH + "locks/ttas-5.bpl";
 	    dartagnanOptions[2] = "-cat";
@@ -63,5 +55,7 @@ public class ApplicationTest {
 	    dartagnanOptions[9] = method.asStringOption();	    	
 	    dartagnanOptions[10] = "-" + SMTSOLVER_OPTION;
 	    dartagnanOptions[11] = Solvers.Z3.toString().toLowerCase();
+	    
+	    return dartagnanOptions;
 	}
 }
