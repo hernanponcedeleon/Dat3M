@@ -132,6 +132,11 @@
       	    <groupId>org.jacoco</groupId>
       		<artifactId>jacoco-maven-plugin</artifactId>
       		<version>0.8.7</version>
+			<configuration>
+        	  <excludes>
+            	<exclude>**/parsers/*</exclude>
+        	  </excludes>
+    		</configuration>
       		<executions>
         	  <execution>
           		<goals>
@@ -291,7 +296,7 @@
       		<version>0.8.7</version>
       		<configuration>
         	  <excludes>
-            	<exclude>com/dat3m/dartagnan/parsers/*.class</exclude>
+            	<exclude>**/parsers/*</exclude>
         	  </excludes>
     		</configuration>
       		<executions>
