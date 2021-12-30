@@ -13,6 +13,8 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import org.junit.Test;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -33,6 +35,7 @@ public class BuildWitnessTest {
     			ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
     	{
     		Result res = runAnalysisIncrementalSolver(ctx, prover, task);
+    		// This code just tests the parsing of witness options
     	    String[] sOptions = new String[8];
     	    sOptions[0] = "-i";
     	    sOptions[1] = "ignore.bpl";
@@ -48,8 +51,13 @@ public class BuildWitnessTest {
     		WitnessGraph graph = new WitnessBuilder(p, ctx, prover, res).buildGraph(option);
     		// Write to file
     		graph.write();
+    		assert(new File(System.getenv("DAT3M_HOME") + "/output/witness.graphml").exists());
     		// Create encoding
-    		graph.encode(p, ctx);
+    		BooleanFormula enc = graph.encode(p, ctx);
+    		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    		// Check the formula is not trivial
+			assert(!bmgr.isFalse(enc));
+    		assert(!bmgr.isTrue(enc));
     	}
     }
 }
