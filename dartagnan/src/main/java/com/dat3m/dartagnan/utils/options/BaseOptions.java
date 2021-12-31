@@ -77,7 +77,7 @@ public abstract class BaseOptions extends Options {
         		"The SMT solver to be used: " + supported_smtsolvers));
     }
 
-    protected void parse(String[] args) throws ParseException, RuntimeException {
+    protected void parse(String[] args) throws ParseException {
         CommandLine cmd = new DefaultParser().parse(this, args);
         parseSettings(cmd);
 

@@ -12,7 +12,6 @@ import org.apache.commons.cli.ParseException;
 
 import com.dat3m.dartagnan.analysis.Analysis;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 
@@ -75,25 +74,24 @@ public class SVCOMPOptions extends BaseOptions {
                 "Generates (also) a sanitised boogie file saved as /output/X-sanitised.bpl"));
     }
     
-    public static SVCOMPOptions fromArgs(String[] args) {
+    public static SVCOMPOptions fromArgs(String[] args) throws ParseException {
     	SVCOMPOptions options = new SVCOMPOptions();
         try {
             options.parse(args);
         }
-        catch (Exception e){
-            if(e instanceof UnsupportedOperationException){
-                System.out.println(e.getMessage());
-            }
+        catch (ParseException e){
+        	System.out.println(e.getMessage());
             new HelpFormatter().printHelp("SVCOMP Runner", options);
-            System.exit(1);
+            throw e;
         }
         return options;
     }
     
-    protected void parse(String[] args) throws ParseException, RuntimeException {
+    protected void parse(String[] args) throws ParseException {
     	super.parse(args);
-    	Preconditions.checkArgument(supported_formats.stream().anyMatch(f -> programFilePath.endsWith(f)),
-    			"Unrecognized program format");
+    	if(!supported_formats.stream().anyMatch(f -> programFilePath.endsWith(f))) {
+    		throw new ParseException("Unrecognized program format");
+    	}
     	CommandLine cmd = new DefaultParser().parse(this, args);
         
     	optimization = cmd.hasOption(OPTIMIZATION_OPTION) ? cmd.getOptionValue(OPTIMIZATION_OPTION) : "O0";
@@ -102,9 +100,10 @@ public class SVCOMPOptions extends BaseOptions {
         umin = cmd.hasOption(UMIN) ? Integer.parseInt(cmd.getOptionValue(UMIN)) : 1;
         umax = cmd.hasOption(UMAX) ? Integer.parseInt(cmd.getOptionValue(UMAX)) : Integer.MAX_VALUE;
         step = cmd.hasOption(STEP) ? Integer.parseInt(cmd.getOptionValue(STEP)) : 1;
-        
         encoding = cmd.hasOption(INTERGER_ENCODING_OPTION) ? cmd.getOptionValue(INTERGER_ENCODING_OPTION) : "unbounded-integer";
-        Preconditions.checkArgument(supported_integer_encoding.contains(encoding), "Unrecognized encoding: " + encoding);
+    	if(!supported_integer_encoding.contains(encoding)) {
+    		throw new ParseException("Unrecognized encoding: " + encoding);
+    	}
         
         String property = Files.getNameWithoutExtension(cmd.getOptionValue(PROPERTY_OPTION));
         switch(property) {
@@ -115,7 +114,7 @@ public class SVCOMPOptions extends BaseOptions {
 				analysis = REACHABILITY;
 				break;
 			default:
-				throw new UnsupportedOperationException("Unrecognized property: " + property);
+				throw new ParseException("Unrecognized property: " + property);
         }
     }
 

@@ -47,25 +47,25 @@ public class DartagnanOptions extends BaseOptions {
         		"Path to the machine readable witness file."));
         }
     
-    public static DartagnanOptions fromArgs(String[] args) {
+    public static DartagnanOptions fromArgs(String[] args) throws ParseException {
         DartagnanOptions options = new DartagnanOptions();
         try {
             options.parse(args);
         }
-        catch (Exception e){
-            if(e instanceof UnsupportedOperationException){
-                System.out.println(e.getMessage());
-            }
+        catch (ParseException e) {
+        	System.out.println(e.getMessage());
             new HelpFormatter().printHelp("DARTAGNAN", options);
-            System.exit(1);
+            throw e;
         }
         return options;
     }
     
-    protected void parse(String[] args) throws ParseException, RuntimeException {
+    protected void parse(String[] args) throws ParseException {
     	super.parse(args);
-    	Preconditions.checkArgument(supportedFormats.stream().anyMatch(f -> programFilePath.endsWith(f)), "Unrecognized program format");
-        CommandLine cmd = new DefaultParser().parse(this, args);
+    	if(!supportedFormats.stream().anyMatch(f -> programFilePath.endsWith(f))) {
+    		throw new ParseException("Unrecognized program format");
+    	}
+    	CommandLine cmd = new DefaultParser().parse(this, args);
         analysis = Analysis.get(cmd.getOptionValue(ANALYSIS_OPTION, Analysis.getDefault().asStringOption()));
         witness = cmd.hasOption(WITNESS_OPTION) ? cmd.getOptionValue(WITNESS_OPTION) : null;
         witnessFilePath = cmd.hasOption(WITNESS_PATH_OPTION) ? cmd.getOptionValue(WITNESS_PATH_OPTION) : null;
