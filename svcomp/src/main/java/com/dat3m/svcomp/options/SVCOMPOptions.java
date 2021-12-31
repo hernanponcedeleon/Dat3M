@@ -44,10 +44,6 @@ public class SVCOMPOptions extends BaseOptions {
     
     private SVCOMPOptions(){
         super();
-        Option catOption = new Option("cat", true,
-                "Path to the CAT file");
-        catOption.setRequired(true);
-        addOption(catOption);
 
         addOption(new Option(UMIN, true,
                 "Starting unrolling bound <integer>"));

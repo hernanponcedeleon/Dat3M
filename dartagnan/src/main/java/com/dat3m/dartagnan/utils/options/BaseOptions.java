@@ -15,7 +15,11 @@ import java.util.stream.Collectors;
 import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.*;
 
 public abstract class BaseOptions extends Options {
-
+	
+	public static final String INPUT_OPTION = "input";
+	public static final String CAT_OPTION = "cat";
+	public static final String TARGET_OPTION = "target";
+	public static final String UNROLL_OPTION = "unroll";
 	public static final String METHOD_OPTION = "method";
 	public static final String SMTSOLVER_OPTION = "solver";
 	public static final String SMTSOLVER_TIMEOUT_OPTION = "timeout";
@@ -24,7 +28,6 @@ public abstract class BaseOptions extends Options {
     protected String targetModelFilePath;
     protected Settings settings;
     protected Arch target;
-
     protected Method method;
     protected Solvers smtsolver;
 
@@ -43,15 +46,20 @@ public abstract class BaseOptions extends Options {
     protected BaseOptions(){
         super();
         
-        Option inputOption = new Option("i", "input", true,
+        Option inputOption = new Option("i", INPUT_OPTION, true,
                 "Path to the file with input program");
         inputOption.setRequired(true);
         addOption(inputOption);
 
-        addOption(new Option("t", "target", true,
+        Option catOption = new Option(CAT_OPTION, true,
+                "Path to the CAT file");
+        catOption.setRequired(true);
+        addOption(catOption);
+
+        addOption(new Option("t", TARGET_OPTION, true,
                 "Target architecture: " + supportedTargets));
 
-        addOption(new Option("u", "unroll", true,
+        addOption(new Option("u", UNROLL_OPTION, true,
                 "Unrolling bound <integer>"));
 
         addOption(new Option(SMTSOLVER_TIMEOUT_OPTION, true,
@@ -73,10 +81,9 @@ public abstract class BaseOptions extends Options {
         CommandLine cmd = new DefaultParser().parse(this, args);
         parseSettings(cmd);
 
-        programFilePath = cmd.getOptionValue("input");
-        targetModelFilePath = cmd.getOptionValue("cat");
-
-        target = Arch.get(cmd.getOptionValue("target", Arch.getDefault().asStringOption()));
+        programFilePath = cmd.getOptionValue(INPUT_OPTION);
+        targetModelFilePath = cmd.getOptionValue(CAT_OPTION);
+        target = Arch.get(cmd.getOptionValue(TARGET_OPTION, Arch.getDefault().asStringOption()));
         method = Method.get(cmd.getOptionValue(METHOD_OPTION, Method.getDefault().asStringOption()));
 
         String solverString = cmd.getOptionValue(SMTSOLVER_OPTION, "unspecified");
@@ -135,9 +142,9 @@ public abstract class BaseOptions extends Options {
     protected void parseSettings(CommandLine cmd){
         int bound = 1;
         int solver_timeout = 0;
-        if(cmd.hasOption("unroll")){
+        if(cmd.hasOption(UNROLL_OPTION)){
             try {
-                bound = Math.max(1, Integer.parseInt(cmd.getOptionValue("unroll")));
+                bound = Math.max(1, Integer.parseInt(cmd.getOptionValue(UNROLL_OPTION)));
             } catch (NumberFormatException e){
                 throw new UnsupportedOperationException("Illegal unroll value");
             }

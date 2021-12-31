@@ -35,10 +35,6 @@ public class DartagnanOptions extends BaseOptions {
 
     private DartagnanOptions(){
         super();
-        Option catOption = new Option("cat", true,
-                "Path to the CAT file");
-        catOption.setRequired(true);
-        addOption(catOption);
 
         addOption(new Option("w", WITNESS_OPTION, true,
                 "Creates a machine readable witness. "
