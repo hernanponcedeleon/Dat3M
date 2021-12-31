@@ -174,6 +174,11 @@ public class ExceptionsTest {
     	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/IllegalJump.litmus"));
     }
 
+    @Test(expected = MalformedProgramException.class)
+    public void AtomicEndWithoutBegin() throws Exception {
+    	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/AtomicEndWithoutBegin.bpl"));
+    }
+
     @Test(expected = IllegalStateException.class)
     public void LocationNotInitialized() throws Exception {
     	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/LocationNotInitialized.litmus"));

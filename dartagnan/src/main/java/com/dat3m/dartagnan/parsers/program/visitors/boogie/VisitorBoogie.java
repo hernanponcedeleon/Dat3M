@@ -368,8 +368,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			if(GlobalSettings.ATOMIC_AS_LOCK) {
 				SvcompProcedures.__VERIFIER_atomic(this, true);	
 			} else {
-				currentBeginAtomic = EventFactory.Svcomp.newBeginAtomic();
-				programBuilder.addChild(threadCount, currentBeginAtomic);
+				SvcompProcedures.__VERIFIER_atomic_begin(this);
 			}
 		}
 		// TODO: double check this 
@@ -396,11 +395,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			if(GlobalSettings.ATOMIC_AS_LOCK) {
 				SvcompProcedures.__VERIFIER_atomic(this, false);	
 			} else {
-				if(currentBeginAtomic == null) {
-		            throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
-				}
-				programBuilder.addChild(threadCount, EventFactory.Svcomp.newEndAtomic(currentBeginAtomic));
-				currentBeginAtomic = null;				
+				SvcompProcedures.__VERIFIER_atomic_end(this);
 			}
 			
 		}
