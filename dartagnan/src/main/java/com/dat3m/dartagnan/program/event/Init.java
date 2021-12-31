@@ -17,11 +17,6 @@ public class Init extends MemEvent {
 		addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.INIT);
 	}
 
-	private Init(Init other){
-		super(other);
-		this.value = other.value;
-	}
-
 	public IConst getValue(){
 		return value;
 	}
@@ -40,14 +35,5 @@ public class Init extends MemEvent {
 	@Override
 	public IConst getMemValue(){
 		return value;
-	}
-
-
-	// Unrolling
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Override
-	public Init getCopy(){
-		return new Init(this);
 	}
 }
