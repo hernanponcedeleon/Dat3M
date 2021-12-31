@@ -24,8 +24,6 @@ import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.google.common.base.Preconditions;
-
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -248,7 +246,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	nextScopeID++;
     	
     	Impl_bodyContext body = ctx.impl_body();
-    	Preconditions.checkArgument(body != null, ctx.proc_sign().Ident().getText() + " cannot be handled");
+		if(body == null) {
+			throw new ParsingException(ctx.proc_sign().Ident().getText() + " cannot be handled");
+    	}
 
     	if(ctx.proc_sign().proc_sign_in() != null) {
 			int index = 0;
@@ -396,7 +396,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			if(GlobalSettings.ATOMIC_AS_LOCK) {
 				SvcompProcedures.__VERIFIER_atomic(this, false);	
 			} else {
-				Preconditions.checkState(currentBeginAtomic != null, "__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
+				if(currentBeginAtomic == null) {
+		            throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
+				}
 				programBuilder.addChild(threadCount, EventFactory.Svcomp.newEndAtomic(currentBeginAtomic));
 				currentBeginAtomic = null;				
 			}
@@ -663,7 +665,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitFun_expr(Fun_exprContext ctx) {
 		String name = ctx.Ident().getText();
 		Function function = functions.get(name);
-		Preconditions.checkArgument(function != null, "Function " + name + " is not defined");
+		if(function == null) {
+			throw new ParsingException("Function " + name + " is not defined");
+		}
 		if(name.contains("$load.")) {
 			return ctx.expr(1).accept(this);
 		}
@@ -717,7 +721,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			return smackPredicate(name, callParams);
 		}
 		// Some functions do not have a body
-		Preconditions.checkArgument(function.getBody() != null, "Function " + name + " has no implementation");
+		if(function.getBody() == null) {
+			throw new ParsingException("Function " + name + " has no implementation");
+		}
 		Object ret = function.getBody().accept(this);
 		// pop currentCall from the call stack
 		currentCall = currentCall.getParent();

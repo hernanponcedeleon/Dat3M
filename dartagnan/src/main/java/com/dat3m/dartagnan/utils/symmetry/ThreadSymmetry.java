@@ -86,6 +86,4 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
                 .map(perm -> createPermutation(symmThreads, perm))
                 .collect(Collectors.toList());
     }
-
-
 }

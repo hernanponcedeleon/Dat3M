@@ -66,7 +66,7 @@ public abstract class MemEvent extends Event {
     }
 
     public ExprInterface getMemValue(){
-        throw new UnsupportedOperationException("MemValue is not available for event " + this.getClass().getName());
+        throw new RuntimeException("MemValue is not available for event " + this.getClass().getName());
     }
 
     public static boolean canAddressTheSameLocation(MemEvent e1, MemEvent e2){

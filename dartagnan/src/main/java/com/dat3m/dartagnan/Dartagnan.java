@@ -25,6 +25,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
+
 import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.analysis.Analysis.RACES;
 import static com.dat3m.dartagnan.analysis.Base.*;
@@ -102,7 +103,7 @@ public class Dartagnan {
                     options.getSMTSolver());
                  ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
             {
-                Result result = Result.UNKNOWN;
+                Result result;
                 switch (options.getAnalysis()) {
                     case RACES:
                         result = checkForRaces(ctx, task);
@@ -124,8 +125,12 @@ public class Dartagnan {
                                 result = runAnalysisWMMSolver(ctx, prover,
                                         RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
                                 break;
+                            default:
+                                throw new RuntimeException("Unrecognized method mode: " + options.getMethod());
                         }
                         break;
+                    default:
+                        throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
                 }
 
                 // Verification ended, we can interrupt the timeout Thread
