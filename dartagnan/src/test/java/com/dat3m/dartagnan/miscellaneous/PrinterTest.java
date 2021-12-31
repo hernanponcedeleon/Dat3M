@@ -38,36 +38,42 @@ public class PrinterTest {
 	public void PrintX86() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/X86/MP+mfence-rmw+rmw-mfence.litmus"));
 		assert(new Printer().print(p) != null);
+		assert(p.getAss().toString() != null);
 	}
 
 	@Test()
 	public void PrintPPC() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/PPC/MP+lwsync+data-wsi-rfi-ctrlisync.litmus"));
 		assert(new Printer().print(p) != null);
+		assert(p.getAss().toString() != null);
 	}
 
 	@Test()
 	public void PrintAARCH64() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/AARCH64/SYS/MP+popl+poap.litmus"));
 		assert(new Printer().print(p) != null);
+		assert(p.getAss().toString() != null);
 	}
 
 	@Test()
 	public void PrintLinux() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/C/manual/rcu/C-rcu-link-after.litmus"));
 		assert(new Printer().print(p) != null);
+		assert(p.getAss().toString() != null);
 	}
 
 	@Test()
 	public void PrintLinux2() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/C/dart/C-atomic-fetch-simple-01.litmus"));
 		assert(new Printer().print(p) != null);
+		assert(p.getAss().toString() != null);
 	}
 	
 	@Test()
 	public void PrintLinux3() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/C/manual/atomic/C-atomic-01.litmus"));
 		assert(new Printer().print(p) != null);
+		assert(p.getAss().toString() != null);
 	}
 	
 	@Test()
