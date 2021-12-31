@@ -27,7 +27,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
 
     public AtomicStore(IExpr address, ExprInterface value, String mo){
         super(address, mo);
-        Preconditions.checkArgument(mo.equals(ACQUIRE) && mo.equals(ACQUIRE_RELEASE), 
+        Preconditions.checkArgument(!mo.equals(ACQUIRE) && !mo.equals(ACQUIRE_RELEASE), 
         		"AtomicStore can not have memory order: " + mo);
         this.value = value;
         this.dataRegs = value.getRegs();
