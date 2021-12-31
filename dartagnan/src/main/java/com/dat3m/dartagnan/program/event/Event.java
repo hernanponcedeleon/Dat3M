@@ -102,13 +102,8 @@ public abstract class Event implements Comparable<Event> {
 	}
 
 	public void setThread(Thread thread) {
-		if (thread != null && !thread.equals(this.thread)) {
-			this.thread = thread;
-			if (successor != null) {
-				//TODO: Get rid of this recursion completely
-				successor.setThread(thread);
-			}
-		}
+		Preconditions.checkNotNull(thread);
+		this.thread = thread;
 	}
 
 	public final List<Event> getSuccessors(){
