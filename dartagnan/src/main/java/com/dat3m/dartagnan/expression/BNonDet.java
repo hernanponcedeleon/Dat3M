@@ -1,10 +1,8 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.base.Verify;
-import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
@@ -45,11 +43,6 @@ public class BNonDet extends BExpr implements ExprInterface {
 		Boolean value = model.evaluate(toBoolFormula(e, ctx));
 		Verify.verify(value != null, "No value in the model for " + this);
 		return value;
-	}
-
-	@Override
-	public ImmutableSet<Register> getRegs() {
-		return ImmutableSet.of();
 	}
 
 	@Override

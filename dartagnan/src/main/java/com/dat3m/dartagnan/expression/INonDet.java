@@ -23,10 +23,8 @@ import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.base.Verify;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.UnsignedInteger;
 import com.google.common.primitives.UnsignedLong;
 
@@ -57,11 +55,6 @@ public class INonDet extends IExpr implements ExprInterface {
 		Object value = model.evaluate(toIntFormula(e, ctx));
 		Verify.verify(value != null, "No value in the model for " + this);
 		return new BigInteger(value.toString());			
-	}
-
-	@Override
-	public ImmutableSet<Register> getRegs() {
-		return ImmutableSet.of();
 	}
 
 	@Override
