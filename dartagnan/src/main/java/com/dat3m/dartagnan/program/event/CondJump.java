@@ -164,7 +164,7 @@ public class CondJump extends Event implements RegReaderData {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Preconditions.checkArgument(target != null, "Target cannot be null");
+    	Preconditions.checkNotNull(target, "Target cannot be null");
     	Preconditions.checkState(successor != null, "Malformed CondJump event");
         return super.compileRecursive(target, nextId, predecessor, depth);
     }

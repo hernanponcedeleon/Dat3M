@@ -69,7 +69,7 @@ public class Lock extends Event {
     // -----------------------------------------------------------------------------------------------------------------
 
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Preconditions.checkArgument(target != null, "Target cannot be null");
+    	Preconditions.checkNotNull(target, "Target cannot be null");
 
         List<Event> events = eventSequence(
                 newLoad(reg, address, SC),

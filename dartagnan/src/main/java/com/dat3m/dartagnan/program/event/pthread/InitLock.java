@@ -48,7 +48,7 @@ public class InitLock extends Event {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Preconditions.checkArgument(target != null, "Target cannot be null");
+    	Preconditions.checkNotNull(target, "Target cannot be null");
         List<Event> events = eventSequence(
                 newStore(address, value, SC)
         );

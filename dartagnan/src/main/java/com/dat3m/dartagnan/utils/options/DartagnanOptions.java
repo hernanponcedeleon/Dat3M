@@ -60,7 +60,7 @@ public class DartagnanOptions extends BaseOptions {
     }
     
     public Analysis getAnalysis(){
-    	Preconditions.checkNotNull(analysis, "Analysis cannot be null");
+    	Preconditions.checkState(analysis != null, "Analysis cannot be null");
 		return analysis;
     }
 

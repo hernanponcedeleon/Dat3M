@@ -110,32 +110,32 @@ public abstract class BaseOptions extends Options {
     }
 
     public Method getMethod(){
-    	Preconditions.checkNotNull(method, "Method cannot be null");
+    	Preconditions.checkState(method != null, "Method cannot be null");
         return method;
     }
 
     public Solvers getSMTSolver(){
-    	Preconditions.checkNotNull(smtsolver, "SMTSolver cannot be null");
+    	Preconditions.checkState(smtsolver != null, "SMTSolver cannot be null");
         return smtsolver;
     }
 
     public String getProgramFilePath() {
-    	Preconditions.checkNotNull(programFilePath, "Program file path cannot be null");
+    	Preconditions.checkState(programFilePath != null, "Program file path cannot be null");
         return programFilePath;
     }
 
     public String getTargetModelFilePath(){
-    	Preconditions.checkNotNull(targetModelFilePath, "CAT file path cannot be null");
+    	Preconditions.checkState(targetModelFilePath != null, "CAT file path cannot be null");
         return targetModelFilePath;
     }
 
     public Settings getSettings(){
-    	Preconditions.checkNotNull(settings, "Settings cannot be null");
+    	Preconditions.checkState(settings != null, "Settings cannot be null");
         return settings;
     }
 
     public Arch getTarget(){
-    	Preconditions.checkNotNull(target, "Target cannot be null");
+    	Preconditions.checkState(target != null, "Target cannot be null");
         return target;
     }
 

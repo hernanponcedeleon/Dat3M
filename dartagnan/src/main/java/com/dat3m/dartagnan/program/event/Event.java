@@ -268,7 +268,7 @@ public abstract class Event implements Comparable<Event> {
     }
 
 	protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Preconditions.checkArgument(target != null, "Target cannot be null");
+    	Preconditions.checkNotNull(target, "Target cannot be null");
 		cId = nextId++;
 		if(successor != null){
 			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {

@@ -45,7 +45,7 @@ public class End extends Event {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Preconditions.checkArgument(target != null, "Target cannot be null");
+    	Preconditions.checkNotNull(target, "Target cannot be null");
 
         Fence optionalBarrierBefore = null;
         Fence optionalBarrierAfter = null;

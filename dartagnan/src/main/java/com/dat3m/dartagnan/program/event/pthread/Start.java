@@ -68,7 +68,7 @@ public class Start extends Event {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Preconditions.checkArgument(target != null, "Target cannot be null");
+    	Preconditions.checkNotNull(target, "Target cannot be null");
 
         List<Event> events = new ArrayList<>();
         Load load = newLoad(reg, address, SC);
