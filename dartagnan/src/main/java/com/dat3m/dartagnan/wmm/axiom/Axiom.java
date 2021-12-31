@@ -38,6 +38,7 @@ public abstract class Axiom implements Dependent<Relation> {
         return rel;
     }
 
+    // TODO: never used. Do we want to keep it?
     public BooleanFormula encodeRelAndConsistency(SolverContext ctx) {
     	return ctx.getFormulaManager().getBooleanFormulaManager().and(rel.encode(ctx), consistent(ctx));
     }
