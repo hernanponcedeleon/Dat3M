@@ -47,8 +47,7 @@ public class BuildWitnessTest {
     	    sOptions[5] = "1";
     	    sOptions[6] = "-create_witness";
     	    sOptions[7] = ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bpl";
-    	    DartagnanOptions option = new DartagnanOptions();
-    	    option.parse(sOptions);
+    	    DartagnanOptions option = DartagnanOptions.fromArgs(sOptions);
     	    
     		WitnessGraph graph = new WitnessBuilder(p, ctx, prover, res).buildGraph(option);
     		File witnessFile = new File(System.getenv("DAT3M_HOME") + "/output/lazy01-for-witness.graphml");

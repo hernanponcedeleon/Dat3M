@@ -17,8 +17,6 @@ import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
-import org.apache.commons.cli.HelpFormatter;
-
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.svcomp.options.SVCOMPOptions;
@@ -29,19 +27,8 @@ import com.google.common.base.Preconditions;
 public class SVCOMPRunner {
 
     public static void main(String[] args) throws IOException {
-    	SVCOMPOptions options = new SVCOMPOptions();
-        try {
-            options.parse(args);
-        }
-        catch (Exception e){
-            if(e instanceof UnsupportedOperationException){
-                System.out.println(e.getMessage());
-            }
-            new HelpFormatter().printHelp("SVCOMP Runner", options);
-            System.exit(1);
-            return;
-        }
-        
+    	
+    	SVCOMPOptions options = SVCOMPOptions.fromArgs(args);        
         WitnessGraph witness = new WitnessGraph(); 
         if(options.getWitnessPath() != null) {
         	Preconditions.checkArgument(Paths.get(options.getProgramFilePath()).getFileName().toString().

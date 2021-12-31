@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.utils.options;
 import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.cli.*;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
@@ -41,7 +40,7 @@ public abstract class BaseOptions extends Options {
             .sorted(Comparator.comparing(String::toString))
     		.collect(Collectors.toList()));
     		
-    public BaseOptions(){
+    protected BaseOptions(){
         super();
         
         Option inputOption = new Option("i", "input", true,
@@ -70,7 +69,7 @@ public abstract class BaseOptions extends Options {
         		"The SMT solver to be used: " + supported_smtsolvers));
     }
 
-    public void parse(String[] args) throws ParseException, RuntimeException {
+    protected void parse(String[] args) throws ParseException, RuntimeException {
         CommandLine cmd = new DefaultParser().parse(this, args);
         parseSettings(cmd);
 
@@ -110,37 +109,30 @@ public abstract class BaseOptions extends Options {
     }
 
     public Method getMethod(){
-    	Preconditions.checkState(method != null, "Method cannot be null");
         return method;
     }
 
     public Solvers getSMTSolver(){
-    	Preconditions.checkState(smtsolver != null, "SMTSolver cannot be null");
         return smtsolver;
     }
 
     public String getProgramFilePath() {
-    	Preconditions.checkState(programFilePath != null, "Program file path cannot be null");
         return programFilePath;
     }
 
     public String getTargetModelFilePath(){
-    	Preconditions.checkState(targetModelFilePath != null, "CAT file path cannot be null");
         return targetModelFilePath;
     }
 
     public Settings getSettings(){
-    	Preconditions.checkState(settings != null, "Settings cannot be null");
         return settings;
     }
 
     public Arch getTarget(){
-    	Preconditions.checkState(target != null, "Target cannot be null");
         return target;
     }
 
     protected void parseSettings(CommandLine cmd){
-
         int bound = 1;
         int solver_timeout = 0;
         if(cmd.hasOption("unroll")){

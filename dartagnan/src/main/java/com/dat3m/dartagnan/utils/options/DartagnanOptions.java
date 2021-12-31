@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 
@@ -32,7 +33,7 @@ public class DartagnanOptions extends BaseOptions {
     private String witness;
     private String witnessFilePath;
 
-    public DartagnanOptions(){
+    private DartagnanOptions(){
         super();
         Option catOption = new Option("cat", true,
                 "Path to the CAT file");
@@ -50,7 +51,22 @@ public class DartagnanOptions extends BaseOptions {
         		"Path to the machine readable witness file."));
         }
     
-    public void parse(String[] args) throws ParseException, RuntimeException {
+    public static DartagnanOptions fromArgs(String[] args) {
+        DartagnanOptions options = new DartagnanOptions();
+        try {
+            options.parse(args);
+        }
+        catch (Exception e){
+            if(e instanceof UnsupportedOperationException){
+                System.out.println(e.getMessage());
+            }
+            new HelpFormatter().printHelp("DARTAGNAN", options);
+            System.exit(1);
+        }
+        return options;
+    }
+    
+    protected void parse(String[] args) throws ParseException, RuntimeException {
     	super.parse(args);
     	Preconditions.checkArgument(supportedFormats.stream().anyMatch(f -> programFilePath.endsWith(f)), "Unrecognized program format");
         CommandLine cmd = new DefaultParser().parse(this, args);
@@ -60,7 +76,6 @@ public class DartagnanOptions extends BaseOptions {
     }
     
     public Analysis getAnalysis(){
-    	Preconditions.checkState(analysis != null, "Analysis cannot be null");
 		return analysis;
     }
 

@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.ShutdownManager;
@@ -43,19 +42,7 @@ public class Dartagnan {
     	CreateGitInfo();
     	LogGlobalSettings();
     	
-        DartagnanOptions options = new DartagnanOptions();
-        try {
-            options.parse(args);
-        }
-        catch (Exception e){
-            if(e instanceof UnsupportedOperationException){
-                System.out.println(e.getMessage());
-            }
-            new HelpFormatter().printHelp("DARTAGNAN", options);
-            System.exit(1);
-            return;
-        }        
-        
+        DartagnanOptions options = DartagnanOptions.fromArgs(args);        
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
         Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));        	
 

@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 
@@ -41,7 +42,7 @@ public class SVCOMPOptions extends BaseOptions {
     private Integer umax;
     private Integer step;
     
-    public SVCOMPOptions(){
+    private SVCOMPOptions(){
         super();
         Option catOption = new Option("cat", true,
                 "Path to the CAT file");
@@ -76,9 +77,24 @@ public class SVCOMPOptions extends BaseOptions {
 
         addOption(new Option(BOOGIESAN, false,
                 "Generates (also) a sanitised boogie file saved as /output/X-sanitised.bpl"));
-}
+    }
     
-    public void parse(String[] args) throws ParseException, RuntimeException {
+    public static SVCOMPOptions fromArgs(String[] args) {
+    	SVCOMPOptions options = new SVCOMPOptions();
+        try {
+            options.parse(args);
+        }
+        catch (Exception e){
+            if(e instanceof UnsupportedOperationException){
+                System.out.println(e.getMessage());
+            }
+            new HelpFormatter().printHelp("SVCOMP Runner", options);
+            System.exit(1);
+        }
+        return options;
+    }
+    
+    protected void parse(String[] args) throws ParseException, RuntimeException {
     	super.parse(args);
     	Preconditions.checkArgument(supported_formats.stream().anyMatch(f -> programFilePath.endsWith(f)),
     			"Unrecognized program format");
