@@ -60,7 +60,7 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Preconditions.checkArgument(target == Arch.ARM8, this + " can only be compiled to " + Arch.ARM8);
+    	Preconditions.checkArgument(target == Arch.ARM8, getClass().getSimpleName() + " can only be compiled to " + Arch.ARM8);
         RMWStoreExclusive store = newRMWStoreExclusive(address, value, mo);
         ExecutionStatus status = newExecutionStatus(register, store);
         List<Event> events = eventSequence(
