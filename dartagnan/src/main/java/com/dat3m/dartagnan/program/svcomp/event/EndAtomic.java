@@ -15,6 +15,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 public class EndAtomic extends Event {
@@ -43,9 +44,7 @@ public class EndAtomic extends Event {
     }
     
     public List<Event> getBlock(){
-    	if (cId < 0) {
-    		throw new IllegalStateException("The program needs to get compiled first");
-		}
+    	Preconditions.checkState(cId >= 0, "The program needs to get compiled first");
     	return enclosedEvents;
     }
 

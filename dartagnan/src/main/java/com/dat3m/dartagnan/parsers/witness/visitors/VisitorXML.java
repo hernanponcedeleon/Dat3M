@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.witness.visitors;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.XMLParser;
 import com.dat3m.dartagnan.parsers.XMLParser.ElementContext;
 import com.dat3m.dartagnan.parsers.XMLParserBaseVisitor;
@@ -8,9 +9,9 @@ import com.dat3m.dartagnan.witness.Edge;
 import com.dat3m.dartagnan.witness.Node;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 
-import static com.dat3m.dartagnan.witness.GraphAttributes.*;
-
 import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.witness.GraphAttributes.*;
 
 public class VisitorXML extends XMLParserBaseVisitor<Object> implements XMLParserVisitor<Object> {
 	
@@ -20,7 +21,7 @@ public class VisitorXML extends XMLParserBaseVisitor<Object> implements XMLParse
 	public WitnessGraph visitDocument(XMLParser.DocumentContext ctx) {
 		visitChildren(ctx);
 		if(!graph.hasAttributed(PRODUCER.toString())) {
-			throw new RuntimeException("The witness does not have a producer tag");
+			throw new ParsingException("The witness does not have a producer tag");
 		}
 		return graph;
 	}

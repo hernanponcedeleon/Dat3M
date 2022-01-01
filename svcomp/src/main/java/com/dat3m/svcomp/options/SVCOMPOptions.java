@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 
@@ -40,12 +41,8 @@ public class SVCOMPOptions extends BaseOptions {
     private Integer umax;
     private Integer step;
     
-    public SVCOMPOptions(){
+    private SVCOMPOptions(){
         super();
-        Option catOption = new Option("cat", true,
-                "Path to the CAT file");
-        catOption.setRequired(true);
-        addOption(catOption);
 
         addOption(new Option(UMIN, true,
                 "Starting unrolling bound <integer>"));
@@ -75,14 +72,26 @@ public class SVCOMPOptions extends BaseOptions {
 
         addOption(new Option(BOOGIESAN, false,
                 "Generates (also) a sanitised boogie file saved as /output/X-sanitised.bpl"));
-}
+    }
     
-    public void parse(String[] args) throws ParseException, RuntimeException {
-    	super.parse(args);
-        if(supported_formats.stream().map(f -> programFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
-            throw new RuntimeException("Unrecognized program format");
+    public static SVCOMPOptions fromArgs(String[] args) throws ParseException {
+    	SVCOMPOptions options = new SVCOMPOptions();
+        try {
+            options.parse(args);
         }
-
+        catch (ParseException e){
+        	System.out.println(e.getMessage());
+            new HelpFormatter().printHelp("SVCOMP Runner", options);
+            throw e;
+        }
+        return options;
+    }
+    
+    protected void parse(String[] args) throws ParseException {
+    	super.parse(args);
+    	if(!supported_formats.stream().anyMatch(f -> programFilePath.endsWith(f))) {
+    		throw new ParseException("Unrecognized program format");
+    	}
     	CommandLine cmd = new DefaultParser().parse(this, args);
         
     	optimization = cmd.hasOption(OPTIMIZATION_OPTION) ? cmd.getOptionValue(OPTIMIZATION_OPTION) : "O0";
@@ -91,11 +100,10 @@ public class SVCOMPOptions extends BaseOptions {
         umin = cmd.hasOption(UMIN) ? Integer.parseInt(cmd.getOptionValue(UMIN)) : 1;
         umax = cmd.hasOption(UMAX) ? Integer.parseInt(cmd.getOptionValue(UMAX)) : Integer.MAX_VALUE;
         step = cmd.hasOption(STEP) ? Integer.parseInt(cmd.getOptionValue(STEP)) : 1;
-        
         encoding = cmd.hasOption(INTERGER_ENCODING_OPTION) ? cmd.getOptionValue(INTERGER_ENCODING_OPTION) : "unbounded-integer";
-        if(!supported_integer_encoding.contains(encoding)) {
-            throw new UnsupportedOperationException("Unrecognized encoding: " + encoding);        		
-        }
+    	if(!supported_integer_encoding.contains(encoding)) {
+    		throw new ParseException("Unrecognized encoding: " + encoding);
+    	}
         
         String property = Files.getNameWithoutExtension(cmd.getOptionValue(PROPERTY_OPTION));
         switch(property) {
@@ -106,7 +114,7 @@ public class SVCOMPOptions extends BaseOptions {
 				analysis = REACHABILITY;
 				break;
 			default:
-				throw new UnsupportedOperationException("Unrecognized property: " + property);
+				throw new ParseException("Unrecognized property: " + property);
         }
     }
 

@@ -1,13 +1,6 @@
 package com.dat3m.dartagnan.program;
 
 
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.utils.ThreadCache;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
@@ -17,6 +10,14 @@ import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.utils.ThreadCache;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -24,9 +25,9 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
-
 import java.util.*;
+
+import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 
 public class Program {
 
@@ -184,10 +185,8 @@ public class Program {
     // -----------------------------------------------------------------------------------------------------------------
 
     public int compile(Arch target, int nextId) {
-        if (!isUnrolled()) {
-            throw new IllegalStateException("The program needs to be unrolled first.");
-        }
-
+        Preconditions.checkNotNull(target, "Target cannot be null.");
+    	Preconditions.checkState(isUnrolled(), "The program needs to be unrolled first.");
         for(Thread thread : threads){
             nextId = thread.compile(target, nextId);
         }
@@ -201,9 +200,7 @@ public class Program {
     // -----------------------------------------------------------------------------------------------------------------
 
     public void initialise(VerificationTask task, SolverContext ctx) {
-        if (!isCompiled) {
-            throw new IllegalStateException("The program needs to be compiled first.");
-        }
+    	Preconditions.checkState(isCompiled, "The program needs to be compiled first."); 
         this.task = task;
         for(Event e : getEvents()){
             e.initialise(task, ctx);
@@ -211,10 +208,7 @@ public class Program {
     }
 
     public BooleanFormula encodeCF(SolverContext ctx) {
-        if (this.task == null) {
-            throw new IllegalStateException("The program needs to get initialised first.");
-        }
-
+    	Preconditions.checkState(task != null, "The program needs to get initialised first.");
         BooleanFormula enc = memory.fixedMemoryEncoding(ctx);
         for(Thread t : threads){
             enc = ctx.getFormulaManager().getBooleanFormulaManager().and(enc, t.encodeCF(ctx));
@@ -223,14 +217,11 @@ public class Program {
     }
 
     public BooleanFormula encodeFinalRegisterValues(SolverContext ctx){
+    	Preconditions.checkState(task != null, "The program needs to get initialised first.");
         FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-
-        if (this.task == null) {
-            throw new IllegalStateException("The program needs to get initialised first.");
-        }
-
         Map<Register, List<Event>> eMap = new HashMap<>();
+
         for(Event e : getCache().getEvents(FilterBasic.get(EType.REG_WRITER))){
             Register reg = ((RegWriter)e).getResultRegister();
             eMap.putIfAbsent(reg, new ArrayList<>());
@@ -277,10 +268,7 @@ public class Program {
     }
     
     public BooleanFormula encodeNoBoundEventExec(SolverContext ctx){
-        if (this.task == null) {
-            throw new IllegalStateException("The program needs to get initialised first.");
-        }
-
+    	Preconditions.checkState(task != null, "The program needs to get initialised first.");
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
         for(Event e : getCache().getEvents(FilterBasic.get(EType.BOUND))){
@@ -294,19 +282,14 @@ public class Program {
     // ----------------------------- Preprocessing -----------------------------------
 
     public void reorder() {
-        if (isUnrolled) {
-            throw new IllegalStateException("Reordering should be performed before unrolling.");
-        }
-
+    	Preconditions.checkState(!isUnrolled, "Reordering should be performed before unrolling.");
         for (Thread t : getThreads()) {
             t.reorderBranches();
         }
     }
 
     public void eliminateDeadCode() {
-        if (isUnrolled) {
-            throw new IllegalStateException("Dead code elimination should be performed before unrolling.");
-        }
+    	Preconditions.checkState(!isUnrolled, "Dead code elimination should be performed before unrolling.");
         int id = 0;
         for (Thread t : getThreads()) {
             id = t.eliminateDeadCode(id);
@@ -333,6 +316,4 @@ public class Program {
         }
         cache = null;
     }
-
-
 }

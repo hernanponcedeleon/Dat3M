@@ -2,10 +2,7 @@ package com.dat3m.dartagnan.utils.options;
 
 import com.dat3m.dartagnan.analysis.Analysis;
 import com.google.common.collect.ImmutableSet;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.*;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -31,12 +28,8 @@ public class DartagnanOptions extends BaseOptions {
     private String witness;
     private String witnessFilePath;
 
-    public DartagnanOptions(){
+    private DartagnanOptions(){
         super();
-        Option catOption = new Option("cat", true,
-                "Path to the CAT file");
-        catOption.setRequired(true);
-        addOption(catOption);
 
         addOption(new Option("w", WITNESS_OPTION, true,
                 "Creates a machine readable witness. "
@@ -49,21 +42,30 @@ public class DartagnanOptions extends BaseOptions {
         		"Path to the machine readable witness file."));
         }
     
-    public void parse(String[] args) throws ParseException, RuntimeException {
-    	super.parse(args);
-        if(supportedFormats.stream().noneMatch(f -> programFilePath.endsWith(f))) {
-            throw new RuntimeException("Unrecognized program format");
+    public static DartagnanOptions fromArgs(String[] args) throws ParseException {
+        DartagnanOptions options = new DartagnanOptions();
+        try {
+            options.parse(args);
+        } catch (ParseException e) {
+        	System.out.println(e.getMessage());
+            new HelpFormatter().printHelp("DARTAGNAN", options);
+            throw e;
         }
-        CommandLine cmd = new DefaultParser().parse(this, args);
-
+        return options;
+    }
+    
+    protected void parse(String[] args) throws ParseException {
+    	super.parse(args);
+    	if(supportedFormats.stream().noneMatch(f -> programFilePath.endsWith(f))) {
+    		throw new ParseException("Unrecognized program format");
+    	}
+    	CommandLine cmd = new DefaultParser().parse(this, args);
         analysis = Analysis.get(cmd.getOptionValue(ANALYSIS_OPTION, Analysis.getDefault().asStringOption()));
         witness = cmd.hasOption(WITNESS_OPTION) ? cmd.getOptionValue(WITNESS_OPTION) : null;
         witnessFilePath = cmd.hasOption(WITNESS_PATH_OPTION) ? cmd.getOptionValue(WITNESS_PATH_OPTION) : null;
     }
     
-    public Analysis getAnalysis(){
-		return analysis;
-    }
+    public Analysis getAnalysis(){ return analysis; }
 
     public String createWitness(){
         return witness;

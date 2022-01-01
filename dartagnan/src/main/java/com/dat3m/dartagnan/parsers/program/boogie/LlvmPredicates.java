@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.llvm.utils;
+package com.dat3m.dartagnan.parsers.program.boogie;
 
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.ExprInterface;

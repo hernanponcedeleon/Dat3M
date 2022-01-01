@@ -1,9 +1,7 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
 public class BConst extends BExpr implements ExprInterface {
@@ -21,11 +19,6 @@ public class BConst extends BExpr implements ExprInterface {
 	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
 		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		return value ? bmgr.makeTrue() : bmgr.makeFalse();
-	}
-
-    @Override
-	public ImmutableSet<Register> getRegs() {
-		return ImmutableSet.of();
 	}
 
 	@Override

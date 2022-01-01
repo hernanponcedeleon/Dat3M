@@ -219,7 +219,7 @@ public class WitnessBuilder {
 		    //This bytes[] has bytes in decimal format;
 		    //Convert it to hexadecimal format
 		    StringBuilder sb = new StringBuilder();
-		    for(int i=0; i< bytes.length ;i++)
+		    for(int i=0; i < bytes.length ;i++)
 		    {
 		        sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
 		    }
@@ -229,7 +229,7 @@ public class WitnessBuilder {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return null;
+		return "";
 	}
 	
 }
