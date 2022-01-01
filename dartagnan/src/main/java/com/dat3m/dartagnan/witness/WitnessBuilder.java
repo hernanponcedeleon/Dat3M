@@ -227,11 +227,9 @@ public class WitnessBuilder {
 		    //return complete hash
 		   return sb.toString();
 		} catch (Exception e) {
-			//TODO(HP): Is it ok for this function to return NULL on failure?
-			// It results in a NULL value being stored in some map.
 			e.printStackTrace();
 		}
-		return null;
+		return "";
 	}
 	
 }
