@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.llvm.utils;
+package com.dat3m.dartagnan.parsers.program.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
@@ -10,8 +10,6 @@ import static com.dat3m.dartagnan.expression.op.BOpBin.AND;
 import static com.dat3m.dartagnan.expression.op.COpBin.GTE;
 import static com.dat3m.dartagnan.expression.op.COpBin.LTE;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
-
-// TODO: This whole package is related to parsing, right? Can we move it to "parsers"?
 
 public class SmackPredicates {
 

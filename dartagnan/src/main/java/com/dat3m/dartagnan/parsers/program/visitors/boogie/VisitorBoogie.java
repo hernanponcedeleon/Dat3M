@@ -34,6 +34,14 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
+import static com.dat3m.dartagnan.parsers.program.boogie.LlvmFunctions.LLVMFUNCTIONS;
+import static com.dat3m.dartagnan.parsers.program.boogie.LlvmFunctions.llvmFunction;
+import static com.dat3m.dartagnan.parsers.program.boogie.LlvmPredicates.LLVMPREDICATES;
+import static com.dat3m.dartagnan.parsers.program.boogie.LlvmPredicates.llvmPredicate;
+import static com.dat3m.dartagnan.parsers.program.boogie.LlvmUnary.LLVMUNARY;
+import static com.dat3m.dartagnan.parsers.program.boogie.LlvmUnary.llvmUnary;
+import static com.dat3m.dartagnan.parsers.program.boogie.SmackPredicates.SMACKPREDICATES;
+import static com.dat3m.dartagnan.parsers.program.boogie.SmackPredicates.smackPredicate;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicProcedures.ATOMICPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicProcedures.handleAtomicFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.DummyProcedures.DUMMYPROCEDURES;
@@ -43,14 +51,6 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.handleStdFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.SVCOMPPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.handleSvcompFunction;
-import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.LLVMFUNCTIONS;
-import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.llvmFunction;
-import static com.dat3m.dartagnan.program.llvm.utils.LlvmPredicates.LLVMPREDICATES;
-import static com.dat3m.dartagnan.program.llvm.utils.LlvmPredicates.llvmPredicate;
-import static com.dat3m.dartagnan.program.llvm.utils.LlvmUnary.LLVMUNARY;
-import static com.dat3m.dartagnan.program.llvm.utils.LlvmUnary.llvmUnary;
-import static com.dat3m.dartagnan.program.llvm.utils.SmackPredicates.SMACKPREDICATES;
-import static com.dat3m.dartagnan.program.llvm.utils.SmackPredicates.smackPredicate;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
 
