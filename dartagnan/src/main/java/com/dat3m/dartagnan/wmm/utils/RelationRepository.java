@@ -20,8 +20,7 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
-
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+import com.google.common.base.Preconditions;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -29,6 +28,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 public class RelationRepository {
 
@@ -69,6 +70,7 @@ public class RelationRepository {
             }
             return relation;
         } catch (Exception e){
+            // TODO: This is very odd code? Is this branch ever executed?
             e.printStackTrace();
             return null;
         }
@@ -76,10 +78,9 @@ public class RelationRepository {
 
     public void updateRelation(Relation relation){
         if(relation.getIsNamed()){
-            if(relationMap.get(relation.getName()) != null){
-                throw new RuntimeException("Relation " + relation.getName() + " is already declared");
-            }
-            relationMap.put(relation.getName(), relation);
+            String name = relation.getName();
+            Preconditions.checkState(!relationMap.containsKey(name), "Relation " + name + " is already declared");
+            relationMap.put(name, relation);
         }
     }
 
@@ -107,7 +108,7 @@ public class RelationRepository {
             return new Class<?>[]{String.class};
         }
 
-        throw new RuntimeException("Method getArgsForClass is not implemented for " + cls.getName());
+        throw new UnsupportedOperationException("Method getArgsForClass is not implemented for " + cls.getName());
     }
 
     private Relation getBasicRelation(String name){

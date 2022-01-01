@@ -1,13 +1,8 @@
 package com.dat3m.dartagnan.utils.options;
 
 import com.dat3m.dartagnan.analysis.Analysis;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.*;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -51,8 +46,7 @@ public class DartagnanOptions extends BaseOptions {
         DartagnanOptions options = new DartagnanOptions();
         try {
             options.parse(args);
-        }
-        catch (ParseException e) {
+        } catch (ParseException e) {
         	System.out.println(e.getMessage());
             new HelpFormatter().printHelp("DARTAGNAN", options);
             throw e;
@@ -62,7 +56,7 @@ public class DartagnanOptions extends BaseOptions {
     
     protected void parse(String[] args) throws ParseException {
     	super.parse(args);
-    	if(!supportedFormats.stream().anyMatch(f -> programFilePath.endsWith(f))) {
+    	if(supportedFormats.stream().noneMatch(f -> programFilePath.endsWith(f))) {
     		throw new ParseException("Unrecognized program format");
     	}
     	CommandLine cmd = new DefaultParser().parse(this, args);
@@ -71,9 +65,7 @@ public class DartagnanOptions extends BaseOptions {
         witnessFilePath = cmd.hasOption(WITNESS_PATH_OPTION) ? cmd.getOptionValue(WITNESS_PATH_OPTION) : null;
     }
     
-    public Analysis getAnalysis(){
-		return analysis;
-    }
+    public Analysis getAnalysis(){ return analysis; }
 
     public String createWitness(){
         return witness;

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.arch.aarch64.event;
 
+import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
@@ -13,7 +14,6 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.base.Preconditions;
-
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -76,6 +76,6 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
 
     @Override
     public BooleanFormula encodeCF(SolverContext ctx, BooleanFormula cond) {
-        throw new IllegalStateException("StoreExclusive event must be compiled before encoding");
+        throw new ProgramProcessingException("StoreExclusive event must be compiled before encoding");
     }
 }

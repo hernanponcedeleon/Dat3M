@@ -1,20 +1,17 @@
 package com.dat3m.dartagnan.program.llvm.utils;
 
-import static com.dat3m.dartagnan.expression.op.BOpBin.AND;
-import static com.dat3m.dartagnan.expression.op.COpBin.LTE;
-import static com.dat3m.dartagnan.expression.op.COpBin.GTE;
-import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
+import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.*;
+
 import java.util.Arrays;
 import java.util.List;
 
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.BExprBin;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.IfExpr;
-import com.dat3m.dartagnan.exception.ParsingException;
+import static com.dat3m.dartagnan.expression.op.BOpBin.AND;
+import static com.dat3m.dartagnan.expression.op.COpBin.GTE;
+import static com.dat3m.dartagnan.expression.op.COpBin.LTE;
+import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
+
+// TODO: This whole package is related to parsing, right? Can we move it to "parsers"?
 
 public class SmackPredicates {
 

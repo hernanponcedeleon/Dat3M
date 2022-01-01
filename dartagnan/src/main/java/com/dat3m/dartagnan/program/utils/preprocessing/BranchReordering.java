@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
     (3) In the case of loops, this procedure is repeated recursively within each loop
  */
 
-//TODO: Add support for Ifs
 public class BranchReordering {
 
 	private final Thread thread;
@@ -46,7 +45,6 @@ public class BranchReordering {
             branchMap.put(e, cur);
 
             if (e.equals(exit)) { break; }
-            //TODO add support for Ifs
             if (e instanceof CondJump && ((CondJump)e).isGoto()) {
                 branches.add(cur = new MoveableBranch());
                 cur.id = id++;

@@ -74,9 +74,7 @@ public class Wmm {
 
     public void addRecursiveGroup(Set<RecursiveRelation> recursiveGroup){
         int id = 1 << recursiveGroups.size();
-        if(id < 0){
-            throw new RuntimeException("Exceeded maximum number of recursive relations");
-        }
+        Preconditions.checkArgument(id >= 0, "Exceeded maximum number of recursive relations.");
         recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
     }
 

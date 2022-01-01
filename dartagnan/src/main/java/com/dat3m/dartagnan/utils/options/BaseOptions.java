@@ -146,14 +146,14 @@ public abstract class BaseOptions extends Options {
             try {
                 bound = Math.max(1, Integer.parseInt(cmd.getOptionValue(UNROLL_OPTION)));
             } catch (NumberFormatException e){
-                throw new UnsupportedOperationException("Illegal unroll value");
+                throw new IllegalArgumentException("Illegal unroll value");
             }
         }
         if(cmd.hasOption(SMTSOLVER_TIMEOUT_OPTION)){
             try {
             	solver_timeout = Math.max(1, Integer.parseInt(cmd.getOptionValue(SMTSOLVER_TIMEOUT_OPTION)));
             } catch (NumberFormatException e){
-                throw new UnsupportedOperationException("Illegal solver_timeout value");
+                throw new IllegalArgumentException("Illegal solver_timeout value");
             }
         }
         settings = new Settings(bound, solver_timeout);

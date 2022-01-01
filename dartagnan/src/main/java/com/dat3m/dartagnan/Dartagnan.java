@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -111,11 +110,11 @@ public class Dartagnan {
 	                                        RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
 	                                break;
 	                            default:
-	                                throw new RuntimeException("Unrecognized method mode: " + options.getMethod());
+	                                throw new IllegalArgumentException("Unrecognized method mode: " + options.getMethod());
 	                        }
 	                        break;
 	                    default:
-	                        throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
+	                        throw new IllegalArgumentException("Unrecognized analysis: " + options.getAnalysis());
 	                }
 	
 	                // Verification ended, we can interrupt the timeout Thread

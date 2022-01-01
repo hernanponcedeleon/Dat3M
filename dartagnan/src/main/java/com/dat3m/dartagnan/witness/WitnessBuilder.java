@@ -219,7 +219,7 @@ public class WitnessBuilder {
 		    //This bytes[] has bytes in decimal format;
 		    //Convert it to hexadecimal format
 		    StringBuilder sb = new StringBuilder();
-		    for(int i=0; i< bytes.length ;i++)
+		    for(int i=0; i < bytes.length ;i++)
 		    {
 		        sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
 		    }
@@ -227,6 +227,8 @@ public class WitnessBuilder {
 		    //return complete hash
 		   return sb.toString();
 		} catch (Exception e) {
+			//TODO(HP): Is it ok for this function to return NULL on failure?
+			// It results in a NULL value being stored in some map.
 			e.printStackTrace();
 		}
 		return null;
