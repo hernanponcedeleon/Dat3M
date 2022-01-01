@@ -61,16 +61,18 @@ public class RelationRepository {
         try{
             Method method = cls.getMethod("makeTerm", argClasses);
             String term = (String)method.invoke(null, args);
-            Relation relation = relationMap.get(term);
-
-            if(relation == null){
+            Relation relation;
+            if(containsRelation(term)) {
+            	relation = relationMap.get(term);
+            } else {
                 Constructor<?> constructor = cls.getConstructor(argClasses);
                 relation = (Relation)constructor.newInstance(args);
-                addRelation(relation);
+                addRelation(relation);            	
             }
             return relation;
         } catch (Exception e){
             // TODO: This is very odd code? Is this branch ever executed?
+        	// No, but I don't see how to get rid of this code.
             e.printStackTrace();
             return null;
         }
