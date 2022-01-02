@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
@@ -13,6 +12,7 @@ import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.collect.ImmutableSet;
 
+import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -31,6 +31,16 @@ public class Wmm {
 
     private final static ImmutableSet<String> baseRelations = ImmutableSet.of(CO, RF, IDD, ADDRDIRECT);
 
+    @Option(
+    		description="Assumes local consistency for all created wmms.",
+    		secure=true)
+    	private boolean assumeLocalConsistency = true;
+
+	@Option(
+		description="Assumes the WMM respects atomic blocks for optimization (only the case for SVCOMP right now).",
+		secure=true)
+	private boolean respectsAtomicBlocks = true;
+    	
     private final List<Axiom> axioms = new ArrayList<>();
     private final Map<String, FilterAbstract> filters = new HashMap<>();
     private final RelationRepository relationRepository;
@@ -71,11 +81,11 @@ public class Wmm {
     }
 
     public boolean isLocallyConsistent() {
-        // For now we just return a global flag, but we would like to automatically
-        // detect local consistency
-        return GlobalSettings.ASSUME_LOCAL_CONSISTENCY;
+        // For now we return a preset value. Ideally, we would like to
+        // find this property automatically.
+        return assumeLocalConsistency;
     }
-
+    
     public void addRecursiveGroup(Set<RecursiveRelation> recursiveGroup){
         int id = 1 << recursiveGroups.size();
         if(id < 0){

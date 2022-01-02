@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.relation.base.memory;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -10,6 +11,9 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
@@ -17,7 +21,6 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.GlobalSettings.ANTISYMM_CO;
 import static com.dat3m.dartagnan.program.utils.EType.INIT;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
 import static com.dat3m.dartagnan.expression.utils.Utils.*;
@@ -26,16 +29,36 @@ import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
+@Options
 public class RelCo extends Relation {
+
+	public static final String OPTION_ANTISYMMETRY = "encoding.antiSymmCo";
 
 	private static final Logger logger = LogManager.getLogger(RelCo.class);
 
+	@Option(
+		name=OPTION_ANTISYMMETRY,
+		description="Encodes the antisymmetry of coherences explicitly.",
+		secure=true)
+	private boolean antisymmetry = false;
+	
     public RelCo(){
         term = CO;
         forceDoEncode = true;
     }
 
-
+    @Override
+	public void initialise(VerificationTask task, SolverContext ctx) {
+		super.initialise(task,ctx);
+		try {
+			task.getConfig().inject(this);
+			logger.info("{}: {}",OPTION_ANTISYMMETRY,antisymmetry);
+		}
+		catch(InvalidConfigurationException e) {
+			logger.warn(e.getMessage());
+		}
+	}
+    
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
@@ -185,7 +208,7 @@ public class RelCo extends Relation {
     
     @Override
     public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
-        if(!ANTISYMM_CO) {
+        if(!antisymmetry) {
             return super.getSMTVar(edge, ctx);
         }
 
