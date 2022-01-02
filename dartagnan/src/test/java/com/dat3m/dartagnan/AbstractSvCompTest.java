@@ -41,7 +41,7 @@ public abstract class AbstractSvCompTest {
     protected long getTimeout() { return 180000; }
 
     protected Provider<Integer> getBoundProvider() {
-        return Provider.fromSupplier(() -> 1);
+        return Provider.fromSupplier(() -> bound);
     }
 
     protected Provider<Integer> getTimeoutProvider() {
