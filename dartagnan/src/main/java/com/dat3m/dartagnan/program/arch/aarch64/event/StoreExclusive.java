@@ -13,9 +13,6 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.base.Preconditions;
 
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.EventFactory.*;
@@ -67,13 +64,5 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
                 store,
                 status
         );
-    }
-
-    // Encoding
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    public BooleanFormula encodeCF(SolverContext ctx, BooleanFormula cond) {
-        throw new IllegalStateException("StoreExclusive event must be compiled before encoding");
     }
 }

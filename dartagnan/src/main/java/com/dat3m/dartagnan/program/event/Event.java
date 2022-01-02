@@ -238,25 +238,6 @@ public abstract class Event implements Comparable<Event> {
 		cfCond = (cfCond == null) ? cond : ctx.getFormulaManager().getBooleanFormulaManager().or(cfCond, cond);
 	}
 
-	public BooleanFormula encodeCF(SolverContext ctx, BooleanFormula cond) {
-		if(cfEnc == null){
-			BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-			cfCond = (cfCond == null) ? cond : bmgr.or(cfCond, cond);
-			cfEnc = bmgr.equivalence(cfVar, cfCond);
-			cfEnc = bmgr.and(cfEnc, encodeExec(ctx));
-		}
-		return cfEnc;
-	}
-
-	public BooleanFormula encodePrefixCF(SolverContext ctx, BooleanFormula cond) {
-		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		if(cfEnc == null){
-			cfCond = (cfCond == null) ? cond : bmgr.or(cfCond, cond);
-			cfEnc = bmgr.and(bmgr.implication(cfVar, cfCond), encodeExec(ctx));
-		}
-		return cfEnc;
-	}
-
 	public BooleanFormula encodeExec(SolverContext ctx){
 		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
 	}
