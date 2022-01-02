@@ -43,7 +43,7 @@ import static org.sosy_lab.common.configuration.OptionCollector.collectOptions;
 public class Dartagnan extends BaseOptions {
 
 	public static final String ANALYSIS = "analysis";
-	public static final String WITNESS = "verifyWitness";
+	public static final String VALIDATE = "validate";
 
 	@Option(
 		description="Analysis to be performed.",
@@ -52,9 +52,9 @@ public class Dartagnan extends BaseOptions {
 	private Analysis analysis = Analysis.getDefault();
 
 	@Option(
-		description="Path to read witness from.",
-		secure=true)
-	private File verifyWitness;
+		name=VALIDATE,
+		description="Run Dartagnan as a violation witness validator. Argument is the path to the witness file.")
+	private String witnessPath;
 
 	private static final Set<String> supportedFormats = 
     		ImmutableSet.copyOf(Arrays.asList(".litmus", ".bpl", ".c", ".i"));
@@ -92,9 +92,9 @@ public class Dartagnan extends BaseOptions {
         Program p = new ProgramParser().parse(fileProgram);
         
         WitnessGraph witness = new WitnessGraph();
-        if(o.verifyWitness != null) {
-        	logger.info("Witness path: " + o.verifyWitness);
-        	witness = new ParserWitness().parse(o.verifyWitness);
+        if(o.witnessPath != null) {
+        	logger.info("Witness path: " + o.witnessPath);
+        	witness = new ParserWitness().parse(new File(o.witnessPath));
         }
 
         VerificationTask task = VerificationTask.builder()
@@ -170,7 +170,8 @@ public class Dartagnan extends BaseOptions {
                     System.out.println(result);
                 }
                 
-                if (o.analysis != RACES) {
+                // We only write witnesses for REACHABILITY and if we are not doing witness validation
+                if (o.analysis != RACES && o.witnessPath == null) {
 					try {
 						WitnessBuilder w = new WitnessBuilder(task, ctx, prover, result);
 						config.inject(w);

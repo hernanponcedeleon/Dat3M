@@ -1,5 +1,6 @@
 package com.dat3m.svcomp;
 
+import static com.dat3m.dartagnan.Dartagnan.VALIDATE;
 import static com.dat3m.dartagnan.program.processing.Compilation.TARGET;
 import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
 import static java.lang.Integer.parseInt;
@@ -75,9 +76,9 @@ public class SVCOMPRunner extends BaseOptions {
 	private boolean sanitize = false;
 
 	@Option(
-		name="validate",
+		name=VALIDATE,
 		description="Run Dartagnan as a violation witness validator. Argument is the path to the witness file.")
-	private File witness;
+	private String witnessPath;
 
 	@Option(
 		name=TARGET,
@@ -109,8 +110,8 @@ public class SVCOMPRunner extends BaseOptions {
 		//TODO help text
 
         WitnessGraph witness = new WitnessGraph(); 
-        if(r.witness != null) {
-        	witness = new ParserWitness().parse(r.witness);
+        if(r.witnessPath != null) {
+        	witness = new ParserWitness().parse(new File(r.witnessPath));
 			if(!fileProgram.getName().
 					equals(Paths.get(witness.getProgram()).getFileName().toString())) {
 				throw new RuntimeException("The witness was generated from a different program than " + fileProgram);
@@ -154,9 +155,9 @@ public class SVCOMPRunner extends BaseOptions {
 			cmd.add(String.format("--%s=%s", Dartagnan.ANALYSIS, r.analysis.asStringOption()));
 			cmd.add(String.format("--%s=%s", BaseOptions.METHOD, r.method.asStringOption()));
 			cmd.add(String.format("--%s=%s", BaseOptions.SOLVER, r.solver.toString().toLowerCase()));
-	    	if(r.witness != null) {
+	    	if(r.witnessPath != null) {
 	    		// In validation mode we do not create witnesses.
-				cmd.add(String.format("--%s=%s", Dartagnan.WITNESS, r.witness));
+				cmd.add(String.format("--%s=%s", Dartagnan.VALIDATE, r.witnessPath));
 	    	} else {
 	    		// In verification mode we always create a witness.
 				cmd.add(String.format("--%s=%s", WitnessBuilder.WITNESS_ORIGINAL_PROGRAM_PATH, fileProgram));

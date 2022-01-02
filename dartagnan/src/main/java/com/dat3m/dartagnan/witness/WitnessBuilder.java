@@ -51,7 +51,7 @@ public class WitnessBuilder {
 	private final String type;
 	
 	@Option(
-			name="witness.originalProgramFilePath",
+			name=WITNESS_ORIGINAL_PROGRAM_PATH,
 			description="Path to the original C file (for which to create a witness).",
 			secure=true)
 	private String originalProgramFilePath;
