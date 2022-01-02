@@ -41,15 +41,19 @@ public class ReachabilityResult {
     private void run(){
         if(validate()){
             Arch arch = program.getArch() != null ? program.getArch() : options.getTarget();
-            VerificationTask task = new VerificationTask(program, wmm, arch, options.getSettings());
+            VerificationTask task = VerificationTask.builder()
+                    .withBound(options.getBound())
+                    .withSolverTimeout(options.getTimeout())
+                    .withTarget(arch)
+                    .build(program, wmm);
             Result result = Result.UNKNOWN;
 
             ShutdownManager sdm = ShutdownManager.create();
         	Thread t = new Thread(() -> {
     			try {
-    				if(options.getSettings().getSolverTimeout() > 0) {
+    				if(options.getTimeout() > 0) {
     					// Converts timeout from secs to millisecs
-    					Thread.sleep(1000L * options.getSettings().getSolverTimeout());
+    					Thread.sleep(1000L * options.getTimeout());
     					sdm.requestShutdown("Shutdown Request");
     				}
     			} catch (InterruptedException e) {

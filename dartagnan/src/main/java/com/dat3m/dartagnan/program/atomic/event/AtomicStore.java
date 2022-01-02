@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 
@@ -61,9 +60,8 @@ public class AtomicStore extends MemEvent implements RegReaderData {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+    public List<Event> compile(Arch target) {
         List<Event> events;
         Store store = newStore(address, value, mo);
         switch (target){
@@ -91,15 +89,14 @@ public class AtomicStore extends MemEvent implements RegReaderData {
                 if (mo.equals(ACQUIRE) || mo.equals(ACQUIRE_RELEASE)) {
                     throw new UnsupportedOperationException("AtomicStore can not have memory order: " + mo);
                 }
-            	String storeMo = extractStoreMo(mo);
-            	events = eventSequence(
+                String storeMo = extractStoreMo(mo);
+                events = eventSequence(
                         newStore(address, value, storeMo)
                 );
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
-        setCLineForAll(events, this.cLine);
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+        return events;
     }
 }

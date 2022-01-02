@@ -10,28 +10,48 @@ import java.util.ArrayList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.dat3m.svcomp.options.SVCOMPOptions;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
+@Options
 public class Compilation {
 	
 	private static final Logger logger = LogManager.getLogger(Compilation.class);
 
-	public static void compile(File file, SVCOMPOptions opt, boolean ownAtomics) {
+	@Option(
+		description="Optimization flag for LLVM compiler",
+		secure=true)
+	private String optimization = "O0";
+
+	@Option(
+		description="bit-vector=use SMT bit-vector theory, " +
+			"unbounded-integer=use SMT integer theory, " +
+			"wrapped-integer=use SMT integer theory but model wrap-around behavior" +
+			" [default: unbounded-integer]",
+		secure=true,
+		regexp="bit-vector|unbounded-integer|wrapped-integer")
+	private String integerEncoding = "unbounded-integer";
+
+	public String getOptimization() {
+		return optimization;
+	}
+
+	public void compile(File file, boolean ownAtomics) {
 		String name = file.getName().contains("_tmp") ?
 				file.getName().substring(0, file.getName().lastIndexOf('_')) :
 				file.getName().substring(0, file.getName().lastIndexOf('.'));
 
     	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("smack", "-q", "-t", "--no-memory-splitting"));
-    	cmd.addAll(asList("--integer-encoding", opt.getEncoding()));
+    	cmd.addAll(asList("--integer-encoding", integerEncoding));
     	if(ownAtomics) {
-        	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + opt.getOptimization() + 
-        			" -fno-vectorize -fno-slp-vectorize -I" + System.getenv("DAT3M_HOME") + "/include/");    		    		
+        	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + optimization +
+        			" -fno-vectorize -fno-slp-vectorize -I" + System.getenv().get("DAT3M_HOME") + "/include/");    		    		
     	} else {
-        	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + opt.getOptimization() + 
+        	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + optimization +
         			" -fno-vectorize -fno-slp-vectorize");    		
     	}
-    	cmd.addAll(asList("-bpl", System.getenv("DAT3M_HOME") + "/output/" + name + "-" + opt.getOptimization() + ".bpl"));
+    	cmd.addAll(asList("-bpl", System.getenv().get("DAT3M_HOME") + "/output/" + name + "-" + optimization + ".bpl"));
     	cmd.add(file.getAbsolutePath());
     	
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 

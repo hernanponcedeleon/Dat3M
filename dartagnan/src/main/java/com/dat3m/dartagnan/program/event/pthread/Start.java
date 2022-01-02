@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import java.util.ArrayList;
@@ -66,7 +65,7 @@ public class Start extends Event {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+    public List<Event> compile(Arch target) {
         List<Event> events = new ArrayList<>();
         Load load = newLoad(reg, address, SC);
         events.add(load);
@@ -90,8 +89,6 @@ public class Start extends Event {
         }
 
         events.add(newJumpUnless(new Atom(reg, EQ, IConst.ONE), label));
-        setCLineForAll(events, this.cLine);
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+        return events;
     }
-
 }

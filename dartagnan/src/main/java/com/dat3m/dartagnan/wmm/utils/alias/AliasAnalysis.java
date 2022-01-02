@@ -16,10 +16,13 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.*;
 
+import org.sosy_lab.common.configuration.Options;
+
 /**
  *
  * @author flo
  */
+@Options
 public class AliasAnalysis {
 
     private final List<Object> variables = new LinkedList<>(); // TODO: Use a queue

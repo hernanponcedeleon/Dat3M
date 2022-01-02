@@ -1,12 +1,7 @@
 package com.dat3m.svcomp;
 
-import static com.dat3m.dartagnan.utils.options.BaseOptions.SMTSOLVER_OPTION;
-import static com.dat3m.dartagnan.utils.options.DartagnanOptions.ANALYSIS_OPTION;
-import static com.dat3m.dartagnan.utils.options.DartagnanOptions.METHOD_OPTION;
-import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_OPTION;
-import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_PATH_OPTION;
+import static com.dat3m.dartagnan.program.processing.Compilation.TARGET;
 import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
-import static com.dat3m.svcomp.utils.Compilation.compile;
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
 
@@ -16,80 +11,140 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 
-import org.apache.commons.cli.HelpFormatter;
+import com.dat3m.dartagnan.Dartagnan;
+import com.dat3m.dartagnan.analysis.Analysis;
+import com.dat3m.dartagnan.program.processing.LoopUnrolling;
+import com.dat3m.dartagnan.utils.options.BaseOptions;
+import com.dat3m.dartagnan.witness.WitnessBuilder;
+import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
+import com.dat3m.svcomp.utils.Compilation;
 
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.witness.WitnessGraph;
-import com.dat3m.svcomp.options.SVCOMPOptions;
 import com.dat3m.svcomp.utils.BoogieSan;
 import com.dat3m.svcomp.utils.SVCOMPSanitizer;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
-public class SVCOMPRunner {
+@Options
+public class SVCOMPRunner extends BaseOptions {
 
-    public static void main(String[] args) throws IOException {
-    	SVCOMPOptions options = new SVCOMPOptions();
-        try {
-            options.parse(args);
-        }
-        catch (Exception e){
-            if(e instanceof UnsupportedOperationException){
-                System.out.println(e.getMessage());
-            }
-            new HelpFormatter().printHelp("SVCOMP Runner", options);
-            System.exit(1);
-            return;
-        }
-        
+	private Analysis analysis;
+
+	@Option(
+		description="The path to the property to be checked")
+	private void property(String p) {
+		//TODO process the property file instead of assuming its contents based of its name
+		if(p.contains("no-data-race")) {
+			analysis = Analysis.RACES;
+		} else if(p.contains("unreach-call")) {
+			analysis = Analysis.REACHABILITY;
+		} else {
+			throw new IllegalArgumentException("unrecognized property " + p);
+		}
+	}
+
+	@Option(
+		description="Starting unrolling bound <integer>")
+	private int umin = 1;
+
+	@Option(
+		description="Ending unrolling bound <integer>")
+	private int umax = Integer.MAX_VALUE;
+
+	@Option(
+		description="Step size for the increasing unrolling bound <integer>")
+	private int step = 1;
+
+	@Option(
+		description="Generates (also) a sanitised boogie file saved as /output/boogiesan.bpl")
+	private boolean sanitize = false;
+
+	@Option(
+		description="Run Dartagnan as a violation witness validator. Argument is the path to the witness file")
+	private File witness;
+
+	@Option(
+		name=TARGET,
+		description="Target architecture to which the program shall be compiled to.")
+	private String target = "none";
+
+    public static void main(String[] args) throws IOException, InvalidConfigurationException {
+
+		String[] argPositional = Arrays.stream(args)
+			.filter(s->!s.startsWith("-"))
+			.toArray(String[]::new);
+		File fileModel = new File(argPositional[0]);
+		File file = new File(argPositional[1]);
+		if(!file.getName().endsWith(".c") && !file.getName().endsWith(".i")) {
+			throw new IllegalArgumentException("unrecognized program format");
+		}
+
+		String[] argKeyword = Arrays.stream(args)
+		.filter(s->s.startsWith("-"))
+		.toArray(String[]::new);
+		Configuration config = Configuration.fromCmdLineArguments(argKeyword);
+		SVCOMPRunner r = new SVCOMPRunner();
+		config.recursiveInject(r);
+
+		//TODO help text
+
         WitnessGraph witness = new WitnessGraph(); 
-        if(options.getWitnessPath() != null) {
-        	witness = new ParserWitness().parse(new File(options.getWitnessPath()));
-			if(!Paths.get(options.getProgramFilePath()).getFileName().toString().
+        if(r.witness != null) {
+        	witness = new ParserWitness().parse(r.witness);
+			if(!file.getName().
 					equals(Paths.get(witness.getProgram()).getFileName().toString())) {
-				throw new RuntimeException("The witness was generated from a different program than " + options.getProgramFilePath());
+				throw new RuntimeException("The witness was generated from a different program than " + file);
 			}
         }
-        
-        File file = new File(options.getProgramFilePath());
-        int bound = witness.hasAttributed(UNROLLBOUND.toString()) ?  parseInt(witness.getAttributed(UNROLLBOUND.toString())) : options.getUMin();
+
+        int bound = witness.hasAttributed(UNROLLBOUND.toString()) ?  parseInt(witness.getAttributed(UNROLLBOUND.toString())) : r.umin;
         File tmp = new SVCOMPSanitizer(file).run(bound);
+
+		Compilation c = new Compilation();
+		config.inject(c);
+
         // First time we compiler with standard atomic header to catch compilation problems
-        compile(tmp, options, false);
+        c.compile(tmp,false);
 
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN")) {
-			compile(tmp, options, true);
+			c.compile(tmp,true);
 	        // If not removed here, file is not removed when we reach the timeout
 	        // File can be safely deleted since it was created by the SVCOMPSanitizer
 	        // (it not the original C file) and we already created the Boogie file
 	        tmp.delete();
 
-	        String boogieName = System.getenv("DAT3M_HOME") + "/output/" +
+	        String boogieName = System.getenv().get("DAT3M_HOME") + "/output/" +
 					file.getName().substring(0, file.getName().lastIndexOf('.')) +
-					"-" + options.getOptimization() + ".bpl";
+					"-" + c.getOptimization() + ".bpl";
 	        
-	        if(options.getBoogieSan()) {
+	        if(r.sanitize) {
 	        	BoogieSan.write(boogieName);
 	        }
 	        
-	    	ArrayList<String> cmd = new ArrayList<String>();
+	    	ArrayList<String> cmd = new ArrayList<>();
 	    	cmd.add("java");
-	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
+	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
 	    	cmd.add("-DLOGNAME=" + file.getName());
-	    	cmd.addAll(asList("-jar", System.getenv("DAT3M_HOME") + "/dartagnan/target/dartagnan-3.0.0.jar"));
-	    	cmd.addAll(asList("-i", boogieName));
-	    	cmd.addAll(asList("-cat", options.getTargetModelFilePath()));
-	    	cmd.addAll(asList("-t", options.getTarget().asStringOption()));
-	    	cmd.addAll(asList("-unroll", String.valueOf(bound)));
-	    	cmd.addAll(asList("-" + ANALYSIS_OPTION, options.getAnalysis().asStringOption()));
-	    	cmd.addAll(asList("-" + METHOD_OPTION, options.getMethod().asStringOption()));
-	    	cmd.addAll(asList("-" + SMTSOLVER_OPTION, options.getSMTSolver().toString().toLowerCase()));
-	    	if(options.getWitnessPath() != null) {
+	    	cmd.addAll(asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-3.0.0.jar"));
+			cmd.add(fileModel.toString());
+			cmd.add(boogieName);
+			cmd.add(String.format("--%s=%s",TARGET,r.target));
+			cmd.add(String.format("--%s=%d",LoopUnrolling.BOUND,bound));
+			cmd.add(String.format("--%s=%s",Dartagnan.ANALYSIS,r.analysis.asStringOption()));
+			cmd.add(String.format("--%s=%s",BaseOptions.METHOD,r.method.asStringOption()));
+			cmd.add(String.format("--%s=%s",BaseOptions.SOLVER,r.solver.toString().toLowerCase()));
+	    	if(r.witness != null) {
 	    		// In validation mode we do not create witnesses.
-	    		cmd.addAll(asList("-" + WITNESS_PATH_OPTION, options.getWitnessPath()));
+				cmd.add(String.format("--%s=%s",Dartagnan.WITNESS,r.witness));
 	    	} else {
 	    		// In verification mode we always create a witness.
-	    		cmd.addAll(asList("-" + WITNESS_OPTION, options.getProgramFilePath()));	
+				cmd.add(String.format("--%s=%s", WitnessBuilder.PATH,file));
 	    	}
 
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
@@ -112,12 +167,12 @@ public class SVCOMPRunner {
 				System.out.println(e.getMessage());
 				System.exit(0);
 			}
-			if(bound > options.getUMax()) {
+			if(bound > r.umax) {
 				System.out.println("PASS");
 				break;
 			}
 			// We always do iterations 1 and 2 and then use the step
-			bound = bound == 1 ? 2 : bound + options.getStep();
+			bound = bound == 1 ? 2 : bound + r.step;
 	        tmp = new SVCOMPSanitizer(file).run(bound);
 		}
 

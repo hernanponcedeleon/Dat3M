@@ -59,7 +59,11 @@ public class Providers {
 
     public static Provider<VerificationTask> createTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier,
                                                         Supplier<Arch> targetSupplier, Supplier<Settings> settingsSupplier) {
-        return Provider.fromSupplier(() -> new VerificationTask(programSupplier.get(), wmmSupplier.get(), targetSupplier.get(), settingsSupplier.get()));
+    	return Provider.fromSupplier(() -> VerificationTask.builder().
+    			withTarget(targetSupplier.get()).
+    			withBound(settingsSupplier.get().getBound()).
+    			withSolverTimeout(settingsSupplier.get().getSolverTimeout()).
+    			build(programSupplier.get(), wmmSupplier.get()));
     }
 
     public static Provider<Settings> createSettings(Supplier<Integer> boundSupplier, Supplier<Integer> timeoutSupplier) {

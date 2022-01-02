@@ -71,30 +71,30 @@ public class UnusedTestFails {
         return data;
     }
 
-    //@Test(timeout = TIMEOUT)
-    public void test() {
-        try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(SolverContext.ProverOptions.GENERATE_MODELS))
-        {
-            Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, target, settings);
-            assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
-        } catch (Exception e){
-            fail(e.getMessage());
-        }
-    }
-
-    //@Test(timeout = TIMEOUT)
-    public void testRefinement() {
-        try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(SolverContext.ProverOptions.GENERATE_MODELS))
-        {
-            Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, target, settings);
-            assertEquals(expected, Refinement.runAnalysisWMMSolver(ctx, prover,
-                    RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
-        } catch (Exception e){
-            fail(e.getMessage());
-        }
-    }
+//    //@Test(timeout = TIMEOUT)
+//    public void test() {
+//        try (SolverContext ctx = TestHelper.createContext();
+//             ProverEnvironment prover = ctx.newProverEnvironment(SolverContext.ProverOptions.GENERATE_MODELS))
+//        {
+//            Program program = new ProgramParser().parse(new File(path));
+//            VerificationTask task = new VerificationTask(program, wmm, target, settings);
+//            assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
+//        } catch (Exception e){
+//            fail(e.getMessage());
+//        }
+//    }
+//
+//    //@Test(timeout = TIMEOUT)
+//    public void testRefinement() {
+//        try (SolverContext ctx = TestHelper.createContext();
+//             ProverEnvironment prover = ctx.newProverEnvironment(SolverContext.ProverOptions.GENERATE_MODELS))
+//        {
+//            Program program = new ProgramParser().parse(new File(path));
+//            VerificationTask task = new VerificationTask(program, wmm, target, settings);
+//            assertEquals(expected, Refinement.runAnalysisWMMSolver(ctx, prover,
+//                    RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
+//        } catch (Exception e){
+//            fail(e.getMessage());
+//        }
+//    }
 }

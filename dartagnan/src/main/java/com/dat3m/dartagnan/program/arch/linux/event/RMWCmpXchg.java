@@ -11,8 +11,8 @@ import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
@@ -52,29 +52,26 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        if(target == Arch.NONE) {
-            Register dummy = resultRegister;
-            if(resultRegister == value || resultRegister == cmp){
-                dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            }
+    public List<Event> compile(Arch target) {
+        Preconditions.checkArgument(target == Arch.NONE, "Compilation of RMWCmpXchg is not implemented for " + target);
 
-            RMWReadCondCmp load = Linux.newRMWReadCondCmp(dummy, cmp, address, Mo.loadMO(mo));
-            RMWStoreCond store = Linux.newRMWStoreCond(load, address, value, Mo.storeMO(mo));
-            Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
-            Fence optionalMbBefore = mo.equals(Mo.MB) ? Linux.newConditionalMemoryBarrier(load) : null;
-            Fence optionalMbAfter = mo.equals(Mo.MB) ? Linux.newConditionalMemoryBarrier(load) : null;
-
-            List<Event> events = eventSequence(
-                    optionalMbBefore,
-                    load,
-                    store,
-                    optionalUpdateReg,
-                    optionalMbAfter
-            );
-
-            return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+        Register dummy = resultRegister;
+        if(resultRegister == value || resultRegister == cmp){
+            dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         }
-        return super.compileRecursive(target, nextId, predecessor, depth);
+
+        RMWReadCondCmp load = Linux.newRMWReadCondCmp(dummy, cmp, address, Mo.loadMO(mo));
+        RMWStoreCond store = Linux.newRMWStoreCond(load, address, value, Mo.storeMO(mo));
+        Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
+        Fence optionalMbBefore = mo.equals(Mo.MB) ? Linux.newConditionalMemoryBarrier(load) : null;
+        Fence optionalMbAfter = mo.equals(Mo.MB) ? Linux.newConditionalMemoryBarrier(load) : null;
+
+        return eventSequence(
+                optionalMbBefore,
+                load,
+                store,
+                optionalUpdateReg,
+                optionalMbAfter
+        );
     }
 }

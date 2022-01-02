@@ -1,12 +1,9 @@
 package com.dat3m.ui.options;
 
 import com.dat3m.dartagnan.analysis.Method;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.ui.button.ClearButton;
 import com.dat3m.ui.button.TestButton;
-import com.dat3m.ui.icon.IconCode;
-import com.dat3m.ui.icon.IconHelper;
 import com.dat3m.ui.options.utils.ControlCode;
 import com.dat3m.ui.utils.UiOptions;
 
@@ -50,6 +47,7 @@ public class OptionsPane extends JPanel implements ActionListener {
     public OptionsPane(){
         super(new GridLayout(1,0));
 
+        int height = Math.min(getIconHeight(), (int) Math.round(Toolkit.getDefaultToolkit().getScreenSize().getHeight()) * 7 / 18);
         iconPane = new JLabel();
 
         methodPane = new Selector<>(Method.orderedValues(), ControlCode.METHOD);
@@ -92,15 +90,16 @@ public class OptionsPane extends JPanel implements ActionListener {
     }
 
     public UiOptions getOptions(){
-        Settings settings = new Settings(
-                Integer.parseInt(boundField.getText()),
-                Integer.parseInt(timeoutField.getText())
-        );
-
+        int bound = Integer.parseInt(boundField.getText());
+        int timeout = Integer.parseInt(timeoutField.getText());
         Arch target = (Arch)targetPane.getSelectedItem();
         Method method = (Method)methodPane.getSelectedItem();
         Solvers solver = (Solvers)solverPane.getSelectedItem();
-        return new UiOptions(target, method, solver, settings);
+        return new UiOptions(target, method, bound, solver, timeout);
+    }
+
+    private int getIconHeight(){
+        return min(500, (int) round((Toolkit.getDefaultToolkit().getScreenSize().getHeight() / 2)));
     }
 
     private void mkGrid(){

@@ -40,7 +40,7 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
     }
 
     @Override
-    protected BooleanFormula encodeExec(SolverContext ctx){
+    public BooleanFormula encodeExec(SolverContext ctx){
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		return bmgr.equivalence(execVar, bmgr.and(cfVar, ((RMWReadCond)loadEvent).getCond()));
     }

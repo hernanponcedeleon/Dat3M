@@ -20,7 +20,7 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
         this(program, true);
     }
 
-    ThreadSymmetry(Program program, boolean createMappings) {
+    public ThreadSymmetry(Program program, boolean createMappings) {
         this.program = program;
         createClasses();
         if (createMappings) {

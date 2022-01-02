@@ -11,8 +11,8 @@ import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 
 import java.util.List;
 
@@ -51,17 +51,15 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        if(target == Arch.NONE) {
-            Load load = newRMWLoad(resultRegister, address, Mo.RELAXED);
-            RMWStore store = newRMWStore(load, address, new IExprBin(resultRegister, op, value), Mo.RELAXED);
-            load.addFilters(EType.NORETURN);
-            List<Event> events = eventSequence(
-                    load,
-                    store
-            );
-            return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
-        }
-        return super.compileRecursive(target, nextId, predecessor, depth + 1);
+    public List<Event> compile(Arch target) {
+        Preconditions.checkArgument(target == Arch.NONE, "Compilation of RMWOp is not implemented for " + target);
+
+        Load load = newRMWLoad(resultRegister, address, Mo.RELAXED);
+        RMWStore store = newRMWStore(load, address, new IExprBin(resultRegister, op, value), Mo.RELAXED);
+        load.addFilters(EType.NORETURN);
+        return eventSequence(
+                load,
+                store
+        );
     }
 }

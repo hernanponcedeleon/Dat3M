@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import java.util.ArrayList;
@@ -70,7 +69,7 @@ public class Join extends Event {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+    public List<Event> compile(Arch target) {
         List<Event> events = new ArrayList<>();
         Load load = newLoad(reg, address, SC);
         load.addFilters(PTHREAD);
@@ -93,9 +92,7 @@ public class Join extends Event {
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
-
         events.add(newJumpUnless(new Atom(reg, EQ, IConst.ZERO), label));
-        setCLineForAll(events, this.cLine);
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+        return events;
     }
 }

@@ -77,6 +77,10 @@ public class Memory {
         	.collect(ArrayList::new, List::addAll, List::addAll).contains(address);
     }
     
+    public Collection<List<Address>> getArrays() {
+        return arrays.values();
+    }
+    
     public List<Address> getArrayfromPointer(Address address) {
     	for(List<Address> array : arrays.values()) {
     		if(array.contains(address)) {

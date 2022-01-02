@@ -12,6 +12,8 @@ import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.collect.ImmutableSet;
+
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -24,6 +26,7 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
  *
  * @author Florian Furbach
  */
+@Options(prefix="wmm")
 public class Wmm {
 
     private final static ImmutableSet<String> baseRelations = ImmutableSet.of(CO, RF, IDD, ADDRDIRECT);
@@ -52,6 +55,8 @@ public class Wmm {
     public List<Axiom> getAxioms() {
         return axioms;
     }
+
+    public List<RecursiveGroup> getRecursiveGroups() { return recursiveGroups; }
 
     public void addFilter(FilterAbstract filter) {
         filters.put(filter.getName(), filter);

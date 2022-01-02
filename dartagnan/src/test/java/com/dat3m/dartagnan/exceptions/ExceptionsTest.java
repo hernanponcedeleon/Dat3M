@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.INonDetTypes;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.exception.*;
 import com.dat3m.dartagnan.parsers.program.utils.*;
 import com.dat3m.dartagnan.program.Program;
@@ -16,18 +17,20 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Skip;
+import com.dat3m.dartagnan.program.processing.BranchReordering;
+import com.dat3m.dartagnan.program.processing.Compilation;
+import com.dat3m.dartagnan.program.processing.DeadCodeElimination;
+import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-
 import static com.dat3m.dartagnan.utils.TestHelper.createContext;
 
 import java.io.File;
 
 import org.junit.Test;
+import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -63,21 +66,20 @@ public class ExceptionsTest {
 		cat.encodeConsistency(TestHelper.createContext());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void compileBeforeUnrollException() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
-    	Program p = pb.build();
-    	p.compile(Arch.NONE, 0);
+    	Compilation.newInstance().run(pb.build());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void unrollBeforeReorderException() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
     	Program p = pb.build();
-    	p.unroll(1, 0);
-    	p.reorder();
+    	LoopUnrolling.newInstance().run(p);
+    	BranchReordering.newInstance().run(p);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -86,41 +88,68 @@ public class ExceptionsTest {
     	pb.initThread(0);
     	Program p = pb.build();
 		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/tso.cat"));
-    	VerificationTask task = new VerificationTask(p, cat, Arch.TSO, new Settings(1, 10));
-    	p.initialise(task, TestHelper.createContext());
+		Configuration config = Configuration.defaultConfiguration();
+		VerificationTask task = VerificationTask.builder()
+                .withConfig(config)
+                .build(p, cat);
+    	ProgramEncoder.fromConfig(config).initialise(task, TestHelper.createContext());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void unrollBeforeDCEException() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
     	Program p = pb.build();
-    	p.unroll(1, 0);
-    	p.eliminateDeadCode();
+    	LoopUnrolling.newInstance().run(p);
+    	DeadCodeElimination.newInstance().run(p);
     }
 
     @Test(expected = IllegalStateException.class)
     public void encodeCFException() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
+		Configuration config = Configuration.defaultConfiguration();
     	Program p = pb.build();
-    	p.encodeCF(TestHelper.createContext());
+		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/tso.cat"));
+		VerificationTask task = VerificationTask.builder()
+                .withConfig(config)
+                .build(p, cat);
+		ProgramEncoder encoder = ProgramEncoder.fromConfig(config);
+		SolverContext ctx = TestHelper.createContext();
+		encoder.initialise(task, ctx);
+		encoder.encodeControlFlow(ctx);
     }
 
     @Test(expected = IllegalStateException.class)
     public void encodeFinalRegisterValuesException() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
+		Configuration config = Configuration.defaultConfiguration();
     	Program p = pb.build();
-    	p.encodeFinalRegisterValues(TestHelper.createContext());
+		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/tso.cat"));
+		VerificationTask task = VerificationTask.builder()
+                .withConfig(config)
+                .build(p, cat);
+		ProgramEncoder encoder = ProgramEncoder.fromConfig(config);
+		SolverContext ctx = TestHelper.createContext();
+		encoder.initialise(task, ctx);
+		encoder.encodeFinalRegisterValues(ctx);
     }
 
     @Test(expected = IllegalStateException.class)
     public void encodeNoBoundEventExecException() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
+		Configuration config = Configuration.defaultConfiguration();
     	Program p = pb.build();
-    	p.encodeNoBoundEventExec(TestHelper.createContext());
+		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/tso.cat"));
+		VerificationTask task = VerificationTask.builder()
+                .withConfig(config)
+                .build(p, cat);
+		ProgramEncoder encoder = ProgramEncoder.fromConfig(config);
+		SolverContext ctx = TestHelper.createContext();
+		encoder.initialise(task, ctx);
+		encoder.encodeNoBoundEventExec(ctx);
     }
 
     @Test(expected = IllegalArgumentException.class)

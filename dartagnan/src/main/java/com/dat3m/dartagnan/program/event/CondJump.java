@@ -3,16 +3,18 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
-import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+
+import java.util.List;
+
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
@@ -167,13 +169,10 @@ public class CondJump extends Event implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        if(successor == null){
-            throw new MalformedProgramException("Malformed CondJump event");
-        }
-        return super.compileRecursive(target, nextId, predecessor, depth);
+    public List<Event> compile(Arch target) {
+        Preconditions.checkState(successor != null, "Malformed CondJump event has no successor.");
+        return super.compile(target);
     }
-
 
     // Encoding
     // -----------------------------------------------------------------------------------------------------------------

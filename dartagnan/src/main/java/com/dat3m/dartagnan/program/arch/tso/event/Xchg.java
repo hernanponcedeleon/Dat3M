@@ -10,8 +10,8 @@ import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
@@ -64,24 +64,22 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        if(target == Arch.TSO) {
-            Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            Load load = newRMWLoad(dummyReg, address, null);
-            load.addFilters(EType.ATOM);
+    public List<Event> compile(Arch target) {
+        Preconditions.checkArgument(target == Arch.TSO, "Compilation of xchg is not implemented for " + target);
+        
+        Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+        Load load = newRMWLoad(dummyReg, address, null);
+        load.addFilters(EType.ATOM);
 
-            RMWStore store = newRMWStore(load, address, resultRegister, null);
-            store.addFilters(EType.ATOM);
+        RMWStore store = newRMWStore(load, address, resultRegister, null);
+        store.addFilters(EType.ATOM);
 
-            Local updateReg = newLocal(resultRegister, dummyReg);
+        Local updateReg = newLocal(resultRegister, dummyReg);
 
-            List<Event> events = eventSequence(
-                    load,
-                    store,
-                    updateReg
-            );
-            return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
-        }
-        throw new UnsupportedOperationException("Compilation of xchg is not implemented for " + target);
+        return eventSequence(
+                load,
+                store,
+                updateReg
+        );
     }
 }

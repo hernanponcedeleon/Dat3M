@@ -1,23 +1,20 @@
 package com.dat3m.dartagnan.verification;
 
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.BitFlags;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
-import com.dat3m.dartagnan.wmm.axiom.Empty;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
-import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
+
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_BASELINE_WMM;
-import static com.dat3m.dartagnan.verification.RefinementTask.BaselineWMM.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 /*
@@ -26,26 +23,60 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
  baseline memory model and refines it iteratively towards the target memory model.
  Currently, we only have a Saturation-based solver to solve such tasks but any CEGAR-like approach could be used.
  */
+@Options
 public class RefinementTask extends VerificationTask {
 
-    //TODO: The usage of plain integers is not so nice.
-    // Maybe we can use EnumSets or something similar to model this more nicely.
-    public static class BaselineWMM {
-        private BaselineWMM() {}
-
-        public static final int EMPTY = 0;
-        public static final int ACYCLIC_DEP_RF = 1; // no OOTA
-        public static final int ACYCLIC_POLOC_RF = 2;
-        public static final int ACYCLIC_POLOC_RF_CO_FR = 6; // SC-per-location
-        public static final int ATOMIC_RMW = 8; // empty(RMW & fre;coe)
-    }
+	public static final String OPTION_LOCAL_CONSISTENCY = "refinement.assumeLocallyConsistentWMM";
+	public static final String OPTION_NO_OUT_OF_THIN_AIR = "refinement.assumeNoOOTA";
 
     private final Wmm baselineModel;
 
-    public RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, WitnessGraph witness, Arch target,
-                          Settings settings) {
-        super(program, targetMemoryModel, witness, target, settings);
-        this.baselineModel = baselineModel;
+	@Option(name=OPTION_LOCAL_CONSISTENCY,
+		description="Refinement will start from a locally consistent baseline WMM instead of the empty one.",
+		secure=true)
+	private boolean useLocallyConsistentBaselineWmm = false;
+
+	@Option(name=OPTION_NO_OUT_OF_THIN_AIR,
+		description="Refinement will start from a baseline WMM that does not allow Out-Of-Thin-Air behaviour.",
+		secure=true)
+	private boolean useNoOOTABaselineWMM = false;
+
+    private RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, RefinementTaskBuilder builder) {
+        super(program,targetMemoryModel,builder);
+        this.baselineModel = baselineModel != null ? baselineModel : createDefaultWmm();
+    }
+
+    public static class RefinementTaskBuilder extends VerificationTaskBuilder {
+
+        private Wmm baselineModel;
+
+        @Override
+        public RefinementTaskBuilder withWitness(WitnessGraph witness) {
+            super.withWitness(witness);
+            return this;
+        }
+
+        @Override
+        public RefinementTaskBuilder withTarget(Arch target) {
+            super.withTarget(target);
+            return this;
+        }
+
+        @Override
+        public RefinementTaskBuilder withConfig(Configuration config) {
+            super.withConfig(config);
+            return this;
+        }
+
+        public RefinementTaskBuilder withBaselineWMM(Wmm baselineModel) {
+            this.baselineModel = baselineModel;
+            return this;
+        }
+
+        @Override
+        public RefinementTask build(Program program, Wmm memoryModel) {
+            return new RefinementTask(program, memoryModel, baselineModel, this);
+        }
     }
 
     public Wmm getBaselineModel() {
@@ -67,42 +98,32 @@ public class RefinementTask extends VerificationTask {
     }
 
     public static RefinementTask fromVerificationTaskWithDefaultBaselineWMM(VerificationTask task) {
-        return new RefinementTask(
-                task.getProgram(),
-                task.getMemoryModel(),
-                createDefaultWmm(),
-                task.getWitness(),
-                task.getTarget(),
-                task.getSettings()
-        );
+        return new RefinementTaskBuilder()
+                .withWitness(task.getWitness())
+                .withConfig(task.getConfig())
+                .build(task.getProgram(),task.getMemoryModel());
     }
 
-    private static Wmm createDefaultWmm() {
+    private Wmm createDefaultWmm() {
         Wmm baseline = new Wmm();
+        baseline.setEncodeCo(true);
 
-        RelationRepository repo = baseline.getRelationRepository();
-        if (BitFlags.isSet(REFINEMENT_BASELINE_WMM, ACYCLIC_POLOC_RF)) {
-            // ---- acyclic(po-loc | rf (| co | fr)) ----
-            Relation poloc = repo.getRelation(POLOC);
-            Relation rf = repo.getRelation(RF);
-            Relation porf = new RelUnion(poloc, rf);
-            repo.addRelation(porf);
-            Relation localConsistency = porf;
-            if (BitFlags.isSet(REFINEMENT_BASELINE_WMM, ACYCLIC_POLOC_RF_CO_FR)) {
-                Relation co = repo.getRelation(CO);
-                Relation fr = repo.getRelation(FR);
-                Relation porfco = new RelUnion(porf, co);
-                repo.addRelation(porfco);
-                Relation porfcofr = new RelUnion(porfco, fr);
-                repo.addRelation(porfcofr);
-                localConsistency = porfcofr;
-            }
-            baseline.addAxiom(new Acyclic(localConsistency));
+        if (!useLocallyConsistentBaselineWmm) {
+            return baseline;
         }
 
-        if (BitFlags.isSet(REFINEMENT_BASELINE_WMM, ACYCLIC_DEP_RF)) {
-            // ---- acyclic (dep | rf) ----
-            Relation rf = repo.getRelation(RF);
+        RelationRepository repo = baseline.getRelationRepository();
+
+        // ====== Locally consistent baseline WMM ======
+        // ---- acyclic(po-loc | rf) ----
+        Relation poloc = repo.getRelation(POLOC);
+        Relation rf = repo.getRelation(RF);
+        Relation porf = new RelUnion(poloc, rf);
+        repo.addRelation(porf);
+        baseline.addAxiom(new Acyclic(porf));
+
+        // ---- acyclic (dep | rf) ----
+        if (useNoOOTABaselineWMM) {
             Relation data = repo.getRelation(DATA);
             Relation ctrl = repo.getRelation(CTRL);
             Relation addr = repo.getRelation(ADDR);
@@ -113,20 +134,6 @@ public class RefinementTask extends VerificationTask {
             Relation hb = new RelUnion(dep, rf);
             repo.addRelation(hb);
             baseline.addAxiom(new Acyclic(hb));
-        }
-
-        if (BitFlags.isSet(REFINEMENT_BASELINE_WMM, ATOMIC_RMW)) {
-            // ---- empty (rmw & fre;coe) ----
-            Relation rmw = repo.getRelation(RMW);
-            Relation coe = repo.getRelation(COE);
-            Relation fre = repo.getRelation(FRE);
-
-            Relation frecoe = new RelComposition(fre, coe);
-            repo.addRelation(frecoe);
-            Relation rmwANDfrecoe = new RelIntersection(rmw, frecoe);
-            repo.addRelation(rmwANDfrecoe);
-
-            baseline.addAxiom(new Empty(rmwANDfrecoe));
         }
 
         return baseline;

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.utils.equivalence;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
@@ -9,7 +8,12 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 
@@ -34,6 +38,7 @@ import java.util.*;
    BONUS: Compute which branches are mutually exclusive
 */
 
+@Options(prefix = "program.analysis.cf")
 public class BranchEquivalence extends AbstractEquivalence<Event> {
     /*
        NOTE: If the initial class or the unreachable class is empty, they will be treated (almost) non-existent:
@@ -51,6 +56,16 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     private final Program program;
     private BranchClass initialClass;
     private BranchClass unreachableClass;
+
+    @Option(name = "alwaysSplitOnJump",
+            description = "Splits control flow branches even on unconditional jumps.",
+            secure = true)
+    private boolean alwaysSplitOnJump = false;
+
+    @Option(name = "mergeBranches",
+            description = "Merges branches with equivalent control-flow behaviour.",
+            secure = true)
+    private boolean mergeBranches = true;
 
     // ============================ Public methods ==============================
 
@@ -104,10 +119,10 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         return (Set<Class>)super.getNonTrivialClasses();
     }
 
-    public BranchEquivalence(Program program) {
+    public BranchEquivalence(Program program, Configuration config) throws InvalidConfigurationException {
+        Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
         this.program = program;
-        if (!program.isCompiled())
-            throw new IllegalArgumentException("The program needs to be compiled first.");
+        config.inject(this);
 
         Map<Thread, Map<Event, Branch>> threadBranches = new HashMap<>();
         for (Thread t : program.getThreads()) {
@@ -162,7 +177,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         do {
             if (succ instanceof CondJump) {
                 CondJump jump = (CondJump) succ;
-                if (!GlobalSettings.ALWAYS_SPLIT_ON_JUMP && jump.isGoto()) {
+                if (!alwaysSplitOnJump && jump.isGoto()) {
                     // There is only one branch we can proceed on so we don't need to split the current branch
                     succ = jump.getLabel();
                 } else {
@@ -309,7 +324,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     private void createBranchClasses(Map<Event, Branch> branchMap) {
         List<BranchClass> newClasses;
-        if (GlobalSettings.MERGE_BRANCHES) {
+        if (mergeBranches) {
             DependencyGraph<Branch> depGraph = DependencyGraph.from(branchMap.values(), Branch::getImpliedBranches);
             newClasses = new ArrayList<>(depGraph.getSCCs().size());
             for (Set<DependencyGraph<Branch>.Node> scc : depGraph.getSCCs()) {
@@ -345,7 +360,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     private void mergeInitialClasses() {
-        if (GlobalSettings.MERGE_BRANCHES) {
+        if (mergeBranches) {
             initialClass = getTypedEqClass(program.getThreads().get(0).getEntry());
             Set<BranchClass> mergedClasses = SetUtil.identityHashSet(classes.size());
             for (int i = 1; i < program.getThreads().size(); i++) {

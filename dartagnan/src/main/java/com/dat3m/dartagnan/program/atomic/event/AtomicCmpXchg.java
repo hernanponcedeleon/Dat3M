@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import java.util.List;
@@ -58,14 +57,14 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	List<Event> events;
+    public List<Event> compile(Arch target) {
+        List<Event> events;
 
-    	// These events are common to all compilation schemes.
+        // These events are common to all compilation schemes.
         // The difference of each architecture lies in the used Store/Load to/from <address>
         // and the fences that get inserted
-    	Register regExpected = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-    	Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+        Register regExpected = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+        Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         Load loadExpected = newLoad(regExpected, expectedAddr, null);
         Store storeExpected = newStore(expectedAddr, regValue, null);
         Label casFail = newLabel("CAS_fail");
@@ -81,15 +80,15 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 Store storeValue = newRMWStore(loadValue, address, value, mo);
 
                 events = eventSequence(
-                		// Indentation shows the branching structure
+                        // Indentation shows the branching structure
                         loadExpected,
                         loadValue,
                         casCmpResult,
                         branchOnCasCmpResult,
-                            storeValue,
-                        	gotoCasEnd,
+                        storeValue,
+                        gotoCasEnd,
                         casFail,
-                        	storeExpected,
+                        storeExpected,
                         casEnd
                 );
                 break;
@@ -108,7 +107,7 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                     optionalExecStatus = newExecutionStatus(statusReg, storeValue);
                     optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
                 }
-               
+
                 // --- Add Fence before under POWER ---
                 Fence optionalMemoryBarrier = null;
                 // if mo.equals(SC) then loadMo.equals(ACQ)
@@ -121,20 +120,20 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 }
 
                 events = eventSequence(
-                		// Indentation shows the branching structure
+                        // Indentation shows the branching structure
                         optionalMemoryBarrier,
                         loadExpected,
                         loadValue,
                         casCmpResult,
                         branchOnCasCmpResult,
-                            storeValue,
-                        	optionalExecStatus,
-                        	optionalUpdateCasCmpResult,
-                        	gotoCasEnd,
+                        storeValue,
+                        optionalExecStatus,
+                        optionalUpdateCasCmpResult,
+                        gotoCasEnd,
                         casFail,
-                        	storeExpected,
+                        storeExpected,
                         casEnd,
-                    	optionalISyncBarrier
+                        optionalISyncBarrier
                 );
 
                 break;
@@ -142,7 +141,6 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
-        setCLineForAll(events, this.cLine);
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+        return events;
     }
 }

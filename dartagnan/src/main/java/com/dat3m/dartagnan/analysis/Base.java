@@ -7,7 +7,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
 
-import static com.dat3m.dartagnan.GlobalSettings.ENABLE_SYMMETRY_BREAKING;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static java.util.Collections.singletonList;
@@ -19,7 +18,7 @@ public class Base {
     public static Result runAnalysisIncrementalSolver(SolverContext ctx, ProverEnvironment prover, VerificationTask task) throws InterruptedException, SolverException {
         Result res = Result.UNKNOWN;
         
-        task.unrollAndCompile();
+        task.preprocessProgram();
        	if(task.getProgram().getAss() instanceof AssertTrue) {
             logger.info("Verification finished: assertion trivially holds");
        		return PASS;
@@ -33,9 +32,7 @@ public class Base {
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
         prover.addConstraint(task.encodeWitness(ctx));
-        if (ENABLE_SYMMETRY_BREAKING) {
-            prover.addConstraint(task.encodeSymmetryBreaking(ctx));
-        }
+        prover.addConstraint(task.encodeSymmetryBreaking(ctx));
         logger.info("Starting push()");
         prover.push();
         prover.addConstraint(task.encodeAssertions(ctx));
@@ -43,7 +40,7 @@ public class Base {
         logger.info("Starting first solver.check()");
         if(prover.isUnsat()) {
         	prover.pop();
-			prover.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgram().encodeNoBoundEventExec(ctx)));
+			prover.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgramEncoder().encodeNoBoundEventExec(ctx)));
             logger.info("Starting second solver.check()");
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
         } else {
@@ -58,7 +55,7 @@ public class Base {
     public static Result runAnalysisAssumeSolver(SolverContext ctx, ProverEnvironment prover, VerificationTask task) throws InterruptedException, SolverException {
         Result res = Result.UNKNOWN;
         
-        task.unrollAndCompile();
+        task.preprocessProgram();
        	if(task.getProgram().getAss() instanceof AssertTrue) {
             logger.info("Verification finished: assertion trivially holds");
        		return PASS;
@@ -72,10 +69,8 @@ public class Base {
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
         prover.addConstraint(task.encodeWitness(ctx));
-        if (ENABLE_SYMMETRY_BREAKING) {
-            prover.addConstraint(task.encodeSymmetryBreaking(ctx));
-        }
-        
+        prover.addConstraint(task.encodeSymmetryBreaking(ctx));
+
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_assertion_assumption");
         BooleanFormula assumedAssertion = bmgr.implication(assumptionLiteral, task.encodeAssertions(ctx));
@@ -83,7 +78,7 @@ public class Base {
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
-			prover.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgram().encodeNoBoundEventExec(ctx)));
+			prover.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgramEncoder().encodeNoBoundEventExec(ctx)));
             logger.info("Starting second solver.check()");
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
         } else {
@@ -98,7 +93,7 @@ public class Base {
     public static Result runAnalysisTwoSolvers(SolverContext ctx, ProverEnvironment prover1, ProverEnvironment prover2, VerificationTask task) throws InterruptedException, SolverException {
     	Result res = Result.UNKNOWN;
     	
-    	task.unrollAndCompile();
+    	task.preprocessProgram();
        	if(task.getProgram().getAss() instanceof AssertTrue) {
             logger.info("Verification finished: assertion trivially holds");
        		return PASS;
@@ -125,16 +120,14 @@ public class Base {
 		prover1.addConstraint(encodeWitness);
         prover2.addConstraint(encodeWitness);
 
-        if (ENABLE_SYMMETRY_BREAKING) {
-            prover1.addConstraint(task.encodeSymmetryBreaking(ctx));
-            prover2.addConstraint(task.encodeSymmetryBreaking(ctx));
-        }
-        
+        prover1.addConstraint(task.encodeSymmetryBreaking(ctx));
+        prover2.addConstraint(task.encodeSymmetryBreaking(ctx));
+
         prover1.addConstraint(task.encodeAssertions(ctx));
 
         logger.info("Starting first solver.check()");
         if(prover1.isUnsat()) {
-			prover2.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgram().encodeNoBoundEventExec(ctx)));
+			prover2.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgramEncoder().encodeNoBoundEventExec(ctx)));
             logger.info("Starting second solver.check()");
             res = prover2.isUnsat() ? PASS : Result.UNKNOWN;
         } else {

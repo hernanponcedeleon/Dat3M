@@ -5,10 +5,7 @@ import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
-import com.dat3m.dartagnan.program.utils.preprocessing.BranchReordering;
-import com.dat3m.dartagnan.program.utils.preprocessing.DeadCodeElimination;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -139,31 +136,6 @@ public class Thread {
         return nextId;
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public int unroll(int bound, int nextId){
-    	while(bound > 0) {
-    		entry.unroll(bound, null);
-    		bound--;
-    	}
-        nextId = entry.setUId(nextId);
-        updateExit(entry);
-        cache = null;
-        return nextId;
-    }
-
-
-    // Compilation
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public int compile(Arch target, int nextId) {
-        nextId = entry.compile(target, nextId, null);
-        updateExit(entry);
-        cache = null;
-        return nextId;
-    }
-
     // Encoding
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -180,20 +152,4 @@ public class Thread {
     	}
     	return enc;
     }
-
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // -------------------------------- Preprocessing -----------------------------------
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public int eliminateDeadCode(int startId) {
-        new DeadCodeElimination(this).apply(startId);
-        clearCache();
-        return getExit().getOId() + 1;
-    }
-    
-    public void reorderBranches() {
-        new BranchReordering(this).apply();
-    }
-
 }

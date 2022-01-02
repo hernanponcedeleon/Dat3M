@@ -56,21 +56,14 @@ public abstract class Event implements Comparable<Event> {
 		this.listeners = other.listeners;
     }
 
-	public int getOId() {
-		return oId;
-	}
+	public int getOId() { return oId; }
+	public void setOId(int id) { this.oId = id; }
 
-	public void setOId(int id) {
-		this.oId = id;
-	}
+	public int getUId(){ return uId; }
+	public void setUId(int id) { this.uId = id; }
 
-	public int getUId(){
-		return uId;
-	}
-
-	public int getCId() {
-		return cId;
-	}
+	public int getCId() { return cId; }
+	public void setCId(int id) { this.cId = id; }
 
 	public String getSymmId() {
 		return symmId;
@@ -198,26 +191,6 @@ public abstract class Event implements Comparable<Event> {
 	// Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-    public final int setUId(int nextId) {
-		return setUIdRecursive(nextId, 0).execute();
-    }
-
-	protected RecursiveFunction<Integer> setUIdRecursive(int nextId, int depth) {
-		uId = nextId;
-		if (successor != null) {
-			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
-				return successor.setUIdRecursive(nextId + 1, depth + 1);
-			} else {
-				return RecursiveFunction.call(() -> successor.setUIdRecursive(nextId + 1, 0));
-			}
-		}
-		return RecursiveFunction.done(nextId + 1);
-	}
-
-
-
-	// --------------------------------
-
     public final void unroll(int bound, Event predecessor) {
 		unrollRecursive(bound, predecessor, 0).execute();
     }
@@ -261,42 +234,8 @@ public abstract class Event implements Comparable<Event> {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    public final int compile(Arch target, int nextId, Event predecessor) {
-		return compileRecursive(target, nextId, predecessor, 0).execute();
-    }
-
-	protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-		cId = nextId++;
-		if(successor != null){
-			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
-				return successor.compileRecursive(target, nextId, this, depth + 1);
-			} else {
-				int finalNextId = nextId;
-				return RecursiveFunction.call(() -> successor.compileRecursive(target, finalNextId, this, 0));
-			}
-		}
-		return RecursiveFunction.done(nextId);
-	}
-
-	protected RecursiveFunction<Integer> compileSequenceRecursive(Arch target, int nextId, Event predecessor, List<Event> sequence, int depth){
-		for(Event e : sequence){
-			e.oId = oId;
-			e.uId = uId;
-			e.cId = nextId++;
-			predecessor.setSuccessor(e);
-			predecessor = e;
-		}
-		if(successor != null){
-			predecessor.successor = successor;
-			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
-				return successor.compileRecursive(target, nextId, predecessor, depth + 1);
-			} else {
-				Event finalPredecessor = predecessor;
-				int finalNextId = nextId;
-				return RecursiveFunction.call(() -> successor.compileRecursive(target, finalNextId, finalPredecessor, 0));
-			}
-		}
-		return RecursiveFunction.done(nextId);
+	public List<Event> compile(Arch target) {
+		return Collections.singletonList(this);
 	}
 
 	public void delete(Event pred) {
@@ -339,10 +278,9 @@ public abstract class Event implements Comparable<Event> {
 		return cf();
 	}
 
-	public BooleanFormula cf(){
-		return cfVar;
-	}
-
+	public BooleanFormula cf(){ return cfVar; }
+	public void setCfVar(BooleanFormula cfVar) { this.cfVar = cfVar; }
+	
 	public BooleanFormula getCfCond(){
 		return cfCond;
 	}
@@ -370,7 +308,7 @@ public abstract class Event implements Comparable<Event> {
 		return cfEnc;
 	}
 
-	protected BooleanFormula encodeExec(SolverContext ctx){
+	public BooleanFormula encodeExec(SolverContext ctx){
 		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
 	}
 

@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import java.util.List;
@@ -44,10 +43,10 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	List<Event> events;
+    public List<Event> compile(Arch target) {
+        List<Event> events;
         switch(target) {
-            case NONE: 
+            case NONE:
             case TSO: {
                 Load load = newRMWLoad(resultRegister, address, mo);
                 Store store = newRMWStore(load, address, value, mo);
@@ -62,7 +61,7 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
                 String loadMo = extractLoadMo(mo);
                 String storeMo = extractStoreMo(mo);
 
-            	Load load = newRMWLoadExclusive(resultRegister, address, loadMo);
+                Load load = newRMWLoadExclusive(resultRegister, address, loadMo);
                 Store store = newRMWStoreExclusive(address, value, storeMo, true);
                 Label label = newLabel("FakeDep");
                 Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
@@ -74,7 +73,7 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
                             : storeMo.equals(REL) ? Power.newLwSyncBarrier()
                             : null;
                 }
-                
+
                 // All events for POWER and ARM8
                 events = eventSequence(
                         optionalMemoryBarrier,
@@ -88,7 +87,6 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
-        setCLineForAll(events, this.cLine);
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+        return events;
     }
 }

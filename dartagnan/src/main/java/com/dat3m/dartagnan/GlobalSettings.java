@@ -5,8 +5,6 @@ import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.dat3m.dartagnan.verification.RefinementTask.BaselineWMM.EMPTY;
-
 public class GlobalSettings {
 
 
@@ -48,7 +46,6 @@ public class GlobalSettings {
     */
     public static final boolean REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES = false;
 
-    public static final int REFINEMENT_BASELINE_WMM = EMPTY;
     public static final Refiner.SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = Refiner.SymmetryLearning.FULL;
 
     // --------------------
@@ -84,7 +81,6 @@ public class GlobalSettings {
 
     	// Refinement settings
         logger.info("REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES: " + REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES);
-    	logger.info("REFINEMENT_BASELINE_WMM: " + REFINEMENT_BASELINE_WMM);
     	logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());
     }
 }

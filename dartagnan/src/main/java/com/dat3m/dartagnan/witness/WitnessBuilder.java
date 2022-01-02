@@ -11,8 +11,10 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -36,8 +38,12 @@ import static com.dat3m.dartagnan.witness.GraphAttributes.*;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 import static java.lang.String.valueOf;
 
+@Options
 public class WitnessBuilder {
 	
+	public static final String PATH = "createWitness";
+
+	private final WitnessGraph graph;
 	private final Program program;
 	private final SolverContext ctx;
 	private final ProverEnvironment prover;
@@ -45,25 +51,44 @@ public class WitnessBuilder {
 	
 	private final Map<Event, Integer> eventThreadMap = new HashMap<>();
 	
+	@Option(
+			name="createWitness",
+			description="Path to source file to write a witness for.",
+			secure=true,
+			required=true)
+		private void path(String f) {
+			graph.addAttribute(PROGRAMFILE.toString(), f);
+			graph.addAttribute(PROGRAMHASH.toString(), getFileSHA256(new File(f)));
+		}
+
+	@Option(
+			name="program.processing.loopBound",
+			description="Unrolls loops up to loopBound many times.",
+			secure=true,
+			required=true)
+		private void unroll(String k) {
+			graph.addAttribute(UNROLLBOUND.toString(),k);
+		}
+		
 	public WitnessBuilder(Program program, SolverContext ctx, ProverEnvironment prover, Result result) {
+		this.graph = new WitnessGraph();
 		this.program = program;
 		this.ctx = ctx;
 		this.prover = prover;
 		this.type = result.equals(FAIL) ? "violation" : "correctness";
+		//TODO omit if required options are not present
+		buildGraph();
 	}
 	
-	public WitnessGraph buildGraph(DartagnanOptions options) {
+	public WitnessGraph buildGraph() {
 		populateMap();
 
 		WitnessGraph graph = new WitnessGraph();
-		graph.addAttribute(UNROLLBOUND.toString(), valueOf(options.getSettings().getBound()));
 		graph.addAttribute(WITNESSTYPE.toString(), type + "_witness");
 		graph.addAttribute(SOURCECODELANG.toString(), "C");
 		graph.addAttribute(PRODUCER.toString(), "Dartagnan");
 		graph.addAttribute(SPECIFICATION.toString(), "CHECK( init(main()), LTL(G ! call(reach_error())))");
-		graph.addAttribute(PROGRAMFILE.toString(), options.createWitness());
 		graph.addAttribute(ARCHITECTURE.toString(), "32bit");
-		graph.addAttribute(PROGRAMHASH.toString(), getFileSHA256(new File(options.createWitness())));
 		
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 		df.setTimeZone(TimeZone.getTimeZone("UTC"));

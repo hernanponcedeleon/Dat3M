@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.miscellaneous;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 
 import org.junit.Test;
@@ -39,6 +40,6 @@ public class LoopTest {
     @Test
     public void test() throws Exception {
     	Program p = new ProgramParser().parse(new File(path));
-    	p.unroll(1, 0);
+    	LoopUnrolling.newInstance().run(p);
     }
 }

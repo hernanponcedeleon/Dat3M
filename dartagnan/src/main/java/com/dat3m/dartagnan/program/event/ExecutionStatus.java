@@ -50,7 +50,7 @@ public class ExecutionStatus extends Event implements RegWriter {
     }
 
     @Override
-    protected BooleanFormula encodeExec(SolverContext ctx){
+    public BooleanFormula encodeExec(SolverContext ctx){
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 
         int precision = register.getPrecision();

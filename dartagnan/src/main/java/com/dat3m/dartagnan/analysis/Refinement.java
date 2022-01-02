@@ -50,13 +50,13 @@ public class Refinement {
     public static Result runAnalysisWMMSolver(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
             throws InterruptedException, SolverException {
 
-        task.unrollAndCompile();
-        if(task.getProgram().getAss() instanceof AssertTrue) {
+		task.preprocessProgram();
+		task.initialiseEncoding(ctx);
+
+		if(task.getProgram().getAss() instanceof AssertTrue) {
             logger.info("Verification finished: assertion trivially holds");
             return PASS;
         }
-
-        task.initialiseEncoding(ctx);
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Program program = task.getProgram();
@@ -173,7 +173,7 @@ public class Refinement {
             lastTime = System.currentTimeMillis();
             prover.pop();
             // Add bound check
-            prover.addConstraint(bmgr.not(program.encodeNoBoundEventExec(ctx)));
+            prover.addConstraint(bmgr.not(task.getProgramEncoder().encodeNoBoundEventExec(ctx)));
             // Add back the constraints found during Refinement (TODO: We might need to perform a second refinement)
             for (DNF<CoreLiteral> reason : foundCoreReasons) {
                 prover.addConstraint(refiner.refine(reason, ctx));
@@ -265,7 +265,7 @@ public class Refinement {
 
         String programName = task.getProgram().getName();
         programName = programName.substring(0, programName.lastIndexOf("."));
-        String directoryName = String.format("%s/output/refinement/%s-%s-debug/", System.getenv("DAT3M_HOME"), programName, task.getTarget());
+        String directoryName = String.format("%s/output/refinement/%s-%s-debug/", System.getenv("DAT3M_HOME"), programName, task.getProgram().getArch());
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
         // File with reason edges only
         generateGraphvizFile(model, iterationCount, edgeFilter, directoryName, fileNameBase);
