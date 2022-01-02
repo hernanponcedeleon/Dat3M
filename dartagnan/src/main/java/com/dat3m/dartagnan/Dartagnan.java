@@ -172,10 +172,11 @@ public class Dartagnan extends BaseOptions {
                 
                 if (o.analysis != RACES) {
 					try {
-						WitnessBuilder w = new WitnessBuilder(p, ctx, prover, result);
+						WitnessBuilder w = new WitnessBuilder(task, ctx, prover, result);
 						config.inject(w);
-//						w.buildGraph(options).write();
+						w.buildGraph().write();
 					} catch(InvalidConfigurationException ignore) {
+						System.out.println("Failed to write witness file.");
 					}
                 }
             }

@@ -12,19 +12,23 @@ import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Set;
 
 import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.analysis.Analysis;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.witness.WitnessBuilder;
-import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.dat3m.svcomp.utils.Compilation;
 
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.witness.WitnessGraph;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.svcomp.utils.BoogieSan;
 import com.dat3m.svcomp.utils.SVCOMPSanitizer;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.io.Files;
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -36,7 +40,9 @@ public class SVCOMPRunner extends BaseOptions {
 	private Analysis analysis;
 
 	@Option(
-		description="The path to the property to be checked")
+		name="property",
+		required=true,
+		description="The path to the property to be checked.")
 	private void property(String p) {
 		//TODO process the property file instead of assuming its contents based of its name
 		if(p.contains("no-data-race")) {
@@ -44,45 +50,54 @@ public class SVCOMPRunner extends BaseOptions {
 		} else if(p.contains("unreach-call")) {
 			analysis = Analysis.REACHABILITY;
 		} else {
-			throw new IllegalArgumentException("unrecognized property " + p);
+			throw new IllegalArgumentException("Unrecognized property " + p);
 		}
 	}
 
 	@Option(
-		description="Starting unrolling bound <integer>")
+		name="umin",
+		description="Starting unrolling bound <integer>.")
 	private int umin = 1;
 
 	@Option(
-		description="Ending unrolling bound <integer>")
+		name="umax",
+		description="Ending unrolling bound <integer>.")
 	private int umax = Integer.MAX_VALUE;
 
 	@Option(
-		description="Step size for the increasing unrolling bound <integer>")
+		name="step",
+		description="Step size for the increasing unrolling bound <integer>.")
 	private int step = 1;
 
 	@Option(
-		description="Generates (also) a sanitised boogie file saved as /output/boogiesan.bpl")
+		name="sanitize",
+		description="Generates (also) a sanitised boogie file saved as /output/boogiesan.bpl.")
 	private boolean sanitize = false;
 
 	@Option(
-		description="Run Dartagnan as a violation witness validator. Argument is the path to the witness file")
+		name="validate",
+		description="Run Dartagnan as a violation witness validator. Argument is the path to the witness file.")
 	private File witness;
 
 	@Option(
 		name=TARGET,
-		description="Target architecture to which the program shall be compiled to.")
-	private String target = "none";
+		description = "The target architecture to which the program shall be compiled to.")
+	private Arch target = Arch.NONE;
+
+	private static final Set<String> supportedFormats = 
+    		ImmutableSet.copyOf(Arrays.asList(".c", ".i"));
 
     public static void main(String[] args) throws IOException, InvalidConfigurationException {
 
-		String[] argPositional = Arrays.stream(args)
-			.filter(s->!s.startsWith("-"))
-			.toArray(String[]::new);
-		File fileModel = new File(argPositional[0]);
-		File file = new File(argPositional[1]);
-		if(!file.getName().endsWith(".c") && !file.getName().endsWith(".i")) {
-			throw new IllegalArgumentException("unrecognized program format");
+		if(Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(f -> a.endsWith(f)))) {
+			throw new IllegalArgumentException("Input program not given or format not recognized");
 		}
+		if(Arrays.stream(args).noneMatch(a -> a.endsWith(".cat"))) {
+			throw new IllegalArgumentException("CAT model not given or format not recognized");
+		}
+		File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst().get());
+		String programPath = Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(f -> a.endsWith(f))).findFirst().get();
+		File fileProgram = new File(programPath);
 
 		String[] argKeyword = Arrays.stream(args)
 		.filter(s->s.startsWith("-"))
@@ -96,14 +111,14 @@ public class SVCOMPRunner extends BaseOptions {
         WitnessGraph witness = new WitnessGraph(); 
         if(r.witness != null) {
         	witness = new ParserWitness().parse(r.witness);
-			if(!file.getName().
+			if(!fileProgram.getName().
 					equals(Paths.get(witness.getProgram()).getFileName().toString())) {
-				throw new RuntimeException("The witness was generated from a different program than " + file);
+				throw new RuntimeException("The witness was generated from a different program than " + fileProgram);
 			}
         }
 
-        int bound = witness.hasAttributed(UNROLLBOUND.toString()) ?  parseInt(witness.getAttributed(UNROLLBOUND.toString())) : r.umin;
-        File tmp = new SVCOMPSanitizer(file).run(bound);
+        int bound = witness.hasAttributed(UNROLLBOUND.toString()) ? parseInt(witness.getAttributed(UNROLLBOUND.toString())) : r.umin;
+        File tmp = new SVCOMPSanitizer(fileProgram).run(bound);
 
 		Compilation c = new Compilation();
 		config.inject(c);
@@ -118,9 +133,9 @@ public class SVCOMPRunner extends BaseOptions {
 	        // File can be safely deleted since it was created by the SVCOMPSanitizer
 	        // (it not the original C file) and we already created the Boogie file
 	        tmp.delete();
-
+	        
 	        String boogieName = System.getenv().get("DAT3M_HOME") + "/output/" +
-					file.getName().substring(0, file.getName().lastIndexOf('.')) +
+	        		Files.getNameWithoutExtension(programPath) +
 					"-" + c.getOptimization() + ".bpl";
 	        
 	        if(r.sanitize) {
@@ -130,21 +145,21 @@ public class SVCOMPRunner extends BaseOptions {
 	    	ArrayList<String> cmd = new ArrayList<>();
 	    	cmd.add("java");
 	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
-	    	cmd.add("-DLOGNAME=" + file.getName());
+	    	cmd.add("-DLOGNAME=" + fileProgram.getName());
 	    	cmd.addAll(asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-3.0.0.jar"));
 			cmd.add(fileModel.toString());
 			cmd.add(boogieName);
-			cmd.add(String.format("--%s=%s",TARGET,r.target));
-			cmd.add(String.format("--%s=%d",LoopUnrolling.BOUND,bound));
-			cmd.add(String.format("--%s=%s",Dartagnan.ANALYSIS,r.analysis.asStringOption()));
-			cmd.add(String.format("--%s=%s",BaseOptions.METHOD,r.method.asStringOption()));
-			cmd.add(String.format("--%s=%s",BaseOptions.SOLVER,r.solver.toString().toLowerCase()));
+			cmd.add(String.format("--%s=%s", TARGET, r.target.asStringOption()));
+			cmd.add(String.format("--%s=%d", LoopUnrolling.BOUND, bound));
+			cmd.add(String.format("--%s=%s", Dartagnan.ANALYSIS, r.analysis.asStringOption()));
+			cmd.add(String.format("--%s=%s", BaseOptions.METHOD, r.method.asStringOption()));
+			cmd.add(String.format("--%s=%s", BaseOptions.SOLVER, r.solver.toString().toLowerCase()));
 	    	if(r.witness != null) {
 	    		// In validation mode we do not create witnesses.
-				cmd.add(String.format("--%s=%s",Dartagnan.WITNESS,r.witness));
+				cmd.add(String.format("--%s=%s", Dartagnan.WITNESS, r.witness));
 	    	} else {
 	    		// In verification mode we always create a witness.
-				cmd.add(String.format("--%s=%s", WitnessBuilder.PATH,file));
+				cmd.add(String.format("--%s=%s", WitnessBuilder.WITNESS_ORIGINAL_PROGRAM_PATH, fileProgram));
 	    	}
 
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
@@ -173,7 +188,7 @@ public class SVCOMPRunner extends BaseOptions {
 			}
 			// We always do iterations 1 and 2 and then use the step
 			bound = bound == 1 ? 2 : bound + r.step;
-	        tmp = new SVCOMPSanitizer(file).run(bound);
+	        tmp = new SVCOMPSanitizer(fileProgram).run(bound);
 		}
 
         tmp.delete();

@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 
 import org.sosy_lab.common.configuration.Option;
@@ -30,6 +31,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.program.processing.LoopUnrolling.BOUND;
 import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -41,53 +43,49 @@ import static java.lang.String.valueOf;
 @Options
 public class WitnessBuilder {
 	
-	public static final String PATH = "createWitness";
-
-	private final WitnessGraph graph;
-	private final Program program;
+	public static final String WITNESS_ORIGINAL_PROGRAM_PATH = "witness.originalProgramFilePath";
+	
+	private final VerificationTask task;
 	private final SolverContext ctx;
 	private final ProverEnvironment prover;
-	private final String type ;
-	
-	private final Map<Event, Integer> eventThreadMap = new HashMap<>();
+	private final String type;
 	
 	@Option(
-			name="createWitness",
-			description="Path to source file to write a witness for.",
-			secure=true,
-			required=true)
-		private void path(String f) {
-			graph.addAttribute(PROGRAMFILE.toString(), f);
-			graph.addAttribute(PROGRAMHASH.toString(), getFileSHA256(new File(f)));
-		}
+			name="witness.originalProgramFilePath",
+			description="Path to the original C file (for which to create a witness).",
+			secure=true)
+	private String originalProgramFilePath;
 
 	@Option(
-			name="program.processing.loopBound",
-			description="Unrolls loops up to loopBound many times.",
-			secure=true,
-			required=true)
-		private void unroll(String k) {
-			graph.addAttribute(UNROLLBOUND.toString(),k);
-		}
-		
-	public WitnessBuilder(Program program, SolverContext ctx, ProverEnvironment prover, Result result) {
-		this.graph = new WitnessGraph();
-		this.program = program;
+			name=BOUND,
+			description = "Unrolling bound used in the verification.",
+			secure=true)
+	private String bound;
+
+	private final Map<Event, Integer> eventThreadMap = new HashMap<>();
+	
+	public WitnessBuilder(VerificationTask task, SolverContext ctx, ProverEnvironment prover, Result result) {
+		this.task = task;
 		this.ctx = ctx;
 		this.prover = prover;
 		this.type = result.equals(FAIL) ? "violation" : "correctness";
-		//TODO omit if required options are not present
-		buildGraph();
 	}
 	
 	public WitnessGraph buildGraph() {
-		populateMap();
+		for(Thread t : task.getProgram().getThreads()) {
+			for(Event e : t.getEntry().getSuccessors()) {
+				eventThreadMap.put(e, t.getId() - 1);
+			}
+		}
 
 		WitnessGraph graph = new WitnessGraph();
+		graph.addAttribute(UNROLLBOUND.toString(), valueOf(bound));
 		graph.addAttribute(WITNESSTYPE.toString(), type + "_witness");
 		graph.addAttribute(SOURCECODELANG.toString(), "C");
 		graph.addAttribute(PRODUCER.toString(), "Dartagnan");
 		graph.addAttribute(SPECIFICATION.toString(), "CHECK( init(main()), LTL(G ! call(reach_error())))");
+		graph.addAttribute(PROGRAMFILE.toString(), originalProgramFilePath);
+		graph.addAttribute(PROGRAMHASH.toString(), getFileSHA256(new File(originalProgramFilePath)));
 		graph.addAttribute(ARCHITECTURE.toString(), "32bit");
 		
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
@@ -117,7 +115,7 @@ public class WitnessBuilder {
 		}
 
 		try (Model model = prover.getModel()) {
-			List<Event> execution = reOrderBasedOnAtomicity(program, getSCExecutionOrder(model));
+			List<Event> execution = reOrderBasedOnAtomicity(task.getProgram(), getSCExecutionOrder(model));
 
 			for (int i = 0; i < execution.size(); i++) {
 				Event e = execution.get(i);
@@ -163,20 +161,12 @@ public class WitnessBuilder {
 		return graph;
 	}
 	
-	private void populateMap() {
-		for(Thread t : program.getThreads()) {
-			for(Event e : t.getEntry().getSuccessors()) {
-				eventThreadMap.put(e, t.getId() - 1);
-			}
-		}
-	}
-	
 	private List<Event> getSCExecutionOrder(Model model) {
 		List<Event> execEvents = new ArrayList<>();
 		// TODO: we recently added many cline to many events and this might affect the witness generation.
 		Predicate<Event> executedCEvents = e -> e.wasExecuted(model) &&  e.getCLine() > - 1;
-		execEvents.addAll(program.getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(executedCEvents).collect(Collectors.toList()));
-		execEvents.addAll(program.getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));
+		execEvents.addAll(task.getProgram().getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(executedCEvents).collect(Collectors.toList()));
+		execEvents.addAll(task.getProgram().getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));
 		
 		Map<Integer, List<Event>> map = new HashMap<>();
         for(Event e : execEvents) {
@@ -244,7 +234,7 @@ public class WitnessBuilder {
 		    //This bytes[] has bytes in decimal format;
 		    //Convert it to hexadecimal format
 		    StringBuilder sb = new StringBuilder();
-		    for(int i=0; i< bytes.length ;i++)
+		    for(int i=0; i < bytes.length ;i++)
 		    {
 		        sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
 		    }
@@ -254,7 +244,7 @@ public class WitnessBuilder {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return null;
+		return "";
 	}
 	
 }
