@@ -12,6 +12,8 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.google.common.collect.ImmutableSet;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.ShutdownManager;
@@ -27,6 +29,7 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.analysis.Analysis.RACES;
 import static com.dat3m.dartagnan.analysis.Base.*;
@@ -53,6 +56,9 @@ public class Dartagnan extends BaseOptions {
 		secure=true)
 	private File verifyWitness;
 
+	private static final Set<String> supportedFormats = 
+    		ImmutableSet.copyOf(Arrays.asList("litmus", "bpl", "c", "i"));
+
 	private static final Logger logger = LogManager.getLogger(Dartagnan.class);
 
 	public static void main(String[] args) throws Exception {
@@ -71,12 +77,14 @@ public class Dartagnan extends BaseOptions {
 		Dartagnan o = new Dartagnan();
 		config.recursiveInject(o);
 
-		// TODO why assume positions?
-		String[] argPositional = Arrays.stream(args)
-		.filter(s->!s.startsWith("-"))
-		.toArray(String[]::new);
-		File fileModel = new File(argPositional[0]);
-		File fileProgram = new File(argPositional[1]);
+		if(Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(f -> a.endsWith("."+f)))) {
+			throw new IllegalArgumentException("Input program not given or format not recognized");
+		}
+		if(Arrays.stream(args).noneMatch(a -> a.endsWith(".cat"))) {
+			throw new IllegalArgumentException("CAT model not given or format not recognized");
+		}
+		File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst().get());
+		File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(f -> a.endsWith("."+f))).findFirst().get());
 		logger.info("Program path: " + fileProgram);
 		logger.info("CAT file path: " + fileModel);	
         
