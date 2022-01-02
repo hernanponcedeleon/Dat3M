@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
 import java.math.BigInteger;
@@ -32,13 +31,6 @@ FIXME reuses oId
 @Options
 public class AtomicAsLock implements ProgramProcessor {
 
-	public static final String OPTION_ATOMIC_AS_LOCK = "program.processing.atomicBlocksAsLocks";
-
-	@Option(name= OPTION_ATOMIC_AS_LOCK,
-		description="Transforms atomic blocks by adding global locks.",
-		secure=true)
-	private boolean active;
-
 	private AtomicAsLock() {}
 
 	public static AtomicAsLock fromConfig(Configuration c) throws InvalidConfigurationException {
@@ -49,9 +41,6 @@ public class AtomicAsLock implements ProgramProcessor {
 
 	@Override
 	public void run(Program program) {
-		if(!active) {
-			return;
-		}
 		Address a = program.getMemory().getOrCreateLocation("__VERIFIER_atomic_location",-1).getAddress();
 		for(Thread t : program.getThreads()) {
 			run(a,t);

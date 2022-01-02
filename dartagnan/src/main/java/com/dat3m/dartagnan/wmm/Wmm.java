@@ -31,6 +31,8 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 @Options(prefix="wmm")
 public class Wmm {
 
+	public static final String LOCAL_CONSISTENT = "wmm.localconsistent";
+
     private final static ImmutableSet<String> baseRelations = ImmutableSet.of(CO, RF, IDD, ADDRDIRECT);
 
     private static final Logger logger = LogManager.getLogger(Wmm.class);
@@ -100,7 +102,7 @@ public class Wmm {
     }
 
     public void initialise(VerificationTask task, SolverContext ctx) {
-        logger.info("{}: {}", "wmm.localconsistent", assumeLocalConsistency);
+        logger.info("{}: {}", LOCAL_CONSISTENT, assumeLocalConsistency);
         this.task = task;
         new AliasAnalysis().calculateLocationSets(task.getProgram());
 

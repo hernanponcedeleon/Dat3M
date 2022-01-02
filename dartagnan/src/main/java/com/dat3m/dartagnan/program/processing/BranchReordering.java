@@ -72,9 +72,6 @@ public class BranchReordering implements ProgramProcessor {
         logger.info("Branches reordered");
     }
 
-
-
-
     private class ThreadReordering {
         private class MovableBranch {
             int id = 0;

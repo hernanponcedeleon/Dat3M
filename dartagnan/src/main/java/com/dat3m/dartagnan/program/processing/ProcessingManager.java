@@ -23,8 +23,10 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean reduceSymmetry = false;
 
-    public boolean reducesSymmetry() { return reduceSymmetry; }
-    public void setReduceSymmetry(boolean value) { reduceSymmetry = value; }
+	@Option(name= "atomicBlocksAsLocks",
+			description="Transforms atomic blocks by adding global locks.",
+			secure=true)
+		private boolean atomicBlocksAsLocks = false;
 
     // ======================================================================
 
@@ -35,13 +37,15 @@ public class ProcessingManager implements ProgramProcessor {
 
     public void run(Program program) {
         try {
-        	AtomicAsLock.fromConfig(config).run(program);
         	DeadCodeElimination.fromConfig(config).run(program);
         	BranchReordering.fromConfig(config).run(program);
         	Simplifier.fromConfig(config).run(program);
         	LoopUnrolling.fromConfig(config).run(program);
         	Compilation.fromConfig(config).run(program);
-            if (reduceSymmetry) {
+        	if(atomicBlocksAsLocks) {
+            	AtomicAsLock.fromConfig(config).run(program);
+        	}
+        	if(reduceSymmetry) {
                 SymmetryReduction.fromConfig(config).run(program);
             }
         } catch (InvalidConfigurationException ex) {

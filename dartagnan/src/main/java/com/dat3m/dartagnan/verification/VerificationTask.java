@@ -30,6 +30,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.List;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.program.processing.Compilation.TARGET;
 import static com.dat3m.dartagnan.program.processing.LoopUnrolling.BOUND;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -40,9 +41,7 @@ Represents a verification task.
 @Options
 public class VerificationTask {
 
-	public static final String TARGET = "program.processing.compilationTarget";
 	public static final String TIMEOUT = "verification.timeout";
-	public static final String OPTION_POSTFIX = "encoding.postfix";
 	public static final String OPTION_DEBUG_PRINT = "program.debugPrint";
 	
     private static final Logger logger = LogManager.getLogger(VerificationTask.class);
@@ -59,12 +58,6 @@ public class VerificationTask {
     private final MemoryEncoder memoryEncoder;
 
 	@Option(
-		name=OPTION_POSTFIX,
-		description="The execution may contain arbitrary edges without meeting their preconditions.",
-		secure=true)
-	private boolean postfix = false;
-
-	@Option(
 		name=OPTION_DEBUG_PRINT,
 		description="Prints the program after all processing steps and before verification for debug purposes.",
 		secure=true)
@@ -78,7 +71,6 @@ public class VerificationTask {
         try {
             this.config = builder.config.build();
             config.recursiveInject(this);
-            logger.info("{}: {}", OPTION_POSTFIX, postfix);
             progEncoder = ProgramEncoder.fromConfig(config);
             memoryEncoder = MemoryEncoder.fromConfig(config);
         } catch (InvalidConfigurationException ex) {
@@ -127,10 +119,6 @@ public class VerificationTask {
             return new VerificationTask(program,memoryModel,this);
         }
     }
-
-	public boolean postfixApproximation() {
-		return postfix;
-	}
 
     public Configuration getConfig() {
         return this.config;
