@@ -2,7 +2,6 @@ package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
@@ -35,8 +34,12 @@ public abstract class AbstractCTest {
     protected abstract Provider<String> getProgramPathProvider();
     protected abstract long getTimeout();
 
-    protected Provider<Settings> getSettingsProvider() {
-        return Provider.fromSupplier(() -> new Settings(1, 0));
+    protected Provider<Integer> getBoundProvider() {
+        return Provider.fromSupplier(() -> 1);
+    }
+
+    protected Provider<Integer> getTimeoutProvider() {
+        return Provider.fromSupplier(() -> 0);
     }
 
     // =============================================================
@@ -49,10 +52,11 @@ public abstract class AbstractCTest {
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
     protected final Provider<Arch> targetProvider = () -> target;
     protected final Provider<String> filePathProvider = getProgramPathProvider();
-    protected final Provider<Settings> settingsProvider = getSettingsProvider();
+    protected final Provider<Integer> boundProvider = getBoundProvider();
+    protected final Provider<Integer> timeoutProvider = getTimeoutProvider();
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = Providers.createWmmFromArch(targetProvider);
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, targetProvider, settingsProvider);
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, targetProvider, boundProvider, timeoutProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
 
@@ -65,7 +69,8 @@ public abstract class AbstractCTest {
     public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
             .around(shutdownOnError)
             .around(filePathProvider)
-            .around(settingsProvider)
+            .around(boundProvider)
+            .around(timeoutProvider)
             .around(programProvider)
             .around(wmmProvider)
             .around(taskProvider)

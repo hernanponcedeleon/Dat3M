@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -58,16 +57,12 @@ public class Providers {
     // =========================== Task related providers ==============================
 
     public static Provider<VerificationTask> createTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier,
-                                                        Supplier<Arch> targetSupplier, Supplier<Settings> settingsSupplier) {
+                                                        Supplier<Arch> targetSupplier, Supplier<Integer> boundSupplier, Supplier<Integer> timeoutSupplier) {
     	return Provider.fromSupplier(() -> VerificationTask.builder().
     			withTarget(targetSupplier.get()).
-    			withBound(settingsSupplier.get().getBound()).
-    			withSolverTimeout(settingsSupplier.get().getSolverTimeout()).
+    			withBound(boundSupplier.get()).
+    			withSolverTimeout(timeoutSupplier.get()).
     			build(programSupplier.get(), wmmSupplier.get()));
-    }
-
-    public static Provider<Settings> createSettings(Supplier<Integer> boundSupplier, Supplier<Integer> timeoutSupplier) {
-        return Provider.fromSupplier(() -> new Settings(boundSupplier.get(), timeoutSupplier.get()));
     }
 
     // =========================== Solving related providers ==============================

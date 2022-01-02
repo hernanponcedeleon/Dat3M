@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -39,14 +38,12 @@ public class UnusedTestFails {
     private final String path;
     private final Wmm wmm;
     private final Arch target;
-    private final Settings settings;
     private final Result expected;
 
-    public UnusedTestFails(String path, Wmm wmm, Arch target, Settings settings, Result expected) {
+    public UnusedTestFails(String path, Wmm wmm, Arch target, Result expected) {
         this.path = path;
         this.wmm = wmm;
         this.target = target;
-        this.settings = settings;
         this.expected = expected;
     }
 
@@ -57,8 +54,6 @@ public class UnusedTestFails {
         Wmm tso = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/tso.cat"));
         Wmm power = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/power.cat"));
         Wmm arm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat"));
-
-        Settings s1 = new Settings(1, TIMEOUT);
 
         List<Object[]> data = new ArrayList<>();
         //data.add(new Object[]{"../tests/mutex-2.c", tso, POWER, s1, UNKNOWN});
