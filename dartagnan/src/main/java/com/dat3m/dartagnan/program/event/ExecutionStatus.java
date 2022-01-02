@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -67,7 +66,7 @@ public class ExecutionStatus extends Event implements RegWriter {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
+	public Event getCopy(){
         throw new ProgramProcessingException("ExecutionStatus cannot be unrolled: event must be generated during compilation");
     }
 }

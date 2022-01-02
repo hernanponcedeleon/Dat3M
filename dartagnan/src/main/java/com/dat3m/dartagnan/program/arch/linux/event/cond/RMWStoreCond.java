@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
-import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -49,7 +48,7 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
+	public RMWStoreCond getCopy(){
         throw new ProgramProcessingException("RMWStoreCond cannot be unrolled: event must be generated during compilation");
     }
 }

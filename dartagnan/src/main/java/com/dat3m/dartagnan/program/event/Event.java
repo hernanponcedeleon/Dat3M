@@ -191,45 +191,9 @@ public abstract class Event implements Comparable<Event> {
 	// Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-    public final void unroll(int bound, Event predecessor) {
-		unrollRecursive(bound, predecessor, 0).execute();
-    }
-
-    protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
-		Event copy = this;
-		if(predecessor != null) {
-			// This check must be done inside this if
-			// Needed for the current implementation of copy in If events
-			if(bound != 1) {
-				copy = getCopy();
-			}
-			predecessor.setSuccessor(copy);
-		}
-		if(successor != null) {
-			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
-				return successor.unrollRecursive(bound, copy, depth + 1);
-			} else {
-				Event finalCopy = copy;
-				return RecursiveAction.call(() -> successor.unrollRecursive(bound, finalCopy, 0));
-			}
-		}
-		return RecursiveAction.done();
-	}
-
 	public Event getCopy(){
 		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
 	}
-
-	static Event copyPath(Event from, Event until, Event appendTo){
-		while(from != null && !from.equals(until)){
-			Event copy = from.getCopy();
-			appendTo.setSuccessor(copy);
-			appendTo = copy;
-			from = from.successor;
-		}
-		return appendTo;
-	}
-
 
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------

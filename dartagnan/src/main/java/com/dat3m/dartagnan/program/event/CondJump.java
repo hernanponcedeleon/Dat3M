@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
@@ -131,33 +130,6 @@ public class CondJump extends Event implements RegReaderData {
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
-
-
-    @Override
-    public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
-        if(label.getOId() < oId){
-            if(bound > 1) {
-                predecessor = copyPath(label, successor, predecessor);
-            }
-            Event next = predecessor;
-            if(bound == 1) {
-                Label target = (Label)getThread().getExit();
-                next = EventFactory.newGoto(target);
-                next.addFilters(EType.BOUND);
-                predecessor.setSuccessor(next);
-            }
-            if(successor != null) {
-                if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
-                    return successor.unrollRecursive(bound, next, depth + 1);
-                } else {
-                    Event finalNext = next;
-                    return RecursiveAction.call(() -> successor.unrollRecursive(bound, finalNext, 0));
-                }
-            }
-        }
-        return super.unrollRecursive(bound, predecessor, depth);
-    }
-
 
     @Override
     public CondJump getCopy(){
