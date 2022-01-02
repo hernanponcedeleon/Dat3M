@@ -156,21 +156,6 @@ public abstract class Event implements Comparable<Event> {
     	throw new UnsupportedOperationException("notify is not allowed for " + getClass().getSimpleName());
     }
     
-    public final void simplify(Event predecessor) {
-		simplifyRecursive(predecessor, 0).execute();
-    }
-
-    protected RecursiveAction simplifyRecursive(Event predecessor, int depth) {
-		if (successor != null) {
-			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
-				return successor.simplifyRecursive(this, depth + 1);
-			} else {
-				return RecursiveAction.call(() -> successor.simplifyRecursive(this, 0));
-			}
-		}
-		return RecursiveAction.done();
-	}
-
     public final int setFId(int nextId) {
 		return setFIdRecursive(nextId, 0).execute();
     }

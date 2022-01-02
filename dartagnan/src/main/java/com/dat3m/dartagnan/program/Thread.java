@@ -125,11 +125,6 @@ public class Thread {
         return id == ((Thread) obj).id;
     }
 
-    public void simplify() {
-        entry.simplify(null);
-        cache = null;
-    }
-
     public int setFId(int nextId) {
         nextId = entry.setFId(0);
         cache = null;
