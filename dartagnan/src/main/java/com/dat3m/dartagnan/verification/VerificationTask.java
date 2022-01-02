@@ -3,9 +3,6 @@ package com.dat3m.dartagnan.verification;
 import com.dat3m.dartagnan.encoding.MemoryEncoder;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
@@ -22,7 +19,6 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -32,6 +28,7 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.program.processing.Compilation.TARGET;
 import static com.dat3m.dartagnan.program.processing.LoopUnrolling.BOUND;
+import static com.dat3m.dartagnan.utils.options.BaseOptions.TIMEOUT;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -41,9 +38,6 @@ Represents a verification task.
 @Options
 public class VerificationTask {
 
-	public static final String TIMEOUT = "verification.timeout";
-	public static final String OPTION_DEBUG_PRINT = "program.debugPrint";
-	
     private static final Logger logger = LogManager.getLogger(VerificationTask.class);
 
     private final Program program;
@@ -56,12 +50,6 @@ public class VerificationTask {
 
     private final ProgramEncoder progEncoder;
     private final MemoryEncoder memoryEncoder;
-
-	@Option(
-		name=OPTION_DEBUG_PRINT,
-		description="Prints the program after all processing steps and before verification for debug purposes.",
-		secure=true)
-	private boolean debugPrint;
 
     protected VerificationTask(Program program, Wmm memoryModel, VerificationTaskBuilder builder) {
         this.program = checkNotNull(program);
@@ -189,16 +177,6 @@ public class VerificationTask {
 			logger.warn(e.getMessage());
 		}
 		aliasAnalysis.calculateLocationSets(program);
-
-        if (debugPrint) {
-            for (Thread t : program.getThreads()) {
-                System.out.println("========== Thread " + t.getId() + " ==============");
-                for (Event e : t.getEntry().getSuccessors()) {
-                    String indent = ((e instanceof Label) ? "" : "   ");
-                    System.out.printf("%4d: %s%s%n", e.getCId(), indent, e);
-                }
-            }
-        }
     }
 
     public void initialiseEncoding(SolverContext ctx) {

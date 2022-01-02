@@ -23,20 +23,17 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
  baseline memory model and refines it iteratively towards the target memory model.
  Currently, we only have a Saturation-based solver to solve such tasks but any CEGAR-like approach could be used.
  */
-@Options
+@Options(prefix="refinement")
 public class RefinementTask extends VerificationTask {
-
-	public static final String OPTION_LOCAL_CONSISTENCY = "refinement.assumeLocallyConsistentWMM";
-	public static final String OPTION_NO_OUT_OF_THIN_AIR = "refinement.assumeNoOOTA";
 
     private final Wmm baselineModel;
 
-	@Option(name=OPTION_LOCAL_CONSISTENCY,
+	@Option(name="assumeLocallyConsistentWMM",
 		description="Refinement will start from a locally consistent baseline WMM instead of the empty one.",
 		secure=true)
 	private boolean useLocallyConsistentBaselineWmm = false;
 
-	@Option(name=OPTION_NO_OUT_OF_THIN_AIR,
+	@Option(name="assumeNoOOTA",
 		description="Refinement will start from a baseline WMM that does not allow Out-Of-Thin-Air behaviour.",
 		secure=true)
 	private boolean useNoOOTABaselineWMM = false;
