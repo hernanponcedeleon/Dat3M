@@ -40,9 +40,11 @@ Represents a verification task.
 @Options
 public class VerificationTask {
 
+	public static final String TARGET = "program.processing.compilationTarget";
+	public static final String TIMEOUT = "verification.timeout";
 	public static final String OPTION_POSTFIX = "encoding.postfix";
 	public static final String OPTION_DEBUG_PRINT = "program.debugPrint";
-
+	
     private static final Logger logger = LogManager.getLogger(VerificationTask.class);
 
     private final Program program;
@@ -62,7 +64,8 @@ public class VerificationTask {
 		secure=true)
 	private boolean postfix = false;
 
-	@Option(name=OPTION_DEBUG_PRINT,
+	@Option(
+		name=OPTION_DEBUG_PRINT,
 		description="Prints the program after all processing steps and before verification for debug purposes.",
 		secure=true)
 	private boolean debugPrint;
@@ -75,7 +78,7 @@ public class VerificationTask {
         try {
             this.config = builder.config.build();
             config.recursiveInject(this);
-            logger.info("{}: {}",OPTION_POSTFIX,postfix);
+            logger.info("{}: {}", OPTION_POSTFIX, postfix);
             progEncoder = ProgramEncoder.fromConfig(config);
             memoryEncoder = MemoryEncoder.fromConfig(config);
         } catch (InvalidConfigurationException ex) {
@@ -101,17 +104,17 @@ public class VerificationTask {
         }
 
         public VerificationTaskBuilder withTarget(Arch target) {
-            this.config.setOption("program.processing.compilationTarget", target.toString());
+            this.config.setOption(TARGET, target.toString());
             return this;
         }
 
 		public VerificationTaskBuilder withBound(int k) {
-			this.config.setOption(BOUND,Integer.toString(k));
+			this.config.setOption(BOUND, Integer.toString(k));
 			return this;
 		}
 
 		public VerificationTaskBuilder withSolverTimeout(int t) {
-			this.config.setOption("verification.timeout",Integer.toString(t));
+			this.config.setOption(TIMEOUT, Integer.toString(t));
 			return this;
 		}
 

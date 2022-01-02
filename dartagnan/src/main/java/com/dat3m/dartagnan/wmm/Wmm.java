@@ -12,6 +12,8 @@ import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.collect.ImmutableSet;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -31,10 +33,13 @@ public class Wmm {
 
     private final static ImmutableSet<String> baseRelations = ImmutableSet.of(CO, RF, IDD, ADDRDIRECT);
 
+    private static final Logger logger = LogManager.getLogger(Wmm.class);
+
     @Option(
-    		description="Assumes local consistency for all created wmms.",
-    		secure=true)
-    	private boolean assumeLocalConsistency = true;
+    	name="localconsistent",
+    	description="Assumes local consistency for all created wmms.",
+    	secure=true)
+    private boolean assumeLocalConsistency = true;
 
 	@Option(
 		description="Assumes the WMM respects atomic blocks for optimization (only the case for SVCOMP right now).",
@@ -95,6 +100,7 @@ public class Wmm {
     }
 
     public void initialise(VerificationTask task, SolverContext ctx) {
+        logger.info("{}: {}", "wmm.localconsistent", assumeLocalConsistency);
         this.task = task;
         new AliasAnalysis().calculateLocationSets(task.getProgram());
 

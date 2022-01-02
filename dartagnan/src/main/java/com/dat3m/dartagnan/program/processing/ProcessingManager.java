@@ -18,22 +18,6 @@ public class ProcessingManager implements ProgramProcessor {
 
     // =========================== Configurables ===========================
 
-    @Option(name = "performDCE",
-            description = "Eliminates unreachable code.",
-            secure = true)
-    private boolean performDCE = true;
-
-    public boolean performsDeadCodeElimination() { return performDCE; }
-    public void setPerformDeadCodeElimination(boolean value) { performDCE = value; }
-
-    @Option(name = "reorderBranches",
-            description = "Soundly reorders the code structure to make it more linear if possible.",
-            secure = true)
-    private boolean reorderBranches = true;
-
-    public boolean reordersBranches() { return reorderBranches; }
-    public void setReorderBranches(boolean value) { reorderBranches = value; }
-
     @Option(name = "reduceSymmetry",
             description = "Reduces the symmetry of the program (unsound in general).",
             secure = true)
@@ -51,21 +35,15 @@ public class ProcessingManager implements ProgramProcessor {
 
     public void run(Program program) {
         try {
-			AtomicAsLock.fromConfig(config).run(program);
-
-            if (performDCE) {
-                DeadCodeElimination.fromConfig(config).run(program);
-            }
-            if (reorderBranches) {
-                BranchReordering.fromConfig(config).run(program);
-            }
-            Simplifier.fromConfig(config).run(program);
-            LoopUnrolling.fromConfig(config).run(program);
-            Compilation.fromConfig(config).run(program);
+        	AtomicAsLock.fromConfig(config).run(program);
+        	DeadCodeElimination.fromConfig(config).run(program);
+        	BranchReordering.fromConfig(config).run(program);
+        	Simplifier.fromConfig(config).run(program);
+        	LoopUnrolling.fromConfig(config).run(program);
+        	Compilation.fromConfig(config).run(program);
             if (reduceSymmetry) {
                 SymmetryReduction.fromConfig(config).run(program);
             }
-
         } catch (InvalidConfigurationException ex) {
             logger.error(ex.getMessage());
             throw new RuntimeException(ex);

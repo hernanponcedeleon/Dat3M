@@ -29,7 +29,6 @@ public class DeadCodeElimination implements ProgramProcessor {
         return newInstance();
     }
 
-
     @Override
     public void run(Program program) {
         Preconditions.checkArgument(!program.isUnrolled(), "Dead code elimination should be performed before unrolling.");

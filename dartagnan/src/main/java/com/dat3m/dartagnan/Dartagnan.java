@@ -57,7 +57,7 @@ public class Dartagnan extends BaseOptions {
 	private File verifyWitness;
 
 	private static final Set<String> supportedFormats = 
-    		ImmutableSet.copyOf(Arrays.asList("litmus", "bpl", "c", "i"));
+    		ImmutableSet.copyOf(Arrays.asList(".litmus", ".bpl", ".c", ".i"));
 
 	private static final Logger logger = LogManager.getLogger(Dartagnan.class);
 
@@ -72,19 +72,18 @@ public class Dartagnan extends BaseOptions {
 		String[] argKeyword = Arrays.stream(args)
 		.filter(s->s.startsWith("-"))
 		.toArray(String[]::new);
-//		Configuration config = Configuration.fromCmdLineArguments(argKeyword); // TODO: We don't parse configs yet
-		Configuration config = Configuration.defaultConfiguration();
+		Configuration config = Configuration.fromCmdLineArguments(argKeyword); // TODO: We don't parse configs yet
 		Dartagnan o = new Dartagnan();
 		config.recursiveInject(o);
 
-		if(Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(f -> a.endsWith("."+f)))) {
+		if(Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(f -> a.endsWith(f)))) {
 			throw new IllegalArgumentException("Input program not given or format not recognized");
 		}
 		if(Arrays.stream(args).noneMatch(a -> a.endsWith(".cat"))) {
 			throw new IllegalArgumentException("CAT model not given or format not recognized");
 		}
 		File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst().get());
-		File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(f -> a.endsWith("."+f))).findFirst().get());
+		File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(f -> a.endsWith(f))).findFirst().get());
 		logger.info("Program path: " + fileProgram);
 		logger.info("CAT file path: " + fileModel);	
         
@@ -96,7 +95,7 @@ public class Dartagnan extends BaseOptions {
         if(o.verifyWitness != null) {
         	logger.info("Witness path: " + o.verifyWitness);
         	witness = new ParserWitness().parse(o.verifyWitness);
-        }        
+        }
 
         VerificationTask task = VerificationTask.builder()
                 .withConfig(config)
