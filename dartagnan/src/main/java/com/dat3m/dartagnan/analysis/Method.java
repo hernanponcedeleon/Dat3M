@@ -5,23 +5,6 @@ import java.util.Arrays;
 public enum Method {
 	ASSUME, INCREMENTAL, TWO, CAAT;
 	
-	public static Method get(String s) {
-        if(s != null){
-            s = s.trim();
-            switch(s){
-                case "two":
-                    return TWO;
-                case "incremental":
-                    return INCREMENTAL;
-                case "assume":
-                    return ASSUME;
-				case "caat":
-					return CAAT;
-            }
-        }
-        throw new UnsupportedOperationException("Unrecognized analysis " + s);
-	}
-
 	// Used for options in the console
 	public String asStringOption() {
         switch(this) {

@@ -5,19 +5,6 @@ import java.util.Arrays;
 public enum Analysis {
 	REACHABILITY, RACES;
 	
-	public static Analysis get(String analysis) {
-        if(analysis != null){
-        	analysis = analysis.trim();
-            switch(analysis){
-            	case "reachability":
-            		return REACHABILITY;
-            	case "races":
-            		return RACES;
-            }
-        }
-        throw new UnsupportedOperationException("Unrecognized analysis " + analysis);
-    }
-
 	// Used for options in the console
 	public String asStringOption() {
         switch(this){
