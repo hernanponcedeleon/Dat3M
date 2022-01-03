@@ -1,7 +1,7 @@
 package com.dat3m.svcomp;
 
 import static com.dat3m.dartagnan.Dartagnan.VALIDATE;
-import static com.dat3m.dartagnan.program.processing.Compilation.TARGET;
+import static com.dat3m.dartagnan.configuration.DAT3MOptions.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
@@ -13,13 +13,13 @@ import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.analysis.Analysis;
-import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
-import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.svcomp.utils.Compilation;
 
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
@@ -150,18 +150,11 @@ public class SVCOMPRunner extends BaseOptions {
 	    	cmd.addAll(asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-3.0.0.jar"));
 			cmd.add(fileModel.toString());
 			cmd.add(boogieName);
-			cmd.add(String.format("--%s=%s", TARGET, r.target.asStringOption()));
-			cmd.add(String.format("--%s=%d", LoopUnrolling.BOUND, bound));
 			cmd.add(String.format("--%s=%s", Dartagnan.ANALYSIS, r.analysis.asStringOption()));
-			cmd.add(String.format("--%s=%s", BaseOptions.METHOD, r.method.asStringOption()));
-			cmd.add(String.format("--%s=%s", BaseOptions.SOLVER, r.solver.toString().toLowerCase()));
-	    	if(r.witnessPath != null) {
-	    		// In validation mode we do not create witnesses.
-				cmd.add(String.format("--%s=%s", Dartagnan.VALIDATE, r.witnessPath));
-	    	} else {
-	    		// In verification mode we always create a witness.
-				cmd.add(String.format("--%s=%s", WitnessBuilder.WITNESS_ORIGINAL_PROGRAM_PATH, fileProgram));
-	    	}
+			cmd.add(String.format("--%s=%s", BOUND, bound));
+			for(String option : propagateOptions(config)) {
+				cmd.add(option);
+			}
 
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
 	        try {
@@ -195,4 +188,15 @@ public class SVCOMPRunner extends BaseOptions {
         tmp.delete();
         return;
     }
+    
+    private static List<String> propagateOptions(Configuration config) {
+    	
+    	List<String> skip = Arrays.asList("property", "umin", "umax", "step", "sanitize", BOUND);
+    	
+    	return Arrays.asList(config.asPropertiesString().split("\n")).stream().
+		filter(p -> skip.stream().noneMatch(s -> s.equals(p.split(" = ")[0]))).
+		map(p -> "--" + p.split(" = ")[0] + "=" + p.split(" = ")[1]).
+		collect(Collectors.toList());
+    }
+    
 }

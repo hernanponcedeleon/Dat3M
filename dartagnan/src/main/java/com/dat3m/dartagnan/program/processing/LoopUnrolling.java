@@ -1,27 +1,37 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.asserts.AbstractAssert;
+import com.dat3m.dartagnan.asserts.AssertCompositeOr;
+import com.dat3m.dartagnan.asserts.AssertInline;
+import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
+import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.base.Preconditions;
+
+import static com.dat3m.dartagnan.configuration.DAT3MOptions.BOUND;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.*;
 
-@Options(prefix = "program.processing")
+@Options
 public class LoopUnrolling implements ProgramProcessor {
-
-	public static final String BOUND = "program.processing.loopBound";
 
     private static final Logger logger = LogManager.getLogger(LoopUnrolling.class);
 
     // =========================== Configurables ===========================
 
-    @Option(name = "loopBound",
+    @Option(name = BOUND,
             description = "Unrolls loops up to loopBound many times.",
             secure = true)
     @IntegerOption(min = 1)
@@ -66,6 +76,8 @@ public class LoopUnrolling implements ProgramProcessor {
         program.markAsUnrolled();
 
         logger.info("Program unrolled {} times", bound);
+        
+        updateAssertions(program);
     }
 
     private int unrollThread(Thread t, int bound, int nextId){
@@ -134,5 +146,27 @@ public class LoopUnrolling implements ProgramProcessor {
             from = from.getSuccessor();
         }
         return appendTo;
+    }
+    
+    private void updateAssertions(Program program) {
+        if (program.getAss() != null) {
+            //TODO: Check why exactly this is needed. Litmus tests seem to have the assertion already defined
+            // but I was under the impression that assFilter was used for Litmus tests.
+            return;
+        }
+
+        List<Event> assertions = new ArrayList<>();
+        for(Thread t : program.getThreads()){
+            assertions.addAll(t.getCache().getEvents(FilterBasic.get(EType.ASSERTION)));
+        }
+        AbstractAssert ass = new AssertTrue();
+        if(!assertions.isEmpty()) {
+            ass = new AssertInline((Local)assertions.get(0));
+            for(int i = 1; i < assertions.size(); i++) {
+                ass = new AssertCompositeOr(ass, new AssertInline((Local)assertions.get(i)));
+            }
+        }
+        program.setAss(ass);
+        logger.info("Updated assertions after unrolling.");
     }
 }

@@ -14,6 +14,8 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
+import static com.dat3m.dartagnan.configuration.DAT3MOptions.DETREORDERING;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,14 +31,14 @@ import java.util.stream.Collectors;
     (3) In the case of loops, this procedure is repeated recursively within each loop
  */
 
-@Options(prefix = "program.processing")
+@Options
 public class BranchReordering implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(BranchReordering.class);
 
     // =========================== Configurables ===========================
 
-    @Option(name = "detReordering",
+    @Option(name = DETREORDERING,
             description = "Deterministically reorders branches. Non-deterministic reordering may be used for testing.",
             secure = true)
     private boolean reorderDeterministically = true;

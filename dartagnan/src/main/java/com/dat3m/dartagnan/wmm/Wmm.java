@@ -12,8 +12,6 @@ import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.collect.ImmutableSet;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -22,23 +20,20 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 
+import static com.dat3m.dartagnan.configuration.DAT3MOptions.LOCAL_CONSISTENT;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 /**
  *
  * @author Florian Furbach
  */
-@Options(prefix="wmm")
+@Options
 public class Wmm {
-
-	public static final String LOCAL_CONSISTENT = "wmm.localconsistent";
 
     private final static ImmutableSet<String> baseRelations = ImmutableSet.of(CO, RF, IDD, ADDRDIRECT);
 
-    private static final Logger logger = LogManager.getLogger(Wmm.class);
-
     @Option(
-    	name="localconsistent",
+    	name=LOCAL_CONSISTENT,
     	description="Assumes local consistency for all created wmms.",
     	secure=true)
     private boolean assumeLocalConsistency = true;
@@ -102,7 +97,6 @@ public class Wmm {
     }
 
     public void initialise(VerificationTask task, SolverContext ctx) {
-        logger.info("{}: {}", LOCAL_CONSISTENT, assumeLocalConsistency);
         this.task = task;
         new AliasAnalysis().calculateLocationSets(task.getProgram());
 

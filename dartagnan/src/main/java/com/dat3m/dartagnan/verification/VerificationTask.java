@@ -26,8 +26,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.List;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.program.processing.Compilation.TARGET;
-import static com.dat3m.dartagnan.program.processing.LoopUnrolling.BOUND;
+import static com.dat3m.dartagnan.configuration.DAT3MOptions.BOUND;
+import static com.dat3m.dartagnan.configuration.DAT3MOptions.TARGET;
 import static com.dat3m.dartagnan.utils.options.BaseOptions.TIMEOUT;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -162,7 +162,6 @@ public class VerificationTask {
     // ===================== Utility Methods ====================
 
     public void preprocessProgram() {
-        logger.info("#Events: " + program.getEvents().size());
         try {
             ProcessingManager.fromConfig(config).run(program);
             branchEquivalence = new BranchEquivalence(program, config);
@@ -171,11 +170,6 @@ public class VerificationTask {
         }
 
 		aliasAnalysis = new AliasAnalysis();
-		try {
-			config.inject(aliasAnalysis);
-		} catch(InvalidConfigurationException e) {
-			logger.warn(e.getMessage());
-		}
 		aliasAnalysis.calculateLocationSets(program);
     }
 

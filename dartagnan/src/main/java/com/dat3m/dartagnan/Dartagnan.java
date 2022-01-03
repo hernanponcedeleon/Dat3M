@@ -102,6 +102,10 @@ public class Dartagnan extends BaseOptions {
                 .withWitness(witness)
                 .build(p, mcm);
 
+        for(String Option : config.asPropertiesString().split("\n")) {
+        	logger.info("Configuration: " + Option);
+        }
+        
         ShutdownManager sdm = ShutdownManager.create();
     	Thread t = new Thread(() -> {
 			try {
@@ -169,17 +173,18 @@ public class Dartagnan extends BaseOptions {
                 } else {
                     System.out.println(result);
                 }
-                
-                // We only write witnesses for REACHABILITY and if we are not doing witness validation
-                if (o.analysis != RACES && o.witnessPath == null) {
-					try {
-						WitnessBuilder w = new WitnessBuilder(task, ctx, prover, result);
-						config.inject(w);
-						w.buildGraph().write();
-					} catch(InvalidConfigurationException ignore) {
-						System.out.println("Failed to write witness file.");
-					}
-                }
+
+				try {
+					WitnessBuilder w = new WitnessBuilder(task, ctx, prover, result);
+					config.inject(w);
+	                // We only write witnesses for REACHABILITY (if the path to the original C file was given) 
+					// and if we are not doing witness validation
+	                if (o.analysis != RACES && w.canBeBuilt() && o.witnessPath == null) {
+						w.build().write();
+	                }
+				} catch(InvalidConfigurationException e) {
+					logger.warn(e.getMessage());
+				}
             }
         } catch (InterruptedException e){
         	logger.warn("Timeout elapsed. The SMT solver was stopped");

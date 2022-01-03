@@ -52,7 +52,6 @@ public class RelCo extends Relation {
 		super.initialise(task,ctx);
 		try {
 			task.getConfig().inject(this);
-			logger.info("{}: {}", OPTION_ANTISYMMETRY, antisymmetry);
 		}
 		catch(InvalidConfigurationException e) {
 			logger.warn(e.getMessage());

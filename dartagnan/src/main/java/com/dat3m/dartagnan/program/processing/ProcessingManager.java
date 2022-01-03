@@ -1,6 +1,10 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
+
+import static com.dat3m.dartagnan.configuration.DAT3MOptions.ATOMICBLOCKSASLOCKS;
+import static com.dat3m.dartagnan.configuration.DAT3MOptions.REDUCESYMMETRY;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -9,7 +13,7 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
 
-@Options(prefix = "program.processing")
+@Options
 public class ProcessingManager implements ProgramProcessor {
 
     private final static Logger logger = LogManager.getLogger(ProcessingManager.class);
@@ -18,12 +22,12 @@ public class ProcessingManager implements ProgramProcessor {
 
     // =========================== Configurables ===========================
 
-    @Option(name = "reduceSymmetry",
+    @Option(name = REDUCESYMMETRY,
             description = "Reduces the symmetry of the program (unsound in general).",
             secure = true)
     private boolean reduceSymmetry = false;
 
-	@Option(name= "atomicBlocksAsLocks",
+	@Option(name= ATOMICBLOCKSASLOCKS,
 			description="Transforms atomic blocks by adding global locks.",
 			secure=true)
 		private boolean atomicBlocksAsLocks = false;

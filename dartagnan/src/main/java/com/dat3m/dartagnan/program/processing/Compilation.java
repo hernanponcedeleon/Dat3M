@@ -1,15 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.asserts.AbstractAssert;
-import com.dat3m.dartagnan.asserts.AssertCompositeOr;
-import com.dat3m.dartagnan.asserts.AssertInline;
-import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
@@ -19,19 +12,19 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.util.ArrayList;
+import static com.dat3m.dartagnan.configuration.DAT3MOptions.TARGET;
+
 import java.util.List;
 
-@Options(prefix = "program.processing")
+@Options
 public class Compilation implements ProgramProcessor {
 
-	public static final String TARGET = "program.processing.compilationTarget";
 
     private static final Logger logger = LogManager.getLogger(Compilation.class);
 
     // =========================== Configurables ===========================
 
-    @Option(name = "compilationTarget",
+    @Option(name = TARGET,
             description = "The target architecture to which the program shall be compiled to.",
             secure = true,
             toUppercase = true)
@@ -79,8 +72,6 @@ public class Compilation implements ProgramProcessor {
         program.clearCache(false);
         program.markAsCompiled();
         logger.info("Program compiled to {}", target);
-
-        updateAssertions(program);
     }
 
     private int compileThread(Thread thread, int nextId) {
@@ -109,29 +100,5 @@ public class Compilation implements ProgramProcessor {
         thread.updateExit(thread.getEntry());
         thread.clearCache();
         return nextId;
-    }
-
-    private void updateAssertions(Program program) {
-        if (program.getAss() != null) {
-            //TODO: Check why exactly this is needed. Litmus tests seem to have the assertion already defined
-            // but I was under the impression that assFilter was used for Litmus tests.
-            return;
-        }
-
-        List<Event> assertions = new ArrayList<>();
-        for(Thread t : program.getThreads()){
-            assertions.addAll(t.getCache().getEvents(FilterBasic.get(EType.ASSERTION)));
-        }
-        AbstractAssert ass = new AssertTrue();
-        if(!assertions.isEmpty()) {
-            ass = new AssertInline((Local)assertions.get(0));
-            for(int i = 1; i < assertions.size(); i++) {
-                ass = new AssertCompositeOr(ass, new AssertInline((Local)assertions.get(i)));
-            }
-        }
-        program.setAss(ass);
-
-        //TODO: It probably makes more sense to move this code to LoopUnrolling
-        logger.info("Updated assertions after compilation.");
     }
 }

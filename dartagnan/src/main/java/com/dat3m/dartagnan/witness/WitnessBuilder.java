@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.program.processing.LoopUnrolling.BOUND;
+import static com.dat3m.dartagnan.configuration.DAT3MOptions.*;
 import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -43,13 +43,13 @@ import static java.lang.String.valueOf;
 @Options
 public class WitnessBuilder {
 	
-	public static final String WITNESS_ORIGINAL_PROGRAM_PATH = "witness.originalProgramFilePath";
-	
 	private final VerificationTask task;
 	private final SolverContext ctx;
 	private final ProverEnvironment prover;
 	private final String type;
-	
+
+    // =========================== Configurables ===========================
+
 	@Option(
 			name=WITNESS_ORIGINAL_PROGRAM_PATH,
 			description="Path to the original C file (for which to create a witness).",
@@ -62,6 +62,8 @@ public class WitnessBuilder {
 			secure=true)
 	private String bound;
 
+    // =====================================================================
+
 	private final Map<Event, Integer> eventThreadMap = new HashMap<>();
 	
 	public WitnessBuilder(VerificationTask task, SolverContext ctx, ProverEnvironment prover, Result result) {
@@ -71,7 +73,10 @@ public class WitnessBuilder {
 		this.type = result.equals(FAIL) ? "violation" : "correctness";
 	}
 	
-	public WitnessGraph buildGraph() {
+    public boolean canBeBuilt() { return originalProgramFilePath != null; }
+
+	
+	public WitnessGraph build() {
 		for(Thread t : task.getProgram().getThreads()) {
 			for(Event e : t.getEntry().getSuccessors()) {
 				eventThreadMap.put(e, t.getId() - 1);

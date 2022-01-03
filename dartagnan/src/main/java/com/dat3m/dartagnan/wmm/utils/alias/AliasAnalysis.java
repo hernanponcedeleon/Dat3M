@@ -13,16 +13,12 @@ import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.collect.ImmutableSet;
-
 import java.util.*;
-
-import org.sosy_lab.common.configuration.Options;
 
 /**
  *
  * @author flo
  */
-@Options
 public class AliasAnalysis {
 
     private final List<Object> variables = new LinkedList<>(); // TODO: Use a queue
