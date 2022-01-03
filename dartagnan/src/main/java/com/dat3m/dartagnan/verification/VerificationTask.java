@@ -26,9 +26,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.List;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.configuration.DAT3MOptions.BOUND;
-import static com.dat3m.dartagnan.configuration.DAT3MOptions.TARGET;
-import static com.dat3m.dartagnan.utils.options.BaseOptions.TIMEOUT;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 

@@ -12,7 +12,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import static com.dat3m.dartagnan.configuration.DAT3MOptions.TARGET;
+import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 
 import java.util.List;
 

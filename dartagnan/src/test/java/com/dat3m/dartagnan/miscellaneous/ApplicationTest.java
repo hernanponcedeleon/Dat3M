@@ -8,9 +8,9 @@ import com.dat3m.dartagnan.analysis.Analysis;
 import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 
-import static com.dat3m.dartagnan.Dartagnan.*;
 import static com.dat3m.dartagnan.analysis.Analysis.*;
 import static com.dat3m.dartagnan.analysis.Method.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 public class ApplicationTest {
 

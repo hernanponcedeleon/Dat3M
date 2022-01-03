@@ -14,7 +14,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import static com.dat3m.dartagnan.configuration.DAT3MOptions.DETREORDERING;
+import static com.dat3m.dartagnan.configuration.OptionNames.DETREORDERING;
 
 import java.util.*;
 import java.util.stream.Collectors;

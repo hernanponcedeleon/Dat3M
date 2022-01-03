@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 
-import static com.dat3m.dartagnan.configuration.DAT3MOptions.ATOMICBLOCKSASLOCKS;
-import static com.dat3m.dartagnan.configuration.DAT3MOptions.REDUCESYMMETRY;
+import static com.dat3m.dartagnan.configuration.OptionNames.ATOMICBLOCKSASLOCKS;
+import static com.dat3m.dartagnan.configuration.OptionNames.REDUCESYMMETRY;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

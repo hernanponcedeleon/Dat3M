@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.analysis.Analysis;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
@@ -19,7 +18,6 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
@@ -41,20 +39,6 @@ import static org.sosy_lab.common.configuration.OptionCollector.collectOptions;
 
 @Options
 public class Dartagnan extends BaseOptions {
-
-	public static final String ANALYSIS = "analysis";
-	public static final String VALIDATE = "validate";
-
-	@Option(
-		description="Analysis to be performed.",
-		secure=true,
-		toUppercase=true)
-	private Analysis analysis = Analysis.getDefault();
-
-	@Option(
-		name=VALIDATE,
-		description="Run Dartagnan as a violation witness validator. Argument is the path to the witness file.")
-	private String witnessPath;
 
 	private static final Set<String> supportedFormats = 
     		ImmutableSet.copyOf(Arrays.asList(".litmus", ".bpl", ".c", ".i"));

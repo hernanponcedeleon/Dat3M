@@ -20,7 +20,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 
-import static com.dat3m.dartagnan.configuration.DAT3MOptions.LOCAL_CONSISTENT;
+import static com.dat3m.dartagnan.configuration.OptionNames.LOCAL_CONSISTENT;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 /**

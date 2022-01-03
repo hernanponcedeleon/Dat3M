@@ -1,7 +1,6 @@
 package com.dat3m.svcomp;
 
-import static com.dat3m.dartagnan.Dartagnan.VALIDATE;
-import static com.dat3m.dartagnan.configuration.DAT3MOptions.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
@@ -17,7 +16,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.analysis.Analysis;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.svcomp.utils.Compilation;
@@ -150,9 +148,9 @@ public class SVCOMPRunner extends BaseOptions {
 	    	cmd.addAll(asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-3.0.0.jar"));
 			cmd.add(fileModel.toString());
 			cmd.add(boogieName);
-			cmd.add(String.format("--%s=%s", Dartagnan.ANALYSIS, r.analysis.asStringOption()));
+			cmd.add(String.format("--%s=%s", ANALYSIS, r.analysis.asStringOption()));
 			cmd.add(String.format("--%s=%s", BOUND, bound));
-			for(String option : propagateOptions(config)) {
+			for(String option : filterOptions(config)) {
 				cmd.add(option);
 			}
 
@@ -189,7 +187,7 @@ public class SVCOMPRunner extends BaseOptions {
         return;
     }
     
-    private static List<String> propagateOptions(Configuration config) {
+    private static List<String> filterOptions(Configuration config) {
     	
     	List<String> skip = Arrays.asList("property", "umin", "umax", "step", "sanitize", BOUND);
     	

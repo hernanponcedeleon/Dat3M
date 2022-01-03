@@ -1,7 +1,13 @@
 package com.dat3m.dartagnan.configuration;
 
-public class DAT3MOptions {
+public class OptionNames {
 
+	public static final String ANALYSIS = "analysis";
+	public static final String METHOD = "method";
+	public static final String SOLVER = "solver";
+	public static final String TIMEOUT = "timeout";
+	public static final String VALIDATE = "validate";
+	
 	public static final String LOCAL_CONSISTENT = "wmm.localConsistent";
 	
 	public static final String BOUND = "program.processing.loopBound";
