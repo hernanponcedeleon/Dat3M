@@ -15,24 +15,11 @@ import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 public class Address extends IConst implements ExprInterface, LastValueInterface {
 
     private final int index;
-    private BigInteger constantValue;
 
     Address(int index, int precision){
         super(BigInteger.valueOf(index), precision);
         this.index = index;
     }
-
-    public boolean hasConstantValue() {
-     	return this.constantValue != null;
-     }
-
-    public BigInteger getConstantValue() {
-     	return this.constantValue;
-     }
-
-    public void setConstantValue(BigInteger value) {
-     	this.constantValue = value;
-     }
 
     @Override
     public Formula toIntFormula(Event e, SolverContext ctx){
@@ -80,11 +67,6 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
     @Override
     public Formula toIntFormula(SolverContext ctx){
 		FormulaManager fmgr = ctx.getFormulaManager();
-		if(constantValue != null) {
-			return precision > 0 ? 
-					fmgr.getBitvectorFormulaManager().makeBitvector(precision, constantValue) : 
-					fmgr.getIntegerFormulaManager().makeNumber(constantValue);
-    	}
 		String name = "memory_" + index;
 		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
 		return fmgr.makeVariable(type, name);
@@ -92,9 +74,6 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
 
     @Override
     public BigInteger getIntValue(Event e, Model model, SolverContext ctx){
-        if (hasConstantValue()) {
-            return constantValue;
-        }
         return new BigInteger(model.evaluate(toIntFormula(ctx)).toString());
     }
 
