@@ -103,7 +103,7 @@ public class VerificationTask {
         }
 
         public VerificationTask build(Program program, Wmm memoryModel) {
-            return new VerificationTask(program,memoryModel,this);
+            return new VerificationTask(program, memoryModel, this);
         }
     }
 
@@ -155,7 +155,9 @@ public class VerificationTask {
         return progEncoder;
     }
 
-    public MemoryEncoder getMemoryEncoder() { return memoryEncoder; }
+    public MemoryEncoder getMemoryEncoder() {
+    	return memoryEncoder;
+    }
 
 
     // ===================== Utility Methods ====================

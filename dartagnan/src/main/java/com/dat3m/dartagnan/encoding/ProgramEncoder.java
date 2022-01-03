@@ -76,7 +76,7 @@ public class ProgramEncoder implements Encoder {
 
     private void initEvent(Event e, VerificationTask task, SolverContext ctx){
         Preconditions.checkState(e.getCId() >= 0, "Event cID is negative for %s. Event was not compiled yet?", e);
-        
+
         FormulaManager fmgr = ctx.getFormulaManager();
 
         boolean mergeVars = shouldMergeCFVars && !shouldAllowPartialExecutions;
@@ -193,7 +193,7 @@ public class ProgramEncoder implements Encoder {
         for(Event e : program.getCache().getEvents(FilterBasic.get(EType.BOUND))){
             enc = bmgr.and(enc, bmgr.not(e.exec()));
         }
-        return enc;
+        return bmgr.not(enc);
     }
 
     public BooleanFormula encodeAssertions(SolverContext ctx) {

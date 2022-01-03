@@ -58,7 +58,6 @@ public class Refinement {
 
 		task.initialiseEncoding(ctx);
 
-		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Program program = task.getProgram();
         WMMSolver solver = new WMMSolver(task);
         Refiner refiner = new Refiner(task);
@@ -173,7 +172,7 @@ public class Refinement {
             lastTime = System.currentTimeMillis();
             prover.pop();
             // Add bound check
-            prover.addConstraint(bmgr.not(task.getProgramEncoder().encodeNoBoundEventExec(ctx)));
+            prover.addConstraint(task.getProgramEncoder().encodeNoBoundEventExec(ctx));
             // Add back the constraints found during Refinement (TODO: We might need to perform a second refinement)
             for (DNF<CoreLiteral> reason : foundCoreReasons) {
                 prover.addConstraint(refiner.refine(reason, ctx));

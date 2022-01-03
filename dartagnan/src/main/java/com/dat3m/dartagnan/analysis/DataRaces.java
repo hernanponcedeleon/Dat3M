@@ -44,7 +44,7 @@ public class DataRaces {
 			
 			if(prover.isUnsat()) {
 	        	prover.pop();
-				prover.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(noBoundEventExec));
+				prover.addConstraint(noBoundEventExec);
 	        	return prover.isUnsat() ? PASS : UNKNOWN;
 	        } else {
 	        	prover.addConstraint(noBoundEventExec);
