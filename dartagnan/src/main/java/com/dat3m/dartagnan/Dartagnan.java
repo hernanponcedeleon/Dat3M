@@ -86,10 +86,6 @@ public class Dartagnan extends BaseOptions {
                 .withWitness(witness)
                 .build(p, mcm);
 
-        for(String Option : config.asPropertiesString().split("\n")) {
-        	logger.info("Configuration: " + Option);
-        }
-        
         ShutdownManager sdm = ShutdownManager.create();
     	Thread t = new Thread(() -> {
 			try {

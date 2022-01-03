@@ -37,11 +37,6 @@ public class ProgramEncoder implements Encoder {
 
     // =========================== Configurables ===========================
 
-    @Option(name = USE_FIXED_MEMORY,
-            description = "Pre-assigns fixed values to dynamically allocated objects if possible.",
-            secure = true)
-    private boolean shouldUseFixedMemoryEncoding = false;
-
     @Option(name = ALLOW_PARTIAL_EXECUTIONS,
             description = "Allows to terminate executions on the first found violation." +
                     "This is not allowed on Litmus tests due to their different assertion condition.",
@@ -69,7 +64,9 @@ public class ProgramEncoder implements Encoder {
 
     public void initialise(VerificationTask task, SolverContext ctx) {
         Preconditions.checkState(task.getProgram().isCompiled(), "The program needs to be compiled first.");
-
+		logger.info("{}: {}", ALLOW_PARTIAL_EXECUTIONS, shouldAllowPartialExecutions);
+		logger.info("{}: {}", MERGE_CF_VARS, shouldMergeCFVars);
+		
         this.task = task;
         this.program = task.getProgram();
         for(Event e : program.getEvents()){

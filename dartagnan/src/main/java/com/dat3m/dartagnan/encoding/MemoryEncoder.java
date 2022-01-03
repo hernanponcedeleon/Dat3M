@@ -12,6 +12,7 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.USE_FIXED_MEMORY;
 import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 
@@ -26,13 +27,10 @@ public class MemoryEncoder implements Encoder {
 
     // =========================== Configurables ===========================
 
-    @Option(name = "encoding.useFixedMemory",
+    @Option(name = USE_FIXED_MEMORY,
             description = "Pre-assigns fixed values to dynamically allocated objects if possible.",
             secure = true)
     private boolean shouldUseFixedMemoryEncoding = false;
-
-    public boolean shouldUseFixedMemoryEncoding() { return shouldUseFixedMemoryEncoding; }
-    public void setShouldUseFixedMemoryEncoding(boolean value) { shouldUseFixedMemoryEncoding = value; }
 
     // ====================================================================
 
@@ -50,6 +48,7 @@ public class MemoryEncoder implements Encoder {
     @Override
     public void initialise(VerificationTask task, SolverContext context) {
         this.memory = task.getProgram().getMemory();
+		logger.info("{}: {}", USE_FIXED_MEMORY, shouldUseFixedMemoryEncoding);
     }
 
     public BooleanFormula encodeMemory(SolverContext ctx) {

@@ -40,18 +40,14 @@ public class ApplicationTest {
     }
 
 	private String[] createandFillOptions(Analysis analysis, Method method) {
-		String[] dartagnanOptions = new String[10];
+		String[] dartagnanOptions = new String[6];
 		
 	    dartagnanOptions[0] = ResourceHelper.TEST_RESOURCE_PATH + "locks/ttas-5.bpl";
 	    dartagnanOptions[1] = ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat";
-	    dartagnanOptions[2] = "-unroll";
-	    dartagnanOptions[3] = "2";
-	    dartagnanOptions[4] = "-" + ANALYSIS;
-	    dartagnanOptions[5] = analysis.asStringOption();
-	    dartagnanOptions[6] = "-" + METHOD;
-	    dartagnanOptions[7] = method.asStringOption();	    	
-	    dartagnanOptions[8] = "-" + SOLVER;
-	    dartagnanOptions[9] = Solvers.Z3.toString().toLowerCase();
+	    dartagnanOptions[2] = String.format("--%s=%s", BOUND, 2);
+	    dartagnanOptions[3] = String.format("--%s=%s", ANALYSIS, analysis.asStringOption());
+	    dartagnanOptions[4] = String.format("--%s=%s", METHOD, method.asStringOption());
+	    dartagnanOptions[5] = String.format("--%s=%s", SOLVER, Solvers.Z3.toString().toLowerCase());
 	    
 	    return dartagnanOptions;
 	}
