@@ -54,11 +54,6 @@ public class Location implements ExprInterface, LastValueInterface {
 	}
 
 	@Override
-	public ImmutableSet<Register> getRegs(){
-		return ImmutableSet.of();
-	}
-
-	@Override
 	public ImmutableSet<Location> getLocs() {
 		return ImmutableSet.of(this);
 	}
