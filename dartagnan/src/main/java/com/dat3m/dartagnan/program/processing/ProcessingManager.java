@@ -2,8 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.ATOMICBLOCKSASLOCKS;
-import static com.dat3m.dartagnan.configuration.OptionNames.REDUCESYMMETRY;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,12 +21,12 @@ public class ProcessingManager implements ProgramProcessor {
 
     // =========================== Configurables ===========================
 
-    @Option(name = REDUCESYMMETRY,
+    @Option(name = REDUCE_SYMMETRY,
             description = "Reduces the symmetry of the program (unsound in general).",
             secure = true)
     private boolean reduceSymmetry = false;
 
-	@Option(name= ATOMICBLOCKSASLOCKS,
+	@Option(name= ATOMIC_BLOCKS_AS_LOCKS,
 			description="Transforms atomic blocks by adding global locks.",
 			secure=true)
 		private boolean atomicBlocksAsLocks = false;

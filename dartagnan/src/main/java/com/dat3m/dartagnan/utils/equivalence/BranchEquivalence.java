@@ -15,6 +15,8 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
+
 import java.util.*;
 
 /* Procedure:
@@ -38,7 +40,7 @@ import java.util.*;
    BONUS: Compute which branches are mutually exclusive
 */
 
-@Options(prefix = "program.analysis.cf")
+@Options
 public class BranchEquivalence extends AbstractEquivalence<Event> {
     /*
        NOTE: If the initial class or the unreachable class is empty, they will be treated (almost) non-existent:
@@ -57,12 +59,14 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     private BranchClass initialClass;
     private BranchClass unreachableClass;
 
-    @Option(name = "alwaysSplitOnJump",
+    // =========================== Configurables ===========================
+
+    @Option(name = ALWAYS_SPLIT_ON_JUMPS,
             description = "Splits control flow branches even on unconditional jumps.",
             secure = true)
     private boolean alwaysSplitOnJump = false;
 
-    @Option(name = "mergeBranches",
+    @Option(name = MERGE_BRANCHES,
             description = "Merges branches with equivalent control-flow behaviour.",
             secure = true)
     private boolean mergeBranches = true;

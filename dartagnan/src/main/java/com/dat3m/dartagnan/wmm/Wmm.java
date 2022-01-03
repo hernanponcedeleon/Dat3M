@@ -38,11 +38,6 @@ public class Wmm {
     	secure=true)
     private boolean assumeLocalConsistency = true;
 
-	@Option(
-		description="Assumes the WMM respects atomic blocks for optimization (only the case for SVCOMP right now).",
-		secure=true)
-	private boolean respectsAtomicBlocks = true;
-    	
     private final List<Axiom> axioms = new ArrayList<>();
     private final Map<String, FilterAbstract> filters = new HashMap<>();
     private final RelationRepository relationRepository;

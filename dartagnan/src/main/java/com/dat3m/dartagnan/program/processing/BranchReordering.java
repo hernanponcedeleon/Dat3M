@@ -14,7 +14,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.DETREORDERING;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,7 +38,7 @@ public class BranchReordering implements ProgramProcessor {
 
     // =========================== Configurables ===========================
 
-    @Option(name = DETREORDERING,
+    @Option(name = DETERMINISTIC_REORDERING,
             description = "Deterministically reorders branches. Non-deterministic reordering may be used for testing.",
             secure = true)
     private boolean reorderDeterministically = true;

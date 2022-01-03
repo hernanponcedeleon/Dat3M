@@ -15,6 +15,7 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 /*
@@ -23,20 +24,24 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
  baseline memory model and refines it iteratively towards the target memory model.
  Currently, we only have a Saturation-based solver to solve such tasks but any CEGAR-like approach could be used.
  */
-@Options(prefix="refinement")
+@Options
 public class RefinementTask extends VerificationTask {
 
     private final Wmm baselineModel;
 
-	@Option(name="assumeLocallyConsistentWMM",
+    // =========================== Configurables ===========================
+
+	@Option(name=ASSUME_LOCALLY_CONSISTENT_WMM,
 		description="Refinement will start from a locally consistent baseline WMM instead of the empty one.",
 		secure=true)
 	private boolean useLocallyConsistentBaselineWmm = false;
 
-	@Option(name="assumeNoOOTA",
+	@Option(name=ASSUME_NO_OOTA,
 		description="Refinement will start from a baseline WMM that does not allow Out-Of-Thin-Air behaviour.",
 		secure=true)
 	private boolean useNoOOTABaselineWMM = false;
+
+    // ======================================================================
 
     private RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, RefinementTaskBuilder builder) {
         super(program,targetMemoryModel,builder);

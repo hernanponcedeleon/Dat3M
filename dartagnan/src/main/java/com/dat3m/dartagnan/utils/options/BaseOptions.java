@@ -32,7 +32,7 @@ public abstract class BaseOptions {
 
 	@Option(
 		name=SOLVER,
-		description="SMT library to be used",
+		description="SMT solver to be used",
 		toUppercase=true)
 	protected Solvers solver = Solvers.Z3;
 
