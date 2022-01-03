@@ -39,7 +39,7 @@ public class SVCOMPRunner extends BaseOptions {
 	private Analysis analysis;
 
 	@Option(
-		name="property",
+		name=PROPERTY,
 		required=true,
 		description="The path to the property to be checked.")
 	private void property(String p) {
@@ -54,22 +54,22 @@ public class SVCOMPRunner extends BaseOptions {
 	}
 
 	@Option(
-		name="umin",
+		name=UMIN,
 		description="Starting unrolling bound <integer>.")
 	private int umin = 1;
 
 	@Option(
-		name="umax",
+		name=UMAX,
 		description="Ending unrolling bound <integer>.")
 	private int umax = Integer.MAX_VALUE;
 
 	@Option(
-		name="step",
+		name=STEP,
 		description="Step size for the increasing unrolling bound <integer>.")
 	private int step = 1;
 
 	@Option(
-		name="sanitize",
+		name=SANITIZE,
 		description="Generates (also) a sanitised boogie file saved as /output/boogiesan.bpl.")
 	private boolean sanitize = false;
 
@@ -144,7 +144,7 @@ public class SVCOMPRunner extends BaseOptions {
 	    	ArrayList<String> cmd = new ArrayList<>();
 	    	cmd.add("java");
 	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
-	    	cmd.add("-DLOGNAME=" + fileProgram.getName());
+	    	cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
 	    	cmd.addAll(asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-3.0.0.jar"));
 			cmd.add(fileModel.toString());
 			cmd.add(boogieName);
@@ -189,7 +189,8 @@ public class SVCOMPRunner extends BaseOptions {
     
     private static List<String> filterOptions(Configuration config) {
     	
-    	List<String> skip = Arrays.asList("property", "umin", "umax", "step", "sanitize", BOUND);
+    	// BOUND is computed based on umin and the information from the witness
+    	List<String> skip = Arrays.asList(PROPERTY, UMIN, UMAX, STEP, SANITIZE, BOUND);
     	
     	return Arrays.asList(config.asPropertiesString().split("\n")).stream().
 		filter(p -> skip.stream().noneMatch(s -> s.equals(p.split(" = ")[0]))).
