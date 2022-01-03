@@ -39,24 +39,28 @@ public class PrinterTest {
 	public void PrintX86() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "litmus/MP+mfence-rmw+rmw-mfence.litmus"));
 		assert(new Printer().print(p) != null);
+		assert(p.getAss().toString() != null);
 	}
 
 	@Test()
 	public void PrintPPC() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "litmus/MP+lwsync+data-wsi-rfi-ctrlisync.litmus"));
 		assert(new Printer().print(p) != null);
+		assert(p.getAss().toString() != null);
 	}
 
 	@Test()
 	public void PrintAARCH64() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "litmus/MP+popl+poap.litmus"));
 		assert(new Printer().print(p) != null);
+		assert(p.getAss().toString() != null);
 	}
 
 	@Test()
 	public void PrintLinux() throws Exception {
 		Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "litmus/C-rcu-link-after.litmus"));
 		assert(new Printer().print(p) != null);
+		assert(p.getAss().toString() != null);
 	}
 
 	@Test()

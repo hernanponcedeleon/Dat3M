@@ -7,8 +7,6 @@ import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
-
 
 //TODO: This is buggy for now, because Addresses are treated as IConst
 public class ExprSimplifier extends ExprTransformer {
@@ -140,11 +138,6 @@ public class ExprSimplifier extends ExprTransformer {
     @Override
     public IExpr visit(INonDet iNonDet) {
         return iNonDet;
-    }
-
-    @Override
-    public ExprInterface visit(Location loc) {
-        return loc;
     }
 
     @Override
