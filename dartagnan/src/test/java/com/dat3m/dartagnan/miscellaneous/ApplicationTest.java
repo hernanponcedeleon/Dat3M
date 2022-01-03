@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.utils.ResourceHelper;
 import static com.dat3m.dartagnan.analysis.Analysis.*;
 import static com.dat3m.dartagnan.analysis.Method.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.utils.ResourceHelper.LITMUS_RESOURCE_PATH;
 
 public class ApplicationTest {
 
@@ -50,15 +51,40 @@ public class ApplicationTest {
 
     @Test
     public void Validation() throws Exception {
-		String[] options = new String[7];
+		String[] options = new String[3];
 		
 	    options[0] = ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bpl";
 	    options[1] = ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat";
-	    options[2] = String.format("--%s=%s", BOUND, 2);
-	    options[3] = String.format("--%s=%s", ANALYSIS, REACHABILITY.asStringOption());
-	    options[4] = String.format("--%s=%s", METHOD, INCREMENTAL.asStringOption());
-	    options[5] = String.format("--%s=%s", SOLVER, Solvers.Z3.toString());
-    	options[6] = String.format("--%s=%s", VALIDATE, ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01.graphml");
+    	options[2] = String.format("--%s=%s", VALIDATE, ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01.graphml");
+
+    	Dartagnan.main(options);
+    }
+
+    @Test
+    public void Litmus() throws Exception {
+		String[] options = new String[2];
+		
+	    options[0] = LITMUS_RESOURCE_PATH + "litmus/X86/2+2W.litmus";
+	    options[1] = ResourceHelper.CAT_RESOURCE_PATH + "cat/tso.cat";
+
+    	Dartagnan.main(options);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void WrongProgramFormat() throws Exception {
+		String[] options = new String[1];
+		
+	    options[0] = ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bc";
+
+    	Dartagnan.main(options);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void WrongCATFormat() throws Exception {
+		String[] options = new String[2];
+		
+	    options[0] = ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bpl";
+	    options[1] = ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.bell";
 
     	Dartagnan.main(options);
     }
