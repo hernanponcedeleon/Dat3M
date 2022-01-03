@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.witness;
 
+import com.dat3m.dartagnan.analysis.IncrementalSolver;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -17,7 +18,6 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
 import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_ORIGINAL_PROGRAM_PATH;
 
@@ -39,7 +39,7 @@ public class BuildWitnessTest {
     	try (SolverContext ctx = TestHelper.createContext();
     			ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
     	{
-    		Result res = runAnalysisIncrementalSolver(ctx, prover, task);
+    		Result res = IncrementalSolver.run(ctx, prover, task);
     		WitnessBuilder witnessBuilder = new WitnessBuilder(task, ctx, prover, res);
     		config.inject(witnessBuilder);
 			WitnessGraph graph = witnessBuilder.build();

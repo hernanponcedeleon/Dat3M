@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.analysis.Refinement;
+import com.dat3m.dartagnan.analysis.RefinementSolver;
+import com.dat3m.dartagnan.analysis.TwoSolvers;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
@@ -30,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
 import static com.google.common.io.Files.getNameWithoutExtension;
 import static org.junit.Assert.assertEquals;
 
@@ -126,14 +126,14 @@ public abstract class AbstractLitmusTest {
     public void test() throws Exception {
         if (programProvider.get().getAss() != null) {
             // @HP: Is the check for assertion != null needed?
-            assertEquals(expected, runAnalysisTwoSolvers(contextProvider.get(), proverProvider.get(), prover2Provider.get(), taskProvider.get()));
+            assertEquals(expected, TwoSolvers.run(contextProvider.get(), proverProvider.get(), prover2Provider.get(), taskProvider.get()));
         }
     }
 
     //@Test
     @CSVLogger.FileName("csv/refinement")
     public void testRefinement() throws Exception {
-        assertEquals(expected, Refinement.runAnalysisWMMSolver(contextProvider.get(), proverProvider.get(),
+        assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(),
                 RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(taskProvider.get())));
     }
 }

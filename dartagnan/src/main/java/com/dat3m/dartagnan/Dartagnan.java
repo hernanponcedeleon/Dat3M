@@ -1,5 +1,10 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.AssumeSolver;
+import com.dat3m.dartagnan.analysis.DataRaceAnalysis;
+import com.dat3m.dartagnan.analysis.IncrementalSolver;
+import com.dat3m.dartagnan.analysis.RefinementSolver;
+import com.dat3m.dartagnan.analysis.TwoSolvers;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
@@ -32,9 +37,6 @@ import java.util.Arrays;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.analysis.Analysis.RACES;
-import static com.dat3m.dartagnan.analysis.Base.*;
-import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
-import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisWMMSolver;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -118,23 +120,23 @@ public class Dartagnan extends BaseOptions {
                 Result result = UNKNOWN;
                 switch (o.getAnalysis()) {
                 	case RACES:
-                    	result = checkForRaces(ctx, task);
+                    	result = DataRaceAnalysis.run(ctx, task);
                         break;
                     case REACHABILITY:
                     	switch (o.getMethod()) {
                         	case TWO:
                             	try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-                                	result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
+                                	result = TwoSolvers.run(ctx, prover, prover2, task);
                                 }
                                 break;
                             case INCREMENTAL:
-                            	result = runAnalysisIncrementalSolver(ctx, prover, task);
+                            	result = IncrementalSolver.run(ctx, prover, task);
                                 break;
                             case ASSUME:
-                            	result = runAnalysisAssumeSolver(ctx, prover, task);
+                            	result = AssumeSolver.run(ctx, prover, task);
                             	break;
                             case CAAT:
-                            	result = runAnalysisWMMSolver(ctx, prover,
+                            	result = RefinementSolver.run(ctx, prover,
                             			RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
                                 break;
                         }

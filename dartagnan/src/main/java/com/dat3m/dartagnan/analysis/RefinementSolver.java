@@ -41,13 +41,13 @@ import static com.dat3m.dartagnan.utils.Result.*;
         - Refines the used memory model if the found execution was inconsistent, using the explanations
           provided by the theory solver.
  */
-public class Refinement {
+public class RefinementSolver {
 
-    private static final Logger logger = LogManager.getLogger(Refinement.class);
+    private static final Logger logger = LogManager.getLogger(RefinementSolver.class);
 
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
-    public static Result runAnalysisWMMSolver(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
+    public static Result run(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
             throws InterruptedException, SolverException {
 
 		task.preProcessProgram();

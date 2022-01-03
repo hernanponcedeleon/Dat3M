@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.miscellaneous;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.analysis.Refinement;
+import com.dat3m.dartagnan.analysis.AssumeSolver;
+import com.dat3m.dartagnan.analysis.RefinementSolver;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -22,7 +23,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -66,14 +66,14 @@ public class UnusedTestFails {
         return data;
     }
 
-//    //@Test(timeout = TIMEOUT)
+    //@Test(timeout = TIMEOUT)
 //    public void test() {
 //        try (SolverContext ctx = TestHelper.createContext();
 //             ProverEnvironment prover = ctx.newProverEnvironment(SolverContext.ProverOptions.GENERATE_MODELS))
 //        {
 //            Program program = new ProgramParser().parse(new File(path));
 //            VerificationTask task = new VerificationTask(program, wmm, target, settings);
-//            assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
+//            assertEquals(expected, AssumeSolver.run(ctx, prover, task));
 //        } catch (Exception e){
 //            fail(e.getMessage());
 //        }
@@ -86,7 +86,7 @@ public class UnusedTestFails {
 //        {
 //            Program program = new ProgramParser().parse(new File(path));
 //            VerificationTask task = new VerificationTask(program, wmm, target, settings);
-//            assertEquals(expected, Refinement.runAnalysisWMMSolver(ctx, prover,
+//            assertEquals(expected, RefinementSolver.run(ctx, prover,
 //                    RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
 //        } catch (Exception e){
 //            fail(e.getMessage());

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.DataRaceAnalysis;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
@@ -23,7 +24,6 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.ResourceHelper.readExpected;
 import static org.junit.Assert.assertEquals;
@@ -114,6 +114,6 @@ public class DataRaceTest {
     @CSVLogger.FileName("csv/data-race")
     public void testAssume() throws Exception {
         assertEquals(expectedResultProvider.get(),
-        		checkForRaces(contextProvider.get(), taskProvider.get()));
+        		DataRaceAnalysis.run(contextProvider.get(), taskProvider.get()));
     }
 }

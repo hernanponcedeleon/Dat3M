@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.miscellaneous;
 
+import com.dat3m.dartagnan.analysis.TwoSolvers;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -22,7 +23,6 @@ import java.nio.file.Paths;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -60,7 +60,7 @@ public class ArrayValidTest {
             VerificationTask task = VerificationTask.builder()
                     .withSolverTimeout(60)
                     .build(program, wmm);
-            assertEquals(runAnalysisTwoSolvers(ctx, prover1, prover2, task), FAIL);
+            assertEquals(TwoSolvers.run(ctx, prover1, prover2, task), FAIL);
         } catch (Exception e){
             fail("Missing resource file");
         }

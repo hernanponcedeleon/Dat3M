@@ -1,5 +1,9 @@
 package com.dat3m.ui.result;
 
+import com.dat3m.dartagnan.analysis.AssumeSolver;
+import com.dat3m.dartagnan.analysis.IncrementalSolver;
+import com.dat3m.dartagnan.analysis.RefinementSolver;
+import com.dat3m.dartagnan.analysis.TwoSolvers;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.RefinementTask;
@@ -16,8 +20,6 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
-import static com.dat3m.dartagnan.analysis.Base.*;
-import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisWMMSolver;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 
 public class ReachabilityResult {
@@ -76,18 +78,18 @@ public class ReachabilityResult {
 
                     switch (options.getMethod()) {
                         case INCREMENTAL:
-                            result = runAnalysisIncrementalSolver(ctx, prover, task);
+                            result = IncrementalSolver.run(ctx, prover, task);
                             break;
                         case ASSUME:
-                            result = runAnalysisAssumeSolver(ctx, prover, task);
+                            result = AssumeSolver.run(ctx, prover, task);
                             break;
                         case TWO:
                             try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-                                result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
+                                result = TwoSolvers.run(ctx, prover, prover2, task);
                             }
                             break;
                         case CAAT:
-                            result = runAnalysisWMMSolver(ctx, prover,
+                            result = RefinementSolver.run(ctx, prover,
                                     RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
                             break;
                     }

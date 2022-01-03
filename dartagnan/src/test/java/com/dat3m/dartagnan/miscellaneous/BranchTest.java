@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.miscellaneous;
 
+import com.dat3m.dartagnan.analysis.TwoSolvers;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -27,7 +28,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
@@ -98,7 +98,7 @@ public class BranchTest {
             VerificationTask task = VerificationTask.builder()
                     .withSolverTimeout(60)
                     .build(program, wmm);
-            assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
+            assertEquals(expected, TwoSolvers.run(ctx, prover1, prover2, task));
         } catch (Exception e){
             fail("Missing resource file");
         }
