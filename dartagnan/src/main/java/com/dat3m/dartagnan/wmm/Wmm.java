@@ -32,11 +32,20 @@ public class Wmm {
 
     private final static ImmutableSet<String> baseRelations = ImmutableSet.of(CO, RF, IDD, ADDRDIRECT);
 
+    // =========================== Configurables ===========================
+
     @Option(
     	name=LOCAL_CONSISTENT,
     	description="Assumes local consistency for all created wmms.",
     	secure=true)
     private boolean assumeLocalConsistency = true;
+
+    @Option(
+    	description="Assumes the WMM respects atomic blocks for optimization (only the case for SVCOMP right now).",
+    	secure=true)
+    private boolean respectsAtomicBlocks = true;
+    
+    // =====================================================================
 
     private final List<Axiom> axioms = new ArrayList<>();
     private final Map<String, FilterAbstract> filters = new HashMap<>();
@@ -81,6 +90,12 @@ public class Wmm {
         // For now we return a preset value. Ideally, we would like to
         // find this property automatically.
         return assumeLocalConsistency;
+    }
+    
+    public boolean doesRespectAtomicBlocks() {
+        // For now we return a preset value. Ideally, we would like to
+        // find this property automatically. This is currently only relevant for SVCOMP
+        return respectsAtomicBlocks;
     }
     
     public void addRecursiveGroup(Set<RecursiveRelation> recursiveGroup){

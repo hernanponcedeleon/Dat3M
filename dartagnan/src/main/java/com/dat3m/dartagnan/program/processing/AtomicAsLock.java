@@ -27,6 +27,7 @@ Substitutes all atomic markers with accesses to a global mutex.
 May be performed right after parsing.
 TODO pure boolean precision
 FIXME reuses oId
+TODO This analysis is buggy right now. It complains that Init events were not compiled 
 */
 @Options
 public class AtomicAsLock implements ProgramProcessor {

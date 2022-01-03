@@ -35,12 +35,16 @@ public class RelCo extends Relation {
 
 	private static final Logger logger = LogManager.getLogger(RelCo.class);
 
+    // =========================== Configurables ===========================
+
 	@Option(
-		name=OPTION_ANTISYMMETRY,
+		name=CO_ANTISYMMETRY,
 		description="Encodes the antisymmetry of coherences explicitly.",
 		secure=true)
 	private boolean antisymmetry = false;
-	
+
+	// =====================================================================
+
     public RelCo(){
         term = CO;
         forceDoEncode = true;
@@ -51,6 +55,7 @@ public class RelCo extends Relation {
 		super.initialise(task,ctx);
 		try {
 			task.getConfig().inject(this);
+    		logger.info("{}: {}", CO_ANTISYMMETRY, antisymmetry);
 		}
 		catch(InvalidConfigurationException e) {
 			logger.warn(e.getMessage());

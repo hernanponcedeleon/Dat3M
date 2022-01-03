@@ -1,5 +1,6 @@
 package com.dat3m.svcomp.utils;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static java.util.Arrays.asList;
 
 import java.io.BufferedReader;
@@ -19,11 +20,13 @@ public class Compilation {
 	private static final Logger logger = LogManager.getLogger(Compilation.class);
 
 	@Option(
+		name=OPTIMIZATION,
 		description="Optimization flag for LLVM compiler",
 		secure=true)
 	private String optimization = "O0";
 
 	@Option(
+		name=INTEGER_ENCODING,
 		description="bit-vector=use SMT bit-vector theory, " +
 			"unbounded-integer=use SMT integer theory, " +
 			"wrapped-integer=use SMT integer theory but model wrap-around behavior" +

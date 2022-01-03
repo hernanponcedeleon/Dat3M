@@ -4,12 +4,16 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.processing.Simplifier;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -52,6 +56,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
              - the reachable-/impliedClasses will only contain themselves, the exclusiveClasses will be empty
     */
 
+    private static final Logger logger = LogManager.getLogger(BranchEquivalence.class);
 
     // ============================= State ==============================
 
@@ -128,6 +133,9 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         this.program = program;
         config.inject(this);
 
+		logger.info("{}: {}", ALWAYS_SPLIT_ON_JUMPS, alwaysSplitOnJump);
+		logger.info("{}: {}", MERGE_BRANCHES, mergeBranches);
+        
         Map<Thread, Map<Event, Branch>> threadBranches = new HashMap<>();
         for (Thread t : program.getThreads()) {
             // Step (1)

@@ -9,6 +9,8 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -26,6 +28,8 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
  */
 @Options
 public class RefinementTask extends VerificationTask {
+
+	private static final Logger logger = LogManager.getLogger(RefinementTask.class);
 
     private final Wmm baselineModel;
 
@@ -97,6 +101,8 @@ public class RefinementTask extends VerificationTask {
     public void initialiseEncoding(SolverContext ctx) {
         super.initialiseEncoding(ctx);
         baselineModel.initialise(this, ctx);
+		logger.info("{}: {}", ASSUME_LOCALLY_CONSISTENT_WMM, useLocallyConsistentBaselineWmm);
+		logger.info("{}: {}", ASSUME_NO_OOTA, useNoOOTABaselineWMM);
     }
 
     public static RefinementTask fromVerificationTaskWithDefaultBaselineWMM(VerificationTask task) {

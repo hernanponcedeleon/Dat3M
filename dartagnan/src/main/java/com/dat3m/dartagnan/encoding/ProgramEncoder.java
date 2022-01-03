@@ -26,6 +26,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.*;
 import java.util.function.BiFunction;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
@@ -36,30 +37,21 @@ public class ProgramEncoder implements Encoder {
 
     // =========================== Configurables ===========================
 
-    @Option(name = "encoding.useFixedMemory",
+    @Option(name = USE_FIXED_MEMORY,
             description = "Pre-assigns fixed values to dynamically allocated objects if possible.",
             secure = true)
     private boolean shouldUseFixedMemoryEncoding = false;
 
-    public boolean shouldUseFixedMemoryEncoding() { return shouldUseFixedMemoryEncoding; }
-    public void setShouldUseFixedMemoryEncoding(boolean value) { shouldUseFixedMemoryEncoding = value; }
-
-    @Option(name = "encoding.allowPartialExecutions",
+    @Option(name = ALLOW_PARTIAL_EXECUTIONS,
             description = "Allows to terminate executions on the first found violation." +
                     "This is not allowed on Litmus tests due to their different assertion condition.",
             secure = true)
     private boolean shouldAllowPartialExecutions = false;
 
-    public boolean shouldAllowPartialExecutions() { return shouldAllowPartialExecutions; }
-    public void setShouldAllowPartialExecutions(boolean value) { shouldAllowPartialExecutions = value; }
-
-    @Option(name = "encoding.mergeCFVars",
+    @Option(name = MERGE_CF_VARS,
             description = "Merges control flow variables of events with identical control-flow behaviour.",
             secure = true)
     private boolean shouldMergeCFVars = true;
-
-    public boolean shouldMergeCFVars() { return shouldMergeCFVars; }
-    public void setShouldMergeCFVars(boolean value) { shouldMergeCFVars = value; }
 
     // =====================================================================
 

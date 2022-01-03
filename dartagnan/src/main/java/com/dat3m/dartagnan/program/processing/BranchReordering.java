@@ -43,9 +43,6 @@ public class BranchReordering implements ProgramProcessor {
             secure = true)
     private boolean reorderDeterministically = true;
 
-    public boolean reordersDeterministically() { return reorderDeterministically; }
-    public void setReorderDeterministically(boolean value) { reorderDeterministically = value; }
-
     // =====================================================================
 
     private BranchReordering() { }
@@ -66,12 +63,11 @@ public class BranchReordering implements ProgramProcessor {
     @Override
     public void run(Program program) {
         Preconditions.checkArgument(!program.isUnrolled(), "Reordering should be performed before unrolling.");
-
         for (Thread t : program.getThreads()) {
             new ThreadReordering(t).run();
         }
-
         logger.info("Branches reordered");
+		logger.info("{}: {}", DETERMINISTIC_REORDERING, reorderDeterministically);
     }
 
     private class ThreadReordering {

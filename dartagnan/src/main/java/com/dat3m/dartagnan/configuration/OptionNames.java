@@ -11,7 +11,12 @@ public class OptionNames {
 
 	// Encoding Options
 	public static final String LOCAL_CONSISTENT = "encoding.localConsistent";
-	public static final String OPTION_ANTISYMMETRY = "encoding.antiSymmCo";
+	public static final String USE_FIXED_MEMORY = "encoding.useFixedMemory";
+	public static final String ALLOW_PARTIAL_EXECUTIONS = "encoding.allowPartialExecutions";
+	public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
+	public static final String CO_ANTISYMMETRY = "encoding.co.antiSymm";
+	public static final String RF_UNINITIALIZED = "encoding.rf.allowUninitialized";
+	public static final String RF_NAIVE = "encoding.rf.naiveMutex";
 
 	// Program Processing Options
 	public static final String BOUND = "program.processing.loopBound";
@@ -37,4 +42,6 @@ public class OptionNames {
 	public static final String UMAX = "svcomp.umax";
 	public static final String STEP = "svcomp.step";
 	public static final String SANITIZE = "svcomp.sanitize";
+	public static final String OPTIMIZATION = "svcomp.optimization";
+	public static final String INTEGER_ENCODING = "svcomp.integerEncoding";
 }
