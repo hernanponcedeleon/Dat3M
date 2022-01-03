@@ -5,12 +5,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
 
-import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
 import java.util.*;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 public class Memory {
 
@@ -28,18 +23,6 @@ public class Memory {
 
     public Location getLocationForAddress(Address address){
         return map.inverse().get(address);
-    }
-
-    // Assigns each Address a fixed memory address.
-    public BooleanFormula fixedMemoryEncoding(SolverContext ctx) {
-        FormulaManager fmgr = ctx.getFormulaManager();
-		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-
-    	BooleanFormula[] addrExprs = getAllAddresses().stream().filter(x -> !x.hasConstantValue())
-        		.map(add -> imgr.equal(convertToIntegerFormula(add.toIntFormula(ctx), ctx),
-        								imgr.makeNumber(add.getValue().intValue())))
-        		.toArray(BooleanFormula[]::new);
-        return fmgr.getBooleanFormulaManager().and(addrExprs);
     }
 
     public List<Address> malloc(String name, int size, int precision){

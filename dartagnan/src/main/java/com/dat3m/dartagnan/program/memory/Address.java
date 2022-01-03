@@ -4,9 +4,7 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
 import java.math.BigInteger;
@@ -35,11 +33,6 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
     public void setConstantValue(BigInteger value) {
      	this.constantValue = value;
      }
-
-    @Override
-    public ImmutableSet<Register> getRegs(){
-        return ImmutableSet.of();
-    }
 
     @Override
     public Formula toIntFormula(Event e, SolverContext ctx){
