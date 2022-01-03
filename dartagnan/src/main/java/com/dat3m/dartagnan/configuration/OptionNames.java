@@ -11,7 +11,6 @@ public class OptionNames {
 
 	// Encoding Options
 	public static final String LOCAL_CONSISTENT = "encoding.localConsistent";
-	public static final String USE_FIXED_MEMORY = "encoding.useFixedMemory";
 	public static final String ALLOW_PARTIAL_EXECUTIONS = "encoding.allowPartialExecutions";
 	public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
 	public static final String CO_ANTISYMMETRY = "encoding.co.antiSymm";
