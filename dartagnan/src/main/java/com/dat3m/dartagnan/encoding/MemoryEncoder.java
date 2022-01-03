@@ -41,7 +41,7 @@ public class MemoryEncoder implements Encoder {
         FormulaManager fmgr = ctx.getFormulaManager();
         IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 
-        BooleanFormula[] addrExprs = memory.getAllAddresses().stream()
+        BooleanFormula[] addrExprs = memory.getAllAddresses().stream().filter(x -> !x.hasConstantValue())
                 .map(add -> imgr.equal(convertToIntegerFormula(add.toIntFormula(ctx), ctx),
                         imgr.makeNumber(add.getValue().intValue())))
                 .toArray(BooleanFormula[]::new);
