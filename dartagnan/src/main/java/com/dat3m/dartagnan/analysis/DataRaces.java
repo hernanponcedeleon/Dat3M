@@ -47,7 +47,7 @@ public class DataRaces {
 				prover.addConstraint(noBoundEventExec);
 	        	return prover.isUnsat() ? PASS : UNKNOWN;
 	        } else {
-	        	prover.addConstraint(noBoundEventExec);
+				prover.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(noBoundEventExec));
 				return prover.isUnsat() ? UNKNOWN : FAIL;
 	        }
 		} catch (Exception e) {
