@@ -35,6 +35,7 @@ import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
 import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisWMMSolver;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static org.sosy_lab.common.configuration.OptionCollector.collectOptions;
 
 @Options
@@ -111,34 +112,30 @@ public class Dartagnan extends BaseOptions {
                     o.solver);
                  ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
             {
-                Result result;
+                Result result = UNKNOWN;
                 switch (o.analysis) {
-                    case RACES:
-                        result = checkForRaces(ctx, task);
+                	case RACES:
+                    	result = checkForRaces(ctx, task);
                         break;
                     case REACHABILITY:
-                        switch (o.method) {
-                            case TWO:
-                                try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-                                    result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
+                    	switch (o.method) {
+                        	case TWO:
+                            	try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+                                	result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
                                 }
                                 break;
                             case INCREMENTAL:
-                                result = runAnalysisIncrementalSolver(ctx, prover, task);
+                            	result = runAnalysisIncrementalSolver(ctx, prover, task);
                                 break;
                             case ASSUME:
-                                result = runAnalysisAssumeSolver(ctx, prover, task);
-                                break;
+                            	result = runAnalysisAssumeSolver(ctx, prover, task);
+                            	break;
                             case CAAT:
-                                result = runAnalysisWMMSolver(ctx, prover,
-                                        RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
+                            	result = runAnalysisWMMSolver(ctx, prover,
+                            			RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
                                 break;
-                            default:
-                                throw new RuntimeException("Unrecognized method mode: " + o.method);
                         }
                         break;
-                    default:
-                        throw new RuntimeException("Unrecognized analysis: " + o.analysis);
                 }
 
                 // Verification ended, we can interrupt the timeout Thread
