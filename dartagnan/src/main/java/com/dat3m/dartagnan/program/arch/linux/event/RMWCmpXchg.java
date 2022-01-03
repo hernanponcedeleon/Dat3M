@@ -53,7 +53,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
 
     @Override
     public List<Event> compile(Arch target) {
-        Preconditions.checkArgument(target == Arch.NONE, "Compilation of RMWCmpXchg is not implemented for " + target);
+        Preconditions.checkArgument(target == Arch.NONE, "Compilation to " + target + " is not supported for " + getClass().getName());
 
         Register dummy = resultRegister;
         if(resultRegister == value || resultRegister == cmp){

@@ -65,7 +65,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
 
     @Override
     public List<Event> compile(Arch target) {
-        Preconditions.checkArgument(target == Arch.TSO, "Compilation of xchg is not implemented for " + target);
+        Preconditions.checkArgument(target == Arch.TSO, "Compilation to " + target + " is not supported for " + getClass().getName());
         
         Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         Load load = newRMWLoad(dummyReg, address, null);

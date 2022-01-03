@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.GlobalSettings.BREAK_SYMMETRY_BY_SYNC_DEGREE;
 import static com.dat3m.dartagnan.GlobalSettings.BREAK_SYMMETRY_ON_RELATION;
 
-
 public class SymmetryBreaking {
 
     private final VerificationTask task;

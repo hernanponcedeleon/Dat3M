@@ -47,6 +47,6 @@ public class FenceCond extends Fence {
 
     @Override
 	public FenceCond getCopy(){
-        throw new ProgramProcessingException("FenceCond cannot be unrolled: event must be generated during compilation");
+        throw new ProgramProcessingException(getClass().getName() + " cannot be unrolled: event must be generated during compilation");
     }
 }

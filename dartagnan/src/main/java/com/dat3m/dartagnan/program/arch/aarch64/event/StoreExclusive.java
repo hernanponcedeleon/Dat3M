@@ -56,7 +56,7 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
 
     @Override
     public List<Event> compile(Arch target) {
-        Preconditions.checkArgument(target == Arch.ARM8, "Compilation of StoreExclusive is not implemented for " + target);
+        Preconditions.checkArgument(target == Arch.ARM8, "Compilation to " + target + " is not supported for " + getClass().getName());
 
         RMWStoreExclusive store = newRMWStoreExclusive(address, value, mo);
         ExecutionStatus status = newExecutionStatus(register, store);

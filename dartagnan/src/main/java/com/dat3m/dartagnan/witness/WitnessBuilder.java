@@ -56,6 +56,8 @@ public class WitnessBuilder {
 			secure=true)
 	private String originalProgramFilePath;
 
+    public boolean canBeBuilt() { return originalProgramFilePath != null; }
+
 	@Option(
 			name=BOUND,
 			description = "Unrolling bound used in the verification.",
@@ -72,9 +74,6 @@ public class WitnessBuilder {
 		this.prover = prover;
 		this.type = result.equals(FAIL) ? "violation" : "correctness";
 	}
-	
-    public boolean canBeBuilt() { return originalProgramFilePath != null; }
-
 	
 	public WitnessGraph build() {
 		for(Thread t : task.getProgram().getThreads()) {

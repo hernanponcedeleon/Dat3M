@@ -34,13 +34,6 @@ import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 @Options
 public class RelRf extends Relation {
 
-
-	@Option(
-		name=RF_UNINITIALIZED,
-		description="Do not require that each read event is satisfied by some write.",
-		secure = true)
-	private boolean canAccessUninitializedMemory = false;
-
 	@Option(
 		name=RF_NAIVE,
 		description="Exclude multiple satisfaction by explicit clauses for each pair instead of using new variables.",
@@ -59,7 +52,6 @@ public class RelRf extends Relation {
 		super.initialise(task,ctx);
 		try {
 			task.getConfig().inject(this);
-			logger.info("{}: {}", RF_UNINITIALIZED, canAccessUninitializedMemory);
 			logger.info("{}: {}", RF_NAIVE, naiveMutex);
 		} catch(InvalidConfigurationException e) {
 			logger.warn(e.getMessage());
@@ -123,38 +115,13 @@ public class RelRf extends Relation {
             BooleanFormula sameValue = imgr.equal(v1, v2);
 
             edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(edge);
-            if(canAccessUninitializedMemory && w.is(INIT)){
-                memInitMap.put(r, bmgr.or(memInitMap.getOrDefault(r, bmgr.makeFalse()), sameAddress));
-            }
             enc = bmgr.and(enc, bmgr.implication(edge, bmgr.and(getExecPair(w, r, ctx), sameAddress, sameValue)));
         }
 
         for(MemEvent r : edgeMap.keySet()){
-            enc = bmgr.and(enc, naiveMutex
-                    ? encodeEdgeNaive(r, memInitMap.get(r), edgeMap.get(r), ctx)
-                    : encodeEdgeSeq(r, memInitMap.get(r), edgeMap.get(r), ctx));
+            enc = bmgr.and(enc, encodeEdgeSeq(r, memInitMap.get(r), edgeMap.get(r), ctx));
         }
         return enc;
-    }
-
-    private BooleanFormula encodeEdgeNaive(Event read, BooleanFormula isMemInit, List<BooleanFormula> edges, SolverContext ctx){
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-    	
-    	BooleanFormula atMostOne = bmgr.makeTrue();
-    	BooleanFormula atLeastOne = bmgr.makeFalse();
-        for(int i = 0; i < edges.size(); i++){
-            atLeastOne = bmgr.or(atLeastOne, edges.get(i));
-            for(int j = i + 1; j < edges.size(); j++){
-                atMostOne = bmgr.and(atMostOne, bmgr.not(bmgr.and(edges.get(i), edges.get(j))));
-            }
-        }
-
-        if(canAccessUninitializedMemory) {
-            atLeastOne = bmgr.implication(bmgr.and(read.exec(), isMemInit), atLeastOne);
-        } else {
-            atLeastOne = bmgr.implication(read.exec(), atLeastOne);
-        }
-        return bmgr.and(atMostOne, atLeastOne);
     }
 
     private BooleanFormula encodeEdgeSeq(Event read, BooleanFormula isMemInit, List<BooleanFormula> edges, SolverContext ctx){
@@ -174,11 +141,7 @@ public class RelRf extends Relation {
         }
         BooleanFormula atLeastOne = bmgr.or(newSeqVar, edges.get(edges.size() - 1));
 
-        if(canAccessUninitializedMemory) {
-            atLeastOne = bmgr.implication(bmgr.and(read.exec(), isMemInit), atLeastOne);
-        } else {
-            atLeastOne = bmgr.implication(read.exec(), atLeastOne);
-        }
+        atLeastOne = bmgr.implication(read.exec(), atLeastOne);
         return bmgr.and(atMostOne, atLeastOne);
     }
 
@@ -275,5 +238,4 @@ public class RelRf extends Relation {
         }
         logger.info("Atomic block optimization eliminated "  + (sizeBefore - maxTupleSet.size()) + " reads");
     }
-
 }

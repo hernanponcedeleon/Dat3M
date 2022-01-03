@@ -95,13 +95,8 @@ public abstract class Event implements Comparable<Event> {
 	}
 
 	public void setThread(Thread thread) {
-		if (thread != null && !thread.equals(this.thread)) {
-			this.thread = thread;
-			if (successor != null) {
-				//TODO: Get rid of this recursion completely
-				successor.setThread(thread);
-			}
-		}
+		Preconditions.checkNotNull(thread);
+		this.thread = thread;
 	}
 
 	public final List<Event> getSuccessors(){
@@ -195,14 +190,11 @@ public abstract class Event implements Comparable<Event> {
 		}
 	}
 
-
 	// Encoding
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void initialise(VerificationTask task, SolverContext ctx){
-		if(cId < 0){
-			throw new IllegalStateException("Event ID is not set in " + this);
-		}
+		Preconditions.checkState(cId >= 0, "Event ID is not set in " + this);
 		this.symmId = getThread().getName() + "-" + fId;
 		this.task = task;
 		FormulaManager fmgr = ctx.getFormulaManager();
@@ -241,7 +233,6 @@ public abstract class Event implements Comparable<Event> {
 	public BooleanFormula encodeExec(SolverContext ctx){
 		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
 	}
-
 
 	// =============== Utility methods ==================
 

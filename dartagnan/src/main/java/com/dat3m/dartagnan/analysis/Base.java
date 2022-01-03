@@ -18,7 +18,7 @@ public class Base {
     public static Result runAnalysisIncrementalSolver(SolverContext ctx, ProverEnvironment prover, VerificationTask task) throws InterruptedException, SolverException {
         Result res = Result.UNKNOWN;
         
-        task.preprocessProgram();
+        task.preProcessProgram();
        	if(task.getProgram().getAss() instanceof AssertTrue) {
             logger.info("Verification finished: assertion trivially holds");
        		return PASS;
@@ -55,7 +55,7 @@ public class Base {
     public static Result runAnalysisAssumeSolver(SolverContext ctx, ProverEnvironment prover, VerificationTask task) throws InterruptedException, SolverException {
         Result res = Result.UNKNOWN;
         
-        task.preprocessProgram();
+        task.preProcessProgram();
        	if(task.getProgram().getAss() instanceof AssertTrue) {
             logger.info("Verification finished: assertion trivially holds");
        		return PASS;
@@ -93,7 +93,7 @@ public class Base {
     public static Result runAnalysisTwoSolvers(SolverContext ctx, ProverEnvironment prover1, ProverEnvironment prover2, VerificationTask task) throws InterruptedException, SolverException {
     	Result res = Result.UNKNOWN;
     	
-    	task.preprocessProgram();
+    	task.preProcessProgram();
        	if(task.getProgram().getAss() instanceof AssertTrue) {
             logger.info("Verification finished: assertion trivially holds");
        		return PASS;

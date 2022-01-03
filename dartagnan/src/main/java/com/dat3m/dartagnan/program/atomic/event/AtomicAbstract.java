@@ -50,6 +50,6 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
 
     @Override
     public List<Event> compile(Arch target) {
-        throw new RuntimeException("Compilation to " + target + " is not supported for " + getClass().getName() + " " + mo);
+        throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName());
     }
 }

@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
+import com.google.common.base.Preconditions;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
@@ -60,12 +61,13 @@ public class RelationRepository {
         try{
             Method method = cls.getMethod("makeTerm", argClasses);
             String term = (String)method.invoke(null, args);
-            Relation relation = relationMap.get(term);
-
-            if(relation == null){
+            Relation relation;
+            if(containsRelation(term)) {
+            	relation = relationMap.get(term);
+            } else {
                 Constructor<?> constructor = cls.getConstructor(argClasses);
                 relation = (Relation)constructor.newInstance(args);
-                addRelation(relation);
+                addRelation(relation);            	
             }
             return relation;
         } catch (Exception e){
@@ -76,10 +78,9 @@ public class RelationRepository {
 
     public void updateRelation(Relation relation){
         if(relation.getIsNamed()){
-            if(relationMap.get(relation.getName()) != null){
-                throw new RuntimeException("Relation " + relation.getName() + " is already declared");
-            }
-            relationMap.put(relation.getName(), relation);
+            String name = relation.getName();
+            Preconditions.checkState(!relationMap.containsKey(name), "Relation " + name + " is already declared");
+            relationMap.put(name, relation);
         }
     }
 
@@ -107,7 +108,7 @@ public class RelationRepository {
             return new Class<?>[]{String.class};
         }
 
-        throw new RuntimeException("Method getArgsForClass is not implemented for " + cls.getName());
+        throw new UnsupportedOperationException("Method getArgsForClass is not implemented for " + cls.getName());
     }
 
     private Relation getBasicRelation(String name){

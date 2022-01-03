@@ -17,27 +17,46 @@ public abstract class BaseOptions {
 		description="Analysis to be performed.",
 		secure=true,
 		toUppercase=true)
-	protected Analysis analysis = Analysis.getDefault();
+	private Analysis analysis = Analysis.getDefault();
+
+	public Analysis getAnalysis() { return analysis; }
 
 	@Option(
 		name=VALIDATE,
 		description="Run Dartagnan as a violation witness validator. Argument is the path to the witness file.")
-	protected String witnessPath;
+	private String witnessPath;
+
+	public boolean runValidator() { return witnessPath != null; }
+	public String getWitnessPath() { return witnessPath; }
 
 	@Option(
 		name=METHOD,
 		description="Solver method to be used",
 		toUppercase=true)
-	protected Method method = Method.getDefault();
+	private Method method = Method.getDefault();
+
+	public Method getMethod() { return method; }
 
 	@Option(
 		name=SOLVER,
 		description="SMT solver to be used",
 		toUppercase=true)
-	protected Solvers solver = Solvers.Z3;
+	private Solvers solver = Solvers.Z3;
 
+	public Solvers getSolver() { return solver; }
+	
 	@Option(
 		name=TIMEOUT,
 		description="Number of seconds before interrupting the SMT solving")
-	protected int timeout = 0;
+	private int timeout = 0;
+	
+	public boolean hasTimeout() { return timeout > 0; }
+	public int getTimeout() { return timeout;}
+
+	@Option(
+		name=PHANTOM_REFERENCES,
+		description="Decrease references on Z3 formula objects once they are no longer referenced.")
+	private boolean phantomReferences = true;
+	
+	public boolean usePhantomReferences() { return phantomReferences; }
 }

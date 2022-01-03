@@ -139,7 +139,7 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 break;
             }
             default:
-                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName());
         }
         return events;
     }

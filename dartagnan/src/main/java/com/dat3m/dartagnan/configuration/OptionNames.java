@@ -8,13 +8,12 @@ public class OptionNames {
 	public static final String SOLVER = "solver";
 	public static final String TIMEOUT = "timeout";
 	public static final String VALIDATE = "validate";
-
+	
 	// Encoding Options
 	public static final String LOCAL_CONSISTENT = "encoding.localConsistent";
 	public static final String ALLOW_PARTIAL_EXECUTIONS = "encoding.allowPartialExecutions";
 	public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
 	public static final String CO_ANTISYMMETRY = "encoding.co.antiSymm";
-	public static final String RF_UNINITIALIZED = "encoding.rf.allowUninitialized";
 	public static final String RF_NAIVE = "encoding.rf.naiveMutex";
 
 	// Program Processing Options
@@ -32,6 +31,9 @@ public class OptionNames {
 	public static final String ASSUME_LOCALLY_CONSISTENT_WMM = "refinement.assumeLocallyConsistentWMM";
 	public static final String ASSUME_NO_OOTA = "refinement.assumeNoOOTA";
 	
+	// SMT solver Options
+	public static final String PHANTOM_REFERENCES = "solver.z3.usePhantomReferences";
+
 	// Witness Options
 	public static final String WITNESS_ORIGINAL_PROGRAM_PATH = "witness.originalProgramFilePath";
 	

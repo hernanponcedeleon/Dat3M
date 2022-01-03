@@ -105,7 +105,7 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                 break;
             }
             default:
-                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName());
         }
         return events;
     }

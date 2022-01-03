@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.memory;
 
-import com.dat3m.dartagnan.program.memory.utils.IllegalMemoryAccessException;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
@@ -43,15 +43,14 @@ public class Memory {
     }
 
     public List<Address> malloc(String name, int size, int precision){
-        if(!arrays.containsKey(name) && size > 0){
-            List<Address> addresses = new ArrayList<>();
-            for(int i = 0; i < size; i++){
-                addresses.add(new Address(nextIndex++, precision));
-            }
-            arrays.put(name, addresses);
-            return addresses;
-        }
-        throw new IllegalMemoryAccessException("Illegal malloc for " + name);
+    	Preconditions.checkArgument(!arrays.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
+    	Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
+    	List<Address> addresses = new ArrayList<>();
+    	for(int i = 0; i < size; i++){
+    		addresses.add(new Address(nextIndex++, precision));
+    	}
+    	arrays.put(name, addresses);
+    	return addresses;
     }
 
     public Location getOrCreateLocation(String name, int precision){

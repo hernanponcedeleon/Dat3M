@@ -75,7 +75,8 @@ public class ProgramEncoder implements Encoder {
     }
 
     private void initEvent(Event e, VerificationTask task, SolverContext ctx){
-        Preconditions.checkState(e.getCId() >= 0,"Event cID is negative for %s. Event was not compiled yet?", e);
+        Preconditions.checkState(e.getCId() >= 0, "Event cID is negative for %s. Event was not compiled yet?", e);
+        
         FormulaManager fmgr = ctx.getFormulaManager();
 
         boolean mergeVars = shouldMergeCFVars && !shouldAllowPartialExecutions;
@@ -86,11 +87,11 @@ public class ProgramEncoder implements Encoder {
     }
 
     public BooleanFormula encodeControlFlow(SolverContext ctx) {
-        Preconditions.checkState(task != null, "The encoder needs to get initialized for encoding first.");
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-
+        Preconditions.checkState(task != null, "The encoder needs to get initialized.");
         logger.info("Encoding program control flow");
 
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        
         BooleanFormula enc = bmgr.makeTrue();
         for(Thread t : program.getThreads()){
             enc = bmgr.and(enc, encodeThreadCF(t, ctx));
@@ -133,7 +134,7 @@ public class ProgramEncoder implements Encoder {
     }
 
     public BooleanFormula encodeFinalRegisterValues(SolverContext ctx){
-        Preconditions.checkState(task != null, "The encoder needs to get initialized for encoding first.");
+        Preconditions.checkState(task != null, "The encoder needs to get initialized.");
         logger.info("Encoding final register values");
 
         FormulaManager fmgr = ctx.getFormulaManager();
@@ -166,7 +167,6 @@ public class ProgramEncoder implements Encoder {
             events.removeIf(x -> events2.stream().anyMatch(y -> y.getCId() > x.getCId() && eq.isImplied(x, y)));
             // ========================================================
 
-
             for(int i = 0; i <  events.size(); i++){
                 Event w1 = events.get(i);
                 BooleanFormula lastModReg = w1.exec();
@@ -185,9 +185,10 @@ public class ProgramEncoder implements Encoder {
     }
 
     public BooleanFormula encodeNoBoundEventExec(SolverContext ctx){
-        Preconditions.checkState(task != null, "The encoder needs to get initialized for encoding first.");
+        Preconditions.checkState(task != null, "The encoder needs to get initialized.");
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        
         BooleanFormula enc = bmgr.makeTrue();
         for(Event e : program.getCache().getEvents(FilterBasic.get(EType.BOUND))){
             enc = bmgr.and(enc, bmgr.not(e.exec()));
@@ -196,9 +197,9 @@ public class ProgramEncoder implements Encoder {
     }
 
     public BooleanFormula encodeAssertions(SolverContext ctx) {
-        Preconditions.checkState(task != null, "The encoder needs to get initialized for encoding first.");
-
+        Preconditions.checkState(task != null, "The encoder needs to get initialized.");
         logger.info("Encoding assertions");
+
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 
         BooleanFormula assertionEncoding = program.getAss().encode(ctx);
@@ -207,5 +208,4 @@ public class ProgramEncoder implements Encoder {
         }
         return assertionEncoding;
     }
-
 }

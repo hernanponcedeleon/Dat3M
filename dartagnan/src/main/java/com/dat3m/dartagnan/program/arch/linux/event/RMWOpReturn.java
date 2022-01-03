@@ -52,7 +52,7 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
 
     @Override
     public List<Event> compile(Arch target) {
-        Preconditions.checkArgument(target == Arch.NONE, "Compilation of RMWOpReturn is not implemented for " + target);
+        Preconditions.checkArgument(target == Arch.NONE, "Compilation to " + target + " is not supported for " + getClass().getName());
 
         Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         Fence optionalMbBefore = mo.equals(Mo.MB) ? Linux.newMemoryBarrier() : null;

@@ -25,6 +25,8 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
+import static java.lang.String.valueOf;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.Set;
@@ -33,43 +35,44 @@ import static com.dat3m.dartagnan.analysis.Analysis.RACES;
 import static com.dat3m.dartagnan.analysis.Base.*;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
 import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisWMMSolver;
+import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
-import static org.sosy_lab.common.configuration.OptionCollector.collectOptions;
 
 @Options
 public class Dartagnan extends BaseOptions {
 
+	private static final Logger logger = LogManager.getLogger(Dartagnan.class);
+
 	private static final Set<String> supportedFormats = 
     		ImmutableSet.copyOf(Arrays.asList(".litmus", ".bpl", ".c", ".i"));
 
-	private static final Logger logger = LogManager.getLogger(Dartagnan.class);
-
 	public static void main(String[] args) throws Exception {
     	
-    	if(Arrays.asList(args).contains("--help")) {
-			collectOptions(false,false,System.out);
-			return;
-		}
-
     	CreateGitInfo();
-		String[] argKeyword = Arrays.stream(args)
-		.filter(s->s.startsWith("-"))
-		.toArray(String[]::new);
+		
+    	String[] argKeyword = Arrays.stream(args)
+				.filter(s->s.startsWith("-"))
+				.toArray(String[]::new);
 		Configuration config = Configuration.fromCmdLineArguments(argKeyword); // TODO: We don't parse configs yet
 		Dartagnan o = new Dartagnan();
 		config.recursiveInject(o);
 
+		//TODO add help
+
 		if(Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(f -> a.endsWith(f)))) {
 			throw new IllegalArgumentException("Input program not given or format not recognized");
 		}
+		// get() is guaranteed to success
+		File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(f -> a.endsWith(f))).findFirst().get());
+		logger.info("Program path: " + fileProgram);
+
 		if(Arrays.stream(args).noneMatch(a -> a.endsWith(".cat"))) {
 			throw new IllegalArgumentException("CAT model not given or format not recognized");
 		}
-		File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst().get());
-		File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(f -> a.endsWith(f))).findFirst().get());
-		logger.info("Program path: " + fileProgram);
+		// get() is guaranteed to success		
+		File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst().get());		
 		logger.info("CAT file path: " + fileModel);	
         
 		Wmm mcm = new ParserCat().parse(fileModel);
@@ -77,9 +80,9 @@ public class Dartagnan extends BaseOptions {
         Program p = new ProgramParser().parse(fileProgram);
         
         WitnessGraph witness = new WitnessGraph();
-        if(o.witnessPath != null) {
-        	logger.info("Witness path: " + o.witnessPath);
-        	witness = new ParserWitness().parse(new File(o.witnessPath));
+        if(o.runValidator()) {
+        	logger.info("Witness path: " + o.getWitnessPath());
+        	witness = new ParserWitness().parse(new File(o.getWitnessPath()));
         }
 
         VerificationTask task = VerificationTask.builder()
@@ -90,9 +93,9 @@ public class Dartagnan extends BaseOptions {
         ShutdownManager sdm = ShutdownManager.create();
     	Thread t = new Thread(() -> {
 			try {
-				if(o.timeout > 0) {
+				if(o.hasTimeout()) {
 					// Converts timeout from secs to millisecs
-					Thread.sleep(1000L * o.timeout);
+					Thread.sleep(1000L * o.getTimeout());
 					sdm.requestShutdown("Shutdown Request");
 					logger.warn("Shutdown Request");
 				}
@@ -103,22 +106,22 @@ public class Dartagnan extends BaseOptions {
     	try {
             t.start();
             Configuration solverConfig = Configuration.builder()
-                    .setOption("solver.z3.usePhantomReferences", "true")
+                    .setOption(PHANTOM_REFERENCES, valueOf(o.usePhantomReferences()))
                     .build();
             try (SolverContext ctx = SolverContextFactory.createSolverContext(
                     config,
                     BasicLogManager.create(solverConfig),
                     sdm.getNotifier(),
-                    o.solver);
+                    o.getSolver());
                  ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
             {
                 Result result = UNKNOWN;
-                switch (o.analysis) {
+                switch (o.getAnalysis()) {
                 	case RACES:
                     	result = checkForRaces(ctx, task);
                         break;
                     case REACHABILITY:
-                    	switch (o.method) {
+                    	switch (o.getMethod()) {
                         	case TWO:
                             	try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
                                 	result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
@@ -156,7 +159,7 @@ public class Dartagnan extends BaseOptions {
 					config.inject(w);
 	                // We only write witnesses for REACHABILITY (if the path to the original C file was given) 
 					// and if we are not doing witness validation
-	                if (o.analysis != RACES && w.canBeBuilt() && o.witnessPath == null) {
+	                if (!o.getAnalysis().equals(RACES) && w.canBeBuilt() && !o.runValidator()) {
 						w.build().write();
 	                }
 				} catch(InvalidConfigurationException e) {

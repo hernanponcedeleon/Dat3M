@@ -14,6 +14,8 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
+import com.google.common.base.Preconditions;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -28,7 +30,6 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 /*
 Represents a verification task.
@@ -143,8 +144,8 @@ public class VerificationTask {
     }
 
     public ThreadSymmetry getThreadSymmetry() {
+    	Preconditions.checkState(program.isCompiled(), "ThreadSymmetry is only available after compilation");
         if (threadSymmetry == null) {
-            checkState(program.isCompiled(), "Thread symmetry can only be computed after compilation.");
             threadSymmetry = new ThreadSymmetry(program);
         }
         return threadSymmetry;
@@ -159,7 +160,7 @@ public class VerificationTask {
 
     // ===================== Utility Methods ====================
 
-    public void preprocessProgram() {
+    public void preProcessProgram() {
         try {
             ProcessingManager.fromConfig(config).run(program);
             branchEquivalence = new BranchEquivalence(program, config);

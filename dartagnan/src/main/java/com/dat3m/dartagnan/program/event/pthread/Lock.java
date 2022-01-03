@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 
 import java.util.List;
 
@@ -68,6 +69,8 @@ public class Lock extends Event {
 
     @Override
     public List<Event> compile(Arch target) {
+    	Preconditions.checkNotNull(target, "Target cannot be null");
+
         List<Event> events = eventSequence(
                 newLoad(reg, address, SC),
                 newJump(new Atom(reg, NEQ, IConst.ZERO), label),

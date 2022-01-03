@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.analysis;
 
-import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
@@ -10,7 +9,6 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
-import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
@@ -32,7 +30,7 @@ public class DataRaces {
 
 	public static Result checkForRaces(SolverContext ctx, VerificationTask task) {
 
-		task.preprocessProgram();
+		task.preProcessProgram();
 		task.initialiseEncoding(ctx);
 		
 		try (ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
@@ -40,7 +38,7 @@ public class DataRaces {
 			prover.addConstraint(task.encodeWmmRelations(ctx));
 	        prover.addConstraint(task.encodeWmmConsistency(ctx));
 	        prover.push();
-	        prover.addConstraint(encodeRaces(task.getProgram(),task.getAliasAnalysis(),ctx));
+	        prover.addConstraint(encodeRaces(task.getProgram(), ctx));
 	        
 			BooleanFormula noBoundEventExec = task.getProgramEncoder().encodeNoBoundEventExec(ctx);
 			
@@ -58,7 +56,7 @@ public class DataRaces {
 		return UNKNOWN;
     }
     
-    private static BooleanFormula encodeRaces(Program p, AliasAnalysis a, SolverContext ctx) {
+    private static BooleanFormula encodeRaces(Program p, SolverContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
     	IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
     	
@@ -73,13 +71,6 @@ public class DataRaces {
     				for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.MEMORY), FilterBasic.get(EType.INIT)))) {
     					MemEvent m = (MemEvent)e2;
     					if(w.hasFilter(EType.RMW) && m.hasFilter(EType.RMW)) {
-    						continue;
-    					}
-    					// TODO improve this: these events correspond to return statements
-    					if(w.getMemValue() instanceof BConst && !((BConst)w.getMemValue()).getValue()) {
-    						continue;
-    					}
-    					if(m.getMemValue() instanceof BConst && !((BConst)m.getMemValue()).getValue()) {
     						continue;
     					}
     					if(w.canRace() && m.canRace() && MemEvent.canAddressTheSameLocation(w, m)) {

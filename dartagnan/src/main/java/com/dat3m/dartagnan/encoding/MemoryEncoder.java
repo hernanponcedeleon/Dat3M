@@ -35,7 +35,7 @@ public class MemoryEncoder implements Encoder {
 
     // Assigns each Address a fixed memory address.
     public BooleanFormula encodeMemory(SolverContext ctx) {
-        Preconditions.checkState(memory != null, "The encoder needs to get initialized for encoding first.");
+        Preconditions.checkState(memory != null, "The encoder needs to get initialized.");
         logger.info("Encoding fixed memory");
 
         FormulaManager fmgr = ctx.getFormulaManager();

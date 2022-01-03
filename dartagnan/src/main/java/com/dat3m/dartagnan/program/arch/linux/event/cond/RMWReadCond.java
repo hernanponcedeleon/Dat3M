@@ -51,9 +51,8 @@ public abstract class RMWReadCond extends Load implements RegWriter, RegReaderDa
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-
     @Override
 	public RMWReadCond getCopy(){
-        throw new ProgramProcessingException("RMWReadCond cannot be unrolled: event must be generated during compilation");
+        throw new ProgramProcessingException(getClass().getName() + " cannot be unrolled: event must be generated during compilation");
     }
 }

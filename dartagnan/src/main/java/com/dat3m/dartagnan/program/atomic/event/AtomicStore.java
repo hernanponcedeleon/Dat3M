@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
@@ -25,6 +26,8 @@ public class AtomicStore extends MemEvent implements RegReaderData {
 
     public AtomicStore(IExpr address, ExprInterface value, String mo){
         super(address, mo);
+        Preconditions.checkArgument(!mo.equals(ACQUIRE) && !mo.equals(ACQUIRE_RELEASE), 
+        		getClass().getName() + " can not have memory order: " + mo);
         this.value = value;
         this.dataRegs = value.getRegs();
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.REG_READER);
@@ -86,16 +89,13 @@ public class AtomicStore extends MemEvent implements RegReaderData {
                 );
                 break;
             case ARM8:
-                if (mo.equals(ACQUIRE) || mo.equals(ACQUIRE_RELEASE)) {
-                    throw new UnsupportedOperationException("AtomicStore can not have memory order: " + mo);
-                }
                 String storeMo = extractStoreMo(mo);
                 events = eventSequence(
                         newStore(address, value, storeMo)
                 );
                 break;
             default:
-                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName());
         }
         return events;
     }

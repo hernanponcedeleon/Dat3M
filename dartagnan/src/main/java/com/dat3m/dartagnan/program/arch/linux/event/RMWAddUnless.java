@@ -56,7 +56,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
 
     @Override
     public List<Event> compile(Arch target) {
-        Preconditions.checkArgument(target == Arch.NONE, "Compilation of RMWAddUnless is not implemented for " + target);
+        Preconditions.checkArgument(target == Arch.NONE, "Compilation to " + target + " is not supported for " + getClass().getName());
 
         Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         RMWReadCondUnless load = Linux.newRMWReadCondUnless(dummy, cmp, address, Mo.RELAXED);

@@ -59,7 +59,7 @@ public class AtomicThreadFence extends Fence {
                         : mo.equals(ACQUIRE) ? Arm8.DSB.newISHLDBarrier() : null;
                 break;
             default:
-                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName());
         }
         return eventSequence(
                 fence

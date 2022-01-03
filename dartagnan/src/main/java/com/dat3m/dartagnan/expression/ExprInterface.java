@@ -23,7 +23,9 @@ public interface ExprInterface {
 
     boolean getBoolValue(Event e, Model model, SolverContext ctx);
 
-    ImmutableSet<Register> getRegs();
+    default ImmutableSet<Register> getRegs() {
+    	return ImmutableSet.of();
+    }
 
     default ImmutableSet<Location> getLocs() {
     	return ImmutableSet.of();

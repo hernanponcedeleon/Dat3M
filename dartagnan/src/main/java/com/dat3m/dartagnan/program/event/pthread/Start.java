@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,12 +67,15 @@ public class Start extends Event {
 
     @Override
     public List<Event> compile(Arch target) {
+    	Preconditions.checkNotNull(target, "Target cannot be null");
+
         List<Event> events = new ArrayList<>();
         Load load = newLoad(reg, address, SC);
         events.add(load);
 
         switch (target) {
-            case NONE: case TSO:
+            case NONE:
+            case TSO:
                 break;
             case POWER:
                 Label label = newLabel("Jump_" + oId);

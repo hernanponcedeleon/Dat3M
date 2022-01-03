@@ -52,7 +52,7 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
 
     @Override
     public List<Event> compile(Arch target) {
-        Preconditions.checkArgument(target == Arch.NONE, "Compilation of RMWOpAndTest is not implemented for " + target);
+        Preconditions.checkArgument(target == Arch.NONE, "Compilation to " + target + " is not supported for " + getClass().getName());
 
         Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         Load load = newRMWLoad(dummy, address, Mo.RELAXED);

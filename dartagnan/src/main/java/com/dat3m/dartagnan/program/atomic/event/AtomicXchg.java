@@ -85,7 +85,7 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
                 );
                 break;
             default:
-                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName());
         }
         return events;
     }

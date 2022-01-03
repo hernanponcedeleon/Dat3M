@@ -13,9 +13,6 @@ public class GlobalSettings {
     // === Parsing ===
     public static final boolean ATOMIC_AS_LOCK = false;
 
-    // === WMM Assumptions ===
-    public static final boolean PERFORM_ATOMIC_BLOCK_OPTIMIZATION = true;
-
     // ------ Symm breaking ------
     public static final boolean ENABLE_SYMMETRY_BREAKING = true;
     public static final boolean BREAK_SYMMETRY_BY_SYNC_DEGREE = true;
@@ -43,7 +40,6 @@ public class GlobalSettings {
     public static void LogGlobalSettings() {
         // General settings
     	logger.info("ATOMIC_AS_LOCK: " + ATOMIC_AS_LOCK);
-    	logger.info("PERFORM_ATOMIC_BLOCK_OPTIMIZATION: " + PERFORM_ATOMIC_BLOCK_OPTIMIZATION);
     	logger.info("ENABLE_SYMMETRY_BREAKING: " + ENABLE_SYMMETRY_BREAKING);
     	if (ENABLE_SYMMETRY_BREAKING) {
             logger.info("-- Breaking on Relation: " + BREAK_SYMMETRY_ON_RELATION);

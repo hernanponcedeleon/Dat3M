@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 
 import java.util.List;
 
@@ -52,6 +53,8 @@ public class Create extends Event {
 
     @Override
     public List<Event> compile(Arch target) {
+    	Preconditions.checkNotNull(target, "Target cannot be null");
+
         Fence optionalBarrierBefore = null;
         Fence optionalBarrierAfter = null;
         Store store = newStore(address, IConst.ONE, SC, cLine);

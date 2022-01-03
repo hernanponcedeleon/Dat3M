@@ -67,6 +67,6 @@ public class ExecutionStatus extends Event implements RegWriter {
 
     @Override
 	public Event getCopy(){
-        throw new ProgramProcessingException("ExecutionStatus cannot be unrolled: event must be generated during compilation");
+        throw new ProgramProcessingException(getClass().getName() + " cannot be unrolled: event must be generated during compilation");
     }
 }

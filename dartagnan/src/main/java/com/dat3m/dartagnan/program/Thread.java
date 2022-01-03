@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.google.common.base.Preconditions;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,12 +22,8 @@ public class Thread {
     private ThreadCache cache;
 
     public Thread(String name, int id, Event entry){
-        if(id < 0){
-            throw new IllegalArgumentException("Invalid thread ID");
-        }
-        if(entry == null){
-            throw new IllegalArgumentException("Thread entry event must be not null");
-        }
+    	Preconditions.checkArgument(id >= 0, "Invalid thread ID");
+    	Preconditions.checkNotNull(entry, "Thread entry event must be not null");
         entry.setThread(this);
         this.name = name;
         this.id = id;

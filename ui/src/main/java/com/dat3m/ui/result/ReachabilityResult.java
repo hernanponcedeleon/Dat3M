@@ -18,6 +18,7 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import static com.dat3m.dartagnan.analysis.Base.*;
 import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisWMMSolver;
+import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 
 public class ReachabilityResult {
 
@@ -63,7 +64,7 @@ public class ReachabilityResult {
             try {
             	t.start();
                 Configuration config = Configuration.builder()
-                		.setOption("solver.z3.usePhantomReferences", "true")
+                		.setOption(PHANTOM_REFERENCES, "true")
                 		.build();
 				try (SolverContext ctx = SolverContextFactory.createSolverContext(
                         config,

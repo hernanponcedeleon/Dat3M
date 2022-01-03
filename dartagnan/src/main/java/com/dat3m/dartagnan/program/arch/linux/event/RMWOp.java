@@ -52,7 +52,7 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
 
     @Override
     public List<Event> compile(Arch target) {
-        Preconditions.checkArgument(target == Arch.NONE, "Compilation of RMWOp is not implemented for " + target);
+        Preconditions.checkArgument(target == Arch.NONE, "Compilation to " + target + " is not supported for " + getClass().getName());
 
         Load load = newRMWLoad(resultRegister, address, Mo.RELAXED);
         RMWStore store = newRMWStore(load, address, new IExprBin(resultRegister, op, value), Mo.RELAXED);

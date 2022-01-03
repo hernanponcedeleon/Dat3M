@@ -1,9 +1,7 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.Model;
@@ -40,11 +38,6 @@ public class IConst extends IExpr implements ExprInterface, LastValueInterface {
 		return precision > 0 ? 
 				fmgr.getBitvectorFormulaManager().makeBitvector(precision, value) : 
 				fmgr.getIntegerFormulaManager().makeNumber(value);
-	}
-
-	@Override
-	public ImmutableSet<Register> getRegs() {
-		return ImmutableSet.of();
 	}
 
 	@Override

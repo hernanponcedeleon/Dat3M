@@ -52,6 +52,6 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
 
     @Override
 	public RMWStoreExclusive getCopy(){
-        throw new ProgramProcessingException("RMWStoreExclusive cannot be unrolled: event must be generated during compilation");
+        throw new ProgramProcessingException(getClass().getName() + " cannot be unrolled: event must be generated during compilation");
     }
 }

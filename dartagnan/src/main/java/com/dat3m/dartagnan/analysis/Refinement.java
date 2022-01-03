@@ -50,15 +50,15 @@ public class Refinement {
     public static Result runAnalysisWMMSolver(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
             throws InterruptedException, SolverException {
 
-		task.preprocessProgram();
-		task.initialiseEncoding(ctx);
-
+		task.preProcessProgram();
 		if(task.getProgram().getAss() instanceof AssertTrue) {
             logger.info("Verification finished: assertion trivially holds");
             return PASS;
         }
 
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		task.initialiseEncoding(ctx);
+
+		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Program program = task.getProgram();
         WMMSolver solver = new WMMSolver(task);
         Refiner refiner = new Refiner(task);
@@ -294,6 +294,4 @@ public class Refinement {
             logger.error(e);
         }
     }
-
-
 }
