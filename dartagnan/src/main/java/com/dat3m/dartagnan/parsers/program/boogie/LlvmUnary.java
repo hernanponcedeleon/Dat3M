@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -133,7 +134,7 @@ public class LlvmUnary {
 		}
 
 		if(op == null) {
-			throw new UnsupportedOperationException("Problem with " + name + " method");
+			throw new ParsingException("Function " + name + " has no implementation");
 		}
 		return new IExprUn(op, (IExpr)callParams.get(0));
 	}

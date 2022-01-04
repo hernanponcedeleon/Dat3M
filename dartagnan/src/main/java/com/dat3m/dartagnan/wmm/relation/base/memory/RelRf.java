@@ -233,8 +233,6 @@ public class RelRf extends Relation {
                     maxTupleSet.removeIf(t -> t.getSecond() == read && t.isCrossThread());
                 }
             }
-
-
         }
         logger.info("Atomic block optimization eliminated "  + (sizeBefore - maxTupleSet.size()) + " reads");
     }
