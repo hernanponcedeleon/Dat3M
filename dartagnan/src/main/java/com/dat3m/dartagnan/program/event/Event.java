@@ -192,7 +192,9 @@ public abstract class Event implements Comparable<Event> {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void initialise(VerificationTask task, SolverContext ctx){
-		Preconditions.checkState(cId >= 0,"Event cID is not set for %s. Event was not compiled yet?", this);
+		Preconditions.checkState(cId >= 0, "Event ID is not set in " + this);
+		this.symmId = getThread().getName() + "-" + fId;
+		this.task = task;
 	}
 	
 	public String repr() {
