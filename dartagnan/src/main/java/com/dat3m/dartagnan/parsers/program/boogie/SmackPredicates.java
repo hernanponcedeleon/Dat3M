@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.llvm.utils;
+package com.dat3m.dartagnan.parsers.program.boogie;
 
 import static com.dat3m.dartagnan.expression.op.BOpBin.AND;
 import static com.dat3m.dartagnan.expression.op.COpBin.LTE;

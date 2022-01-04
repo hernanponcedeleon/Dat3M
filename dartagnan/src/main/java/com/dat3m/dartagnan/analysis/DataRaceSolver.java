@@ -10,12 +10,12 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import static com.dat3m.dartagnan.utils.Result.*;
 
-public class DataRaceAnalysis {
+public class DataRaceSolver {
 	
 	// This analysis assumes that CAT file defining the memory model has a happens-before 
 	// relation named hb: it should contain the following axiom "acyclic hb"
 
-    private static final Logger logger = LogManager.getLogger(DataRaceAnalysis.class);
+    private static final Logger logger = LogManager.getLogger(DataRaceSolver.class);
 
 	public static Result run(SolverContext ctx, VerificationTask task) {
 

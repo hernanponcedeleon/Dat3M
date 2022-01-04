@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.analysis.AssumeSolver;
-import com.dat3m.dartagnan.analysis.DataRaceAnalysis;
+import com.dat3m.dartagnan.analysis.DataRaceSolver;
 import com.dat3m.dartagnan.analysis.IncrementalSolver;
 import com.dat3m.dartagnan.analysis.RefinementSolver;
 import com.dat3m.dartagnan.analysis.TwoSolvers;
@@ -120,7 +120,7 @@ public class Dartagnan extends BaseOptions {
                 Result result = UNKNOWN;
                 switch (o.getAnalysis()) {
                 	case RACES:
-                    	result = DataRaceAnalysis.run(ctx, task);
+                    	result = DataRaceSolver.run(ctx, task);
                         break;
                     case REACHABILITY:
                     	switch (o.getMethod()) {

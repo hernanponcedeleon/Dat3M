@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.analysis.DataRaceAnalysis;
+import com.dat3m.dartagnan.analysis.DataRaceSolver;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
@@ -114,6 +114,6 @@ public class DataRaceTest {
     @CSVLogger.FileName("csv/data-race")
     public void testAssume() throws Exception {
         assertEquals(expectedResultProvider.get(),
-        		DataRaceAnalysis.run(contextProvider.get(), taskProvider.get()));
+        		DataRaceSolver.run(contextProvider.get(), taskProvider.get()));
     }
 }
