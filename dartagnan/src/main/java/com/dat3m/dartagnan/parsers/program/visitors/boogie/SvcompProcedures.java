@@ -88,7 +88,7 @@ public class SvcompProcedures {
     	IExpr expr = (IExpr)ctx.call_params().exprs().accept(visitor);
     	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, expr.getPrecision());
     	visitor.assertionIndex++;
-    	if(expr instanceof IConst && ((IConst)expr).getIntValue().equals(BigInteger.ONE)) {
+    	if(expr instanceof IConst && ((IConst)expr).getValue().equals(BigInteger.ONE)) {
     		return;
     	}
     	Local event = EventFactory.newLocal(ass, expr);

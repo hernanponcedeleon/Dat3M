@@ -47,8 +47,8 @@ public class IExprBin extends IExpr implements ExprInterface {
     
     @Override
 	public IConst reduce() {
-    	BigInteger v1 = lhs.reduce().getIntValue();
-    	BigInteger v2 = rhs.reduce().getIntValue();
+    	BigInteger v1 = lhs.reduce().getValue();
+    	BigInteger v2 = rhs.reduce().getValue();
 		return new IConst(op.combine(v1, v2), lhs.getPrecision());
 	}
 

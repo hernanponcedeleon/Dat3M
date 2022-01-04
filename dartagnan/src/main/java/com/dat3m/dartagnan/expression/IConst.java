@@ -58,8 +58,8 @@ public class IConst extends IExpr implements ExprInterface, LastValueInterface {
 		return value;
 	}
 
-	public BigInteger getIntValue() {
-		return value;
+	public int getValueAsInt() {
+		return value.intValue();
 	}
 
     public Formula toIntFormula(SolverContext ctx) {

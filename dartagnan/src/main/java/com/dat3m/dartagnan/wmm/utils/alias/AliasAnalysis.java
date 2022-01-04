@@ -148,12 +148,12 @@ public class AliasAnalysis {
     			if(base instanceof Address) {
     				bases.put(reg, (Address)base);
     				if(((IExprBin) exp).getRHS() instanceof IConst) {
-        				offsets.put(reg, ((IConst)((IExprBin) exp).getRHS()).getIntValue().intValue());    					
+        				offsets.put(reg, ((IConst)((IExprBin) exp).getRHS()).getValueAsInt());    					
     				}
     			} else if(base instanceof Register && bases.containsKey(base)) {
     				bases.put(reg, bases.get(base));
     				if(((IExprBin) exp).getRHS() instanceof IConst) {
-        				offsets.put(reg, ((IConst)((IExprBin) exp).getRHS()).getIntValue().intValue());    					
+        				offsets.put(reg, ((IConst)((IExprBin) exp).getRHS()).getValueAsInt());    					
     				}
     			}
     		}

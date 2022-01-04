@@ -677,7 +677,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				ExprInterface lhs = address;
 				BigInteger rhs = BigInteger.ZERO;
 				while(lhs instanceof IExprBin) {
-					rhs = rhs.add(((IExprBin)lhs).getRHS().reduce().getIntValue());
+					rhs = rhs.add(((IExprBin)lhs).getRHS().reduce().getValue());
 					lhs = ((IExprBin)lhs).getLHS();
 				}
 				String text = ctx.expr(1).getText();				
