@@ -22,7 +22,10 @@ public class DataRaceSolver {
 		task.preProcessProgram();
 		task.initialiseEncoding(ctx);
 		
+		Result res = UNKNOWN;
 		try (ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+			
+	        logger.info("Starting encoding using " + ctx.getVersion());
 			prover.addConstraint(task.encodeProgram(ctx));
 			prover.addConstraint(task.encodeWmmRelations(ctx));
 	        prover.addConstraint(task.encodeWmmConsistency(ctx));
@@ -34,16 +37,19 @@ public class DataRaceSolver {
 	        
 			BooleanFormula noBoundEventExec = task.getProgramEncoder().encodeNoBoundEventExec(ctx);
 			
+	        logger.info("Starting first solver.check()");
 			if(prover.isUnsat()) {
 	        	prover.pop();
 				prover.addConstraint(noBoundEventExec);
-	        	return prover.isUnsat() ? PASS : UNKNOWN;
+	            logger.info("Starting second solver.check()");
+	        	res = prover.isUnsat() ? PASS : UNKNOWN;
 	        } else {
-				return FAIL;
+				res = FAIL;
 	        }
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-		return UNKNOWN;
+        logger.info("Verification finished with result " + res);
+		return res;
     }
 }
