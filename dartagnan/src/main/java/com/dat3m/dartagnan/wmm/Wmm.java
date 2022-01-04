@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -71,9 +72,7 @@ public class Wmm {
 
     public void addRecursiveGroup(Set<RecursiveRelation> recursiveGroup){
         int id = 1 << recursiveGroups.size();
-        if(id < 0){
-            throw new RuntimeException("Exceeded maximum number of recursive relations");
-        }
+        Preconditions.checkArgument(id >= 0, "Exceeded maximum number of recursive relations.");
         recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
     }
 
@@ -116,9 +115,7 @@ public class Wmm {
 	 * @param computedActiveSets Whether active sets get computed.
 	 */
 	public void performRelationAnalysis(boolean computeMustNotSets, boolean computedActiveSets) {
-		if(task == null) {
-			throw new IllegalStateException("The WMM needs to get initialised first.");
-		}
+    	Preconditions.checkState(task != null, "The WMM needs to get initialised first.");
 
 		// ===== Compute may sets =====
 		for(RecursiveGroup recursiveGroup : recursiveGroups) {
@@ -213,9 +210,8 @@ public class Wmm {
 	 * This model's relations were not encoded with {@link #encodeRelations(SolverContext)} before.
 	 */
 	public final BooleanFormula encodeConsistency(SolverContext ctx) {
-		if(!relationsAreEncoded) {
-			throw new IllegalStateException("Wmm relations must be encoded before the consistency predicate.");
-		}
+        //TODO: Actually, there are use-cases where it makes sense to encode axioms without the relations
+    	Preconditions.checkState(relationsAreEncoded, "Wmm relations must be encoded before the consistency predicate.");
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
         for (Axiom ax : axioms) {

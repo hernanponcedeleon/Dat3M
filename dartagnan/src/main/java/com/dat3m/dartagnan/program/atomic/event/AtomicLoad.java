@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 
 import java.util.List;
 
@@ -20,6 +21,8 @@ public class AtomicLoad extends MemEvent implements RegWriter {
 
     public AtomicLoad(Register register, IExpr address, String mo) {
         super(address, mo);
+    	Preconditions.checkArgument(!mo.equals(RELEASE) && !mo.equals(ACQUIRE_RELEASE), 
+    			"AtomicLoad can not have memory order: " + mo);
         this.resultRegister = register;
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.REG_WRITER);
     }
@@ -89,9 +92,6 @@ public class AtomicLoad extends MemEvent implements RegWriter {
                 break;
             }
             case ARM8:
-                if (mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE)) {
-                    throw new UnsupportedOperationException("AtomicLoad can not have memory order: " + mo);
-                }
             	String loadMo = extractLoadMo(mo);
 		        events = eventSequence(
                         newLoad(resultRegister, address, loadMo)

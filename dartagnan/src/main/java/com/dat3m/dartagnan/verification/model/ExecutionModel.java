@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -271,9 +272,7 @@ public class ExecutionModel {
                 if (e instanceof BeginAtomic) {
                     atomicBegin = id;
                 } else if (e instanceof EndAtomic) {
-                    if (atomicBegin == -1) {
-                        throw new IllegalStateException("EndAtomic without matching BeginAtomic in model");
-                    }
+                	Preconditions.checkState(atomicBegin != -1, "EndAtomic without matching BeginAtomic in model");
                     atomicBlockRanges.add(ImmutableList.of(atomicBegin, id));
                     atomicBegin = -1;
                 }

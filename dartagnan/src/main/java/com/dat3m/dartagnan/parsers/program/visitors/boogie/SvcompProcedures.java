@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
@@ -116,14 +117,14 @@ public class SvcompProcedures {
         }
 	}
 	
-	private static void __VERIFIER_atomic_begin(VisitorBoogie visitor) {
+	public static void __VERIFIER_atomic_begin(VisitorBoogie visitor) {
 		visitor.currentBeginAtomic = EventFactory.Svcomp.newBeginAtomic();
 		visitor.programBuilder.addChild(visitor.threadCount, visitor.currentBeginAtomic);	
 	}
 	
-	private static void __VERIFIER_atomic_end(VisitorBoogie visitor) {
+	public static void __VERIFIER_atomic_end(VisitorBoogie visitor) {
 		if(visitor.currentBeginAtomic == null) {
-            throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
+            throw new MalformedProgramException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newEndAtomic(visitor.currentBeginAtomic));
 		visitor.currentBeginAtomic = null;

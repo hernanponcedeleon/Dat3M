@@ -132,6 +132,15 @@
       	    <groupId>org.jacoco</groupId>
       		<artifactId>jacoco-maven-plugin</artifactId>
       		<version>0.8.7</version>
+			<configuration>
+        	  <excludes>
+            	<exclude>**/parsers/*Parser.class</exclude>
+            	<exclude>**/parsers/*Lexer.class</exclude>
+            	<exclude>**/parsers/*Visitor.class</exclude>
+            	<exclude>**/parsers/*Context.class</exclude>
+            	<exclude>**/parsers/*Listener.class</exclude>
+        	  </excludes>
+    		</configuration>
       		<executions>
         	  <execution>
           		<goals>
@@ -291,7 +300,11 @@
       		<version>0.8.7</version>
       		<configuration>
         	  <excludes>
-            	<exclude>com/dat3m/dartagnan/parsers/*.class</exclude>
+            	<exclude>**/parsers/*Parser.class</exclude>
+            	<exclude>**/parsers/*Lexer.class</exclude>
+            	<exclude>**/parsers/*Visitor.class</exclude>
+            	<exclude>**/parsers/*Context.class</exclude>
+				<exclude>**/parsers/*Listener.class</exclude>
         	  </excludes>
     		</configuration>
       		<executions>

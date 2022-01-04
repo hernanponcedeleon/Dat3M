@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.utils.preprocessing.BranchReordering;
 import com.dat3m.dartagnan.program.utils.preprocessing.DeadCodeElimination;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -28,12 +29,8 @@ public class Thread {
     private ThreadCache cache;
 
     public Thread(String name, int id, Event entry){
-        if(id < 0){
-            throw new IllegalArgumentException("Invalid thread ID");
-        }
-        if(entry == null){
-            throw new IllegalArgumentException("Thread entry event must be not null");
-        }
+    	Preconditions.checkArgument(id >= 0, "Invalid thread ID");
+    	Preconditions.checkNotNull(entry, "Thread entry event must be not null");
         entry.setThread(this);
         this.name = name;
         this.id = id;
@@ -158,6 +155,7 @@ public class Thread {
     // -----------------------------------------------------------------------------------------------------------------
 
     public int compile(Arch target, int nextId) {
+        Preconditions.checkNotNull(target, "Target cannot be null.");
         nextId = entry.compile(target, nextId, null);
         updateExit(entry);
         cache = null;

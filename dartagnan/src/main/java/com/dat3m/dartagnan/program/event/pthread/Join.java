@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,6 +72,8 @@ public class Join extends Event {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+    	Preconditions.checkNotNull(target, "Target cannot be null");
+
         List<Event> events = new ArrayList<>();
         Load load = newLoad(reg, address, SC);
         load.addFilters(PTHREAD);
