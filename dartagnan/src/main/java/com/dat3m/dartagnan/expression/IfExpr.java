@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Formula;
@@ -51,11 +50,6 @@ public class IfExpr implements ExprInterface {
         return new ImmutableSet.Builder<Register>().addAll(guard.getRegs()).addAll(tbranch.getRegs()).addAll(fbranch.getRegs()).build();
 	}
 
-	@Override
-	public ImmutableSet<Location> getLocs() {
-		return new ImmutableSet.Builder<Location>().addAll(guard.getLocs()).addAll(tbranch.getLocs()).addAll(fbranch.getLocs()).build();
-	}
-	
     @Override
     public String toString() {
         return "(if " + guard + " then " + tbranch + " else " + fbranch + ")";
