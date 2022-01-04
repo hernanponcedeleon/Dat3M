@@ -116,8 +116,11 @@ public class Wmm {
 	 * @param computedActiveSets Whether active sets get computed.
 	 */
 	public void performRelationAnalysis(boolean computeMustNotSets, boolean computedActiveSets) {
+		if(task == null) {
+			throw new IllegalStateException("The WMM needs to get initialised first.");
+		}
 
-    	// ===== Compute may sets =====
+		// ===== Compute may sets =====
 		for(RecursiveGroup recursiveGroup : recursiveGroups) {
 			recursiveGroup.initMaxTupleSets();
 		}
@@ -187,9 +190,6 @@ public class Wmm {
 	 * This model has to be invoked with {@link #initialise(VerificationTask, SolverContext)} first.
 	 */
 	public BooleanFormula encodeRelations(SolverContext ctx) {
-		if(task == null) {
-			throw new IllegalStateException("The WMM needs to get initialised first.");
-		}
 
 		performRelationAnalysis(GlobalSettings.COMPUTE_MUSTNOT_SETS, true);
 
