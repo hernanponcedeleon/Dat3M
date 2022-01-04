@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
@@ -26,19 +25,12 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.utils.EType.*;
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 @Options
 public class RelRf extends Relation {
-
-	@Option(
-		name=RF_NAIVE,
-		description="Exclude multiple satisfaction by explicit clauses for each pair instead of using new variables.",
-		secure=true)
-	private boolean naiveMutex = false;
 
 	private static final Logger logger = LogManager.getLogger(RelRf.class);
 
@@ -52,7 +44,6 @@ public class RelRf extends Relation {
 		super.initialise(task,ctx);
 		try {
 			task.getConfig().inject(this);
-			logger.info("{}: {}", RF_NAIVE, naiveMutex);
 		} catch(InvalidConfigurationException e) {
 			logger.warn(e.getMessage());
 		}
