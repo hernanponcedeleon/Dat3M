@@ -12,8 +12,6 @@ import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
 
-import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
-
 public abstract class Event implements Comparable<Event> {
 
 	public static final int PRINT_PAD_EXTRA = 50;
@@ -194,14 +192,9 @@ public abstract class Event implements Comparable<Event> {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void initialise(VerificationTask task, SolverContext ctx){
-		Preconditions.checkState(cId >= 0, "Event ID is not set in " + this);
-		this.symmId = getThread().getName() + "-" + fId;
-		this.task = task;
-		FormulaManager fmgr = ctx.getFormulaManager();
-		String repr = task.getBranchEquivalence().getRepresentative(this).repr();
-		cfVar = fmgr.makeVariable(BooleanType, "cf(" + repr + ")");
+		Preconditions.checkState(cId >= 0,"Event cID is not set for %s. Event was not compiled yet?", this);
 	}
-
+	
 	public String repr() {
 		if (cId == -1) {
 			// We have not yet compiled

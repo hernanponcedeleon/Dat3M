@@ -18,6 +18,8 @@ import org.junit.Test;
 
 public class UnrollExceptionsTest {
 
+	// These events cannot be unrolled. They are generated during compilation.
+	
     @Test(expected = ProgramProcessingException.class)
     public void RMWStore() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();

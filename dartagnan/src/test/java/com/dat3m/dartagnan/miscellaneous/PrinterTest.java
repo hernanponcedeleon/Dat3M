@@ -64,6 +64,20 @@ public class PrinterTest {
 	}
 
 	@Test()
+	public void PrintLinux2() throws Exception {
+		Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/C/dart/C-atomic-fetch-simple-01.litmus"));
+		assert(new Printer().print(p) != null);
+		assert(p.getAss().toString() != null);
+	}
+	
+	@Test()
+	public void PrintLinux3() throws Exception {
+		Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/C/manual/atomic/C-atomic-01.litmus"));
+		assert(new Printer().print(p) != null);
+		assert(p.getAss().toString() != null);
+	}
+
+	@Test()
 	public void TSOtoString() throws Exception {
 		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/tso.cat"));
 		assert(cat.toString() != null);

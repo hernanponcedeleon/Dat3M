@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -35,10 +36,8 @@ public abstract class RMWReadCond extends Load implements RegWriter, RegReaderDa
     }
 
     public BooleanFormula getCond(){
-        if(formulaCond != null){
-            return formulaCond;
-        }
-        throw new IllegalStateException("formulaCond is requested before it has been initialised in " + this.getClass().getName());
+    	Preconditions.checkState(formulaCond != null, "formulaCond is requested before it has been initialised in " + this.getClass().getName());
+    	return formulaCond;
     }
 
     @Override

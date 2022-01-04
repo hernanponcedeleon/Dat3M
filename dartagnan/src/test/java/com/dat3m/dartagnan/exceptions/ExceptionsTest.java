@@ -48,21 +48,23 @@ public class ExceptionsTest {
     public void RegisterAlreadyExist() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
-    	Program p = pb.build();
-    	Thread t = p.getThreads().get(0);
+    	Thread t = pb.build().getThreads().get(0);
     	t.addRegister("r1", -1);
+    	// Adding same register a second time
     	t.addRegister("r1", -1);
     }
 
     @Test(expected = IllegalStateException.class)
     public void performRelationalAnalysisException() throws Exception {
 		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/tso.cat"));
+		// Wmm.initialise() must be called first
 		cat.performRelationalAnalysis(true);
     }
 
     @Test(expected = IllegalStateException.class)
     public void encodeConsistencyException() throws Exception {
 		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/tso.cat"));
+		// Relations are not yet encoded
 		cat.encodeConsistency(TestHelper.createContext());
     }
 
@@ -70,6 +72,7 @@ public class ExceptionsTest {
     public void compileBeforeUnrollException() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
+    	// Program must be unrolled first
     	Compilation.newInstance().run(pb.build());
     }
 
@@ -79,6 +82,7 @@ public class ExceptionsTest {
     	pb.initThread(0);
     	Program p = pb.build();
     	LoopUnrolling.newInstance().run(p);
+    	// Reordering cannot be called after unrolling
     	BranchReordering.newInstance().run(p);
     }
 
@@ -92,6 +96,7 @@ public class ExceptionsTest {
 		VerificationTask task = VerificationTask.builder()
                 .withConfig(config)
                 .build(p, cat);
+		// The program must be unrolled before initializing the encoder
     	ProgramEncoder.fromConfig(config).initialise(task, TestHelper.createContext());
     }
 
@@ -101,6 +106,7 @@ public class ExceptionsTest {
     	pb.initThread(0);
     	Program p = pb.build();
     	LoopUnrolling.newInstance().run(p);
+    	// DCE cannot be called after unrolling
     	DeadCodeElimination.newInstance().run(p);
     }
 
@@ -117,6 +123,7 @@ public class ExceptionsTest {
 		ProgramEncoder encoder = ProgramEncoder.fromConfig(config);
 		SolverContext ctx = TestHelper.createContext();
 		encoder.initialise(task, ctx);
+		// The program must be compiled first
 		encoder.encodeControlFlow(ctx);
     }
 
@@ -133,6 +140,7 @@ public class ExceptionsTest {
 		ProgramEncoder encoder = ProgramEncoder.fromConfig(config);
 		SolverContext ctx = TestHelper.createContext();
 		encoder.initialise(task, ctx);
+		// The program must be compiled first
 		encoder.encodeFinalRegisterValues(ctx);
     }
 
@@ -149,13 +157,14 @@ public class ExceptionsTest {
 		ProgramEncoder encoder = ProgramEncoder.fromConfig(config);
 		SolverContext ctx = TestHelper.createContext();
 		encoder.initialise(task, ctx);
+		// The program must be compiled first
 		encoder.encodeNoBoundEventExec(ctx);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void diffPrecisionInt() throws Exception {
-    	IExprBin bin = new IExprBin(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
-    	bin.getPrecision();
+    	// Both arguments should have same precision
+    	new IExprBin(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
     }
 
     @Test(expected = RuntimeException.class)
@@ -182,6 +191,7 @@ public class ExceptionsTest {
     public void JumpWithNullLabel() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
+    	// Label cannot be null
     	pb.addChild(0, new CondJump(BConst.FALSE, null));
     }
 
@@ -190,6 +200,7 @@ public class ExceptionsTest {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
     	Label end = pb.getOrCreateLabel("END");
+    	// The expr cannot be null
     	pb.addChild(0, new CondJump(null, end));
     }
     
