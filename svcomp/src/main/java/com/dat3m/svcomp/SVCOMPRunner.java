@@ -1,9 +1,19 @@
 package com.dat3m.svcomp;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
-import static java.lang.Integer.parseInt;
-import static java.util.Arrays.asList;
+import com.dat3m.dartagnan.parsers.witness.ParserWitness;
+import com.dat3m.dartagnan.utils.options.BaseOptions;
+import com.dat3m.dartagnan.verification.analysis.Analysis;
+import com.dat3m.dartagnan.witness.WitnessGraph;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.svcomp.utils.BoogieSan;
+import com.dat3m.svcomp.utils.Compilation;
+import com.dat3m.svcomp.utils.SVCOMPSanitizer;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.io.Files;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -16,22 +26,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.dat3m.dartagnan.analysis.Analysis;
-import com.dat3m.dartagnan.utils.options.BaseOptions;
-import com.dat3m.svcomp.utils.Compilation;
-
-import com.dat3m.dartagnan.parsers.witness.ParserWitness;
-import com.dat3m.dartagnan.witness.WitnessGraph;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.svcomp.utils.BoogieSan;
-import com.dat3m.svcomp.utils.SVCOMPSanitizer;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.io.Files;
-
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
+import static java.lang.Integer.parseInt;
+import static java.util.Arrays.asList;
 
 @Options
 public class SVCOMPRunner extends BaseOptions {

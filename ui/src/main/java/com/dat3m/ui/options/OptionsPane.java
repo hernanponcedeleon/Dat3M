@@ -1,18 +1,16 @@
 package com.dat3m.ui.options;
 
-import com.dat3m.dartagnan.analysis.Method;
+import com.dat3m.dartagnan.verification.analysis.Method;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.ui.button.ClearButton;
 import com.dat3m.ui.button.TestButton;
 import com.dat3m.ui.options.utils.ControlCode;
 import com.dat3m.ui.utils.UiOptions;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
-
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;

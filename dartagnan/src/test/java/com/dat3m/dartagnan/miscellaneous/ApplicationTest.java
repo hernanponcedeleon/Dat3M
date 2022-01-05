@@ -1,16 +1,16 @@
 package com.dat3m.dartagnan.miscellaneous;
 
+import com.dat3m.dartagnan.Dartagnan;
+import com.dat3m.dartagnan.utils.ResourceHelper;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
-import com.dat3m.dartagnan.Dartagnan;
-import com.dat3m.dartagnan.utils.ResourceHelper;
-
-import static com.dat3m.dartagnan.analysis.Analysis.*;
-import static com.dat3m.dartagnan.analysis.Method.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.LITMUS_RESOURCE_PATH;
+import static com.dat3m.dartagnan.verification.analysis.Analysis.RACES;
+import static com.dat3m.dartagnan.verification.analysis.Analysis.REACHABILITY;
+import static com.dat3m.dartagnan.verification.analysis.Method.*;
 
 public class ApplicationTest {
 

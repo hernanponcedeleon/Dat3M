@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.analysis;
+package com.dat3m.dartagnan.verification.analysis;
 
 import com.dat3m.dartagnan.encoding.DataRaceEncoder;
 import com.dat3m.dartagnan.utils.Result;
