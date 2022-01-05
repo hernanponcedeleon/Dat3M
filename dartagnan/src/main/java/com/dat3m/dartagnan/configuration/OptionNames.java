@@ -10,7 +10,7 @@ public class OptionNames {
 	public static final String VALIDATE = "validate";
 	
 	// Encoding Options
-	public static final String LOCAL_CONSISTENT = "encoding.localConsistent";
+	public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";
 	public static final String ALLOW_PARTIAL_EXECUTIONS = "encoding.allowPartialExecutions";
 	public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
 	public static final String CO_ANTISYMMETRY = "encoding.co.antiSymm";

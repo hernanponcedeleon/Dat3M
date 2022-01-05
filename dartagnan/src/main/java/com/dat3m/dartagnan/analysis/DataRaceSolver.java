@@ -5,7 +5,9 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import static com.dat3m.dartagnan.utils.Result.*;
@@ -35,7 +37,7 @@ public class DataRaceSolver {
 	        encoder.initialise(task, ctx);
 	        prover.addConstraint(encoder.encodeDataRaces(ctx));
 	        
-			BooleanFormula noBoundEventExec = task.getProgramEncoder().encodeNoBoundEventExec(ctx);
+			BooleanFormula noBoundEventExec = task.getProgramEncoder().encodeBoundEventExec(ctx);
 			
 	        logger.info("Starting first solver.check()");
 			if(prover.isUnsat()) {

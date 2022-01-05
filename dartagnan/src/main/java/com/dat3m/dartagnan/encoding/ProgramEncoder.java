@@ -26,7 +26,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.*;
 import java.util.function.BiFunction;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.ALLOW_PARTIAL_EXECUTIONS;
+import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
@@ -184,16 +185,11 @@ public class ProgramEncoder implements Encoder {
         return enc;
     }
 
-    public BooleanFormula encodeNoBoundEventExec(SolverContext ctx){
+    public BooleanFormula encodeBoundEventExec(SolverContext ctx){
         Preconditions.checkState(task != null, "The encoder needs to get initialized.");
-
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        
-        BooleanFormula enc = bmgr.makeTrue();
-        for(Event e : program.getCache().getEvents(FilterBasic.get(EType.BOUND))){
-            enc = bmgr.and(enc, bmgr.not(e.exec()));
-        }
-        return bmgr.not(enc);
+        return program.getCache().getEvents(FilterBasic.get(EType.BOUND))
+                .stream().map(Event::exec).reduce(bmgr.makeFalse(), bmgr::or);
     }
 
     public BooleanFormula encodeAssertions(SolverContext ctx) {

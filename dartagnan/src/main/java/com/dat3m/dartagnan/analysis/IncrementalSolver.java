@@ -5,7 +5,9 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
@@ -40,7 +42,7 @@ public class IncrementalSolver {
         logger.info("Starting first solver.check()");
         if(prover.isUnsat()) {
         	prover.pop();
-			prover.addConstraint(task.getProgramEncoder().encodeNoBoundEventExec(ctx));
+			prover.addConstraint(task.getProgramEncoder().encodeBoundEventExec(ctx));
             logger.info("Starting second solver.check()");
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
         } else {

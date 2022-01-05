@@ -62,7 +62,7 @@ public class SymmetryBreaking {
 
         // ===== Construct row =====
         //IMPORTANT: Each thread writes to its own special location for the purpose of starting/terminating threads
-        // These need to get skipped!
+        // These need to get skipped.
         Thread t1 = symmThreads.get(0);
         List<Tuple> r1Tuples = new ArrayList<>();
         for (Tuple t : rel.getMaxTupleSet()) {
