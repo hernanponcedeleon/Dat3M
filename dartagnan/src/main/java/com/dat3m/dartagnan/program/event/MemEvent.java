@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -52,25 +51,12 @@ public abstract class MemEvent extends Event {
     	return memValueExpr;
     }
 
-    public ImmutableSet<Address> getMaxAddressSet(){
-    	Preconditions.checkState(maxAddressSet != null);
-    	return maxAddressSet;
-    }
-
-    public void setMaxAddressSet(ImmutableSet<Address> maxAddressSet){
-        this.maxAddressSet = maxAddressSet;
-    }
-
     public IExpr getAddress(){
         return address;
     }
 
     public ExprInterface getMemValue(){
         throw new RuntimeException("MemValue is not available for event " + this.getClass().getName());
-    }
-
-    public static boolean canAddressTheSameLocation(MemEvent e1, MemEvent e2){
-        return !Sets.intersection(e1.getMaxAddressSet(), e2.getMaxAddressSet()).isEmpty();
     }
     
     public boolean canRace() {

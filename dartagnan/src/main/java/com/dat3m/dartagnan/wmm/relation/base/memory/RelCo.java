@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
+import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
@@ -10,7 +11,6 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -23,10 +23,11 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.CO_ANTISYMMETRY;
+import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
+import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.program.utils.EType.INIT;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.expression.utils.Utils.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
@@ -77,6 +78,7 @@ public class RelCo extends Relation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
         	logger.info("Computing maxTupleSet for " + getName());
+        	AliasAnalysis alias = task.getAliasAnalysis();
             maxTupleSet = new TupleSet();
             List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
             List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
@@ -86,7 +88,7 @@ public class RelCo extends Relation {
 
             for(Event e1 : eventsInit){
                 for(Event e2 : eventsStore){
-                    if(MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent)e2)){
+                    if(alias.mayAlias((MemEvent) e1, (MemEvent)e2)){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
@@ -94,7 +96,7 @@ public class RelCo extends Relation {
 
             for(Event e1 : eventsStore){
                 for(Event e2 : eventsStore){
-                    if(e1.getCId() != e2.getCId() && MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent)e2)){
+                    if(e1.getCId() != e2.getCId() && alias.mayAlias((MemEvent) e1, (MemEvent)e2)){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
@@ -110,6 +112,7 @@ public class RelCo extends Relation {
 
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
+        AliasAnalysis alias = task.getAliasAnalysis();
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
@@ -172,14 +175,21 @@ public class RelCo extends Relation {
             BooleanFormula lastCoExpr = fmgr.makeVariable(BooleanType, "co_last(" + w1.repr() + ")");
             enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
 
-            for(Address address : w1.getMaxAddressSet()){
+
+            for (Event i : eventsInit) {
+                MemEvent init = (MemEvent) i;
+                if (!alias.mayAlias(w1, init)) {
+                    continue;
+                }
+
+                Address address = (Address)init.getAddress();
                 IntegerFormula a1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
                 IntegerFormula a2 = convertToIntegerFormula(address.toIntFormula(ctx), ctx);
                 IntegerFormula v1 = convertToIntegerFormula(w1.getMemValueExpr(), ctx);
                 IntegerFormula v2 = convertToIntegerFormula(address.getLastMemValueExpr(ctx), ctx);
                 BooleanFormula sameAddress = imgr.equal(a1, a2);
                 BooleanFormula sameValue = imgr.equal(v1, v2);
-				enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
+                enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
             }
         }
         return enc;
@@ -188,16 +198,10 @@ public class RelCo extends Relation {
     private void applyLocalConsistencyMinSet() {
         if (task.getMemoryModel().isLocallyConsistent()) {
             for (Tuple t : getMaxTupleSet()) {
+                AliasAnalysis alias = task.getAliasAnalysis();
                 MemEvent w1 = (MemEvent) t.getFirst();
                 MemEvent w2 = (MemEvent) t.getSecond();
-
-                if (w2.is(INIT)) {
-                    continue;
-                } else if (w1.getMaxAddressSet().size() != 1 || w2.getMaxAddressSet().size() != 1) {
-                    continue;
-                }
-
-                if (w1.is(INIT) || t.isForward()) {
+                if (!w1.is(INIT) && alias.mustAlias(w1, w2) && (w1.is(INIT) || t.isForward())) {
                     minTupleSet.add(t);
                 }
             }

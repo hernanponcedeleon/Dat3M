@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.utils.symmetry;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.utils.EType;
@@ -98,6 +99,7 @@ public class CoSymmetryBreaking {
     }
 
     private void initialize(EquivalenceClass<Thread> symmClass) {
+        AliasAnalysis alias = task.getAliasAnalysis();
         Info info = new Info();
         infoMap.put(symmClass, info);
 
@@ -112,7 +114,7 @@ public class CoSymmetryBreaking {
 
         // Symmetric writes that cannot alias are related to e.g. thread-creation
         // We do not want to break on those
-        writes.removeIf(w -> !Store.canAddressTheSameLocation(w, (Store)symm.map(w, symmThreads.get(1))));
+        writes.removeIf(w -> !alias.mayAlias(w, (Store)symm.map(w, symmThreads.get(1))));
 
         // We compute the (overall) sync-degree of a write w as the maximal sync degree over all
         // axioms. The sync-degree of w for axiom(r) is computed via must(r).
@@ -137,11 +139,9 @@ public class CoSymmetryBreaking {
         // first position.
         for (int i = 0; i < writes.size(); i++) {
             Store w = writes.get(i);
-            if (w.getMaxAddressSet().size() > 1) {
-                continue;
-            }
+
             boolean mustAlias = symmThreads.stream()
-                    .allMatch(t -> ((Store)symm.map(w, t)).getMaxAddressSet().equals(w.getMaxAddressSet()));
+                    .allMatch(t -> alias.mustAlias(w, (Store)symm.map(w, t)));
 
             if (mustAlias) {
                 info.hasMustEdges = true;

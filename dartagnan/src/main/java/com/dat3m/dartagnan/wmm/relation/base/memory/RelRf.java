@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
+import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Load;
@@ -21,7 +22,6 @@ import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
@@ -60,6 +60,7 @@ public class RelRf extends Relation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
+            AliasAnalysis alias = task.getAliasAnalysis();
         	logger.info("Computing maxTupleSet for " + getName());
             maxTupleSet = new TupleSet();
 
@@ -68,7 +69,7 @@ public class RelRf extends Relation {
 
             for(Event e1 : storeEvents){
                 for(Event e2 : loadEvents){
-                    if(MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent) e2)){
+                    if(alias.mayAlias((MemEvent) e1, (MemEvent) e2)){
                     	maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
@@ -90,7 +91,6 @@ public class RelRf extends Relation {
     	
     	BooleanFormula enc = bmgr.makeTrue();
         Map<MemEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
-        Map<MemEvent, BooleanFormula> memInitMap = new HashMap<>();
 
         for(Tuple tuple : maxTupleSet){
             MemEvent w = (MemEvent) tuple.getFirst();
@@ -110,12 +110,12 @@ public class RelRf extends Relation {
         }
 
         for(MemEvent r : edgeMap.keySet()){
-            enc = bmgr.and(enc, encodeEdgeSeq(r, memInitMap.get(r), edgeMap.get(r), ctx));
+            enc = bmgr.and(enc, encodeEdgeSeq(r, edgeMap.get(r), ctx));
         }
         return enc;
     }
 
-    private BooleanFormula encodeEdgeSeq(Event read, BooleanFormula isMemInit, List<BooleanFormula> edges, SolverContext ctx){
+    private BooleanFormula encodeEdgeSeq(Event read, List<BooleanFormula> edges, SolverContext ctx){
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
     	
         int num = edges.size();
@@ -147,40 +147,39 @@ public class RelRf extends Relation {
 
             // Remove past reads
             BranchEquivalence eq = task.getBranchEquivalence();
+            AliasAnalysis alias = task.getAliasAnalysis();
             Set<Tuple> deletedTuples = new HashSet<>();
-            for (Event read: task.getProgram().getCache().getEvents(FilterBasic.get(READ))) {
-                // TODO: remove this restriction?
-                if (((MemEvent)read).getMaxAddressSet().size() != 1) {
-                    continue;
-                }
+            for (Event r : task.getProgram().getCache().getEvents(FilterBasic.get(READ))) {
+                MemEvent read = (MemEvent)r;
 
+                // The set of same-thread writes as well as init writes that could be read from (all before the read)
+                // sorted by order (init events first)
                 List<MemEvent> possibleWrites = maxTupleSet.getBySecond(read).stream().map(Tuple::getFirst)
                         .filter(e -> (e.getThread() == read.getThread() || e.is(INIT)))
                         .map(x -> (MemEvent)x)
                         .sorted((o1, o2) -> o1.is(INIT) == o2.is(INIT) ? (o1.getCId() - o2.getCId()) : o1.is(INIT) ? -1 : 1)
                         .collect(Collectors.toList());
+
+                // The set of writes that won't be readable due getting overwritten.
                 Set<MemEvent> deletedWrites = new HashSet<>();
 
-                if (((MemEvent)read).getMaxAddressSet().size() == 1){
-                    List<Event> impliedWrites = possibleWrites.stream().filter(x -> x.getMaxAddressSet().size() == 1 && eq.isImplied(read, x) && x.cfImpliesExec()).collect(Collectors.toList());
-                    if (!impliedWrites.isEmpty()) {
-                        Event lastImplied = impliedWrites.get(impliedWrites.size() - 1);
-                        if (!lastImplied.is(INIT)) {
-                            Predicate<Event> pred = x -> x.is(INIT) || x.getCId() < lastImplied.getCId();
-                            possibleWrites.stream().filter(pred).forEach(deletedWrites::add);
-                            possibleWrites.removeIf(pred);
+                // A rf-edge (w1, r) is impossible, if there exists a write w2 such that
+                // - w2 is exec-implied by w1 or r (i.e. cf-implied + w2.cfImpliesExec)
+                // - w2 must alias with either w1 or r.
+                for (int i = 0; i < possibleWrites.size(); i++) {
+                    MemEvent w1 = possibleWrites.get(i);
+                    for (MemEvent w2 : possibleWrites.subList(i + 1, possibleWrites.size())) {
+                        // w2 dominates w1 if it aliases with it and it is guaranteed to execute if either w1 or the read are
+                        // executed
+                        if (w2.cfImpliesExec()
+                                && (eq.isImplied(w1, w2) || eq.isImplied(read, w2))
+                                && (alias.mustAlias(w1, w2) || alias.mustAlias(w2, read))) {
+                            deletedWrites.add(w1);
+                            break;
                         }
                     }
                 }
-                //TODO: If a read can read from multiple addresses, we have to make sure that
-                // we don't let writes of different addresses override each other
-                List<MemEvent> canOverride = possibleWrites.stream()
-                        .filter(x -> !x.is(INIT) && x.cfImpliesExec() && x.getMaxAddressSet().size() == 1)
-                        .collect(Collectors.toList());
-                possibleWrites.stream().filter(x ->
-                        (x.is(INIT) && canOverride.stream().anyMatch(y -> eq.isImplied(x ,y)))
-                                || (!x.is(INIT) && canOverride.stream().anyMatch(y ->  x.getCId() < y.getCId() && eq.isImplied(x ,y))))
-                        .forEach(deletedWrites::add);
+
                 for (Event w : deletedWrites) {
                     deletedTuples.add(new Tuple(w, read));
                 }
@@ -190,6 +189,14 @@ public class RelRf extends Relation {
     }
 
     private void atomicBlockOptimization() {
+        //TODO: This function can not only reduce rf-edges
+        // but we could also figure out implied coherences:
+        // Assume w1 and w2 are aliasing in the same block and w1 is before w2,
+        // then if w1 is co-before some external w3, then so is w2, i.e.
+        // co(w1, w3) => co(w2, w3), but we also have co(w2, w3) => co(w1, w3)
+        // so co(w1, w3) <=> co(w2, w3).
+        // This information is not expressible in terms of min/must sets, but
+        // we could still encode it.
         if (!task.getMemoryModel().doesRespectAtomicBlocks()) {
             return;
         }
@@ -198,8 +205,10 @@ public class RelRf extends Relation {
 
         // Atomics blocks: BeginAtomic -> EndAtomic
         BranchEquivalence eq = task.getBranchEquivalence();
+        AliasAnalysis alias = task.getAliasAnalysis();
         FilterAbstract filter = FilterIntersection.get(FilterBasic.get(RMW), FilterBasic.get(SVCOMPATOMIC));
-        for(Event end : task.getProgram().getCache().getEvents(filter)){
+        for(Event end : task.getProgram().getCache().getEvents(filter)) {
+            // Collect memEvents of the atomic block
             List<Store> writes = new ArrayList<>();
             List<Load> reads = new ArrayList<>();
             EndAtomic endAtomic = (EndAtomic) end;
@@ -211,19 +220,19 @@ public class RelRf extends Relation {
                 }
             }
 
-            for (Load read : reads) {
-                if (read.getMaxAddressSet().size() != 1) {
-                    continue;
-                }
 
-                List<Store> ownWrites = writes.stream()
-                        .filter(x -> x.getCId() < read.getCId() && x.getMaxAddressSet().equals(read.getMaxAddressSet()))
-                        .collect(Collectors.toList());
-                boolean hasImpliedWrites = ownWrites.stream().anyMatch(x -> eq.isImplied(read, x) && x.cfImpliesExec());
+            for (Load r : reads) {
+                // If there is any write w inside the atomic block that is guaranteed to
+                // execute before the read and that aliases with it,
+                // then the read won't be able to read any external writes
+                boolean hasImpliedWrites = writes.stream()
+                        .anyMatch(w -> w.cfImpliesExec() && w.getCId() < r.getCId()
+                                && eq.isImplied(r, w) && alias.mustAlias(r, w));
                 if (hasImpliedWrites) {
-                    maxTupleSet.removeIf(t -> t.getSecond() == read && t.isCrossThread());
+                    maxTupleSet.removeIf(t -> t.getSecond() == r && t.isCrossThread());
                 }
             }
+
         }
         logger.info("Atomic block optimization eliminated "  + (sizeBefore - maxTupleSet.size()) + " reads");
     }
