@@ -50,7 +50,11 @@ public class AtomicStore extends MemEvent implements RegReaderData {
         return "atomic_store" + tag + "(*" + address + ", " +  value + (mo != null ? ", " + mo : "") + ")";
     }
 
-
+    @Override
+    public ExprInterface getMemValue() {
+    	return value;
+    }
+    
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
