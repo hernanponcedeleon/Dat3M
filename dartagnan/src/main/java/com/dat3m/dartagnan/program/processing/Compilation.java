@@ -12,9 +12,9 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
-
 import java.util.List;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 
 @Options
 public class Compilation implements ProgramProcessor {
@@ -77,15 +77,11 @@ public class Compilation implements ProgramProcessor {
     private int compileThread(Thread thread, int nextId) {
         Event pred = thread.getEntry();
         Event toBeCompiled = pred.getSuccessor();
-
-        int fId = 0;
-        pred.setFId(fId++);
         pred.setCId(nextId++);
 
         while (toBeCompiled != null) {
             List<Event> compiledEvents = toBeCompiled.compile(target);
             for (Event e : compiledEvents) {
-                pred.setFId(fId++);
                 e.setOId(toBeCompiled.getOId());
                 e.setUId(toBeCompiled.getUId());
                 e.setCId(nextId++);
