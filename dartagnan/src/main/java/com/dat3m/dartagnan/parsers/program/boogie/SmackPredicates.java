@@ -9,7 +9,6 @@ import java.util.List;
 
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BExprBin;
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
@@ -116,7 +115,7 @@ public class SmackPredicates {
 		Atom c1 = new Atom(var, GTE, new IConst(min, var.getPrecision()));
 		Atom c2 = new Atom(var, LTE, new IConst(max, var.getPrecision()));
 		BExprBin guard = new BExprBin(c1, AND, c2);
-		ExprInterface fbranch = new IExprBin(var, MOD, new IConst(max, var.getPrecision()));
+		IExpr fbranch = new IExprBin(var, MOD, new IConst(max, var.getPrecision()));
 		return new IfExpr(guard, var, fbranch);
 	}
 }
