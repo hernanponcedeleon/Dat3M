@@ -48,7 +48,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
 
     @Override
     public ExprInterface visit(IfExpr ifExpr) {
-        return new IfExpr((BExpr)ifExpr.getGuard().visit(this), ifExpr.getTrueBranch().visit(this), ifExpr.getFalseBranch().visit(this));
+        return new IfExpr((BExpr)ifExpr.getGuard().visit(this), (IExpr)ifExpr.getTrueBranch().visit(this), (IExpr)ifExpr.getFalseBranch().visit(this));
     }
 
     @Override

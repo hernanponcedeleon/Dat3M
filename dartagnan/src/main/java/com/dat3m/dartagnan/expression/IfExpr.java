@@ -11,13 +11,13 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 
-public class IfExpr implements ExprInterface {
+public class IfExpr extends IExpr implements ExprInterface {
 
 	private final BExpr guard;
-	private final ExprInterface tbranch;
-	private final ExprInterface fbranch;
+	private final IExpr tbranch;
+	private final IExpr fbranch;
 	
-	public IfExpr(BExpr guard, ExprInterface tbranch, ExprInterface fbranch) {
+	public IfExpr(BExpr guard, IExpr tbranch, IExpr fbranch) {
 		this.guard =  guard;
 		this.tbranch = tbranch;
 		this.fbranch = fbranch;
@@ -59,11 +59,11 @@ public class IfExpr implements ExprInterface {
 		return guard;
 	}
 
-	public ExprInterface getTrueBranch() {
+	public IExpr getTrueBranch() {
 		return tbranch;
 	}
 
-	public ExprInterface getFalseBranch() {
+	public IExpr getFalseBranch() {
 		return fbranch;
 	}
 
