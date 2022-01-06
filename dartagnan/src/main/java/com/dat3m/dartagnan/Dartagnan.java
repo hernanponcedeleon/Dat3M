@@ -1,10 +1,5 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.analysis.AssumeSolver;
-import com.dat3m.dartagnan.analysis.DataRaceSolver;
-import com.dat3m.dartagnan.analysis.IncrementalSolver;
-import com.dat3m.dartagnan.analysis.RefinementSolver;
-import com.dat3m.dartagnan.analysis.TwoSolvers;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
@@ -13,11 +8,11 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.analysis.*;
 import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.collect.ImmutableSet;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.ShutdownManager;
@@ -30,17 +25,16 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
-import static java.lang.String.valueOf;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.analysis.Analysis.RACES;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
+import static com.dat3m.dartagnan.verification.analysis.Analysis.RACES;
+import static java.lang.String.valueOf;
 
 @Options
 public class Dartagnan extends BaseOptions {

@@ -1,15 +1,15 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
-
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.ATOMIC_BLOCKS_AS_LOCKS;
+import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_SYMMETRY;
 
 
 @Options
@@ -46,6 +46,7 @@ public class ProcessingManager implements ProgramProcessor {
         	LoopUnrolling.fromConfig(config).run(program);
         	Compilation.fromConfig(config).run(program);
         	if(atomicBlocksAsLocks) {
+        	    // TODO: Do we really want to execute this after compilation?
             	AtomicAsLock.fromConfig(config).run(program);
         	}
         	if(reduceSymmetry) {

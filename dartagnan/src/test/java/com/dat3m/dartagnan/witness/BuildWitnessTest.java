@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.witness;
 
-import com.dat3m.dartagnan.analysis.IncrementalSolver;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -8,8 +7,8 @@ import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.analysis.IncrementalSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
-
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -18,10 +17,10 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
+import java.io.File;
+
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
 import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_ORIGINAL_PROGRAM_PATH;
-
-import java.io.File;
 
 public class BuildWitnessTest {
 

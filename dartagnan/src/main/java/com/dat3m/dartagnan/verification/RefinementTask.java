@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -17,14 +16,15 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.ASSUME_LOCALLY_CONSISTENT_WMM;
+import static com.dat3m.dartagnan.configuration.OptionNames.ASSUME_NO_OOTA;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 /*
  A RefinementTask is a VerificationTask with an additional baseline memory model.
  The intention is that such a task is solved by any solving strategy that starts from the
  baseline memory model and refines it iteratively towards the target memory model.
- Currently, we only have a Saturation-based solver to solve such tasks but any CEGAR-like approach could be used.
+ Currently, we only have a custom theory solver (CAAT) to solve such tasks but any CEGAR-like approach could be used.
  */
 @Options
 public class RefinementTask extends VerificationTask {
@@ -48,7 +48,7 @@ public class RefinementTask extends VerificationTask {
     // ======================================================================
 
     private RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, RefinementTaskBuilder builder) {
-        super(program,targetMemoryModel,builder);
+        super(program, targetMemoryModel, builder);
         this.baselineModel = baselineModel != null ? baselineModel : createDefaultWmm();
     }
 
@@ -112,6 +112,8 @@ public class RefinementTask extends VerificationTask {
                 .build(task.getProgram(),task.getMemoryModel());
     }
 
+    //TODO: This code is outdated and was replaced in the CAAT branch.
+    // The merging introduced the old code again.
     private Wmm createDefaultWmm() {
         Wmm baseline = new Wmm();
         baseline.setEncodeCo(true);

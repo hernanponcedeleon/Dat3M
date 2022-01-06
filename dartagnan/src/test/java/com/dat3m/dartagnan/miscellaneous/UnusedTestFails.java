@@ -1,30 +1,18 @@
 package com.dat3m.dartagnan.miscellaneous;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.analysis.AssumeSolver;
-import com.dat3m.dartagnan.analysis.RefinementSolver;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.TestHelper;
-import com.dat3m.dartagnan.verification.RefinementTask;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /*
 NOTE: We use these tests to collect benchmarks that are failing for some reason

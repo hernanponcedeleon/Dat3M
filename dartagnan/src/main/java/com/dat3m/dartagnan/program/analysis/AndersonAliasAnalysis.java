@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.wmm.utils.alias;
+package com.dat3m.dartagnan.program.analysis;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
@@ -12,26 +12,62 @@ import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+
 import java.util.*;
 
 /**
  *
  * @author flo
  */
-public class AliasAnalysis {
+public class AndersonAliasAnalysis implements AliasAnalysis {
 
-    private final List<Object> variables = new LinkedList<>(); // TODO: Use a queue
-    private ImmutableSet<Address> maxAddressSet;
-
+    private final Queue<Object> variables = new ArrayDeque<>();
+    private final ImmutableSet<Address> maxAddressSet;
     private final Graph graph = new Graph();
 
-    public void calculateLocationSets(Program program) {
-    	maxAddressSet = program.getMemory().getAllAddresses();
-    	processLocs(program);
-    	processRegs(program);            	
-    	algorithm(program);
-    	processResults(program);
+    private final Map<MemEvent, ImmutableSet<Address>> eventAddressSpaceMap = new HashMap<>();
+
+    // ================================ Construction ================================
+
+    private AndersonAliasAnalysis(Program program) {
+        Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
+        maxAddressSet = program.getMemory().getAllAddresses();
+        run(program);
+    }
+
+    public static AndersonAliasAnalysis fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
+        return new AndersonAliasAnalysis(program);
+    }
+
+    // ================================ API ================================
+
+    @Override
+    public boolean mayAlias(MemEvent x, MemEvent y) {
+        return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
+    }
+
+
+    @Override
+    public boolean mustAlias(MemEvent x, MemEvent y) {
+        return getMaxAddressSet(x).size() == 1 && getMaxAddressSet(x).containsAll(getMaxAddressSet(y));
+    }
+
+    private ImmutableSet<Address> getMaxAddressSet(MemEvent e) {
+        return eventAddressSpaceMap.get(e);
+    }
+
+    // ================================ Processing ================================
+
+    private void run(Program program) {
+        processLocs(program);
+        processRegs(program);
+        algorithm(program);
+        processResults(program);
     }
 
     private void processLocs(Program program) {
@@ -60,7 +96,8 @@ public class AliasAnalysis {
                     variables.add(register);
                 }
                 // We allow for more address calculations
-                e.setMaxAddressSet(maxAddressSet);
+                //e.setMaxAddressSet(maxAddressSet);
+                eventAddressSpaceMap.put(e, maxAddressSet);
             }
         }
     }
@@ -89,7 +126,7 @@ public class AliasAnalysis {
 
     private void algorithm(Program program) {
         while (!variables.isEmpty()) {
-            Object variable = variables.remove(0);
+            Object variable = variables.poll();
             if(variable instanceof Register){
                 // Process rules with *variable:
                 for (Address address : graph.getAddresses(variable)) {
@@ -180,8 +217,43 @@ public class AliasAnalysis {
             if (addresses.size() == 0) {
                 addresses = maxAddressSet;
             }
-            ImmutableSet<Address> addr = ImmutableSet.copyOf(addresses);
-            ((MemEvent) e).setMaxAddressSet(addr);
+
+            eventAddressSpaceMap.put((MemEvent) e, ImmutableSet.copyOf(addresses));
+        }
+    }
+
+    private static class Graph {
+
+        private final Map<Object, Set<Object>> edges = new HashMap<>();
+        private final Map<Object, Set<Address>> addresses = new HashMap<>();
+        private final Map<Register, Set<MemEvent>> events = new HashMap<>();
+
+        boolean addEdge(Object v1, Object v2){
+            return edges.computeIfAbsent(v1, key -> new HashSet<>()).add(v2);
+        }
+
+        Set<Object> getEdges(Object v){
+            return edges.getOrDefault(v, ImmutableSet.of());
+        }
+
+        void addAddress(Object v, Address a){
+            addresses.computeIfAbsent(v, key -> new HashSet<>()).add(a);
+        }
+
+        boolean addAllAddresses(Object v, Set<Address> s){
+            return addresses.computeIfAbsent(v, key -> new HashSet<>()).addAll(s);
+        }
+
+        Set<Address> getAddresses(Object v){
+            return addresses.getOrDefault(v, ImmutableSet.of());
+        }
+
+        void addEvent(Register r, MemEvent e){
+            events.computeIfAbsent(r, key -> new HashSet<>()).add(e);
+        }
+
+        Set<MemEvent> getEvents(Register r){
+            return events.getOrDefault(r, ImmutableSet.of());
         }
     }
 }

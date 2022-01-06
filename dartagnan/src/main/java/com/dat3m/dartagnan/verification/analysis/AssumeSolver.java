@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.analysis;
+package com.dat3m.dartagnan.verification.analysis;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.utils.Result;
@@ -41,7 +41,7 @@ public class AssumeSolver {
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
-			prover.addConstraint(task.getProgramEncoder().encodeNoBoundEventExec(ctx));
+			prover.addConstraint(task.getProgramEncoder().encodeBoundEventExec(ctx));
             logger.info("Starting second solver.check()");
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
         } else {

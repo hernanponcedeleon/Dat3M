@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.utils.equivalence;
+package com.dat3m.dartagnan.program.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -7,10 +7,11 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.utils.equivalence.AbstractEquivalence;
+import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -18,9 +19,10 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-
 import java.util.*;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.ALWAYS_SPLIT_ON_JUMPS;
+import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_BRANCHES;
 
 /* Procedure:
    (1) Find all simple branches using
@@ -134,7 +136,15 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
 		logger.info("{}: {}", ALWAYS_SPLIT_ON_JUMPS, alwaysSplitOnJump);
 		logger.info("{}: {}", MERGE_BRANCHES, mergeBranches);
-        
+
+		run();
+    }
+
+    public static BranchEquivalence fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
+        return new BranchEquivalence(program, config);
+    }
+
+    private void run() {
         Map<Thread, Map<Event, Branch>> threadBranches = new HashMap<>();
         for (Thread t : program.getThreads()) {
             // Step (1)

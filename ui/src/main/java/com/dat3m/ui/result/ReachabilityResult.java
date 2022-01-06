@@ -1,13 +1,13 @@
 package com.dat3m.ui.result;
 
-import com.dat3m.dartagnan.analysis.AssumeSolver;
-import com.dat3m.dartagnan.analysis.IncrementalSolver;
-import com.dat3m.dartagnan.analysis.RefinementSolver;
-import com.dat3m.dartagnan.analysis.TwoSolvers;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.analysis.AssumeSolver;
+import com.dat3m.dartagnan.verification.analysis.IncrementalSolver;
+import com.dat3m.dartagnan.verification.analysis.RefinementSolver;
+import com.dat3m.dartagnan.verification.analysis.TwoSolvers;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.ui.utils.UiOptions;

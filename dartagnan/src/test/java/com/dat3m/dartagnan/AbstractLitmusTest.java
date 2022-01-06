@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.analysis.RefinementSolver;
-import com.dat3m.dartagnan.analysis.TwoSolvers;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
@@ -11,6 +9,8 @@ import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.analysis.RefinementSolver;
+import com.dat3m.dartagnan.verification.analysis.TwoSolvers;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.junit.ClassRule;

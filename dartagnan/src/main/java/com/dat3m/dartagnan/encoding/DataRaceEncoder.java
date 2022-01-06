@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.utils.EType;
@@ -14,20 +15,22 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.math.BigInteger;
 
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
-import java.math.BigInteger;
-
 @Options
 public class DataRaceEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(DataRaceEncoder.class);
-
-    private Program program;
+    private VerificationTask task;
 
     private DataRaceEncoder(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
@@ -39,13 +42,15 @@ public class DataRaceEncoder implements Encoder {
 
     @Override
     public void initialise(VerificationTask task, SolverContext context) {
-        this.program = task.getProgram();
+    	this.task = task;
     }
 
     public BooleanFormula encodeDataRaces(SolverContext ctx) {
-        Preconditions.checkState(program != null, "The encoder needs to get initialized.");
+        Preconditions.checkState(task != null, "The encoder needs to get initialized.");
         logger.info("Encoding data-races");
 
+        Program program = task.getProgram();
+		AliasAnalysis alias = task.getAliasAnalysis();
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
     	IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
     	
@@ -62,7 +67,7 @@ public class DataRaceEncoder implements Encoder {
     					if(w.hasFilter(EType.RMW) && m.hasFilter(EType.RMW)) {
     						continue;
     					}
-    					if(w.canRace() && m.canRace() && MemEvent.canAddressTheSameLocation(w, m)) {
+    					if(w.canRace() && m.canRace() && alias.mayAlias(w, m)) {
     						BooleanFormula conflict = bmgr.and(m.exec(), w.exec(), edge("hb", m, w, ctx),  
     								generalEqual(w.getMemAddressExpr(), m.getMemAddressExpr(), ctx), 
         							imgr.equal(intVar("hb", w, ctx), 

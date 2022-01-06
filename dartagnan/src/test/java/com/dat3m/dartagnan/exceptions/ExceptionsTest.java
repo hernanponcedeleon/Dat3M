@@ -1,16 +1,12 @@
 package com.dat3m.dartagnan.exceptions;
 
-import com.dat3m.dartagnan.expression.BConst;
-import com.dat3m.dartagnan.expression.BNonDet;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.INonDet;
-import com.dat3m.dartagnan.expression.INonDetTypes;
+import com.dat3m.dartagnan.encoding.ProgramEncoder;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.encoding.ProgramEncoder;
-import com.dat3m.dartagnan.exception.*;
-import com.dat3m.dartagnan.parsers.program.utils.*;
+import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -25,15 +21,15 @@ import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
-import static com.dat3m.dartagnan.utils.TestHelper.createContext;
-
-import java.io.File;
-
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
+
+import java.io.File;
+
+import static com.dat3m.dartagnan.utils.TestHelper.createContext;
 
 public class ExceptionsTest {
 
@@ -158,7 +154,7 @@ public class ExceptionsTest {
 		SolverContext ctx = TestHelper.createContext();
 		encoder.initialise(task, ctx);
 		// The program must be compiled first
-		encoder.encodeNoBoundEventExec(ctx);
+		encoder.encodeBoundEventExec(ctx);
     }
 
     @Test(expected = IllegalArgumentException.class)

@@ -9,10 +9,8 @@ import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
-import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -21,7 +19,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.LOCAL_CONSISTENT;
+import static com.dat3m.dartagnan.configuration.OptionNames.LOCALLY_CONSISTENT;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 /**
@@ -36,7 +34,7 @@ public class Wmm {
     // =========================== Configurables ===========================
 
     @Option(
-    	name=LOCAL_CONSISTENT,
+    	name= LOCALLY_CONSISTENT,
     	description="Assumes local consistency for all created wmms.",
     	secure=true)
     private boolean assumeLocalConsistency = true;
@@ -107,7 +105,6 @@ public class Wmm {
 
     public void initialise(VerificationTask task, SolverContext ctx) {
         this.task = task;
-        new AliasAnalysis().calculateLocationSets(task.getProgram());
 
         for(String relName : baseRelations){
             relationRepository.getRelation(relName);

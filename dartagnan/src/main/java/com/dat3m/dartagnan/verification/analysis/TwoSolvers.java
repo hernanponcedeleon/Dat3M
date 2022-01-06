@@ -1,11 +1,14 @@
-package com.dat3m.dartagnan.analysis;
+package com.dat3m.dartagnan.verification.analysis;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
@@ -51,7 +54,7 @@ public class TwoSolvers {
 
         logger.info("Starting first solver.check()");
         if(prover1.isUnsat()) {
-			prover2.addConstraint(task.getProgramEncoder().encodeNoBoundEventExec(ctx));
+			prover2.addConstraint(task.getProgramEncoder().encodeBoundEventExec(ctx));
             logger.info("Starting second solver.check()");
             res = prover2.isUnsat() ? PASS : Result.UNKNOWN;
         } else {

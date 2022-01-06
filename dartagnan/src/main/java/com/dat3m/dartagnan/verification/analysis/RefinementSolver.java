@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.analysis;
+package com.dat3m.dartagnan.verification.analysis;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
@@ -16,7 +16,10 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -172,7 +175,7 @@ public class RefinementSolver {
             lastTime = System.currentTimeMillis();
             prover.pop();
             // Add bound check
-            prover.addConstraint(task.getProgramEncoder().encodeNoBoundEventExec(ctx));
+            prover.addConstraint(task.getProgramEncoder().encodeBoundEventExec(ctx));
             // Add back the constraints found during Refinement (TODO: We might need to perform a second refinement)
             for (DNF<CoreLiteral> reason : foundCoreReasons) {
                 prover.addConstraint(refiner.refine(reason, ctx));

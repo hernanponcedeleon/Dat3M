@@ -1,13 +1,12 @@
 package com.dat3m.dartagnan.utils.options;
 
-import com.dat3m.dartagnan.analysis.Analysis;
-import com.dat3m.dartagnan.analysis.Method;
-
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-
+import com.dat3m.dartagnan.verification.analysis.Analysis;
+import com.dat3m.dartagnan.verification.analysis.Method;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 @Options
 public abstract class BaseOptions {
