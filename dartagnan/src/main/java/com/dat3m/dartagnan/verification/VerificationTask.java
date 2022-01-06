@@ -3,9 +3,10 @@ package com.dat3m.dartagnan.verification;
 import com.dat3m.dartagnan.encoding.MemoryEncoder;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.symmetry.SymmetryBreaking;
 import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
 import com.dat3m.dartagnan.witness.WitnessGraph;
@@ -13,9 +14,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.base.Preconditions;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -165,13 +164,12 @@ public class VerificationTask {
     public void preProcessProgram() {
         try {
             ProcessingManager.fromConfig(config).run(program);
-            branchEquivalence = new BranchEquivalence(program, config);
+            branchEquivalence = BranchEquivalence.fromConfig(program, config);
+            aliasAnalysis = AliasAnalysis.fromConfig(program, config);
         } catch (InvalidConfigurationException ex) {
-            logger.warn("Configuration error when processing program. Some processing steps may have been skipped.");
+            logger.warn("Configuration error when processing program.");
+            throw new RuntimeException(ex); // TODO: Let the error bubble up
         }
-
-		aliasAnalysis = new AliasAnalysis();
-		aliasAnalysis.calculateLocationSets(program);
     }
 
     public void initialiseEncoding(SolverContext ctx) {

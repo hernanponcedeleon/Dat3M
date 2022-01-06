@@ -1,22 +1,21 @@
 package com.dat3m.dartagnan.program.svcomp.event;
 
-import static com.dat3m.dartagnan.program.utils.EType.RMW;
-import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.sosy_lab.java_smt.api.SolverContext;
-
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
+import static com.dat3m.dartagnan.program.utils.EType.RMW;
+import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
 
 public class EndAtomic extends Event {
 

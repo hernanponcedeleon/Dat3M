@@ -48,7 +48,7 @@ public class RefinementTask extends VerificationTask {
     // ======================================================================
 
     private RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, RefinementTaskBuilder builder) {
-        super(program,targetMemoryModel,builder);
+        super(program, targetMemoryModel, builder);
         this.baselineModel = baselineModel != null ? baselineModel : createDefaultWmm();
     }
 
