@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 public class ThreadSymmetry extends AbstractEquivalence<Thread> {
 
     private final Program program;
-    private final Map<Thread, Map<String, Event>> symmMap = new HashMap<>();
+    private final Map<Thread, Map<Integer, Event>> symmMap = new HashMap<>();
 
     private ThreadSymmetry(Program program, boolean createMappings) {
         this.program = program;
@@ -46,8 +46,8 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
 
     private void createMappings() {
         for (Thread thread : program.getThreads()) {
-            Map<String, Event> mapping = symmMap.computeIfAbsent(thread, key -> new HashMap<>());
-            thread.getEvents().forEach(e -> mapping.put(e.getSymmId(), e));
+            Map<Integer, Event> mapping = symmMap.computeIfAbsent(thread, key -> new HashMap<>());
+            thread.getEvents().forEach(e -> mapping.put(e.getFId(), e));
         }
     }
 
@@ -56,7 +56,7 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
     public Event map(Event source, Thread target) {
     	Preconditions.checkArgument(areEquivalent(source.getThread(), target), 
     			"Target thread is not symmetric with source thread.");
-        return symmMap.get(target).get(source.getSymmId());
+        return symmMap.get(target).get(source.getFId());
     }
 
     public Function<Event, Event> createPermutation(List<Thread> orig, List<Thread> target) {

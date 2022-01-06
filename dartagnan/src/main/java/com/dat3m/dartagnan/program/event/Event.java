@@ -3,12 +3,12 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.base.Preconditions;
-
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 
@@ -21,8 +21,6 @@ public abstract class Event implements Comparable<Event> {
 	protected int cId = -1;		// ID after compilation
 	protected int fId = -1;		// ID within a function
 
-	protected String symmId;	// ID for symmetry breaking
-
 	protected int cLine = -1;	// line in the original C program
 
 	protected Thread thread; // The thread this event belongs to
@@ -31,7 +29,6 @@ public abstract class Event implements Comparable<Event> {
 
 	protected transient Event successor;
 
-    protected transient BooleanFormula cfEnc;
     protected transient BooleanFormula cfCond;
 	protected transient BooleanFormula cfVar;
 
@@ -65,14 +62,13 @@ public abstract class Event implements Comparable<Event> {
 	public int getCId() { return cId; }
 	public void setCId(int id) { this.cId = id; }
 
-	public String getSymmId() {
-		return symmId;
-	}
+	// TODO: This should be called "LId" (localId) and be set once after all processing is done.
+	public int getFId() { return fId; }
+	public void setFId(int id) { this.fId = id; }
 
 	public int getCLine() {
 		return cLine;
 	}
-
 	public void setCLine(int line) {
 		this.cLine = line;
 	}
@@ -150,22 +146,7 @@ public abstract class Event implements Comparable<Event> {
     public void notify(Event e) {
     	throw new UnsupportedOperationException("notify is not allowed for " + getClass().getSimpleName());
     }
-    
-    public final int setFId(int nextId) {
-		return setFIdRecursive(nextId, 0).execute();
-    }
 
-	public RecursiveFunction<Integer> setFIdRecursive(int nextId, int depth) {
-		fId = nextId;
-		if (successor != null) {
-			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
-				return successor.setFIdRecursive(nextId + 1, depth + 1);
-			} else {
-				return RecursiveFunction.call(() -> successor.setFIdRecursive(nextId + 1, 0));
-			}
-		}
-		return RecursiveFunction.done(nextId + 1);
-	}
 
 
 	// Unrolling
@@ -193,7 +174,6 @@ public abstract class Event implements Comparable<Event> {
 
 	public void initialise(VerificationTask task, SolverContext ctx){
 		Preconditions.checkState(cId >= 0, "Event ID is not set in " + this);
-		this.symmId = getThread().getName() + "-" + fId;
 		this.task = task;
 	}
 	
@@ -216,14 +196,6 @@ public abstract class Event implements Comparable<Event> {
 
 	public BooleanFormula cf(){ return cfVar; }
 	public void setCfVar(BooleanFormula cfVar) { this.cfVar = cfVar; }
-	
-	public BooleanFormula getCfCond(){
-		return cfCond;
-	}
-
-	public void addCfCond(SolverContext ctx, BooleanFormula cond){
-		cfCond = (cfCond == null) ? cond : ctx.getFormulaManager().getBooleanFormulaManager().or(cfCond, cond);
-	}
 
 	public BooleanFormula encodeExec(SolverContext ctx){
 		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
