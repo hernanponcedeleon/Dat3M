@@ -38,18 +38,24 @@ public class ProcessingManager implements ProgramProcessor {
         config.inject(this);
     }
 
-    public void run(Program program) {
+    public static ProcessingManager fromConfig(Configuration config) throws InvalidConfigurationException {
+        return new ProcessingManager(config);
+    }
+
+    // ==================================================
+
+    public void run(Program program){
         try {
-        	DeadCodeElimination.fromConfig(config).run(program);
-        	BranchReordering.fromConfig(config).run(program);
-        	Simplifier.fromConfig(config).run(program);
-        	LoopUnrolling.fromConfig(config).run(program);
-        	Compilation.fromConfig(config).run(program);
-        	if(atomicBlocksAsLocks) {
-        	    // TODO: Do we really want to execute this after compilation?
-            	AtomicAsLock.fromConfig(config).run(program);
-        	}
-        	if(reduceSymmetry) {
+            DeadCodeElimination.fromConfig(config).run(program);
+            BranchReordering.fromConfig(config).run(program);
+            Simplifier.fromConfig(config).run(program);
+            LoopUnrolling.fromConfig(config).run(program);
+            Compilation.fromConfig(config).run(program);
+            if(atomicBlocksAsLocks) {
+                // TODO: Do we really want to execute this after compilation?
+                AtomicAsLock.fromConfig(config).run(program);
+            }
+            if(reduceSymmetry) {
                 SymmetryReduction.fromConfig(config).run(program);
             }
         } catch (InvalidConfigurationException ex) {
@@ -58,9 +64,4 @@ public class ProcessingManager implements ProgramProcessor {
         }
     }
 
-    // ==================================================
-
-    public static ProcessingManager fromConfig(Configuration config) throws InvalidConfigurationException {
-        return new ProcessingManager(config);
-    }
 }

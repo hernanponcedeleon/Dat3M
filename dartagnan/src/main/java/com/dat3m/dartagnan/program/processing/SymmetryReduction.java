@@ -2,10 +2,10 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
-import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -15,7 +15,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 
-// A first rough implementation for symmetry reduction
+/**
+ * A SymmetryReduction pass goes through all symmetry classes of the program threads
+ * and designates in each a single thread (the representative).
+ * It removes all assertions from non-designated threads thereby making them asymmetric
+ * to the designated thread (hence the symmetries get reduced).
+ * In the resultant program, only designated threads are able to trigger assertion violations / bugs.
+ * This procedure is only sound if all symmetric threads have the same capability of triggering a violation assertion.
+ * This may not be the case if symmetric threads have assertions that distinguish between the executing threads (by e.g.
+ * using the local thread id or the input parameter in the assertion in an asymmetric manner)
+ * E.g. "assert(tid == 3)" is a thread-distinguishing assertion which would make this pass unsound.
+ */
 public class SymmetryReduction implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(SymmetryReduction.class);
@@ -31,8 +41,7 @@ public class SymmetryReduction implements ProgramProcessor {
     }
 
     public void run(Program program) {
-
-        ThreadSymmetry symm = new ThreadSymmetry(program, false);
+        ThreadSymmetry symm = ThreadSymmetry.withoutMappings(program);
         Set<? extends EquivalenceClass<Thread>> symmClasses = symm.getNonTrivialClasses();
         if (symmClasses.isEmpty()) {
             return;

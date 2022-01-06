@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.solver.caat4wmm;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.AddressLiteral;
@@ -10,7 +11,6 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
-import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import org.sosy_lab.java_smt.api.BooleanFormula;

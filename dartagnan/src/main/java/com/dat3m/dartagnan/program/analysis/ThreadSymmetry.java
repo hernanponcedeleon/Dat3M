@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.utils.symmetry;
+package com.dat3m.dartagnan.program.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -7,6 +7,8 @@ import com.dat3m.dartagnan.utils.equivalence.AbstractEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.*;
 import java.util.function.Function;
@@ -17,16 +19,20 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
     private final Program program;
     private final Map<Thread, Map<String, Event>> symmMap = new HashMap<>();
 
-    public ThreadSymmetry(Program program) {
-        this(program, true);
-    }
-
-    public ThreadSymmetry(Program program, boolean createMappings) {
+    private ThreadSymmetry(Program program, boolean createMappings) {
         this.program = program;
         createClasses();
         if (createMappings) {
             createMappings();
         }
+    }
+
+    public static ThreadSymmetry fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
+        return new ThreadSymmetry(program, true);
+    }
+
+    public static ThreadSymmetry withoutMappings(Program program) {
+        return new ThreadSymmetry(program, false);
     }
 
     // ================= Private methods ===================

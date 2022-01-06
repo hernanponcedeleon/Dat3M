@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
 import com.google.common.base.Preconditions;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -29,8 +28,6 @@ public class Simplifier implements ProgramProcessor {
     @Override
     public void run(Program program) {
         Preconditions.checkArgument(!program.isUnrolled(), "Simplifying should be performed before unrolling.");
-        // Some simplification are only applicable after others.
-        // Thus we apply them iteratively until we reach a fixpoint.
         logger.info("pre-simplification: " + program.getEvents().size() + " events");
 
         for (Thread t : program.getThreads()) {
@@ -51,6 +48,8 @@ public class Simplifier implements ProgramProcessor {
             if (next == null) {
                 break;
             }
+            // Some simplification are only applicable after others.
+            // Thus we apply them iteratively until we reach a fixpoint.
             if (simplifyEvent(pred, next)) {
                 hasAnyChanges = true;
             } else {

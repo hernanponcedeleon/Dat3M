@@ -14,7 +14,6 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.util.HashSet;
 import java.util.Set;
 
-//TODO: Add support for Ifs
 public class DeadCodeElimination implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(DeadCodeElimination.class);
@@ -83,8 +82,7 @@ public class DeadCodeElimination implements ProgramProcessor {
                 if (j.isGoto()) {
                     e = j.getLabel();
                     continue;
-                }
-                else {
+                } else {
                     computeReachableEvents(j.getLabel(), reachable);
                 }
             }
