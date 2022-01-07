@@ -57,9 +57,9 @@ public class MemoryEncoder implements Encoder {
         IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 
         // Some addresses already have a constant value (obtained from parsing the boogie file)
-        BooleanFormula[] addrExprs = memory.getAllAddresses().stream().filter(x -> !x.hasConstantValue())
+        BooleanFormula[] addrExprs = memory.getAllAddresses().stream()
                 .map(addr -> imgr.equal(convertToIntegerFormula(addr.toIntFormula(ctx), ctx),
-                        imgr.makeNumber(addr.getValue().intValue())))
+                        imgr.makeNumber(addr.getIntValue().intValue())))
                 .toArray(BooleanFormula[]::new);
         return fmgr.getBooleanFormulaManager().and(addrExprs);
      }

@@ -125,7 +125,7 @@ public class StdProcedures {
     	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
     	visitor.assertionIndex++;
     	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
-    	if(expr instanceof IConst && ((IConst)expr).getValue().compareTo(BigInteger.ONE) == 0) {
+    	if(expr instanceof IConst && ((IConst)expr).getIntValue().compareTo(BigInteger.ONE) == 0) {
     		return;
     	}
     	Local event = EventFactory.newLocal(ass, expr);

@@ -22,18 +22,6 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
         this.index = index;
     }
 
-    public boolean hasConstantValue() {
-     	return this.constantValue != null;
-     }
-
-    public BigInteger getConstantValue() {
-     	return this.constantValue;
-     }
-
-    public void setConstantValue(BigInteger value) {
-     	this.constantValue = value;
-     }
-
     @Override
     public Formula toIntFormula(Event e, SolverContext ctx){
         return toIntFormula(ctx);
@@ -92,9 +80,6 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
 
     @Override
     public BigInteger getIntValue(Event e, Model model, SolverContext ctx){
-        if (hasConstantValue()) {
-            return constantValue;
-        }
         return new BigInteger(model.evaluate(toIntFormula(ctx)).toString());
     }
 

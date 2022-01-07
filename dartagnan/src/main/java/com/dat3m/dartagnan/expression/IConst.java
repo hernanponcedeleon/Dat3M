@@ -19,7 +19,7 @@ public class IConst extends IExpr implements ExprInterface, LastValueInterface {
 	public static IConst ZERO = new IConst(BigInteger.ZERO, -1);
 	public static IConst ONE = new IConst(BigInteger.ONE, -1);
 
-	private final BigInteger value;
+	private BigInteger value;
 	protected final int precision;
 	
 	public IConst(BigInteger value, int precision) {
@@ -79,10 +79,13 @@ public class IConst extends IExpr implements ExprInterface, LastValueInterface {
 		return this;
 	}
 	
-	public BigInteger getValue() {
+	public BigInteger getIntValue() {
 		return value;
 	}
 
+    public void setIntValue(BigInteger value) {
+     	this.value = value;
+     }
     
 	@Override
 	public int getPrecision() {

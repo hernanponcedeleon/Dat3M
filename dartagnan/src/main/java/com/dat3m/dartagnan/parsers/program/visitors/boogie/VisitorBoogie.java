@@ -159,7 +159,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(exp instanceof Atom && ((Atom)exp).getLHS() instanceof Address && ((Atom)exp).getOp().equals(EQ)) {
  			Address add = (Address)((Atom)exp).getLHS();
  			Reducible def = (Reducible) ((Atom)exp).getRHS();
- 			add.setConstantValue(def.reduce().getValue());
+ 			add.setIntValue(def.reduce().getIntValue());
  		}
 		return null;
 	}
@@ -675,7 +675,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				ExprInterface lhs = address;
 				BigInteger rhs = BigInteger.ZERO;
 				while(lhs instanceof IExprBin) {
-					rhs = rhs.add(((IExprBin)lhs).getRHS().reduce().getValue());
+					rhs = rhs.add(((IExprBin)lhs).getRHS().reduce().getIntValue());
 					lhs = ((IExprBin)lhs).getLHS();
 				}
 				String text = ctx.expr(1).getText();				
