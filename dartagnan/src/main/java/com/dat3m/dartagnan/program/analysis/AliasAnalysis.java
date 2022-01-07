@@ -12,6 +12,6 @@ public interface AliasAnalysis {
 
     static AliasAnalysis fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
         // If we had more alias analyses, we would use a factory class instead
-        return AndersonAliasAnalysis.fromConfig(program, config);
+        return AndersenAliasAnalysis.fromConfig(program, config);
     }
 }

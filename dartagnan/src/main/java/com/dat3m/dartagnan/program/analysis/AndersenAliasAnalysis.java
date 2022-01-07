@@ -24,7 +24,7 @@ import java.util.*;
  *
  * @author flo
  */
-public class AndersonAliasAnalysis implements AliasAnalysis {
+public class AndersenAliasAnalysis implements AliasAnalysis {
 
     private final Queue<Object> variables = new ArrayDeque<>();
     private final ImmutableSet<Address> maxAddressSet;
@@ -34,14 +34,14 @@ public class AndersonAliasAnalysis implements AliasAnalysis {
 
     // ================================ Construction ================================
 
-    private AndersonAliasAnalysis(Program program) {
+    private AndersenAliasAnalysis(Program program) {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
         maxAddressSet = program.getMemory().getAllAddresses();
         run(program);
     }
 
-    public static AndersonAliasAnalysis fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
-        return new AndersonAliasAnalysis(program);
+    public static AndersenAliasAnalysis fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
+        return new AndersenAliasAnalysis(program);
     }
 
     // ================================ API ================================
