@@ -5,92 +5,39 @@ import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.verification.Context;
-import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 
-public abstract class Event implements Encoder, Comparable<Event> {
+public interface Event extends Encoder, Comparable<Event> {
 
-	public static final int PRINT_PAD_EXTRA = 50;
+	int PRINT_PAD_EXTRA = 50;
 
-	protected int oId = -1;		// ID after parsing (original)
-	protected int uId = -1;		// ID after unrolling
-	protected int cId = -1;		// ID after compilation
-	protected int fId = -1;		// ID within a function
+	int getOId();
+	void setOId(int id);
 
-	protected int cLine = -1;	// line in the original C program
+	int getUId();
+	void setUId(int id);
 
-	protected Thread thread; // The thread this event belongs to
-
-	protected final Set<String> filter;
-
-	protected transient Event successor;
-
-	protected transient BooleanFormula cfVar;
-
-	protected Set<Event> listeners = new HashSet<>();
-
-	private transient String repr;
-
-	protected Event(){
-		filter = new HashSet<>();
-	}
-
-	protected Event(Event other){
-		this.oId = other.oId;
-        this.uId = other.uId;
-        this.cId = other.cId;
-        this.fId = other.fId;
-        this.cLine = other.cLine;
-        this.filter = other.filter;
-        this.thread = other.thread;
-		this.listeners = other.listeners;
-    }
-
-	public int getOId() { return oId; }
-	public void setOId(int id) { this.oId = id; }
-
-	public int getUId(){ return uId; }
-	public void setUId(int id) { this.uId = id; }
-
-	public int getCId() { return cId; }
-	public void setCId(int id) { this.cId = id; }
+	int getCId();
+	void setCId(int id);
 
 	// TODO: This should be called "LId" (localId) and be set once after all processing is done.
-	public int getFId() { return fId; }
-	public void setFId(int id) { this.fId = id; }
+	int getFId();
+	void setFId(int id);
 
-	public int getCLine() {
-		return cLine;
-	}
-	public void setCLine(int line) {
-		this.cLine = line;
-	}
+	int getCLine();
+	void setCLine(int line);
 
-	public Event getSuccessor(){
-		return successor;
-	}
+	Event getSuccessor();
+	void setSuccessor(Event event);
 
-	public void setSuccessor(Event event){
-		successor = event;
-		if (successor != null) {
-			successor.setThread(this.thread);
-		}
-	}
+	Thread getThread();
+	void setThread(Thread thread);
 
-	public Thread getThread() {
-		return thread;
-	}
-
-	public void setThread(Thread thread) {
-		Preconditions.checkNotNull(thread);
-		this.thread = thread;
-	}
-
-	public final List<Event> getSuccessors(){
+	default List<Event> getSuccessors(){
 		List<Event> events = new ArrayList<>();
 		Event cur = this;
 		while (cur != null) {
@@ -101,39 +48,17 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		return events;
 	}
 
-	public boolean is(String param){
-		return param != null && (filter.contains(param));
-	}
+	boolean is(String param);
 
-	public void addFilters(String... params){
-		filter.addAll(Arrays.asList(params));
-	}
+	void addFilters(String... params);
 
-	public boolean hasFilter(String f) {
-		return filter.contains(f);
-	}
-	
-	@Override
-	public int compareTo(Event e){
-		int result = Integer.compare(cId, e.cId);
-		if(result == 0){
-			result = Integer.compare(uId, e.uId);
-			if(result == 0){
-				result = Integer.compare(oId, e.oId);
-			}
-		}
-		return result;
-	}
+	boolean hasFilter(String f);
 
-    public void addListener(Event e) {
-    	listeners.add(e);
-    }
+    void addListener(Event e);
 
-    public Set<Event> getListeners() {
-		return listeners;
-	}
+    Set<Event> getListeners();
 
-    public void notify(Event e) {
+    default void notify(Event e) {
     	throw new UnsupportedOperationException("notify is not allowed for " + getClass().getSimpleName());
     }
 
@@ -142,67 +67,58 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	// Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-	public Event getCopy(){
+	default Event getCopy(){
 		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
 	}
 
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-	public List<Event> compile(Arch target) {
+	default List<Event> compile(Arch target) {
 		return Collections.singletonList(this);
 	}
 
-	public void delete(Event pred) {
+	default void delete(Event pred) {
 		if (pred != null) {
-			pred.successor = this.successor;
+			pred.setSuccessor(getSuccessor());
 		}
 	}
 
 	// Encoding
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void initializeEncoding(SolverContext ctx) { }
-
-	public void runLocalAnalysis(Program program, Context context) { }
-	
-	public String repr() {
-		if (cId == -1) {
-			// We have not yet compiled
-			return "E" + oId;
-		}
-		if (repr == null) {
-			// We cache the result, because this saves string concatenations
-			// for every(!) single edge encoded in the program
-			repr = "E" + cId;
-		}
-		return repr;
+	default void initializeEncoding(SolverContext ctx) {
 	}
 
-	public BooleanFormula exec(){
+	default void runLocalAnalysis(Program program, Context context) {
+	}
+
+	String repr();
+
+	default BooleanFormula exec(){
 		return cf();
 	}
 
-	public BooleanFormula cf(){ return cfVar; }
-	public void setCfVar(BooleanFormula cfVar) { this.cfVar = cfVar; }
+	BooleanFormula cf();
+	void setCfVar(BooleanFormula cfVar);
 
 	// This method needs to get overwritten for conditional events.
-	public boolean cfImpliesExec() {
+	default boolean cfImpliesExec() {
 		return true;
 	}
 
-	public BooleanFormula encodeExec(SolverContext ctx){
+	default BooleanFormula encodeExec(SolverContext ctx){
 		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
 	}
 
 	// =============== Utility methods ==================
 
-	public boolean wasExecuted(Model model) {
+	default boolean wasExecuted(Model model) {
 		Boolean expr = model.evaluate(exec());
 		return expr != null && expr;
 	}
 
-	public boolean wasInControlFlow(Model model) {
+	default boolean wasInControlFlow(Model model) {
 		Boolean expr = model.evaluate(cf());
 		return expr != null && expr;
 	}

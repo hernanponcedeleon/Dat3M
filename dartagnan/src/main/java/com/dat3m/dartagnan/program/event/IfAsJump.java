@@ -30,7 +30,7 @@ public class IfAsJump extends CondJump {
 		List<Event> events = new ArrayList<>();
 		Event next = successor;
 		// For IfAsJump events, getLabel() returns the label representing the else branch
-		while(next != null && next.successor != getLabel()) {
+		while(next != null && next.getSuccessor() != getLabel()) {
 			events.add(next);
 			next = next.getSuccessor();
 		}
