@@ -21,7 +21,8 @@ public class OptionNames {
 	public static final String DETERMINISTIC_REORDERING = "program.processing.detReordering";
 	public static final String REDUCE_SYMMETRY = "program.processing.reduceSymmetry";
 	public static final String ATOMIC_BLOCKS_AS_LOCKS = "program.processing.atomicBlocksAsLocks";
-
+	public static final String CONSTANT_PROPAGATION = "program.processing.constantPropagation";
+	
 	// Program Analysis Options
 	public static final String ALWAYS_SPLIT_ON_JUMPS = "program.analysis.cf.alwaysSplitOnJump";
 	public static final String MERGE_BRANCHES = "program.analysis.cf.mergeBranches";

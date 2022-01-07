@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Formula;
@@ -18,6 +19,8 @@ public class IfExpr extends IExpr implements ExprInterface {
 	private final IExpr fbranch;
 	
 	public IfExpr(BExpr guard, IExpr tbranch, IExpr fbranch) {
+    	Preconditions.checkArgument(tbranch.getPrecision() == fbranch.getPrecision(), 
+    			"The type of " + tbranch + " and " + fbranch + " does not match");
 		this.guard =  guard;
 		this.tbranch = tbranch;
 		this.fbranch = fbranch;
@@ -65,6 +68,11 @@ public class IfExpr extends IExpr implements ExprInterface {
 
 	public IExpr getFalseBranch() {
 		return fbranch;
+	}
+
+	@Override
+	public int getPrecision() {
+		return tbranch.getPrecision();
 	}
 
 	@Override

@@ -40,6 +40,15 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
 
     //TODO: Override getDataRegs???
 
+    public IExpr getExpectedAddr() {
+    	return expectedAddr;
+    }
+    
+    @Override
+    public ExprInterface getMemValue() {
+    	return value;
+    }
+    
     @Override
     public String toString() {
     	String tag = is(STRONG) ? "_strong" : "_weak";

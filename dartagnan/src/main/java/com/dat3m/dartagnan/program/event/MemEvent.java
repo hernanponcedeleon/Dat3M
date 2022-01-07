@@ -55,6 +55,10 @@ public abstract class MemEvent extends Event {
         throw new RuntimeException("MemValue is not available for event " + this.getClass().getName());
     }
     
+    public String getMo(){
+        return mo;
+    }
+
     public boolean canRace() {
     	return mo == null || mo.equals("NA");
     }

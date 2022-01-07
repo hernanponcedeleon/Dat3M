@@ -39,6 +39,15 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
         return resultRegister + " := atomic_cmpxchg" + Mo.toText(mo) + "(" + address + ", " + cmp + ", " + value + ")";
     }
 
+    public ExprInterface getCmp() {
+    	return cmp;
+    }
+    
+    @Override
+    public ExprInterface getMemValue(){
+        return value;
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

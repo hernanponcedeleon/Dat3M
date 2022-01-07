@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.arch.linux.event;
 
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
@@ -36,6 +37,15 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
     @Override
     public String toString() {
         return resultRegister + " := atomic_" + op.toLinuxName() + "_return" + Mo.toText(mo) + "(" + value + ", " + address + ")";
+    }
+
+    public IOpBin getOp() {
+    	return op;
+    }
+    
+    @Override
+    public ExprInterface getMemValue(){
+        return value;
     }
 
     // Unrolling

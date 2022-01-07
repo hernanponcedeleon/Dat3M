@@ -38,6 +38,11 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
         return resultRegister + " = __DAT3M_CAS(*" + address + ", " + expectedValue + ", " + value + (mo != null ? ", " + mo : "") + ")";
     }
 
+    @Override
+    public ExprInterface getMemValue() {
+    	return value;
+    }
+    
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

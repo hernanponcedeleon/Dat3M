@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
@@ -36,6 +37,15 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
         return resultRegister + " = atomic_fetch_" + op.toLinuxName() + tag + "(*" + address + ", " + value + (mo != null ? ", " + mo : "") + ")";
     }
 
+    public IOpBin getOp() {
+    	return op;
+    }
+    
+    @Override
+    public ExprInterface getMemValue() {
+    	return value;
+    }
+    
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

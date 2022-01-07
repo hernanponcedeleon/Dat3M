@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
@@ -42,6 +43,10 @@ public class AtomicLoad extends MemEvent implements RegWriter {
         return resultRegister + " = atomic_load" + tag + "(*" + address + (mo != null ? ", " + mo : "") + ")";
     }
 
+    @Override
+    public ExprInterface getMemValue(){
+        return resultRegister;
+    }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
