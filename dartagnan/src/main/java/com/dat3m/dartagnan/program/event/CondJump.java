@@ -14,7 +14,7 @@ import java.util.List;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-public class CondJump extends Event implements RegReaderData {
+public class CondJump extends AbstractEvent implements RegReaderData {
 
     private Label label;
     private Label label4Copy;

@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.utils.EType;
 
-public class FunRet extends Event {
+public class FunRet extends AbstractEvent {
 
 	private final String funName;
 	

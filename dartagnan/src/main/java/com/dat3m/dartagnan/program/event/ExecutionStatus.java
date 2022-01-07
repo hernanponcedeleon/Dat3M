@@ -14,7 +14,7 @@ import java.math.BigInteger;
 
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 
-public class ExecutionStatus extends Event implements RegWriter {
+public class ExecutionStatus extends AbstractEvent implements RegWriter {
 
     private final Register register;
     private final Event event;

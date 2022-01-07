@@ -11,7 +11,7 @@ import org.sosy_lab.java_smt.api.*;
 
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 
-public class Local extends Event implements RegWriter, RegReaderData {
+public class Local extends AbstractEvent implements RegWriter, RegReaderData {
 	
 	protected final Register register;
 	protected final ExprInterface expr;

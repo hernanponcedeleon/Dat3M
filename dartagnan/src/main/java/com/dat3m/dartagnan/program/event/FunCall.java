@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.utils.EType;
 
-public class FunCall extends Event {
+public class FunCall extends AbstractEvent {
 
 	private final String funName;
 	

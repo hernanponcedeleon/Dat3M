@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.utils.EType;
 
-public class Fence extends Event {
+public class Fence extends AbstractEvent {
 
 	protected final String name;
 

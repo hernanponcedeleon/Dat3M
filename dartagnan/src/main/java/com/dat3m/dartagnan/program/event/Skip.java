@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.utils.EType;
 
-public class Skip extends Event {
+public class Skip extends AbstractEvent {
 	
 	public Skip() {
 		addFilters(EType.ANY);

@@ -1,9 +1,10 @@
 package com.dat3m.dartagnan.program.svcomp.event;
 
+import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 
-public class BeginAtomic extends Event {
+public class BeginAtomic extends AbstractEvent {
 	
     public BeginAtomic() {
         addFilters(EType.RMW);

@@ -6,7 +6,7 @@ import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-public abstract class MemEvent extends Event {
+public abstract class MemEvent extends AbstractEvent {
 
     protected final IExpr address;
     protected final String mo;

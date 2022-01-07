@@ -9,7 +9,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-public class Assume extends Event implements RegReaderData {
+public class Assume extends AbstractEvent implements RegReaderData {
 
 	protected final ExprInterface expr;
 	private final ImmutableSet<Register> dataRegs;
