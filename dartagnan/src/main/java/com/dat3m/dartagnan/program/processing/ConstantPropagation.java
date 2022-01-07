@@ -22,6 +22,7 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -238,5 +239,13 @@ public class ConstantPropagation implements ProgramProcessor {
 			return tbranch instanceof ITop ? tbranch : fbranch instanceof ITop ? fbranch : new IfExpr(ife.getGuard(), tbranch, fbranch);
     	}
 		throw new UnsupportedOperationException(String.format("IExpr %s not supported", input));
+    }
+    
+    private class ITop extends IConst {
+    	
+    	private ITop() {
+    		super(BigInteger.ZERO, -1);
+    	}
+    
     }
 }
