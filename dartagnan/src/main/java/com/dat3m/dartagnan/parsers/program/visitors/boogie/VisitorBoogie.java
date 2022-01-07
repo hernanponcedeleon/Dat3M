@@ -171,7 +171,25 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			String type = ctx.typed_idents().type().getText();
 			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
 			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name) && ATOMICPROCEDURES.stream().noneMatch(name::startsWith)) {
-				programBuilder.getOrCreateLocation(name);
+				int size = 0;
+				String tmp = ctx.getText();
+				// Arrays have both count and allocSize tags.
+				// The former is more precise.
+				// The latter is used for structures.
+				if(ctx.getText().contains(":count")) {
+					tmp = tmp.split(":count")[1];
+					tmp = tmp.split("}")[0];
+					size = Integer.parseInt(tmp);
+				} else if(ctx.getText().contains(":allocSize")) {
+					tmp = tmp.split(":allocSize")[1];
+					tmp = tmp.split("}")[0];
+					size = Integer.parseInt(tmp);
+				} 
+				if(size > 0) {
+					programBuilder.addDeclarationArray(name, Collections.nCopies(size, IConst.ZERO));										
+				} else {
+					programBuilder.getOrCreateLocation(name);
+				}
 			} else {
 				constantsTypeMap.put(name, precision);
 			}
