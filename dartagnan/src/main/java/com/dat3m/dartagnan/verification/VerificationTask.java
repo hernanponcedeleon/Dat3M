@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /*
@@ -48,61 +49,20 @@ public class VerificationTask {
     private final ProgramEncoder progEncoder;
     private final MemoryEncoder memoryEncoder;
 
-    protected VerificationTask(Program program, Wmm memoryModel, VerificationTaskBuilder builder) {
+    protected VerificationTask(Program program, Wmm memoryModel, WitnessGraph witness, Configuration config)
+    throws InvalidConfigurationException {
         this.program = checkNotNull(program);
         this.memoryModel = checkNotNull(memoryModel);
-        this.witness = checkNotNull(builder.witness);
+        this.witness = checkNotNull(witness);
+        this.config = checkNotNull(config);
 
-        try {
-            this.config = builder.config.build();
-            config.recursiveInject(this);
-            progEncoder = ProgramEncoder.fromConfig(config);
-            memoryEncoder = MemoryEncoder.fromConfig(config);
-        } catch (InvalidConfigurationException ex) {
-            // TODO: We throw a RuntimeException for now to avoid forcing the calling code
-            //  to be adapted (we convert from checked exception to unchecked exception)
-            throw new RuntimeException(ex);
-        }
+        config.recursiveInject(this);
+        progEncoder = ProgramEncoder.fromConfig(config);
+        memoryEncoder = MemoryEncoder.fromConfig(config);
     }
 
     public static VerificationTaskBuilder builder() {
         return new VerificationTaskBuilder();
-    }
-
-    public static class VerificationTaskBuilder {
-        protected WitnessGraph witness = new WitnessGraph();
-        protected ConfigurationBuilder config = Configuration.builder();
-
-        protected VerificationTaskBuilder() { }
-
-        public VerificationTaskBuilder withWitness(WitnessGraph witness) {
-            this.witness = checkNotNull(witness, "Witness may not be null.");
-            return this;
-        }
-
-        public VerificationTaskBuilder withTarget(Arch target) {
-            this.config.setOption(TARGET, target.toString());
-            return this;
-        }
-
-		public VerificationTaskBuilder withBound(int k) {
-			this.config.setOption(BOUND, Integer.toString(k));
-			return this;
-		}
-
-		public VerificationTaskBuilder withSolverTimeout(int t) {
-			this.config.setOption(TIMEOUT, Integer.toString(t));
-			return this;
-		}
-
-        public VerificationTaskBuilder withConfig(Configuration config) {
-            this.config.copyFrom(config);
-            return this;
-        }
-
-        public VerificationTask build(Program program, Wmm memoryModel) {
-            return new VerificationTask(program, memoryModel, this);
-        }
     }
 
     public Configuration getConfig() {
@@ -197,5 +157,46 @@ public class VerificationTask {
 
     public BooleanFormula encodeWitness(SolverContext ctx) {
     	return witness.encode(program, ctx);
+    }
+
+
+    // ==================== Builder =====================
+
+    public static class VerificationTaskBuilder {
+        protected WitnessGraph witness = new WitnessGraph();
+        protected ConfigurationBuilder config = Configuration.builder();
+
+        protected VerificationTaskBuilder() { }
+
+        public VerificationTaskBuilder withWitness(WitnessGraph witness) {
+            this.witness = checkNotNull(witness, "Witness may not be null.");
+            return this;
+        }
+
+        public VerificationTaskBuilder withTarget(Arch target) {
+            checkNotNull(target, "Target may not be null.");
+            this.config.setOption(TARGET, target.toString());
+            return this;
+        }
+
+        public VerificationTaskBuilder withBound(int k) {
+            checkArgument(k > 0 , "Unrolling bound must be positive.");
+            this.config.setOption(BOUND, Integer.toString(k));
+            return this;
+        }
+
+        public VerificationTaskBuilder withSolverTimeout(int t) {
+            this.config.setOption(TIMEOUT, Integer.toString(t));
+            return this;
+        }
+
+        public VerificationTaskBuilder withConfig(Configuration config) {
+            this.config.copyFrom(config);
+            return this;
+        }
+
+        public VerificationTask build(Program program, Wmm memoryModel) throws InvalidConfigurationException {
+            return new VerificationTask(program, memoryModel, witness, config.build());
+        }
     }
 }

@@ -8,6 +8,10 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 @Options
@@ -15,7 +19,7 @@ public class ProcessingManager implements ProgramProcessor {
 
     private final static Logger logger = LogManager.getLogger(ProcessingManager.class);
 
-    private final Configuration config;
+    private final List<ProgramProcessor> programProcessors = new ArrayList<>();
 
     // =========================== Configurables ===========================
 
@@ -37,8 +41,25 @@ public class ProcessingManager implements ProgramProcessor {
     // ======================================================================
 
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
-        this.config = config;
         config.inject(this);
+
+        programProcessors.addAll(Arrays.asList(
+                DeadCodeElimination.fromConfig(config),
+                BranchReordering.fromConfig(config),
+                Simplifier.fromConfig(config),
+                LoopUnrolling.fromConfig(config)
+        ));
+        if(constantPropagation) {
+            programProcessors.add(ConstantPropagation.fromConfig(config));
+        }
+        programProcessors.add(Compilation.fromConfig(config));
+        if(atomicBlocksAsLocks) {
+            // TODO: Do we really want to execute this after compilation?
+            programProcessors.add(AtomicAsLock.fromConfig(config));
+        }
+        if(reduceSymmetry) {
+            programProcessors.add(SymmetryReduction.fromConfig(config));
+        }
     }
 
     public static ProcessingManager fromConfig(Configuration config) throws InvalidConfigurationException {
@@ -47,27 +68,8 @@ public class ProcessingManager implements ProgramProcessor {
 
     // ==================================================
 
-    public void run(Program program){
-        try {
-            DeadCodeElimination.fromConfig(config).run(program);
-            BranchReordering.fromConfig(config).run(program);
-            Simplifier.fromConfig(config).run(program);
-            LoopUnrolling.fromConfig(config).run(program);
-            if(constantPropagation) {
-              ConstantPropagation.fromConfig(config).run(program);            	
-            }
-            Compilation.fromConfig(config).run(program);
-            if(atomicBlocksAsLocks) {
-                // TODO: Do we really want to execute this after compilation?
-                AtomicAsLock.fromConfig(config).run(program);
-            }
-            if(reduceSymmetry) {
-                SymmetryReduction.fromConfig(config).run(program);
-            }
-        } catch (InvalidConfigurationException ex) {
-            logger.error(ex.getMessage());
-            throw new RuntimeException(ex);
-        }
+    public void run(Program program) {
+        programProcessors.forEach(p -> p.run(program));
     }
 
 }

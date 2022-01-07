@@ -3,7 +3,9 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.program.EventFactory;
-import com.dat3m.dartagnan.program.EventFactory.*;
+import com.dat3m.dartagnan.program.EventFactory.Arm8;
+import com.dat3m.dartagnan.program.EventFactory.Atomic;
+import com.dat3m.dartagnan.program.EventFactory.Linux;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -14,17 +16,17 @@ import com.dat3m.dartagnan.program.atomic.event.*;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.google.common.base.Preconditions;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 
-import static com.dat3m.dartagnan.expression.op.IOpUn.*;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.dat3m.dartagnan.expression.op.IOpUn.BV2INT;
+import static com.dat3m.dartagnan.expression.op.IOpUn.BV2UINT;
 
 @Options
 public class ConstantPropagation implements ProgramProcessor {
@@ -34,7 +36,7 @@ public class ConstantPropagation implements ProgramProcessor {
     private int propagations = 0;
     
 	// TODO we need a proper class for lattices. The inner map is nothing more than a map lattice.
-    private Map<Integer, Map<Register, IExpr>> propagationMap = new HashMap<Integer, Map<Register, IExpr>>();
+    private final Map<Integer, Map<Register, IExpr>> propagationMap = new HashMap<Integer, Map<Register, IExpr>>();
 
     // =========================== Configurables ===========================
 

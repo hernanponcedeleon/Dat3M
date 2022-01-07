@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -47,42 +48,10 @@ public class RefinementTask extends VerificationTask {
 
     // ======================================================================
 
-    private RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, RefinementTaskBuilder builder) {
-        super(program, targetMemoryModel, builder);
+    private RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, WitnessGraph witness, Configuration config)
+    throws InvalidConfigurationException {
+        super(program, targetMemoryModel, witness, config);
         this.baselineModel = baselineModel != null ? baselineModel : createDefaultWmm();
-    }
-
-    public static class RefinementTaskBuilder extends VerificationTaskBuilder {
-
-        private Wmm baselineModel;
-
-        @Override
-        public RefinementTaskBuilder withWitness(WitnessGraph witness) {
-            super.withWitness(witness);
-            return this;
-        }
-
-        @Override
-        public RefinementTaskBuilder withTarget(Arch target) {
-            super.withTarget(target);
-            return this;
-        }
-
-        @Override
-        public RefinementTaskBuilder withConfig(Configuration config) {
-            super.withConfig(config);
-            return this;
-        }
-
-        public RefinementTaskBuilder withBaselineWMM(Wmm baselineModel) {
-            this.baselineModel = baselineModel;
-            return this;
-        }
-
-        @Override
-        public RefinementTask build(Program program, Wmm memoryModel) {
-            return new RefinementTask(program, memoryModel, baselineModel, this);
-        }
     }
 
     public Wmm getBaselineModel() {
@@ -105,11 +74,12 @@ public class RefinementTask extends VerificationTask {
 		logger.info("{}: {}", ASSUME_NO_OOTA, useNoOOTABaselineWMM);
     }
 
-    public static RefinementTask fromVerificationTaskWithDefaultBaselineWMM(VerificationTask task) {
+    public static RefinementTask fromVerificationTaskWithDefaultBaselineWMM(VerificationTask task)
+            throws InvalidConfigurationException {
         return new RefinementTaskBuilder()
                 .withWitness(task.getWitness())
                 .withConfig(task.getConfig())
-                .build(task.getProgram(),task.getMemoryModel());
+                .build(task.getProgram(), task.getMemoryModel());
     }
 
     //TODO: This code is outdated and was replaced in the CAAT branch.
@@ -147,5 +117,40 @@ public class RefinementTask extends VerificationTask {
         }
 
         return baseline;
+    }
+
+    // ==================== Builder =====================
+
+    public static class RefinementTaskBuilder extends VerificationTaskBuilder {
+
+        private Wmm baselineModel;
+
+        @Override
+        public RefinementTaskBuilder withWitness(WitnessGraph witness) {
+            super.withWitness(witness);
+            return this;
+        }
+
+        @Override
+        public RefinementTaskBuilder withTarget(Arch target) {
+            super.withTarget(target);
+            return this;
+        }
+
+        @Override
+        public RefinementTaskBuilder withConfig(Configuration config) {
+            super.withConfig(config);
+            return this;
+        }
+
+        public RefinementTaskBuilder withBaselineWMM(Wmm baselineModel) {
+            this.baselineModel = baselineModel;
+            return this;
+        }
+
+        @Override
+        public RefinementTask build(Program program, Wmm memoryModel) throws InvalidConfigurationException {
+            return new RefinementTask(program, memoryModel, baselineModel, witness, config.build());
+        }
     }
 }

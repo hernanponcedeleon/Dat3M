@@ -43,13 +43,6 @@ public class ReachabilityResult {
 
     private void run(){
         if(validate()){
-            Arch arch = program.getArch() != null ? program.getArch() : options.getTarget();
-            VerificationTask task = VerificationTask.builder()
-                    .withBound(options.getBound())
-                    .withSolverTimeout(options.getTimeout())
-                    .withTarget(arch)
-                    .build(program, wmm);
-            Result result = Result.UNKNOWN;
 
             ShutdownManager sdm = ShutdownManager.create();
         	Thread t = new Thread(() -> {
@@ -64,6 +57,14 @@ public class ReachabilityResult {
     			}});
 
             try {
+                Result result = Result.UNKNOWN;
+                Arch arch = program.getArch() != null ? program.getArch() : options.getTarget();
+                VerificationTask task = VerificationTask.builder()
+                        .withBound(options.getBound())
+                        .withSolverTimeout(options.getTimeout())
+                        .withTarget(arch)
+                        .build(program, wmm);
+
             	t.start();
                 Configuration config = Configuration.builder()
                 		.setOption(PHANTOM_REFERENCES, "true")
