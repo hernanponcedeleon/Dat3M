@@ -8,9 +8,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.ATOMIC_BLOCKS_AS_LOCKS;
-import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_SYMMETRY;
-
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 @Options
 public class ProcessingManager implements ProgramProcessor {
@@ -31,6 +29,11 @@ public class ProcessingManager implements ProgramProcessor {
 			secure=true)
 		private boolean atomicBlocksAsLocks = false;
 
+	@Option(name= CONSTANT_PROPAGATION,
+			description="Perform constant propagation.",
+			secure=true)
+		private boolean constantPropagation = false;
+
     // ======================================================================
 
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
@@ -50,6 +53,9 @@ public class ProcessingManager implements ProgramProcessor {
             BranchReordering.fromConfig(config).run(program);
             Simplifier.fromConfig(config).run(program);
             LoopUnrolling.fromConfig(config).run(program);
+            if(constantPropagation) {
+              ConstantPropagation.fromConfig(config).run(program);            	
+            }
             Compilation.fromConfig(config).run(program);
             if(atomicBlocksAsLocks) {
                 // TODO: Do we really want to execute this after compilation?
