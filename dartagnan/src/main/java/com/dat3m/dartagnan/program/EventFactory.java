@@ -18,14 +18,13 @@ import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
-
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 public class EventFactory {
 
@@ -38,12 +37,6 @@ public class EventFactory {
 
     public static List<Event> eventSequence(Event... events) {
         return Arrays.stream(events).filter(Objects::nonNull).collect(Collectors.toList());
-    }
-
-    public static void setCLineForAll(Collection<Event> events, int cLine) {
-        for (Event e : events) {
-            e.setCLine(cLine);
-        }
     }
 
 
