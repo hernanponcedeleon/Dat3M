@@ -14,13 +14,12 @@ import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 
 import java.math.BigInteger;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
-import static com.dat3m.dartagnan.program.EventFactory.newLabel;
 import static com.dat3m.dartagnan.program.EventFactory.newInit;
+import static com.dat3m.dartagnan.program.EventFactory.newLabel;
 
 /**
 Substitutes all atomic markers with accesses to a global mutex.
@@ -29,15 +28,12 @@ TODO pure boolean precision
 FIXME reuses oId
 TODO This analysis is buggy right now. It complains that Init events were not compiled 
 */
-@Options
 public class AtomicAsLock implements ProgramProcessor {
 
 	private AtomicAsLock() {}
 
 	public static AtomicAsLock fromConfig(Configuration c) throws InvalidConfigurationException {
-		AtomicAsLock a = new AtomicAsLock();
-		c.inject(a);
-		return a;
+		return new AtomicAsLock();
 	}
 
 	@Override

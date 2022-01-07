@@ -33,6 +33,8 @@ public class Wmm {
 
     // =========================== Configurables ===========================
 
+    //TODO: We need to move these options somewhere else (e.g. a WmmEncoder or a WmmMetaData Object)
+    // because a Wmm is a non-configurable data object.
     @Option(
     	name= LOCALLY_CONSISTENT,
     	description="Assumes local consistency for all created wmms.",

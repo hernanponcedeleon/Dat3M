@@ -14,7 +14,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
@@ -26,18 +25,16 @@ import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
-@Options
 public class DataRaceEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(DataRaceEncoder.class);
     private VerificationTask task;
 
-    private DataRaceEncoder(Configuration config) throws InvalidConfigurationException {
-        config.inject(this);
+    private DataRaceEncoder() {
     }
 
     public static DataRaceEncoder fromConfig(Configuration config) throws InvalidConfigurationException {
-        return new DataRaceEncoder(config);
+        return new DataRaceEncoder();
     }
 
     @Override

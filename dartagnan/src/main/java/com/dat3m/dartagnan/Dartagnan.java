@@ -44,6 +44,10 @@ public class Dartagnan extends BaseOptions {
 	private static final Set<String> supportedFormats = 
     		ImmutableSet.copyOf(Arrays.asList(".litmus", ".bpl", ".c", ".i"));
 
+	private Dartagnan(Configuration config) throws InvalidConfigurationException {
+		config.recursiveInject(this);
+	}
+
 	public static void main(String[] args) throws Exception {
     	
     	CreateGitInfo();
@@ -52,8 +56,7 @@ public class Dartagnan extends BaseOptions {
 				.filter(s->s.startsWith("-"))
 				.toArray(String[]::new);
 		Configuration config = Configuration.fromCmdLineArguments(argKeyword); // TODO: We don't parse configs yet
-		Dartagnan o = new Dartagnan();
-		config.recursiveInject(o);
+		Dartagnan o = new Dartagnan(config);
 
 		//TODO add help
 
@@ -152,7 +155,6 @@ public class Dartagnan extends BaseOptions {
 
 				try {
 					WitnessBuilder w = new WitnessBuilder(task, ctx, prover, result);
-					config.inject(w);
 	                // We only write witnesses for REACHABILITY (if the path to the original C file was given) 
 					// and if we are not doing witness validation
 	                if (!o.getProperty().equals(RACES) && w.canBeBuilt() && !o.runValidator()) {

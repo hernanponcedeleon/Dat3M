@@ -13,7 +13,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.Model;
@@ -31,7 +31,8 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
+import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_ORIGINAL_PROGRAM_PATH;
 import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -68,11 +69,14 @@ public class WitnessBuilder {
 
 	private final Map<Event, Integer> eventThreadMap = new HashMap<>();
 	
-	public WitnessBuilder(VerificationTask task, SolverContext ctx, ProverEnvironment prover, Result result) {
+	public WitnessBuilder(VerificationTask task, SolverContext ctx, ProverEnvironment prover, Result result)
+		throws InvalidConfigurationException {
 		this.task = task;
 		this.ctx = ctx;
 		this.prover = prover;
 		this.type = result.equals(FAIL) ? "violation" : "correctness";
+
+		task.getConfig().inject(this);
 	}
 	
 	public WitnessGraph build() {

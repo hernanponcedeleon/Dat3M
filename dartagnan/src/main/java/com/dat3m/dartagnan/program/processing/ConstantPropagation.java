@@ -21,7 +21,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -30,7 +29,6 @@ import java.util.Map;
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2INT;
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2UINT;
 
-@Options
 public class ConstantPropagation implements ProgramProcessor {
 	
     private final static Logger logger = LogManager.getLogger(ConstantPropagation.class);
@@ -46,12 +44,8 @@ public class ConstantPropagation implements ProgramProcessor {
 
     private ConstantPropagation() { }
 
-    private ConstantPropagation(Configuration config) throws InvalidConfigurationException {
-        config.inject(this);
-    }
-
     public static ConstantPropagation fromConfig(Configuration config) throws InvalidConfigurationException {
-        return new ConstantPropagation(config);
+        return newInstance();
     }
 
     public static ConstantPropagation newInstance() {
