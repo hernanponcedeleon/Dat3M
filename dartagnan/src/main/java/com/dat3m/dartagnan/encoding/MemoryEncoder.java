@@ -7,9 +7,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.PRECISION;
 import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
 
 @Options
@@ -18,6 +20,19 @@ public class MemoryEncoder implements Encoder {
     private static final Logger logger = LogManager.getLogger(MemoryEncoder.class);
 
     private Memory memory;
+
+    // =========================== Configurables ===========================
+
+    @Option(name = PRECISION,
+            description = "Encoding precision (use -1 for pure Integer)",
+            secure = true)
+    private int precision = -1;
+    
+    public int getPrecision() {
+    	return precision;
+    }
+
+    // =====================================================================
 
     private MemoryEncoder(Configuration config) throws InvalidConfigurationException {
         config.inject(this);

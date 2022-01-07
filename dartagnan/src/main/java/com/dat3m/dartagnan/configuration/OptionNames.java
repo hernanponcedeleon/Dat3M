@@ -15,7 +15,8 @@ public class OptionNames {
 	public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
 	public static final String CO_ANTISYMMETRY = "encoding.co.antiSymm";
 	public static final String ENCODE_FINAL_MEMVALUES = "encoding.encodeFinalMemoryValues";
-
+	public static final String PRECISION = "encoding.precision";
+	
 	// Program Processing Options
 	public static final String BOUND = "program.processing.loopBound";
 	public static final String TARGET = "program.processing.compilationTarget";

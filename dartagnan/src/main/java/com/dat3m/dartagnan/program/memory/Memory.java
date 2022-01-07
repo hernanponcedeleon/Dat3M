@@ -25,20 +25,20 @@ public class Memory {
         return map.inverse().get(address);
     }
 
-    public List<Address> malloc(String name, int size, int precision){
+    public List<Address> malloc(String name, int size){
     	Preconditions.checkArgument(!arrays.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
     	Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
     	List<Address> addresses = new ArrayList<>();
     	for(int i = 0; i < size; i++){
-    		addresses.add(new Address(nextIndex++, precision));
+    		addresses.add(new Address(nextIndex++));
     	}
     	arrays.put(name, addresses);
     	return addresses;
     }
 
-    public Location getOrCreateLocation(String name, int precision){
+    public Location getOrCreateLocation(String name){
         if(!locationIndex.containsKey(name)){
-            Location location = new Location(name, new Address(nextIndex++, precision));
+            Location location = new Location(name, new Address(nextIndex++));
             map.put(location, location.getAddress());
             locationIndex.put(name, location);
             return location;

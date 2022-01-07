@@ -17,8 +17,8 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
     private final int index;
     private BigInteger constantValue;
 
-    Address(int index, int precision){
-        super(BigInteger.valueOf(index), precision);
+    Address(int index){
+        super(BigInteger.valueOf(index), -1);
         this.index = index;
     }
 

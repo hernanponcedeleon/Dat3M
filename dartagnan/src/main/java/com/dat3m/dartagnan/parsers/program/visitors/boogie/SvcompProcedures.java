@@ -105,7 +105,7 @@ public class SvcompProcedures {
 
 	public static void __VERIFIER_atomic(VisitorBoogie visitor, boolean begin) {
         Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
-        Address lockAddress = visitor.programBuilder.getOrCreateLocation("__VERIFIER_atomic", -1).getAddress();
+        Address lockAddress = visitor.programBuilder.getOrCreateLocation("__VERIFIER_atomic").getAddress();
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		LinkedList<Event> events = new LinkedList<>();
         events.add(EventFactory.newLoad(register, lockAddress, null));

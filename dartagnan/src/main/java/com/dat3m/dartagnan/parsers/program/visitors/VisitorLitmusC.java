@@ -89,14 +89,14 @@ public class VisitorLitmusC
     @Override
     public Object visitGlobalDeclaratorLocationLocation(LitmusCParser.GlobalDeclaratorLocationLocationContext ctx) {
         if(ctx.Ast() == null){
-            programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText(), -1);
+            programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText());
         } else {
             String rightName = ctx.varName(1).getText();
             Address address = programBuilder.getPointer(rightName);
             if(address != null){
                 programBuilder.initLocEqConst(ctx.varName(0).getText(), address);
             } else {
-                programBuilder.initLocEqLocVal(ctx.varName(0).getText(), ctx.varName(1).getText(), -1);
+                programBuilder.initLocEqLocVal(ctx.varName(0).getText(), ctx.varName(1).getText());
             }
         }
         return null;
@@ -139,7 +139,7 @@ public class VisitorLitmusC
                         if(address != null){
                             values.add(address);
                         } else {
-                            address = programBuilder.getOrCreateLocation(varName, -1).getAddress();
+                            address = programBuilder.getOrCreateLocation(varName).getAddress();
                             values.add(elCtx.Ast() == null ? address : programBuilder.getInitValue(address));
                         }
                     }
@@ -178,7 +178,7 @@ public class VisitorLitmusC
                     Register register = programBuilder.getOrCreateRegister(scope, name, -1);
                     programBuilder.addChild(currentThread, EventFactory.newLocal(register, pointer));
                 } else {
-                    Location location = programBuilder.getOrCreateLocation(varName.getText(), -1);
+                    Location location = programBuilder.getOrCreateLocation(varName.getText());
                     Register register = programBuilder.getOrCreateRegister(scope, varName.getText(), -1);
                     programBuilder.addChild(currentThread, EventFactory.newLocal(register, location.getAddress()));
                 }
@@ -460,7 +460,7 @@ public class VisitorLitmusC
             }
             return programBuilder.getOrCreateRegister(scope, ctx.getText(), -1);
         }
-        Location location = programBuilder.getOrCreateLocation(ctx.getText(), -1);
+        Location location = programBuilder.getOrCreateLocation(ctx.getText());
         Register register = programBuilder.getOrCreateRegister(scope, null, -1);
         programBuilder.addChild(currentThread, EventFactory.newLoad(register, location.getAddress(), "NA"));
         return register;
