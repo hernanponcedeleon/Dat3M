@@ -29,6 +29,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -51,14 +52,17 @@ public class Dartagnan extends BaseOptions {
 	public static void main(String[] args) throws Exception {
     	
     	CreateGitInfo();
-		
+
+        if(Arrays.asList(args).contains("--help")) {
+            collectOptions();
+            return;
+        }
+
     	String[] argKeyword = Arrays.stream(args)
 				.filter(s->s.startsWith("-"))
 				.toArray(String[]::new);
 		Configuration config = Configuration.fromCmdLineArguments(argKeyword); // TODO: We don't parse configs yet
 		Dartagnan o = new Dartagnan(config);
-
-		//TODO add help
 
 		if(Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(a::endsWith))) {
 			throw new IllegalArgumentException("Input program not given or format not recognized");

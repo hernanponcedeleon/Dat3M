@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
 import static java.lang.Integer.parseInt;
@@ -79,6 +80,11 @@ public class SVCOMPRunner extends BaseOptions {
 
     public static void main(String[] args) throws IOException, InvalidConfigurationException {
 
+        if(Arrays.asList(args).contains("--help")) {
+            collectOptions();
+            return;
+        }
+
 		if(Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(a::endsWith))) {
 			throw new IllegalArgumentException("Input program not given or format not recognized");
 		}
@@ -95,8 +101,6 @@ public class SVCOMPRunner extends BaseOptions {
 		Configuration config = Configuration.fromCmdLineArguments(argKeyword);
 		SVCOMPRunner r = new SVCOMPRunner();
 		config.recursiveInject(r);
-
-		//TODO help text
 
         WitnessGraph witness = new WitnessGraph(); 
         if(r.witnessPath != null) {
