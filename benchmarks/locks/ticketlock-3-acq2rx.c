@@ -62,17 +62,17 @@ static inline void ticketlock_release(struct ticketlock_s *l)
 // main.c
 //
 int shared;
-ticketlock_t *lock;
+ticketlock_t lock;
 
 void *thread_n(void *arg)
 {
     intptr_t index = ((intptr_t) arg);
 
-    ticketlock_acquire(lock);
+    ticketlock_acquire(&lock);
     shared = index;
     int r = shared;
     assert(r == index);
-    ticketlock_release(lock);
+    ticketlock_release(&lock);
     return NULL;
 }
 
@@ -82,8 +82,7 @@ int main()
 {
     pthread_t t0, t1, t2;
 
-    lock = malloc(sizeof(ticketlock_t));
-    ticketlock_init(lock);
+    ticketlock_init(&lock);
     
     pthread_create(&t0, NULL, thread_n, (void *) 0);
     pthread_create(&t1, NULL, thread_n, (void *) 1);
