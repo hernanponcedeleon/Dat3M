@@ -93,7 +93,7 @@ public class ExceptionsTest {
                 .withConfig(config)
                 .build(p, cat);
 		// The program must be unrolled before initializing the encoder
-    	ProgramEncoder.fromConfig(config).initialise(task, TestHelper.createContext());
+    	ProgramEncoder.fromConfig(config).initializeEncoding(task, TestHelper.createContext());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -118,7 +118,7 @@ public class ExceptionsTest {
                 .build(p, cat);
 		ProgramEncoder encoder = ProgramEncoder.fromConfig(config);
 		SolverContext ctx = TestHelper.createContext();
-		encoder.initialise(task, ctx);
+		encoder.initializeEncoding(task, ctx);
 		// The program must be compiled first
 		encoder.encodeControlFlow(ctx);
     }
@@ -135,7 +135,7 @@ public class ExceptionsTest {
                 .build(p, cat);
 		ProgramEncoder encoder = ProgramEncoder.fromConfig(config);
 		SolverContext ctx = TestHelper.createContext();
-		encoder.initialise(task, ctx);
+		encoder.initializeEncoding(task, ctx);
 		// The program must be compiled first
 		encoder.encodeFinalRegisterValues(ctx);
     }
@@ -152,7 +152,7 @@ public class ExceptionsTest {
                 .build(p, cat);
 		ProgramEncoder encoder = ProgramEncoder.fromConfig(config);
 		SolverContext ctx = TestHelper.createContext();
-		encoder.initialise(task, ctx);
+		encoder.initializeEncoding(task, ctx);
 		// The program must be compiled first
 		encoder.encodeBoundEventExec(ctx);
     }

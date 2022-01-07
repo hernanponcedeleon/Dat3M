@@ -61,8 +61,8 @@ public class RelCo extends Relation {
     }
 
     @Override
-	public void initialise(VerificationTask task, SolverContext ctx) {
-		super.initialise(task,ctx);
+	public void initializeEncoding(VerificationTask task, SolverContext ctx) {
+		super.initializeEncoding(task,ctx);
 		try {
 			task.getConfig().inject(this);
     		logger.info("{}: {}", CO_ANTISYMMETRY, antisymmetry);

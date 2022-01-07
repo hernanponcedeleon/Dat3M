@@ -22,7 +22,7 @@ public class EndAtomic extends Event {
 	private static final Logger logger = LogManager.getLogger(EndAtomic.class);
 
 	protected BeginAtomic begin;
-	protected BeginAtomic begin4Copy;
+	protected transient BeginAtomic begin4Copy;
 	protected transient List<Event> enclosedEvents;
 
 	public EndAtomic(BeginAtomic begin) {
@@ -47,9 +47,8 @@ public class EndAtomic extends Event {
     	return enclosedEvents;
     }
 
-	@Override
-	public void initialise(VerificationTask task, SolverContext ctx) {
-		super.initialise(task, ctx);
+	public void initializeEncoding(VerificationTask task, SolverContext ctx) {
+		super.initializeEncoding(task, ctx);
 		//===== Temporary fix to rematch atomic blocks correctly =====
 		BranchEquivalence eq = task.getBranchEquivalence();
 		List<Event> begins = this.thread.getEvents()
@@ -58,13 +57,12 @@ public class EndAtomic extends Event {
 		this.begin = (BeginAtomic) begins.get(begins.size() - 1);
 		// =======================================================
 
-		findEnclosedEvents();
+		findEnclosedEvents(eq);
 
 	}
 
-	private void findEnclosedEvents() {
+	private void findEnclosedEvents(BranchEquivalence eq) {
     	enclosedEvents = new ArrayList<>();
-		BranchEquivalence eq = task.getBranchEquivalence();
 		BranchEquivalence.Class startClass = eq.getEquivalenceClass(begin);
 		BranchEquivalence.Class endClass = eq.getEquivalenceClass(this);
 		if (!startClass.getReachableClasses().contains(endClass)) {

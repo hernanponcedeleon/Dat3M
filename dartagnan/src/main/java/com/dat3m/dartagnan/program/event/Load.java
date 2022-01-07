@@ -25,8 +25,8 @@ public class Load extends MemEvent implements RegWriter {
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx) {
-        super.initialise(task, ctx);
+    public void initializeEncoding(VerificationTask task, SolverContext ctx) {
+        super.initializeEncoding(task, ctx);
         memValueExpr = resultRegister.toIntFormulaResult(this, ctx);
     }
 

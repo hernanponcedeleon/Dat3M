@@ -67,7 +67,7 @@ public abstract class Relation implements Dependent<Relation> {
         return recursiveGroupId;
     }
 
-    public void initialise(VerificationTask task, SolverContext ctx){
+    public void initializeEncoding(VerificationTask task, SolverContext ctx){
         this.task = task;
         this.minTupleSet = null;
         this.maxTupleSet = null;

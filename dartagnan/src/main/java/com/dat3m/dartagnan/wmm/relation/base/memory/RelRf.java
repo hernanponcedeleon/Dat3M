@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterIntersection;
@@ -16,8 +15,6 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
@@ -29,7 +26,6 @@ import static com.dat3m.dartagnan.program.utils.EType.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
-@Options
 public class RelRf extends Relation {
 
 	private static final Logger logger = LogManager.getLogger(RelRf.class);
@@ -38,16 +34,6 @@ public class RelRf extends Relation {
         term = RF;
         forceDoEncode = true;
     }
-
-	@Override
-	public void initialise(VerificationTask task, SolverContext ctx) {
-		super.initialise(task,ctx);
-		try {
-			task.getConfig().inject(this);
-		} catch(InvalidConfigurationException e) {
-			logger.warn(e.getMessage());
-		}
-	}
 
     @Override
     public TupleSet getMinTupleSet(){

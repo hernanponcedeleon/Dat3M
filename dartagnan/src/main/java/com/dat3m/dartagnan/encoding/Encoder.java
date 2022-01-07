@@ -7,5 +7,5 @@ public interface Encoder {
 
     // Any Encoder may rely on the assumption that after initialisation, the
     // data models (e.g. program, wmm and memory) do not change anymore.
-    void initialise(VerificationTask task, SolverContext context);
+    void initializeEncoding(VerificationTask task, SolverContext context);
 }

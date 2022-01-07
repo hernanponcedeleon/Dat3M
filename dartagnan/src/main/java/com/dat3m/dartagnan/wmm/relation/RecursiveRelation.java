@@ -2,12 +2,11 @@ package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Collections;
 import java.util.List;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -36,11 +35,11 @@ public class RecursiveRelation extends Relation {
         return name;
     }
 
-    public void initialise(VerificationTask task, SolverContext ctx){
+    public void initializeEncoding(VerificationTask task, SolverContext ctx){
         if(doRecurse){
             doRecurse = false;
-            super.initialise(task, ctx);
-            r1.initialise(task, ctx);
+            super.initializeEncoding(task, ctx);
+            r1.initializeEncoding(task, ctx);
         }
     }
 

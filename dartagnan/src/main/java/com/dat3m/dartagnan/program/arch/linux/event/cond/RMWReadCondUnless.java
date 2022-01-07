@@ -15,8 +15,8 @@ public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegRead
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx) {
-        super.initialise(task, ctx);
+    public void initializeEncoding(VerificationTask task, SolverContext ctx) {
+        super.initializeEncoding(task, ctx);
         this.formulaCond = ctx.getFormulaManager().getBooleanFormulaManager().not(formulaCond);
     }
 

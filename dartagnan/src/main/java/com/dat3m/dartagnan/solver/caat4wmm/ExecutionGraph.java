@@ -241,7 +241,7 @@ public class ExecutionGraph {
                 graph = new RangeIdentityGraph(innerGraph);
             } else if (relClass == RelTransRef.class) {
                 RelTrans relTrans = new RelTrans(innerRelation);
-                relTrans.initialise(verificationTask, null); // A little sketchy
+                relTrans.initializeEncoding(verificationTask, null); // A little sketchy
                 RelationGraph transGraph = getOrCreateGraphFromRelation(relTrans);
                 graph = new ReflexiveClosureGraph(transGraph);
             } else {
