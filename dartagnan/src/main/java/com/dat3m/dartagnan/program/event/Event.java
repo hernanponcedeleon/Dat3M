@@ -27,10 +27,7 @@ public abstract class Event implements Comparable<Event> {
 
 	protected transient Event successor;
 
-    protected transient BooleanFormula cfCond;
 	protected transient BooleanFormula cfVar;
-
-	protected transient VerificationTask task;
 
 	protected Set<Event> listeners = new HashSet<>();
 
@@ -163,10 +160,7 @@ public abstract class Event implements Comparable<Event> {
 	// Encoding
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void initialise(VerificationTask task, SolverContext ctx){
-		Preconditions.checkState(cId >= 0, "Event ID is not set in " + this);
-		this.task = task;
-	}
+	public void initialise(VerificationTask task, SolverContext ctx) { }
 	
 	public String repr() {
 		if (cId == -1) {

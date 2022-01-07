@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.verification;
 
-import com.dat3m.dartagnan.encoding.MemoryEncoder;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
@@ -47,7 +46,6 @@ public class VerificationTask {
     private ThreadSymmetry threadSymmetry;
 
     private final ProgramEncoder progEncoder;
-    private final MemoryEncoder memoryEncoder;
 
     protected VerificationTask(Program program, Wmm memoryModel, WitnessGraph witness, Configuration config)
     throws InvalidConfigurationException {
@@ -58,7 +56,6 @@ public class VerificationTask {
 
         config.recursiveInject(this);
         progEncoder = ProgramEncoder.fromConfig(config);
-        memoryEncoder = MemoryEncoder.fromConfig(config);
     }
 
     public static VerificationTaskBuilder builder() {
@@ -107,10 +104,6 @@ public class VerificationTask {
         return progEncoder;
     }
 
-    public MemoryEncoder getMemoryEncoder() {
-    	return memoryEncoder;
-    }
-
 
     // ===================== Utility Methods ====================
 
@@ -126,12 +119,11 @@ public class VerificationTask {
 
     public void initialiseEncoding(SolverContext ctx) {
         progEncoder.initialise(this, ctx);
-        memoryEncoder.initialise(this, ctx);
         memoryModel.initialise(this, ctx);
     }
 
     public BooleanFormula encodeProgram(SolverContext ctx) {
-        BooleanFormula memEncoding = memoryEncoder.encodeMemory(ctx);
+        BooleanFormula memEncoding = progEncoder.encodeMemory(ctx);
     	BooleanFormula cfEncoding = progEncoder.encodeControlFlow(ctx);
     	BooleanFormula finalRegValueEncoding = progEncoder.encodeFinalRegisterValues(ctx);
         return ctx.getFormulaManager().getBooleanFormulaManager().and(memEncoding, cfEncoding, finalRegValueEncoding);

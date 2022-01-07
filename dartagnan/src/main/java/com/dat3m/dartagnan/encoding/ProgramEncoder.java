@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
@@ -18,16 +19,14 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
 import java.util.function.BiFunction;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ALLOW_PARTIAL_EXECUTIONS;
 import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
+import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
@@ -54,7 +53,7 @@ public class ProgramEncoder implements Encoder {
     private Program program;
     private VerificationTask task;
 
-    private ProgramEncoder(Configuration config) throws InvalidConfigurationException  {
+    private ProgramEncoder(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
     }
 
@@ -62,6 +61,7 @@ public class ProgramEncoder implements Encoder {
         return new ProgramEncoder(config);
     }
 
+    // ============================== Initialization ==============================
 
     public void initialise(VerificationTask task, SolverContext ctx) {
         Preconditions.checkState(task.getProgram().isCompiled(), "The program needs to be compiled first.");
@@ -86,6 +86,8 @@ public class ProgramEncoder implements Encoder {
 
         e.initialise(task, ctx);
     }
+
+    // ============================== Encoding ==============================
 
     public BooleanFormula encodeControlFlow(SolverContext ctx) {
         Preconditions.checkState(task != null, "The encoder needs to get initialized.");
@@ -133,6 +135,24 @@ public class ProgramEncoder implements Encoder {
         }
         return enc;
     }
+
+    // Assigns each Address a fixed memory address.
+    public BooleanFormula encodeMemory(SolverContext ctx) {
+        Preconditions.checkState(task != null, "The encoder needs to get initialized.");
+        logger.info("Encoding fixed memory");
+
+        Memory memory = program.getMemory();;
+        FormulaManager fmgr = ctx.getFormulaManager();
+        IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+
+        // Some addresses already have a constant value (obtained from parsing the boogie file)
+        BooleanFormula[] addrExprs = memory.getAllAddresses().stream().filter(x -> !x.hasConstantValue())
+                .map(addr -> imgr.equal(convertToIntegerFormula(addr.toIntFormula(ctx), ctx),
+                        imgr.makeNumber(addr.getValue().intValue())))
+                .toArray(BooleanFormula[]::new);
+        return fmgr.getBooleanFormulaManager().and(addrExprs);
+    }
+
 
     public BooleanFormula encodeFinalRegisterValues(SolverContext ctx){
         Preconditions.checkState(task != null, "The encoder needs to get initialized.");
