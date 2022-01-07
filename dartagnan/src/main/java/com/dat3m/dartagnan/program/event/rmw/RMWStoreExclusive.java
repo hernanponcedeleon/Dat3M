@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program.event.rmw;
 
+import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
@@ -31,8 +31,8 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx) {
-        super.initialise(task, ctx);
+    public void initializeEncoding(VerificationTask task, SolverContext ctx) {
+        super.initializeEncoding(task, ctx);
         execVar = is(EType.STRONG) ? cfVar : ctx.getFormulaManager().makeVariable(BooleanType, "exec(" + repr() + ")");
     }
 

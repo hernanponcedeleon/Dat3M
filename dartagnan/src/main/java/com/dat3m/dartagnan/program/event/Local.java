@@ -35,8 +35,8 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
 	@Override
-	public void initialise(VerificationTask task, SolverContext ctx) {
-		super.initialise(task, ctx);
+	public void initializeEncoding(VerificationTask task, SolverContext ctx) {
+		super.initializeEncoding(task, ctx);
 		regResultExpr = register.toIntFormulaResult(this, ctx);
 	}
 

@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program.arch.linux.event.cond;
 
+import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
@@ -30,8 +30,8 @@ public abstract class RMWReadCond extends Load implements RegWriter, RegReaderDa
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx) {
-        super.initialise(task, ctx);
+    public void initializeEncoding(VerificationTask task, SolverContext ctx) {
+        super.initializeEncoding(task, ctx);
         formulaCond = generalEqual(memValueExpr, cmp.toIntFormula(this, ctx), ctx);
     }
 

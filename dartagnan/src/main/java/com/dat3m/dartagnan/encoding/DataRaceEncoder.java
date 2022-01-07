@@ -41,7 +41,7 @@ public class DataRaceEncoder implements Encoder {
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext context) {
+    public void initializeEncoding(VerificationTask task, SolverContext context) {
     	this.task = task;
     }
 

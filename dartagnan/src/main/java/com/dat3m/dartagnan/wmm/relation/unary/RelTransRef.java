@@ -40,8 +40,8 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx){
-        super.initialise(task, ctx);
+    public void initializeEncoding(VerificationTask task, SolverContext ctx){
+        super.initializeEncoding(task, ctx);
         identityEncodeTupleSet = new TupleSet();
         transEncodeTupleSet = new TupleSet();
     }

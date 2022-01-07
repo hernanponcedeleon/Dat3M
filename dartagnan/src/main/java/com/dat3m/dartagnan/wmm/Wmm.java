@@ -103,7 +103,7 @@ public class Wmm {
         recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
     }
 
-    public void initialise(VerificationTask task, SolverContext ctx) {
+    public void initializeEncoding(VerificationTask task, SolverContext ctx) {
         this.task = task;
 
         for(String relName : baseRelations){
@@ -119,11 +119,11 @@ public class Wmm {
         }
 
         for(Relation relation : relationRepository.getRelations()){
-            relation.initialise(task, ctx);
+            relation.initializeEncoding(task, ctx);
         }
 
         for (Axiom axiom : axioms) {
-            axiom.initialise(task, ctx);
+            axiom.initializeEncoding(task, ctx);
         }
     }
 

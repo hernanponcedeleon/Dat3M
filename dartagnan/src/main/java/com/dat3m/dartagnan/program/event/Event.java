@@ -160,7 +160,7 @@ public abstract class Event implements Comparable<Event> {
 	// Encoding
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void initialise(VerificationTask task, SolverContext ctx) { }
+	public void initializeEncoding(VerificationTask task, SolverContext ctx) { }
 	
 	public String repr() {
 		if (cId == -1) {

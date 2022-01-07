@@ -69,7 +69,7 @@ public class RefinementTask extends VerificationTask {
     @Override
     public void initialiseEncoding(SolverContext ctx) {
         super.initialiseEncoding(ctx);
-        baselineModel.initialise(this, ctx);
+        baselineModel.initializeEncoding(this, ctx);
 		logger.info("{}: {}", ASSUME_LOCALLY_CONSISTENT_WMM, useLocallyConsistentBaselineWmm);
 		logger.info("{}: {}", ASSUME_NO_OOTA, useNoOOTABaselineWMM);
     }

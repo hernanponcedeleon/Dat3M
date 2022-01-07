@@ -36,7 +36,7 @@ public class DataRaceSolver {
 	        prover.push();
 	        
 	        DataRaceEncoder encoder = DataRaceEncoder.fromConfig(task.getConfig());
-	        encoder.initialise(task, ctx);
+	        encoder.initializeEncoding(task, ctx);
 	        prover.addConstraint(encoder.encodeDataRaces(ctx));
 	        
 			BooleanFormula noBoundEventExec = task.getProgramEncoder().encodeBoundEventExec(ctx);

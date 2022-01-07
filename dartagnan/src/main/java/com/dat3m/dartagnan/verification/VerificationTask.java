@@ -118,8 +118,8 @@ public class VerificationTask {
     }
 
     public void initialiseEncoding(SolverContext ctx) {
-        progEncoder.initialise(this, ctx);
-        memoryModel.initialise(this, ctx);
+        progEncoder.initializeEncoding(this, ctx);
+        memoryModel.initializeEncoding(this, ctx);
     }
 
     public BooleanFormula encodeProgram(SolverContext ctx) {

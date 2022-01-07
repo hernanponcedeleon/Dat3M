@@ -26,8 +26,8 @@ public class FenceCond extends Fence {
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx) {
-        super.initialise(task, ctx);
+    public void initializeEncoding(VerificationTask task, SolverContext ctx) {
+        super.initializeEncoding(task, ctx);
         execVar = ctx.getFormulaManager().makeVariable(BooleanType, "exec(" + repr() + ")");
     }
 

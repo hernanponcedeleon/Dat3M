@@ -63,7 +63,7 @@ public class ProgramEncoder implements Encoder {
 
     // ============================== Initialization ==============================
 
-    public void initialise(VerificationTask task, SolverContext ctx) {
+    public void initializeEncoding(VerificationTask task, SolverContext ctx) {
         Preconditions.checkState(task.getProgram().isCompiled(), "The program needs to be compiled first.");
 		logger.info("{}: {}", ALLOW_PARTIAL_EXECUTIONS, shouldAllowPartialExecutions);
 		logger.info("{}: {}", MERGE_CF_VARS, shouldMergeCFVars);
@@ -84,7 +84,7 @@ public class ProgramEncoder implements Encoder {
         String repr = mergeVars ? task.getBranchEquivalence().getRepresentative(e).repr() : e.repr();
         e.setCfVar(fmgr.makeVariable(BooleanType, "cf(" + repr + ")"));
 
-        e.initialise(task, ctx);
+        e.initializeEncoding(task, ctx);
     }
 
     // ============================== Encoding ==============================

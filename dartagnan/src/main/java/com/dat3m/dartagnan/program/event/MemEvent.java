@@ -32,8 +32,8 @@ public abstract class MemEvent extends Event {
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx) {
-        super.initialise(task, ctx);
+    public void initializeEncoding(VerificationTask task, SolverContext ctx) {
+        super.initializeEncoding(task, ctx);
         memAddressExpr = address.toIntFormula(this, ctx);
     }
 

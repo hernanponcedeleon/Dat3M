@@ -47,9 +47,8 @@ public class EndAtomic extends Event {
     	return enclosedEvents;
     }
 
-	@Override
-	public void initialise(VerificationTask task, SolverContext ctx) {
-		super.initialise(task, ctx);
+	public void initializeEncoding(VerificationTask task, SolverContext ctx) {
+		super.initializeEncoding(task, ctx);
 		//===== Temporary fix to rematch atomic blocks correctly =====
 		BranchEquivalence eq = task.getBranchEquivalence();
 		List<Event> begins = this.thread.getEvents()

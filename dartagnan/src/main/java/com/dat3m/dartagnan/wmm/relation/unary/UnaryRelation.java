@@ -2,13 +2,12 @@ package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-
-import java.util.Collections;
-import java.util.List;
-
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  *
@@ -47,8 +46,8 @@ public abstract class UnaryRelation extends Relation {
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx){
-        super.initialise(task, ctx);
+    public void initializeEncoding(VerificationTask task, SolverContext ctx){
+        super.initializeEncoding(task, ctx);
         if(recursiveGroupId > 0){
             throw new UnsupportedOperationException("Recursion is not implemented for " + this.getClass().getName());
         }

@@ -25,7 +25,7 @@ public abstract class Axiom implements Dependent<Relation> {
         this.rel = rel;
     }
 
-    public void initialise(VerificationTask task, SolverContext ctx) {
+    public void initializeEncoding(VerificationTask task, SolverContext ctx) {
         this.task = task;
     }
 
