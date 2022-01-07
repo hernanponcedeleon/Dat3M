@@ -11,6 +11,7 @@ import org.sosy_lab.common.configuration.Options;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
@@ -47,19 +48,13 @@ public class ProcessingManager implements ProgramProcessor {
                 DeadCodeElimination.fromConfig(config),
                 BranchReordering.fromConfig(config),
                 Simplifier.fromConfig(config),
-                LoopUnrolling.fromConfig(config)
+                LoopUnrolling.fromConfig(config),
+                constantPropagation ? ConstantPropagation.fromConfig(config) : null,
+                Compilation.fromConfig(config),
+                atomicBlocksAsLocks ? AtomicAsLock.fromConfig(config) : null,
+                reduceSymmetry ? SymmetryReduction.fromConfig(config) : null
         ));
-        if(constantPropagation) {
-            programProcessors.add(ConstantPropagation.fromConfig(config));
-        }
-        programProcessors.add(Compilation.fromConfig(config));
-        if(atomicBlocksAsLocks) {
-            // TODO: Do we really want to execute this after compilation?
-            programProcessors.add(AtomicAsLock.fromConfig(config));
-        }
-        if(reduceSymmetry) {
-            programProcessors.add(SymmetryReduction.fromConfig(config));
-        }
+        programProcessors.removeIf(Objects::isNull);
     }
 
     public static ProcessingManager fromConfig(Configuration config) throws InvalidConfigurationException {
@@ -71,5 +66,6 @@ public class ProcessingManager implements ProgramProcessor {
     public void run(Program program) {
         programProcessors.forEach(p -> p.run(program));
     }
+
 
 }

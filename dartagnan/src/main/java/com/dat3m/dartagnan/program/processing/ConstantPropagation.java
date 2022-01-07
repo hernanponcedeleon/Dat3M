@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.atomic.event.*;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Verify;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -37,7 +38,7 @@ public class ConstantPropagation implements ProgramProcessor {
     private int propagations = 0;
     
 	// TODO we need a proper class for lattices. The inner map is nothing more than a map lattice.
-    private final Map<Integer, Map<Register, IExpr>> propagationMap = new HashMap<Integer, Map<Register, IExpr>>();
+    private final Map<Integer, Map<Register, IExpr>> propagationMap = new HashMap<>();
 
     // =========================== Configurables ===========================
 
@@ -70,7 +71,7 @@ public class ConstantPropagation implements ProgramProcessor {
 	private void run(Thread thread) {
 		
 		int currentThreadId = thread.getId();
-		propagationMap.put(currentThreadId, new HashMap<Register, IExpr>());
+		propagationMap.put(currentThreadId, new HashMap<>());
 		
         Event pred = thread.getEntry();
         Event current = pred.getSuccessor();
@@ -105,14 +106,14 @@ public class ConstantPropagation implements ProgramProcessor {
         		IExpr oldAddress = m.getAddress();
         		IExpr newAddress = evaluate(oldAddress, currentThreadId);
         		newAddress = newAddress instanceof ITop ? oldAddress : newAddress;
-        		Preconditions.checkState(newAddress != null, 
-        				String.format("Expression %s got no value after constant propagation analysis", oldAddress));
+				Verify.verifyNotNull(newAddress,
+						"Expression %s got no value after constant propagation analysis", oldAddress);
 
         		IExpr oldValue = (IExpr) ((MemEvent)current).getMemValue();
         		IExpr newValue = evaluate(oldValue, currentThreadId);
-        		newValue = newValue instanceof ITop ? oldValue : newValue; 
-        		Preconditions.checkState(newValue != null, 
-        				String.format("Expression %s got no value after constant propagation analysis", oldValue));
+        		newValue = newValue instanceof ITop ? oldValue : newValue;
+				Verify.verifyNotNull(newValue,
+						"Expression %s got no value after constant propagation analysis", oldValue);
         		
         		// Atomic Events
         		if(current instanceof AtomicLoad) {
@@ -122,8 +123,8 @@ public class ConstantPropagation implements ProgramProcessor {
             	} else if(current instanceof AtomicCmpXchg) {
             		IExpr oldExpectedAddr = ((AtomicCmpXchg)current).getExpectedAddr();
             		IExpr newExpectedAddr = evaluate(oldExpectedAddr, currentThreadId);
-                	Preconditions.checkState(newExpectedAddr != null, 
-                			String.format("Register %s got no value after constant propagation analysis", oldExpectedAddr));
+					Verify.verifyNotNull(newExpectedAddr,
+                			"Register %s got no value after constant propagation analysis", oldExpectedAddr);
     				e = Atomic.newCompareExchange(reg, newAddress, newExpectedAddr, newValue, mo, current.is(EType.STRONG));
             	} else if(current instanceof AtomicXchg) {
     				e = Atomic.newExchange(reg, newAddress, newValue, mo);
@@ -188,6 +189,7 @@ public class ConstantPropagation implements ProgramProcessor {
             e.setOId(current.getOId());
             e.setUId(current.getUId());
             e.setCId(current.getCId());
+            e.setCLine(current.getCLine());
             e.setThread(thread);
             pred.setSuccessor(e);
             pred = e;
@@ -210,11 +212,7 @@ public class ConstantPropagation implements ProgramProcessor {
     		// When pthread create passes arguments, the new thread starts with a Local
     		// where the RHS is a Register from the parent thread and thus we might not 
     		// have the key in the map.
-    		if(propagationMap.get(threadId).containsKey(input)) {
-    			return propagationMap.get(threadId).get(input);
-    		} else {
-    			return input;
-    		}
+			return propagationMap.get(threadId).getOrDefault(input, input);
     	}
     	if(input instanceof IExprUn) {
     		IExprUn un = (IExprUn)input;
