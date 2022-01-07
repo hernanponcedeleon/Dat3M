@@ -241,7 +241,7 @@ public class ConstantPropagation implements ProgramProcessor {
 		throw new UnsupportedOperationException(String.format("IExpr %s not supported", input));
     }
     
-    private class ITop extends IConst {
+    private static class ITop extends IConst {
     	
     	private ITop() {
     		super(BigInteger.ZERO, -1);
