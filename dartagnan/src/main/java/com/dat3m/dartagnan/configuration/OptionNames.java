@@ -14,6 +14,7 @@ public class OptionNames {
 	public static final String ALLOW_PARTIAL_EXECUTIONS = "encoding.allowPartialExecutions";
 	public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
 	public static final String CO_ANTISYMMETRY = "encoding.co.antiSymm";
+	public static final String ENCODE_FINAL_MEMVALUES = "encoding.encodeFinalMemoryValues";
 
 	// Program Processing Options
 	public static final String BOUND = "program.processing.loopBound";

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.CO_ANTISYMMETRY;
+import static com.dat3m.dartagnan.configuration.OptionNames.ENCODE_FINAL_MEMVALUES;
 import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.program.utils.EType.INIT;
@@ -46,6 +47,12 @@ public class RelCo extends Relation {
 		secure=true)
 	private boolean antisymmetry = false;
 
+    @Option(
+            name=ENCODE_FINAL_MEMVALUES,
+            description="Encode final memory values per address.",
+            secure=true)
+    private boolean encodeLastCo = true; //TODO: Automatically set this option only for litmus tests
+
 	// =====================================================================
 
     public RelCo(){
@@ -59,8 +66,8 @@ public class RelCo extends Relation {
 		try {
 			task.getConfig().inject(this);
     		logger.info("{}: {}", CO_ANTISYMMETRY, antisymmetry);
-		}
-		catch(InvalidConfigurationException e) {
+            logger.info("{}: {}", ENCODE_FINAL_MEMVALUES, encodeLastCo);
+		} catch(InvalidConfigurationException e) {
 			logger.warn(e.getMessage());
 		}
 	}
@@ -142,7 +149,7 @@ public class RelCo extends Relation {
 
         enc = bmgr.and(enc, distinct);
 
-        for(Event w :  task.getProgram().getCache().getEvents(FilterBasic.get(WRITE))){
+        for(Event w :  task.getProgram().getCache().getEvents(FilterBasic.get(WRITE))) {
             MemEvent w1 = (MemEvent)w;
             BooleanFormula lastCo = w1.exec();
 
@@ -172,24 +179,26 @@ public class RelCo extends Relation {
                 }
             }
 
-            BooleanFormula lastCoExpr = fmgr.makeVariable(BooleanType, "co_last(" + w1.repr() + ")");
-            enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
+            if (encodeLastCo) {
+                // TODO: This encoding should be extracted as it is orthogonal to how co itself gets encoded.
+                BooleanFormula lastCoExpr = fmgr.makeVariable(BooleanType, "co_last(" + w1.repr() + ")");
+                enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
 
+                for (Event i : eventsInit) {
+                    MemEvent init = (MemEvent) i;
+                    if (!alias.mayAlias(w1, init)) {
+                        continue;
+                    }
 
-            for (Event i : eventsInit) {
-                MemEvent init = (MemEvent) i;
-                if (!alias.mayAlias(w1, init)) {
-                    continue;
+                    Address address = (Address) init.getAddress();
+                    IntegerFormula a1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
+                    IntegerFormula a2 = convertToIntegerFormula(address.toIntFormula(ctx), ctx);
+                    IntegerFormula v1 = convertToIntegerFormula(w1.getMemValueExpr(), ctx);
+                    IntegerFormula v2 = convertToIntegerFormula(address.getLastMemValueExpr(ctx), ctx);
+                    BooleanFormula sameAddress = imgr.equal(a1, a2);
+                    BooleanFormula sameValue = imgr.equal(v1, v2);
+                    enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
-
-                Address address = (Address)init.getAddress();
-                IntegerFormula a1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
-                IntegerFormula a2 = convertToIntegerFormula(address.toIntFormula(ctx), ctx);
-                IntegerFormula v1 = convertToIntegerFormula(w1.getMemValueExpr(), ctx);
-                IntegerFormula v2 = convertToIntegerFormula(address.getLastMemValueExpr(ctx), ctx);
-                BooleanFormula sameAddress = imgr.equal(a1, a2);
-                BooleanFormula sameValue = imgr.equal(v1, v2);
-                enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
             }
         }
         return enc;
