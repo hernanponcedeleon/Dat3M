@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.verification.analysis;
+package com.dat3m.dartagnan.verification.solving;
 
 import java.util.Arrays;
 

@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.verification.analysis;
+package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.utils.Result;

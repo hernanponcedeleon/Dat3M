@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.analysis.*;
+import com.dat3m.dartagnan.verification.solving.*;
 import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -33,7 +33,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
-import static com.dat3m.dartagnan.verification.analysis.Analysis.RACES;
+import static com.dat3m.dartagnan.verification.solving.Property.RACES;
 import static java.lang.String.valueOf;
 
 @Options
@@ -57,11 +57,11 @@ public class Dartagnan extends BaseOptions {
 
 		//TODO add help
 
-		if(Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(f -> a.endsWith(f)))) {
+		if(Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(a::endsWith))) {
 			throw new IllegalArgumentException("Input program not given or format not recognized");
 		}
 		// get() is guaranteed to success
-		File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(f -> a.endsWith(f))).findFirst().get());
+		File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith)).findFirst().get());
 		logger.info("Program path: " + fileProgram);
 
 		if(Arrays.stream(args).noneMatch(a -> a.endsWith(".cat"))) {
@@ -112,7 +112,7 @@ public class Dartagnan extends BaseOptions {
                  ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
             {
                 Result result = UNKNOWN;
-                switch (o.getAnalysis()) {
+                switch (o.getProperty()) {
                 	case RACES:
                     	result = DataRaceSolver.run(ctx, task);
                         break;
@@ -155,7 +155,7 @@ public class Dartagnan extends BaseOptions {
 					config.inject(w);
 	                // We only write witnesses for REACHABILITY (if the path to the original C file was given) 
 					// and if we are not doing witness validation
-	                if (!o.getAnalysis().equals(RACES) && w.canBeBuilt() && !o.runValidator()) {
+	                if (!o.getProperty().equals(RACES) && w.canBeBuilt() && !o.runValidator()) {
 						w.build().write();
 	                }
 				} catch(InvalidConfigurationException e) {

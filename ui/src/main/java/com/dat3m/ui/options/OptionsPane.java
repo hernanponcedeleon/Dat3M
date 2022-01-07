@@ -1,6 +1,6 @@
 package com.dat3m.ui.options;
 
-import com.dat3m.dartagnan.verification.analysis.Method;
+import com.dat3m.dartagnan.verification.solving.Method;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.ui.button.ClearButton;
 import com.dat3m.ui.button.TestButton;
@@ -45,7 +45,6 @@ public class OptionsPane extends JPanel implements ActionListener {
     public OptionsPane(){
         super(new GridLayout(1,0));
 
-        int height = Math.min(getIconHeight(), (int) Math.round(Toolkit.getDefaultToolkit().getScreenSize().getHeight()) * 7 / 18);
         iconPane = new JLabel();
 
         methodPane = new Selector<>(Method.orderedValues(), ControlCode.METHOD);

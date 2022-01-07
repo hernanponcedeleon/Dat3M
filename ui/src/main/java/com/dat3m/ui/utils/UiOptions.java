@@ -1,6 +1,6 @@
 package com.dat3m.ui.utils;
 
-import com.dat3m.dartagnan.verification.analysis.Method;
+import com.dat3m.dartagnan.verification.solving.Method;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 

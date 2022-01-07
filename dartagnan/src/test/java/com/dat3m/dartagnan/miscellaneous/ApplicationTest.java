@@ -8,9 +8,9 @@ import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.LITMUS_RESOURCE_PATH;
-import static com.dat3m.dartagnan.verification.analysis.Analysis.RACES;
-import static com.dat3m.dartagnan.verification.analysis.Analysis.REACHABILITY;
-import static com.dat3m.dartagnan.verification.analysis.Method.*;
+import static com.dat3m.dartagnan.verification.solving.Method.*;
+import static com.dat3m.dartagnan.verification.solving.Property.RACES;
+import static com.dat3m.dartagnan.verification.solving.Property.REACHABILITY;
 
 public class ApplicationTest {
 
@@ -110,13 +110,13 @@ public class ApplicationTest {
     										"unsupported-solver"));
     }
 
-	private String[] createAndFillOptions(String analysis, String method, String solver) {
+	private String[] createAndFillOptions(String property, String method, String solver) {
 		String[] dartagnanOptions = new String[6];
 		
 	    dartagnanOptions[0] = ResourceHelper.TEST_RESOURCE_PATH + "locks/ttas-5.bpl";
 	    dartagnanOptions[1] = ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat";
 	    dartagnanOptions[2] = String.format("--%s=%s", BOUND, 2);
-	    dartagnanOptions[3] = String.format("--%s=%s", ANALYSIS, analysis);
+	    dartagnanOptions[3] = String.format("--%s=%s", PROPERTY, property);
 	    dartagnanOptions[4] = String.format("--%s=%s", METHOD, method);
 	    dartagnanOptions[5] = String.format("--%s=%s", SOLVER, solver);
 	    

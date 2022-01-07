@@ -2,9 +2,8 @@ package com.dat3m.svcomp;
 
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
-import com.dat3m.dartagnan.verification.analysis.Analysis;
+import com.dat3m.dartagnan.verification.solving.Property;
 import com.dat3m.dartagnan.witness.WitnessGraph;
-import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.svcomp.utils.BoogieSan;
 import com.dat3m.svcomp.utils.Compilation;
 import com.dat3m.svcomp.utils.SVCOMPSanitizer;
@@ -29,23 +28,22 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
 import static java.lang.Integer.parseInt;
-import static java.util.Arrays.asList;
 
 @Options
 public class SVCOMPRunner extends BaseOptions {
 
-	private Analysis analysis;
+	private Property property;
 
 	@Option(
-		name=PROPERTY,
+		name= PROPERTYPATH,
 		required=true,
 		description="The path to the property to be checked.")
 	private void property(String p) {
 		//TODO process the property file instead of assuming its contents based of its name
 		if(p.contains("no-data-race")) {
-			analysis = Analysis.RACES;
+			property = Property.RACES;
 		} else if(p.contains("unreach-call")) {
-			analysis = Analysis.REACHABILITY;
+			property = Property.REACHABILITY;
 		} else {
 			throw new IllegalArgumentException("Unrecognized property " + p);
 		}
@@ -76,24 +74,19 @@ public class SVCOMPRunner extends BaseOptions {
 		description="Run Dartagnan as a violation witness validator. Argument is the path to the witness file.")
 	private String witnessPath;
 
-	@Option(
-		name=TARGET,
-		description = "The target architecture to which the program shall be compiled to.")
-	private Arch target = Arch.NONE;
-
 	private static final Set<String> supportedFormats = 
     		ImmutableSet.copyOf(Arrays.asList(".c", ".i"));
 
     public static void main(String[] args) throws IOException, InvalidConfigurationException {
 
-		if(Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(f -> a.endsWith(f)))) {
+		if(Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(a::endsWith))) {
 			throw new IllegalArgumentException("Input program not given or format not recognized");
 		}
 		if(Arrays.stream(args).noneMatch(a -> a.endsWith(".cat"))) {
 			throw new IllegalArgumentException("CAT model not given or format not recognized");
 		}
 		File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst().get());
-		String programPath = Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(f -> a.endsWith(f))).findFirst().get();
+		String programPath = Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith)).findFirst().get();
 		File fileProgram = new File(programPath);
 
 		String[] argKeyword = Arrays.stream(args)
@@ -143,14 +136,12 @@ public class SVCOMPRunner extends BaseOptions {
 	    	cmd.add("java");
 	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
 	    	cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
-	    	cmd.addAll(asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-3.0.0.jar"));
+	    	cmd.addAll(Arrays.asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-3.0.0.jar"));
 			cmd.add(fileModel.toString());
 			cmd.add(boogieName);
-			cmd.add(String.format("--%s=%s", ANALYSIS, r.analysis.asStringOption()));
+			cmd.add(String.format("--%s=%s", PROPERTY, r.property.asStringOption()));
 			cmd.add(String.format("--%s=%s", BOUND, bound));
-			for(String option : filterOptions(config)) {
-				cmd.add(option);
-			}
+			cmd.addAll(filterOptions(config));
 
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
 	        try {
@@ -182,18 +173,17 @@ public class SVCOMPRunner extends BaseOptions {
 		}
 
         tmp.delete();
-        return;
     }
     
     private static List<String> filterOptions(Configuration config) {
     	
     	// BOUND is computed based on umin and the information from the witness
-    	List<String> skip = Arrays.asList(PROPERTY, UMIN, UMAX, STEP, SANITIZE, BOUND);
+    	List<String> skip = Arrays.asList(PROPERTYPATH, UMIN, UMAX, STEP, SANITIZE, BOUND);
     	
-    	return Arrays.asList(config.asPropertiesString().split("\n")).stream().
-		filter(p -> skip.stream().noneMatch(s -> s.equals(p.split(" = ")[0]))).
-		map(p -> "--" + p.split(" = ")[0] + "=" + p.split(" = ")[1]).
-		collect(Collectors.toList());
+    	return Arrays.stream(config.asPropertiesString().split("\n")).
+			filter(p -> skip.stream().noneMatch(s -> s.equals(p.split(" = ")[0]))).
+			map(p -> "--" + p.split(" = ")[0] + "=" + p.split(" = ")[1]).
+			collect(Collectors.toList());
     }
     
 }

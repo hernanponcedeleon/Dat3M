@@ -1,8 +1,8 @@
-package com.dat3m.dartagnan.verification.analysis;
+package com.dat3m.dartagnan.verification.solving;
 
 import java.util.Arrays;
 
-public enum Analysis {
+public enum Property {
 	REACHABILITY, RACES;
 	
 	// Used for options in the console
@@ -13,7 +13,7 @@ public enum Analysis {
         	case RACES:
         		return "races";
         }
-        throw new UnsupportedOperationException("Unrecognized analysis " + this);
+        throw new UnsupportedOperationException("Unrecognized property: " + this);
 	}
 
 	// Used to display in UI
@@ -25,16 +25,16 @@ public enum Analysis {
         	case RACES:
         		return "Races";
         }
-        throw new UnsupportedOperationException("Unrecognized analysis " + this);
+        throw new UnsupportedOperationException("Unrecognized property: " + this);
     }
 
-	public static Analysis getDefault() {
+	public static Property getDefault() {
 		return REACHABILITY;
 	}
 
 	// Used to decide the order shown by the selector in the UI
-	public static Analysis[] orderedValues() {
-		Analysis[] order = { REACHABILITY, RACES };
+	public static Property[] orderedValues() {
+		Property[] order = { REACHABILITY, RACES };
 		// Be sure no element is missing
 		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;

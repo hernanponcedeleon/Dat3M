@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.configuration;
 public class OptionNames {
 
 	// Base Options
-	public static final String ANALYSIS = "analysis";
+	public static final String PROPERTY = "property";
 	public static final String METHOD = "method";
 	public static final String SOLVER = "solver";
 	public static final String TIMEOUT = "timeout";
@@ -23,7 +23,7 @@ public class OptionNames {
 	public static final String ATOMIC_BLOCKS_AS_LOCKS = "program.processing.atomicBlocksAsLocks";
 	public static final String CONSTANT_PROPAGATION = "program.processing.constantPropagation";
 	
-	// Program Analysis Options
+	// Program Property Options
 	public static final String ALWAYS_SPLIT_ON_JUMPS = "program.analysis.cf.alwaysSplitOnJump";
 	public static final String MERGE_BRANCHES = "program.analysis.cf.mergeBranches";
 
@@ -38,7 +38,7 @@ public class OptionNames {
 	public static final String WITNESS_ORIGINAL_PROGRAM_PATH = "witness.originalProgramFilePath";
 	
 	// SVCOMP Options
-	public static final String PROPERTY = "svcomp.property";
+	public static final String PROPERTYPATH = "svcomp.property";
 	public static final String UMIN = "svcomp.umin";
 	public static final String UMAX = "svcomp.umax";
 	public static final String STEP = "svcomp.step";

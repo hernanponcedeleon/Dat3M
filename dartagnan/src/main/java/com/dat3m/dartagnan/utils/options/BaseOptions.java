@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.utils.options;
 
-import com.dat3m.dartagnan.verification.analysis.Analysis;
-import com.dat3m.dartagnan.verification.analysis.Method;
+import com.dat3m.dartagnan.verification.solving.Method;
+import com.dat3m.dartagnan.verification.solving.Property;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
@@ -12,13 +12,13 @@ import static com.dat3m.dartagnan.configuration.OptionNames.*;
 public abstract class BaseOptions {
 
 	@Option(
-		name=ANALYSIS,
-		description="Analysis to be performed.",
+		name= PROPERTY,
+		description="Property to be checked.",
 		secure=true,
 		toUppercase=true)
-	private Analysis analysis = Analysis.getDefault();
+	private Property property = Property.getDefault();
 
-	public Analysis getAnalysis() { return analysis; }
+	public Property getProperty() { return property; }
 
 	@Option(
 		name=VALIDATE,
@@ -30,7 +30,7 @@ public abstract class BaseOptions {
 
 	@Option(
 		name=METHOD,
-		description="Solver method to be used",
+		description="Solver method to be used.",
 		toUppercase=true)
 	private Method method = Method.getDefault();
 

@@ -184,7 +184,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         }
     }
 
-    //========================== Branching Analysis =========================
+    //========================== Branching Property =========================
 
     private Branch computeBranches(Event start, Map<Event, Branch> branchMap, Map<Event, Branch> finalBranchMap) {
         if ( branchMap.containsKey(start)) {
