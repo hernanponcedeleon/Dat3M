@@ -21,6 +21,8 @@ import java.io.File;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
 import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_ORIGINAL_PROGRAM_PATH;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class BuildWitnessTest {
 
@@ -44,19 +46,19 @@ public class BuildWitnessTest {
 			WitnessGraph graph = witnessBuilder.build();
     		File witnessFile = new File(System.getenv("DAT3M_HOME") + "/output/lazy01-for-witness.graphml");
     		// The file should not exist
-    		assert(!witnessFile.exists());
+			assertFalse(witnessFile.exists());
     		// Write to file
     		graph.write();
     		// The file should exist now
-			assert(witnessFile.exists());
+			assertTrue(witnessFile.exists());
 			// Delete the file
 			witnessFile.delete();
     		// Create encoding
     		BooleanFormula enc = graph.encode(p, ctx);
     		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
     		// Check the formula is not trivial
-			assert(!bmgr.isFalse(enc));
-    		assert(!bmgr.isTrue(enc));
+			assertFalse(bmgr.isFalse(enc));
+			assertFalse(bmgr.isTrue(enc));
     	}
     }
 }
