@@ -114,16 +114,14 @@ public class VerificationTask {
 
     // ===================== Utility Methods ====================
 
-    public void preProcessProgram() {
-        try {
-            ProcessingManager.fromConfig(config).run(program);
-            branchEquivalence = BranchEquivalence.fromConfig(program, config);
-            aliasAnalysis = AliasAnalysis.fromConfig(program, config);
-            threadSymmetry = ThreadSymmetry.fromConfig(program, config);
-        } catch (InvalidConfigurationException ex) {
-            logger.warn("Configuration error when processing program.");
-            throw new RuntimeException(ex); // TODO: Let the error bubble up
-        }
+    public void preprocessProgram() throws InvalidConfigurationException {
+        ProcessingManager.fromConfig(config).run(program);
+    }
+
+    public void performStaticProgramAnalyses() throws InvalidConfigurationException {
+        branchEquivalence = BranchEquivalence.fromConfig(program, config);
+        aliasAnalysis = AliasAnalysis.fromConfig(program, config);
+        threadSymmetry = ThreadSymmetry.fromConfig(program, config);
     }
 
     public void initialiseEncoding(SolverContext ctx) {

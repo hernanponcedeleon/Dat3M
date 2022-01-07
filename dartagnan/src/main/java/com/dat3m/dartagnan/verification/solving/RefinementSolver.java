@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -51,14 +52,15 @@ public class RefinementSolver {
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
     public static Result run(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
-            throws InterruptedException, SolverException {
+            throws InterruptedException, SolverException, InvalidConfigurationException {
 
-		task.preProcessProgram();
+		task.preprocessProgram();
 		if(task.getProgram().getAss() instanceof AssertTrue) {
             logger.info("Verification finished: assertion trivially holds");
             return PASS;
         }
 
+        task.performStaticProgramAnalyses();
 		task.initialiseEncoding(ctx);
 
         Program program = task.getProgram();

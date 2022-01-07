@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -19,9 +20,10 @@ public class DataRaceSolver {
 
     private static final Logger logger = LogManager.getLogger(DataRaceSolver.class);
 
-	public static Result run(SolverContext ctx, VerificationTask task) {
+	public static Result run(SolverContext ctx, VerificationTask task) throws InvalidConfigurationException {
 
-		task.preProcessProgram();
+		task.preprocessProgram();
+		task.performStaticProgramAnalyses();
 		task.initialiseEncoding(ctx);
 		
 		Result res = UNKNOWN;

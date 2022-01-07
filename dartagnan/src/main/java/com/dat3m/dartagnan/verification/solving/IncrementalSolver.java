@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
@@ -17,14 +18,15 @@ public class IncrementalSolver {
     private static final Logger logger = LogManager.getLogger(IncrementalSolver.class);
 
     public static Result run(SolverContext ctx, ProverEnvironment prover, VerificationTask task) 
-    		throws InterruptedException, SolverException {
+    		throws InterruptedException, SolverException, InvalidConfigurationException {
         Result res = Result.UNKNOWN;
         
-        task.preProcessProgram();
+        task.preprocessProgram();
        	if(task.getProgram().getAss() instanceof AssertTrue) {
             logger.info("Verification finished: assertion trivially holds");
        		return PASS;
        	}
+        task.performStaticProgramAnalyses();
         task.initialiseEncoding(ctx);
 
         logger.info("Starting encoding using " + ctx.getVersion());
