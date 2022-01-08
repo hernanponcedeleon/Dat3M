@@ -1,8 +1,3 @@
-// Inspired from OptionCollector https://github.com/sosy-lab/java-common-lib
-//
-// SPDX-FileCopyrightText: 2007-2020 Dirk Beyer <https://www.sosy-lab.org>
-//
-// SPDX-License-Identifier: Apache-2.0
 package com.dat3m.dartagnan.configuration;
 
 import com.google.common.reflect.ClassPath;
@@ -21,13 +16,12 @@ import java.util.stream.Stream;
  */
 public final class OptionInfo {
 
-    private static final Pattern IGNORED_CLASSES = Pattern.compile("^org\\.sosy_lab\\.common\\..*Test(\\$.*)?$");
+    private static final Pattern PROJECT_CLASSES = Pattern.compile("^com\\.dat3m\\..*$");
 
     /**
      * Traverses all options from all classes and outputs them.
      * Each find is printed to {@link System#out}.
      */
-    @SuppressWarnings("unchecked")
     public static void collectOptions() {
 
         ClassPath classPath;
@@ -62,7 +56,7 @@ public final class OptionInfo {
             return Stream.empty();
         }
 
-        if(IGNORED_CLASSES.matcher(c.getCanonicalName()).matches()) {
+        if(!PROJECT_CLASSES.matcher(c.getCanonicalName()).matches()) {
             return Stream.empty();
         }
 
