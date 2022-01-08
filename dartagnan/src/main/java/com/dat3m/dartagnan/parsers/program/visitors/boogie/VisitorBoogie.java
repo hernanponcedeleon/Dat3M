@@ -156,11 +156,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			ExprInterface def = ((Atom)exp).getRHS();
 			constantsMap.put(name, def);
 		}
-		if(exp instanceof Atom && ((Atom)exp).getLHS() instanceof Address && ((Atom)exp).getOp().equals(EQ)) {
- 			Address add = (Address)((Atom)exp).getLHS();
- 			Reducible def = (Reducible) ((Atom)exp).getRHS();
- 			add.setIntValue(def.reduce().getIntValue());
- 		}
 		return null;
 	}
 
@@ -176,11 +171,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				// Arrays have both count and allocSize tags.
 				// The former is more precise.
 				// The latter is used for structures.
-				if(ctx.getText().contains(":count")) {
-					tmp = tmp.split(":count")[1];
-					tmp = tmp.split("}")[0];
-					size = Integer.parseInt(tmp);
-				} else if(ctx.getText().contains(":allocSize")) {
+				if(ctx.getText().contains(":allocSize")) {
 					tmp = tmp.split(":allocSize")[1];
 					tmp = tmp.split("}")[0];
 					size = Integer.parseInt(tmp);
@@ -188,7 +179,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				if(size > 0) {
 					programBuilder.addDeclarationArray(name, Collections.nCopies(size, IConst.ZERO));										
 				} else {
-					programBuilder.getOrCreateLocation(name);
+					// Since we treat all globally defined variables as arrays 
+					// (e.g. an int variable results in an array of size 4 since 
+					// boogie works at the byte granularity), we need this for char 
+					// variables which would result in a single variable but we will 
+					// treat it as an array of size 1
+					programBuilder.getOrCreateLocation(name + "[0]");
 				}
 			} else {
 				constantsTypeMap.put(name, precision);
@@ -702,9 +698,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 					text = split[split.length - 1];
 					text = text.substring(text.indexOf("(")+1, text.indexOf(","));
 				}
-				if(!rhs.equals(BigInteger.ZERO)) {
-					text += "(" + rhs + ")";
-				}
+				// This needs to be consistent with the naming  
+				// used in ProgramBuilder for arrays
+				text += "[" + rhs + "]";
 				programBuilder.initLocEqConst(text, value.reduce());
 				return null;
 			}
