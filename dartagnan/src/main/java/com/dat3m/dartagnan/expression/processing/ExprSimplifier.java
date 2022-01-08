@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.expression.processing;
 
-import java.math.BigInteger;
-
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.Address;
+
+import java.math.BigInteger;
 
 //TODO: This is buggy for now, because Addresses are treated as IConst
 public class ExprSimplifier extends ExprTransformer {
@@ -18,7 +18,7 @@ public class ExprSimplifier extends ExprTransformer {
         if (lhs instanceof IConst && rhs instanceof  IConst) {
             IConst lc = (IConst) lhs;
             IConst rc = (IConst) rhs;
-            return new BConst(atom.getOp().combine(lc.getIntValue(), rc.getIntValue()));
+            return new BConst(atom.getOp().combine(lc.getValue(), rc.getValue()));
         }
         return new Atom(lhs, atom.getOp(), rhs);
     }
@@ -90,7 +90,7 @@ public class ExprSimplifier extends ExprTransformer {
 
         if (lhs instanceof IConst) {
             IConst lc = (IConst)lhs;
-            BigInteger val = lc.getIntValue();
+            BigInteger val = lc.getValue();
             switch (op) {
                 case MULT:
                     return val.compareTo(BigInteger.ZERO) == 0 ? IConst.ZERO : val.equals(BigInteger.ONE) ? rhs : new IExprBin(lhs, op, rhs);
@@ -102,7 +102,7 @@ public class ExprSimplifier extends ExprTransformer {
         }
 
         IConst rc = (IConst)rhs;
-        BigInteger val = rc.getIntValue();
+        BigInteger val = rc.getValue();
         switch (op) {
             case MULT:
                 return val.compareTo(BigInteger.ZERO) == 0 ? IConst.ZERO : val.equals(BigInteger.ONE) ? lhs : new IExprBin(lhs, op, rhs);

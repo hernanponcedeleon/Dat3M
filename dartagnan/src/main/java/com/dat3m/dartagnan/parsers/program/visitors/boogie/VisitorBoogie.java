@@ -1,10 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.parsers.program.boogie.Function;
-import com.dat3m.dartagnan.parsers.program.boogie.FunctionCall;
-import com.dat3m.dartagnan.parsers.program.boogie.PthreadPool;
-import com.dat3m.dartagnan.parsers.program.boogie.Scope;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
@@ -12,7 +9,10 @@ import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.*;
 import com.dat3m.dartagnan.parsers.BoogieVisitor;
-import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.parsers.program.boogie.Function;
+import com.dat3m.dartagnan.parsers.program.boogie.FunctionCall;
+import com.dat3m.dartagnan.parsers.program.boogie.PthreadPool;
+import com.dat3m.dartagnan.parsers.program.boogie.Scope;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
@@ -34,6 +34,14 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
+import static com.dat3m.dartagnan.parsers.program.boogie.LlvmFunctions.LLVMFUNCTIONS;
+import static com.dat3m.dartagnan.parsers.program.boogie.LlvmFunctions.llvmFunction;
+import static com.dat3m.dartagnan.parsers.program.boogie.LlvmPredicates.LLVMPREDICATES;
+import static com.dat3m.dartagnan.parsers.program.boogie.LlvmPredicates.llvmPredicate;
+import static com.dat3m.dartagnan.parsers.program.boogie.LlvmUnary.LLVMUNARY;
+import static com.dat3m.dartagnan.parsers.program.boogie.LlvmUnary.llvmUnary;
+import static com.dat3m.dartagnan.parsers.program.boogie.SmackPredicates.SMACKPREDICATES;
+import static com.dat3m.dartagnan.parsers.program.boogie.SmackPredicates.smackPredicate;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicProcedures.ATOMICPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicProcedures.handleAtomicFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.DummyProcedures.DUMMYPROCEDURES;
@@ -43,14 +51,6 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.handleStdFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.SVCOMPPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.handleSvcompFunction;
-import static com.dat3m.dartagnan.parsers.program.boogie.LlvmFunctions.LLVMFUNCTIONS;
-import static com.dat3m.dartagnan.parsers.program.boogie.LlvmFunctions.llvmFunction;
-import static com.dat3m.dartagnan.parsers.program.boogie.LlvmPredicates.LLVMPREDICATES;
-import static com.dat3m.dartagnan.parsers.program.boogie.LlvmPredicates.llvmPredicate;
-import static com.dat3m.dartagnan.parsers.program.boogie.LlvmUnary.LLVMUNARY;
-import static com.dat3m.dartagnan.parsers.program.boogie.LlvmUnary.llvmUnary;
-import static com.dat3m.dartagnan.parsers.program.boogie.SmackPredicates.SMACKPREDICATES;
-import static com.dat3m.dartagnan.parsers.program.boogie.SmackPredicates.smackPredicate;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
 
@@ -689,7 +689,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				ExprInterface lhs = address;
 				BigInteger rhs = BigInteger.ZERO;
 				while(lhs instanceof IExprBin) {
-					rhs = rhs.add(((IExprBin)lhs).getRHS().reduce().getIntValue());
+					rhs = rhs.add(((IExprBin)lhs).getRHS().reduce().getValue());
 					lhs = ((IExprBin)lhs).getLHS();
 				}
 				String text = ctx.expr(1).getText();				

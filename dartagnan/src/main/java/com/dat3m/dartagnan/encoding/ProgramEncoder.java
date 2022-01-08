@@ -148,7 +148,7 @@ public class ProgramEncoder implements Encoder {
         // Some addresses already have a constant value (obtained from parsing the boogie file)
         BooleanFormula[] addrExprs = memory.getAllAddresses().stream()
                 .map(addr -> imgr.equal(convertToIntegerFormula(addr.toIntFormula(ctx), ctx),
-                        imgr.makeNumber(addr.getIntValue().intValue())))
+                        imgr.makeNumber(addr.getValue().intValue())))
                 .toArray(BooleanFormula[]::new);
         return fmgr.getBooleanFormulaManager().and(addrExprs);
     }

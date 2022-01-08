@@ -15,11 +15,11 @@ public class IConst extends IExpr implements ExprInterface, LastValueInterface {
 	// TH: This was a temporary try for integer logic only
 	// However, it is impossible to define general constants, we need a function that produces
 	// a constant for each precision degree
-	// HP: agree. I assume you wanted this to improve code readability, but having one constant per precition won't help.
+	// HP: agree. I assume you wanted this to improve code readability, but having one constant per precision won't help.
 	public static IConst ZERO = new IConst(BigInteger.ZERO, -1);
 	public static IConst ONE = new IConst(BigInteger.ONE, -1);
 
-	private BigInteger value;
+	protected final BigInteger value;
 	protected final int precision;
 	
 	public IConst(BigInteger value, int precision) {
@@ -28,15 +28,18 @@ public class IConst extends IExpr implements ExprInterface, LastValueInterface {
 	}
 
 	public IConst(String value, int precision) {
-		this.value = new BigInteger(value);
-		this.precision = precision;
+		this( new BigInteger(value), precision);
 	}
 
 	@Override
-    public Formula toIntFormula(Event e, SolverContext ctx){
+    public Formula toIntFormula(Event e, SolverContext ctx) {
+		return toIntFormula(ctx);
+	}
+
+	public Formula toIntFormula(SolverContext ctx) {
 		FormulaManager fmgr = ctx.getFormulaManager();
-		return precision > 0 ? 
-				fmgr.getBitvectorFormulaManager().makeBitvector(precision, value) : 
+		return precision > 0 ?
+				fmgr.getBitvectorFormulaManager().makeBitvector(precision, value) :
 				fmgr.getIntegerFormulaManager().makeNumber(value);
 	}
 
@@ -47,10 +50,7 @@ public class IConst extends IExpr implements ExprInterface, LastValueInterface {
 
 	@Override
 	public Formula getLastValueExpr(SolverContext ctx){
-		FormulaManager fmgr = ctx.getFormulaManager();
-		return precision > 0 ? 
-				fmgr.getBitvectorFormulaManager().makeBitvector(precision, value) : 
-				fmgr.getIntegerFormulaManager().makeNumber(value);
+		return toIntFormula(ctx);
 	}
 
 	@Override
@@ -62,12 +62,6 @@ public class IConst extends IExpr implements ExprInterface, LastValueInterface {
 		return value.intValue();
 	}
 
-    public Formula toIntFormula(SolverContext ctx) {
-		FormulaManager fmgr = ctx.getFormulaManager();
-		return precision > 0 ?
-				fmgr.getBitvectorFormulaManager().makeBitvector(precision, value) :
-				fmgr.getIntegerFormulaManager().makeNumber(value);
-    }
 
 	@Override
 	public IConst reduce() {
@@ -79,13 +73,9 @@ public class IConst extends IExpr implements ExprInterface, LastValueInterface {
 		return this;
 	}
 	
-	public BigInteger getIntValue() {
+	public BigInteger getValue() {
 		return value;
 	}
-
-    public void setIntValue(BigInteger value) {
-     	this.value = value;
-     }
     
 	@Override
 	public int getPrecision() {

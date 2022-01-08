@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -88,7 +88,7 @@ public class SvcompProcedures {
     	IExpr expr = (IExpr)ctx.call_params().exprs().accept(visitor);
     	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, expr.getPrecision());
     	visitor.assertionIndex++;
-    	if(expr instanceof IConst && ((IConst)expr).getIntValue().equals(BigInteger.ONE)) {
+    	if(expr instanceof IConst && ((IConst)expr).getValue().equals(BigInteger.ONE)) {
     		return;
     	}
     	Local event = EventFactory.newLocal(ass, expr);
