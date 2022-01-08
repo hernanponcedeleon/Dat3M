@@ -5,7 +5,9 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
 import java.io.IOException;
-import java.lang.reflect.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -27,8 +29,7 @@ public final class OptionInfo {
         ClassPath classPath;
         try {
             classPath = ClassPath.from(OptionInfo.class.getClassLoader());
-        }
-        catch(IOException e) {
+        } catch(IOException e) {
             return;
         }
 
@@ -46,8 +47,7 @@ public final class OptionInfo {
         Class<?> c;
         try {
             c = i.load();
-        }
-        catch(NoClassDefFoundError e) {
+        } catch(LinkageError e) {
             return Stream.empty();
         }
 
