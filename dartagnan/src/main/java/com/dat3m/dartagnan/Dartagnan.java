@@ -34,7 +34,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
-import static com.dat3m.dartagnan.verification.solving.Property.RACES;
+import static com.dat3m.dartagnan.configuration.Property.RACES;
 import static java.lang.String.valueOf;
 
 @Options
@@ -51,12 +51,12 @@ public class Dartagnan extends BaseOptions {
 
 	public static void main(String[] args) throws Exception {
     	
-    	CreateGitInfo();
-
         if(Arrays.asList(args).contains("--help")) {
             collectOptions();
             return;
         }
+
+    	CreateGitInfo();
 
     	String[] argKeyword = Arrays.stream(args)
 				.filter(s->s.startsWith("-"))

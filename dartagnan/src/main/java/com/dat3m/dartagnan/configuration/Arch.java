@@ -1,8 +1,10 @@
-package com.dat3m.dartagnan.wmm.utils;
+package com.dat3m.dartagnan.configuration;
 
 import java.util.Arrays;
 
-public enum Arch {
+import com.dat3m.dartagnan.configuration.OptionInterface;
+
+public enum Arch implements OptionInterface {
 	NONE, ARM8, POWER, TSO;
 
 	// Used for options in the console

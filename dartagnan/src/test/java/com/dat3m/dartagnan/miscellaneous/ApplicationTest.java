@@ -8,9 +8,8 @@ import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.LITMUS_RESOURCE_PATH;
-import static com.dat3m.dartagnan.verification.solving.Method.*;
-import static com.dat3m.dartagnan.verification.solving.Property.RACES;
-import static com.dat3m.dartagnan.verification.solving.Property.REACHABILITY;
+import static com.dat3m.dartagnan.configuration.Method.*;
+import static com.dat3m.dartagnan.configuration.Property.*;
 
 public class ApplicationTest {
 

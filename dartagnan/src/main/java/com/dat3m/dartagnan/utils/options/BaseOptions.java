@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.utils.options;
 
-import com.dat3m.dartagnan.verification.solving.Method;
-import com.dat3m.dartagnan.verification.solving.Property;
+import com.dat3m.dartagnan.configuration.Method;
+import com.dat3m.dartagnan.configuration.Property;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;

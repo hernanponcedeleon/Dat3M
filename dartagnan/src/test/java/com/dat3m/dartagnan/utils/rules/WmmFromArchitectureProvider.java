@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.utils.rules;
 
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.configuration.Arch;
 
 import java.io.File;
 import java.util.HashMap;

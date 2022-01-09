@@ -38,7 +38,7 @@ public class ProgramEncoder implements Encoder {
     // =========================== Configurables ===========================
 
     @Option(name = ALLOW_PARTIAL_EXECUTIONS,
-            description = "Allows to terminate executions on the first found violation." +
+            description = "Allows to terminate executions on the first found violation. " +
                     "This is not allowed on Litmus tests due to their different assertion condition.",
             secure = true)
     private boolean shouldAllowPartialExecutions = false;

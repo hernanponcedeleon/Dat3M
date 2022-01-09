@@ -1,7 +1,7 @@
 package com.dat3m.ui.utils;
 
-import com.dat3m.dartagnan.verification.solving.Method;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.configuration.Method;
+import com.dat3m.dartagnan.configuration.Arch;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 public class UiOptions {
