@@ -13,17 +13,14 @@ import java.util.List;
 import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 
-public class End extends Event {
+public class End extends Store {
 
-	private final Address address;
-	
     public End(Address address){
-        this.address = address;
+    	super(address, IConst.ZERO, SC);
     }
 
     private End(End other){
     	super(other);
-        this.address = other.address;
     }
 
     @Override
@@ -48,7 +45,7 @@ public class End extends Event {
     	
         Fence optionalBarrierBefore = null;
         Fence optionalBarrierAfter = null;
-        Store store = newStore(address, IConst.ZERO, SC);
+        Store store = newStore(address, value, mo);
 
         switch (target){
             case NONE:
