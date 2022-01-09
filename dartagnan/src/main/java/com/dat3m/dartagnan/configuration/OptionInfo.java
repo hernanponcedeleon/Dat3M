@@ -19,7 +19,7 @@ import java.util.stream.Stream;
  * <p>
  * Mimics {@link org.sosy_lab.common.configuration.OptionCollector OptionCollector} with reduced functionality.
  */
-public final class OptionInfo {
+public final class OptionInfo implements Comparable<OptionInfo> {
 
     private static final Pattern PROJECT_CLASSES = Pattern.compile("^com\\.dat3m\\..*$");
 
@@ -38,7 +38,8 @@ public final class OptionInfo {
 
         classPath.getAllClasses().stream()
                 .flatMap(OptionInfo::collectOptions)
-                .forEach(OptionInfo::print);
+                .sorted()
+                .forEach(System.out::print);
     }
 
     /**
@@ -106,8 +107,9 @@ public final class OptionInfo {
         domain = d;
     }
 
-    private void print() {
-        System.out.printf("\n[-] %s%s : %s\n\t%s\n",
+    @Override
+    public String toString() {
+    	return String.format("\n[-] %s%s : %s\n\t%s\n",
             parent.prefix,
             option.name().isEmpty() ? member.getName() : option.name(),
             domain.isEnum() ? 
@@ -120,4 +122,9 @@ public final class OptionInfo {
         			domain.getSimpleName(),
             option.description());
     }
+
+	@Override
+	public int compareTo(OptionInfo o) {
+		return toString().compareTo(o.toString());
+	}
 }
