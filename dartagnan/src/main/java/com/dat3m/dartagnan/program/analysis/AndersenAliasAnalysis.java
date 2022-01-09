@@ -202,9 +202,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             if (address instanceof Register) {
             	if(bases.containsKey(address) && program.getMemory().isArrayPointer(bases.get(address))) {
             		if(offsets.containsKey(address)) {
-                		addresses = ImmutableSet.of(program.getMemory().getArrayfromPointer(bases.get(address)).get(offsets.get(address)));            			
+                		addresses = ImmutableSet.of(program.getMemory().getArrayFromPointer(bases.get(address)).get(offsets.get(address)));
             		} else {
-                		addresses = new HashSet<>(program.getMemory().getArrayfromPointer(bases.get(address)));
+                		addresses = new HashSet<>(program.getMemory().getArrayFromPointer(bases.get(address)));
             		}
             	} else {
             	    addresses = graph.getAddresses(address);
