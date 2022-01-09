@@ -37,12 +37,12 @@ public class RefinementTask extends VerificationTask {
     // =========================== Configurables ===========================
 
 	@Option(name=ASSUME_LOCALLY_CONSISTENT_WMM,
-		description="Refinement will start from a locally consistent baseline WMM instead of the empty one.",
+		description="Refinement starts from a locally consistent baseline WMM instead of the empty one.",
 		secure=true)
 	private boolean useLocallyConsistentBaselineWmm = false;
 
 	@Option(name=ASSUME_NO_OOTA,
-		description="Refinement will start from a baseline WMM that does not allow Out-Of-Thin-Air behaviour.",
+		description="Refinement starts from a baseline WMM that does not allow Out-Of-Thin-Air behaviour.",
 		secure=true)
 	private boolean useNoOOTABaselineWMM = false;
 

@@ -22,7 +22,7 @@ public abstract class BaseOptions {
 
 	@Option(
 		name=VALIDATE,
-		description="Run Dartagnan as a violation witness validator. Argument is the path to the witness file.")
+		description="Performs violation witness validation. Argument is the path to the witness file.")
 	private String witnessPath;
 
 	public boolean runValidator() { return witnessPath != null; }
@@ -38,7 +38,7 @@ public abstract class BaseOptions {
 
 	@Option(
 		name=SOLVER,
-		description="SMT solver to be used",
+		description="Uses the specified SMT solver as a backend.",
 		toUppercase=true)
 	private Solvers solver = Solvers.Z3;
 
@@ -46,7 +46,7 @@ public abstract class BaseOptions {
 	
 	@Option(
 		name=TIMEOUT,
-		description="Number of seconds before interrupting the SMT solving")
+		description="Timeout (in secs) before interrupting the SMT solver.")
 	private int timeout = 0;
 	
 	public boolean hasTimeout() { return timeout > 0; }
