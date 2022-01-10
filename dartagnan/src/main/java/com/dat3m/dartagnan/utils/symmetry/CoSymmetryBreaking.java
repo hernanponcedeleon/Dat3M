@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.utils.symmetry;
 
+import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
@@ -235,7 +236,7 @@ public class CoSymmetryBreaking {
 
             final String id = "_" + rep.getId() + "_" + i;
             // NOTE: We want to have r1 >= r2 but lexLeader encodes r1 <= r2, so we swap r1 and r2.
-            enc = bmgr.and(enc, SymmetryBreaking.encodeLexLeader(id, r2, r1, ctx));
+            enc = bmgr.and(enc, SymmetryEncoder.encodeLexLeader(id, r2, r1, ctx));
 
             t1 = t2;
             r1Tuples = r2Tuples;

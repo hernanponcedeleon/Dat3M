@@ -7,7 +7,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -47,8 +46,9 @@ public class EndAtomic extends Event {
     	return enclosedEvents;
     }
 
-	public void initializeEncoding(VerificationTask task, SolverContext ctx) {
-		super.initializeEncoding(task, ctx);
+	@Override
+	public void provideAnalysisContext(VerificationTask task) {
+		super.provideAnalysisContext(task);
 		//===== Temporary fix to rematch atomic blocks correctly =====
 		BranchEquivalence eq = task.getBranchEquivalence();
 		List<Event> begins = this.thread.getEvents()
@@ -58,7 +58,6 @@ public class EndAtomic extends Event {
 		// =======================================================
 
 		findEnclosedEvents(eq);
-
 	}
 
 	private void findEnclosedEvents(BranchEquivalence eq) {

@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegReaderData {
@@ -15,8 +14,8 @@ public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegRead
     }
 
     @Override
-    public void initializeEncoding(VerificationTask task, SolverContext ctx) {
-        super.initializeEncoding(task, ctx);
+    public void initializeEncoding(SolverContext ctx) {
+        super.initializeEncoding(ctx);
         this.formulaCond = ctx.getFormulaManager().getBooleanFormulaManager().not(formulaCond);
     }
 

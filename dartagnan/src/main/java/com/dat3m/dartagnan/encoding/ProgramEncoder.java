@@ -50,33 +50,35 @@ public class ProgramEncoder implements Encoder {
 
     // =====================================================================
 
-    private Program program;
-    private VerificationTask task;
+    private final Program program;
+    //TODO: We misuse the <task> object as information pool for static analyses here
+    // We ignore the program, wmm etc. that is contained in <task>.
+    private final VerificationTask task;
 
-    private ProgramEncoder(Configuration config) throws InvalidConfigurationException {
+    private ProgramEncoder(Program program, VerificationTask task, Configuration config) throws InvalidConfigurationException {
+        this.program = Preconditions.checkNotNull(program);
+        this.task = Preconditions.checkNotNull(task);
+        Preconditions.checkArgument(program.isCompiled(), "Program needs to get compiled before it can be encoded.");
         config.inject(this);
+
+        logger.info("{}: {}", ALLOW_PARTIAL_EXECUTIONS, shouldAllowPartialExecutions);
+        logger.info("{}: {}", MERGE_CF_VARS, shouldMergeCFVars);
     }
 
-    public static ProgramEncoder fromConfig(Configuration config) throws InvalidConfigurationException {
-        return new ProgramEncoder(config);
+    public static ProgramEncoder fromConfig(Program program, VerificationTask task, Configuration config) throws InvalidConfigurationException {
+        return new ProgramEncoder(program, task, config);
     }
 
     // ============================== Initialization ==============================
 
-    public void initializeEncoding(VerificationTask task, SolverContext ctx) {
-        Preconditions.checkState(task.getProgram().isCompiled(), "The program needs to be compiled first.");
-		logger.info("{}: {}", ALLOW_PARTIAL_EXECUTIONS, shouldAllowPartialExecutions);
-		logger.info("{}: {}", MERGE_CF_VARS, shouldMergeCFVars);
-		
-        this.task = task;
-        this.program = task.getProgram();
+    public void initializeEncoding(SolverContext ctx) {
         for(Event e : program.getEvents()){
             initEvent(e, task, ctx);
         }
     }
 
     private void initEvent(Event e, VerificationTask task, SolverContext ctx){
-        Preconditions.checkState(e.getCId() >= 0, "Event cID is negative for %s. Event was not compiled yet?", e);
+        Preconditions.checkArgument(e.getCId() >= 0, "Event cID is negative for %s. Event was not compiled yet?", e);
 
         FormulaManager fmgr = ctx.getFormulaManager();
 
@@ -84,10 +86,15 @@ public class ProgramEncoder implements Encoder {
         String repr = mergeVars ? task.getBranchEquivalence().getRepresentative(e).repr() : e.repr();
         e.setCfVar(fmgr.makeVariable(BooleanType, "cf(" + repr + ")"));
 
-        e.initializeEncoding(task, ctx);
+        e.initializeEncoding(ctx);
     }
 
     // ============================== Encoding ==============================
+
+    public BooleanFormula encodeFullProgram(SolverContext ctx) {
+        return ctx.getFormulaManager().getBooleanFormulaManager().and(
+                        encodeMemory(ctx), encodeControlFlow(ctx), encodeFinalRegisterValues(ctx));
+    }
 
     public BooleanFormula encodeControlFlow(SolverContext ctx) {
         Preconditions.checkState(task != null, "The encoder needs to get initialized.");
@@ -205,23 +212,4 @@ public class ProgramEncoder implements Encoder {
         return enc;
     }
 
-    public BooleanFormula encodeBoundEventExec(SolverContext ctx){
-        Preconditions.checkState(task != null, "The encoder needs to get initialized.");
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return program.getCache().getEvents(FilterBasic.get(EType.BOUND))
-                .stream().map(Event::exec).reduce(bmgr.makeFalse(), bmgr::or);
-    }
-
-    public BooleanFormula encodeAssertions(SolverContext ctx) {
-        Preconditions.checkState(task != null, "The encoder needs to get initialized.");
-        logger.info("Encoding assertions");
-
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-
-        BooleanFormula assertionEncoding = program.getAss().encode(ctx);
-        if (program.getAssFilter() != null) {
-            assertionEncoding = bmgr.and(assertionEncoding, program.getAssFilter().encode(ctx));
-        }
-        return assertionEncoding;
-    }
 }

@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan.verification;
 
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
@@ -14,7 +16,6 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ASSUME_LOCALLY_CONSISTENT_WMM;
@@ -33,6 +34,8 @@ public class RefinementTask extends VerificationTask {
 	private static final Logger logger = LogManager.getLogger(RefinementTask.class);
 
     private final Wmm baselineModel;
+    private RelationAnalysis baselineRelationAnalysis;
+    private WmmEncoder baselineWmmEncoder;
 
     // =========================== Configurables ===========================
 
@@ -58,18 +61,21 @@ public class RefinementTask extends VerificationTask {
         return baselineModel;
     }
 
-    public BooleanFormula encodeBaselineWmmRelations(SolverContext ctx) {
-        return baselineModel.encodeRelations(ctx);
-    }
+    public RelationAnalysis getBaselineRelationAnalysis() { return baselineRelationAnalysis; }
 
-    public BooleanFormula encodeBaselineWmmConsistency(SolverContext ctx) {
-        return baselineModel.encodeConsistency(ctx);
+    public WmmEncoder getBaselineWmmEncoder() { return baselineWmmEncoder; }
+
+    @Override
+    public void performStaticWmmAnalyses() throws InvalidConfigurationException {
+        super.performStaticWmmAnalyses();
+        this.baselineRelationAnalysis = RelationAnalysis.fromConfig(getProgram(), baselineModel, this, getConfig());
     }
 
     @Override
-    public void initialiseEncoding(SolverContext ctx) {
-        super.initialiseEncoding(ctx);
-        baselineModel.initializeEncoding(this, ctx);
+    public void initializeEncoders(SolverContext ctx) throws InvalidConfigurationException {
+        super.initializeEncoders(ctx);
+        this.baselineWmmEncoder = WmmEncoder.fromConfig(baselineModel, this, getConfig());
+        baselineWmmEncoder.initializeEncoding(ctx);
 		logger.info("{}: {}", ASSUME_LOCALLY_CONSISTENT_WMM, useLocallyConsistentBaselineWmm);
 		logger.info("{}: {}", ASSUME_NO_OOTA, useNoOOTABaselineWMM);
     }
@@ -86,7 +92,6 @@ public class RefinementTask extends VerificationTask {
     // The merging introduced the old code again.
     private Wmm createDefaultWmm() {
         Wmm baseline = new Wmm();
-        baseline.setEncodeCo(true);
 
         if (!useLocallyConsistentBaselineWmm) {
             return baseline;

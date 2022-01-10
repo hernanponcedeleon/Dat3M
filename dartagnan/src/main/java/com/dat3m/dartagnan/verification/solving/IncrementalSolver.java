@@ -1,6 +1,10 @@
 package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
+import com.dat3m.dartagnan.encoding.ProgramEncoder;
+import com.dat3m.dartagnan.encoding.PropertyEncoder;
+import com.dat3m.dartagnan.encoding.SymmetryEncoder;
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.apache.logging.log4j.LogManager;
@@ -27,24 +31,29 @@ public class IncrementalSolver {
        		return PASS;
        	}
         task.performStaticProgramAnalyses();
-        task.initialiseEncoding(ctx);
+        task.performStaticWmmAnalyses();
+
+        task.initializeEncoders(ctx);
+        ProgramEncoder programEncoder = task.getProgramEncoder();
+        PropertyEncoder propertyEncoder = task.getPropertyEncoder();
+        WmmEncoder wmmEncoder = task.getWmmEncoder();
+        SymmetryEncoder symmEncoder = task.getSymmetryEncoder();
 
         logger.info("Starting encoding using " + ctx.getVersion());
-        prover.addConstraint(task.encodeProgram(ctx));
-        prover.addConstraint(task.encodeWmmRelations(ctx));
-        prover.addConstraint(task.encodeWmmConsistency(ctx));
+        prover.addConstraint(programEncoder.encodeFullProgram(ctx));
+        prover.addConstraint(wmmEncoder.encodeFullMemoryModel(ctx));
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
-        prover.addConstraint(task.encodeWitness(ctx));
-        prover.addConstraint(task.encodeSymmetryBreaking(ctx));
+        prover.addConstraint(task.getWitness().encode(task.getProgram(), ctx));
+        prover.addConstraint(symmEncoder.encodeFullSymmetry(ctx));
         logger.info("Starting push()");
         prover.push();
-        prover.addConstraint(task.encodeAssertions(ctx));
+        prover.addConstraint(propertyEncoder.encodeAssertions(ctx));
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsat()) {
         	prover.pop();
-			prover.addConstraint(task.getProgramEncoder().encodeBoundEventExec(ctx));
+			prover.addConstraint(propertyEncoder.encodeBoundEventExec(ctx));
             logger.info("Starting second solver.check()");
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
         } else {

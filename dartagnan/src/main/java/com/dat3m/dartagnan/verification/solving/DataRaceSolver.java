@@ -1,12 +1,13 @@
 package com.dat3m.dartagnan.verification.solving;
 
-import com.dat3m.dartagnan.encoding.DataRaceEncoder;
+import com.dat3m.dartagnan.encoding.ProgramEncoder;
+import com.dat3m.dartagnan.encoding.PropertyEncoder;
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -24,27 +25,27 @@ public class DataRaceSolver {
 
 		task.preprocessProgram();
 		task.performStaticProgramAnalyses();
-		task.initialiseEncoding(ctx);
+		task.performStaticWmmAnalyses();
+
+		task.initializeEncoders(ctx);
+		ProgramEncoder programEncoder = task.getProgramEncoder();
+		PropertyEncoder propertyEncoder = task.getPropertyEncoder();
+		WmmEncoder wmmEncoder = task.getWmmEncoder();
 		
 		Result res = UNKNOWN;
 		try (ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
 			
 	        logger.info("Starting encoding using " + ctx.getVersion());
-			prover.addConstraint(task.encodeProgram(ctx));
-			prover.addConstraint(task.encodeWmmRelations(ctx));
-	        prover.addConstraint(task.encodeWmmConsistency(ctx));
+			prover.addConstraint(programEncoder.encodeFullProgram(ctx));
+			prover.addConstraint(wmmEncoder.encodeFullMemoryModel(ctx));
 	        prover.push();
-	        
-	        DataRaceEncoder encoder = DataRaceEncoder.fromConfig(task.getConfig());
-	        encoder.initializeEncoding(task, ctx);
-	        prover.addConstraint(encoder.encodeDataRaces(ctx));
-	        
-			BooleanFormula noBoundEventExec = task.getProgramEncoder().encodeBoundEventExec(ctx);
+
+	        prover.addConstraint(propertyEncoder.encodeDataRaces(ctx));
 			
 	        logger.info("Starting first solver.check()");
 			if(prover.isUnsat()) {
 	        	prover.pop();
-				prover.addConstraint(noBoundEventExec);
+				prover.addConstraint(propertyEncoder.encodeBoundEventExec(ctx));
 	            logger.info("Starting second solver.check()");
 	        	res = prover.isUnsat() ? PASS : UNKNOWN;
 	        } else {

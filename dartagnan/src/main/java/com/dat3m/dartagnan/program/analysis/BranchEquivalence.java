@@ -129,7 +129,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         return (Set<Class>)super.getNonTrivialClasses();
     }
 
-    public BranchEquivalence(Program program, Configuration config) throws InvalidConfigurationException {
+    private BranchEquivalence(Program program, Configuration config) throws InvalidConfigurationException {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
         this.program = program;
         config.inject(this);

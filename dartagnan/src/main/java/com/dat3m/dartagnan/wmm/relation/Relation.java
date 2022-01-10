@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation;
 
+import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
@@ -9,6 +10,7 @@ import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -23,7 +25,8 @@ import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
  *
  * @author Florian Furbach
  */
-public abstract class Relation implements Dependent<Relation> {
+//TODO: Remove "Encoder" once we split data and operations appropriately
+public abstract class Relation implements Encoder, Dependent<Relation> {
 
     public static boolean PostFixApprox = false;
 
@@ -34,18 +37,19 @@ public abstract class Relation implements Dependent<Relation> {
 
     protected boolean isEncoded;
 
-    protected TupleSet minTupleSet;
-    protected TupleSet maxTupleSet;
-    protected TupleSet encodeTupleSet;
+    protected TupleSet minTupleSet = null;
+    protected TupleSet maxTupleSet = null;
+    protected TupleSet encodeTupleSet = null;
 
     protected int recursiveGroupId = 0;
     protected boolean forceUpdateRecursiveGroupId = false;
     protected boolean isRecursive = false;
     protected boolean forceDoEncode = false;
 
-    public Relation() {}
+    public Relation() { }
 
     public Relation(String name) {
+        this();
         this.name = name;
     }
 
@@ -67,12 +71,23 @@ public abstract class Relation implements Dependent<Relation> {
         return recursiveGroupId;
     }
 
-    public void initializeEncoding(VerificationTask task, SolverContext ctx){
-        this.task = task;
-        this.minTupleSet = null;
-        this.maxTupleSet = null;
+    // TODO: The following two methods are provided because currently Relations are treated as both,
+    //  data objects and encoders of said data objects.
+    //  Once we split these aspects, "initializeEncoding" may be removed altogether.
+
+
+    public void initializeEncoding(SolverContext ctx) {
         this.isEncoded = false;
-        encodeTupleSet = new TupleSet();
+        this.encodeTupleSet = new TupleSet();
+        Preconditions.checkState(this.task != null,
+                "No available relation data to encode. Perform RelationAnalysis before encoding.");
+    }
+
+    // TODO: We misuse <task> as data object and analysis information object.
+    public void initializeDataContext(VerificationTask task) {
+        this.task = task;
+        this.maxTupleSet = null;
+        this.minTupleSet = null;
     }
 
     public abstract TupleSet getMinTupleSet();

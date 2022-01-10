@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
-import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -12,12 +11,6 @@ public class GlobalSettings {
 
     // === Parsing ===
     public static final boolean ATOMIC_AS_LOCK = false;
-
-    // ------ Symm breaking ------
-    public static final boolean ENABLE_SYMMETRY_BREAKING = true;
-    public static final boolean BREAK_SYMMETRY_BY_SYNC_DEGREE = true;
-    public static final String BREAK_SYMMETRY_ON_RELATION = RelationNameRepository.RF;
-    public static final int LEX_LEADER_SIZE = 1000;
 
     // === Static analysis ===
     public static final boolean REDUCE_ACYCLICITY_ENCODE_SETS = true;
@@ -40,12 +33,6 @@ public class GlobalSettings {
     public static void LogGlobalSettings() {
         // General settings
     	logger.info("ATOMIC_AS_LOCK: " + ATOMIC_AS_LOCK);
-    	logger.info("ENABLE_SYMMETRY_BREAKING: " + ENABLE_SYMMETRY_BREAKING);
-    	if (ENABLE_SYMMETRY_BREAKING) {
-            logger.info("-- Breaking on Relation: " + BREAK_SYMMETRY_ON_RELATION);
-            logger.info("-- Break by sync-degree: " + BREAK_SYMMETRY_BY_SYNC_DEGREE);
-            logger.info("-- Lex leader size: " + LEX_LEADER_SIZE);
-        }
     	logger.info("MAX_RECURSION_DEPTH: " + MAX_RECURSION_DEPTH);
 
     	// Refinement settings

@@ -1,6 +1,10 @@
 package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
+import com.dat3m.dartagnan.encoding.ProgramEncoder;
+import com.dat3m.dartagnan.encoding.PropertyEncoder;
+import com.dat3m.dartagnan.encoding.SymmetryEncoder;
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.apache.logging.log4j.LogManager;
@@ -29,35 +33,38 @@ public class TwoSolvers {
        	}
 
         task.performStaticProgramAnalyses();
-        task.initialiseEncoding(ctx);
+        task.performStaticWmmAnalyses();
+        task.initializeEncoders(ctx);
+
+        ProgramEncoder programEncoder = task.getProgramEncoder();
+        PropertyEncoder propertyEncoder = task.getPropertyEncoder();
+        WmmEncoder wmmEncoder = task.getWmmEncoder();
+        SymmetryEncoder symmEncoder = task.getSymmetryEncoder();
 
         logger.info("Starting encoding using " + ctx.getVersion());
-        BooleanFormula encodeCF = task.encodeProgram(ctx);
-        prover1.addConstraint(encodeCF);
-        prover2.addConstraint(encodeCF);
+        BooleanFormula encodeProg = programEncoder.encodeFullProgram(ctx);
+        prover1.addConstraint(encodeProg);
+        prover2.addConstraint(encodeProg);
         
-        BooleanFormula encodeWmm = task.encodeWmmRelations(ctx);
+        BooleanFormula encodeWmm = wmmEncoder.encodeFullMemoryModel(ctx);
 		prover1.addConstraint(encodeWmm);
         prover2.addConstraint(encodeWmm);
-        
-        BooleanFormula encodeConsistency = task.encodeWmmConsistency(ctx);
-		prover1.addConstraint(encodeConsistency);
-        prover2.addConstraint(encodeConsistency);
        	
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
-        BooleanFormula encodeWitness = task.encodeWitness(ctx);
+        BooleanFormula encodeWitness = task.getWitness().encode(task.getProgram(), ctx);
 		prover1.addConstraint(encodeWitness);
         prover2.addConstraint(encodeWitness);
 
-        prover1.addConstraint(task.encodeSymmetryBreaking(ctx));
-        prover2.addConstraint(task.encodeSymmetryBreaking(ctx));
+        BooleanFormula encodeSymm = symmEncoder.encodeFullSymmetry(ctx);
+        prover1.addConstraint(encodeSymm);
+        prover2.addConstraint(encodeSymm);
 
-        prover1.addConstraint(task.encodeAssertions(ctx));
+        prover1.addConstraint(propertyEncoder.encodeAssertions(ctx));
 
         logger.info("Starting first solver.check()");
         if(prover1.isUnsat()) {
-			prover2.addConstraint(task.getProgramEncoder().encodeBoundEventExec(ctx));
+			prover2.addConstraint(propertyEncoder.encodeBoundEventExec(ctx));
             logger.info("Starting second solver.check()");
             res = prover2.isUnsat() ? PASS : Result.UNKNOWN;
         } else {

@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.utils.symmetry;
+package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
@@ -12,6 +12,12 @@ import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -20,39 +26,77 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.GlobalSettings.BREAK_SYMMETRY_BY_SYNC_DEGREE;
-import static com.dat3m.dartagnan.GlobalSettings.BREAK_SYMMETRY_ON_RELATION;
+import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_BY_SYNC_DEGREE;
+import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_ON_RELATION;
 
-public class SymmetryBreaking {
+@Options
+public class SymmetryEncoder implements Encoder {
+
+    private static final Logger logger = LogManager.getLogger(SymmetryEncoder.class);
 
     private final VerificationTask task;
     private final ThreadSymmetry symm;
     private final Relation rel;
 
-    public SymmetryBreaking(VerificationTask task) {
-        this.task = task;
+    @Option(name = BREAK_SYMMETRY_ON_RELATION,
+            description = "The relation on which symmetry breaking should happen." +
+            "Empty, if symmetry shall not be encoded.",
+            secure = true)
+    private String symmBreakRelName = "rf";
+
+    @Option(name = BREAK_SYMMETRY_BY_SYNC_DEGREE,
+            description = "Orders the relation edges to break on based on their synchronization strength.",
+            secure = true)
+    private boolean breakBySyncDegree = true;
+
+    // =====================================================================
+
+    private SymmetryEncoder(VerificationTask task, Configuration config) throws InvalidConfigurationException {
+        this.task = Preconditions.checkNotNull(task);
+        Preconditions.checkArgument(task.getThreadSymmetry() != null,
+                "A ThreadSymmetry must get computed before symmetry can be encoded.");
         this.symm = task.getThreadSymmetry();
+        config.inject(this);
 
         RelationRepository repo = task.getMemoryModel().getRelationRepository();
-        Preconditions.checkState(repo.containsRelation(BREAK_SYMMETRY_ON_RELATION),
-                "Unknown relation: " + BREAK_SYMMETRY_ON_RELATION);
-        this.rel = repo.getRelation(BREAK_SYMMETRY_ON_RELATION);
-
+        if (symmBreakRelName.isEmpty()) {
+            logger.info("Symmetry breaking disabled.");
+            this.rel = null;
+        } else if (!repo.containsRelation(symmBreakRelName)) {
+            logger.warn("The wmm has no relation named {} to break symmetry on." +
+                    " Symmetry breaking was disabled.", symmBreakRelName);
+            this.rel = null;
+        } else {
+            this.rel = repo.getRelation(symmBreakRelName);
+            logger.info("Breaking symmetry on relation: " + symmBreakRelName);
+            logger.info("Breaking by sync degree: " + breakBySyncDegree);
+        }
     }
 
-    public BooleanFormula encode(SolverContext ctx) {
+    public static SymmetryEncoder fromConfig(VerificationTask task, Configuration config) throws InvalidConfigurationException {
+        return new SymmetryEncoder(task, config);
+    }
+
+    @Override
+    public void initializeEncoding(SolverContext context) { }
+
+    public BooleanFormula encodeFullSymmetry(SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
+        if (rel == null) {
+            return enc;
+        }
+
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
-            enc = bmgr.and(enc, encode(symmClass, ctx));
+            enc = bmgr.and(enc, encodeSymmetryClass(symmClass, ctx));
         }
         return enc;
     }
 
-    public BooleanFormula encode(EquivalenceClass<Thread> symmClass, SolverContext ctx) {
+    public BooleanFormula encodeSymmetryClass(EquivalenceClass<Thread> symmClass, SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
-        if (symmClass.getEquivalence() != symm) {
+        if (rel == null || symmClass.getEquivalence() != symm) {
             return enc;
         }
 
@@ -94,7 +138,7 @@ public class SymmetryBreaking {
     }
 
     private void sort(List<Tuple> row) {
-        if (!BREAK_SYMMETRY_BY_SYNC_DEGREE) {
+        if (!breakBySyncDegree) {
             // ===== Natural order =====
             row.sort(Comparator.naturalOrder());
             return;

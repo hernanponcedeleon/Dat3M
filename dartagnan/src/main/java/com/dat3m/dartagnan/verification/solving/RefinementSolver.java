@@ -1,6 +1,10 @@
 package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
+import com.dat3m.dartagnan.encoding.ProgramEncoder;
+import com.dat3m.dartagnan.encoding.PropertyEncoder;
+import com.dat3m.dartagnan.encoding.SymmetryEncoder;
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
@@ -29,7 +33,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 
-import static com.dat3m.dartagnan.GlobalSettings.ENABLE_SYMMETRY_BREAKING;
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONCLUSIVE;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
@@ -61,25 +64,25 @@ public class RefinementSolver {
         }
 
         task.performStaticProgramAnalyses();
-		task.initialiseEncoding(ctx);
+        task.performStaticWmmAnalyses();
+		task.initializeEncoders(ctx);
+
+        ProgramEncoder programEncoder = task.getProgramEncoder();
+        PropertyEncoder propertyEncoder = task.getPropertyEncoder();
+        WmmEncoder baselineEncoder = task.getBaselineWmmEncoder();
+        SymmetryEncoder symmEncoder = task.getSymmetryEncoder();
 
         Program program = task.getProgram();
         WMMSolver solver = new WMMSolver(task);
         Refiner refiner = new Refiner(task);
         CAATSolver.Status status = INCONSISTENT;
 
-        task.getMemoryModel().performRelationalAnalysis(false);
-
-        prover.addConstraint(task.encodeProgram(ctx));
-        prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
-        prover.addConstraint(task.encodeBaselineWmmConsistency(ctx));
-
-        if (ENABLE_SYMMETRY_BREAKING) {
-            prover.addConstraint(task.encodeSymmetryBreaking(ctx));
-        }
+        prover.addConstraint(programEncoder.encodeFullProgram(ctx));
+        prover.addConstraint(baselineEncoder.encodeFullMemoryModel(ctx));
+        prover.addConstraint(symmEncoder.encodeFullSymmetry(ctx));
 
         prover.push();
-        prover.addConstraint(task.encodeAssertions(ctx));
+        prover.addConstraint(propertyEncoder.encodeAssertions(ctx));
 
         //  ------ Just for statistics ------
         List<DNF<CoreLiteral>> foundCoreReasons = new ArrayList<>();
@@ -177,7 +180,7 @@ public class RefinementSolver {
             lastTime = System.currentTimeMillis();
             prover.pop();
             // Add bound check
-            prover.addConstraint(task.getProgramEncoder().encodeBoundEventExec(ctx));
+            prover.addConstraint(propertyEncoder.encodeBoundEventExec(ctx));
             // Add back the constraints found during Refinement (TODO: We might need to perform a second refinement)
             for (DNF<CoreLiteral> reason : foundCoreReasons) {
                 prover.addConstraint(refiner.refine(reason, ctx));

@@ -57,9 +57,10 @@ public class RelRMW extends StaticRelation {
         forceDoEncode = true;
     }
 
+
     @Override
-    public void initializeEncoding(VerificationTask task, SolverContext ctx){
-        super.initializeEncoding(task, ctx);
+    public void initializeDataContext(VerificationTask task) {
+        super.initializeDataContext(task);
         this.baseMaxTupleSet = null;
     }
 

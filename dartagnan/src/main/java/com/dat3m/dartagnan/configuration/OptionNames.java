@@ -16,6 +16,8 @@ public class OptionNames {
 	public static final String CO_ANTISYMMETRY = "encoding.co.antiSymm";
 	public static final String ENCODE_FINAL_MEMVALUES = "encoding.encodeFinalMemoryValues";
 	public static final String PRECISION = "encoding.precision";
+	public static final String BREAK_SYMMETRY_ON_RELATION = "encoding.symmetry.breakOnRelation";
+	public static final String BREAK_SYMMETRY_BY_SYNC_DEGREE = "encoding.symmetry.orderBySyncDegree";
 	
 	// Program Processing Options
 	public static final String BOUND = "program.processing.loopBound";

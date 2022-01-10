@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -31,8 +30,8 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
     }
 
     @Override
-    public void initializeEncoding(VerificationTask task, SolverContext ctx) {
-        super.initializeEncoding(task, ctx);
+    public void initializeEncoding(SolverContext ctx) {
+        super.initializeEncoding(ctx);
         execVar = is(EType.STRONG) ? cfVar : ctx.getFormulaManager().makeVariable(BooleanType, "exec(" + repr() + ")");
     }
 

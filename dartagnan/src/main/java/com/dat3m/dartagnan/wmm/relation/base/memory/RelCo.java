@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -61,17 +60,17 @@ public class RelCo extends Relation {
     }
 
     @Override
-	public void initializeEncoding(VerificationTask task, SolverContext ctx) {
-		super.initializeEncoding(task,ctx);
-		try {
-			task.getConfig().inject(this);
-    		logger.info("{}: {}", CO_ANTISYMMETRY, antisymmetry);
+    public void initializeEncoding(SolverContext ctx) {
+        super.initializeEncoding(ctx);
+        try {
+            task.getConfig().inject(this);
+            logger.info("{}: {}", CO_ANTISYMMETRY, antisymmetry);
             logger.info("{}: {}", ENCODE_FINAL_MEMVALUES, encodeLastCo);
-		} catch(InvalidConfigurationException e) {
-			logger.warn(e.getMessage());
-		}
-	}
-    
+        } catch(InvalidConfigurationException e) {
+            logger.warn(e.getMessage());
+        }
+    }
+
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){

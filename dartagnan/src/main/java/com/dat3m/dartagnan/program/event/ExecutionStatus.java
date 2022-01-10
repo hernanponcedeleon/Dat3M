@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Formula;
@@ -28,8 +27,8 @@ public class ExecutionStatus extends Event implements RegWriter {
     }
 
     @Override
-    public void initializeEncoding(VerificationTask task, SolverContext ctx) {
-        super.initializeEncoding(task, ctx);
+    public void initializeEncoding(SolverContext ctx) {
+        super.initializeEncoding(ctx);
         regResultExpr = register.toIntFormulaResult(this, ctx);
     }
 
