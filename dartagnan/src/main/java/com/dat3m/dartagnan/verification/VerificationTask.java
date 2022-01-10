@@ -37,10 +37,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /*
 Represents a verification task.
  */
-//TODO: We should separate a task object into a pure data part (Program, Wmm, Witness)
-// and a metadata/analysis part (Config, BranchEquivalence, AliasAnalysis, ThreadSymmetry etc.)
-// These could be called "VerificationObject" and "VerificationContext"
-//TODO 2: The encoders should also go from this class.
+//TODO: The encoders should go from this class
 @Options
 public class VerificationTask {
 
