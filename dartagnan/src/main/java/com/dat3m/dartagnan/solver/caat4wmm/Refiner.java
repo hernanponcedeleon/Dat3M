@@ -35,12 +35,14 @@ public class Refiner {
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
 
     private final RefinementTask task;
+    private final ThreadSymmetry symm;
     private final List<Function<Event, Event>> symmPermutations;
     private final SymmetryLearning learningOption;
 
     public Refiner(RefinementTask task) {
         this.task = task;
         this.learningOption = REFINEMENT_SYMMETRY_LEARNING;
+        symm = task.getAnalysisContext().requires(ThreadSymmetry.class);
         symmPermutations = computeSymmetryPermutations();
     }
 
@@ -69,7 +71,6 @@ public class Refiner {
     // Depending on the <learningOption>, the set of computed permutations differs.
     // In particular, for the option NONE, only the identity permutation will be returned.
     private List<Function<Event, Event>> computeSymmetryPermutations() {
-        ThreadSymmetry symm = task.getThreadSymmetry();
         Set<? extends EquivalenceClass<Thread>> symmClasses = symm.getNonTrivialClasses();
         List<Function<Event, Event>> perms = new ArrayList<>();
         perms.add(Function.identity());

@@ -33,7 +33,7 @@ public class CoreReasoner {
     public CoreReasoner(VerificationTask task, ExecutionGraph executionGraph) {
         this.executionGraph = executionGraph;
         this.memoryModel = task.getMemoryModel();
-        this.eq = task.getBranchEquivalence();
+        this.eq = task.getAnalysisContext().requires(BranchEquivalence.class);
     }
 
 

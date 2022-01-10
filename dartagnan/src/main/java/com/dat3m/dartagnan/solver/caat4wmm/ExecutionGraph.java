@@ -240,8 +240,9 @@ public class ExecutionGraph {
             } else if (relClass == RelRangeIdentity.class) {
                 graph = new RangeIdentityGraph(innerGraph);
             } else if (relClass == RelTransRef.class) {
+                //FIXME: This is very, very sketchy and instead of doing this
+                // a WmmProcessor should run that transforms the wmm accordingly.
                 RelTrans relTrans = new RelTrans(innerRelation);
-                relTrans.initializeEncoding(verificationTask, null); // A little sketchy
                 RelationGraph transGraph = getOrCreateGraphFromRelation(relTrans);
                 graph = new ReflexiveClosureGraph(transGraph);
             } else {

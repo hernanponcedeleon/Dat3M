@@ -1,8 +1,9 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.configuration.Arch;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
@@ -10,7 +11,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 
-public abstract class Event implements Comparable<Event> {
+public abstract class Event implements Encoder, Comparable<Event> {
 
 	public static final int PRINT_PAD_EXTRA = 50;
 
@@ -160,7 +161,9 @@ public abstract class Event implements Comparable<Event> {
 	// Encoding
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void initializeEncoding(VerificationTask task, SolverContext ctx) { }
+	public void initializeEncoding(SolverContext ctx) { }
+
+	public void runLocalAnalysis(VerificationTask task) { }
 	
 	public String repr() {
 		if (cId == -1) {

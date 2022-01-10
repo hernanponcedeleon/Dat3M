@@ -30,7 +30,7 @@ abstract class BasicRegRelation extends StaticRelation {
     void mkTupleSets(Collection<Event> regReaders) {
         maxTupleSet = new TupleSet();
         minTupleSet = new TupleSet();
-        BranchEquivalence eq = task.getBranchEquivalence();
+        BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
         ImmutableMap<Register, ImmutableList<Event>> regWriterMap = task.getProgram().getCache().getRegWriterMap();
         for(Event regReader : regReaders){
             for(Register register : getRegisters(regReader)){

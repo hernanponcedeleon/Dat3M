@@ -27,7 +27,7 @@ public class RelLoc extends Relation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            AliasAnalysis alias = task.getAliasAnalysis();
+            AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
             minTupleSet = new TupleSet();
             for (Tuple t : getMaxTupleSet()) {
                 if (alias.mustAlias((MemEvent) t.getFirst(), (MemEvent) t.getSecond())) {
@@ -41,7 +41,7 @@ public class RelLoc extends Relation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            AliasAnalysis alias = task.getAliasAnalysis();;
+            AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
             maxTupleSet = new TupleSet();
             Collection<Event> events = task.getProgram().getCache().getEvents(FilterBasic.get(MEMORY));
             for(Event e1 : events){

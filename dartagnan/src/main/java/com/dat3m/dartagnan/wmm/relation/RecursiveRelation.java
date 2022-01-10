@@ -35,11 +35,21 @@ public class RecursiveRelation extends Relation {
         return name;
     }
 
-    public void initializeEncoding(VerificationTask task, SolverContext ctx){
+    @Override
+    public void initializeEncoding(SolverContext ctx){
         if(doRecurse){
             doRecurse = false;
-            super.initializeEncoding(task, ctx);
-            r1.initializeEncoding(task, ctx);
+            super.initializeEncoding(ctx);
+            r1.initializeEncoding(ctx);
+        }
+    }
+
+    @Override
+    public void initializeRelationAnalysis(VerificationTask task) {
+        if(doRecurse){
+            doRecurse = false;
+            super.initializeRelationAnalysis(task);
+            r1.initializeRelationAnalysis(task);
         }
     }
 

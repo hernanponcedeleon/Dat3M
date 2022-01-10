@@ -37,7 +37,7 @@ public class RelFencerel extends StaticRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            BranchEquivalence eq = task.getBranchEquivalence();
+            BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
             minTupleSet = new TupleSet();
             for(Thread t : task.getProgram().getThreads()){
                 List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));

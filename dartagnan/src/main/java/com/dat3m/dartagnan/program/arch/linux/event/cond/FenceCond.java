@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.arch.linux.event.cond;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -26,8 +25,8 @@ public class FenceCond extends Fence {
     }
 
     @Override
-    public void initializeEncoding(VerificationTask task, SolverContext ctx) {
-        super.initializeEncoding(task, ctx);
+    public void initializeEncoding(SolverContext ctx) {
+        super.initializeEncoding(ctx);
         execVar = ctx.getFormulaManager().makeVariable(BooleanType, "exec(" + repr() + ")");
     }
 
