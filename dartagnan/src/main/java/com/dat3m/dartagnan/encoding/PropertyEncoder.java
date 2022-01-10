@@ -79,7 +79,7 @@ public class PropertyEncoder implements Encoder {
                 "The provided WMM needs an 'acyclic(hb)' axiom to encode data races.");
         logger.info("Encoding data-races");
 
-        AliasAnalysis alias = task.getAliasAnalysis();
+        AliasAnalysis alias = task.getAnalysisContext().requires(AliasAnalysis.class);
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
 

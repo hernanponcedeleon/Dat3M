@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
@@ -18,6 +20,9 @@ public class RelationAnalysis {
     private RelationAnalysis(Program program, Wmm memoryModel, VerificationTask task) {
         this.memoryModel = Preconditions.checkNotNull(memoryModel);
         this.task = Preconditions.checkNotNull(task);
+        task.getAnalysisContext().requires(AliasAnalysis.class);
+        task.getAnalysisContext().requires(BranchEquivalence.class);
+        task.getAnalysisContext().requires(WmmAnalysis.class);
         run();
     }
 
@@ -27,33 +32,37 @@ public class RelationAnalysis {
 
     private void run() {
         // Init data context so that each relation is able to compute its may/must sets.
-        for(String relName : Wmm.BASE_RELATIONS){
-            memoryModel.getRelationRepository().getRelation(relName).initializeRelationAnalysis(task);
-        }
         for (Axiom ax : memoryModel.getAxioms()) {
             ax.getRelation().updateRecursiveGroupId(ax.getRelation().getRecursiveGroupId());
         }
         for(RecursiveGroup recursiveGroup : memoryModel.getRecursiveGroups()){
             recursiveGroup.setDoRecurse();
         }
+
+        // ------------------------------------------------
+        for(String relName : Wmm.BASE_RELATIONS){
+            memoryModel.getRelationRepository().getRelation(relName).initializeRelationAnalysis(task);
+        }
         for (Relation rel : memoryModel.getRelationRepository().getRelations()) {
             rel.initializeRelationAnalysis(task);
         }
         for (Axiom ax : memoryModel.getAxioms()) {
-            ax.initializeDataContext(task);
+            ax.initializeRelationAnalysis(task);
         }
 
+        // ------------------------------------------------
+        for(String relName : Wmm.BASE_RELATIONS){
+            Relation baseRel = memoryModel.getRelationRepository().getRelation(relName);
+            baseRel.getMaxTupleSet();
+            baseRel.getMinTupleSet();
+        }
         for (RecursiveGroup recursiveGroup : memoryModel.getRecursiveGroups()) {
             recursiveGroup.initMaxTupleSets();
             recursiveGroup.initMinTupleSets();
         }
-
         for (Axiom ax : memoryModel.getAxioms()) {
             ax.getRelation().getMaxTupleSet();
-        }
-
-        for(String relName : Wmm.BASE_RELATIONS){
-            memoryModel.getRelationRepository().getRelation(relName).getMaxTupleSet();
+            ax.getRelation().getMinTupleSet();
         }
 
 

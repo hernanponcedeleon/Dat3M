@@ -53,9 +53,7 @@ public class SymmetryEncoder implements Encoder {
 
     private SymmetryEncoder(VerificationTask task, Configuration config) throws InvalidConfigurationException {
         this.task = Preconditions.checkNotNull(task);
-        Preconditions.checkArgument(task.getThreadSymmetry() != null,
-                "A ThreadSymmetry must get computed before symmetry can be encoded.");
-        this.symm = task.getThreadSymmetry();
+        this.symm = task.getAnalysisContext().requires(ThreadSymmetry.class);
         config.inject(this);
 
         RelationRepository repo = task.getMemoryModel().getRelationRepository();

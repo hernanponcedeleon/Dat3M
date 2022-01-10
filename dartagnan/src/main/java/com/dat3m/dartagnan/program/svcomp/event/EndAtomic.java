@@ -48,9 +48,8 @@ public class EndAtomic extends Event {
 
 	@Override
 	public void runLocalAnalysis(VerificationTask task) {
-		super.runLocalAnalysis(task);
 		//===== Temporary fix to rematch atomic blocks correctly =====
-		BranchEquivalence eq = task.getBranchEquivalence();
+		BranchEquivalence eq = task.getAnalysisContext().requires(BranchEquivalence.class);
 		List<Event> begins = this.thread.getEvents()
 				.stream().filter( x -> x instanceof BeginAtomic && eq.isReachableFrom(x, this))
 				.collect(Collectors.toList());

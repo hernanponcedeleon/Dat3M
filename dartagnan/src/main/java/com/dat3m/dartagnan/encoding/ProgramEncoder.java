@@ -54,10 +54,12 @@ public class ProgramEncoder implements Encoder {
     //TODO: We misuse the <task> object as information pool for static analyses here
     // We ignore the program, wmm etc. that is contained in <task>.
     private final VerificationTask task;
+    private final BranchEquivalence eq;
 
     private ProgramEncoder(Program program, VerificationTask task, Configuration config) throws InvalidConfigurationException {
         this.program = Preconditions.checkNotNull(program);
         this.task = Preconditions.checkNotNull(task);
+        this.eq = task.getAnalysisContext().requires(BranchEquivalence.class);
         Preconditions.checkArgument(program.isCompiled(), "Program needs to get compiled before it can be encoded.");
         config.inject(this);
 
@@ -73,17 +75,17 @@ public class ProgramEncoder implements Encoder {
 
     public void initializeEncoding(SolverContext ctx) {
         for(Event e : program.getEvents()){
-            initEvent(e, task, ctx);
+            initEvent(e, ctx);
         }
     }
 
-    private void initEvent(Event e, VerificationTask task, SolverContext ctx){
+    private void initEvent(Event e, SolverContext ctx){
         Preconditions.checkArgument(e.getCId() >= 0, "Event cID is negative for %s. Event was not compiled yet?", e);
 
         FormulaManager fmgr = ctx.getFormulaManager();
 
         boolean mergeVars = shouldMergeCFVars && !shouldAllowPartialExecutions;
-        String repr = mergeVars ? task.getBranchEquivalence().getRepresentative(e).repr() : e.repr();
+        String repr = mergeVars ? eq.getRepresentative(e).repr() : e.repr();
         e.setCfVar(fmgr.makeVariable(BooleanType, "cf(" + repr + ")"));
 
         e.initializeEncoding(ctx);
@@ -174,7 +176,6 @@ public class ProgramEncoder implements Encoder {
             eMap.computeIfAbsent(reg, key -> new ArrayList<>()).add(e);
         }
 
-        BranchEquivalence eq = task.getBranchEquivalence();
         BooleanFormula enc = bmgr.makeTrue();
         for (Register reg : eMap.keySet()) {
             Thread thread = program.getThreads().get(reg.getThreadId());

@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,6 +76,7 @@ public class CoSymmetryBreaking {
 
     private final VerificationTask task;
     private final ThreadSymmetry symm;
+    private final AliasAnalysis alias;
     private final Relation co;
 
     private final Map<EquivalenceClass<Thread>, Info> infoMap;
@@ -87,21 +89,17 @@ public class CoSymmetryBreaking {
     }
 
     public CoSymmetryBreaking(VerificationTask task) {
-        this.task = task;
-        this.symm = task.getThreadSymmetry();
+        this.task = Preconditions.checkNotNull(task);
+        this.symm = task.getAnalysisContext().requires(ThreadSymmetry.class);
+        this.alias = task.getAnalysisContext().requires(AliasAnalysis.class);
         this.co = task.getMemoryModel().getRelationRepository().getRelation(RelationNameRepository.CO);
         infoMap = new HashMap<>();
-    }
-
-    public void initialize() {
-        infoMap.clear();
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
             initialize(symmClass);
         }
     }
 
     private void initialize(EquivalenceClass<Thread> symmClass) {
-        AliasAnalysis alias = task.getAliasAnalysis();
         Info info = new Info();
         infoMap.put(symmClass, info);
 

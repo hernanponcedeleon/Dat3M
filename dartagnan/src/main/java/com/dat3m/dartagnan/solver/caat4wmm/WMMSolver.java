@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.google.common.base.Preconditions;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -27,8 +27,7 @@ public class WMMSolver {
     private final CoreReasoner reasoner;
 
     public WMMSolver(VerificationTask task) {
-        Preconditions.checkArgument(task.getRelationAnalysis() != null,
-                "A relation analysis has to be performed before the WMMSolver gets constructed.");
+        task.getAnalysisContext().requires(RelationAnalysis.class);
         this.executionGraph = new ExecutionGraph(task, true);
         this.executionModel = new ExecutionModel(task);
         this.reasoner = new CoreReasoner(task, executionGraph);

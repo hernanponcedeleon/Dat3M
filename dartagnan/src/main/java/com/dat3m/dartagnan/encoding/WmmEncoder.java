@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
@@ -21,15 +22,12 @@ public class WmmEncoder implements Encoder {
     private static final Logger logger = LogManager.getLogger(WmmEncoder.class);
 
     private final Wmm memoryModel;
-    //TODO: We misuse the <task> object as information pool for static analyses here
-    // We ignore the program, wmm etc. that is contained in <task>.
-    private final VerificationTask task;
 
     // =====================================================================
 
     private WmmEncoder(Wmm memoryModel, VerificationTask task) {
         this.memoryModel = Preconditions.checkNotNull(memoryModel);
-        this.task = Preconditions.checkNotNull(task);
+        task.getAnalysisContext().requires(RelationAnalysis.class);
     }
 
     public static WmmEncoder fromConfig(Wmm memoryModel, VerificationTask task, Configuration config) throws InvalidConfigurationException {

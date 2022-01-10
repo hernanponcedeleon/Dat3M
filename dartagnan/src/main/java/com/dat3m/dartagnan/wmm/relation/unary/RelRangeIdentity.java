@@ -29,7 +29,7 @@ public class RelRangeIdentity extends UnaryRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            BranchEquivalence eq = task.getBranchEquivalence();
+            BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
             minTupleSet = new TupleSet();
             r1.getMinTupleSet().stream()
                     .filter(t -> t.getFirst().cfImpliesExec() && eq.isImplied(t.getSecond(), t.getFirst()))

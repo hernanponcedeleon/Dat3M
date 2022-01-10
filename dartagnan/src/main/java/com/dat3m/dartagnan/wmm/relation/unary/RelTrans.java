@@ -48,7 +48,7 @@ public class RelTrans extends UnaryRelation {
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             //TODO: Make sure this is correct and efficient
-            BranchEquivalence eq = task.getBranchEquivalence();
+            BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
             minTupleSet = new TupleSet(r1.getMinTupleSet());
             boolean changed;
             int size = minTupleSet.size();

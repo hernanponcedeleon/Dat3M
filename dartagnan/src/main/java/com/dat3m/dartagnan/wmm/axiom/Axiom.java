@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
 import com.dat3m.dartagnan.utils.dependable.Dependent;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -21,6 +22,7 @@ public abstract class Axiom implements Dependent<Relation> {
     protected Relation rel;
 
     protected VerificationTask task;
+    protected Context analysisContext;
 
     Axiom(Relation rel) {
         this.rel = rel;
@@ -31,8 +33,9 @@ public abstract class Axiom implements Dependent<Relation> {
                 "No available relation data to encode. Perform RelationAnalysis before encoding.");
     }
 
-    public void initializeDataContext(VerificationTask task) {
+    public void initializeRelationAnalysis(VerificationTask task) {
         this.task = task;
+        this.analysisContext = task.getAnalysisContext();
     }
 
     @Override

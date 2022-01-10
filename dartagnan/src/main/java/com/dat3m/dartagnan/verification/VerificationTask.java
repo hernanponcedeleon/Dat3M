@@ -51,13 +51,8 @@ public class VerificationTask {
     private final Wmm memoryModel;
     private final WitnessGraph witness;
     private final Configuration config;
+    private final Context analysisContext;
 
-    // Analysis information
-    protected BranchEquivalence branchEquivalence;
-    protected AliasAnalysis aliasAnalysis;
-    protected ThreadSymmetry threadSymmetry;
-    protected WmmAnalysis wmmAnalysis;
-    protected RelationAnalysis relationAnalysis;
 
     // Encoders
     protected ProgramEncoder progEncoder;
@@ -71,6 +66,7 @@ public class VerificationTask {
         this.memoryModel = checkNotNull(memoryModel);
         this.witness = checkNotNull(witness);
         this.config = checkNotNull(config);
+        this.analysisContext = Context.create();
 
         config.recursiveInject(this);
     }
@@ -91,6 +87,7 @@ public class VerificationTask {
     public WitnessGraph getWitness() {
     	return witness;
     }
+    public Context getAnalysisContext() { return analysisContext; }
 
     public Set<Relation> getRelations() {
     	return memoryModel.getRelationRepository().getRelations();
@@ -101,16 +98,6 @@ public class VerificationTask {
     public DependencyGraph<Relation> getRelationDependencyGraph() {
         return memoryModel.getRelationDependencyGraph();
     }
-
-    public BranchEquivalence getBranchEquivalence() {
-        return branchEquivalence;
-    }
-	public AliasAnalysis getAliasAnalysis() {
-		return aliasAnalysis;
-	}
-    public ThreadSymmetry getThreadSymmetry() { return threadSymmetry; }
-    public WmmAnalysis getWmmAnalysis() { return wmmAnalysis; }
-    public RelationAnalysis getRelationAnalysis() { return relationAnalysis; }
 
     public ProgramEncoder getProgramEncoder() { return progEncoder; }
     public PropertyEncoder getPropertyEncoder() { return propertyEncoder; }
@@ -125,9 +112,9 @@ public class VerificationTask {
     }
 
     public void performStaticProgramAnalyses() throws InvalidConfigurationException {
-        branchEquivalence = BranchEquivalence.fromConfig(program, config);
-        aliasAnalysis = AliasAnalysis.fromConfig(program, config);
-        threadSymmetry = ThreadSymmetry.fromConfig(program, config);
+        analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
+        analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, config));
+        analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
 
         for (Thread thread : program.getThreads()) {
             for (Event e : thread.getEvents()) {
@@ -140,8 +127,8 @@ public class VerificationTask {
     }
 
     public void performStaticWmmAnalyses() throws InvalidConfigurationException {
-        wmmAnalysis = WmmAnalysis.fromConfig(memoryModel, config);
-        relationAnalysis = RelationAnalysis.fromConfig(program, memoryModel, this, config);
+        analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(memoryModel, config));
+        analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(program, memoryModel, this, config));
     }
 
     public void initializeEncoders(SolverContext ctx) throws InvalidConfigurationException {

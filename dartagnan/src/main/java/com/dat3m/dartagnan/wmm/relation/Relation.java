@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
@@ -34,6 +35,7 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     protected String term;
 
     protected VerificationTask task;
+    protected Context analysisContext;
 
     protected boolean isEncoded;
 
@@ -77,7 +79,7 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
 
     // Due to being an encoder
     public void initializeEncoding(SolverContext ctx) {
-        Preconditions.checkState(this.task != null,
+        Preconditions.checkState(this.maxTupleSet != null && this.minTupleSet != null,
                 "No available relation data to encode. Perform RelationAnalysis before encoding.");
         this.isEncoded = false;
         this.encodeTupleSet = new TupleSet();
@@ -87,6 +89,7 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     // Due to partaking in relation analysis
     public void initializeRelationAnalysis(VerificationTask task) {
         this.task = task;
+        this.analysisContext = task.getAnalysisContext();
         this.maxTupleSet = null;
         this.minTupleSet = null;
     }
@@ -188,7 +191,7 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
             e1 = e2;
             e2 = temp;
         }
-        BranchEquivalence eq = task.getBranchEquivalence();
+        BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
         if (eq.isImplied(e1, e2) && e2.cfImpliesExec()) {
             return e1.exec();
         } else if (eq.isImplied(e2 ,e1) && e1.cfImpliesExec()) {
@@ -202,7 +205,7 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     }
 
     protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {
-        BranchEquivalence eq = task.getBranchEquivalence();
+        BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
         tupleSet.removeIf(t -> eq.areMutuallyExclusive(t.getFirst(), t.getSecond()));
     }
 
