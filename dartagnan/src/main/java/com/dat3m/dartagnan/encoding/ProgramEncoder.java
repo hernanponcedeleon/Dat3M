@@ -60,7 +60,6 @@ public class ProgramEncoder implements Encoder {
         this.program = Preconditions.checkNotNull(program);
         this.task = Preconditions.checkNotNull(task);
         this.eq = task.getAnalysisContext().requires(BranchEquivalence.class);
-        Preconditions.checkArgument(program.isCompiled(), "Program needs to get compiled before it can be encoded.");
         config.inject(this);
 
         logger.info("{}: {}", ALLOW_PARTIAL_EXECUTIONS, shouldAllowPartialExecutions);

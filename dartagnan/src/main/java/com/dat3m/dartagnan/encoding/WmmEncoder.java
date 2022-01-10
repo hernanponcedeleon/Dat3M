@@ -40,9 +40,9 @@ public class WmmEncoder implements Encoder {
             memoryModel.getRelationRepository().getRelation(relName);
         }
 
-        for (Axiom ax : memoryModel.getAxioms()) {
+        /*for (Axiom ax : memoryModel.getAxioms()) {
             ax.getRelation().updateRecursiveGroupId(ax.getRelation().getRecursiveGroupId());
-        }
+        }*/
 
         for(RecursiveGroup recursiveGroup : memoryModel.getRecursiveGroups()){
             recursiveGroup.setDoRecurse();

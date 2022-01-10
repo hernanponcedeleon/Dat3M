@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
@@ -68,7 +69,7 @@ public class ExceptionsTest {
     	BranchReordering.newInstance().run(p);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = UnsatisfiedRequirementException.class)
     public void initializedBeforeCompileException() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);

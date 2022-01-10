@@ -115,16 +115,6 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public void setRecursiveGroupId(int id){
-        if(doRecurse){
-            doRecurse = false;
-            forceUpdateRecursiveGroupId = true;
-            recursiveGroupId = id;
-            r1.setRecursiveGroupId(id);
-        }
-    }
-
-    @Override
     public int updateRecursiveGroupId(int parentId){
         if(forceUpdateRecursiveGroupId){
             forceUpdateRecursiveGroupId = false;
