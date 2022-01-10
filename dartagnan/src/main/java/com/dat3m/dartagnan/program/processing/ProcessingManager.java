@@ -35,7 +35,7 @@ public class ProcessingManager implements ProgramProcessor {
 		private boolean atomicBlocksAsLocks = false;
 
 	@Option(name= CONSTANT_PROPAGATION,
-			description="Perform constant propagation.",
+			description="Performs constant propagation.",
 			secure=true)
 		private boolean constantPropagation = false;
 

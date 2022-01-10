@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.configuration;
 
+import com.dat3m.dartagnan.configuration.OptionInterface;
 import com.google.common.reflect.ClassPath;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -8,7 +9,9 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -16,7 +19,7 @@ import java.util.stream.Stream;
  * <p>
  * Mimics {@link org.sosy_lab.common.configuration.OptionCollector OptionCollector} with reduced functionality.
  */
-public final class OptionInfo {
+public final class OptionInfo implements Comparable<OptionInfo> {
 
     private static final Pattern PROJECT_CLASSES = Pattern.compile("^com\\.dat3m\\..*$");
 
@@ -35,7 +38,8 @@ public final class OptionInfo {
 
         classPath.getAllClasses().stream()
                 .flatMap(OptionInfo::collectOptions)
-                .forEach(OptionInfo::print);
+                .sorted()
+                .forEach(System.out::print);
     }
 
     /**
@@ -103,11 +107,24 @@ public final class OptionInfo {
         domain = d;
     }
 
-    private void print() {
-        System.out.printf("\n\t%s%s : %s\n%s\n",
+    @Override
+    public String toString() {
+    	return String.format("\n[-] %s%s : %s\n\t%s\n",
             parent.prefix,
             option.name().isEmpty() ? member.getName() : option.name(),
-            domain.getSimpleName(),
+            domain.isEnum() ? 
+            		"[" + String.join(", ", Arrays.stream(domain.getEnumConstants())
+            				.map(o -> o instanceof OptionInterface ? 
+            						((OptionInterface)o).asStringOption() : 
+            						o.toString().toLowerCase())
+            				.collect(Collectors.toList())) + 
+            		"]" : 
+        			domain.getSimpleName(),
             option.description());
     }
+
+	@Override
+	public int compareTo(OptionInfo o) {
+		return toString().compareTo(o.toString());
+	}
 }

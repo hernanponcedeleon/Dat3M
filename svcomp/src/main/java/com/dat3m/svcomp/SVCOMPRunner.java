@@ -2,7 +2,7 @@ package com.dat3m.svcomp;
 
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
-import com.dat3m.dartagnan.verification.solving.Property;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.svcomp.utils.BoogieSan;
 import com.dat3m.svcomp.utils.Compilation;

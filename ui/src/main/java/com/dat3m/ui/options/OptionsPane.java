@@ -1,7 +1,7 @@
 package com.dat3m.ui.options;
 
-import com.dat3m.dartagnan.verification.solving.Method;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.configuration.Method;
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.ui.button.ClearButton;
 import com.dat3m.ui.button.TestButton;
 import com.dat3m.ui.options.utils.ControlCode;

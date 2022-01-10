@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.exception.ParserErrorListener;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.VisitorLitmusPPC;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.configuration.Arch;
 
 import org.antlr.v4.runtime.*;
 

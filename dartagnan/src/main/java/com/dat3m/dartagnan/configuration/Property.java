@@ -1,8 +1,8 @@
-package com.dat3m.dartagnan.verification.solving;
+package com.dat3m.dartagnan.configuration;
 
 import java.util.Arrays;
 
-public enum Property {
+public enum Property implements OptionInterface {
 	REACHABILITY, RACES;
 	
 	// Used for options in the console
