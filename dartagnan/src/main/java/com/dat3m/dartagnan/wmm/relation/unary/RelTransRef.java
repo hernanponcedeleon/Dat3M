@@ -40,8 +40,8 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    public void initializeDataContext(VerificationTask task) {
-        super.initializeDataContext(task);
+    public void initializeRelationAnalysis(VerificationTask task) {
+        super.initializeRelationAnalysis(task);
         identityEncodeTupleSet = new TupleSet();
         transEncodeTupleSet = new TupleSet();
     }

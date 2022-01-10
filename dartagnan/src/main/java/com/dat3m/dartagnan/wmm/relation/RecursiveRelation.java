@@ -45,11 +45,11 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public void initializeDataContext(VerificationTask task) {
+    public void initializeRelationAnalysis(VerificationTask task) {
         if(doRecurse){
             doRecurse = false;
-            super.initializeDataContext(task);
-            r1.initializeDataContext(task);
+            super.initializeRelationAnalysis(task);
+            r1.initializeRelationAnalysis(task);
         }
     }
 

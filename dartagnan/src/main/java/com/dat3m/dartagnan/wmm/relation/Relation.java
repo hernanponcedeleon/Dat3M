@@ -71,20 +71,21 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
         return recursiveGroupId;
     }
 
-    // TODO: The following two methods are provided because currently Relations are treated as both,
-    //  data objects and encoders of said data objects.
-    //  Once we split these aspects, "initializeEncoding" may be removed altogether.
+    // TODO: The following two methods are provided because currently Relations are treated as three things:
+    //  data objects, static analysers (relation analysis) and encoders of said data objects.
+    //  Once we split these aspects, we might get rid of these methods
 
-
+    // Due to being an encoder
     public void initializeEncoding(SolverContext ctx) {
-        this.isEncoded = false;
-        this.encodeTupleSet = new TupleSet();
         Preconditions.checkState(this.task != null,
                 "No available relation data to encode. Perform RelationAnalysis before encoding.");
+        this.isEncoded = false;
+        this.encodeTupleSet = new TupleSet();
     }
 
     // TODO: We misuse <task> as data object and analysis information object.
-    public void initializeDataContext(VerificationTask task) {
+    // Due to partaking in relation analysis
+    public void initializeRelationAnalysis(VerificationTask task) {
         this.task = task;
         this.maxTupleSet = null;
         this.minTupleSet = null;

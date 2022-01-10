@@ -28,7 +28,7 @@ public class RelationAnalysis {
     private void run() {
         // Init data context so that each relation is able to compute its may/must sets.
         for(String relName : Wmm.BASE_RELATIONS){
-            memoryModel.getRelationRepository().getRelation(relName).initializeDataContext(task);
+            memoryModel.getRelationRepository().getRelation(relName).initializeRelationAnalysis(task);
         }
         for (Axiom ax : memoryModel.getAxioms()) {
             ax.getRelation().updateRecursiveGroupId(ax.getRelation().getRecursiveGroupId());
@@ -37,7 +37,7 @@ public class RelationAnalysis {
             recursiveGroup.setDoRecurse();
         }
         for (Relation rel : memoryModel.getRelationRepository().getRelations()) {
-            rel.initializeDataContext(task);
+            rel.initializeRelationAnalysis(task);
         }
         for (Axiom ax : memoryModel.getAxioms()) {
             ax.initializeDataContext(task);

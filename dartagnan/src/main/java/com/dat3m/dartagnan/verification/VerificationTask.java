@@ -134,7 +134,7 @@ public class VerificationTask {
                 // Some events perform static analyses by themselves (e.g. Svcomp's EndAtomic)
                 // which may rely on previous "global" analyses
                 // TODO: We misuse the <task> object as analysis information object for now.
-                e.provideAnalysisContext(this);
+                e.runLocalAnalysis(this);
             }
         }
     }
