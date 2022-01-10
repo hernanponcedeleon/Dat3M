@@ -168,7 +168,7 @@ public class RelCo extends Relation {
                 // ============ Local consistency optimizations ============
                 if (getMinTupleSet().contains(t)) {
                    enc = bmgr.and(enc, bmgr.equivalence(relation, execPair));
-                } else if (task.getMemoryModel().isLocallyConsistent()) {
+                } else if (task.getWmmAnalysis().isLocallyConsistent()) {
                     if (w2.is(INIT) || t.isBackward()){
                         enc = bmgr.and(enc, bmgr.equivalence(relation, bmgr.makeFalse()));
                     }
@@ -204,7 +204,7 @@ public class RelCo extends Relation {
     }
 
     private void applyLocalConsistencyMinSet() {
-        if (task.getMemoryModel().isLocallyConsistent()) {
+        if (task.getWmmAnalysis().isLocallyConsistent()) {
             for (Tuple t : getMaxTupleSet()) {
                 AliasAnalysis alias = task.getAliasAnalysis();
                 MemEvent w1 = (MemEvent) t.getFirst();
@@ -217,7 +217,7 @@ public class RelCo extends Relation {
     }
 
     private void applyLocalConsistencyMaxSet() {
-        if (task.getMemoryModel().isLocallyConsistent()) {
+        if (task.getWmmAnalysis().isLocallyConsistent()) {
             //TODO: Make sure that this is correct and does not cause any issues with totality of co
             maxTupleSet.removeIf(t -> t.getSecond().is(INIT) || t.isBackward());
         }

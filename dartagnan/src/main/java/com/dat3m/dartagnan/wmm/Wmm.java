@@ -10,39 +10,19 @@ import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.LOCALLY_CONSISTENT;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 /**
  *
  * @author Florian Furbach
  */
-@Options
 public class Wmm {
 
     public final static ImmutableSet<String> BASE_RELATIONS = ImmutableSet.of(CO, RF, IDD, ADDRDIRECT);
 
-    // =========================== Configurables ===========================
-
-    //TODO: We need to move these options somewhere else (e.g. a WmmEncoder or a WmmMetaData Object)
-    // because a Wmm is a non-configurable data object.
-    @Option(
-    	name= LOCALLY_CONSISTENT,
-    	description="Assumes local consistency for all created wmms.",
-    	secure=true)
-    private boolean assumeLocalConsistency = true;
-
-    @Option(
-    	description="Assumes the WMM respects atomic blocks for optimization (only the case for SVCOMP right now).",
-    	secure=true)
-    private boolean respectsAtomicBlocks = true;
-
-    // =====================================================================
 
     private final List<Axiom> axioms = new ArrayList<>();
     private final Map<String, FilterAbstract> filters = new HashMap<>();
@@ -73,18 +53,6 @@ public class Wmm {
 
     public RelationRepository getRelationRepository(){
         return relationRepository;
-    }
-
-    public boolean isLocallyConsistent() {
-        // For now we return a preset value. Ideally, we would like to
-        // find this property automatically.
-        return assumeLocalConsistency;
-    }
-
-    public boolean doesRespectAtomicBlocks() {
-        // For now we return a preset value. Ideally, we would like to
-        // find this property automatically. This is currently only relevant for SVCOMP
-        return respectsAtomicBlocks;
     }
 
     public void addRecursiveGroup(Set<RecursiveRelation> recursiveGroup){

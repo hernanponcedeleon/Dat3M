@@ -127,7 +127,7 @@ public class RelRf extends Relation {
     }
 
     private void applyLocalConsistency() {
-        if (task.getMemoryModel().isLocallyConsistent()) {
+        if (task.getWmmAnalysis().isLocallyConsistent()) {
             // Remove future reads
             maxTupleSet.removeIf(Tuple::isBackward);
 
@@ -183,7 +183,7 @@ public class RelRf extends Relation {
         // so co(w1, w3) <=> co(w2, w3).
         // This information is not expressible in terms of min/must sets, but
         // we could still encode it.
-        if (!task.getMemoryModel().doesRespectAtomicBlocks()) {
+        if (!task.getWmmAnalysis().doesRespectAtomicBlocks()) {
             return;
         }
 

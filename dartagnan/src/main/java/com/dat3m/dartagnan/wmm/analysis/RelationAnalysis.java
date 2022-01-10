@@ -15,7 +15,7 @@ public class RelationAnalysis {
     private final Wmm memoryModel;
     private final VerificationTask task;
 
-    public RelationAnalysis(Program program, Wmm memoryModel, VerificationTask task) {
+    private RelationAnalysis(Program program, Wmm memoryModel, VerificationTask task) {
         this.memoryModel = Preconditions.checkNotNull(memoryModel);
         this.task = Preconditions.checkNotNull(task);
         run();

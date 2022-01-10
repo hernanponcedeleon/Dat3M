@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.verification;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.encoding.PropertyEncoder;
 import com.dat3m.dartagnan.encoding.SymmetryEncoder;
@@ -15,9 +16,9 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.configuration.Arch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -55,6 +56,7 @@ public class VerificationTask {
     protected BranchEquivalence branchEquivalence;
     protected AliasAnalysis aliasAnalysis;
     protected ThreadSymmetry threadSymmetry;
+    protected WmmAnalysis wmmAnalysis;
     protected RelationAnalysis relationAnalysis;
 
     // Encoders
@@ -107,6 +109,7 @@ public class VerificationTask {
 		return aliasAnalysis;
 	}
     public ThreadSymmetry getThreadSymmetry() { return threadSymmetry; }
+    public WmmAnalysis getWmmAnalysis() { return wmmAnalysis; }
     public RelationAnalysis getRelationAnalysis() { return relationAnalysis; }
 
     public ProgramEncoder getProgramEncoder() { return progEncoder; }
@@ -137,6 +140,7 @@ public class VerificationTask {
     }
 
     public void performStaticWmmAnalyses() throws InvalidConfigurationException {
+        wmmAnalysis = WmmAnalysis.fromConfig(memoryModel, config);
         relationAnalysis = RelationAnalysis.fromConfig(program, memoryModel, this, config);
     }
 
