@@ -31,10 +31,10 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
+import static com.dat3m.dartagnan.configuration.Property.RACES;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
-import static com.dat3m.dartagnan.configuration.Property.RACES;
 import static java.lang.String.valueOf;
 
 @Options
@@ -121,7 +121,7 @@ public class Dartagnan extends BaseOptions {
                 Result result = UNKNOWN;
                 switch (o.getProperty()) {
                 	case RACES:
-                    	result = DataRaceSolver.run(ctx, task);
+                    	result = DataRaceSolver.run(ctx, prover, task);
                         break;
                     case REACHABILITY:
                     	switch (o.getMethod()) {
