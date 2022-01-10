@@ -27,6 +27,11 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
     }
 
     @Override
+    public boolean cfImpliesExec() {
+        return false;
+    }
+
+    @Override
     public void initializeEncoding(SolverContext ctx) {
         super.initializeEncoding(ctx);
         execVar = ctx.getFormulaManager().makeVariable(BooleanType, "exec(" + repr() + ")");

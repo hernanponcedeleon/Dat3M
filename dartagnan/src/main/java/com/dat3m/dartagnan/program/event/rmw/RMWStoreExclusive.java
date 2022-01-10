@@ -30,6 +30,11 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
     }
 
     @Override
+    public boolean cfImpliesExec() {
+        return is(EType.STRONG); // Strong RMWs always succeed
+    }
+
+    @Override
     public void initializeEncoding(SolverContext ctx) {
         super.initializeEncoding(ctx);
         execVar = is(EType.STRONG) ? cfVar : ctx.getFormulaManager().makeVariable(BooleanType, "exec(" + repr() + ")");

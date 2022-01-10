@@ -185,6 +185,11 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public BooleanFormula cf(){ return cfVar; }
 	public void setCfVar(BooleanFormula cfVar) { this.cfVar = cfVar; }
 
+	// This method needs to get overwritten for conditional events.
+	public boolean cfImpliesExec() {
+		return true;
+	}
+
 	public BooleanFormula encodeExec(SolverContext ctx){
 		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
 	}
@@ -201,8 +206,5 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		return expr != null && expr;
 	}
 
-	public boolean cfImpliesExec() {
-		return cf() == exec();
-	}
 
 }
