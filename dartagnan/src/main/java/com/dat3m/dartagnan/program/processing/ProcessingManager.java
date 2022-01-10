@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -17,8 +15,6 @@ import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 @Options
 public class ProcessingManager implements ProgramProcessor {
-
-    private final static Logger logger = LogManager.getLogger(ProcessingManager.class);
 
     private final List<ProgramProcessor> programProcessors = new ArrayList<>();
 

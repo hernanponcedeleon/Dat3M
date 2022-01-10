@@ -55,6 +55,8 @@ public class PropertyEncoder implements Encoder {
     public void initializeEncoding(SolverContext context) { }
 
     public BooleanFormula encodeBoundEventExec(SolverContext ctx){
+        logger.info("Encoding bound events execution");
+
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         return program.getCache().getEvents(FilterBasic.get(EType.BOUND))
                 .stream().map(Event::exec).reduce(bmgr.makeFalse(), bmgr::or);

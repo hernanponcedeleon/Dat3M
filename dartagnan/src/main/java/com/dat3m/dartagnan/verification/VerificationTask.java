@@ -19,8 +19,6 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -40,8 +38,6 @@ Represents a verification task.
 //TODO: The encoders should go from this class
 @Options
 public class VerificationTask {
-
-    private static final Logger logger = LogManager.getLogger(VerificationTask.class);
 
     // Data objects
     private final Program program;

@@ -153,7 +153,6 @@ public class ProgramEncoder implements Encoder {
         FormulaManager fmgr = ctx.getFormulaManager();
         IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 
-        // Some addresses already have a constant value (obtained from parsing the boogie file)
         BooleanFormula[] addrExprs = memory.getAllAddresses().stream()
                 .map(addr -> imgr.equal(convertToIntegerFormula(addr.toIntFormula(ctx), ctx),
                         imgr.makeNumber(addr.getValue().intValue())))
