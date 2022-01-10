@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
@@ -59,8 +60,8 @@ public class RelRMW extends StaticRelation {
 
 
     @Override
-    public void initializeRelationAnalysis(VerificationTask task) {
-        super.initializeRelationAnalysis(task);
+    public void initializeRelationAnalysis(VerificationTask task, Context context) {
+        super.initializeRelationAnalysis(task, context);
         this.baseMaxTupleSet = null;
     }
 

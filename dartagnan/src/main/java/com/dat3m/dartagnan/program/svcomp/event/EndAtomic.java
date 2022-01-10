@@ -1,8 +1,9 @@
 package com.dat3m.dartagnan.program.svcomp.event;
 
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.LogManager;
@@ -47,9 +48,9 @@ public class EndAtomic extends Event {
     }
 
 	@Override
-	public void runLocalAnalysis(VerificationTask task) {
+	public void runLocalAnalysis(Program program, Context context) {
 		//===== Temporary fix to rematch atomic blocks correctly =====
-		BranchEquivalence eq = task.getAnalysisContext().requires(BranchEquivalence.class);
+		BranchEquivalence eq = context.requires(BranchEquivalence.class);
 		List<Event> begins = this.thread.getEvents()
 				.stream().filter( x -> x instanceof BeginAtomic && eq.isReachableFrom(x, this))
 				.collect(Collectors.toList());

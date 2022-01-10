@@ -1,14 +1,15 @@
 package com.dat3m.dartagnan.verification;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
-import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,8 +35,9 @@ public class RefinementTask extends VerificationTask {
 	private static final Logger logger = LogManager.getLogger(RefinementTask.class);
 
     private final Wmm baselineModel;
-    private RelationAnalysis baselineRelationAnalysis;
+    private Context baselineContext;
     private WmmEncoder baselineWmmEncoder;
+
 
     // =========================== Configurables ===========================
 
@@ -61,20 +63,22 @@ public class RefinementTask extends VerificationTask {
         return baselineModel;
     }
 
-    public RelationAnalysis getBaselineRelationAnalysis() { return baselineRelationAnalysis; }
-
     public WmmEncoder getBaselineWmmEncoder() { return baselineWmmEncoder; }
 
     @Override
     public void performStaticWmmAnalyses() throws InvalidConfigurationException {
         super.performStaticWmmAnalyses();
-        this.baselineRelationAnalysis = RelationAnalysis.fromConfig(getProgram(), baselineModel, this, getConfig());
+        VerificationTask newTask = new VerificationTask(getProgram(), baselineModel, getWitness(), getConfig());
+        baselineContext = Context.createCopyFrom(getAnalysisContext());
+        baselineContext .invalidate(WmmAnalysis.class);
+        baselineContext .register(WmmAnalysis.class, WmmAnalysis.fromConfig(baselineModel, getConfig()));
+        baselineContext .register(RelationAnalysis.class, RelationAnalysis.fromConfig(newTask, baselineContext, getConfig()));
     }
 
     @Override
     public void initializeEncoders(SolverContext ctx) throws InvalidConfigurationException {
         super.initializeEncoders(ctx);
-        this.baselineWmmEncoder = WmmEncoder.fromConfig(baselineModel, this, getConfig());
+        this.baselineWmmEncoder = WmmEncoder.fromConfig(baselineModel, baselineContext, getConfig());
         baselineWmmEncoder.initializeEncoding(ctx);
 		logger.info("{}: {}", ASSUME_LOCALLY_CONSISTENT_WMM, useLocallyConsistentBaselineWmm);
 		logger.info("{}: {}", ASSUME_NO_OOTA, useNoOOTABaselineWMM);

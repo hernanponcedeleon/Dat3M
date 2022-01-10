@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -38,8 +39,8 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public void initializeRelationAnalysis(VerificationTask task) {
-        super.initializeRelationAnalysis(task);
+    public void initializeRelationAnalysis(VerificationTask task, Context context) {
+        super.initializeRelationAnalysis(task, context);
         fullEncodeTupleSet = new TupleSet();
         transitiveReachabilityMap = null;
     }

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
@@ -18,16 +18,17 @@ import org.sosy_lab.java_smt.api.SolverContext;
 public class WmmEncoder implements Encoder {
 
     private final Wmm memoryModel;
+    private boolean isInitialized = false;
 
     // =====================================================================
 
-    private WmmEncoder(Wmm memoryModel, VerificationTask task) {
+    private WmmEncoder(Wmm memoryModel, Context context) {
         this.memoryModel = Preconditions.checkNotNull(memoryModel);
-        task.getAnalysisContext().requires(RelationAnalysis.class);
+        context.requires(RelationAnalysis.class);
     }
 
-    public static WmmEncoder fromConfig(Wmm memoryModel, VerificationTask task, Configuration config) throws InvalidConfigurationException {
-        return new WmmEncoder(memoryModel, task);
+    public static WmmEncoder fromConfig(Wmm memoryModel, Context context, Configuration config) throws InvalidConfigurationException {
+        return new WmmEncoder(memoryModel, context);
     }
 
     @Override
@@ -35,10 +36,6 @@ public class WmmEncoder implements Encoder {
         for(String relName : Wmm.BASE_RELATIONS) {
             memoryModel.getRelationRepository().getRelation(relName);
         }
-
-        /*for (Axiom ax : memoryModel.getAxioms()) {
-            ax.getRelation().updateRecursiveGroupId(ax.getRelation().getRecursiveGroupId());
-        }*/
 
         for(RecursiveGroup recursiveGroup : memoryModel.getRecursiveGroups()){
             recursiveGroup.setDoRecurse();
@@ -61,6 +58,11 @@ public class WmmEncoder implements Encoder {
             recursiveGroup.updateEncodeTupleSets();
         }
 
+        isInitialized = true;
+    }
+
+    private void checkInitialized() {
+        Preconditions.checkState(isInitialized, "initializeEncoding must get called before encoding.");
     }
 
     public BooleanFormula encodeFullMemoryModel(SolverContext ctx) {
@@ -72,6 +74,7 @@ public class WmmEncoder implements Encoder {
     // This methods initializes all relations and encodes all base relations
     // It does NOT encode the axioms nor any non-base relation yet!
     public BooleanFormula encodeAnarchicSemantics(SolverContext ctx) {
+        checkInitialized();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         for(String relName : Wmm.BASE_RELATIONS){
@@ -85,6 +88,7 @@ public class WmmEncoder implements Encoder {
     // relations that are needed for the axioms (but does NOT encode the axioms themselves yet)
     // NOTE: It avoids encoding relations that do NOT affect the axioms, i.e. unused relations
     public BooleanFormula encodeRelations(SolverContext ctx) {
+        checkInitialized();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = encodeAnarchicSemantics(ctx);
         for (Axiom ax : memoryModel.getAxioms()) {
@@ -95,6 +99,7 @@ public class WmmEncoder implements Encoder {
 
     // Encodes all axioms. This should be called after <encodeRelations>
     public BooleanFormula encodeConsistency(SolverContext ctx) {
+        checkInitialized();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula expr = bmgr.makeTrue();
         for (Axiom ax : memoryModel.getAxioms()) {

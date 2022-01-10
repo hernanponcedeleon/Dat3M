@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
@@ -33,22 +33,20 @@ public class PropertyEncoder implements Encoder {
 
     private final Program program;
     private final Wmm memoryModel;
-    //TODO: We misuse the <task> object as information pool for static analyses here
-    // We ignore the program, wmm etc. that is contained in <task>.
-    private final VerificationTask task;
+    private final AliasAnalysis alias;
 
     // =====================================================================
 
-    private PropertyEncoder(Program program, Wmm wmm, VerificationTask task) {
-        this.program = checkNotNull(program);
-        this.memoryModel = checkNotNull(wmm);
-        this.task = checkNotNull(task);
+    private PropertyEncoder(Program program, Wmm wmm, Context context) {
         checkArgument(program.isCompiled(),
                 "The program must get compiled first before its properties can be encoded.");
+        this.program = checkNotNull(program);
+        this.memoryModel = checkNotNull(wmm);
+        this.alias = context.requires(AliasAnalysis.class);
     }
 
-    public static PropertyEncoder fromConfig(Program program, Wmm wmm, VerificationTask task, Configuration config) throws InvalidConfigurationException {
-        return new PropertyEncoder(program, wmm, task);
+    public static PropertyEncoder fromConfig(Program program, Wmm wmm, Context context, Configuration config) throws InvalidConfigurationException {
+        return new PropertyEncoder(program, wmm, context);
     }
 
     @Override
@@ -66,7 +64,6 @@ public class PropertyEncoder implements Encoder {
         logger.info("Encoding assertions");
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-
         BooleanFormula assertionEncoding = program.getAss().encode(ctx);
         if (program.getAssFilter() != null) {
             assertionEncoding = bmgr.and(assertionEncoding, program.getAssFilter().encode(ctx));
@@ -81,7 +78,6 @@ public class PropertyEncoder implements Encoder {
                 "The provided WMM needs an 'acyclic(hb)' axiom to encode data races.");
         logger.info("Encoding data-races");
 
-        AliasAnalysis alias = task.getAnalysisContext().requires(AliasAnalysis.class);
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
 

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation;
 
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -45,11 +46,11 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public void initializeRelationAnalysis(VerificationTask task) {
+    public void initializeRelationAnalysis(VerificationTask task, Context context) {
         if(doRecurse){
             doRecurse = false;
-            super.initializeRelationAnalysis(task);
-            r1.initializeRelationAnalysis(task);
+            super.initializeRelationAnalysis(task, context);
+            r1.initializeRelationAnalysis(task, context);
         }
     }
 

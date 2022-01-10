@@ -15,6 +15,12 @@ public class Context {
         return new Context();
     }
 
+    public static Context createCopyFrom(Context context) {
+        Context ctx = new Context();
+        ctx.metaDataMap.putAll(context.metaDataMap);
+        return ctx;
+    }
+
     // =============================================
 
     public <T> boolean has(Class<T> c) {
@@ -44,4 +50,5 @@ public class Context {
         }
         return instance;
     }
+
 }

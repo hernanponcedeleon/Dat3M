@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
-import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
@@ -19,6 +18,7 @@ import com.dat3m.dartagnan.program.processing.Compilation;
 import com.dat3m.dartagnan.program.processing.DeadCodeElimination;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ResourceHelper;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
@@ -69,7 +69,7 @@ public class ExceptionsTest {
     	BranchReordering.newInstance().run(p);
     }
 
-    @Test(expected = UnsatisfiedRequirementException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void initializedBeforeCompileException() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
@@ -80,7 +80,7 @@ public class ExceptionsTest {
                 .withConfig(config)
                 .build(p, cat);
 		// The program must be compiled before being able to construct an Encoder for it
-    	ProgramEncoder.fromConfig(task.getProgram(), task, config);
+    	ProgramEncoder.fromConfig(task.getProgram(), Context.create(), config);
     }
 
     @Test(expected = IllegalArgumentException.class)

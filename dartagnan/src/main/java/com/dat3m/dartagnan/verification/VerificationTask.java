@@ -113,22 +113,21 @@ public class VerificationTask {
             for (Event e : thread.getEvents()) {
                 // Some events perform static analyses by themselves (e.g. Svcomp's EndAtomic)
                 // which may rely on previous "global" analyses
-                // TODO: We misuse the <task> object as analysis information object for now.
-                e.runLocalAnalysis(this);
+                e.runLocalAnalysis(program, analysisContext);
             }
         }
     }
 
     public void performStaticWmmAnalyses() throws InvalidConfigurationException {
         analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(memoryModel, config));
-        analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(program, memoryModel, this, config));
+        analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(this, analysisContext, config));
     }
 
     public void initializeEncoders(SolverContext ctx) throws InvalidConfigurationException {
-        progEncoder = ProgramEncoder.fromConfig(program, this, config);
-        propertyEncoder = PropertyEncoder.fromConfig(program, memoryModel,this, config);
-        wmmEncoder = WmmEncoder.fromConfig(memoryModel, this, config);
-        symmetryEncoder = SymmetryEncoder.fromConfig(this, config);
+        progEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
+        propertyEncoder = PropertyEncoder.fromConfig(program, memoryModel,analysisContext, config);
+        wmmEncoder = WmmEncoder.fromConfig(memoryModel, analysisContext, config);
+        symmetryEncoder = SymmetryEncoder.fromConfig(memoryModel, analysisContext, config);
 
         progEncoder.initializeEncoding(ctx);
         propertyEncoder.initializeEncoding(ctx);

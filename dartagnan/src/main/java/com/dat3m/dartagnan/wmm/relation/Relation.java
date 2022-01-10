@@ -87,9 +87,9 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
 
     // TODO: We misuse <task> as data object and analysis information object.
     // Due to partaking in relation analysis
-    public void initializeRelationAnalysis(VerificationTask task) {
+    public void initializeRelationAnalysis(VerificationTask task, Context context) {
         this.task = task;
-        this.analysisContext = task.getAnalysisContext();
+        this.analysisContext = context;
         this.maxTupleSet = null;
         this.minTupleSet = null;
     }
@@ -191,7 +191,7 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
             e1 = e2;
             e2 = temp;
         }
-        BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
+        BranchEquivalence eq = analysisContext.requires(BranchEquivalence.class);
         if (eq.isImplied(e1, e2) && e2.cfImpliesExec()) {
             return e1.exec();
         } else if (eq.isImplied(e2 ,e1) && e1.cfImpliesExec()) {
@@ -205,7 +205,7 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     }
 
     protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {
-        BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
+        BranchEquivalence eq = analysisContext.requires(BranchEquivalence.class);
         tupleSet.removeIf(t -> eq.areMutuallyExclusive(t.getFirst(), t.getSecond()));
     }
 

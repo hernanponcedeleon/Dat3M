@@ -1,37 +1,32 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
-import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 public class RelationAnalysis {
 
-    private final Wmm memoryModel;
-    private final VerificationTask task;
-
-    private RelationAnalysis(Program program, Wmm memoryModel, VerificationTask task) {
-        this.memoryModel = Preconditions.checkNotNull(memoryModel);
-        this.task = Preconditions.checkNotNull(task);
-        task.getAnalysisContext().requires(AliasAnalysis.class);
-        task.getAnalysisContext().requires(BranchEquivalence.class);
-        task.getAnalysisContext().requires(WmmAnalysis.class);
-        run();
+    private RelationAnalysis(VerificationTask task, Context context, Configuration config) {
+        context.requires(AliasAnalysis.class);
+        context.requires(BranchEquivalence.class);
+        context.requires(WmmAnalysis.class);
+        run(task, context);
     }
 
-    public static RelationAnalysis fromConfig(Program program, Wmm memoryModel, VerificationTask task, Configuration config) throws InvalidConfigurationException {
-        return new RelationAnalysis(program, memoryModel, task);
+    public static RelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
+        return new RelationAnalysis(task, context, config);
     }
 
-    private void run() {
+    private void run(VerificationTask task, Context context) {
         // Init data context so that each relation is able to compute its may/must sets.
+        Wmm memoryModel = task.getMemoryModel();
         for (Axiom ax : memoryModel.getAxioms()) {
             ax.getRelation().updateRecursiveGroupId(ax.getRelation().getRecursiveGroupId());
         }
@@ -41,13 +36,13 @@ public class RelationAnalysis {
 
         // ------------------------------------------------
         for(String relName : Wmm.BASE_RELATIONS){
-            memoryModel.getRelationRepository().getRelation(relName).initializeRelationAnalysis(task);
+            memoryModel.getRelationRepository().getRelation(relName).initializeRelationAnalysis(task, context);
         }
         for (Relation rel : memoryModel.getRelationRepository().getRelations()) {
-            rel.initializeRelationAnalysis(task);
+            rel.initializeRelationAnalysis(task, context);
         }
         for (Axiom ax : memoryModel.getAxioms()) {
-            ax.initializeRelationAnalysis(task);
+            ax.initializeRelationAnalysis(task, context);
         }
 
         // ------------------------------------------------

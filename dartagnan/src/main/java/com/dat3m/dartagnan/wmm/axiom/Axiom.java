@@ -33,9 +33,9 @@ public abstract class Axiom implements Dependent<Relation> {
                 "No available relation data to encode. Perform RelationAnalysis before encoding.");
     }
 
-    public void initializeRelationAnalysis(VerificationTask task) {
+    public void initializeRelationAnalysis(VerificationTask task, Context context) {
         this.task = task;
-        this.analysisContext = task.getAnalysisContext();
+        this.analysisContext = context;
     }
 
     @Override
