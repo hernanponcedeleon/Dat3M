@@ -9,12 +9,4 @@ public interface OptionInterface {
 	@Override
 	public String toString();
 
-	public static OptionInterface getDefault() {
-        throw new UnsupportedOperationException("getDefault() not implemented");
-	}
-	
-	// Used to decide the order shown by the selector in the UI
-	public static OptionInterface[] orderedValues() {
-		throw new UnsupportedOperationException("orderedValues() not implemented");
-	}
 }
