@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.svcomp;
 
+import com.dat3m.dartagnan.program.event.EType;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.utils.EType;
 
 public class BeginAtomic extends Event {
 	

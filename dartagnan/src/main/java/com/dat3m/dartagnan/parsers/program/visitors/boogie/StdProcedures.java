@@ -7,9 +7,9 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EType;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.utils.EType;
 
 import java.math.BigInteger;
 import java.util.Arrays;

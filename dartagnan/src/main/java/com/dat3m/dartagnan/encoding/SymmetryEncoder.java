@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
+import com.dat3m.dartagnan.program.event.EType;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;

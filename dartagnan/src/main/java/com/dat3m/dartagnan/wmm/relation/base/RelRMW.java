@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.base;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.EType;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -9,7 +10,6 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterIntersection;
-import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
-import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
+import static com.dat3m.dartagnan.program.event.EType.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RMW;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 

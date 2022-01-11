@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.utils;
+package com.dat3m.dartagnan.program.event;
 
 public class EType {
 

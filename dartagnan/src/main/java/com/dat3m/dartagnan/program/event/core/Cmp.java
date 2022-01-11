@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.event.EType;
 
 public class Cmp extends Skip {
 

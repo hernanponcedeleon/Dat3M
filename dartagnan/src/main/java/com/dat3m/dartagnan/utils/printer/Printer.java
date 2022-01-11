@@ -2,11 +2,11 @@ package com.dat3m.dartagnan.utils.printer;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.EType;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.utils.EType;
 
 public class Printer {
 

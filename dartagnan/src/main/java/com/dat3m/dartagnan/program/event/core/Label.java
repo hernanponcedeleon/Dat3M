@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.event.EType;
 
 public class Label extends Event {
 

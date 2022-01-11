@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.program.event.EType;
 import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -16,7 +17,6 @@ import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.utils.EType;
 
 import java.math.BigInteger;
 import java.util.Arrays;

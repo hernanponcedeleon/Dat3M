@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.wmm.relation.base.local;
 
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EType;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;

@@ -14,8 +14,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.program.utils.EType.RMW;
-import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
+import static com.dat3m.dartagnan.program.event.EType.RMW;
+import static com.dat3m.dartagnan.program.event.EType.SVCOMPATOMIC;
 
 public class EndAtomic extends Event {
 
