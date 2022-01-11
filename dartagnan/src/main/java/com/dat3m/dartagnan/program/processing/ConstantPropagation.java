@@ -29,6 +29,8 @@ import java.util.Map;
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2INT;
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2UINT;
 
+
+// FIXME this is buggy> It currently fails CLocks and also casues problems with weaver/chl-match-subst.wvr.c, weaver/chl-match-symm.wvr.c and weaver/chl-match-trans.wvr.c
 public class ConstantPropagation implements ProgramProcessor {
 	
     private final static Logger logger = LogManager.getLogger(ConstantPropagation.class);
