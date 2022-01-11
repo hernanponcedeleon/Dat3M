@@ -41,13 +41,13 @@ public class ProcessingManager implements ProgramProcessor {
         config.inject(this);
 
         programProcessors.addAll(Arrays.asList(
+                atomicBlocksAsLocks ? AtomicAsLock.fromConfig(config) : null,
                 DeadCodeElimination.fromConfig(config),
                 BranchReordering.fromConfig(config),
                 Simplifier.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
                 Compilation.fromConfig(config),
-                atomicBlocksAsLocks ? AtomicAsLock.fromConfig(config) : null,
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null
         ));
         programProcessors.removeIf(Objects::isNull);
