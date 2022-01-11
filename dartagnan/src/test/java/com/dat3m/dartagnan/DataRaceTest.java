@@ -106,7 +106,13 @@ public class DataRaceTest {
                 {"race-1_2-join", 1},
                 {"race-1_2b-join", 1},
                 {"singleton", 1},
-                {"singleton-b", 1}
+                {"singleton-b", 1},
+                {"05-lval_ls_05-glob_idx_rc", 1},
+                {"05-lval_ls_08-glob_fld_2_rc", 1},
+                {"05-lval_ls_09-idxsense_rc", 12},
+                {"05-lval_ls_13-idxunknown_lock", 12},
+                {"05-lval_ls_14-idxunknown_access", 1},
+                {"06-symbeq_09-tricky_address4", 12},
         });
     }
     
