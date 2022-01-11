@@ -15,7 +15,6 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
 import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -24,9 +23,11 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.configuration.Baseline.NONE;
+import static com.dat3m.dartagnan.configuration.Baseline.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+
+import java.util.EnumSet;
 
 /*
  A RefinementTask is a VerificationTask with an additional baseline memory model.
@@ -50,7 +51,7 @@ public class RefinementTask extends VerificationTask {
 			description="Refinement starts from this baseline WMM.",
 			secure=true,
 			toUppercase=true)
-		private Baseline baseline = NONE;
+		private EnumSet<Baseline> baselines = EnumSet.of(NONE);
 
     // ======================================================================
 
@@ -82,7 +83,7 @@ public class RefinementTask extends VerificationTask {
         super.initializeEncoders(ctx);
         this.baselineWmmEncoder = WmmEncoder.fromConfig(baselineModel, baselineContext, getConfig());
         baselineWmmEncoder.initializeEncoding(ctx);
-		logger.info("{}: {}", BASELINE, baseline);
+		logger.info("{}: {}", BASELINE, baselines);
     }
 
     public static RefinementTask fromVerificationTaskWithDefaultBaselineWMM(VerificationTask task)
@@ -98,40 +99,42 @@ public class RefinementTask extends VerificationTask {
         RelationRepository repo = baseline.getRelationRepository();
         Relation rf = repo.getRelation(RF);
 
-        switch(this.baseline) {
-			case NONE:
-				break;
-			case UNIPROC:
-		        // ---- acyclic(po-loc | rf) ----
-		        Relation poloc = repo.getRelation(POLOC);
-		        Relation porf = new RelUnion(poloc, rf);
-		        repo.addRelation(porf);
-		        baseline.addAxiom(new Acyclic(porf));
-		        break;
-	    	case NO_OOTA:
-	            // ---- acyclic(po-loc | rf) ----
-	            Relation data = repo.getRelation(DATA);
-	            Relation ctrl = repo.getRelation(CTRL);
-	            Relation addr = repo.getRelation(ADDR);
-	            Relation dep = new RelUnion(data, addr);
-	            repo.addRelation(dep);
-	            dep = new RelUnion(ctrl, dep);
-	            repo.addRelation(dep);
-	            Relation hb = new RelUnion(dep, rf);
-	            repo.addRelation(hb);
-	            baseline.addAxiom(new Acyclic(hb));
-	            break;
-	    	case ATOMIC_RMW:
-	    		// ---- empty (rmw & fre;coe) ----
-	            Relation rmw = repo.getRelation(RMW);
-	            Relation coe = repo.getRelation(COE);
-	            Relation fre = repo.getRelation(FRE);
-	            Relation frecoe = new RelComposition(fre, coe);
-	            repo.addRelation(frecoe);
-	            Relation rmwANDfrecoe = new RelIntersection(rmw, frecoe);
-	            repo.addRelation(rmwANDfrecoe);
-	            baseline.addAxiom(new Empty(rmwANDfrecoe));
-	            break;
+        if(baselines.contains(UNIPROC)) {
+	        // ---- acyclic(po-loc | rf) ----
+	        Relation poloc = repo.getRelation(POLOC);
+	        Relation co = repo.getRelation(CO);
+	        Relation fr = repo.getRelation(FR);
+	        Relation porf = new RelUnion(poloc, rf);
+	        repo.addRelation(porf);
+	        Relation porfco = new RelUnion(porf, co);
+	        repo.addRelation(porfco);
+	        Relation porfcofr = new RelUnion(porfco, fr);
+	        repo.addRelation(porfcofr);
+	        baseline.addAxiom(new Acyclic(porfcofr));
+        }
+        if(baselines.contains(NO_OOTA)) {
+            // ---- acyclic (dep | rf) ----
+            Relation data = repo.getRelation(DATA);
+            Relation ctrl = repo.getRelation(CTRL);
+            Relation addr = repo.getRelation(ADDR);
+            Relation dep = new RelUnion(data, addr);
+            repo.addRelation(dep);
+            dep = new RelUnion(ctrl, dep);
+            repo.addRelation(dep);
+            Relation hb = new RelUnion(dep, rf);
+            repo.addRelation(hb);
+            baseline.addAxiom(new Acyclic(hb));
+        }
+        if(baselines.contains(ATOMIC_RMW)) {
+    		// ---- empty (rmw & fre;coe) ----
+            Relation rmw = repo.getRelation(RMW);
+            Relation coe = repo.getRelation(COE);
+            Relation fre = repo.getRelation(FRE);
+            Relation frecoe = new RelComposition(fre, coe);
+            repo.addRelation(frecoe);
+            Relation rmwANDfrecoe = new RelIntersection(rmw, frecoe);
+            repo.addRelation(rmwANDfrecoe);
+            baseline.addAxiom(new Empty(rmwANDfrecoe));
         }
         
         return baseline;
