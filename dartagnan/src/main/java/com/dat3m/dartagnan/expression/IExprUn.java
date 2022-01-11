@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.Model;
@@ -44,11 +43,6 @@ public class IExprUn extends IExpr {
 	public ImmutableSet<Register> getRegs() {
         return b.getRegs();
 	}
-	@Override
-	public ImmutableSet<Location> getLocs() {
-		return b.getLocs();
-	}
-
     @Override
     public String toString() {
         return "(" + op + b + ")";
@@ -59,7 +53,7 @@ public class IExprUn extends IExpr {
 		IConst inner = b.reduce();
         switch(op){
 			case MINUS:
-			return new IConst(inner.getIntValue().negate(), b.getPrecision());
+			return new IConst(inner.getValue().negate(), b.getPrecision());
 			case BV2UINT: case BV2INT:
 			case INT2BV1: case INT2BV8: case INT2BV16: case INT2BV32: case INT2BV64: 
 			case TRUNC6432: case TRUNC6416: case TRUNC648: case TRUNC641: case TRUNC3216: case TRUNC328: case TRUNC321: case TRUNC168: case TRUNC161: case TRUNC81:

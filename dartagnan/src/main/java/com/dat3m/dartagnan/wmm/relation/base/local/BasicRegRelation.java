@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.wmm.relation.base.local;
 
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -30,7 +30,7 @@ abstract class BasicRegRelation extends StaticRelation {
     void mkTupleSets(Collection<Event> regReaders) {
         maxTupleSet = new TupleSet();
         minTupleSet = new TupleSet();
-        BranchEquivalence eq = task.getBranchEquivalence();
+        BranchEquivalence eq = analysisContext.requires(BranchEquivalence.class);
         ImmutableMap<Register, ImmutableList<Event>> regWriterMap = task.getProgram().getCache().getRegWriterMap();
         for(Event regReader : regReaders){
             for(Register register : getRegisters(regReader)){

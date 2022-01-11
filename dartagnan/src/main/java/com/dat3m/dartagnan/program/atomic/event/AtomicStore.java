@@ -9,8 +9,7 @@ import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.configuration.Arch;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
@@ -28,7 +27,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
     public AtomicStore(IExpr address, ExprInterface value, String mo){
         super(address, mo);
         Preconditions.checkArgument(!mo.equals(ACQUIRE) && !mo.equals(ACQUIRE_RELEASE), 
-        		"AtomicStore can not have memory order: " + mo);
+        		getClass().getName() + " can not have memory order: " + mo);
         this.value = value;
         this.dataRegs = value.getRegs();
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.REG_READER);
@@ -51,7 +50,11 @@ public class AtomicStore extends MemEvent implements RegReaderData {
         return "atomic_store" + tag + "(*" + address + ", " +  value + (mo != null ? ", " + mo : "") + ")";
     }
 
-
+    @Override
+    public ExprInterface getMemValue() {
+    	return value;
+    }
+    
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -64,9 +67,8 @@ public class AtomicStore extends MemEvent implements RegReaderData {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+    public List<Event> compile(Arch target) {
         List<Event> events;
         Store store = newStore(address, value, mo);
         switch (target){
@@ -91,15 +93,14 @@ public class AtomicStore extends MemEvent implements RegReaderData {
                 );
                 break;
             case ARM8:
-            	String storeMo = extractStoreMo(mo);
-            	events = eventSequence(
+                String storeMo = extractStoreMo(mo);
+                events = eventSequence(
                         newStore(address, value, storeMo)
                 );
                 break;
             default:
-                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName());
         }
-        setCLineForAll(events, this.cLine);
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+        return events;
     }
 }

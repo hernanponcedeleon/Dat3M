@@ -3,8 +3,6 @@ package com.dat3m.dartagnan.program.arch.linux.event.cond;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
-import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -27,8 +25,13 @@ public class FenceCond extends Fence {
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx) {
-        super.initialise(task, ctx);
+    public boolean cfImpliesExec() {
+        return false;
+    }
+
+    @Override
+    public void initializeEncoding(SolverContext ctx) {
+        super.initializeEncoding(ctx);
         execVar = ctx.getFormulaManager().makeVariable(BooleanType, "exec(" + repr() + ")");
     }
 
@@ -38,7 +41,7 @@ public class FenceCond extends Fence {
     }
 
     @Override
-    protected BooleanFormula encodeExec(SolverContext ctx){
+    public BooleanFormula encodeExec(SolverContext ctx){
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		return bmgr.equivalence(execVar, bmgr.and(cfVar, loadEvent.getCond()));
     }
@@ -46,9 +49,8 @@ public class FenceCond extends Fence {
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-
     @Override
-    protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
-        throw new ProgramProcessingException("FenceCond cannot be unrolled: event must be generated during compilation");
+	public FenceCond getCopy(){
+        throw new ProgramProcessingException(getClass().getName() + " cannot be unrolled: event must be generated during compilation");
     }
 }

@@ -4,46 +4,20 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
-
-import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
-import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
 public class Address extends IConst implements ExprInterface, LastValueInterface {
 
     private final int index;
-    private BigInteger constantValue;
 
-    Address(int index, int precision){
-        super(BigInteger.valueOf(index), precision);
+    Address(int index){
+        super(BigInteger.valueOf(index), -1);
         this.index = index;
-    }
-
-    public boolean hasConstantValue() {
-     	return this.constantValue != null;
-     }
-
-    public BigInteger getConstantValue() {
-     	return this.constantValue;
-     }
-
-    public void setConstantValue(BigInteger value) {
-     	this.constantValue = value;
-     }
-
-    @Override
-    public ImmutableSet<Register> getRegs(){
-        return ImmutableSet.of();
-    }
-
-    @Override
-    public Formula toIntFormula(Event e, SolverContext ctx){
-        return toIntFormula(ctx);
     }
 
     @Override
@@ -52,10 +26,8 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
     }
 
     public Formula getLastMemValueExpr(SolverContext ctx){
-        FormulaManager fmgr = ctx.getFormulaManager();
 		String name = "last_val_at_memory_" + index;
-		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
-		return fmgr.makeVariable(type, name);
+		return ctx.getFormulaManager().getIntegerFormulaManager().makeVariable(name);
     }
 
     @Override
@@ -82,27 +54,6 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
         }
 
         return index == ((Address)obj).index;
-    }
-
-    @Override
-    public Formula toIntFormula(SolverContext ctx){
-		FormulaManager fmgr = ctx.getFormulaManager();
-		if(constantValue != null) {
-			return precision > 0 ? 
-					fmgr.getBitvectorFormulaManager().makeBitvector(precision, constantValue) : 
-					fmgr.getIntegerFormulaManager().makeNumber(constantValue);
-    	}
-		String name = "memory_" + index;
-		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
-		return fmgr.makeVariable(type, name);
-    }
-
-    @Override
-    public BigInteger getIntValue(Event e, Model model, SolverContext ctx){
-        if (hasConstantValue()) {
-            return constantValue;
-        }
-        return new BigInteger(model.evaluate(toIntFormula(ctx)).toString());
     }
 
     @Override

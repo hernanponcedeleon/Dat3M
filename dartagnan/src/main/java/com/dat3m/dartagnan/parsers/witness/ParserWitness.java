@@ -33,8 +33,8 @@ public class ParserWitness {
 		if(graph.hasAttributed("producer")) {
 			logger.info("Witness graph produced by " + graph.getAttributed("producer"));
 		}
-		logger.info("Witness graph stats: #nodes " + graph.getNodes().size());
-		logger.info("Witness graph stats: #edges " + graph.getEdges().size());
+		logger.info("Witness graph stats: #Nodes " + graph.getNodes().size());
+		logger.info("Witness graph stats: #Edges " + graph.getEdges().size());
 
         return graph;
     }

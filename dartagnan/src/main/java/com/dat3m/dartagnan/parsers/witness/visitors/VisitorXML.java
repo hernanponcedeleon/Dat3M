@@ -9,9 +9,9 @@ import com.dat3m.dartagnan.witness.Edge;
 import com.dat3m.dartagnan.witness.Node;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 
-import java.util.stream.Collectors;
-
 import static com.dat3m.dartagnan.witness.GraphAttributes.*;
+
+import java.util.stream.Collectors;
 
 public class VisitorXML extends XMLParserBaseVisitor<Object> implements XMLParserVisitor<Object> {
 	

@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
@@ -40,11 +39,6 @@ public class BExprBin extends BExpr {
     @Override
     public ImmutableSet<Register> getRegs() {
         return new ImmutableSet.Builder<Register>().addAll(b1.getRegs()).addAll(b2.getRegs()).build();
-    }
-
-    @Override
-    public ImmutableSet<Location> getLocs() {
-        return new ImmutableSet.Builder<Location>().addAll(b1.getLocs()).addAll(b2.getLocs()).build();
     }
 
     @Override

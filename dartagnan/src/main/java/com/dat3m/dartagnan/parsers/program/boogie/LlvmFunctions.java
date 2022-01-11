@@ -62,9 +62,9 @@ public class LlvmFunctions {
 			// Once we have proper preprocessing code, we should remove this here!
 			if (name.startsWith("$xor.i1") && callParams.get(1) instanceof IConst) {
 				IConst c = (IConst) callParams.get(1);
-				if (c.getIntValue().intValue() == 0) {
+				if (c.getValueAsInt() == 0) {
 					return callParams.get(0);
-				} else if (c.getIntValue().intValue() == 1) {
+				} else if (c.getValueAsInt() == 1) {
 					return new BExprUn(BOpUn.NOT, (ExprInterface) callParams.get(0));
 				}
 			}

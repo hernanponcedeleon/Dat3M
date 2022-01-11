@@ -3,9 +3,7 @@ package com.dat3m.dartagnan.asserts;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 
 public class AssertNot extends AbstractAssert {
 
@@ -18,11 +16,6 @@ public class AssertNot extends AbstractAssert {
 
     AbstractAssert getChild(){
         return child;
-    }
-
-    @Override
-    public ImmutableSet<Location> getLocs() {
-        return child.getLocs();
     }
 
     @Override

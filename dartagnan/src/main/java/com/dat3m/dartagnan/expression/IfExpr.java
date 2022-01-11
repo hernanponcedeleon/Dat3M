@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Formula;
@@ -12,13 +12,15 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 
-public class IfExpr implements ExprInterface {
+public class IfExpr extends IExpr implements ExprInterface {
 
 	private final BExpr guard;
-	private final ExprInterface tbranch;
-	private final ExprInterface fbranch;
+	private final IExpr tbranch;
+	private final IExpr fbranch;
 	
-	public IfExpr(BExpr guard, ExprInterface tbranch, ExprInterface fbranch) {
+	public IfExpr(BExpr guard, IExpr tbranch, IExpr fbranch) {
+    	Preconditions.checkArgument(tbranch.getPrecision() == fbranch.getPrecision(), 
+    			"The type of " + tbranch + " and " + fbranch + " does not match");
 		this.guard =  guard;
 		this.tbranch = tbranch;
 		this.fbranch = fbranch;
@@ -51,11 +53,6 @@ public class IfExpr implements ExprInterface {
         return new ImmutableSet.Builder<Register>().addAll(guard.getRegs()).addAll(tbranch.getRegs()).addAll(fbranch.getRegs()).build();
 	}
 
-	@Override
-	public ImmutableSet<Location> getLocs() {
-		return new ImmutableSet.Builder<Location>().addAll(guard.getLocs()).addAll(tbranch.getLocs()).addAll(fbranch.getLocs()).build();
-	}
-	
     @Override
     public String toString() {
         return "(if " + guard + " then " + tbranch + " else " + fbranch + ")";
@@ -65,12 +62,17 @@ public class IfExpr implements ExprInterface {
 		return guard;
 	}
 
-	public ExprInterface getTrueBranch() {
+	public IExpr getTrueBranch() {
 		return tbranch;
 	}
 
-	public ExprInterface getFalseBranch() {
+	public IExpr getFalseBranch() {
 		return fbranch;
+	}
+
+	@Override
+	public int getPrecision() {
+		return tbranch.getPrecision();
 	}
 
 	@Override

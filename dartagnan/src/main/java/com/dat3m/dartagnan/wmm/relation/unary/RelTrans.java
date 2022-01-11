@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -38,8 +39,8 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx){
-        super.initialise(task, ctx);
+    public void initializeRelationAnalysis(VerificationTask task, Context context) {
+        super.initializeRelationAnalysis(task, context);
         fullEncodeTupleSet = new TupleSet();
         transitiveReachabilityMap = null;
     }
@@ -48,7 +49,7 @@ public class RelTrans extends UnaryRelation {
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             //TODO: Make sure this is correct and efficient
-            BranchEquivalence eq = task.getBranchEquivalence();
+            BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
             minTupleSet = new TupleSet(r1.getMinTupleSet());
             boolean changed;
             int size = minTupleSet.size();

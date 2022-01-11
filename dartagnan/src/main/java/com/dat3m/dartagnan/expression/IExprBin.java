@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.Formula;
@@ -37,11 +36,6 @@ public class IExprBin extends IExpr implements ExprInterface {
     }
 
     @Override
-    public ImmutableSet<Location> getLocs() {
-        return new ImmutableSet.Builder<Location>().addAll(lhs.getLocs()).addAll(rhs.getLocs()).build();
-    }
-
-    @Override
     public String toString() {
         return "(" + lhs + " " + op + " " + rhs + ")";
     }
@@ -53,8 +47,8 @@ public class IExprBin extends IExpr implements ExprInterface {
     
     @Override
 	public IConst reduce() {
-    	BigInteger v1 = lhs.reduce().getIntValue();
-    	BigInteger v2 = rhs.reduce().getIntValue();
+    	BigInteger v1 = lhs.reduce().getValue();
+    	BigInteger v2 = rhs.reduce().getValue();
 		return new IConst(op.combine(v1, v2), lhs.getPrecision());
 	}
 

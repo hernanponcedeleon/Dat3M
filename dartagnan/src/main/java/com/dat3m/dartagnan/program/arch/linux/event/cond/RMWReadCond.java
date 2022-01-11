@@ -1,16 +1,13 @@
 package com.dat3m.dartagnan.program.arch.linux.event.cond;
 
+import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -32,8 +29,8 @@ public abstract class RMWReadCond extends Load implements RegWriter, RegReaderDa
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx) {
-        super.initialise(task, ctx);
+    public void initializeEncoding(SolverContext ctx) {
+        super.initializeEncoding(ctx);
         formulaCond = generalEqual(memValueExpr, cmp.toIntFormula(this, ctx), ctx);
     }
 
@@ -52,9 +49,8 @@ public abstract class RMWReadCond extends Load implements RegWriter, RegReaderDa
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-
     @Override
-    protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
-        throw new ProgramProcessingException("RMWReadCond cannot be unrolled: event must be generated during compilation");
+	public RMWReadCond getCopy(){
+        throw new ProgramProcessingException(getClass().getName() + " cannot be unrolled: event must be generated during compilation");
     }
 }

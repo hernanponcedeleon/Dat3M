@@ -89,17 +89,17 @@ static inline void mutex_unlock(mutex_t *m)
 // main.c
 //
 int shared;
-mutex_t* mutex;
+mutex_t mutex;
 
 void *thread_n(void *arg)
 {
     intptr_t index = ((intptr_t) arg);
 
-    mutex_lock(mutex);
+    mutex_lock(&mutex);
     shared = index;
     int r = shared;
     assert(r == index);
-    mutex_unlock(mutex);
+    mutex_unlock(&mutex);
     return NULL;
 }
 
@@ -108,8 +108,7 @@ void *thread_n(void *arg)
 int main()
 {
     pthread_t t0, t1, t2;
-    mutex = malloc(sizeof(mutex_t));
-    mutex_init(mutex);
+    mutex_init(&mutex);
 
     pthread_create(&t0, NULL, thread_n, (void *) 0);
     pthread_create(&t1, NULL, thread_n, (void *) 1);

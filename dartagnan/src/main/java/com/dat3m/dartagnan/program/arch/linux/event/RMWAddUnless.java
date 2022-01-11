@@ -14,8 +14,8 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.configuration.Arch;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
@@ -42,6 +42,15 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
         return resultRegister + " := atomic_add_unless" + "(" + address + ", " + value + ", " + cmp + ")";
     }
 
+    public ExprInterface getCmp() {
+    	return cmp;
+    }
+    
+    @Override
+    public ExprInterface getMemValue(){
+        return value;
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -55,23 +64,20 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        if(target == Arch.NONE) {
-            Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            RMWReadCondUnless load = Linux.newRMWReadCondUnless(dummy, cmp, address, Mo.RELAXED);
-            RMWStoreCond store = Linux.newRMWStoreCond(load, address, new IExprBin(dummy, IOpBin.PLUS, value), Mo.RELAXED);
-            Local local = newLocal(resultRegister, new Atom(dummy, COpBin.NEQ, cmp));
+    public List<Event> compile(Arch target) {
+        Preconditions.checkArgument(target == Arch.NONE, "Compilation to " + target + " is not supported for " + getClass().getName());
 
-            List<Event> events = eventSequence(
-                    Linux.newConditionalMemoryBarrier(load),
-                    load,
-                    store,
-                    local,
-                    Linux.newConditionalMemoryBarrier(load)
-            );
+        Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+        RMWReadCondUnless load = Linux.newRMWReadCondUnless(dummy, cmp, address, Mo.RELAXED);
+        RMWStoreCond store = Linux.newRMWStoreCond(load, address, new IExprBin(dummy, IOpBin.PLUS, value), Mo.RELAXED);
+        Local local = newLocal(resultRegister, new Atom(dummy, COpBin.NEQ, cmp));
 
-            return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
-        }
-        return super.compileRecursive(target, nextId, predecessor, depth + 1);
+        return eventSequence(
+                Linux.newConditionalMemoryBarrier(load),
+                load,
+                store,
+                local,
+                Linux.newConditionalMemoryBarrier(load)
+        );
     }
 }

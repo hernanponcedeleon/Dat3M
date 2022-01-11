@@ -22,14 +22,14 @@ import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.google.common.base.Preconditions;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 public class RelationRepository {
 
@@ -71,8 +71,6 @@ public class RelationRepository {
             }
             return relation;
         } catch (Exception e){
-            // TODO: This is very odd code? Is this branch ever executed?
-        	// No, but I don't see how to get rid of this code.
             e.printStackTrace();
             return null;
         }

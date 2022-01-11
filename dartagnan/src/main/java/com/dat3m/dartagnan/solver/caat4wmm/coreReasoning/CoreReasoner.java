@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.solver.caat4wmm.coreReasoning;
 
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
@@ -8,7 +9,6 @@ import com.dat3m.dartagnan.solver.caat.reasoning.ElementLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.EventDomain;
 import com.dat3m.dartagnan.solver.caat4wmm.ExecutionGraph;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.FenceGraph;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
@@ -33,7 +33,7 @@ public class CoreReasoner {
     public CoreReasoner(VerificationTask task, ExecutionGraph executionGraph) {
         this.executionGraph = executionGraph;
         this.memoryModel = task.getMemoryModel();
-        this.eq = task.getBranchEquivalence();
+        this.eq = task.getAnalysisContext().requires(BranchEquivalence.class);
     }
 
 

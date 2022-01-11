@@ -1,12 +1,10 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
+import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Formula;
@@ -29,8 +27,8 @@ public class ExecutionStatus extends Event implements RegWriter {
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx) {
-        super.initialise(task, ctx);
+    public void initializeEncoding(SolverContext ctx) {
+        super.initializeEncoding(ctx);
         regResultExpr = register.toIntFormulaResult(this, ctx);
     }
 
@@ -50,7 +48,7 @@ public class ExecutionStatus extends Event implements RegWriter {
     }
 
     @Override
-    protected BooleanFormula encodeExec(SolverContext ctx){
+    public BooleanFormula encodeExec(SolverContext ctx){
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 
         int precision = register.getPrecision();
@@ -67,7 +65,7 @@ public class ExecutionStatus extends Event implements RegWriter {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
-        throw new ProgramProcessingException("ExecutionStatus cannot be unrolled: event must be generated during compilation");
+	public Event getCopy(){
+        throw new ProgramProcessingException(getClass().getName() + " cannot be unrolled: event must be generated during compilation");
     }
 }

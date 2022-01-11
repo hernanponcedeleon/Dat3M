@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
@@ -34,11 +33,6 @@ public class BExprUn extends BExpr {
     @Override
     public ImmutableSet<Register> getRegs() {
         return b.getRegs();
-    }
-
-    @Override
-    public ImmutableSet<Location> getLocs() {
-        return b.getLocs();
     }
 
     @Override

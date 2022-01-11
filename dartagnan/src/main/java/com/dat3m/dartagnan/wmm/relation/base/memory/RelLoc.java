@@ -1,8 +1,9 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
+import com.dat3m.dartagnan.expression.utils.Utils;
+import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.expression.utils.Utils;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -26,11 +27,10 @@ public class RelLoc extends Relation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
+            AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
             minTupleSet = new TupleSet();
             for (Tuple t : getMaxTupleSet()) {
-                MemEvent e1 = (MemEvent) t.getFirst();
-                MemEvent e2 = (MemEvent) t.getSecond();
-                if (e1.getMaxAddressSet().size() == 1 && e2.getMaxAddressSet().size() == 1) {
+                if (alias.mustAlias((MemEvent) t.getFirst(), (MemEvent) t.getSecond())) {
                     minTupleSet.add(t);
                 }
             }
@@ -41,11 +41,12 @@ public class RelLoc extends Relation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
+            AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
             maxTupleSet = new TupleSet();
             Collection<Event> events = task.getProgram().getCache().getEvents(FilterBasic.get(MEMORY));
             for(Event e1 : events){
                 for(Event e2 : events){
-                    if(MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent)e2)){
+                    if(alias.mayAlias((MemEvent) e1, (MemEvent)e2)){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }

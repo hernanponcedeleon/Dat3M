@@ -1,6 +1,9 @@
 package com.dat3m.dartagnan.utils.symmetry;
 
+import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
+import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.utils.EType;
@@ -12,6 +15,7 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -72,6 +76,7 @@ public class CoSymmetryBreaking {
 
     private final VerificationTask task;
     private final ThreadSymmetry symm;
+    private final AliasAnalysis alias;
     private final Relation co;
 
     private final Map<EquivalenceClass<Thread>, Info> infoMap;
@@ -84,14 +89,11 @@ public class CoSymmetryBreaking {
     }
 
     public CoSymmetryBreaking(VerificationTask task) {
-        this.task = task;
-        this.symm = task.getThreadSymmetry();
+        this.task = Preconditions.checkNotNull(task);
+        this.symm = task.getAnalysisContext().requires(ThreadSymmetry.class);
+        this.alias = task.getAnalysisContext().requires(AliasAnalysis.class);
         this.co = task.getMemoryModel().getRelationRepository().getRelation(RelationNameRepository.CO);
         infoMap = new HashMap<>();
-    }
-
-    public void initialize() {
-        infoMap.clear();
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
             initialize(symmClass);
         }
@@ -112,7 +114,7 @@ public class CoSymmetryBreaking {
 
         // Symmetric writes that cannot alias are related to e.g. thread-creation
         // We do not want to break on those
-        writes.removeIf(w -> !Store.canAddressTheSameLocation(w, (Store)symm.map(w, symmThreads.get(1))));
+        writes.removeIf(w -> !alias.mayAlias(w, (Store)symm.map(w, symmThreads.get(1))));
 
         // We compute the (overall) sync-degree of a write w as the maximal sync degree over all
         // axioms. The sync-degree of w for axiom(r) is computed via must(r).
@@ -137,11 +139,9 @@ public class CoSymmetryBreaking {
         // first position.
         for (int i = 0; i < writes.size(); i++) {
             Store w = writes.get(i);
-            if (w.getMaxAddressSet().size() > 1) {
-                continue;
-            }
+
             boolean mustAlias = symmThreads.stream()
-                    .allMatch(t -> ((Store)symm.map(w, t)).getMaxAddressSet().equals(w.getMaxAddressSet()));
+                    .allMatch(t -> alias.mustAlias(w, (Store)symm.map(w, t)));
 
             if (mustAlias) {
                 info.hasMustEdges = true;
@@ -234,7 +234,7 @@ public class CoSymmetryBreaking {
 
             final String id = "_" + rep.getId() + "_" + i;
             // NOTE: We want to have r1 >= r2 but lexLeader encodes r1 <= r2, so we swap r1 and r2.
-            enc = bmgr.and(enc, SymmetryBreaking.encodeLexLeader(id, r2, r1, ctx));
+            enc = bmgr.and(enc, SymmetryEncoder.encodeLexLeader(id, r2, r1, ctx));
 
             t1 = t2;
             r1Tuples = r2Tuples;

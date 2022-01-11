@@ -1,10 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.parsers.program.boogie.Function;
-import com.dat3m.dartagnan.parsers.program.boogie.FunctionCall;
-import com.dat3m.dartagnan.parsers.program.boogie.PthreadPool;
-import com.dat3m.dartagnan.parsers.program.boogie.Scope;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
@@ -12,7 +9,10 @@ import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.*;
 import com.dat3m.dartagnan.parsers.BoogieVisitor;
-import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.parsers.program.boogie.Function;
+import com.dat3m.dartagnan.parsers.program.boogie.FunctionCall;
+import com.dat3m.dartagnan.parsers.program.boogie.PthreadPool;
+import com.dat3m.dartagnan.parsers.program.boogie.Scope;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
@@ -156,11 +156,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			ExprInterface def = ((Atom)exp).getRHS();
 			constantsMap.put(name, def);
 		}
-		if(exp instanceof Atom && ((Atom)exp).getLHS() instanceof Address && ((Atom)exp).getOp().equals(EQ)) {
- 			Address add = (Address)((Atom)exp).getLHS();
- 			Reducible def = (Reducible) ((Atom)exp).getRHS();
- 			add.setConstantValue(def.reduce().getValue());
- 		}
 		return null;
 	}
 
@@ -171,7 +166,23 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			String type = ctx.typed_idents().type().getText();
 			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
 			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name) && ATOMICPROCEDURES.stream().noneMatch(name::startsWith)) {
-				programBuilder.getOrCreateLocation(name, precision);
+				int size = 0;
+				String tmp = ctx.getText();
+				if(ctx.getText().contains(":allocSize")) {
+					tmp = tmp.split(":allocSize")[1];
+					tmp = tmp.split("}")[0];
+					size = Integer.parseInt(tmp);
+				} 
+				if(size > 0) {
+					programBuilder.addDeclarationArray(name, Collections.nCopies(size, IConst.ZERO));										
+				} else {
+					// Since we treat all globally defined variables as arrays 
+					// (e.g. an int variable results in an array of size 4 since 
+					// boogie works at the byte granularity), we need this for char 
+					// variables which would result in a single variable but we will 
+					// treat it as an array of size 1
+					programBuilder.getOrCreateLocation(name + "[0]");
+				}
 			} else {
 				constantsTypeMap.put(name, precision);
 			}
@@ -191,10 +202,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	 for(Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
     		 for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
     			 String name = ident.getText();
-    			 String type = atiwC.typed_idents_where().typed_idents().type().getText();
-    			 int precision = type.contains("bv") && !name.equals("$M.0") ? Integer.parseInt(type.split("bv")[1]) : -1;
     			 if(!smackDummyVariables.contains(name)) {
-        			 programBuilder.getOrCreateLocation(name, precision);
+        			 programBuilder.getOrCreateLocation(name);
     			 }
     		 }
     	 }
@@ -235,7 +244,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
             programBuilder.initThread(name, threadCount);
             if(threadCount != 1) {
             	// Used to allow execution of threads after they have been created (pthread_create)
-        		Location loc = programBuilder.getOrCreateLocation(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))), -1);
+        		Location loc = programBuilder.getOrCreateLocation(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
         		Register reg = programBuilder.getOrCreateRegister(threadCount, null, -1);
                	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
                	programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, loc.getAddress(), label));
@@ -282,7 +291,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	if(create) {
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
-        		Location loc = programBuilder.getOrCreateLocation(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))), -1);
+        		Location loc = programBuilder.getOrCreateLocation(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
         		programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(loc.getAddress()));
          	}
         	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
@@ -677,7 +686,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				ExprInterface lhs = address;
 				BigInteger rhs = BigInteger.ZERO;
 				while(lhs instanceof IExprBin) {
-					rhs = rhs.add(((IExprBin)lhs).getRHS().reduce().getIntValue());
+					rhs = rhs.add(((IExprBin)lhs).getRHS().reduce().getValue());
 					lhs = ((IExprBin)lhs).getLHS();
 				}
 				String text = ctx.expr(1).getText();				
@@ -686,9 +695,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 					text = split[split.length - 1];
 					text = text.substring(text.indexOf("(")+1, text.indexOf(","));
 				}
-				if(!rhs.equals(BigInteger.ZERO)) {
-					text += "(" + rhs + ")";
-				}
+				// This needs to be consistent with the naming  
+				// used in ProgramBuilder for arrays
+				text += "[" + rhs + "]";
 				programBuilder.initLocEqConst(text, value.reduce());
 				return null;
 			}
@@ -728,8 +737,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitIf_then_else_expr(If_then_else_exprContext ctx) {
 		BExpr guard = (BExpr)ctx.expr(0).accept(this);
-		ExprInterface tbranch = (ExprInterface)ctx.expr(1).accept(this);
-		ExprInterface fbranch = (ExprInterface)ctx.expr(2).accept(this);
+		IExpr tbranch = (IExpr)ctx.expr(1).accept(this);
+		IExpr fbranch = (IExpr)ctx.expr(2).accept(this);
 		return new IfExpr(guard, tbranch, fbranch);
 	}
 

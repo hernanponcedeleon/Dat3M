@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.arch.linux.event;
 
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
@@ -10,8 +11,8 @@ import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.configuration.Arch;
+import com.google.common.base.Preconditions;
 
 import java.util.List;
 
@@ -32,6 +33,11 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
         return resultRegister + " := atomic_xchg" + Mo.toText(mo) + "(" + address + ", " + value + ")";
     }
 
+    @Override
+    public ExprInterface getMemValue(){
+        return value;
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -45,29 +51,26 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        if(target == Arch.NONE) {
-            Register dummy = resultRegister;
-            if(resultRegister == value){
-                dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            }
+    public List<Event> compile(Arch target) {
+        Preconditions.checkArgument(target == Arch.NONE, "Compilation to " + target + " is not supported for " + getClass().getName());
 
-            Fence optionalMbBefore = mo.equals(Mo.MB) ? Linux.newMemoryBarrier() : null;
-            Load load = newRMWLoad(dummy, address, Mo.loadMO(mo));
-            RMWStore store = newRMWStore(load, address, value, Mo.storeMO(mo));
-            Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
-            Fence optionalMbAfter = mo.equals(Mo.MB) ? Linux.newMemoryBarrier() : null;
-
-            List<Event> events = eventSequence(
-                    optionalMbBefore,
-                    load,
-                    store,
-                    optionalUpdateReg,
-                    optionalMbAfter
-            );
-
-            return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+        Register dummy = resultRegister;
+        if(resultRegister == value){
+            dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         }
-        return super.compileRecursive(target, nextId, predecessor, depth + 1);
+
+        Fence optionalMbBefore = mo.equals(Mo.MB) ? Linux.newMemoryBarrier() : null;
+        Load load = newRMWLoad(dummy, address, Mo.loadMO(mo));
+        RMWStore store = newRMWStore(load, address, value, Mo.storeMO(mo));
+        Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
+        Fence optionalMbAfter = mo.equals(Mo.MB) ? Linux.newMemoryBarrier() : null;
+
+        return eventSequence(
+                optionalMbBefore,
+                load,
+                store,
+                optionalUpdateReg,
+                optionalMbAfter
+        );
     }
 }

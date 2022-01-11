@@ -1,13 +1,11 @@
 package com.dat3m.dartagnan.program.arch.linux.event.cond;
 
+import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
-import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -29,8 +27,13 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx) {
-        super.initialise(task, ctx);
+    public boolean cfImpliesExec() {
+        return false;
+    }
+
+    @Override
+    public void initializeEncoding(SolverContext ctx) {
+        super.initializeEncoding(ctx);
         execVar = ctx.getFormulaManager().makeVariable(BooleanType, "exec(" + repr() + ")");
     }
 
@@ -40,7 +43,7 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
     }
 
     @Override
-    protected BooleanFormula encodeExec(SolverContext ctx){
+    public BooleanFormula encodeExec(SolverContext ctx){
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		return bmgr.equivalence(execVar, bmgr.and(cfVar, ((RMWReadCond)loadEvent).getCond()));
     }
@@ -49,7 +52,7 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
-        throw new ProgramProcessingException("RMWStoreCond cannot be unrolled: event must be generated during compilation");
+	public RMWStoreCond getCopy(){
+        throw new ProgramProcessingException(getClass().getName() + " cannot be unrolled: event must be generated during compilation");
     }
 }

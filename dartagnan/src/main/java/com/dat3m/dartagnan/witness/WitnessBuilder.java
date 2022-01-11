@@ -11,8 +11,11 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.options.DartagnanOptions;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -28,6 +31,8 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
+import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_ORIGINAL_PROGRAM_PATH;
 import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -36,34 +41,60 @@ import static com.dat3m.dartagnan.witness.GraphAttributes.*;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 import static java.lang.String.valueOf;
 
+@Options
 public class WitnessBuilder {
 	
-	private final Program program;
+	private final VerificationTask task;
 	private final SolverContext ctx;
 	private final ProverEnvironment prover;
-	private final String type ;
-	
+	private final String type;
+
+    // =========================== Configurables ===========================
+
+	@Option(
+			name=WITNESS_ORIGINAL_PROGRAM_PATH,
+			description="Path to the original C file (for which to create a witness).",
+			secure=true)
+	private String originalProgramFilePath;
+
+    public boolean canBeBuilt() { return originalProgramFilePath != null; }
+
+	@Option(
+			name=BOUND,
+			description = "Unrolling bound used in the verification.",
+			secure=true)
+	private String bound;
+
+    // =====================================================================
+
 	private final Map<Event, Integer> eventThreadMap = new HashMap<>();
 	
-	public WitnessBuilder(Program program, SolverContext ctx, ProverEnvironment prover, Result result) {
-		this.program = program;
+	public WitnessBuilder(VerificationTask task, SolverContext ctx, ProverEnvironment prover, Result result)
+		throws InvalidConfigurationException {
+		this.task = task;
 		this.ctx = ctx;
 		this.prover = prover;
 		this.type = result.equals(FAIL) ? "violation" : "correctness";
+
+		task.getConfig().inject(this);
 	}
 	
-	public WitnessGraph buildGraph(DartagnanOptions options) {
-		populateMap();
+	public WitnessGraph build() {
+		for(Thread t : task.getProgram().getThreads()) {
+			for(Event e : t.getEntry().getSuccessors()) {
+				eventThreadMap.put(e, t.getId() - 1);
+			}
+		}
 
 		WitnessGraph graph = new WitnessGraph();
-		graph.addAttribute(UNROLLBOUND.toString(), valueOf(options.getSettings().getBound()));
+		graph.addAttribute(UNROLLBOUND.toString(), valueOf(bound));
 		graph.addAttribute(WITNESSTYPE.toString(), type + "_witness");
 		graph.addAttribute(SOURCECODELANG.toString(), "C");
 		graph.addAttribute(PRODUCER.toString(), "Dartagnan");
 		graph.addAttribute(SPECIFICATION.toString(), "CHECK( init(main()), LTL(G ! call(reach_error())))");
-		graph.addAttribute(PROGRAMFILE.toString(), options.createWitness());
+		graph.addAttribute(PROGRAMFILE.toString(), originalProgramFilePath);
+		graph.addAttribute(PROGRAMHASH.toString(), getFileSHA256(new File(originalProgramFilePath)));
 		graph.addAttribute(ARCHITECTURE.toString(), "32bit");
-		graph.addAttribute(PROGRAMHASH.toString(), getFileSHA256(new File(options.createWitness())));
 		
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 		df.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -92,7 +123,7 @@ public class WitnessBuilder {
 		}
 
 		try (Model model = prover.getModel()) {
-			List<Event> execution = reOrderBasedOnAtomicity(program, getSCExecutionOrder(model));
+			List<Event> execution = reOrderBasedOnAtomicity(task.getProgram(), getSCExecutionOrder(model));
 
 			for (int i = 0; i < execution.size(); i++) {
 				Event e = execution.get(i);
@@ -138,20 +169,12 @@ public class WitnessBuilder {
 		return graph;
 	}
 	
-	private void populateMap() {
-		for(Thread t : program.getThreads()) {
-			for(Event e : t.getEntry().getSuccessors()) {
-				eventThreadMap.put(e, t.getId() - 1);
-			}
-		}
-	}
-	
 	private List<Event> getSCExecutionOrder(Model model) {
 		List<Event> execEvents = new ArrayList<>();
 		// TODO: we recently added many cline to many events and this might affect the witness generation.
 		Predicate<Event> executedCEvents = e -> e.wasExecuted(model) &&  e.getCLine() > - 1;
-		execEvents.addAll(program.getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(executedCEvents).collect(Collectors.toList()));
-		execEvents.addAll(program.getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));
+		execEvents.addAll(task.getProgram().getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(executedCEvents).collect(Collectors.toList()));
+		execEvents.addAll(task.getProgram().getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));
 		
 		Map<Integer, List<Event>> map = new HashMap<>();
         for(Event e : execEvents) {
@@ -231,5 +254,4 @@ public class WitnessBuilder {
 		}
 		return "";
 	}
-	
 }

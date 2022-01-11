@@ -14,6 +14,6 @@ public class ParserErrorListener extends ConsoleErrorListener {
             String msg,
             RecognitionException e
     ) throws ParsingException {
-        throw new ParsingException("line " + line + ":" + charPositionInLine + " " + msg);
+        throw new ParsingException("Line " + line + ":" + charPositionInLine + " " + msg);
     }
 }

@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -43,7 +43,7 @@ public class RelCartesian extends StaticRelation {
             maxTupleSet = new TupleSet();
             List<Event> l1 = task.getProgram().getCache().getEvents(filter1);
             List<Event> l2 = task.getProgram().getCache().getEvents(filter2);
-            BranchEquivalence eq = task.getBranchEquivalence();
+            BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
             for(Event e1 : l1){
                 for(Event e2 : l2){
                     if (!eq.areMutuallyExclusive(e1, e2)) {

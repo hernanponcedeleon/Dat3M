@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
@@ -26,8 +27,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RMW;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
@@ -57,9 +58,10 @@ public class RelRMW extends StaticRelation {
         forceDoEncode = true;
     }
 
+
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx){
-        super.initialise(task, ctx);
+    public void initializeRelationAnalysis(VerificationTask task, Context context) {
+        super.initializeRelationAnalysis(task, context);
         this.baseMaxTupleSet = null;
     }
 

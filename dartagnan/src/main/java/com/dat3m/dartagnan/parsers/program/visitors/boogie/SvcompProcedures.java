@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -88,7 +88,7 @@ public class SvcompProcedures {
     	IExpr expr = (IExpr)ctx.call_params().exprs().accept(visitor);
     	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, expr.getPrecision());
     	visitor.assertionIndex++;
-    	if(expr instanceof IConst && ((IConst)expr).getIntValue().equals(BigInteger.ONE)) {
+    	if(expr instanceof IConst && ((IConst)expr).getValue().equals(BigInteger.ONE)) {
     		return;
     	}
     	Local event = EventFactory.newLocal(ass, expr);
@@ -105,7 +105,7 @@ public class SvcompProcedures {
 
 	public static void __VERIFIER_atomic(VisitorBoogie visitor, boolean begin) {
         Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
-        Address lockAddress = visitor.programBuilder.getOrCreateLocation("__VERIFIER_atomic", -1).getAddress();
+        Address lockAddress = visitor.programBuilder.getOrCreateLocation("__VERIFIER_atomic").getAddress();
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		LinkedList<Event> events = new LinkedList<>();
         events.add(EventFactory.newLoad(register, lockAddress, null));

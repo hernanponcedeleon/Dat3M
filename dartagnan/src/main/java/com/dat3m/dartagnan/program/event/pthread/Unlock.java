@@ -6,8 +6,8 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.program.event.MemEvent;
+import com.dat3m.dartagnan.configuration.Arch;
 import com.google.common.base.Preconditions;
 
 import java.util.List;
@@ -18,25 +18,24 @@ import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 import static com.dat3m.dartagnan.program.utils.EType.LOCK;
 import static com.dat3m.dartagnan.program.utils.EType.RMW;
 
-public class Unlock extends Event {
+public class Unlock extends MemEvent {
 	
 	private final String name;
-	private final IExpr address;
 	private final Register reg;
 	private Label label;
     private Label label4Copy;
 
 	public Unlock(String name, IExpr address, Register reg, Label label){
+		super(address, SC);
 		this.name = name;
-        this.address = address;
         this.reg = reg;
         this.label = label;
         this.label.addListener(this);
     }
 
 	private Unlock(Unlock other){
+		super(other);
 		this.name = other.name;
-        this.address = other.address;
         this.reg = other.reg;
 		this.label = other.label4Copy;
 		Event notifier = label != null ? label : other.label;
@@ -57,6 +56,14 @@ public class Unlock extends Event {
     	}
     }
 
+    public Label getLabel() {
+    	return label;
+    }
+    
+    public Register getResultRegister() {
+    	return reg;
+    }
+    
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -69,18 +76,17 @@ public class Unlock extends Event {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+    public List<Event> compile(Arch target) {
     	Preconditions.checkNotNull(target, "Target cannot be null");
 
         List<Event> events = eventSequence(
-                newLoad(reg, address, SC),
+                newLoad(reg, address, mo),
                 newJump(new Atom(reg, NEQ, IConst.ONE), label),
-                newStore(address, IConst.ZERO, SC)
+                newStore(address, IConst.ZERO, mo)
         );
         for(Event e : events) {
             e.addFilters(LOCK, RMW);
         }
-        setCLineForAll(events, this.cLine);
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+        return events;
     }
 }

@@ -1,15 +1,15 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.solving.DataRaceSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,7 +24,6 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.ResourceHelper.readExpected;
 import static org.junit.Assert.assertEquals;
@@ -48,8 +47,12 @@ public class DataRaceTest {
 
     protected long getTimeout() { return 180000; }
 
-    protected Provider<Settings> getSettingsProvider() {
-        return Provider.fromSupplier(() -> new Settings(bound, 0));
+    protected Provider<Integer> getBoundProvider() {
+        return Provider.fromSupplier(() -> bound);
+    }
+
+    protected Provider<Integer> getTimeoutProvider() {
+        return Provider.fromSupplier(() -> 0);
     }
 
     protected Provider<Wmm> getWmmProvider() {
@@ -65,12 +68,13 @@ public class DataRaceTest {
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
     protected final Provider<Arch> targetProvider = () -> Arch.NONE;
     protected final Provider<String> filePathProvider = getProgramPathProvider();
-    protected final Provider<Settings> settingsProvider = getSettingsProvider();
+    protected final Provider<Integer> boundProvider = getBoundProvider();
+    protected final Provider<Integer> timeoutProvider = getTimeoutProvider();
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
     	readExpected(filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf("-")) + ".yml", "no-data-race.prp"));
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, targetProvider, settingsProvider);
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, targetProvider, boundProvider, timeoutProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
 
@@ -83,7 +87,8 @@ public class DataRaceTest {
     public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
             .around(shutdownOnError)
             .around(filePathProvider)
-            .around(settingsProvider)
+            .around(boundProvider)
+            .around(timeoutProvider)
             .around(programProvider)
             .around(wmmProvider)
             .around(taskProvider)
@@ -101,7 +106,13 @@ public class DataRaceTest {
                 {"race-1_2-join", 1},
                 {"race-1_2b-join", 1},
                 {"singleton", 1},
-                {"singleton-b", 1}
+                {"singleton-b", 1},
+                {"05-lval_ls_05-glob_idx_rc", 1},
+                {"05-lval_ls_08-glob_fld_2_rc", 1},
+                {"05-lval_ls_09-idxsense_rc", 12},
+                {"05-lval_ls_13-idxunknown_lock", 12},
+                {"05-lval_ls_14-idxunknown_access", 1},
+                {"06-symbeq_09-tricky_address4", 12},
         });
     }
     
@@ -109,6 +120,6 @@ public class DataRaceTest {
     @CSVLogger.FileName("csv/data-race")
     public void testAssume() throws Exception {
         assertEquals(expectedResultProvider.get(),
-        		checkForRaces(contextProvider.get(), taskProvider.get()));
+        		DataRaceSolver.run(contextProvider.get(), proverProvider.get(),taskProvider.get()));
     }
 }

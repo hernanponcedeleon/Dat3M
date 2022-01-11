@@ -2,8 +2,7 @@ package com.dat3m.dartagnan.program.atomic.event;
 
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.configuration.Arch;
 
 import java.util.List;
 
@@ -43,8 +42,7 @@ public class AtomicThreadFence extends Fence {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        List<Event> events;
+    public List<Event> compile(Arch target) {
         Fence fence = null;
         switch (target) {
             case NONE:
@@ -61,12 +59,10 @@ public class AtomicThreadFence extends Fence {
                         : mo.equals(ACQUIRE) ? Arm8.DSB.newISHLDBarrier() : null;
                 break;
             default:
-                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName());
         }
-        events = eventSequence(
+        return eventSequence(
                 fence
         );
-        setCLineForAll(events, this.cLine);
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }

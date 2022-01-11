@@ -6,8 +6,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.configuration.Arch;
 import com.google.common.base.Preconditions;
 
 import java.util.List;
@@ -16,23 +15,21 @@ import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
 
-public class Create extends Event {
+public class Create extends Store {
 
 	private final Register pthread_t;
 	private final String routine;
-	private final Address address;
 	
     public Create(Register pthread_t, String routine, Address address){
+    	super(address, IConst.ONE, SC);
         this.pthread_t = pthread_t;
         this.routine = routine;
-        this.address = address;
     }
 
     private Create(Create other){
     	super(other);
         this.pthread_t = other.pthread_t;
         this.routine = other.routine;
-        this.address = other.address;
     }
 
     @Override
@@ -53,12 +50,12 @@ public class Create extends Event {
 
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+    public List<Event> compile(Arch target) {
     	Preconditions.checkNotNull(target, "Target cannot be null");
 
         Fence optionalBarrierBefore = null;
         Fence optionalBarrierAfter = null;
-        Store store = newStore(address, IConst.ONE, SC, cLine);
+        Store store = newStore(address, value, mo, cLine);
         store.addFilters(PTHREAD);
 
         switch (target){
@@ -78,13 +75,10 @@ public class Create extends Event {
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
 
-        List<Event> events = eventSequence(
+        return eventSequence(
                 optionalBarrierBefore,
                 store,
                 optionalBarrierAfter
         );
-        setCLineForAll(events, this.cLine);
-
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }

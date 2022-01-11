@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
+import java.util.List;
+
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.linux.utils.EType;
@@ -7,8 +9,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.configuration.Arch;
 import com.google.common.collect.ImmutableSet;
 
 public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegReaderData {
@@ -48,7 +49,7 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName() + " " + mo);
+    public List<Event> compile(Arch target) {
+        throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName());
     }
 }

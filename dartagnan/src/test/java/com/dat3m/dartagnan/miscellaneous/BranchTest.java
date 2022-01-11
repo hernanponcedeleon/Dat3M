@@ -5,11 +5,10 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.solving.TwoSolvers;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
@@ -41,7 +39,6 @@ public class BranchTest {
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
         ImmutableMap<String, Result> expected = readExpectedResults();
-        Settings settings = new Settings(1, 60);
 
         Wmm linuxWmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat"));
         Wmm aarch64Wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat"));
@@ -51,7 +48,7 @@ public class BranchTest {
             data = fileStream
                     .filter(Files::isRegularFile)
                     .filter(f -> (f.toString().endsWith("litmus")))
-                    .map(f -> new Object[]{f.toString(), expected.get(f.getFileName().toString()), linuxWmm, settings})
+                    .map(f -> new Object[]{f.toString(), expected.get(f.getFileName().toString()), linuxWmm})
                     .collect(Collectors.toList());
         }
 
@@ -59,7 +56,7 @@ public class BranchTest {
             data.addAll(fileStream.
                     filter(Files::isRegularFile)
                     .filter(f -> (f.toString().endsWith("litmus")))
-                    .map(f -> new Object[]{f.toString(), expected.get(f.getFileName().toString()), aarch64Wmm, settings})
+                    .map(f -> new Object[]{f.toString(), expected.get(f.getFileName().toString()), aarch64Wmm})
                     .collect(Collectors.toList()));
         }
 
@@ -83,14 +80,12 @@ public class BranchTest {
 
     private final String path;
     private final Wmm wmm;
-    private final Settings settings;
     private final Result expected;
 
-    public BranchTest(String path, Result expected, Wmm wmm, Settings settings) {
+    public BranchTest(String path, Result expected, Wmm wmm) {
         this.path = path;
         this.expected = expected;
         this.wmm = wmm;
-        this.settings = settings;
     }
 
     @Test
@@ -100,8 +95,10 @@ public class BranchTest {
              ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
         {
             Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
+            VerificationTask task = VerificationTask.builder()
+                    .withSolverTimeout(60)
+                    .build(program, wmm);
+            assertEquals(expected, TwoSolvers.run(ctx, prover1, prover2, task));
         } catch (Exception e){
             fail("Missing resource file");
         }

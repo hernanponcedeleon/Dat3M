@@ -3,8 +3,6 @@ package com.dat3m.dartagnan.expression.processing;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
-
 
 public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface> {
 
@@ -50,17 +48,12 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
 
     @Override
     public ExprInterface visit(IfExpr ifExpr) {
-        return new IfExpr((BExpr)ifExpr.getGuard().visit(this), ifExpr.getTrueBranch().visit(this), ifExpr.getFalseBranch().visit(this));
+        return new IfExpr((BExpr)ifExpr.getGuard().visit(this), (IExpr)ifExpr.getTrueBranch().visit(this), (IExpr)ifExpr.getFalseBranch().visit(this));
     }
 
     @Override
     public IExpr visit(INonDet iNonDet) {
         return iNonDet;
-    }
-
-    @Override
-    public ExprInterface visit(Location loc) {
-        return loc;
     }
 
     @Override

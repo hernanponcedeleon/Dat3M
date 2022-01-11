@@ -7,8 +7,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.configuration.Arch;
 import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
@@ -19,18 +18,15 @@ import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
 
-public class Join extends Event {
+public class Join extends Load {
 
 	private final Register pthread_t;
-	private final Register reg;
-	private final Address address;
 	private Label label;
     private Label label4Copy;
 
-    public Join(Register pthread_t, Register reg, Address address, Label label){
+    public Join(Register pthread_t, Register reg, Address address, Label label) {
+    	super(reg, address, SC);
         this.pthread_t = pthread_t;
-        this.reg = reg;
-        this.address = address;
         this.label = label;
         this.label.addListener(this);
     }
@@ -38,8 +34,6 @@ public class Join extends Event {
     public Join(Join other){
     	super(other);
         this.pthread_t = other.pthread_t;
-        this.reg = other.reg;
-        this.address = other.address;
 		this.label = other.label4Copy;
 		Event notifier = label != null ? label : other.label;
 		notifier.addListener(this);
@@ -59,6 +53,10 @@ public class Join extends Event {
     	}
     }
 
+    public Label getLabel() {
+    	return label;
+    }
+    
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -71,11 +69,11 @@ public class Join extends Event {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+    public List<Event> compile(Arch target) {
     	Preconditions.checkNotNull(target, "Target cannot be null");
 
         List<Event> events = new ArrayList<>();
-        Load load = newLoad(reg, address, SC);
+        Load load = newLoad(resultRegister, address, mo);
         load.addFilters(PTHREAD);
         events.add(load);
 
@@ -85,7 +83,7 @@ public class Join extends Event {
             case POWER:
                 Label label = newLabel("Jump_" + oId);
                 events.addAll(eventSequence(
-                        newFakeCtrlDep(reg, label),
+                        newFakeCtrlDep(resultRegister, label),
                         label,
                         Power.newISyncBarrier()
                 ));
@@ -96,9 +94,7 @@ public class Join extends Event {
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
-
-        events.add(newJumpUnless(new Atom(reg, EQ, IConst.ZERO), label));
-        setCLineForAll(events, this.cLine);
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+        events.add(newJumpUnless(new Atom(resultRegister, EQ, IConst.ZERO), label));
+        return events;
     }
 }

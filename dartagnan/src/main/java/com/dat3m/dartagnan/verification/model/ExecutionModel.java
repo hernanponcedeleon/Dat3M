@@ -342,7 +342,7 @@ public class ExecutionModel {
                     addressInitMap.put(address, data);
                 }
             } else {
-                throw new RuntimeException("Unexpected memory event");
+                throw new UnsupportedOperationException("Unexpected memory event " + data.getEvent());
             }
 
         } else if (data.isFence()) {

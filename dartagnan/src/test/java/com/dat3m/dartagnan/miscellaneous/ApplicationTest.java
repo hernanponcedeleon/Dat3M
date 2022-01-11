@@ -1,64 +1,123 @@
 package com.dat3m.dartagnan.miscellaneous;
 
+import com.dat3m.dartagnan.Dartagnan;
+import com.dat3m.dartagnan.utils.ResourceHelper;
 import org.junit.Test;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
-import com.dat3m.dartagnan.Dartagnan;
-import com.dat3m.dartagnan.analysis.Analysis;
-import com.dat3m.dartagnan.analysis.Method;
-import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-
-import static com.dat3m.dartagnan.analysis.Analysis.*;
-import static com.dat3m.dartagnan.analysis.Method.*;
-import static com.dat3m.dartagnan.utils.options.BaseOptions.*;
-import static com.dat3m.dartagnan.utils.options.DartagnanOptions.ANALYSIS_OPTION;
-import static com.dat3m.dartagnan.wmm.utils.Arch.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.utils.ResourceHelper.LITMUS_RESOURCE_PATH;
+import static com.dat3m.dartagnan.configuration.Method.*;
+import static com.dat3m.dartagnan.configuration.Property.*;
 
 public class ApplicationTest {
 
     @Test
     public void Two() throws Exception {
-    	Dartagnan.main(createandFillOptions(REACHABILITY, TWO, NONE));
+    	Dartagnan.main(createAndFillOptions(REACHABILITY.asStringOption(), 
+    										TWO.asStringOption(),
+    										Solvers.Z3.toString()));
     }
 
     @Test
     public void Assume() throws Exception {
-    	Dartagnan.main(createandFillOptions(REACHABILITY, ASSUME, TSO));
+    	Dartagnan.main(createAndFillOptions(REACHABILITY.asStringOption(), 
+    										ASSUME.asStringOption(),
+    										Solvers.Z3.toString()));
     }
 
     @Test
     public void Incremental() throws Exception {
-    	Dartagnan.main(createandFillOptions(REACHABILITY, INCREMENTAL, ARM8));
+    	Dartagnan.main(createAndFillOptions(REACHABILITY.asStringOption(), 
+    										INCREMENTAL.asStringOption(),
+    										Solvers.Z3.toString()));
     }
 
     @Test
     public void CAAT() throws Exception {
-    	Dartagnan.main(createandFillOptions(REACHABILITY, CAAT, POWER));
+    	Dartagnan.main(createAndFillOptions(REACHABILITY.asStringOption(), 
+    										CAAT.asStringOption(),
+    										Solvers.Z3.toString()));
     }
 
     @Test
     public void Races() throws Exception {
-    	Dartagnan.main(createandFillOptions(RACES, ASSUME, NONE));
+    	Dartagnan.main(createAndFillOptions(RACES.asStringOption(), 
+    										ASSUME.asStringOption(),
+    										Solvers.Z3.toString()));
     }
 
-	private String[] createandFillOptions(Analysis analysis, Method method, Arch target) {
-		String[] dartagnanOptions = new String[14];
+    @Test
+    public void Validation() throws Exception {
+		String[] options = new String[3];
 		
-		dartagnanOptions[0] = "-" + INPUT_OPTION;
-	    dartagnanOptions[1] = ResourceHelper.TEST_RESOURCE_PATH + "locks/ttas-5.bpl";
-	    dartagnanOptions[2] = "-" + CAT_OPTION;
-	    dartagnanOptions[3] = ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat";
-	    dartagnanOptions[4] = "-" + UNROLL_OPTION;
-	    dartagnanOptions[5] = "2";
-	    dartagnanOptions[6] = "-" + ANALYSIS_OPTION;
-	    dartagnanOptions[7] = analysis.asStringOption();
-	    dartagnanOptions[8] = "-" + METHOD_OPTION;
-	    dartagnanOptions[9] = method.asStringOption();	    	
-	    dartagnanOptions[10] = "-" + SMTSOLVER_OPTION;
-	    dartagnanOptions[11] = Solvers.Z3.toString().toLowerCase();
-	    dartagnanOptions[12] = "-" + TARGET_OPTION;
-	    dartagnanOptions[13] = target.asStringOption();
+	    options[0] = ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bpl";
+	    options[1] = ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat";
+    	options[2] = String.format("--%s=%s", VALIDATE, ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01.graphml");
+
+    	Dartagnan.main(options);
+    }
+
+    @Test
+    public void Litmus() throws Exception {
+		String[] options = new String[2];
+		
+	    options[0] = LITMUS_RESOURCE_PATH + "litmus/X86/2+2W.litmus";
+	    options[1] = ResourceHelper.CAT_RESOURCE_PATH + "cat/tso.cat";
+
+    	Dartagnan.main(options);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void WrongProgramFormat() throws Exception {
+		String[] options = new String[1];
+		
+	    options[0] = ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bc";
+
+    	Dartagnan.main(options);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void WrongCATFormat() throws Exception {
+		String[] options = new String[2];
+		
+	    options[0] = ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bpl";
+	    options[1] = ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.bell";
+
+    	Dartagnan.main(options);
+    }
+
+    @Test(expected = InvalidConfigurationException.class)
+    public void UnsupportedAnalysis() throws Exception {
+    	Dartagnan.main(createAndFillOptions("unsupported-analysis", 
+    										ASSUME.asStringOption(),
+    										Solvers.Z3.toString()));
+    }
+
+    @Test(expected = InvalidConfigurationException.class)
+    public void UnsupportedMethod() throws Exception {
+    	Dartagnan.main(createAndFillOptions(REACHABILITY.asStringOption(), 
+    										"unsupported-method",
+    										Solvers.Z3.toString()));
+    }
+
+    @Test(expected = InvalidConfigurationException.class)
+    public void UnsupportedSolver() throws Exception {
+    	Dartagnan.main(createAndFillOptions(REACHABILITY.asStringOption(), 
+    										ASSUME.asStringOption(),
+    										"unsupported-solver"));
+    }
+
+	private String[] createAndFillOptions(String property, String method, String solver) {
+		String[] dartagnanOptions = new String[6];
+		
+	    dartagnanOptions[0] = ResourceHelper.TEST_RESOURCE_PATH + "locks/ttas-5.bpl";
+	    dartagnanOptions[1] = ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat";
+	    dartagnanOptions[2] = String.format("--%s=%s", BOUND, 2);
+	    dartagnanOptions[3] = String.format("--%s=%s", PROPERTY, property);
+	    dartagnanOptions[4] = String.format("--%s=%s", METHOD, method);
+	    dartagnanOptions[5] = String.format("--%s=%s", SOLVER, solver);
 	    
 	    return dartagnanOptions;
 	}

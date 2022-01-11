@@ -28,6 +28,7 @@ import com.google.common.base.Verify;
 import com.google.common.primitives.UnsignedInteger;
 import com.google.common.primitives.UnsignedLong;
 
+// TODO why is INonDet not a IConst?
 public class INonDet extends IExpr implements ExprInterface {
 	
 	private final INonDetTypes type;

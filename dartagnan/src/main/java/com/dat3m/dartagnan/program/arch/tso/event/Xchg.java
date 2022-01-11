@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.arch.tso.event;
 
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.tso.utils.EType;
 import com.dat3m.dartagnan.program.event.Event;
@@ -10,8 +11,7 @@ import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.configuration.Arch;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
@@ -52,6 +52,11 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
         return "xchg(*" + address + ", " + resultRegister + ")";
     }
 
+    @Override
+    public ExprInterface getMemValue(){
+        return resultRegister;
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -65,8 +70,9 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Preconditions.checkArgument(target == Arch.TSO, getClass().getSimpleName() + " can only be compiled to " + Arch.TSO);
+    public List<Event> compile(Arch target) {
+        Preconditions.checkArgument(target == Arch.TSO, "Compilation to " + target + " is not supported for " + getClass().getName());
+        
         Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         Load load = newRMWLoad(dummyReg, address, null);
         load.addFilters(EType.ATOM);
@@ -76,11 +82,10 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
 
         Local updateReg = newLocal(resultRegister, dummyReg);
 
-        List<Event> events = eventSequence(
+        return eventSequence(
                 load,
                 store,
                 updateReg
         );
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }

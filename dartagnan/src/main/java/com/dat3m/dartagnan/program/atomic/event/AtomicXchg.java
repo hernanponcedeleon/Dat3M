@@ -1,19 +1,19 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.configuration.Arch;
 
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.*;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
-import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
+import static com.dat3m.dartagnan.configuration.Arch.POWER;
 
 public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderData {
 
@@ -31,6 +31,11 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
         return resultRegister + " = atomic_exchange" + tag + "(*" + address + ", " + value + (mo != null ? ", " + mo : "") + ")";
     }
 
+    @Override
+    public ExprInterface getMemValue() {
+    	return value;
+    }
+    
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -44,10 +49,10 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	List<Event> events;
+    public List<Event> compile(Arch target) {
+        List<Event> events;
         switch(target) {
-            case NONE: 
+            case NONE:
             case TSO: {
                 Load load = newRMWLoad(resultRegister, address, mo);
                 Store store = newRMWStore(load, address, value, mo);
@@ -62,7 +67,7 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
                 String loadMo = extractLoadMo(mo);
                 String storeMo = extractStoreMo(mo);
 
-            	Load load = newRMWLoadExclusive(resultRegister, address, loadMo);
+                Load load = newRMWLoadExclusive(resultRegister, address, loadMo);
                 Store store = newRMWStoreExclusive(address, value, storeMo, true);
                 Label label = newLabel("FakeDep");
                 Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
@@ -74,7 +79,7 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
                             : storeMo.equals(REL) ? Power.newLwSyncBarrier()
                             : null;
                 }
-                
+
                 // All events for POWER and ARM8
                 events = eventSequence(
                         optionalMemoryBarrier,
@@ -86,9 +91,8 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
                 );
                 break;
             default:
-                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName());
         }
-        setCLineForAll(events, this.cLine);
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+        return events;
     }
 }

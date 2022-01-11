@@ -8,7 +8,6 @@ import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -27,10 +26,6 @@ public interface ExprInterface {
     	return ImmutableSet.of();
     }
 
-    default ImmutableSet<Location> getLocs() {
-    	return ImmutableSet.of();
-    }
-    
     <T> T visit(ExpressionVisitor<T> visitor);
 
     //default ExprInterface simplify() { return visit(ExprSimplifier.SIMPLIFIER); }

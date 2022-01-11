@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.event.pthread;
 
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.program.event.Store;
+import com.dat3m.dartagnan.configuration.Arch;
 import com.google.common.base.Preconditions;
 
 import java.util.List;
@@ -11,22 +11,18 @@ import java.util.List;
 import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 
-public class InitLock extends Event {
+public class InitLock extends Store {
 	
 	private final String name;
-	private final IExpr address;
-	private final IExpr value;
 
 	public InitLock(String name, IExpr address, IExpr value){
+		super(address, value, SC);
 		this.name = name;
-        this.address = address;
-        this.value = value;
     }
 
 	private InitLock(InitLock other){
+        super(other);
 		this.name = other.name;
-        this.address = other.address;
-        this.value = other.value;
     }
 
     @Override
@@ -45,15 +41,11 @@ public class InitLock extends Event {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+    public List<Event> compile(Arch target) {
     	Preconditions.checkNotNull(target, "Target cannot be null");
-        List<Event> events = eventSequence(
-                newStore(address, value, SC)
+        return eventSequence(
+                newStore(address, value, mo)
         );
-        setCLineForAll(events, this.cLine);
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
-
 }

@@ -5,8 +5,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.configuration.Arch;
 import com.google.common.base.Preconditions;
 
 import java.util.List;
@@ -14,17 +13,14 @@ import java.util.List;
 import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 
-public class End extends Event {
+public class End extends Store {
 
-	private final Address address;
-	
     public End(Address address){
-        this.address = address;
+    	super(address, IConst.ZERO, SC);
     }
 
     private End(End other){
     	super(other);
-        this.address = other.address;
     }
 
     @Override
@@ -44,12 +40,12 @@ public class End extends Event {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+    public List<Event> compile(Arch target) {
     	Preconditions.checkNotNull(target, "Target cannot be null");
-
+    	
         Fence optionalBarrierBefore = null;
         Fence optionalBarrierAfter = null;
-        Store store = newStore(address, IConst.ZERO, SC);
+        Store store = newStore(address, value, mo);
 
         switch (target){
             case NONE:
@@ -68,14 +64,10 @@ public class End extends Event {
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
 
-        List<Event> events = eventSequence(
+        return eventSequence(
                 optionalBarrierBefore,
                 store,
                 optionalBarrierAfter
         );
-        setCLineForAll(events, this.cLine);
-
-        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
-
 }
