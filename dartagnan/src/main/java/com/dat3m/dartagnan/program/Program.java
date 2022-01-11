@@ -2,13 +2,13 @@ package com.dat3m.dartagnan.program;
 
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
-import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.configuration.Arch;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;

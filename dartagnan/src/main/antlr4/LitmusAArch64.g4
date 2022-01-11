@@ -4,7 +4,7 @@ import LitmusAssertions;
 
 @header{
 import com.dat3m.dartagnan.expression.op.*;
-import com.dat3m.dartagnan.program.arch.aarch64.utils.Mo;
+import com.dat3m.dartagnan.program.event.arch.aarch64.utils.Mo;
 }
 
 main

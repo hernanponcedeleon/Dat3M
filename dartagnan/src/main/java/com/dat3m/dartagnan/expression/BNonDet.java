@@ -1,13 +1,13 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.base.Verify;
 import org.sosy_lab.java_smt.api.*;
 
-import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
-
 import java.math.BigInteger;
+
+import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 public class BNonDet extends BExpr implements ExprInterface {
 

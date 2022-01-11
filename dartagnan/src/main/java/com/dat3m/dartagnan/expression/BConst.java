@@ -1,8 +1,11 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.event.Event;
-import org.sosy_lab.java_smt.api.*;
+import com.dat3m.dartagnan.program.event.core.Event;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class BConst extends BExpr implements ExprInterface {
 
