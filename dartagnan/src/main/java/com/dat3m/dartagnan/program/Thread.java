@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.utils.ThreadCache;
+import com.dat3m.dartagnan.program.utils.EventCache;
 import com.google.common.base.Preconditions;
 
 import java.util.HashMap;
@@ -19,7 +19,7 @@ public class Thread {
     private Event exit;
 
     private final Map<String, Register> registers;
-    private ThreadCache cache;
+    private EventCache cache;
 
     public Thread(String name, int id, Event entry){
     	Preconditions.checkArgument(id >= 0, "Invalid thread ID");
@@ -48,9 +48,9 @@ public class Thread {
         return id;
     }
 
-    public ThreadCache getCache(){
+    public EventCache getCache(){
         if(cache == null){
-            cache = new ThreadCache(entry.getSuccessors());
+            cache = new EventCache(entry.getSuccessors());
         }
         return cache;
     }

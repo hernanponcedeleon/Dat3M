@@ -10,12 +10,12 @@ import com.google.common.collect.ImmutableMap;
 
 import java.util.*;
 
-public class ThreadCache {
+public class EventCache {
 
     private final Map<FilterAbstract, ImmutableList<Event>> events = new HashMap<>();
     private ImmutableMap<Register, ImmutableList<Event>> regWriterMap;
 
-    public ThreadCache(List<Event> events){
+    public EventCache(List<Event> events){
         this.events.put(FilterBasic.get(EType.ANY), ImmutableList.copyOf(events));
     }
 

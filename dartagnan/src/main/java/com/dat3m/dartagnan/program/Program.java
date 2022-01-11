@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.utils.ThreadCache;
+import com.dat3m.dartagnan.program.utils.EventCache;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;
@@ -23,7 +23,7 @@ public class Program {
 	private final ImmutableSet<Location> locations;
 	private final Memory memory;
 	private Arch arch;
-    private ThreadCache cache;
+    private EventCache cache;
     private boolean isUnrolled;
     private boolean isCompiled;
 
@@ -86,9 +86,9 @@ public class Program {
 		threads.add(t);
 	}
 
-    public ThreadCache getCache(){
+    public EventCache getCache(){
         if(cache == null){
-            cache = new ThreadCache(getEvents());
+            cache = new EventCache(getEvents());
         }
         return cache;
     }
