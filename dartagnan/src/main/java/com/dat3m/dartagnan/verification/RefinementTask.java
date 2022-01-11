@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.verification;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Baseline;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.witness.WitnessGraph;
@@ -8,9 +9,13 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
+import com.dat3m.dartagnan.wmm.axiom.Empty;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
+import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -19,8 +24,8 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.ASSUME_LOCALLY_CONSISTENT_WMM;
-import static com.dat3m.dartagnan.configuration.OptionNames.ASSUME_NO_OOTA;
+import static com.dat3m.dartagnan.configuration.Baseline.NONE;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 /*
@@ -41,21 +46,18 @@ public class RefinementTask extends VerificationTask {
 
     // =========================== Configurables ===========================
 
-	@Option(name=ASSUME_LOCALLY_CONSISTENT_WMM,
-		description="Refinement starts from a locally consistent baseline WMM instead of the empty one.",
-		secure=true)
-	private boolean useLocallyConsistentBaselineWmm = false;
-
-	@Option(name=ASSUME_NO_OOTA,
-		description="Refinement starts from a baseline WMM that does not allow Out-Of-Thin-Air behaviour.",
-		secure=true)
-	private boolean useNoOOTABaselineWMM = false;
+	@Option(name=BASELINE,
+			description="Refinement starts from this baseline WMM.",
+			secure=true,
+			toUppercase=true)
+		private Baseline baseline = NONE;
 
     // ======================================================================
 
     private RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, WitnessGraph witness, Configuration config)
     throws InvalidConfigurationException {
         super(program, targetMemoryModel, witness, config);
+        config.inject(this);
         this.baselineModel = baselineModel != null ? baselineModel : createDefaultWmm();
     }
 
@@ -80,8 +82,7 @@ public class RefinementTask extends VerificationTask {
         super.initializeEncoders(ctx);
         this.baselineWmmEncoder = WmmEncoder.fromConfig(baselineModel, baselineContext, getConfig());
         baselineWmmEncoder.initializeEncoding(ctx);
-		logger.info("{}: {}", ASSUME_LOCALLY_CONSISTENT_WMM, useLocallyConsistentBaselineWmm);
-		logger.info("{}: {}", ASSUME_NO_OOTA, useNoOOTABaselineWMM);
+		logger.info("{}: {}", BASELINE, baseline);
     }
 
     public static RefinementTask fromVerificationTaskWithDefaultBaselineWMM(VerificationTask task)
@@ -92,39 +93,47 @@ public class RefinementTask extends VerificationTask {
                 .build(task.getProgram(), task.getMemoryModel());
     }
 
-    //TODO: This code is outdated and was replaced in the CAAT branch.
-    // The merging introduced the old code again.
     private Wmm createDefaultWmm() {
         Wmm baseline = new Wmm();
-
-        if (!useLocallyConsistentBaselineWmm) {
-            return baseline;
-        }
-
         RelationRepository repo = baseline.getRelationRepository();
-
-        // ====== Locally consistent baseline WMM ======
-        // ---- acyclic(po-loc | rf) ----
-        Relation poloc = repo.getRelation(POLOC);
         Relation rf = repo.getRelation(RF);
-        Relation porf = new RelUnion(poloc, rf);
-        repo.addRelation(porf);
-        baseline.addAxiom(new Acyclic(porf));
 
-        // ---- acyclic (dep | rf) ----
-        if (useNoOOTABaselineWMM) {
-            Relation data = repo.getRelation(DATA);
-            Relation ctrl = repo.getRelation(CTRL);
-            Relation addr = repo.getRelation(ADDR);
-            Relation dep = new RelUnion(data, addr);
-            repo.addRelation(dep);
-            dep = new RelUnion(ctrl, dep);
-            repo.addRelation(dep);
-            Relation hb = new RelUnion(dep, rf);
-            repo.addRelation(hb);
-            baseline.addAxiom(new Acyclic(hb));
+        switch(this.baseline) {
+			case NONE:
+				break;
+			case UNIPROC:
+		        // ---- acyclic(po-loc | rf) ----
+		        Relation poloc = repo.getRelation(POLOC);
+		        Relation porf = new RelUnion(poloc, rf);
+		        repo.addRelation(porf);
+		        baseline.addAxiom(new Acyclic(porf));
+		        break;
+	    	case NO_OOTA:
+	            // ---- acyclic(po-loc | rf) ----
+	            Relation data = repo.getRelation(DATA);
+	            Relation ctrl = repo.getRelation(CTRL);
+	            Relation addr = repo.getRelation(ADDR);
+	            Relation dep = new RelUnion(data, addr);
+	            repo.addRelation(dep);
+	            dep = new RelUnion(ctrl, dep);
+	            repo.addRelation(dep);
+	            Relation hb = new RelUnion(dep, rf);
+	            repo.addRelation(hb);
+	            baseline.addAxiom(new Acyclic(hb));
+	            break;
+	    	case ATOMIC_RMW:
+	    		// ---- empty (rmw & fre;coe) ----
+	            Relation rmw = repo.getRelation(RMW);
+	            Relation coe = repo.getRelation(COE);
+	            Relation fre = repo.getRelation(FRE);
+	            Relation frecoe = new RelComposition(fre, coe);
+	            repo.addRelation(frecoe);
+	            Relation rmwANDfrecoe = new RelIntersection(rmw, frecoe);
+	            repo.addRelation(rmwANDfrecoe);
+	            baseline.addAxiom(new Empty(rmwANDfrecoe));
+	            break;
         }
-
+        
         return baseline;
     }
 

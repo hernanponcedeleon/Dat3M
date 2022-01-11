@@ -32,8 +32,7 @@ public class OptionNames {
 	public static final String MERGE_BRANCHES = "program.analysis.cf.mergeBranches";
 
 	// Refinement Options
-	public static final String ASSUME_LOCALLY_CONSISTENT_WMM = "refinement.assumeLocallyConsistentWMM";
-	public static final String ASSUME_NO_OOTA = "refinement.assumeNoOOTA";
+	public static final String BASELINE = "refinement.baseline";
 	
 	// SMT solver Options
 	public static final String PHANTOM_REFERENCES = "solver.z3.usePhantomReferences";
