@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.program.event;
 
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.*;
-
 public class Tag {
     private Tag() { }
 
@@ -25,29 +23,22 @@ public class Tag {
     public static final String ASSERTION    = "ASS";
     public static final String BOUND   		= "BOUND";
     public static final String SVCOMPATOMIC	= "A-SVCOMP";
-    public static final String LOCK    		= "L";
-    public static final String PTHREAD    	= "PTHREAD";
 
     public static final class ARMv8 {
         private ARMv8() { }
 
-        public static final String MO_RX = "MO_RX";
+        public static final String MO_RX = "RX";
         public static final String MO_REL = "L";
         public static final String MO_ACQ = "A";
         public static final String MO_ACQ_PC = "Q";
 
-        // The Mo in the condition refers to those in atomic.utils.Mo
-        // The returned ones are the ones defined in this class.
-        // Having all these Mo classes is annoying, but it is not
-        // trivial to get rid of them (see #62)
-
         public static String extractStoreMoFromCMo(String cMo) {
-            return cMo.equals(SC) || cMo.equals(RELEASE) || cMo.equals(ACQUIRE_RELEASE) ? MO_REL : MO_RX;
+            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_RELEASE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_REL : MO_RX;
         }
 
         public static String extractLoadMoFromCMo(String cMo) {
-            //TODO: What about CONSUME loads?
-            return cMo.equals(SC) || cMo.equals(ACQUIRE) || cMo.equals(ACQUIRE_RELEASE) ? MO_ACQ : MO_RX;
+            //TODO: What about MO_CONSUME loads?
+            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_ACQUIRE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_ACQ : MO_RX;
         }
     }
 
@@ -55,5 +46,35 @@ public class Tag {
         private TSO() {}
 
         public static final String ATOM      = "A";
+    }
+
+    public static class C11 {
+
+        private C11() {}
+
+        public static final String PTHREAD    	= "PTHREAD";
+        public static final String LOCK    		= "LOCK";
+
+        public static final String MO_RELAXED           = "memory_order_relaxed";
+        public static final String MO_CONSUME           = "memory_order_consume";
+        public static final String MO_ACQUIRE           = "memory_order_acquire";
+        public static final String MO_RELEASE           = "memory_order_release";
+        public static final String MO_ACQUIRE_RELEASE   = "memory_order_acq_rel";
+        public static final String MO_SC                = "memory_order_seq_cst";
+
+        public static String intToMo(int i) {
+            switch(i) {
+                case 0: return MO_RELAXED;
+                case 1: return MO_CONSUME;
+                case 2: return MO_ACQUIRE;
+                case 3: return MO_RELEASE;
+                case 4: return MO_ACQUIRE_RELEASE;
+                case 5: return MO_SC;
+                default:
+                    throw new UnsupportedOperationException("The memory order is not recognized");
+            }
+        }
+
+
     }
 }

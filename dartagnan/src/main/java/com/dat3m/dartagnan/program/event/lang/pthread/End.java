@@ -11,12 +11,12 @@ import com.google.common.base.Preconditions;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.SC;
+import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
 public class End extends Store {
 
     public End(Address address){
-    	super(address, IConst.ZERO, SC);
+    	super(address, IConst.ZERO, MO_SC);
     }
 
     private End(End other){

@@ -13,7 +13,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.ARMv8.extractLoadMoFromCMo;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.*;
+import static com.dat3m.dartagnan.program.event.Tag.C11.*;
 
 public class AtomicLoad extends MemEvent implements RegWriter {
 
@@ -21,7 +21,7 @@ public class AtomicLoad extends MemEvent implements RegWriter {
 
     public AtomicLoad(Register register, IExpr address, String mo) {
         super(address, mo);
-    	Preconditions.checkArgument(!mo.equals(RELEASE) && !mo.equals(ACQUIRE_RELEASE), 
+    	Preconditions.checkArgument(!mo.equals(MO_RELEASE) && !mo.equals(MO_ACQUIRE_RELEASE),
     			getClass().getName() + " can not have memory order: " + mo);
         this.resultRegister = register;
         addFilters(Tag.ANY, Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.REG_WRITER);
@@ -73,17 +73,17 @@ public class AtomicLoad extends MemEvent implements RegWriter {
                 );
                 break;
             case POWER: {
-                Fence optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier() : null;
+                Fence optionalMemoryBarrier = mo.equals(MO_SC) ? Power.newSyncBarrier() : null;
                 Label optionalLabel =
-                        (mo.equals(SC) || mo.equals(ACQUIRE) || mo.equals(RELAXED)) ?
+                        (mo.equals(MO_SC) || mo.equals(MO_ACQUIRE) || mo.equals(MO_RELAXED)) ?
                                 newLabel("FakeDep") :
                                 null;
                 CondJump optionalFakeCtrlDep =
-                        (mo.equals(SC) || mo.equals(ACQUIRE) || mo.equals(RELAXED)) ?
+                        (mo.equals(MO_SC) || mo.equals(MO_ACQUIRE) || mo.equals(MO_RELAXED)) ?
                                 newFakeCtrlDep(resultRegister, optionalLabel) :
                                 null;
                 Fence optionalISyncBarrier =
-                        (mo.equals(SC) || mo.equals(ACQUIRE)) ?
+                        (mo.equals(MO_SC) || mo.equals(MO_ACQUIRE)) ?
                                 Power.newISyncBarrier() :
                                 null;
                 events = eventSequence(

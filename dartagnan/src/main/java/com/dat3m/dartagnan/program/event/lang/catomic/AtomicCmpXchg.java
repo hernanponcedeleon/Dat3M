@@ -15,8 +15,8 @@ import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.ARMv8.*;
+import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.SC;
 
 public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReaderData {
 
@@ -119,11 +119,11 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
 
                 // --- Add Fence before under POWER ---
                 Fence optionalMemoryBarrier = null;
-                // if mo.equals(SC) then loadMo.equals(MO_ACQ)
+                // if mo.equals(MO_SC) then loadMo.equals(MO_ACQ)
                 Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(MO_ACQ)) ? Power.newISyncBarrier() : null;
                 if(target.equals(POWER)) {
-                    optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier()
-                            // if mo.equals(SC) then storeMo.equals(MO_REL)
+                    optionalMemoryBarrier = mo.equals(MO_SC) ? Power.newSyncBarrier()
+                            // if mo.equals(MO_SC) then storeMo.equals(MO_REL)
                             : storeMo.equals(MO_REL) ? Power.newLwSyncBarrier()
                             : null;
                 }

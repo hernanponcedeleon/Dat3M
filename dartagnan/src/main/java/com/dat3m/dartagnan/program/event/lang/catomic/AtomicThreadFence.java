@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.event.core.Fence;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.*;
+import static com.dat3m.dartagnan.program.event.Tag.C11.*;
 
 public class AtomicThreadFence extends Fence {
 
@@ -48,15 +48,15 @@ public class AtomicThreadFence extends Fence {
             case NONE:
                 break;
             case TSO:
-                fence = mo.equals(SC) ? X86.newMemoryFence() : null;
+                fence = mo.equals(MO_SC) ? X86.newMemoryFence() : null;
                 break;
             case POWER:
-                fence = mo.equals(ACQUIRE) || mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE) || mo.equals(SC) ?
+                fence = mo.equals(MO_ACQUIRE) || mo.equals(MO_RELEASE) || mo.equals(MO_ACQUIRE_RELEASE) || mo.equals(MO_SC) ?
                         Power.newLwSyncBarrier() : null;
                 break;
             case ARM8:
-                fence = mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE) || mo.equals(SC) ? AArch64.DMB.newISHBarrier()
-                        : mo.equals(ACQUIRE) ? AArch64.DSB.newISHLDBarrier() : null;
+                fence = mo.equals(MO_RELEASE) || mo.equals(MO_ACQUIRE_RELEASE) || mo.equals(MO_SC) ? AArch64.DMB.newISHBarrier()
+                        : mo.equals(MO_ACQUIRE) ? AArch64.DSB.newISHLDBarrier() : null;
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName());

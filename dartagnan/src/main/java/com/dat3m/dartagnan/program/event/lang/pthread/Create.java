@@ -12,8 +12,8 @@ import com.google.common.base.Preconditions;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.Tag.PTHREAD;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.SC;
+import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
+import static com.dat3m.dartagnan.program.event.Tag.C11.PTHREAD;
 
 public class Create extends Store {
 
@@ -21,7 +21,7 @@ public class Create extends Store {
 	private final String routine;
 	
     public Create(Register pthread_t, String routine, Address address){
-    	super(address, IConst.ONE, SC);
+    	super(address, IConst.ONE, MO_SC);
         this.pthread_t = pthread_t;
         this.routine = routine;
     }

@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
 import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_ORIGINAL_PROGRAM_PATH;
-import static com.dat3m.dartagnan.program.event.Tag.PTHREAD;
+import static com.dat3m.dartagnan.program.event.Tag.C11.PTHREAD;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;

@@ -112,7 +112,7 @@ public class SvcompProcedures {
         events.add(EventFactory.newJump(new Atom(register, NEQ, new IConst(begin ? BigInteger.ZERO : BigInteger.ONE, -1)), label));
         events.add(EventFactory.newStore(lockAddress, new IConst(begin ? BigInteger.ONE : BigInteger.ZERO, -1), null));
         for(Event e : events) {
-        	e.addFilters(Tag.LOCK, Tag.RMW);
+        	e.addFilters(Tag.C11.LOCK, Tag.RMW);
         	visitor.programBuilder.addChild(visitor.threadCount, e);
         }
 	}

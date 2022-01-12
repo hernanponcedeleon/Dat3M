@@ -13,7 +13,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.Atomic;
 import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.intToMo;
+import static com.dat3m.dartagnan.program.event.Tag.C11.intToMo;
 
 public class AtomicProcedures {
 

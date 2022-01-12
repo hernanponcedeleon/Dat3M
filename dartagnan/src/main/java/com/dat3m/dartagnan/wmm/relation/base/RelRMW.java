@@ -90,7 +90,7 @@ public class RelRMW extends StaticRelation {
             }
 
             //Locks: Load -> CondJump -> Store
-            filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(Tag.LOCK));
+            filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(Tag.C11.LOCK));
             for(Event e : task.getProgram().getCache().getEvents(filter)){
             	if(e instanceof Load) {
             	    // Connect Load to Store

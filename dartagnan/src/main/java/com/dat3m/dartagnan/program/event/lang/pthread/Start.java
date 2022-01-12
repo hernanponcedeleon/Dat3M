@@ -15,7 +15,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.SC;
+import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
 public class Start extends Load {
 
@@ -23,7 +23,7 @@ public class Start extends Load {
     private Label label4Copy;
 
 	public Start(Register reg, Address address, Label label){
-		super(reg, address, SC);
+		super(reg, address, MO_SC);
         this.label = label;
         this.label.addListener(this);
     }

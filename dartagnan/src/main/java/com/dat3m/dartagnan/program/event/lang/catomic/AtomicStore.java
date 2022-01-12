@@ -17,7 +17,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.ARMv8.extractStoreMoFromCMo;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.*;
+import static com.dat3m.dartagnan.program.event.Tag.C11.*;
 
 public class AtomicStore extends MemEvent implements RegReaderData {
 
@@ -26,7 +26,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
 
     public AtomicStore(IExpr address, ExprInterface value, String mo){
         super(address, mo);
-        Preconditions.checkArgument(!mo.equals(ACQUIRE) && !mo.equals(ACQUIRE_RELEASE), 
+        Preconditions.checkArgument(!mo.equals(MO_ACQUIRE) && !mo.equals(MO_ACQUIRE_RELEASE),
         		getClass().getName() + " can not have memory order: " + mo);
         this.value = value;
         this.dataRegs = value.getRegs();
@@ -78,15 +78,15 @@ public class AtomicStore extends MemEvent implements RegReaderData {
                 );
                 break;
             case TSO:
-                Fence optionalMFence = mo.equals(SC) ? X86.newMemoryFence() : null;
+                Fence optionalMFence = mo.equals(MO_SC) ? X86.newMemoryFence() : null;
                 events = eventSequence(
                         store,
                         optionalMFence
                 );
                 break;
             case POWER:
-                Fence optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier()
-                        : mo.equals(RELEASE) ? Power.newLwSyncBarrier() : null;
+                Fence optionalMemoryBarrier = mo.equals(MO_SC) ? Power.newSyncBarrier()
+                        : mo.equals(MO_RELEASE) ? Power.newLwSyncBarrier() : null;
                 events = eventSequence(
                         optionalMemoryBarrier,
                         store

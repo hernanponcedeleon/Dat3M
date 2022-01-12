@@ -14,9 +14,9 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.Tag.LOCK;
+import static com.dat3m.dartagnan.program.event.Tag.C11.LOCK;
+import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 import static com.dat3m.dartagnan.program.event.Tag.RMW;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.SC;
 
 public class Lock extends MemEvent {
 	
@@ -26,7 +26,7 @@ public class Lock extends MemEvent {
     private Label label4Copy;
 
 	public Lock(String name, IExpr address, Register reg, Label label){
-		super(address, SC);
+		super(address, MO_SC);
 		this.name = name;
         this.reg = reg;
         this.label = label;

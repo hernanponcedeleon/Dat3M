@@ -10,14 +10,14 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
 import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.SC;
+import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
 public class InitLock extends Store {
 	
 	private final String name;
 
 	public InitLock(String name, IExpr address, IExpr value){
-		super(address, value, SC);
+		super(address, value, MO_SC);
 		this.name = name;
     }
 

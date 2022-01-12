@@ -69,9 +69,9 @@ public class AtomicAsLock implements ProgramProcessor {
 				load.setOId(event.getOId());
 				check.setOId(event.getOId());
 				store.setOId(event.getOId());
-				load.addFilters(Tag.LOCK, Tag.RMW);
-				check.addFilters(Tag.LOCK, Tag.RMW);
-				store.addFilters(Tag.LOCK, Tag.RMW);
+				load.addFilters(Tag.C11.LOCK, Tag.RMW);
+				check.addFilters(Tag.C11.LOCK, Tag.RMW);
+				store.addFilters(Tag.C11.LOCK, Tag.RMW);
 				predecessor.setSuccessor(load);
 				load.setSuccessor(check);
 				check.setSuccessor(store);
