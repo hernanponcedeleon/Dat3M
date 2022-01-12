@@ -7,13 +7,13 @@ import java.util.*;
 
 public class Memory {
 
-    private final Map<Address, Location> map;
+    private final Set<Address> map;
     private final Map<String, List<Address>> arrays;
 
     private int nextIndex = 1;
 
     public Memory() {
-        map = new HashMap<>();
+        map = new HashSet<>();
         arrays = new HashMap<>();
     }
 
@@ -24,7 +24,7 @@ public class Memory {
      * The address points to a static location.
      */
     public boolean isStatic(Address a) {
-        return map.containsKey(a);
+        return map.contains(a);
     }
 
     public List<Address> malloc(String name, int size) {
@@ -41,12 +41,12 @@ public class Memory {
 
     public Location newLocation(String name){
         Location location = new Location(name, new Address(nextIndex++));
-        map.put(location.getAddress(), location);
+        map.add(location.getAddress());
         return location;
     }
 
     public ImmutableSet<Address> getAllAddresses() {
-        Set<Address> result = new HashSet<>(map.keySet());
+        Set<Address> result = new HashSet<>(map);
         for(List<Address> array : arrays.values()){
             result.addAll(array);
         }
