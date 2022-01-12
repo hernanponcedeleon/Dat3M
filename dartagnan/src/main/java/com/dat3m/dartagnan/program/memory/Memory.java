@@ -39,10 +39,15 @@ public class Memory {
     	return addresses;
     }
 
-    public Location newLocation(String name){
-        Location location = new Location(name, new Address(nextIndex++));
-        map.add(location.getAddress());
-        return location;
+    /**
+     * Creates a new static location.
+     * @return
+     * Points to the created location.
+     */
+    public Address newLocation() {
+        Address address = new Address(nextIndex++);
+        map.add(address);
+        return address;
     }
 
     public ImmutableSet<Address> getAllAddresses() {
