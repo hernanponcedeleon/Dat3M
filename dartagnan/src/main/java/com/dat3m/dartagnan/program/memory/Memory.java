@@ -8,13 +8,13 @@ import java.util.*;
 public class Memory {
 
     private final Set<Address> map;
-    private final Map<String, List<Address>> arrays;
+    private final Collection<List<Address>> arrays;
 
     private int nextIndex = 1;
 
     public Memory() {
         map = new HashSet<>();
-        arrays = new HashMap<>();
+        arrays = new ArrayList<>();
     }
 
     /**
@@ -27,15 +27,14 @@ public class Memory {
         return map.contains(a);
     }
 
-    public List<Address> malloc(String name, int size) {
-    	Preconditions.checkArgument(!arrays.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
+    public List<Address> malloc(int size) {
     	Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
 
     	List<Address> addresses = new ArrayList<>();
     	for(int i = 0; i < size; i++) {
     		addresses.add(new Address(nextIndex++));
     	}
-    	arrays.put(name, addresses);
+    	arrays.add(addresses);
     	return addresses;
     }
 
@@ -52,22 +51,22 @@ public class Memory {
 
     public ImmutableSet<Address> getAllAddresses() {
         Set<Address> result = new HashSet<>(map);
-        for(List<Address> array : arrays.values()){
+        for(List<Address> array : arrays){
             result.addAll(array);
         }
         return ImmutableSet.copyOf(result);
     }
 
     public boolean isArrayPointer(Address address) {
-        return arrays.values().stream().anyMatch(array -> array.contains(address));
+        return arrays.stream().anyMatch(array -> array.contains(address));
     }
 
     public Collection<List<Address>> getArrays() {
-        return arrays.values();
+        return arrays;
     }
 
     public List<Address> getArrayFromPointer(Address address) {
-        return arrays.values().stream()
+        return arrays.stream()
                 .filter(array -> array.contains(address))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Provided address does not belong to any array."));

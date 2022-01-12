@@ -19,6 +19,8 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import java.math.BigInteger;
 import java.util.*;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 public class ProgramBuilder {
 
 	public static final BigInteger DEFAULT_INIT_VALUE = BigInteger.ZERO;
@@ -120,8 +122,9 @@ public class ProgramBuilder {
     }
 
     public void addDeclarationArray(String name, List<IConst> values){
+        checkArgument(!pointers.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
         int size = values.size();
-        List<Address> addresses = memory.malloc(name, size);
+        List<Address> addresses = memory.malloc(size);
         for(int i = 0; i < size; i++){
             String varName = name + "[" + i + "]";
             Address address = addresses.get(i);
