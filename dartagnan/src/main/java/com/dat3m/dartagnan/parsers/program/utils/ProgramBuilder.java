@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.parsers.program.utils;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -30,7 +29,7 @@ public class ProgramBuilder {
     private final Map<String, Location> locations = new HashMap<>();
     private final Map<String, Address> pointers = new HashMap<>();
 
-    private final Map<IExpr, IConst> iValueMap = new HashMap<>();
+    private final Map<Address,IConst> iValueMap = new HashMap<>();
     private final Memory memory = new Memory();
 
     private final Map<String, Label> labels = new HashMap<>();
@@ -219,7 +218,7 @@ public class ProgramBuilder {
 
     private void buildInitThreads(){
         int nextThreadId = nextThreadId();
-        for (Map.Entry<IExpr, IConst> entry : iValueMap.entrySet()) {
+        for (Map.Entry<Address,IConst> entry : iValueMap.entrySet()) {
             Event e = EventFactory.newInit(entry.getKey(), entry.getValue());
             Thread thread = new Thread(nextThreadId, e);
             threads.put(nextThreadId, thread);
