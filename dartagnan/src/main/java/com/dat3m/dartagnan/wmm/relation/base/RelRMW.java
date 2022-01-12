@@ -1,17 +1,17 @@
 package com.dat3m.dartagnan.wmm.relation.base;
 
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Load;
-import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.program.event.rmw.RMWStore;
-import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
-import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
+import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
+import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.dat3m.dartagnan.program.filter.FilterIntersection;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.wmm.filter.FilterIntersection;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
-import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
+import static com.dat3m.dartagnan.program.event.Tag.SVCOMP.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RMW;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
@@ -41,13 +41,13 @@ public class RelRMW extends StaticRelation {
 	private static final Logger logger = LogManager.getLogger(RelRMW.class);
 
     private final FilterAbstract loadExclFilter = FilterIntersection.get(
-            FilterBasic.get(EType.EXCL),
-            FilterBasic.get(EType.READ)
+            FilterBasic.get(Tag.EXCL),
+            FilterBasic.get(Tag.READ)
     );
 
     private final FilterAbstract storeExclFilter = FilterIntersection.get(
-            FilterBasic.get(EType.EXCL),
-            FilterBasic.get(EType.WRITE)
+            FilterBasic.get(Tag.EXCL),
+            FilterBasic.get(Tag.WRITE)
     );
 
     // Set without exclusive events
@@ -82,7 +82,7 @@ public class RelRMW extends StaticRelation {
             baseMaxTupleSet = new TupleSet();
 
             // RMWLoad -> RMWStore
-            FilterAbstract filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.WRITE));
+            FilterAbstract filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(Tag.WRITE));
             for(Event store : task.getProgram().getCache().getEvents(filter)){
             	if(store instanceof RMWStore) {
                     baseMaxTupleSet.add(new Tuple(((RMWStore)store).getLoadEvent(), store));            		
@@ -90,7 +90,7 @@ public class RelRMW extends StaticRelation {
             }
 
             //Locks: Load -> CondJump -> Store
-            filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.LOCK));
+            filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(Tag.C11.LOCK));
             for(Event e : task.getProgram().getCache().getEvents(filter)){
             	if(e instanceof Load) {
             	    // Connect Load to Store
@@ -99,9 +99,9 @@ public class RelRMW extends StaticRelation {
             }
 
             // Atomics blocks: BeginAtomic -> EndAtomic
-            filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(SVCOMPATOMIC));
+            filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(SVCOMPATOMIC));
             for(Event end : task.getProgram().getCache().getEvents(filter)){
-                List<Event> block = ((EndAtomic)end).getBlock().stream().filter(x -> x.is(EType.VISIBLE)).collect(Collectors.toList());
+                List<Event> block = ((EndAtomic)end).getBlock().stream().filter(x -> x.is(Tag.VISIBLE)).collect(Collectors.toList());
                 for (int i = 0; i < block.size(); i++) {
                     for (int j = i + 1; j < block.size(); j++) {
                         baseMaxTupleSet.add(new Tuple(block.get(i), block.get(j)));

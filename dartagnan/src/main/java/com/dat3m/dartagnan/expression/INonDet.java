@@ -1,32 +1,18 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-
-import static com.dat3m.dartagnan.expression.INonDetTypes.UCHAR;
-import static com.dat3m.dartagnan.expression.INonDetTypes.UINT;
-import static com.dat3m.dartagnan.expression.INonDetTypes.ULONG;
-import static com.dat3m.dartagnan.expression.INonDetTypes.USHORT;
-import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
-import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
-
-import java.math.BigInteger;
-
-import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.FormulaType;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
-
-import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.base.Verify;
 import com.google.common.primitives.UnsignedInteger;
 import com.google.common.primitives.UnsignedLong;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+
+import java.math.BigInteger;
+
+import static com.dat3m.dartagnan.expression.INonDetTypes.*;
+import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
+import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
 // TODO why is INonDet not a IConst?
 public class INonDet extends IExpr implements ExprInterface {

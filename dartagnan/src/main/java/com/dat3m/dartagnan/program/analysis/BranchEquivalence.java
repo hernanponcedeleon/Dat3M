@@ -2,14 +2,14 @@ package com.dat3m.dartagnan.program.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.CondJump;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.utils.equivalence.AbstractEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
@@ -331,7 +331,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         unreachableClass = new BranchClass();
         for (Thread t : program.getThreads()) {
             // Add all unreachable nodes
-            t.getCache().getEvents(FilterBasic.get(EType.ANY)).stream()
+            t.getCache().getEvents(FilterBasic.get(Tag.ANY)).stream()
                     .filter(x -> !hasClass(x)).forEach(unreachableClass::addInternal);
         }
 

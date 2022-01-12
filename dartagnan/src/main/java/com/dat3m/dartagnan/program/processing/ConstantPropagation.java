@@ -2,19 +2,19 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpUn;
-import com.dat3m.dartagnan.program.EventFactory;
-import com.dat3m.dartagnan.program.EventFactory.Arm8;
-import com.dat3m.dartagnan.program.EventFactory.Atomic;
-import com.dat3m.dartagnan.program.EventFactory.Linux;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.arch.aarch64.event.StoreExclusive;
-import com.dat3m.dartagnan.program.arch.linux.event.*;
-import com.dat3m.dartagnan.program.arch.linux.utils.EType;
-import com.dat3m.dartagnan.program.atomic.event.*;
-import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.EventFactory.AArch64;
+import com.dat3m.dartagnan.program.event.EventFactory.Atomic;
+import com.dat3m.dartagnan.program.event.EventFactory.Linux;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
+import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.lang.catomic.*;
+import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import org.apache.logging.log4j.LogManager;
@@ -121,7 +121,7 @@ public class ConstantPropagation implements ProgramProcessor {
             		IExpr newExpectedAddr = evaluate(oldExpectedAddr, currentThreadId);
 					Verify.verifyNotNull(newExpectedAddr,
                 			"Register %s got no value after constant propagation analysis", oldExpectedAddr);
-    				e = Atomic.newCompareExchange(reg, newAddress, newExpectedAddr, newValue, mo, current.is(EType.STRONG));
+    				e = Atomic.newCompareExchange(reg, newAddress, newExpectedAddr, newValue, mo, current.is(Tag.STRONG));
             	} else if(current instanceof AtomicXchg) {
     				e = Atomic.newExchange(reg, newAddress, newValue, mo);
             	} else if(current instanceof AtomicFetchOp) {
@@ -144,11 +144,11 @@ public class ConstantPropagation implements ProgramProcessor {
             		e = Linux.newRMWExchange(newAddress, reg, newValue, mo);
             	}
         		// Exclusive events
-            	else if(current.is(EType.EXCL)) {
+            	else if(current.is(Tag.EXCL)) {
             		if(current instanceof Load) {
             			e = EventFactory.newRMWLoadExclusive(reg, newAddress, mo);
             		} else if (current instanceof StoreExclusive) {
-            			e = Arm8.newExclusiveStore(reg, newAddress, newValue, mo);
+            			e = AArch64.newExclusiveStore(reg, newAddress, newValue, mo);
             		} else {
             			// Other EXCL events are generated during compilation (which have not yet occurred)
             			throw new UnsupportedOperationException(String.format("Exclusive event %s not supported by %s", 
@@ -167,7 +167,7 @@ public class ConstantPropagation implements ProgramProcessor {
         	// Local events coming from assertions cause problems because the encoding of 
         	// AssertInline uses getResultRegisterExpr() which gets a value when calling
         	// Local.initialise() which is never the case for the new Event e below.
-        	else if(current instanceof Local && ((Local)current).getExpr() instanceof IExpr && !current.is(EType.ASSERTION)) {
+        	else if(current instanceof Local && ((Local)current).getExpr() instanceof IExpr && !current.is(Tag.ASSERTION)) {
 //        		Register reg = ((Local)current).getResultRegister();
 //        		
 //        		IExpr oldValue = (IExpr) ((Local)current).getExpr();

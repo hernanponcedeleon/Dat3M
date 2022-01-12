@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
@@ -24,10 +24,10 @@ public class RelPo extends StaticRelation {
     public RelPo(boolean includeLocalEvents){
         if(includeLocalEvents){
             term = POWITHLOCALEVENTS;
-            filter = FilterBasic.get(EType.ANY);
+            filter = FilterBasic.get(Tag.ANY);
         } else {
             term = PO;
-            filter = FilterBasic.get(EType.VISIBLE);
+            filter = FilterBasic.get(Tag.VISIBLE);
         }
     }
 

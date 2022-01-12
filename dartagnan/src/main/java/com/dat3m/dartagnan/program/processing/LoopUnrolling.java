@@ -4,25 +4,24 @@ import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.asserts.AssertTrue;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.CondJump;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Label;
-import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.google.common.base.Preconditions;
-
-import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
 
 @Options
 public class LoopUnrolling implements ProgramProcessor {
@@ -114,7 +113,7 @@ public class LoopUnrolling implements ProgramProcessor {
                 if (bound == 1) {
                     Label target = (Label) jump.getThread().getExit();
                     newPred = EventFactory.newGoto(target);
-                    newPred.addFilters(EType.BOUND);
+                    newPred.addFilters(Tag.BOUND);
                     predecessor.setSuccessor(newPred);
                 } else {
                     newPred = predecessor;
@@ -157,7 +156,7 @@ public class LoopUnrolling implements ProgramProcessor {
 
         List<Event> assertions = new ArrayList<>();
         for(Thread t : program.getThreads()){
-            assertions.addAll(t.getCache().getEvents(FilterBasic.get(EType.ASSERTION)));
+            assertions.addAll(t.getCache().getEvents(FilterBasic.get(Tag.ASSERTION)));
         }
         AbstractAssert ass = new AssertTrue();
         if(!assertions.isEmpty()) {

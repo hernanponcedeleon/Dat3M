@@ -4,13 +4,13 @@ import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Store;
-import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -109,7 +109,7 @@ public class CoSymmetryBreaking {
         info.threads = symmThreads;
 
         // Get stores of first thread
-        List<Store> writes = symmThreads.get(0).getCache().getEvents(FilterBasic.get(EType.WRITE))
+        List<Store> writes = symmThreads.get(0).getCache().getEvents(FilterBasic.get(Tag.WRITE))
                 .stream().map(Store.class::cast).collect(Collectors.toList());
 
         // Symmetric writes that cannot alias are related to e.g. thread-creation

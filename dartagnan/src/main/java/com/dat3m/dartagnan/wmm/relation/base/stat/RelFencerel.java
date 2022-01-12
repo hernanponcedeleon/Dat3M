@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.wmm.relation.base.stat;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -41,7 +41,7 @@ public class RelFencerel extends StaticRelation {
             minTupleSet = new TupleSet();
             for(Thread t : task.getProgram().getThreads()){
                 List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));
-                List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(EType.MEMORY));
+                List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(Tag.MEMORY));
                 for (Event fence : fences) {
                     if (!fence.cfImpliesExec()) {
                         continue;
@@ -73,7 +73,7 @@ public class RelFencerel extends StaticRelation {
             maxTupleSet = new TupleSet();
             for(Thread t : task.getProgram().getThreads()){
                 List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));
-                List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(EType.MEMORY));
+                List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(Tag.MEMORY));
                 for (Event fence : fences) {
                     int numEventsBeforeFence = (int) memEvents.stream()
                             .mapToInt(Event::getCId).filter(id -> id < fence.getCId())

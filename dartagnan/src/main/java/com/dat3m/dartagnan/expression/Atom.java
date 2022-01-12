@@ -3,9 +3,11 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class Atom extends BExpr implements ExprInterface {
 	

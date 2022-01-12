@@ -3,16 +3,16 @@ package com.dat3m.dartagnan.witness;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Load;
-import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.program.event.Store;
-import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
-import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -33,8 +33,8 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
 import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_ORIGINAL_PROGRAM_PATH;
-import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
-import static com.dat3m.dartagnan.program.utils.EType.WRITE;
+import static com.dat3m.dartagnan.program.event.Tag.C11.PTHREAD;
+import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.*;
@@ -158,7 +158,7 @@ public class WitnessBuilder {
 				graph.addEdge(edge);
 
 				nextNode++;
-				if (e.hasFilter(EType.ASSERTION)) {
+				if (e.hasFilter(Tag.ASSERTION)) {
 					break;
 				}
 			}
@@ -173,7 +173,7 @@ public class WitnessBuilder {
 		List<Event> execEvents = new ArrayList<>();
 		// TODO: we recently added many cline to many events and this might affect the witness generation.
 		Predicate<Event> executedCEvents = e -> e.wasExecuted(model) &&  e.getCLine() > - 1;
-		execEvents.addAll(task.getProgram().getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(executedCEvents).collect(Collectors.toList()));
+		execEvents.addAll(task.getProgram().getCache().getEvents(FilterBasic.get(Tag.INIT)).stream().filter(executedCEvents).collect(Collectors.toList()));
 		execEvents.addAll(task.getProgram().getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));
 		
 		Map<Integer, List<Event>> map = new HashMap<>();
@@ -197,7 +197,7 @@ public class WitnessBuilder {
 		List<Event> result = new ArrayList<>();
 		Set<Event> processedEvents = new HashSet<>(); // Maintained for constant lookup time
 		// All the atomic blocks in the code that have to stay together in any execution
-		List<List<Event>> atomicBlocks = program.getCache().getEvents(FilterBasic.get(EType.SVCOMPATOMIC))
+		List<List<Event>> atomicBlocks = program.getCache().getEvents(FilterBasic.get(Tag.SVCOMP.SVCOMPATOMIC))
 				.stream().map(e -> ((EndAtomic)e).getBlock().stream().
 						filter(order::contains).
 						collect(Collectors.toList()))

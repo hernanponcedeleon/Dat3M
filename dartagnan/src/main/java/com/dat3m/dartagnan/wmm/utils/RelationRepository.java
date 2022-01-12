@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.wmm.utils;
 
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.RelCrit;
@@ -22,14 +22,14 @@ import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.google.common.base.Preconditions;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 public class RelationRepository {
 
@@ -146,11 +146,11 @@ public class RelationRepository {
             case FR:
                 return getRelation(RelComposition.class, getRelation(RFINV), getRelation(CO)).setName(FR);
             case RW:
-                return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.WRITE));
+                return getRelation(RelCartesian.class, FilterBasic.get(Tag.READ), FilterBasic.get(Tag.WRITE));
             case RM:
-                return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.MEMORY));
+                return getRelation(RelCartesian.class, FilterBasic.get(Tag.READ), FilterBasic.get(Tag.MEMORY));
             case RV:
-                return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.VISIBLE));
+                return getRelation(RelCartesian.class, FilterBasic.get(Tag.READ), FilterBasic.get(Tag.VISIBLE));
             case IDDTRANS:
                 return getRelation(RelTrans.class, getRelation(IDD));
             case DATA:

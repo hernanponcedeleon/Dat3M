@@ -2,13 +2,13 @@ package com.dat3m.dartagnan.program;
 
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
-import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.program.event.EventCache;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.utils.ThreadCache;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.configuration.Arch;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;
@@ -23,7 +23,7 @@ public class Program {
 	private final ImmutableSet<Location> locations;
 	private final Memory memory;
 	private Arch arch;
-    private ThreadCache cache;
+    private EventCache cache;
     private boolean isUnrolled;
     private boolean isCompiled;
 
@@ -86,9 +86,9 @@ public class Program {
 		threads.add(t);
 	}
 
-    public ThreadCache getCache(){
+    public EventCache getCache(){
         if(cache == null){
-            cache = new ThreadCache(getEvents());
+            cache = new EventCache(getEvents());
         }
         return cache;
     }
@@ -114,7 +114,7 @@ public class Program {
         // TODO: Why don't we use the cache if available?
         List<Event> events = new ArrayList<>();
 		for(Thread t : threads){
-			events.addAll(t.getCache().getEvents(FilterBasic.get(EType.ANY)));
+			events.addAll(t.getCache().getEvents(FilterBasic.get(Tag.ANY)));
 		}
 		return events;
 	}

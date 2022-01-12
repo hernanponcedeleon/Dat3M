@@ -2,24 +2,24 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Label;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
-import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
-import com.dat3m.dartagnan.program.utils.EType;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.math.BigInteger;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
-import static com.dat3m.dartagnan.program.EventFactory.newInit;
-import static com.dat3m.dartagnan.program.EventFactory.newLabel;
+import static com.dat3m.dartagnan.program.event.EventFactory.newInit;
+import static com.dat3m.dartagnan.program.event.EventFactory.newLabel;
 
 /**
 Substitutes all atomic markers with accesses to a global mutex.
@@ -69,9 +69,9 @@ public class AtomicAsLock implements ProgramProcessor {
 				load.setOId(event.getOId());
 				check.setOId(event.getOId());
 				store.setOId(event.getOId());
-				load.addFilters(EType.LOCK,EType.RMW);
-				check.addFilters(EType.LOCK,EType.RMW);
-				store.addFilters(EType.LOCK,EType.RMW);
+				load.addFilters(Tag.C11.LOCK, Tag.RMW);
+				check.addFilters(Tag.C11.LOCK, Tag.RMW);
+				store.addFilters(Tag.C11.LOCK, Tag.RMW);
 				predecessor.setSuccessor(load);
 				load.setSuccessor(check);
 				check.setSuccessor(store);

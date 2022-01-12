@@ -1,8 +1,9 @@
 package com.dat3m.dartagnan.program.processing;
+
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.CondJump;
-import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
@@ -14,10 +15,10 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.DETERMINISTIC_REORDERING;
 
 /*
     This class performs reordering of code as follows

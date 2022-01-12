@@ -11,9 +11,9 @@ import com.dat3m.dartagnan.program.Register;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.dat3m.dartagnan.program.EventFactory.Atomic;
-import static com.dat3m.dartagnan.program.EventFactory.newStore;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.intToMo;
+import static com.dat3m.dartagnan.program.event.EventFactory.Atomic;
+import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
+import static com.dat3m.dartagnan.program.event.Tag.C11.intToMo;
 
 public class AtomicProcedures {
 
