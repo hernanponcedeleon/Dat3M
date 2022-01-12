@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 
 public class Skip extends Event {
 	
 	public Skip() {
-		addFilters(EType.ANY);
+		addFilters(Tag.ANY);
 	}
 
 	protected Skip(Skip other){

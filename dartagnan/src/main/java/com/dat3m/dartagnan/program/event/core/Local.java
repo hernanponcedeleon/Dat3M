@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.google.common.collect.ImmutableSet;
@@ -22,7 +22,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 		this.register = register;
 		this.expr = expr;
 		this.dataRegs = expr.getRegs();
-		addFilters(EType.ANY, EType.LOCAL, EType.REG_WRITER, EType.REG_READER);
+		addFilters(Tag.ANY, Tag.LOCAL, Tag.REG_WRITER, Tag.REG_READER);
 	}
 	
 	protected Local(Local other){

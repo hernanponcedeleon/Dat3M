@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.google.common.base.Preconditions;
@@ -12,8 +12,8 @@ import com.google.common.base.Preconditions;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.arch.aarch64.utils.Mo.extractLoadMo;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Mo.*;
+import static com.dat3m.dartagnan.program.event.arch.aarch64.utils.Tag.extractLoadMo;
+import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.*;
 
 public class AtomicLoad extends MemEvent implements RegWriter {
 
@@ -24,7 +24,7 @@ public class AtomicLoad extends MemEvent implements RegWriter {
     	Preconditions.checkArgument(!mo.equals(RELEASE) && !mo.equals(ACQUIRE_RELEASE), 
     			getClass().getName() + " can not have memory order: " + mo);
         this.resultRegister = register;
-        addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.REG_WRITER);
+        addFilters(Tag.ANY, Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.REG_WRITER);
     }
 
     private AtomicLoad(AtomicLoad other){

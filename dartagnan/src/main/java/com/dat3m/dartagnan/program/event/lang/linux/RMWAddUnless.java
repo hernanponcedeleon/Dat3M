@@ -14,7 +14,7 @@ import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWReadCondUnless;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWStoreCond;
-import com.dat3m.dartagnan.program.event.lang.linux.utils.Mo;
+import com.dat3m.dartagnan.program.event.lang.linux.utils.Tag;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
@@ -27,7 +27,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
     private final ExprInterface cmp;
 
     public RMWAddUnless(IExpr address, Register register, ExprInterface cmp, IExpr value) {
-        super(address, register, value, Mo.MB);
+        super(address, register, value, Tag.MB);
         dataRegs = new ImmutableSet.Builder<Register>().addAll(value.getRegs()).addAll(cmp.getRegs()).build();
         this.cmp = cmp;
     }
@@ -68,8 +68,8 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
         Preconditions.checkArgument(target == Arch.NONE, "Compilation to " + target + " is not supported for " + getClass().getName());
 
         Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-        RMWReadCondUnless load = Linux.newRMWReadCondUnless(dummy, cmp, address, Mo.RELAXED);
-        RMWStoreCond store = Linux.newRMWStoreCond(load, address, new IExprBin(dummy, IOpBin.PLUS, value), Mo.RELAXED);
+        RMWReadCondUnless load = Linux.newRMWReadCondUnless(dummy, cmp, address, Tag.RELAXED);
+        RMWStoreCond store = Linux.newRMWStoreCond(load, address, new IExprBin(dummy, IOpBin.PLUS, value), Tag.RELAXED);
         Local local = newLocal(resultRegister, new Atom(dummy, COpBin.NEQ, cmp));
 
         return eventSequence(

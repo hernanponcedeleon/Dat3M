@@ -10,13 +10,12 @@ import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EType;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.IfAsJump;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.lang.linux.utils.Mo;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 import org.antlr.v4.runtime.misc.Interval;
@@ -201,7 +200,7 @@ public class VisitorLitmusC
         for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
             expressionContext.accept(this);
         CondJump jumpToEnd = EventFactory.newGoto(endL);
-        jumpToEnd.addFilters(EType.IFI);
+        jumpToEnd.addFilters(Tag.IFI);
 		programBuilder.addChild(currentThread, jumpToEnd);
         
         programBuilder.addChild(currentThread, elseL);
@@ -386,8 +385,8 @@ public class VisitorLitmusC
     @Override
     public Object visitNreStore(LitmusCParser.NreStoreContext ctx){
         ExprInterface value = (ExprInterface)ctx.value.accept(this);
-        if(ctx.mo.equals(Mo.MB)){
-            Event event = EventFactory.newStore(getAddress(ctx.address), value, Mo.RELAXED);
+        if(ctx.mo.equals(com.dat3m.dartagnan.program.event.lang.linux.utils.Tag.MB)){
+            Event event = EventFactory.newStore(getAddress(ctx.address), value, com.dat3m.dartagnan.program.event.lang.linux.utils.Tag.RELAXED);
             programBuilder.addChild(currentThread, event);
             return programBuilder.addChild(currentThread, EventFactory.Linux.newMemoryBarrier());
         }

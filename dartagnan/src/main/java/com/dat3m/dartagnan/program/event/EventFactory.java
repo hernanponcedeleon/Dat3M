@@ -148,7 +148,7 @@ public class EventFactory {
 
     public static Load newRMWLoad(Register reg, IExpr address, String mo) {
         Load load = newLoad(reg, address, mo);
-        load.addFilters(EType.RMW);
+        load.addFilters(Tag.RMW);
         return load;
     }
 
@@ -158,7 +158,7 @@ public class EventFactory {
 
     public static Load newRMWLoadExclusive(Register reg, IExpr address, String mo) {
         Load load = new Load(reg, address, mo);
-        load.addFilters(EType.RMW, EType.EXCL);
+        load.addFilters(Tag.RMW, Tag.EXCL);
         return load;
     }
 

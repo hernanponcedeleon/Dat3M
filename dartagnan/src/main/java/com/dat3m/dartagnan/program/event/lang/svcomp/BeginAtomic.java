@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.program.event.lang.svcomp;
 
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 
 public class BeginAtomic extends Event {
 	
     public BeginAtomic() {
-        addFilters(EType.RMW);
+        addFilters(Tag.RMW);
     }
 
     protected BeginAtomic(BeginAtomic other){

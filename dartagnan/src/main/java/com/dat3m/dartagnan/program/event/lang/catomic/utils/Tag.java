@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.catomic.utils;
 
-public class Mo {
+public class Tag {
 
     public static final String RELAXED  		= "memory_order_relaxed";
     public static final String CONSUME  		= "memory_order_consume";

@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.lang.linux.utils.EType;
+import com.dat3m.dartagnan.program.event.lang.linux.utils.Tag;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
@@ -23,8 +23,8 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
         this.resultRegister = register;
         this.value = value;
         this.dataRegs = value.getRegs();
-        addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.WRITE,
-                EType.RMW, EType.REG_WRITER, EType.REG_READER);
+        addFilters(Tag.ANY, Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.WRITE,
+                Tag.RMW, Tag.REG_WRITER, Tag.REG_READER);
     }
 
     RMWAbstract(RMWAbstract other){

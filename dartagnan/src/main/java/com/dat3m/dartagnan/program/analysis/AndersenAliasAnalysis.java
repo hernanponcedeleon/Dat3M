@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
@@ -71,7 +71,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     }
 
     private void processLocs(Program program) {
-        for (Event ev : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
+        for (Event ev : program.getCache().getEvents(FilterBasic.get(Tag.MEMORY))) {
             MemEvent e = (MemEvent) ev;
             IExpr address = e.getAddress();
 
@@ -103,7 +103,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     }
 
     private void processRegs(Program program) {
-        for (Event ev : program.getCache().getEvents(FilterBasic.get(EType.LOCAL))) {
+        for (Event ev : program.getCache().getEvents(FilterBasic.get(Tag.LOCAL))) {
             if(ev instanceof Local) {
                 Local e = (Local) ev;
                 Register register = e.getResultRegister();
@@ -169,7 +169,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     	// Used to have pointer analysis when having arrays and structures
     	Map<Register, Address> bases = new HashMap<>();
     	Map<Register, Integer> offsets = new HashMap<>();
-    	for (Event ev : program.getCache().getEvents(FilterBasic.get(EType.LOCAL))) {
+    	for (Event ev : program.getCache().getEvents(FilterBasic.get(Tag.LOCAL))) {
     		// Not only Local events have EType.LOCAL tag
     		if(!(ev instanceof Local)) {
     			continue;
@@ -196,7 +196,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     		}
     	}
 
-        for (Event e : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
+        for (Event e : program.getCache().getEvents(FilterBasic.get(Tag.MEMORY))) {
             IExpr address = ((MemEvent) e).getAddress();
             Set<Address> addresses;
             if (address instanceof Register) {

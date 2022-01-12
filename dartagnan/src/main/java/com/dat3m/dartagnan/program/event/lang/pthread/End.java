@@ -11,7 +11,7 @@ import com.google.common.base.Preconditions;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Mo.SC;
+import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.SC;
 
 public class End extends Store {
 

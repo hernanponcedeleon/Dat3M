@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -18,7 +18,7 @@ public class Assume extends Event implements RegReaderData {
 		super();
 		this.expr = expr;
 		this.dataRegs = expr.getRegs();
-		addFilters(EType.ANY, EType.LOCAL, EType.REG_READER);
+		addFilters(Tag.ANY, Tag.LOCAL, Tag.REG_READER);
 	}
 
 	protected Assume(Assume other){

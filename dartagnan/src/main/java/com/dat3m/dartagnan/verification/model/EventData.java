@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.program.event.EType.*;
+import static com.dat3m.dartagnan.program.event.Tag.*;
 
 
 //EventData represents all data associated with an event in a concrete model.

@@ -14,9 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
-import static com.dat3m.dartagnan.program.event.EType.PTHREAD;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Mo.SC;
+import static com.dat3m.dartagnan.program.event.Tag.PTHREAD;
+import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.SC;
 
 public class Join extends Load {
 

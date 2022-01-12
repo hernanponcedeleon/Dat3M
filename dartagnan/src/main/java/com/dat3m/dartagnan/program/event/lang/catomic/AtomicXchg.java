@@ -12,8 +12,8 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.Arch.POWER;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.arch.aarch64.utils.Mo.*;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Mo.SC;
+import static com.dat3m.dartagnan.program.event.arch.aarch64.utils.Tag.*;
+import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.SC;
 
 public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderData {
 

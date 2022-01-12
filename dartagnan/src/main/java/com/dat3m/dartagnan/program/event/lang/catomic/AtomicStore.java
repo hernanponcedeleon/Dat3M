@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Fence;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -16,8 +16,8 @@ import com.google.common.collect.ImmutableSet;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.arch.aarch64.utils.Mo.extractStoreMo;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Mo.*;
+import static com.dat3m.dartagnan.program.event.arch.aarch64.utils.Tag.extractStoreMo;
+import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.*;
 
 public class AtomicStore extends MemEvent implements RegReaderData {
 
@@ -30,7 +30,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
         		getClass().getName() + " can not have memory order: " + mo);
         this.value = value;
         this.dataRegs = value.getRegs();
-        addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.REG_READER);
+        addFilters(Tag.ANY, Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.REG_READER);
     }
 
     private AtomicStore(AtomicStore other){

@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.event.core.Fence;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Mo.*;
+import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.*;
 
 public class AtomicThreadFence extends Fence {
 

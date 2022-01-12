@@ -14,7 +14,7 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.linux.utils.EType;
+import com.dat3m.dartagnan.program.event.lang.linux.utils.Tag;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import org.apache.logging.log4j.LogManager;
@@ -121,7 +121,7 @@ public class ConstantPropagation implements ProgramProcessor {
             		IExpr newExpectedAddr = evaluate(oldExpectedAddr, currentThreadId);
 					Verify.verifyNotNull(newExpectedAddr,
                 			"Register %s got no value after constant propagation analysis", oldExpectedAddr);
-    				e = Atomic.newCompareExchange(reg, newAddress, newExpectedAddr, newValue, mo, current.is(EType.STRONG));
+    				e = Atomic.newCompareExchange(reg, newAddress, newExpectedAddr, newValue, mo, current.is(Tag.STRONG));
             	} else if(current instanceof AtomicXchg) {
     				e = Atomic.newExchange(reg, newAddress, newValue, mo);
             	} else if(current instanceof AtomicFetchOp) {
@@ -144,7 +144,7 @@ public class ConstantPropagation implements ProgramProcessor {
             		e = Linux.newRMWExchange(newAddress, reg, newValue, mo);
             	}
         		// Exclusive events
-            	else if(current.is(EType.EXCL)) {
+            	else if(current.is(Tag.EXCL)) {
             		if(current instanceof Load) {
             			e = EventFactory.newRMWLoadExclusive(reg, newAddress, mo);
             		} else if (current instanceof StoreExclusive) {
@@ -167,7 +167,7 @@ public class ConstantPropagation implements ProgramProcessor {
         	// Local events coming from assertions cause problems because the encoding of 
         	// AssertInline uses getResultRegisterExpr() which gets a value when calling
         	// Local.initialise() which is never the case for the new Event e below.
-        	else if(current instanceof Local && ((Local)current).getExpr() instanceof IExpr && !current.is(EType.ASSERTION)) {
+        	else if(current instanceof Local && ((Local)current).getExpr() instanceof IExpr && !current.is(Tag.ASSERTION)) {
 //        		Register reg = ((Local)current).getResultRegister();
 //        		
 //        		IExpr oldValue = (IExpr) ((Local)current).getExpr();

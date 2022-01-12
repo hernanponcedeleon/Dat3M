@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 public class Init extends MemEvent {
@@ -12,7 +12,7 @@ public class Init extends MemEvent {
 	public Init(IExpr address, IConst value) {
 		super(address, null);
 		this.value = value;
-		addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.INIT);
+		addFilters(Tag.ANY, Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.INIT);
 	}
 
 	public IConst getValue(){

@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
@@ -109,7 +109,7 @@ public class CoSymmetryBreaking {
         info.threads = symmThreads;
 
         // Get stores of first thread
-        List<Store> writes = symmThreads.get(0).getCache().getEvents(FilterBasic.get(EType.WRITE))
+        List<Store> writes = symmThreads.get(0).getCache().getEvents(FilterBasic.get(Tag.WRITE))
                 .stream().map(Store.class::cast).collect(Collectors.toList());
 
         // Symmetric writes that cannot alias are related to e.g. thread-creation

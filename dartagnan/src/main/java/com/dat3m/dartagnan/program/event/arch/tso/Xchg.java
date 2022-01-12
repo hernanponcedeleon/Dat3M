@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event.arch.tso;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.arch.tso.utils.EType;
+import com.dat3m.dartagnan.program.event.arch.tso.utils.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -28,7 +28,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
         super(address, null);
         this.resultRegister = register;
         this.dataRegs = ImmutableSet.of(resultRegister);
-        addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.WRITE, EType.ATOM, EType.REG_WRITER, EType.REG_READER);
+        addFilters(Tag.ANY, Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.WRITE, Tag.ATOM, Tag.REG_WRITER, Tag.REG_READER);
     }
 
     private Xchg(Xchg other){
@@ -75,10 +75,10 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
         
         Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         Load load = newRMWLoad(dummyReg, address, null);
-        load.addFilters(EType.ATOM);
+        load.addFilters(Tag.ATOM);
 
         RMWStore store = newRMWStore(load, address, resultRegister, null);
-        store.addFilters(EType.ATOM);
+        store.addFilters(Tag.ATOM);
 
         Local updateReg = newLocal(resultRegister, dummyReg);
 

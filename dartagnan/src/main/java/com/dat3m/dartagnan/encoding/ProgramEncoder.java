@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -169,7 +169,7 @@ public class ProgramEncoder implements Encoder {
         BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 
         Map<Register, List<Event>> eMap = new HashMap<>();
-        for(Event e : program.getCache().getEvents(FilterBasic.get(EType.REG_WRITER))){
+        for(Event e : program.getCache().getEvents(FilterBasic.get(Tag.REG_WRITER))){
             Register reg = ((RegWriter)e).getResultRegister();
             eMap.computeIfAbsent(reg, key -> new ArrayList<>()).add(e);
         }

@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -23,7 +23,7 @@ public class ExecutionStatus extends Event implements RegWriter {
     public ExecutionStatus(Register register, Event event){
         this.register = register;
         this.event = event;
-        addFilters(EType.ANY, EType.LOCAL, EType.REG_WRITER);
+        addFilters(Tag.ANY, Tag.LOCAL, Tag.REG_WRITER);
     }
 
     @Override

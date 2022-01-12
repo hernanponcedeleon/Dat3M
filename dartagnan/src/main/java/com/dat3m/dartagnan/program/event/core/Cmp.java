@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 
 public class Cmp extends Skip {
 
@@ -11,7 +11,7 @@ public class Cmp extends Skip {
     public Cmp(IExpr left, IExpr right){
         this.left = left;
         this.right = right;
-        addFilters(EType.ANY);
+        addFilters(Tag.ANY);
     }
 
     private Cmp(Cmp other){

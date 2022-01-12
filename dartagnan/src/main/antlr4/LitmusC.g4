@@ -5,7 +5,7 @@ import LinuxLexer, LitmusAssertions;
 @header{
 import com.dat3m.dartagnan.expression.op.*;
 import com.dat3m.dartagnan.program.event.lang.linux.utils.Mo;
-import com.dat3m.dartagnan.program.event.lang.linux.utils.EType;
+import com.dat3m.dartagnan.program.event.lang.linux.utils.Tag;
 }
 
 main

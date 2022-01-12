@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.IfAsJump;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
@@ -29,7 +29,7 @@ public class RelCtrlDirect extends StaticRelation {
 
             // NOTE: If's (under Linux) have different notion of ctrl dependency than conditional jumps!
             for(Thread thread : task.getProgram().getThreads()){
-                for(Event e1 : thread.getCache().getEvents(FilterBasic.get(EType.CMP))){
+                for(Event e1 : thread.getCache().getEvents(FilterBasic.get(Tag.CMP))){
                     for(Event e2 : ((IfAsJump) e1).getBranchesEvents()){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
@@ -37,10 +37,10 @@ public class RelCtrlDirect extends StaticRelation {
                 
                 // Relates jumps (except those implementing Ifs and their internal jump to end) with all later events
                 List<Event> condJumps = thread.getCache().getEvents(FilterMinus.get(
-                		FilterBasic.get(EType.JUMP), 
-                		FilterUnion.get(FilterBasic.get(EType.CMP), FilterBasic.get(EType.IFI))));
+                		FilterBasic.get(Tag.JUMP),
+                		FilterUnion.get(FilterBasic.get(Tag.CMP), FilterBasic.get(Tag.IFI))));
                 if(!condJumps.isEmpty()){
-                    for(Event e2 : thread.getCache().getEvents(FilterBasic.get(EType.ANY))){
+                    for(Event e2 : thread.getCache().getEvents(FilterBasic.get(Tag.ANY))){
                         for(Event e1 : condJumps){
                             if(e1.getCId() < e2.getCId()){
                                 maxTupleSet.add(new Tuple(e1, e2));

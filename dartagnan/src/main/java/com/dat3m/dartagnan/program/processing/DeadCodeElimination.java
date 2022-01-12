@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.base.Preconditions;
@@ -49,7 +49,7 @@ public class DeadCodeElimination implements ProgramProcessor {
         Event entry = thread.getEntry();
         Event exit = thread.getExit();
 
-        if (entry.is(EType.INIT)) {
+        if (entry.is(Tag.INIT)) {
             return;
         }
 

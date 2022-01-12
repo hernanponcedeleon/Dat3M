@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.wmm.utils;
 
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
@@ -146,11 +146,11 @@ public class RelationRepository {
             case FR:
                 return getRelation(RelComposition.class, getRelation(RFINV), getRelation(CO)).setName(FR);
             case RW:
-                return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.WRITE));
+                return getRelation(RelCartesian.class, FilterBasic.get(Tag.READ), FilterBasic.get(Tag.WRITE));
             case RM:
-                return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.MEMORY));
+                return getRelation(RelCartesian.class, FilterBasic.get(Tag.READ), FilterBasic.get(Tag.MEMORY));
             case RV:
-                return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.VISIBLE));
+                return getRelation(RelCartesian.class, FilterBasic.get(Tag.READ), FilterBasic.get(Tag.VISIBLE));
             case IDDTRANS:
                 return getRelation(RelTrans.class, getRelation(IDD));
             case DATA:

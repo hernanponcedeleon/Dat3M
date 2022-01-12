@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program.event.arch.aarch64.utils;
 
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Mo.*;
+import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.*;
 
-public final class Mo {
+public final class Tag {
     public static final String RX       = "RX";
     public static final String REL      = "L";
     public static final String ACQ      = "A";

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 
 public class FunRet extends Event {
 
@@ -8,7 +8,7 @@ public class FunRet extends Event {
 	
 	public FunRet(String funName) {
 		this.funName = funName;
-        addFilters(EType.ANY);
+        addFilters(Tag.ANY);
 	}
 	
 	protected FunRet(FunRet other){

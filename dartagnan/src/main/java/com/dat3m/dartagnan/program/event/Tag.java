@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
-public class EType {
+public class Tag {
 
     public static final String ANY          = "_";
     public static final String INIT         = "IW";

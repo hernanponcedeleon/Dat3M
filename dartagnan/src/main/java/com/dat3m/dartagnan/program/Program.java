@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.program.event.EType;
 import com.dat3m.dartagnan.program.event.EventCache;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.memory.Location;
@@ -114,7 +114,7 @@ public class Program {
         // TODO: Why don't we use the cache if available?
         List<Event> events = new ArrayList<>();
 		for(Thread t : threads){
-			events.addAll(t.getCache().getEvents(FilterBasic.get(EType.ANY)));
+			events.addAll(t.getCache().getEvents(FilterBasic.get(Tag.ANY)));
 		}
 		return events;
 	}

@@ -16,13 +16,13 @@ public class EventCache {
     private ImmutableMap<Register, ImmutableList<Event>> regWriterMap;
 
     public EventCache(List<Event> events){
-        this.events.put(FilterBasic.get(EType.ANY), ImmutableList.copyOf(events));
+        this.events.put(FilterBasic.get(Tag.ANY), ImmutableList.copyOf(events));
     }
 
     public ImmutableList<Event> getEvents(FilterAbstract filter){
         if(!events.containsKey(filter)){
             ImmutableList.Builder<Event> builder = new ImmutableList.Builder<>();
-            for(Event e : getEvents(FilterBasic.get(EType.ANY))){
+            for(Event e : getEvents(FilterBasic.get(Tag.ANY))){
                 if(filter.filter(e)){
                     builder.add(e);
                 }
@@ -35,7 +35,7 @@ public class EventCache {
     public ImmutableMap<Register, ImmutableList<Event>> getRegWriterMap(){
         if(regWriterMap == null){
             Map<Register, List<Event>> regEventMap = new HashMap<>();
-            List<Event> regWriters = getEvents(FilterBasic.get(EType.REG_WRITER));
+            List<Event> regWriters = getEvents(FilterBasic.get(Tag.REG_WRITER));
             for (Event e : regWriters) {
                 Register register = ((RegWriter) e).getResultRegister();
                 regEventMap.computeIfAbsent(register, key -> new ArrayList<>(regWriters.size())).add(e);

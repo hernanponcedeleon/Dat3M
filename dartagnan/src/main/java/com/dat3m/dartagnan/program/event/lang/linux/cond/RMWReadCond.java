@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -29,7 +29,7 @@ public abstract class RMWReadCond extends Load implements RegWriter, RegReaderDa
         super(reg, address, atomic);
         this.cmp = cmp;
         this.dataRegs = cmp.getRegs();
-        addFilters(EType.RMW, EType.REG_READER);
+        addFilters(Tag.RMW, Tag.REG_READER);
     }
 
     @Override
