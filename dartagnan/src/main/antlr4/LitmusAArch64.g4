@@ -132,23 +132,23 @@ branchLabel
     ;
 
 loadInstruction locals [String mo]
-    :   LDR     {$mo = Mo.RX;}
-    |   LDAR    {$mo = Mo.ACQ;}
+    :   LDR     {$mo = Tag.RX;}
+    |   LDAR    {$mo = Tag.ACQ;}
     ;
 
 loadExclusiveInstruction locals [String mo]
-    :   LDXR    {$mo = Mo.RX;}
-    |   LDAXR   {$mo = Mo.ACQ;}
+    :   LDXR    {$mo = Tag.RX;}
+    |   LDAXR   {$mo = Tag.ACQ;}
     ;
 
 storeInstruction locals [String mo]
-    :   STR     {$mo = Mo.RX;}
-    |   STLR    {$mo = Mo.REL;}
+    :   STR     {$mo = Tag.RX;}
+    |   STLR    {$mo = Tag.REL;}
     ;
 
 storeExclusiveInstruction locals [String mo]
-    :   STXR    {$mo = Mo.RX;}
-    |   STLXR   {$mo = Mo.REL;}
+    :   STXR    {$mo = Tag.RX;}
+    |   STLXR   {$mo = Tag.REL;}
     ;
 
 arithmeticInstruction locals [IOpBin op]
