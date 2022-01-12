@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -81,11 +80,10 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             } else if (address instanceof Address) {
                 if (e instanceof Init) {
                     // Rule loc = &loc2 -> lo(loc) = {loc2} (only possible in init events)
-                    Location loc = program.getMemory().getLocationForAddress((Address) address);
                     IExpr value = ((Init) e).getValue();
-                    if (loc != null && value instanceof Address) {
-                        graph.addAddress(loc, (Address)value);
-                        variables.add(loc);
+                    if (program.getMemory().isStatic((Address)address) && value instanceof Address) {
+                        graph.addAddress(address, (Address)value);
+                        variables.add(address);
                     }
                 }
             } else {
@@ -130,15 +128,14 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             if(variable instanceof Register){
                 // Process rules with *variable:
                 for (Address address : graph.getAddresses(variable)) {
-                    Location location = program.getMemory().getLocationForAddress(address);
-                    if (location != null) {
+                    if(program.getMemory().isStatic(address)) {
                         for (MemEvent e : graph.getEvents((Register) variable)) {
                             // p = *variable:
                             if (e instanceof RegWriter) {
                                 // Add edge from location to p
-                                if (graph.addEdge(location, ((RegWriter) e).getResultRegister())) {
+                                if (graph.addEdge(address, ((RegWriter) e).getResultRegister())) {
                                     // Add location to variables if edge is new.
-                                    variables.add(location);
+                                    variables.add(address);
                                 }
                             } else if (e instanceof Store) {
                                 // *variable = register
@@ -146,7 +143,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                                 if (value instanceof Register) {
                                     Register register = (Register) value;
                                     // Add edge from register to location
-                                    if (graph.addEdge(register, location)) {
+                                    if (graph.addEdge(register, address)) {
                                         // Add register to variables if edge is new.
                                         variables.add(register);
                                     }

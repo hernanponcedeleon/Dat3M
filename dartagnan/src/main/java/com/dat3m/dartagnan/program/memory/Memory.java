@@ -17,8 +17,14 @@ public class Memory {
         arrays = new HashMap<>();
     }
 
-    public Location getLocationForAddress(Address address) {
-        return map.get(address);
+    /**
+     * @param a
+     * Address associated with this instance.
+     * @return
+     * The address points to a static location.
+     */
+    public boolean isStatic(Address a) {
+        return map.containsKey(a);
     }
 
     public List<Address> malloc(String name, int size) {
