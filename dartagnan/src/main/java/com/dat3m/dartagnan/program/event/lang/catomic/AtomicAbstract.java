@@ -7,10 +7,11 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.lang.linux.utils.Tag;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
+
+import static com.dat3m.dartagnan.program.event.Tag.*;
 
 public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegReaderData {
 
@@ -23,8 +24,7 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
         this.resultRegister = register;
         this.value = value;
         this.dataRegs = value.getRegs();
-        addFilters(Tag.ANY, Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.WRITE,
-                Tag.RMW, Tag.REG_WRITER, Tag.REG_READER);
+        addFilters(ANY, VISIBLE, MEMORY, READ, WRITE, RMW, REG_WRITER, REG_READER);
     }
 
     AtomicAbstract(AtomicAbstract other) {

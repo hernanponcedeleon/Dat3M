@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event.arch.tso;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.arch.tso.utils.Tag;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -18,6 +18,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.program.event.Tag.*;
 
 public class Xchg extends MemEvent implements RegWriter, RegReaderData {
 
@@ -28,7 +29,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
         super(address, null);
         this.resultRegister = register;
         this.dataRegs = ImmutableSet.of(resultRegister);
-        addFilters(Tag.ANY, Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.WRITE, Tag.ATOM, Tag.REG_WRITER, Tag.REG_READER);
+        addFilters(ANY, VISIBLE, MEMORY, READ, WRITE, Tag.TSO.ATOM, REG_WRITER, REG_READER);
     }
 
     private Xchg(Xchg other){
@@ -75,10 +76,10 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
         
         Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         Load load = newRMWLoad(dummyReg, address, null);
-        load.addFilters(Tag.ATOM);
+        load.addFilters(Tag.TSO.ATOM);
 
         RMWStore store = newRMWStore(load, address, resultRegister, null);
-        store.addFilters(Tag.ATOM);
+        store.addFilters(Tag.TSO.ATOM);
 
         Local updateReg = newLocal(resultRegister, dummyReg);
 

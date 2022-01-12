@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux.utils;
 
-public class Tag extends com.dat3m.dartagnan.program.event.Tag {
+public class Tag{
 
     public static final String NORETURN     = "Noreturn";
     public static final String RCU_SYNC     = "Sync-rcu";

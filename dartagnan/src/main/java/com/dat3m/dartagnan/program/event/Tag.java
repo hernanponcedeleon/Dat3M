@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event;
 import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.*;
 
 public class Tag {
+    private Tag() { }
 
     public static final String ANY          = "_";
     public static final String INIT         = "IW";
@@ -28,6 +29,8 @@ public class Tag {
     public static final String PTHREAD    	= "PTHREAD";
 
     public static final class ARMv8 {
+        private ARMv8() { }
+
         public static final String MO_RX = "MO_RX";
         public static final String MO_REL = "L";
         public static final String MO_ACQ = "A";
@@ -46,5 +49,11 @@ public class Tag {
             //TODO: What about CONSUME loads?
             return cMo.equals(SC) || cMo.equals(ACQUIRE) || cMo.equals(ACQUIRE_RELEASE) ? MO_ACQ : MO_RX;
         }
+    }
+
+    public static class TSO {
+        private TSO() {}
+
+        public static final String ATOM      = "A";
     }
 }
