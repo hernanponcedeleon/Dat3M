@@ -28,7 +28,7 @@ public class ProgramBuilder {
     private final Map<String,Address> locations = new HashMap<>();
     private final Map<String, Address> pointers = new HashMap<>();
 
-    private final Map<Address,IConst> iValueMap = new HashMap<>();
+    private final Map<Address,List<IConst>> iValueMap = new HashMap<>();
     private final Memory memory = new Memory();
 
     private final Map<String, Label> labels = new HashMap<>();
@@ -89,18 +89,18 @@ public class ProgramBuilder {
 
     public void initLocEqLocPtr(String leftName, String rightName){
         Address location = getOrCreateLocation(leftName);
-        iValueMap.put(location, getOrCreateLocation(rightName));
+        iValueMap.put(location,List.of(getOrCreateLocation(rightName)));
     }
 
     public void initLocEqLocVal(String leftName, String rightName){
         Address left = getOrCreateLocation(leftName);
         Address right = getOrCreateLocation(rightName);
-        iValueMap.put(left, iValueMap.get(right));
+        iValueMap.put(left,List.copyOf(iValueMap.get(right)));
     }
 
     public void initLocEqConst(String locName, IConst iValue){
         Address location = getOrCreateLocation(locName);
-        iValueMap.put(location, iValue);
+        iValueMap.put(location,List.of(iValue));
     }
 
     public void initRegEqLocPtr(int regThread, String regName, String locName, int precision){
@@ -112,7 +112,7 @@ public class ProgramBuilder {
     public void initRegEqLocVal(int regThread, String regName, String locName, int precision){
         Address loc = getOrCreateLocation(locName);
         Register reg = getOrCreateRegister(regThread, regName, precision);
-        addChild(regThread, EventFactory.newLocal(reg, iValueMap.get(loc)));
+        addChild(regThread, EventFactory.newLocal(reg, iValueMap.get(loc).get(0)));
     }
 
     public void initRegEqConst(int regThread, String regName, IConst iValue){
@@ -123,9 +123,7 @@ public class ProgramBuilder {
         checkArgument(!pointers.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
         int size = values.size();
         List<Address> addresses = memory.malloc(size);
-        for(int i = 0; i < size; i++){
-            iValueMap.put(addresses.get(i),values.get(i));
-        }
+        iValueMap.put(addresses.get(0),values);
         locations.put(name,addresses.get(0));
         pointers.put(name, addresses.get(0));
     }
@@ -145,7 +143,7 @@ public class ProgramBuilder {
         if(!locations.containsKey(name)){
             Address address = memory.newLocation();
             locations.put(name,address);
-            iValueMap.put(address, new IConst(DEFAULT_INIT_VALUE, address.getPrecision()));
+            iValueMap.put(address,List.of(new IConst(DEFAULT_INIT_VALUE, address.getPrecision())));
         }
         return locations.get(name);
     }
@@ -187,7 +185,8 @@ public class ProgramBuilder {
     }
 
     public IConst getInitValue(Address address){
-        return iValueMap.getOrDefault(address, new IConst(DEFAULT_INIT_VALUE, address.getPrecision()));
+        List<IConst> result = iValueMap.get(address);
+        return result != null ? result.get(0) : new IConst(DEFAULT_INIT_VALUE,address.getPrecision());
     }
 
     public Address getPointer(String name){
@@ -207,11 +206,13 @@ public class ProgramBuilder {
 
     private void buildInitThreads(){
         int nextThreadId = nextThreadId();
-        for (Map.Entry<Address,IConst> entry : iValueMap.entrySet()) {
-            Event e = EventFactory.newInit(entry.getKey(),0,entry.getValue());
-            Thread thread = new Thread(nextThreadId, e);
-            threads.put(nextThreadId, thread);
-            nextThreadId++;
+        for(Map.Entry<Address,List<IConst>> entry : iValueMap.entrySet()) {
+            for(int i = 0; i < entry.getValue().size(); i++) {
+                Event e = EventFactory.newInit(entry.getKey(),i,entry.getValue().get(i));
+                Thread thread = new Thread(nextThreadId,e);
+                threads.put(nextThreadId,thread);
+                nextThreadId++;
+            }
         }
     }
 
