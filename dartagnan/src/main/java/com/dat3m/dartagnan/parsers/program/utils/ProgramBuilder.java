@@ -219,7 +219,7 @@ public class ProgramBuilder {
     private void buildInitThreads(){
         int nextThreadId = nextThreadId();
         for (Map.Entry<Address,IConst> entry : iValueMap.entrySet()) {
-            Event e = EventFactory.newInit(entry.getKey(), entry.getValue());
+            Event e = EventFactory.newInit(entry.getKey(),0,entry.getValue());
             Thread thread = new Thread(nextThreadId, e);
             threads.put(nextThreadId, thread);
             nextThreadId++;

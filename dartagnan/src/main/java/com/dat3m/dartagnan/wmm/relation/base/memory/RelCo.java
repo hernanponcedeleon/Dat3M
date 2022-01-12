@@ -219,7 +219,7 @@ public class RelCo extends Relation {
                     IntegerFormula a1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
                     IntegerFormula a2 = convertToIntegerFormula(address.toIntFormula(init,ctx), ctx);
                     IntegerFormula v1 = convertToIntegerFormula(w1.getMemValueExpr(), ctx);
-                    IntegerFormula v2 = convertToIntegerFormula(init.getLastMemValueExpr(ctx), ctx);
+                    IntegerFormula v2 = convertToIntegerFormula(init.getBase().getLastMemValueExpr(ctx,init.getOffset()), ctx);
                     BooleanFormula sameAddress = imgr.equal(a1, a2);
                     BooleanFormula sameValue = imgr.equal(v1, v2);
                     enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
