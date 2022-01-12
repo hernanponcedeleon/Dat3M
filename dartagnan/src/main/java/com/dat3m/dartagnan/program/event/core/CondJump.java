@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
@@ -26,7 +26,7 @@ public class CondJump extends Event implements RegReaderData {
         this.thread = label.getThread();
         this.expr = expr;
         dataRegs = expr.getRegs();
-        addFilters(EType.ANY, EType.JUMP, EType.REG_READER);
+        addFilters(Tag.ANY, Tag.JUMP, Tag.REG_READER);
     }
 
     protected CondJump(CondJump other) {

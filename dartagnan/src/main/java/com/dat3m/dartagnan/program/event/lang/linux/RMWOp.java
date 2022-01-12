@@ -4,10 +4,9 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.lang.linux.utils.EType;
-import com.dat3m.dartagnan.program.event.lang.linux.utils.Mo;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
@@ -15,9 +14,9 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
     private final IOpBin op;
 
     public RMWOp(IExpr address, Register register, IExpr value, IOpBin op) {
-        super(address, register, value, Mo.RELAXED);
+        super(address, register, value, Tag.Linux.MO_RELAXED);
         this.op = op;
-        addFilters(EType.NORETURN);
+        addFilters(Tag.Linux.NORETURN);
     }
 
     private RMWOp(RMWOp other){

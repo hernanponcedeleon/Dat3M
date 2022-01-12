@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
-import static com.dat3m.dartagnan.program.event.EType.*;
+import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
@@ -135,7 +135,7 @@ public class RelRf extends Relation {
         // Atomics blocks: BeginAtomic -> EndAtomic
         BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
         AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
-        FilterAbstract filter = FilterIntersection.get(FilterBasic.get(RMW), FilterBasic.get(SVCOMPATOMIC));
+        FilterAbstract filter = FilterIntersection.get(FilterBasic.get(RMW), FilterBasic.get(SVCOMP.SVCOMPATOMIC));
         for(Event end : task.getProgram().getCache().getEvents(filter)) {
             // Collect memEvents of the atomic block
             List<Store> writes = new ArrayList<>();

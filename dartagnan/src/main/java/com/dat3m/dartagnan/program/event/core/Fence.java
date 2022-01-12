@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class Fence extends Event {
@@ -9,7 +9,7 @@ public class Fence extends Event {
 
 	public Fence(String name){
         this.name = name;
-        this.addFilters(EType.ANY, EType.VISIBLE, EType.FENCE, name);
+        this.addFilters(Tag.ANY, Tag.VISIBLE, Tag.FENCE, name);
 	}
 
 	protected Fence(Fence other){

@@ -4,7 +4,7 @@ import LitmusAssertions;
 
 @header{
 import com.dat3m.dartagnan.expression.op.*;
-import com.dat3m.dartagnan.program.event.arch.aarch64.utils.Mo;
+import static com.dat3m.dartagnan.program.event.Tag.ARMv8.*;
 }
 
 main
@@ -132,23 +132,23 @@ branchLabel
     ;
 
 loadInstruction locals [String mo]
-    :   LDR     {$mo = Mo.RX;}
-    |   LDAR    {$mo = Mo.ACQ;}
+    :   LDR     {$mo = MO_RX;}
+    |   LDAR    {$mo = MO_ACQ;}
     ;
 
 loadExclusiveInstruction locals [String mo]
-    :   LDXR    {$mo = Mo.RX;}
-    |   LDAXR   {$mo = Mo.ACQ;}
+    :   LDXR    {$mo = MO_RX;}
+    |   LDAXR   {$mo = MO_ACQ;}
     ;
 
 storeInstruction locals [String mo]
-    :   STR     {$mo = Mo.RX;}
-    |   STLR    {$mo = Mo.REL;}
+    :   STR     {$mo = MO_RX;}
+    |   STLR    {$mo = MO_REL;}
     ;
 
 storeExclusiveInstruction locals [String mo]
-    :   STXR    {$mo = Mo.RX;}
-    |   STLXR   {$mo = Mo.REL;}
+    :   STXR    {$mo = MO_RX;}
+    |   STLXR   {$mo = MO_REL;}
     ;
 
 arithmeticInstruction locals [IOpBin op]

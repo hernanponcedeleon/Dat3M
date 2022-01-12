@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class Label extends Event {
@@ -9,7 +9,7 @@ public class Label extends Event {
     
     public Label(String name){
         this.name = name;
-        addFilters(EType.ANY, EType.LABEL);
+        addFilters(Tag.ANY, Tag.LABEL);
     }
 
     protected Label(Label other){

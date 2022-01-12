@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.memory.Address;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Mo.SC;
+import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
 public class Create extends Store {
 
@@ -13,7 +13,7 @@ public class Create extends Store {
 	private final String routine;
 	
     public Create(Register pthread_t, String routine, Address address){
-    	super(address, IConst.ONE, SC);
+    	super(address, IConst.ONE, MO_SC);
         this.pthread_t = pthread_t;
         this.routine = routine;
     }

@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Mo.SC;
+import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
 public class Unlock extends MemEvent {
 	
@@ -16,7 +16,7 @@ public class Unlock extends MemEvent {
     private Label label4Copy;
 
 	public Unlock(String name, IExpr address, Register reg, Label label){
-		super(address, SC);
+		super(address, MO_SC);
 		this.name = name;
         this.reg = reg;
         this.label = label;

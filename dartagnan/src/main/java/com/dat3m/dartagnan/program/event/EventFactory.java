@@ -1,10 +1,10 @@
-package com.dat3m.dartagnan.program;
+package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -148,7 +148,7 @@ public class EventFactory {
 
     public static Load newRMWLoad(Register reg, IExpr address, String mo) {
         Load load = newLoad(reg, address, mo);
-        load.addFilters(EType.RMW);
+        load.addFilters(Tag.RMW);
         return load;
     }
 
@@ -158,7 +158,7 @@ public class EventFactory {
 
     public static Load newRMWLoadExclusive(Register reg, IExpr address, String mo) {
         Load load = new Load(reg, address, mo);
-        load.addFilters(EType.RMW, EType.EXCL);
+        load.addFilters(Tag.RMW, Tag.EXCL);
         return load;
     }
 
@@ -282,8 +282,8 @@ public class EventFactory {
     // ============================================ ARM ============================================
     // =============================================================================================
 
-    public static class Arm8 {
-        private Arm8() {}
+    public static class AArch64 {
+        private AArch64() {}
 
         public static StoreExclusive newExclusiveStore(Register register, IExpr address, ExprInterface value, String mo) {
             return new StoreExclusive(register, address, value, mo);

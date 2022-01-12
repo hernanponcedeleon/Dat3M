@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
@@ -56,7 +56,7 @@ public class PropertyEncoder implements Encoder {
         logger.info("Encoding bound events execution");
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return program.getCache().getEvents(FilterBasic.get(EType.BOUND))
+        return program.getCache().getEvents(FilterBasic.get(Tag.BOUND))
                 .stream().map(Event::exec).reduce(bmgr.makeFalse(), bmgr::or);
     }
 
@@ -87,11 +87,11 @@ public class PropertyEncoder implements Encoder {
                 if(t1.getId() == t2.getId()) {
                     continue;
                 }
-                for(Event e1 : t1.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.WRITE), FilterBasic.get(EType.INIT)))) {
+                for(Event e1 : t1.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.WRITE), FilterBasic.get(Tag.INIT)))) {
                     MemEvent w = (MemEvent)e1;
-                    for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.MEMORY), FilterBasic.get(EType.INIT)))) {
+                    for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.INIT)))) {
                         MemEvent m = (MemEvent)e2;
-                        if(w.hasFilter(EType.RMW) && m.hasFilter(EType.RMW)) {
+                        if(w.hasFilter(Tag.RMW) && m.hasFilter(Tag.RMW)) {
                             continue;
                         }
                         if(w.canRace() && m.canRace() && alias.mayAlias(w, m)) {

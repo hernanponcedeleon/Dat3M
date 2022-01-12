@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.Context;
@@ -113,7 +113,7 @@ public class SymmetryEncoder implements Encoder {
         for (Tuple t : rel.getMaxTupleSet()) {
             Event a = t.getFirst();
             Event b = t.getSecond();
-            if (!a.is(EType.PTHREAD) && !b.is(EType.PTHREAD) && a.getThread() == t1) {
+            if (!a.is(Tag.C11.PTHREAD) && !b.is(Tag.C11.PTHREAD) && a.getThread() == t1) {
                 r1Tuples.add(t);
             }
         }

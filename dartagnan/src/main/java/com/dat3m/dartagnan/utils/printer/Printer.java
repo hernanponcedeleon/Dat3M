@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.utils.printer;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Skip;
@@ -72,7 +72,7 @@ public class Printer {
         } catch (Exception e) {
             result.append("\n").append(thread.getName()).append("\n");        	
         }
-        for(Event e : thread.getCache().getEvents(FilterBasic.get(EType.ANY))){
+        for(Event e : thread.getCache().getEvents(FilterBasic.get(Tag.ANY))){
             appendEvent(e);
         }
     }

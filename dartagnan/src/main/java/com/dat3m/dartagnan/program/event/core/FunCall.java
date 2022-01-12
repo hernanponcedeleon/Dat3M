@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+
 
 public class FunCall extends Event {
 
@@ -9,7 +10,7 @@ public class FunCall extends Event {
 	
 	public FunCall(String funName) {
 		this.funName = funName;
-        addFilters(EType.ANY);
+        addFilters(Tag.ANY);
 	}
 	
 	protected FunCall(FunCall other){

@@ -11,8 +11,8 @@ import com.dat3m.dartagnan.parsers.LitmusAArch64Parser;
 import com.dat3m.dartagnan.parsers.LitmusAArch64Visitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.Cmp;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -171,7 +171,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        StoreExclusive event = EventFactory.Arm8.newExclusiveStore(statusReg, address, register, ctx.storeExclusiveInstruction().mo);
+        StoreExclusive event = EventFactory.AArch64.newExclusiveStore(statusReg, address, register, ctx.storeExclusiveInstruction().mo);
         return programBuilder.addChild(mainThread, event);
     }
 

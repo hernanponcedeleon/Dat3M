@@ -4,8 +4,8 @@ import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
-import com.dat3m.dartagnan.program.EventFactory;
-import com.dat3m.dartagnan.program.EventFactory.Linux;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.EventFactory.Linux;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWReadCond;
@@ -13,7 +13,7 @@ import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import org.junit.Test;
 
-import static com.dat3m.dartagnan.program.EventFactory.newRMWStoreExclusive;
+import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStoreExclusive;
 
 public class UnrollExceptionsTest {
 

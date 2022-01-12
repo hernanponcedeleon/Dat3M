@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.base.local;
 
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
@@ -23,7 +23,7 @@ public class RelAddrDirect extends BasicRegRelation {
     @Override
     public TupleSet getMinTupleSet() {
         if(minTupleSet == null){
-            mkTupleSets(task.getProgram().getCache().getEvents(FilterBasic.get(EType.MEMORY)));
+            mkTupleSets(task.getProgram().getCache().getEvents(FilterBasic.get(Tag.MEMORY)));
         }
         return minTupleSet;
     }
@@ -31,14 +31,14 @@ public class RelAddrDirect extends BasicRegRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            mkTupleSets(task.getProgram().getCache().getEvents(FilterBasic.get(EType.MEMORY)));
+            mkTupleSets(task.getProgram().getCache().getEvents(FilterBasic.get(Tag.MEMORY)));
         }
         return maxTupleSet;
     }
 
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
-        return doEncodeApprox(task.getProgram().getCache().getEvents(FilterBasic.get(EType.MEMORY)), ctx);
+        return doEncodeApprox(task.getProgram().getCache().getEvents(FilterBasic.get(Tag.MEMORY)), ctx);
     }
 
     @Override

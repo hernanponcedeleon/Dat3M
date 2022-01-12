@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.verification.model;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -208,7 +208,7 @@ public class ExecutionModel {
     }
 
     public void initialize(Model model, SolverContext ctx, boolean extractCoherences) {
-        initialize(model, ctx, FilterBasic.get(EType.VISIBLE), extractCoherences);
+        initialize(model, ctx, FilterBasic.get(Tag.VISIBLE), extractCoherences);
     }
 
     public void initialize(Model model, SolverContext ctx, FilterAbstract eventFilter, boolean extractCoherences) {
@@ -397,7 +397,7 @@ public class ExecutionModel {
             addrDepMap.put(eventMap.get(e), deps);
         }
 
-        if (e.is(EType.VISIBLE)) {
+        if (e.is(Tag.VISIBLE)) {
             // ---- Track ctrl dependency ----
             // TODO: This may be done more efficiently, as many events share the same set of ctrldeps.
             ctrlDepMap.put(eventMap.get(e), new HashSet<>(curCtrlDeps));

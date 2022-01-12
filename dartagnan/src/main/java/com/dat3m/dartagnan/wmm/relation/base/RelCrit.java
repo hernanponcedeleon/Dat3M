@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation.base;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.lang.linux.utils.EType;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -34,8 +34,8 @@ public class RelCrit extends StaticRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Thread thread : task.getProgram().getThreads()){
-                for(Event lock : thread.getCache().getEvents(FilterBasic.get(EType.RCU_LOCK))){
-                    for(Event unlock : thread.getCache().getEvents(FilterBasic.get(EType.RCU_UNLOCK))){
+                for(Event lock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_LOCK))){
+                    for(Event unlock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_UNLOCK))){
                         if(lock.getCId() < unlock.getCId()){
                             maxTupleSet.add(new Tuple(lock, unlock));
                         }
@@ -54,18 +54,18 @@ public class RelCrit extends StaticRelation {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
         for(Thread thread : task.getProgram().getThreads()){
-            for(Event lock : thread.getCache().getEvents(FilterBasic.get(EType.RCU_LOCK))){
-                for(Event unlock : thread.getCache().getEvents(FilterBasic.get(EType.RCU_UNLOCK))){
+            for(Event lock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_LOCK))){
+                for(Event unlock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_UNLOCK))){
                     if(lock.getCId() < unlock.getCId()){
                         Tuple tuple = new Tuple(lock, unlock);
                         if(encodeTupleSet.contains(tuple)){
                         	BooleanFormula relation = bmgr.and(getExecPair(lock, unlock, ctx));
-                            for(Event otherLock : thread.getCache().getEvents(FilterBasic.get(EType.RCU_LOCK))){
+                            for(Event otherLock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_LOCK))){
                                 if(lock.getCId() < otherLock.getCId() && otherLock.getCId() < unlock.getCId()){
                                     relation = bmgr.and(relation, bmgr.not(this.getSMTVar(otherLock, unlock, ctx)));
                                 }
                             }
-                            for(Event otherUnlock : thread.getCache().getEvents(FilterBasic.get(EType.RCU_UNLOCK))){
+                            for(Event otherUnlock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_UNLOCK))){
                                 if(lock.getCId() < otherUnlock.getCId() && otherUnlock.getCId() < unlock.getCId()){
                                     relation = bmgr.and(relation, bmgr.not(this.getSMTVar(lock, otherUnlock, ctx)));
                                 }
