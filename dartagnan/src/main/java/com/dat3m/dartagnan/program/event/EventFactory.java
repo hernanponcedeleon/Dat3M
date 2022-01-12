@@ -282,8 +282,8 @@ public class EventFactory {
     // ============================================ ARM ============================================
     // =============================================================================================
 
-    public static class Arm8 {
-        private Arm8() {}
+    public static class AArch64 {
+        private AArch64() {}
 
         public static StoreExclusive newExclusiveStore(Register register, IExpr address, ExprInterface value, String mo) {
             return new StoreExclusive(register, address, value, mo);

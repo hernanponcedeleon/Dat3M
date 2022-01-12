@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.EventFactory.Arm8;
+import com.dat3m.dartagnan.program.event.EventFactory.AArch64;
 import com.dat3m.dartagnan.program.event.EventFactory.Atomic;
 import com.dat3m.dartagnan.program.event.EventFactory.Linux;
 import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
@@ -148,7 +148,7 @@ public class ConstantPropagation implements ProgramProcessor {
             		if(current instanceof Load) {
             			e = EventFactory.newRMWLoadExclusive(reg, newAddress, mo);
             		} else if (current instanceof StoreExclusive) {
-            			e = Arm8.newExclusiveStore(reg, newAddress, newValue, mo);
+            			e = AArch64.newExclusiveStore(reg, newAddress, newValue, mo);
             		} else {
             			// Other EXCL events are generated during compilation (which have not yet occurred)
             			throw new UnsupportedOperationException(String.format("Exclusive event %s not supported by %s", 

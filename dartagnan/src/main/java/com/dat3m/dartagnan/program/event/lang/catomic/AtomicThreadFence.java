@@ -55,8 +55,8 @@ public class AtomicThreadFence extends Fence {
                         Power.newLwSyncBarrier() : null;
                 break;
             case ARM8:
-                fence = mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE) || mo.equals(SC) ? Arm8.DMB.newISHBarrier()
-                        : mo.equals(ACQUIRE) ? Arm8.DSB.newISHLDBarrier() : null;
+                fence = mo.equals(RELEASE) || mo.equals(ACQUIRE_RELEASE) || mo.equals(SC) ? AArch64.DMB.newISHBarrier()
+                        : mo.equals(ACQUIRE) ? AArch64.DSB.newISHLDBarrier() : null;
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName());

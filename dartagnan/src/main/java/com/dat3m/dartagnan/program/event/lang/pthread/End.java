@@ -57,8 +57,8 @@ public class End extends Store {
                 optionalBarrierBefore = Power.newSyncBarrier();
                 break;
             case ARM8:
-                optionalBarrierBefore = Arm8.DMB.newISHBarrier();
-                optionalBarrierAfter = Arm8.DMB.newISHBarrier();
+                optionalBarrierBefore = AArch64.DMB.newISHBarrier();
+                optionalBarrierAfter = AArch64.DMB.newISHBarrier();
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);

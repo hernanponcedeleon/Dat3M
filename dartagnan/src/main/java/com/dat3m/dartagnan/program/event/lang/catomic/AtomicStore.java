@@ -16,7 +16,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.arch.aarch64.utils.Tag.extractStoreMo;
+import static com.dat3m.dartagnan.program.event.Tag.ARMv8.extractStoreMoFromCMo;
 import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.*;
 
 public class AtomicStore extends MemEvent implements RegReaderData {
@@ -93,7 +93,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
                 );
                 break;
             case ARM8:
-                String storeMo = extractStoreMo(mo);
+                String storeMo = extractStoreMoFromCMo(mo);
                 events = eventSequence(
                         newStore(address, value, storeMo)
                 );

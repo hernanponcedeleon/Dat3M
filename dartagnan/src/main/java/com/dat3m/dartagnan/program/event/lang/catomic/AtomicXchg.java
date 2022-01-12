@@ -12,7 +12,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.Arch.POWER;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.arch.aarch64.utils.Tag.*;
+import static com.dat3m.dartagnan.program.event.Tag.ARMv8.*;
 import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.SC;
 
 public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderData {
@@ -64,8 +64,8 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
             }
             case POWER:
             case ARM8:
-                String loadMo = extractLoadMo(mo);
-                String storeMo = extractStoreMo(mo);
+                String loadMo = extractLoadMoFromCMo(mo);
+                String storeMo = extractStoreMoFromCMo(mo);
 
                 Load load = newRMWLoadExclusive(resultRegister, address, loadMo);
                 Store store = newRMWStoreExclusive(address, value, storeMo, true);
@@ -73,10 +73,10 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
                 Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
                 Fence optionalMemoryBarrier = null;
-                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(ACQ)) ? Power.newISyncBarrier() : null;
+                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(MO_ACQ)) ? Power.newISyncBarrier() : null;
                 if(target.equals(POWER)) {
                     optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier()
-                            : storeMo.equals(REL) ? Power.newLwSyncBarrier()
+                            : storeMo.equals(MO_REL) ? Power.newLwSyncBarrier()
                             : null;
                 }
 

@@ -12,7 +12,7 @@ import com.google.common.base.Preconditions;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.arch.aarch64.utils.Tag.extractLoadMo;
+import static com.dat3m.dartagnan.program.event.Tag.ARMv8.extractLoadMoFromCMo;
 import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.*;
 
 public class AtomicLoad extends MemEvent implements RegWriter {
@@ -96,7 +96,7 @@ public class AtomicLoad extends MemEvent implements RegWriter {
                 break;
             }
             case ARM8:
-                String loadMo = extractLoadMo(mo);
+                String loadMo = extractLoadMoFromCMo(mo);
                 events = eventSequence(
                         newLoad(resultRegister, address, loadMo)
                 );

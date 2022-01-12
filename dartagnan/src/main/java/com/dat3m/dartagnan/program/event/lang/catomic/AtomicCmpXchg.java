@@ -14,8 +14,8 @@ import static com.dat3m.dartagnan.configuration.Arch.POWER;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.program.event.Tag.ARMv8.*;
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
-import static com.dat3m.dartagnan.program.event.arch.aarch64.utils.Tag.*;
 import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.SC;
 
 public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReaderData {
@@ -104,8 +104,8 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
             }
             case POWER:
             case ARM8: {
-                String loadMo = extractLoadMo(mo);
-                String storeMo = extractStoreMo(mo);
+                String loadMo = extractLoadMoFromCMo(mo);
+                String storeMo = extractStoreMoFromCMo(mo);
 
                 Load loadValue = newRMWLoadExclusive(regValue, address, loadMo);
                 Store storeValue = newRMWStoreExclusive(address, value, storeMo, is(STRONG));
@@ -119,12 +119,12 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
 
                 // --- Add Fence before under POWER ---
                 Fence optionalMemoryBarrier = null;
-                // if mo.equals(SC) then loadMo.equals(ACQ)
-                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(ACQ)) ? Power.newISyncBarrier() : null;
+                // if mo.equals(SC) then loadMo.equals(MO_ACQ)
+                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(MO_ACQ)) ? Power.newISyncBarrier() : null;
                 if(target.equals(POWER)) {
                     optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier()
-                            // if mo.equals(SC) then storeMo.equals(REL)
-                            : storeMo.equals(REL) ? Power.newLwSyncBarrier()
+                            // if mo.equals(SC) then storeMo.equals(MO_REL)
+                            : storeMo.equals(MO_REL) ? Power.newLwSyncBarrier()
                             : null;
                 }
 

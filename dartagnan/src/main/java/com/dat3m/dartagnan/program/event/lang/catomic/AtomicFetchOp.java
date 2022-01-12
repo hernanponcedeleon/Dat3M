@@ -14,7 +14,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.Arch.POWER;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.arch.aarch64.utils.Tag.*;
+import static com.dat3m.dartagnan.program.event.Tag.ARMv8.*;
 import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Tag.SC;
 
 public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReaderData {
@@ -77,8 +77,8 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
             }
             case POWER:
             case ARM8:
-                String loadMo = extractLoadMo(mo);
-                String storeMo = extractStoreMo(mo);
+                String loadMo = extractLoadMoFromCMo(mo);
+                String storeMo = extractStoreMoFromCMo(mo);
 
                 Load load = newRMWLoadExclusive(resultRegister, address, loadMo);
                 Store store = newRMWStoreExclusive(address, dummyReg, storeMo, true);
@@ -90,10 +90,10 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
                 // Academics papers normally say an isync barrier is enough
                 // However this makes benchmark linuxrwlocks.c fail
                 // Additionally, power compilers in godbolt.org use a lwsync
-                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(ACQ)) ? Power.newLwSyncBarrier() : null;
+                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(MO_ACQ)) ? Power.newLwSyncBarrier() : null;
                 if(target.equals(POWER)) {
                     optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier()
-                            : storeMo.equals(REL) ? Power.newLwSyncBarrier()
+                            : storeMo.equals(MO_REL) ? Power.newLwSyncBarrier()
                             : null;
                 }
 

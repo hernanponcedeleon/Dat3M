@@ -89,7 +89,7 @@ public class Join extends Load {
                 ));
                 break;
             case ARM8:
-                events.add(Arm8.DMB.newISHBarrier());
+                events.add(AArch64.DMB.newISHBarrier());
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
