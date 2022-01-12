@@ -136,8 +136,9 @@ public class ProgramBuilder {
         return threads.get(thread).getExit();
     }
 
-    public Location getLocation(String name){
-        return locations.get(name);
+    public Address getLocation(String name){
+        Location l = locations.get(name);
+        return l==null ? null : l.getAddress();
     }
 
     public Address getOrCreateLocation(String name){

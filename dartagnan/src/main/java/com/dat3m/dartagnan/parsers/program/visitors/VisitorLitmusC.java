@@ -451,10 +451,10 @@ public class VisitorLitmusC
             if(register != null){
                 return register;
             }
-            Location location = programBuilder.getLocation(ctx.getText());
+            Address location = programBuilder.getLocation(ctx.getText());
             if(location != null){
                 register = programBuilder.getOrCreateRegister(scope, null, -1);
-                programBuilder.addChild(currentThread, EventFactory.newLoad(register, location.getAddress(), "NA"));
+                programBuilder.addChild(currentThread, EventFactory.newLoad(register, location, "NA"));
                 return register;
             }
             return programBuilder.getOrCreateRegister(scope, ctx.getText(), -1);

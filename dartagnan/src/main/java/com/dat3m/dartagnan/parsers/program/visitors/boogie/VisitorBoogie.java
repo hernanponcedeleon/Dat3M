@@ -23,7 +23,6 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -467,9 +466,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				programBuilder.addChild(threadCount, child);	        		
 	            continue;
 	        }
-	        Location location = programBuilder.getLocation(name);
+	        Address location = programBuilder.getLocation(name);
 	        if(location != null){
-	            Store child = EventFactory.newStore(location.getAddress(), value, null, currentLine);
+	            Store child = EventFactory.newStore(location, value, null, currentLine);
 				programBuilder.addChild(threadCount, child);
 	            continue;
 	        }
@@ -653,14 +652,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         if(register != null){
             return register;
         }
-        Location location = programBuilder.getLocation(name);
+        Address location = programBuilder.getLocation(name);
         if(location != null){
-       		return location.getAddress();
+       		return location;
         }
         // It might be the start of an array
         location = programBuilder.getLocation(name+"[0]");
         if(location != null){
-       		return location.getAddress();
+       		return location;
         }
         throw new ParsingException("Variable " + name + " is not defined");
 	}
