@@ -20,14 +20,14 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
         this.index = index;
     }
 
+    public Formula getLastMemValueExpr(SolverContext ctx, int offset) {
+        String name = "last_val_at_memory_" + (index + offset);
+        return ctx.getFormulaManager().getIntegerFormulaManager().makeVariable(name);
+    }
+
     @Override
     public Formula getLastValueExpr(SolverContext ctx){
         return toIntFormula(ctx);
-    }
-
-    public Formula getLastMemValueExpr(SolverContext ctx){
-		String name = "last_val_at_memory_" + index;
-		return ctx.getFormulaManager().getIntegerFormulaManager().makeVariable(name);
     }
 
     @Override

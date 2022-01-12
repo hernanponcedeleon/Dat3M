@@ -44,6 +44,6 @@ public class Location implements LastValueInterface {
 
 	@Override
 	public Formula getLastValueExpr(SolverContext ctx){
-		return address.getLastMemValueExpr(ctx);
+		return address.getLastMemValueExpr(ctx,0);
 	}
 }
