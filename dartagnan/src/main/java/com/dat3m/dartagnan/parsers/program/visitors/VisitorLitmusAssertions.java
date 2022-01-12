@@ -10,7 +10,9 @@ import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsVisitor;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<AbstractAssert>
         implements LitmusAssertionsVisitor<AbstractAssert> {
@@ -66,21 +68,36 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
 
     @Override
     public AbstractAssert visitAssertionBasic(LitmusAssertionsParser.AssertionBasicContext ctx){
-    	LastValueInterface expr1 = acceptAssertionValue(ctx.assertionValue(0));
-    	LastValueInterface expr2 = acceptAssertionValue(ctx.assertionValue(1));
-        if(expr2 instanceof Location){
-            expr2 = ((Location) expr2).getAddress();
+        LastValueInterface expr1;
+        LitmusAssertionsParser.AssertionValueContext left = ctx.assertionValue(0);
+        if(left.constant() != null) {
+            expr1 = new IConst(new BigInteger(left.constant().getText()), -1);
+        } else if(left.threadId() != null) {
+            expr1 = programBuilder.getOrErrorRegister(left.threadId().id, left.varName().getText());
+        } else {
+            LitmusAssertionsParser.VarNameContext name = left.varName();
+            Address base = programBuilder.getLocation(name.getText());
+            if(base == null) {
+                throw new IllegalStateException("Location " + name.getText() + " has not been initialised");
+            }
+            TerminalNode offset = left.DigitSequence();
+            expr1 = new Location(name.getText(),base,offset==null?0:Integer.parseInt(offset.getText()));
+        }
+        LastValueInterface expr2;
+        LitmusAssertionsParser.AssertionValueContext right = ctx.assertionValue(1);
+        if(right.constant() != null) {
+            expr2 = new IConst(new BigInteger(right.constant().getText()), -1);
+        } else if(right.threadId() != null) {
+            expr2 = programBuilder.getOrErrorRegister(right.threadId().id, right.varName().getText());
+        } else {
+            LitmusAssertionsParser.VarNameContext name = right.varName();
+            Address base = programBuilder.getLocation(name.getText());
+            if(base == null) {
+                throw new IllegalStateException("Location " + name.getText() + " has not been initialised");
+            }
+            TerminalNode offset = right.DigitSequence();
+            expr2 = offset==null?base:new Location(name.getText(),base,Integer.parseInt(offset.getText()));
         }
         return new AssertBasic(expr1, ctx.assertionCompare().op, expr2);
-    }
-
-    private LastValueInterface acceptAssertionValue(LitmusAssertionsParser.AssertionValueContext ctx){
-        if(ctx.constant() != null){
-            return new IConst(new BigInteger(ctx.constant().getText()), -1);
-        }
-        if(ctx.threadId() != null){
-            return programBuilder.getOrErrorRegister(ctx.threadId().id, ctx.varName().getText());
-        }
-        return programBuilder.getOrErrorLocation(ctx.getText());
     }
 }

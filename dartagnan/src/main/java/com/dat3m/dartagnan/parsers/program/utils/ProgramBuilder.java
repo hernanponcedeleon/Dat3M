@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
 
 import java.math.BigInteger;
@@ -26,7 +25,7 @@ public class ProgramBuilder {
 
     private final Map<Integer, Thread> threads = new HashMap<>();
 
-    private final Map<String, Location> locations = new HashMap<>();
+    private final Map<String,Address> locations = new HashMap<>();
     private final Map<String, Address> pointers = new HashMap<>();
 
     private final Map<Address,IConst> iValueMap = new HashMap<>();
@@ -125,11 +124,9 @@ public class ProgramBuilder {
         int size = values.size();
         List<Address> addresses = memory.malloc(size);
         for(int i = 0; i < size; i++){
-            String varName = name + "[" + i + "]";
-            Address address = addresses.get(i);
-            locations.put(varName, new Location(varName, address));
-            iValueMap.put(address, values.get(i));
+            iValueMap.put(addresses.get(i),values.get(i));
         }
+        locations.put(name,addresses.get(0));
         pointers.put(name, addresses.get(0));
     }
 
@@ -141,24 +138,16 @@ public class ProgramBuilder {
     }
 
     public Address getLocation(String name){
-        Location l = locations.get(name);
-        return l==null ? null : l.getAddress();
+        return locations.get(name);
     }
 
     public Address getOrCreateLocation(String name){
         if(!locations.containsKey(name)){
             Address address = memory.newLocation();
-            locations.put(name, new Location(name,address));
+            locations.put(name,address);
             iValueMap.put(address, new IConst(DEFAULT_INIT_VALUE, address.getPrecision()));
         }
-        return locations.get(name).getAddress();
-    }
-
-    public Location getOrErrorLocation(String name){
-        if(locations.containsKey(name)){
-            return locations.get(name);
-        }
-        throw new IllegalStateException("Location " + name + " has not been initialised");
+        return locations.get(name);
     }
 
     public Register getRegister(int thread, String name){
