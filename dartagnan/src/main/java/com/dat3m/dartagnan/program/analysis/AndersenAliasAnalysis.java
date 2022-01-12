@@ -37,7 +37,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
         ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
         for(Address a : program.getMemory().getAllAddresses()) {
-            builder.add(new Location(a,0));
+            for(int i = 0; i < a.size(); i++) {
+                builder.add(new Location(a,i));
+            }
         }
         maxAddressSet = builder.build();
         run(program);
@@ -198,8 +200,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                         addresses = ImmutableSet.of(target);
             		} else {
                         addresses = new HashSet<>();
-                        List<Address> array = program.getMemory().getArrayFromPointer(target.base);
-                        int size = array == null ? 1 : array.size();
+                        int size = target.base.size();
                         for(int i = 0; i < size; i++) {
                             addresses.add(new Location(target.base,i));
                         }
@@ -226,6 +227,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         final int offset;
 
         Location(Address b, int o) {
+            Preconditions.checkArgument(-1 <= o && o < b.size(),"Array out of bounds");
             base = b;
             offset = o;
         }

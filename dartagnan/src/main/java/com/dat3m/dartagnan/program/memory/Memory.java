@@ -8,7 +8,7 @@ import java.util.*;
 public class Memory {
 
     private final Set<Address> map;
-    private final Collection<List<Address>> arrays;
+    private final Collection<Address> arrays;
 
     private int nextIndex = 1;
 
@@ -27,15 +27,13 @@ public class Memory {
         return map.contains(a);
     }
 
-    public List<Address> malloc(int size) {
+    public Address malloc(int size) {
     	Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
 
-    	List<Address> addresses = new ArrayList<>();
-    	for(int i = 0; i < size; i++) {
-    		addresses.add(new Address(nextIndex++));
-    	}
-    	arrays.add(addresses);
-    	return addresses;
+        Address address = new Address(nextIndex,size);
+        nextIndex += size;
+        arrays.add(address);
+        return address;
     }
 
     /**
@@ -44,31 +42,14 @@ public class Memory {
      * Points to the created location.
      */
     public Address newLocation() {
-        Address address = new Address(nextIndex++);
+        Address address = new Address(nextIndex++,1);
         map.add(address);
         return address;
     }
 
     public ImmutableSet<Address> getAllAddresses() {
         Set<Address> result = new HashSet<>(map);
-        for(List<Address> array : arrays){
-            result.addAll(array);
-        }
+        result.addAll(arrays);
         return ImmutableSet.copyOf(result);
-    }
-
-    public boolean isArrayPointer(Address address) {
-        return arrays.stream().anyMatch(array -> array.contains(address));
-    }
-
-    public Collection<List<Address>> getArrays() {
-        return arrays;
-    }
-
-    public List<Address> getArrayFromPointer(Address address) {
-        return arrays.stream()
-                .filter(array -> array.contains(address))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Provided address does not belong to any array."));
     }
 }
