@@ -525,11 +525,11 @@ public class CompilationVisitor implements EventVisitor<List<Event>> {
                 // --- Add Fence before under POWER ---
                 Fence optionalMemoryBarrier = null;
                 // if mo.equals(SC) then loadMo.equals(ACQ)
-                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(Tag.C11.MO_ACQUIRE)) ? Power.newISyncBarrier() : null;
+                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(Tag.ARMv8.MO_ACQ)) ? Power.newISyncBarrier() : null;
                 if(target.equals(POWER)) {
                     optionalMemoryBarrier = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier()
                             // if mo.equals(SC) then storeMo.equals(REL)
-                            : storeMo.equals(Tag.C11.MO_RELEASE) ? Power.newLwSyncBarrier()
+                            : storeMo.equals(Tag.ARMv8.MO_REL) ? Power.newLwSyncBarrier()
                             : null;
                 }
 
@@ -596,10 +596,10 @@ public class CompilationVisitor implements EventVisitor<List<Event>> {
                 // Academics papers normally say an isync barrier is enough
                 // However this makes benchmark linuxrwlocks.c fail
                 // Additionally, power compilers in godbolt.org use a lwsync
-                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(Tag.C11.MO_ACQUIRE)) ? Power.newLwSyncBarrier() : null;
+                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(Tag.ARMv8.MO_ACQ)) ? Power.newLwSyncBarrier() : null;
                 if(target.equals(POWER)) {
                     optionalMemoryBarrier = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier()
-                            : storeMo.equals(Tag.C11.MO_RELEASE) ? Power.newLwSyncBarrier()
+                            : storeMo.equals(Tag.ARMv8.MO_REL) ? Power.newLwSyncBarrier()
                             : null;
                 }
 
@@ -769,10 +769,10 @@ public class CompilationVisitor implements EventVisitor<List<Event>> {
                 Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
                 Fence optionalMemoryBarrier = null;
-                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(Tag.C11.MO_ACQUIRE)) ? Power.newISyncBarrier() : null;
+                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(Tag.ARMv8.MO_ACQ)) ? Power.newISyncBarrier() : null;
                 if(target.equals(POWER)) {
                     optionalMemoryBarrier = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier()
-                            : storeMo.equals(Tag.C11.MO_RELEASE) ? Power.newLwSyncBarrier()
+                            : storeMo.equals(Tag.ARMv8.MO_REL) ? Power.newLwSyncBarrier()
                             : null;
                 }
 
@@ -832,10 +832,10 @@ public class CompilationVisitor implements EventVisitor<List<Event>> {
 
                 // --- Add Fence before under POWER ---
                 Fence optionalMemoryBarrier = null;
-                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(Tag.C11.MO_ACQUIRE)) ? Power.newISyncBarrier() : null;
+                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(Tag.ARMv8.MO_ACQ)) ? Power.newISyncBarrier() : null;
                 if(target.equals(POWER)) {
                     optionalMemoryBarrier = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier()
-                            : storeMo.equals(Tag.C11.MO_RELEASE) ? Power.newLwSyncBarrier()
+                            : storeMo.equals(Tag.ARMv8.MO_REL) ? Power.newLwSyncBarrier()
                             : null;
                 }
                 // --- Add success events ---
