@@ -1,7 +1,6 @@
-package com.dat3m.dartagnan.program.utils;
+package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EType;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;

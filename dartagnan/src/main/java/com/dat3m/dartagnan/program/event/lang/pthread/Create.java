@@ -11,8 +11,8 @@ import com.google.common.base.Preconditions;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EType.PTHREAD;
+import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Mo.SC;
 
 public class Create extends Store {

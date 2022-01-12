@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.EventCache;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.utils.EventCache;
 import com.google.common.base.Preconditions;
 
 import java.util.HashMap;

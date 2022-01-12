@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.program.EventFactory.*;
+import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderData {
 

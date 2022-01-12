@@ -15,7 +15,7 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.program.EventFactory.*;
+import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.arch.aarch64.utils.Mo.extractStoreMo;
 import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Mo.*;
 

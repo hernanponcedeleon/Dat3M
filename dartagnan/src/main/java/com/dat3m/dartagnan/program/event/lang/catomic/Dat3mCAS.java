@@ -15,7 +15,7 @@ import java.util.List;
 import static com.dat3m.dartagnan.configuration.Arch.POWER;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
-import static com.dat3m.dartagnan.program.EventFactory.*;
+import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.arch.aarch64.utils.Mo.*;
 import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Mo.SC;
 

@@ -2,13 +2,13 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpUn;
-import com.dat3m.dartagnan.program.EventFactory;
-import com.dat3m.dartagnan.program.EventFactory.Arm8;
-import com.dat3m.dartagnan.program.EventFactory.Atomic;
-import com.dat3m.dartagnan.program.EventFactory.Linux;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.EventFactory.Arm8;
+import com.dat3m.dartagnan.program.event.EventFactory.Atomic;
+import com.dat3m.dartagnan.program.event.EventFactory.Linux;
 import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
