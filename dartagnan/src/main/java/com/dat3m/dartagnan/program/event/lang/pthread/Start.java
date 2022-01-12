@@ -1,20 +1,11 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
-import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.google.common.base.Preconditions;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
-import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.lang.catomic.utils.Mo.SC;
 
 public class Start extends Load {
@@ -61,37 +52,11 @@ public class Start extends Load {
         return new Start(this);
     }
 
-    // Compilation
-    // -----------------------------------------------------------------------------------------------------------------
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
 
-    @Override
-    public List<Event> compile(Arch target) {
-    	Preconditions.checkNotNull(target, "Target cannot be null");
-
-        List<Event> events = new ArrayList<>();
-        Load load = newLoad(resultRegister, address, mo);
-        events.add(load);
-
-        switch (target) {
-            case NONE:
-            case TSO:
-                break;
-            case POWER:
-                Label label = newLabel("Jump_" + oId);
-                events.addAll(eventSequence(
-                        newFakeCtrlDep(resultRegister, label),
-                        label,
-                        Power.newISyncBarrier()
-                ));
-                break;
-            case ARM8:
-                events.add(Arm8.DMB.newISHBarrier());
-                break;
-            default:
-                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
-        }
-
-        events.add(newJumpUnless(new Atom(resultRegister, EQ, IConst.ONE), label));
-        return events;
-    }
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visit(this);
+	}
 }

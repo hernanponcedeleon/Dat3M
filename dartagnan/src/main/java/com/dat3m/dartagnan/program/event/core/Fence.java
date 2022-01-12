@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class Fence extends Event {
 
@@ -31,5 +32,13 @@ public class Fence extends Event {
 	@Override
 	public Fence getCopy(){
 		return new Fence(this);
+	}
+
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 }

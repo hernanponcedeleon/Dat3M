@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.visitors.CompilationVisitor;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -80,7 +81,7 @@ public class Compilation implements ProgramProcessor {
         pred.setCId(nextId++);
 
         while (toBeCompiled != null) {
-            List<Event> compiledEvents = toBeCompiled.compile(target);
+            List<Event> compiledEvents = toBeCompiled.accept(new CompilationVisitor(target));
             for (Event e : compiledEvents) {
                 e.setOId(toBeCompiled.getOId());
                 e.setUId(toBeCompiled.getUId());

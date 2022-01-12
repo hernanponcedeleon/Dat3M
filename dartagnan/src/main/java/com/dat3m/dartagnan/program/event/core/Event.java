@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -137,7 +137,11 @@ public abstract class Event implements Encoder, Comparable<Event> {
     	throw new UnsupportedOperationException("notify is not allowed for " + getClass().getSimpleName());
     }
 
-
+	public void delete(Event pred) {
+		if (pred != null) {
+			pred.successor = this.successor;
+		}
+	}
 
 	// Unrolling
     // -----------------------------------------------------------------------------------------------------------------
@@ -146,17 +150,11 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
 	}
 
-    // Compilation
-    // -----------------------------------------------------------------------------------------------------------------
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
 
-	public List<Event> compile(Arch target) {
-		return Collections.singletonList(this);
-	}
-
-	public void delete(Event pred) {
-		if (pred != null) {
-			pred.successor = this.successor;
-		}
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 
 	// Encoding
@@ -206,6 +204,4 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		Boolean expr = model.evaluate(cf());
 		return expr != null && expr;
 	}
-
-
 }

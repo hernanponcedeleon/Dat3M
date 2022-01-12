@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
@@ -45,5 +46,13 @@ public class IfAsJump extends CondJump {
 	@Override
 	public IfAsJump getCopy() {
 		return new IfAsJump(this);
+	}
+
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 }

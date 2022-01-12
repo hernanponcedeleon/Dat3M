@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.program.event.lang.linux.cond;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Fence;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -53,4 +55,12 @@ public class FenceCond extends Fence {
 	public FenceCond getCopy(){
         throw new ProgramProcessingException(getClass().getName() + " cannot be unrolled: event must be generated during compilation");
     }
+
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visit(this);
+	}
 }

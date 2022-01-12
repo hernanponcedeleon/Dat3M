@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.EType;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
 public class RMWStore extends Store implements RegReaderData {
@@ -31,4 +32,12 @@ public class RMWStore extends Store implements RegReaderData {
 	public RMWStore getCopy(){
         throw new ProgramProcessingException(getClass().getName() + " cannot be unrolled: event must be generated during compilation");
     }
+
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visit(this);
+	}
 }

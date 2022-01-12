@@ -1,23 +1,13 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Fence;
-import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWReadCondCmp;
-import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWStoreCond;
 import com.dat3m.dartagnan.program.event.lang.linux.utils.Mo;
-import com.google.common.base.Preconditions;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.collect.ImmutableSet;
-
-import java.util.List;
-
-import static com.dat3m.dartagnan.program.EventFactory.*;
 
 public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
@@ -56,31 +46,11 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
         return new RMWCmpXchg(this);
     }
 
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
 
-    // Compilation
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    public List<Event> compile(Arch target) {
-        Preconditions.checkArgument(target == Arch.NONE, "Compilation to " + target + " is not supported for " + getClass().getName());
-
-        Register dummy = resultRegister;
-        if(resultRegister == value || resultRegister == cmp){
-            dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-        }
-
-        RMWReadCondCmp load = Linux.newRMWReadCondCmp(dummy, cmp, address, Mo.loadMO(mo));
-        RMWStoreCond store = Linux.newRMWStoreCond(load, address, value, Mo.storeMO(mo));
-        Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
-        Fence optionalMbBefore = mo.equals(Mo.MB) ? Linux.newConditionalMemoryBarrier(load) : null;
-        Fence optionalMbAfter = mo.equals(Mo.MB) ? Linux.newConditionalMemoryBarrier(load) : null;
-
-        return eventSequence(
-                optionalMbBefore,
-                load,
-                store,
-                optionalUpdateReg,
-                optionalMbAfter
-        );
-    }
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visit(this);
+	}
 }

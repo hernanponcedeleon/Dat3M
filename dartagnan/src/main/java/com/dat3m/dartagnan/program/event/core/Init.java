@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.EType;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+
 import org.sosy_lab.java_smt.api.SolverContext;
 
 public class Init extends MemEvent {
@@ -33,5 +35,13 @@ public class Init extends MemEvent {
 	@Override
 	public IConst getMemValue(){
 		return value;
+	}
+
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 }

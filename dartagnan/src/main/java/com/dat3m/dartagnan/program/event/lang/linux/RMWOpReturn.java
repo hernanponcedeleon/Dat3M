@@ -1,24 +1,13 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Fence;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.linux.utils.Mo;
-import com.google.common.base.Preconditions;
-
-import java.util.List;
-
-import static com.dat3m.dartagnan.program.EventFactory.*;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData {
 
@@ -56,27 +45,11 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
         return new RMWOpReturn(this);
     }
 
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
 
-    // Compilation
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    public List<Event> compile(Arch target) {
-        Preconditions.checkArgument(target == Arch.NONE, "Compilation to " + target + " is not supported for " + getClass().getName());
-
-        Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-        Fence optionalMbBefore = mo.equals(Mo.MB) ? Linux.newMemoryBarrier() : null;
-        Load load = newRMWLoad(dummy, address, Mo.loadMO(mo));
-        Local localOp = newLocal(resultRegister, new IExprBin(dummy, op, value));
-        RMWStore store = newRMWStore(load, address, resultRegister, Mo.storeMO(mo));
-        Fence optionalMbAfter = mo.equals(Mo.MB) ? Linux.newMemoryBarrier() : null;
-
-        return eventSequence(
-                optionalMbBefore,
-                load,
-                localOp,
-                store,
-                optionalMbAfter
-        );
-    }
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visit(this);
+	}
 }
