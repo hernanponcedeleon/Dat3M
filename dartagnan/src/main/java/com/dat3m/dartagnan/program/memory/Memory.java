@@ -35,7 +35,7 @@ public class Memory {
     	return addresses;
     }
 
-    public Location getOrCreateLocation(String name){
+    public Location newLocation(String name){
         if(!locationIndex.containsKey(name)) {
             Location location = new Location(name, new Address(nextIndex++));
             map.put(location.getAddress(), location);

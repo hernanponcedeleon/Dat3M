@@ -142,7 +142,7 @@ public class ProgramBuilder {
 
     public Address getOrCreateLocation(String name){
         if(!locations.containsKey(name)){
-            Location location = memory.getOrCreateLocation(name);
+            Location location = memory.newLocation(name);
             locations.put(name, location);
             iValueMap.put(location.getAddress(), new IConst(Location.DEFAULT_INIT_VALUE, location.getAddress().getPrecision()));
         }
