@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.event.Tag.RMW;
-import static com.dat3m.dartagnan.program.event.Tag.SVCOMPATOMIC;
+import static com.dat3m.dartagnan.program.event.Tag.SVCOMP.SVCOMPATOMIC;
 
 public class EndAtomic extends Event {
 

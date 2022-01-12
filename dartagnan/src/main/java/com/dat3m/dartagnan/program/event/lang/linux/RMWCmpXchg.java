@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Fence;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -11,13 +12,13 @@ import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWReadCondCmp;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWStoreCond;
-import com.dat3m.dartagnan.program.event.lang.linux.utils.Tag;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
+import static com.dat3m.dartagnan.program.event.EventFactory.newLocal;
 
 public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
@@ -36,7 +37,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
 
     @Override
     public String toString() {
-        return resultRegister + " := atomic_cmpxchg" + Tag.toText(mo) + "(" + address + ", " + cmp + ", " + value + ")";
+        return resultRegister + " := atomic_cmpxchg" + Tag.Linux.toText(mo) + "(" + address + ", " + cmp + ", " + value + ")";
     }
 
     public ExprInterface getCmp() {
@@ -69,11 +70,11 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
             dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         }
 
-        RMWReadCondCmp load = Linux.newRMWReadCondCmp(dummy, cmp, address, Tag.loadMO(mo));
-        RMWStoreCond store = Linux.newRMWStoreCond(load, address, value, Tag.storeMO(mo));
+        RMWReadCondCmp load = com.dat3m.dartagnan.program.event.EventFactory.Linux.newRMWReadCondCmp(dummy, cmp, address, Tag.Linux.loadMO(mo));
+        RMWStoreCond store = com.dat3m.dartagnan.program.event.EventFactory.Linux.newRMWStoreCond(load, address, value, Tag.Linux.storeMO(mo));
         Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
-        Fence optionalMbBefore = mo.equals(Tag.MB) ? Linux.newConditionalMemoryBarrier(load) : null;
-        Fence optionalMbAfter = mo.equals(Tag.MB) ? Linux.newConditionalMemoryBarrier(load) : null;
+        Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? com.dat3m.dartagnan.program.event.EventFactory.Linux.newConditionalMemoryBarrier(load) : null;
+        Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? com.dat3m.dartagnan.program.event.EventFactory.Linux.newConditionalMemoryBarrier(load) : null;
 
         return eventSequence(
                 optionalMbBefore,

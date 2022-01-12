@@ -6,12 +6,12 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.lang.linux.utils.Tag;
 import com.google.common.base.Preconditions;
 
 import java.util.List;
@@ -23,9 +23,9 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
     private final IOpBin op;
 
     public RMWOp(IExpr address, Register register, IExpr value, IOpBin op) {
-        super(address, register, value, Tag.RELAXED);
+        super(address, register, value, Tag.Linux.MO_RELAXED);
         this.op = op;
-        addFilters(Tag.NORETURN);
+        addFilters(Tag.Linux.NORETURN);
     }
 
     private RMWOp(RMWOp other){
@@ -62,9 +62,9 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
     public List<Event> compile(Arch target) {
         Preconditions.checkArgument(target == Arch.NONE, "Compilation to " + target + " is not supported for " + getClass().getName());
 
-        Load load = newRMWLoad(resultRegister, address, Tag.RELAXED);
-        RMWStore store = newRMWStore(load, address, new IExprBin(resultRegister, op, value), Tag.RELAXED);
-        load.addFilters(Tag.NORETURN);
+        Load load = newRMWLoad(resultRegister, address, Tag.Linux.MO_RELAXED);
+        RMWStore store = newRMWStore(load, address, new IExprBin(resultRegister, op, value), Tag.Linux.MO_RELAXED);
+        load.addFilters(Tag.Linux.NORETURN);
         return eventSequence(
                 load,
                 store

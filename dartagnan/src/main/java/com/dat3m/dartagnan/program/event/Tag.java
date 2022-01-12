@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
-public class Tag {
+public final class Tag {
     private Tag() { }
 
     public static final String ANY          = "_";
@@ -22,7 +22,10 @@ public class Tag {
     public static final String REG_READER   = "rR";
     public static final String ASSERTION    = "ASS";
     public static final String BOUND   		= "BOUND";
-    public static final String SVCOMPATOMIC	= "A-SVCOMP";
+
+    // =============================================================================================
+    // =========================================== ARMv8 ===========================================
+    // =============================================================================================
 
     public static final class ARMv8 {
         private ARMv8() { }
@@ -42,14 +45,21 @@ public class Tag {
         }
     }
 
-    public static class TSO {
+    // =============================================================================================
+    // ============================================ TSO ============================================
+    // =============================================================================================
+
+    public static final class TSO {
         private TSO() {}
 
         public static final String ATOM      = "A";
     }
 
-    public static class C11 {
+    // =============================================================================================
+    // ============================================ C11 ============================================
+    // =============================================================================================
 
+    public static final class C11 {
         private C11() {}
 
         public static final String PTHREAD    	= "PTHREAD";
@@ -75,6 +85,54 @@ public class Tag {
             }
         }
 
+    }
 
+    // =============================================================================================
+    // =========================================== Linux ===========================================
+    // =============================================================================================
+
+    public static final class Linux {
+        private Linux() {}
+
+        public static final String NORETURN     = "Noreturn";
+        public static final String RCU_SYNC     = "Sync-rcu";
+        public static final String RCU_LOCK     = "Rcu-lock";
+        public static final String RCU_UNLOCK   = "Rcu-unlock";
+        public static final String MO_MB        = "Mb";
+        public static final String MO_RELAXED   = "Relaxed";
+        public static final String MO_RELEASE   = "Release";
+        public static final String MO_ACQUIRE   = "Acquire";
+
+        public static String loadMO(String mo){
+            return mo.equals(MO_ACQUIRE) ? MO_ACQUIRE : MO_RELAXED;
+        }
+
+        public static String storeMO(String mo){
+            return mo.equals(MO_RELEASE) ? MO_RELEASE : MO_RELAXED;
+        }
+
+        public static String toText(String mo){
+            switch (mo){
+                case MO_RELAXED:
+                    return "_relaxed";
+                case MO_ACQUIRE:
+                    return "_acquire";
+                case MO_RELEASE:
+                    return "_release";
+                case MO_MB:
+                    return "";
+            }
+            throw new IllegalArgumentException("Unrecognised memory order " + mo);
+        }
+    }
+
+    // =============================================================================================
+    // ========================================== SVCOMP ===========================================
+    // =============================================================================================
+
+    public static final class SVCOMP {
+        private SVCOMP() {}
+
+        public static final String SVCOMPATOMIC	= "A-SVCOMP";
     }
 }

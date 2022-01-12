@@ -197,7 +197,7 @@ public class WitnessBuilder {
 		List<Event> result = new ArrayList<>();
 		Set<Event> processedEvents = new HashSet<>(); // Maintained for constant lookup time
 		// All the atomic blocks in the code that have to stay together in any execution
-		List<List<Event>> atomicBlocks = program.getCache().getEvents(FilterBasic.get(Tag.SVCOMPATOMIC))
+		List<List<Event>> atomicBlocks = program.getCache().getEvents(FilterBasic.get(Tag.SVCOMP.SVCOMPATOMIC))
 				.stream().map(e -> ((EndAtomic)e).getBlock().stream().
 						filter(order::contains).
 						collect(Collectors.toList()))

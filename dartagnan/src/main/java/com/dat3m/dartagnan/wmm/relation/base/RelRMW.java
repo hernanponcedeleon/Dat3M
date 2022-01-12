@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
-import static com.dat3m.dartagnan.program.event.Tag.SVCOMPATOMIC;
+import static com.dat3m.dartagnan.program.event.Tag.SVCOMP.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RMW;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 

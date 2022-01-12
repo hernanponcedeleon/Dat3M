@@ -135,7 +135,7 @@ public class RelRf extends Relation {
         // Atomics blocks: BeginAtomic -> EndAtomic
         BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
         AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
-        FilterAbstract filter = FilterIntersection.get(FilterBasic.get(RMW), FilterBasic.get(SVCOMPATOMIC));
+        FilterAbstract filter = FilterIntersection.get(FilterBasic.get(RMW), FilterBasic.get(SVCOMP.SVCOMPATOMIC));
         for(Event end : task.getProgram().getCache().getEvents(filter)) {
             // Collect memEvents of the atomic block
             List<Store> writes = new ArrayList<>();
