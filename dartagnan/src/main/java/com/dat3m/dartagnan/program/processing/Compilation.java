@@ -997,4 +997,256 @@ public class Compilation implements ProgramProcessor {
     	}
     }
 
+    private class VisitorTSO implements EventVisitor<List<Event>> {
+
+    	@Override
+    	public List<Event> visitEvent(Event e) {
+    		return Collections.singletonList(e);
+    	};
+
+    	@Override
+    	public List<Event> visitCondJump(CondJump e) {
+        	Preconditions.checkState(e.getSuccessor() != null, "Malformed CondJump event");
+    		return visitEvent(e);
+    	}
+
+    	@Override
+    	public List<Event> visitCreate(Create e) {
+            Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo(), e.getCLine());
+            store.addFilters(C11.PTHREAD);
+            
+            return eventSequence(
+                    store,
+                    X86.newMemoryFence()
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitEnd(End e) {
+            return eventSequence(
+            		newStore(e.getAddress(), IConst.ZERO, e.getMo()),
+                    X86.newMemoryFence()
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitInitLock(InitLock e) {
+    		return eventSequence(
+                    newStore(e.getAddress(), e.getMemValue(), e.getMo())
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitJoin(Join e) {
+            Register resultRegister = e.getResultRegister();
+    		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+            load.addFilters(C11.PTHREAD);
+            
+            return eventSequence(
+            		load,
+            		newJumpUnless(new Atom(resultRegister, EQ, IConst.ZERO), e.getLabel())
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitLock(Lock e) {
+            Register resultRegister = e.getResultRegister();
+    		String mo = e.getMo();
+    		
+    		List<Event> events = eventSequence(
+                    newLoad(resultRegister, e.getAddress(), mo),
+                    newJump(new Atom(resultRegister, NEQ, IConst.ZERO), e.getLabel()),
+                    newStore(e.getAddress(), IConst.ONE, mo)
+            );
+            
+    		for(Event child : events) {
+                child.addFilters(C11.LOCK, RMW);
+            }
+            
+    		return events;
+    	}
+
+    	@Override
+    	public List<Event> visitStart(Start e) {
+            Register resultRegister = e.getResultRegister();
+
+            return eventSequence(
+            		newLoad(resultRegister, e.getAddress(), e.getMo()),
+            		newJumpUnless(new Atom(resultRegister, EQ, IConst.ONE), e.getLabel())
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitUnlock(Unlock e) {
+            Register resultRegister = e.getResultRegister();
+    		IExpr address = e.getAddress();
+    		String mo = e.getMo();
+    		
+    		List<Event> events = eventSequence(
+                    newLoad(resultRegister, address, mo),
+                    newJump(new Atom(resultRegister, NEQ, IConst.ONE), e.getLabel()),
+                    newStore(address, IConst.ZERO, mo)
+            );
+            
+    		for(Event child : events) {
+                child.addFilters(C11.LOCK, RMW);
+            }
+            
+    		return events;
+    	}
+
+    	@Override
+    	public List<Event> visitXchg(Xchg e) {
+            Register resultRegister = e.getResultRegister();
+            IExpr address = e.getAddress();
+
+            Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+    		Load load = newRMWLoad(dummyReg, address, null);
+            load.addFilters(Tag.TSO.ATOM);
+
+            RMWStore store = newRMWStore(load, address, resultRegister, null);
+            store.addFilters(Tag.TSO.ATOM);
+
+            Local updateReg = newLocal(resultRegister, dummyReg);
+
+            return eventSequence(
+                    load,
+                    store,
+                    updateReg
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
+    		throw new UnsupportedOperationException("Compilation to " + target + 
+    				" is not supported for " + getClass().getName());
+    	}
+
+    	@Override
+    	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
+    		Register resultRegister = e.getResultRegister();
+    		IExpr address = e.getAddress();
+    		ExprInterface value = e.getMemValue();
+    		String mo = e.getMo();
+    		IExpr expectedAddr = e.getExpectedAddr();
+            int threadId = resultRegister.getThreadId();
+    		int precision = resultRegister.getPrecision();
+
+    		List<Event> events;
+
+    		Register regExpected = new Register(null, threadId, precision);
+            Load loadExpected = newLoad(regExpected, expectedAddr, null);
+            Register regValue = new Register(null, threadId, precision);
+            Load loadValue = newRMWLoad(regValue, address, mo);
+            Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
+            Label casFail = newLabel("CAS_fail");
+            CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
+            Store storeValue = newRMWStore(loadValue, address, value, mo);
+            Label casEnd = newLabel("CAS_end");
+            CondJump gotoCasEnd = newGoto(casEnd);
+            Store storeExpected = newStore(expectedAddr, regValue, null);
+
+            events = eventSequence(
+                    // Indentation shows the branching structure
+                    loadExpected,
+                    loadValue,
+                    casCmpResult,
+                    branchOnCasCmpResult,
+                        storeValue,
+                        gotoCasEnd,
+                    casFail,
+                        storeExpected,
+                    casEnd
+            );
+
+            return events;
+    	}
+
+    	@Override
+    	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
+    		Register resultRegister = e.getResultRegister();
+    		IExpr address = e.getAddress();
+    		String mo = e.getMo();
+    		
+            Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+            Load load = newRMWLoad(resultRegister, address, mo);
+            Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, e.getOp(), (IExpr)e.getMemValue()));
+            Store store = newRMWStore(load, address, dummyReg, mo);
+            
+            return eventSequence(
+                    load,
+                    localOp,
+                    store
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitAtomicLoad(AtomicLoad e) {
+            return eventSequence(
+            		newLoad(e.getResultRegister(), e.getAddress(), e.getMo())
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitAtomicStore(AtomicStore e) {
+    		String mo = e.getMo();
+
+            Store store = newStore(e.getAddress(), e.getMemValue(), mo);
+            Fence optionalMFence = mo.equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
+
+            return eventSequence(
+                    store,
+                    optionalMFence
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
+            Fence optionalFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
+            
+            return eventSequence(
+            		optionalFence
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitAtomicXchg(AtomicXchg e) {
+    		IExpr address = e.getAddress();
+    		String mo = e.getMo();
+
+            Load load = newRMWLoad(e.getResultRegister(), address, mo);
+            Store store = newRMWStore(load, address, e.getMemValue(), mo);
+
+            return eventSequence(
+                    load,
+                    store
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitDat3mCAS(Dat3mCAS e) {
+    		Register resultRegister = e.getResultRegister();
+    		IExpr address = e.getAddress();
+    		String mo = e.getMo();
+
+            // Events common for all compilation schemes.
+            Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+            Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, e.getExpectedValue()));
+            Label casEnd = newLabel("CAS_end");
+            CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casEnd);
+            Load load = newRMWLoad(regValue, address, mo);
+            Store store = newRMWStore(load, address, e.getMemValue(), mo);
+
+            return eventSequence(
+                    // Indentation shows the branching structure
+                    load,
+                    casCmpResult,
+                    branchOnCasCmpResult,
+                        store,
+                    casEnd
+            );
+    	}
+    }
+
+    
 }
