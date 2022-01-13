@@ -847,8 +847,8 @@ public class Compilation implements ProgramProcessor {
             store.addFilters(C11.PTHREAD);
 
             return eventSequence(
-                    store,
-                    Power.newSyncBarrier()
+                    Power.newSyncBarrier(),
+                    store
             );
     	}
 
