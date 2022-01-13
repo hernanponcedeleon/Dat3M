@@ -185,6 +185,49 @@ public class Compilation implements ProgramProcessor {
         return nextId;
     }
 
+    // =============================================================================================
+    // =========================================== Common ==========================================
+    // =============================================================================================
+
+    private List<Event> commonVisitLock(Lock e) {
+        Register resultRegister = e.getResultRegister();
+		String mo = e.getMo();
+		
+		List<Event> events = eventSequence(
+                newLoad(resultRegister, e.getAddress(), mo),
+                newJump(new Atom(resultRegister, NEQ, IConst.ZERO), e.getLabel()),
+                newStore(e.getAddress(), IConst.ONE, mo)
+        );
+        
+		for(Event child : events) {
+            child.addFilters(C11.LOCK, RMW);
+        }
+        
+		return events;
+    }
+    
+	private List<Event> commonVisitUnlock(Unlock e) {
+        Register resultRegister = e.getResultRegister();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		
+		List<Event> events = eventSequence(
+                newLoad(resultRegister, address, mo),
+                newJump(new Atom(resultRegister, NEQ, IConst.ONE), e.getLabel()),
+                newStore(address, IConst.ZERO, mo)
+        );
+        
+		for(Event child : events) {
+            child.addFilters(C11.LOCK, RMW);
+        }
+        
+		return events;
+	}
+
+    // =============================================================================================
+    // =========================================== ARMv8 ===========================================
+    // =============================================================================================
+
     private class VisitorARM implements EventVisitor<List<Event>> {
 
     	@Override
@@ -235,20 +278,7 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visitLock(Lock e) {
-            Register resultRegister = e.getResultRegister();
-    		String mo = e.getMo();
-    		
-    		List<Event> events = eventSequence(
-                    newLoad(resultRegister, e.getAddress(), mo),
-                    newJump(new Atom(resultRegister, NEQ, IConst.ZERO), e.getLabel()),
-                    newStore(e.getAddress(), IConst.ONE, mo)
-            );
-            
-    		for(Event child : events) {
-                child.addFilters(C11.LOCK, RMW);
-            }
-            
-    		return events;
+    		return commonVisitLock(e);
     	}
 
     	@Override
@@ -264,21 +294,7 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visitUnlock(Unlock e) {
-            Register resultRegister = e.getResultRegister();
-    		IExpr address = e.getAddress();
-    		String mo = e.getMo();
-    		
-    		List<Event> events = eventSequence(
-                    newLoad(resultRegister, address, mo),
-                    newJump(new Atom(resultRegister, NEQ, IConst.ONE), e.getLabel()),
-                    newStore(address, IConst.ZERO, mo)
-            );
-            
-    		for(Event child : events) {
-                child.addFilters(C11.LOCK, RMW);
-            }
-            
-    		return events;
+    		return commonVisitUnlock(e);
     	}
 
     	@Override
@@ -443,6 +459,10 @@ public class Compilation implements ProgramProcessor {
     	}
     }
 
+    // =============================================================================================
+    // =========================================== None ============================================
+    // =============================================================================================
+
     private class VisitorNone implements EventVisitor<List<Event>> {
 
     	@Override
@@ -489,21 +509,7 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visitLock(Lock e) {
-            Register resultRegister = e.getResultRegister();
-    		IExpr address = e.getAddress();
-    		String mo = e.getMo();
-    		
-			List<Event> events = eventSequence(
-                    newLoad(resultRegister, address, mo),
-                    newJump(new Atom(resultRegister, NEQ, IConst.ZERO), e.getLabel()),
-                    newStore(address, IConst.ONE, mo)
-            );
-            
-    		for(Event child : events) {
-                child.addFilters(C11.LOCK, RMW);
-            }
-            
-    		return events;
+    		return commonVisitLock(e);
     	}
 
     	@Override
@@ -518,21 +524,7 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visitUnlock(Unlock e) {
-            Register resultRegister = e.getResultRegister();
-    		IExpr address = e.getAddress();
-    		String mo = e.getMo();
-    		
-    		List<Event> events = eventSequence(
-                    newLoad(resultRegister, address, mo),
-                    newJump(new Atom(resultRegister, NEQ, IConst.ONE), e.getLabel()),
-                    newStore(address, IConst.ZERO, mo)
-            );
-            
-    		for(Event child : events) {
-                child.addFilters(C11.LOCK, RMW);
-            }
-            
-    		return events;
+    		return commonVisitUnlock(e);
     	}
 
     	@Override
@@ -799,6 +791,10 @@ public class Compilation implements ProgramProcessor {
     	}
     }
     
+    // =============================================================================================
+    // ============================================ TSO ============================================
+    // =============================================================================================
+
     private class VisitorTSO implements EventVisitor<List<Event>> {
 
     	@Override
@@ -846,20 +842,7 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visitLock(Lock e) {
-            Register resultRegister = e.getResultRegister();
-    		String mo = e.getMo();
-    		
-    		List<Event> events = eventSequence(
-                    newLoad(resultRegister, e.getAddress(), mo),
-                    newJump(new Atom(resultRegister, NEQ, IConst.ZERO), e.getLabel()),
-                    newStore(e.getAddress(), IConst.ONE, mo)
-            );
-            
-    		for(Event child : events) {
-                child.addFilters(C11.LOCK, RMW);
-            }
-            
-    		return events;
+    		return commonVisitLock(e);
     	}
 
     	@Override
@@ -874,21 +857,7 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visitUnlock(Unlock e) {
-            Register resultRegister = e.getResultRegister();
-    		IExpr address = e.getAddress();
-    		String mo = e.getMo();
-    		
-    		List<Event> events = eventSequence(
-                    newLoad(resultRegister, address, mo),
-                    newJump(new Atom(resultRegister, NEQ, IConst.ONE), e.getLabel()),
-                    newStore(address, IConst.ZERO, mo)
-            );
-            
-    		for(Event child : events) {
-                child.addFilters(C11.LOCK, RMW);
-            }
-            
-    		return events;
+    		return commonVisitUnlock(e);
     	}
 
     	@Override
@@ -1037,6 +1006,10 @@ public class Compilation implements ProgramProcessor {
     	}
     }
     
+    // =============================================================================================
+    // =========================================== Power ===========================================
+    // =============================================================================================
+
     private class VisitorPower implements EventVisitor<List<Event>> {
 
     	@Override
@@ -1090,20 +1063,7 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visitLock(Lock e) {
-            Register resultRegister = e.getResultRegister();
-    		String mo = e.getMo();
-    		
-    		List<Event> events = eventSequence(
-                    newLoad(resultRegister, e.getAddress(), mo),
-                    newJump(new Atom(resultRegister, NEQ, IConst.ZERO), e.getLabel()),
-                    newStore(e.getAddress(), IConst.ONE, mo)
-            );
-            
-    		for(Event child : events) {
-                child.addFilters(C11.LOCK, RMW);
-            }
-            
-    		return events;
+    		return commonVisitLock(e);
     	}
 
     	@Override
@@ -1125,21 +1085,7 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visitUnlock(Unlock e) {
-            Register resultRegister = e.getResultRegister();
-    		IExpr address = e.getAddress();
-    		String mo = e.getMo();
-    		
-    		List<Event> events = eventSequence(
-                    newLoad(resultRegister, address, mo),
-                    newJump(new Atom(resultRegister, NEQ, IConst.ONE), e.getLabel()),
-                    newStore(address, IConst.ZERO, mo)
-            );
-            
-    		for(Event child : events) {
-                child.addFilters(C11.LOCK, RMW);
-            }
-            
-    		return events;
+    		return commonVisitUnlock(e);
     	}
 
     	@Override
