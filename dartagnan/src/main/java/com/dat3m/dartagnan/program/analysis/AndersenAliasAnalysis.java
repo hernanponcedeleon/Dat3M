@@ -18,6 +18,9 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  *
@@ -166,7 +169,11 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
 
     private void processResults(Program program) {
     	// Used to have pointer analysis when having arrays and structures
-        Map<Register,Location> targets = new HashMap<>();
+        Map<Register,Set<Location>> targets = new HashMap<>();
+        BiConsumer<Register,Location> addTarget = (r,l)->targets.put(r,Set.of(l));
+        BiConsumer<Register,Address> addTargetArray = (r,b)->targets.put(r,IntStream.range(0,b.size())
+                .mapToObj(i->new Location(b,i))
+                .collect(Collectors.toSet()));
     	for (Event ev : program.getCache().getEvents(FilterBasic.get(Tag.LOCAL))) {
     		// Not only Local events have EType.LOCAL tag
     		if(!(ev instanceof Local)) {
@@ -176,16 +183,32 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     		ExprInterface exp = l.getExpr();
     		Register reg = l.getResultRegister();
 			if(exp instanceof Address) {
-                targets.put(reg,new Location((Address)exp,0));
+                addTarget.accept(reg,new Location((Address)exp,0));
             } else if(exp instanceof IExprBin) {
     			IExpr base = ((IExprBin)exp).getBase();
     			if(base instanceof Address) {
                     IExpr rhs = ((IExprBin) exp).getRHS();
-                    targets.put(reg,new Location((Address)base,rhs instanceof IConst?((IConst)rhs).getValueAsInt():-1));
-    			} else if(base instanceof Register && targets.containsKey(base)) {
-                    Location target = targets.get(base);
+                    //FIXME Address extends IConst
+                    if(rhs instanceof IConst) {
+                        addTarget.accept(reg,new Location((Address)base,((IConst)rhs).getValueAsInt()));
+                    } else {
+                        addTargetArray.accept(reg,(Address)base);
+                    }
+                    continue;
+                }
+                if(!(base instanceof Register)) {
+                    continue;
+                }
+                //accept register2 = register1 + constant
+                for(Location target : targets.getOrDefault(base,Set.of())) {
                     IExpr rhs = ((IExprBin) exp).getRHS();
-                    targets.put(reg,rhs instanceof IConst ? target.add(((IConst)rhs).getValueAsInt()) : target.invalid());
+                    //FIXME Address extends IConst
+                    if(rhs instanceof IConst) {
+                        //TODO array overflow
+                        addTarget.accept(reg,new Location(target.base,target.offset+((IConst)rhs).getValueAsInt()));
+                    } else {
+                        addTargetArray.accept(reg,target.base);
+                    }
     			}
     		}
     	}
@@ -194,17 +217,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             IExpr address = ((MemEvent) e).getAddress();
             Set<Location> addresses;
             if (address instanceof Register) {
-                Location target = targets.get(address);
+                Set<Location> target = targets.get(address);
                 if(target != null) {
-            		if(target.offset >= 0) {
-                        addresses = ImmutableSet.of(target);
-            		} else {
-                        addresses = new HashSet<>();
-                        int size = target.base.size();
-                        for(int i = 0; i < size; i++) {
-                            addresses.add(new Location(target.base,i));
-                        }
-            		}
+                    addresses = target;
             	} else {
             	    addresses = graph.getAddresses(address);
             	}
@@ -227,17 +242,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         final int offset;
 
         Location(Address b, int o) {
-            Preconditions.checkArgument(-1 <= o && o < b.size(),"Array out of bounds");
+            Preconditions.checkArgument(0 <= o && o < b.size(),"Array out of bounds");
             base = b;
             offset = o;
-        }
-
-        Location add(int o) {
-            return offset<0 || o==0 ? this : new Location(base,offset+o);
-        }
-
-        Location invalid() {
-            return offset<0 ? this : new Location(base,-1);
         }
 
         @Override
