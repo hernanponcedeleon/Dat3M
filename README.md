@@ -110,18 +110,19 @@ Authors and Contact
 ======
 **Maintainer:**
 
-* [Hernán Ponce de León](mailto:hernan.ponce@unibw.de)
+* [Hernán Ponce de León](https://hernanponcedeleon.github.io)
 
 **Developers:**
 
-* [Thomas Haas](mailto:t.haas@tu-braunschweig.de)
+* [Thomas Haas](https://www.tcs.cs.tu-bs.de/group/haas/home.html)
+* [René Pascal Maseli](https://www.tcs.cs.tu-bs.de/group/maseli/home.html)
 
 **Former Developers:**
 
 * Florian Furbach
 * Natalia Gavrilenko
 
-Please feel free to contact us in case of questions or to send feedback.
+Please feel free to [contact us](mailto:hernan.ponce@unibw.de) in case of questions or to send feedback.
 
 References
 ======
