@@ -150,12 +150,14 @@ public class Compilation implements ProgramProcessor {
     }
 
     private int compileThread(Thread thread, int nextId) {
-        Event pred = thread.getEntry();
+        Visitor visitor = new Visitor(target);
+
+    	Event pred = thread.getEntry();
         Event toBeCompiled = pred.getSuccessor();
         pred.setCId(nextId++);
 
         while (toBeCompiled != null) {
-            List<Event> compiledEvents = toBeCompiled.accept(new Visitor(target));
+			List<Event> compiledEvents = toBeCompiled.accept(visitor);
             for (Event e : compiledEvents) {
                 e.setOId(toBeCompiled.getOId());
                 e.setUId(toBeCompiled.getUId());
