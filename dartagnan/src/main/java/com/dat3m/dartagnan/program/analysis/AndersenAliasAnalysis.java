@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.sosy_lab.common.configuration.Configuration;
@@ -22,13 +23,24 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
+
 /**
+ * Inclusion-based pointer analysis by Andersen.
+ * <p>
+ * Each register and memory location gets a variable set of pointers.
+ * A graph denotes inclusion relationships between pointer sets.
+ * Iteratively, the sets of pointers are populated based on this graph.
+ * Memory operations can generate new edges during the process.
  *
  * @author flo
+ * @author xeren
  */
 public class AndersenAliasAnalysis implements AliasAnalysis {
 
+    ///When a pointer set gains new content, it is added to this queue
     private final Queue<Object> variables = new ArrayDeque<>();
+    ///Super set of all pointer sets in this analysis
     private final ImmutableSet<Location> maxAddressSet;
     private final Graph graph = new Graph();
 
@@ -84,24 +96,46 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             IExpr address = e.getAddress();
 
             // Collect for each v events of form: p = *v, *v = q
-            if(e instanceof Init && ((Init)e).getValue() instanceof Address) {
-                // Rule loc = &loc2 -> lo(loc) = {loc2} (only possible in init events)
-                Location location = new Location(((Init)e).getBase(),((Init)e).getOffset());
-                graph.addAddress(location,new Location((Address)((Init)e).getValue(),0));
-                variables.add(location);
-            } else if (address instanceof Register) {
+            if(address instanceof Register) {
                 graph.addEvent((Register) address, e);
-            } else if(!(address instanceof Address)) {
+                continue;
+            }
+            Constant addressConstant = new Constant(address);
+            if(addressConstant.failed) {
                 // r = *(CompExpr) -> loc(r) = max
                 if (e instanceof RegWriter) {
                     Register register = ((RegWriter) e).getResultRegister();
                     graph.addAllAddresses(register, maxAddressSet);
                     variables.add(register);
                 }
-                // We allow for more address calculations
-                //e.setMaxAddressSet(maxAddressSet);
+                //FIXME if e is a store event, then all locations should include its values
                 eventAddressSpaceMap.put(e, maxAddressSet);
+                continue;
             }
+            //address is a constant
+            Location location = addressConstant.location;
+            if(location == null) {
+                throw new RuntimeException("memory event accessing a pure constant address");
+            }
+            eventAddressSpaceMap.put(e,ImmutableSet.of(location));
+            if(e instanceof RegWriter) {
+                graph.addEdge(location,((RegWriter)e).getResultRegister());
+                continue;
+            }
+            //event is a store operation
+            Verify.verify(e.is(Tag.WRITE),"memory event that is neither tagged \"W\" nor a register writer");
+            ExprInterface value = e.getMemValue();
+            if(value instanceof Register) {
+                graph.addEdge(value,location);
+                continue;
+            }
+            Constant v = new Constant(value);
+            if(v.failed) {
+                graph.addAllAddresses(location,maxAddressSet);
+            } else if(v.location != null) {
+                graph.addAddress(location,v.location);
+            }
+            variables.add(location);
         }
     }
 
@@ -123,6 +157,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                     graph.addAddress(register,new Location((Address) expr,0));
                     variables.add(register);
                 }
+                //FIXME if the expression is too complicated, the register should receive maxAddressSet
             }
         }
     }
@@ -233,6 +268,35 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             }
 
             eventAddressSpaceMap.put((MemEvent) e, ImmutableSet.copyOf(addresses));
+        }
+    }
+
+    private static final class Constant {
+
+        final Location location;
+        //implies location == null
+        final boolean failed;
+
+        /**
+         * Tries to match an expression as a constant address.
+         */
+        Constant(ExprInterface x) {
+            if(x instanceof IConst) {
+                location = x instanceof Address ? new Location((Address)x,0) : null;
+                failed = false;
+                return;
+            }
+            if(x instanceof IExprBin && ((IExprBin)x).getOp() == PLUS) {
+                IExpr lhs = ((IExprBin)x).getLHS();
+                IExpr rhs = ((IExprBin)x).getRHS();
+                if(lhs instanceof Address && rhs instanceof IConst && !(rhs instanceof Address)) {
+                    location = new Location((Address)lhs,((IConst)rhs).getValueAsInt());
+                    failed = false;
+                    return;
+                }
+            }
+            location = null;
+            failed = true;
         }
     }
 
