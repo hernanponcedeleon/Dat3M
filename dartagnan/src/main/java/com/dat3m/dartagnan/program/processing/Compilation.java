@@ -39,6 +39,7 @@ import com.dat3m.dartagnan.program.event.lang.catomic.AtomicStore;
 import com.dat3m.dartagnan.program.event.lang.catomic.AtomicThreadFence;
 import com.dat3m.dartagnan.program.event.lang.catomic.AtomicXchg;
 import com.dat3m.dartagnan.program.event.lang.catomic.Dat3mCAS;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWAbstract;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWAddUnless;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
@@ -69,6 +70,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
@@ -152,12 +154,16 @@ public class Compilation implements ProgramProcessor {
         switch(target) {
 	    	case NONE:
 	    		visitor = new VisitorNone();
+	    		break;
 	    	case TSO:
 	    		visitor = new VisitorTSO();
+	    		break;
 	    	case POWER:
 	    		visitor = new VisitorPower();
+	    		break;
 	    	case ARM8:
 	    		visitor = new VisitorARM();
+	    		break;
         }
         Preconditions.checkState(visitor != null, String.format("Compilation to %s is not supported.", target));
 
@@ -223,241 +229,6 @@ public class Compilation implements ProgramProcessor {
         
 		return events;
 	}
-
-    // =============================================================================================
-    // =========================================== ARMv8 ===========================================
-    // =============================================================================================
-
-    private class VisitorARM implements EventVisitor<List<Event>> {
-
-    	@Override
-    	public List<Event> visitEvent(Event e) {
-    		return Collections.singletonList(e);
-    	};
-
-    	@Override
-    	public List<Event> visitCreate(Create e) {
-            Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo(), e.getCLine());
-            store.addFilters(C11.PTHREAD);
-
-            return eventSequence(
-            		AArch64.DMB.newISHBarrier(),
-                    store,
-                    AArch64.DMB.newISHBarrier()
-            );
-    	}
-
-    	@Override
-    	public List<Event> visitEnd(End e) {
-            return eventSequence(
-            		AArch64.DMB.newISHBarrier(),
-            		newStore(e.getAddress(), IConst.ZERO, e.getMo()),
-                    AArch64.DMB.newISHBarrier()
-            );
-    	}
-
-    	@Override
-    	public List<Event> visitInitLock(InitLock e) {
-    		return eventSequence(
-                    newStore(e.getAddress(), e.getMemValue(), e.getMo())
-            );
-    	}
-
-    	@Override
-    	public List<Event> visitJoin(Join e) {
-            List<Event> events = new ArrayList<>();
-            Register resultRegister = e.getResultRegister();
-    		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
-            load.addFilters(C11.PTHREAD);
-            events.add(load);
-            events.add(AArch64.DMB.newISHBarrier());
-            events.add(newJumpUnless(new Atom(resultRegister, EQ, IConst.ZERO), e.getLabel()));
-            
-            return events;
-    	}
-
-    	@Override
-    	public List<Event> visitLock(Lock e) {
-    		return commonVisitLock(e);
-    	}
-
-    	@Override
-    	public List<Event> visitStart(Start e) {
-            List<Event> events = new ArrayList<>();
-            Register resultRegister = e.getResultRegister();
-            events.add(newLoad(resultRegister, e.getAddress(), e.getMo()));
-            events.add(AArch64.DMB.newISHBarrier());
-            events.add(newJumpUnless(new Atom(resultRegister, EQ, IConst.ONE), e.getLabel()));
-            
-            return events;
-    	}
-
-    	@Override
-    	public List<Event> visitUnlock(Unlock e) {
-    		return commonVisitUnlock(e);
-    	}
-
-    	@Override
-    	public List<Event> visitStoreExclusive(StoreExclusive e) {
-            RMWStoreExclusive store = newRMWStoreExclusive(e.getAddress(), e.getMemValue(), e.getMo());
-            
-            return eventSequence(
-                    store,
-                    newExecutionStatus(e.getResultRegister(), store)
-            );
-    	}
-
-    	@Override
-    	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
-    		throw new UnsupportedOperationException("Compilation to " + target + 
-    				" is not supported for " + getClass().getName());
-    	}
-
-    	@Override
-    	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
-    		Register resultRegister = e.getResultRegister();
-    		IExpr address = e.getAddress();
-    		ExprInterface value = e.getMemValue();
-    		String mo = e.getMo();
-    		IExpr expectedAddr = e.getExpectedAddr();
-            int threadId = resultRegister.getThreadId();
-    		int precision = resultRegister.getPrecision();
-
-    		Register regExpected = new Register(null, threadId, precision);
-            Register regValue = new Register(null, threadId, precision);
-            Load loadExpected = newLoad(regExpected, expectedAddr, null);
-            Store storeExpected = newStore(expectedAddr, regValue, null);
-            Label casFail = newLabel("CAS_fail");
-            Label casEnd = newLabel("CAS_end");
-            Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
-            CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
-            CondJump gotoCasEnd = newGoto(casEnd);
-
-            Load loadValue = newRMWLoadExclusive(regValue, address, Tag.ARMv8.extractLoadMoFromCMo(mo));
-            Store storeValue = newRMWStoreExclusive(address, value, Tag.ARMv8.extractStoreMoFromCMo(mo), e.is(STRONG));
-            ExecutionStatus optionalExecStatus = null;
-            Local optionalUpdateCasCmpResult = null;
-            if (!e.is(STRONG)) {
-                Register statusReg = new Register("status(" + e.getOId() + ")", threadId, precision);
-                optionalExecStatus = newExecutionStatus(statusReg, storeValue);
-                optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
-            }
-
-            return eventSequence(
-                    // Indentation shows the branching structure
-                    loadExpected,
-                    loadValue,
-                    casCmpResult,
-                    branchOnCasCmpResult,
-                        storeValue,
-                        optionalExecStatus,
-                        optionalUpdateCasCmpResult,
-                        gotoCasEnd,
-                    casFail,
-                        storeExpected,
-                    casEnd
-            );
-    	}
-
-    	@Override
-    	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
-    		Register resultRegister = e.getResultRegister();
-    		IOpBin op = e.getOp();
-    		IExpr value = (IExpr) e.getMemValue();
-    		IExpr address = e.getAddress();
-    		String mo = e.getMo();
-    		
-            Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
-
-            Load load = newRMWLoadExclusive(resultRegister, address, Tag.ARMv8.extractLoadMoFromCMo(mo));
-            Store store = newRMWStoreExclusive(address, dummyReg, Tag.ARMv8.extractStoreMoFromCMo(mo), true);
-            Label label = newLabel("FakeDep");
-            Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-
-            return eventSequence(
-                    load,
-                    fakeCtrlDep,
-                    label,
-                    localOp,
-                    store
-            );
-    	}
-
-    	@Override
-    	public List<Event> visitAtomicLoad(AtomicLoad e) {
-            return eventSequence(
-                    newLoad(e.getResultRegister(), e.getAddress(), Tag.ARMv8.extractLoadMoFromCMo(e.getMo()))
-            );
-    	}
-
-    	@Override
-    	public List<Event> visitAtomicStore(AtomicStore e) {
-            return eventSequence(
-                    newStore(e.getAddress(), e.getMemValue(), Tag.ARMv8.extractStoreMoFromCMo(e.getMo()))
-            );
-    	}
-
-    	@Override
-    	public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-    		String mo = e.getMo();
-            Fence fence = null;
-                    fence = mo.equals(Tag.C11.MO_RELEASE) || mo.equals(Tag.C11.MO_ACQUIRE_RELEASE) || mo.equals(Tag.C11.MO_SC) ? AArch64.DMB.newISHBarrier()
-                            : mo.equals(Tag.C11.MO_ACQUIRE) ? AArch64.DSB.newISHLDBarrier() : null;
-
-        return eventSequence(
-                    fence
-            );
-    	}
-
-    	@Override
-    	public List<Event> visitAtomicXchg(AtomicXchg e) {
-    		Register resultRegister = e.getResultRegister();
-    		ExprInterface value = e.getMemValue();
-    		IExpr address = e.getAddress();
-    		String mo = e.getMo();
-
-            Load load = newRMWLoadExclusive(resultRegister, address, Tag.ARMv8.extractLoadMoFromCMo(mo));
-            Store store = newRMWStoreExclusive(address, value, Tag.ARMv8.extractStoreMoFromCMo(mo), true);
-            Label label = newLabel("FakeDep");
-            Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-
-            return eventSequence(
-                    load,
-                    fakeCtrlDep,
-                    label,
-                    store
-            );
-    	}
-
-    	@Override
-    	public List<Event> visitDat3mCAS(Dat3mCAS e) {
-    		Register resultRegister = e.getResultRegister();
-    		ExprInterface value = e.getMemValue();
-    		IExpr address = e.getAddress();
-    		String mo = e.getMo();
-    		ExprInterface expectedValue = e.getExpectedValue();
-
-            // Events common for all compilation schemes.
-            Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
-            Label casEnd = newLabel("CAS_end");
-            CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casEnd);
-
-            Load load = newRMWLoadExclusive(regValue, address, Tag.ARMv8.extractLoadMoFromCMo(mo));
-            Store store = newRMWStoreExclusive(address, value, Tag.ARMv8.extractStoreMoFromCMo(mo), true);
-
-            // --- Add success events ---
-            return eventSequence(
-                    // Indentation shows the branching structure
-                    load,
-                    casCmpResult,
-                    branchOnCasCmpResult,
-                        store,
-                    casEnd
-            );
-    	}
-    }
 
     // =============================================================================================
     // =========================================== None ============================================
@@ -541,6 +312,11 @@ public class Compilation implements ProgramProcessor {
                     Linux.newConditionalMemoryBarrier(load)
             );
     	}
+
+    	@Override
+    	public List<Event> visitStoreExclusive(StoreExclusive e) {
+    		throw new IllegalArgumentException("Compilation to " + NONE + " is not supported for " + e.getClass().getName());
+    	};
 
     	@Override
     	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
@@ -675,9 +451,13 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
+    	public List<Event> visitXchg(Xchg e) {
+    		throw new IllegalArgumentException("Compilation to " + NONE + " is not supported for " + e.getClass().getName());
+    	}
+
+    	@Override
     	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
-    		throw new UnsupportedOperationException("Compilation to " + target + 
-    				" is not supported for " + getClass().getName());
+    		throw new IllegalArgumentException("Compilation to " + NONE + " is not supported for " + e.getClass().getName());
     	}
 
     	@Override
@@ -861,6 +641,51 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
+    	public List<Event> visitStoreExclusive(StoreExclusive e) {
+    		throw new IllegalArgumentException("Compilation to " + TSO + " is not supported for " + e.getClass().getName());
+    	};
+
+    	@Override
+    	public List<Event> visitRMWAbstract(RMWAbstract e) {
+    		throw new IllegalArgumentException("Compilation to " + TSO + " is not supported for " + e.getClass().getName());
+    	};
+    	
+    	@Override
+    	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+    		throw new IllegalArgumentException("Compilation to " + TSO + " is not supported for " + e.getClass().getName());
+    	};
+    	
+    	@Override
+    	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
+    		throw new IllegalArgumentException("Compilation to " + TSO + " is not supported for " + e.getClass().getName());
+    	};
+    	
+    	@Override
+    	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+    		throw new IllegalArgumentException("Compilation to " + TSO + " is not supported for " + e.getClass().getName());
+    	};
+    	
+    	@Override
+    	public List<Event> visitRMWOp(RMWOp e) {
+    		throw new IllegalArgumentException("Compilation to " + TSO + " is not supported for " + e.getClass().getName());
+    	};
+    	
+    	@Override
+    	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
+    		throw new IllegalArgumentException("Compilation to " + TSO + " is not supported for " + e.getClass().getName());
+    	};
+    	
+    	@Override
+    	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
+    		throw new IllegalArgumentException("Compilation to " + TSO + " is not supported for " + e.getClass().getName());
+    	};
+    	
+    	@Override
+    	public List<Event> visitRMWXchg(RMWXchg e) {
+    		throw new IllegalArgumentException("Compilation to " + TSO + " is not supported for " + e.getClass().getName());
+    	};
+
+    	@Override
     	public List<Event> visitXchg(Xchg e) {
             Register resultRegister = e.getResultRegister();
             IExpr address = e.getAddress();
@@ -881,8 +706,7 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
-    		throw new UnsupportedOperationException("Compilation to " + target + 
-    				" is not supported for " + getClass().getName());
+    		throw new IllegalArgumentException("Compilation to " + TSO + " is not supported for " + e.getClass().getName());
     	}
 
     	@Override
@@ -1089,9 +913,52 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
+    	public List<Event> visitStoreExclusive(StoreExclusive e) {
+    		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
+    	};
+
+    	@Override
+    	public List<Event> visitRMWAbstract(RMWAbstract e) {
+    		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
+    	};
+    	
+    	@Override
+    	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+    		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
+    	};
+    	@Override
+    	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
+    		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
+    	};
+    	@Override
+    	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+    		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
+    	};
+    	@Override
+    	public List<Event> visitRMWOp(RMWOp e) {
+    		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
+    	};
+    	@Override
+    	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
+    		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
+    	};
+    	@Override
+    	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
+    		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
+    	};
+    	@Override
+    	public List<Event> visitRMWXchg(RMWXchg e) {
+    		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
+    	};
+
+    	@Override
+    	public List<Event> visitXchg(Xchg e) {
+    		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
+    	}
+
+    	@Override
     	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
-    		throw new UnsupportedOperationException("Compilation to " + target + 
-    				" is not supported for " + getClass().getName());
+    		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
     	}
 
     	@Override
@@ -1300,6 +1167,285 @@ public class Compilation implements ProgramProcessor {
                     branchOnCasCmpResult,
                         store,
                     optionalISyncBarrier,
+                    casEnd
+            );
+    	}
+    }
+
+    // =============================================================================================
+    // =========================================== ARMv8 ===========================================
+    // =============================================================================================
+
+    private class VisitorARM implements EventVisitor<List<Event>> {
+
+    	@Override
+    	public List<Event> visitEvent(Event e) {
+    		return Collections.singletonList(e);
+    	};
+
+    	@Override
+    	public List<Event> visitCreate(Create e) {
+            Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo(), e.getCLine());
+            store.addFilters(C11.PTHREAD);
+
+            return eventSequence(
+            		AArch64.DMB.newISHBarrier(),
+                    store,
+                    AArch64.DMB.newISHBarrier()
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitEnd(End e) {
+            return eventSequence(
+            		AArch64.DMB.newISHBarrier(),
+            		newStore(e.getAddress(), IConst.ZERO, e.getMo()),
+                    AArch64.DMB.newISHBarrier()
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitInitLock(InitLock e) {
+    		return eventSequence(
+                    newStore(e.getAddress(), e.getMemValue(), e.getMo())
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitJoin(Join e) {
+            List<Event> events = new ArrayList<>();
+            Register resultRegister = e.getResultRegister();
+    		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+            load.addFilters(C11.PTHREAD);
+            events.add(load);
+            events.add(AArch64.DMB.newISHBarrier());
+            events.add(newJumpUnless(new Atom(resultRegister, EQ, IConst.ZERO), e.getLabel()));
+            
+            return events;
+    	}
+
+    	@Override
+    	public List<Event> visitLock(Lock e) {
+    		return commonVisitLock(e);
+    	}
+
+    	@Override
+    	public List<Event> visitStart(Start e) {
+            List<Event> events = new ArrayList<>();
+            Register resultRegister = e.getResultRegister();
+            events.add(newLoad(resultRegister, e.getAddress(), e.getMo()));
+            events.add(AArch64.DMB.newISHBarrier());
+            events.add(newJumpUnless(new Atom(resultRegister, EQ, IConst.ONE), e.getLabel()));
+            
+            return events;
+    	}
+
+    	@Override
+    	public List<Event> visitUnlock(Unlock e) {
+    		return commonVisitUnlock(e);
+    	}
+
+    	@Override
+    	public List<Event> visitStoreExclusive(StoreExclusive e) {
+            RMWStoreExclusive store = newRMWStoreExclusive(e.getAddress(), e.getMemValue(), e.getMo());
+            
+            return eventSequence(
+                    store,
+                    newExecutionStatus(e.getResultRegister(), store)
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitRMWAbstract(RMWAbstract e) {
+    		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
+    	};
+    	
+    	@Override
+    	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+    		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
+    	};
+
+    	@Override
+    	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
+    		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
+    	};
+    	
+    	@Override
+    	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+    		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
+    	};
+    	
+    	@Override
+    	public List<Event> visitRMWOp(RMWOp e) {
+    		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
+    	};
+    	
+    	@Override
+    	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
+    		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
+    	};
+    	
+    	@Override
+    	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
+    		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
+    	};
+    	
+    	@Override
+    	public List<Event> visitRMWXchg(RMWXchg e) {
+    		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
+    	};
+
+    	@Override
+    	public List<Event> visitXchg(Xchg e) {
+    		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
+    	}
+
+    	@Override
+    	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
+    		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
+    	}
+
+    	@Override
+    	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
+    		Register resultRegister = e.getResultRegister();
+    		IExpr address = e.getAddress();
+    		ExprInterface value = e.getMemValue();
+    		String mo = e.getMo();
+    		IExpr expectedAddr = e.getExpectedAddr();
+            int threadId = resultRegister.getThreadId();
+    		int precision = resultRegister.getPrecision();
+
+    		Register regExpected = new Register(null, threadId, precision);
+            Register regValue = new Register(null, threadId, precision);
+            Load loadExpected = newLoad(regExpected, expectedAddr, null);
+            Store storeExpected = newStore(expectedAddr, regValue, null);
+            Label casFail = newLabel("CAS_fail");
+            Label casEnd = newLabel("CAS_end");
+            Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
+            CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
+            CondJump gotoCasEnd = newGoto(casEnd);
+
+            Load loadValue = newRMWLoadExclusive(regValue, address, Tag.ARMv8.extractLoadMoFromCMo(mo));
+            Store storeValue = newRMWStoreExclusive(address, value, Tag.ARMv8.extractStoreMoFromCMo(mo), e.is(STRONG));
+            ExecutionStatus optionalExecStatus = null;
+            Local optionalUpdateCasCmpResult = null;
+            if (!e.is(STRONG)) {
+                Register statusReg = new Register("status(" + e.getOId() + ")", threadId, precision);
+                optionalExecStatus = newExecutionStatus(statusReg, storeValue);
+                optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
+            }
+
+            return eventSequence(
+                    // Indentation shows the branching structure
+                    loadExpected,
+                    loadValue,
+                    casCmpResult,
+                    branchOnCasCmpResult,
+                        storeValue,
+                        optionalExecStatus,
+                        optionalUpdateCasCmpResult,
+                        gotoCasEnd,
+                    casFail,
+                        storeExpected,
+                    casEnd
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
+    		Register resultRegister = e.getResultRegister();
+    		IOpBin op = e.getOp();
+    		IExpr value = (IExpr) e.getMemValue();
+    		IExpr address = e.getAddress();
+    		String mo = e.getMo();
+    		
+            Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+            Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+
+            Load load = newRMWLoadExclusive(resultRegister, address, Tag.ARMv8.extractLoadMoFromCMo(mo));
+            Store store = newRMWStoreExclusive(address, dummyReg, Tag.ARMv8.extractStoreMoFromCMo(mo), true);
+            Label label = newLabel("FakeDep");
+            Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+            return eventSequence(
+                    load,
+                    fakeCtrlDep,
+                    label,
+                    localOp,
+                    store
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitAtomicLoad(AtomicLoad e) {
+            return eventSequence(
+                    newLoad(e.getResultRegister(), e.getAddress(), Tag.ARMv8.extractLoadMoFromCMo(e.getMo()))
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitAtomicStore(AtomicStore e) {
+            return eventSequence(
+                    newStore(e.getAddress(), e.getMemValue(), Tag.ARMv8.extractStoreMoFromCMo(e.getMo()))
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
+    		String mo = e.getMo();
+            Fence fence = null;
+                    fence = mo.equals(Tag.C11.MO_RELEASE) || mo.equals(Tag.C11.MO_ACQUIRE_RELEASE) || mo.equals(Tag.C11.MO_SC) ? AArch64.DMB.newISHBarrier()
+                            : mo.equals(Tag.C11.MO_ACQUIRE) ? AArch64.DSB.newISHLDBarrier() : null;
+
+        return eventSequence(
+                    fence
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitAtomicXchg(AtomicXchg e) {
+    		Register resultRegister = e.getResultRegister();
+    		ExprInterface value = e.getMemValue();
+    		IExpr address = e.getAddress();
+    		String mo = e.getMo();
+
+            Load load = newRMWLoadExclusive(resultRegister, address, Tag.ARMv8.extractLoadMoFromCMo(mo));
+            Store store = newRMWStoreExclusive(address, value, Tag.ARMv8.extractStoreMoFromCMo(mo), true);
+            Label label = newLabel("FakeDep");
+            Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+            return eventSequence(
+                    load,
+                    fakeCtrlDep,
+                    label,
+                    store
+            );
+    	}
+
+    	@Override
+    	public List<Event> visitDat3mCAS(Dat3mCAS e) {
+    		Register resultRegister = e.getResultRegister();
+    		ExprInterface value = e.getMemValue();
+    		IExpr address = e.getAddress();
+    		String mo = e.getMo();
+    		ExprInterface expectedValue = e.getExpectedValue();
+
+            // Events common for all compilation schemes.
+            Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+            Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
+            Label casEnd = newLabel("CAS_end");
+            CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casEnd);
+
+            Load load = newRMWLoadExclusive(regValue, address, Tag.ARMv8.extractLoadMoFromCMo(mo));
+            Store store = newRMWStoreExclusive(address, value, Tag.ARMv8.extractStoreMoFromCMo(mo), true);
+
+            // --- Add success events ---
+            return eventSequence(
+                    // Indentation shows the branching structure
+                    load,
+                    casCmpResult,
+                    branchOnCasCmpResult,
+                        store,
                     casEnd
             );
     	}
