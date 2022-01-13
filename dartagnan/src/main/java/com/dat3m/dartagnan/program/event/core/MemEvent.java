@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -61,4 +62,12 @@ public abstract class MemEvent extends Event {
     public boolean canRace() {
     	return mo == null || mo.equals("NA");
     }
+
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visitMemEvent(this);
+	}
 }

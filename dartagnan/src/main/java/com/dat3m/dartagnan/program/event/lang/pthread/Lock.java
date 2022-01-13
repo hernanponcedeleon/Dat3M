@@ -1,22 +1,12 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
-import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.google.common.base.Preconditions;
-
-import java.util.List;
-
-import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
-import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.Tag.C11.LOCK;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
-import static com.dat3m.dartagnan.program.event.Tag.RMW;
 
 public class Lock extends MemEvent {
 	
@@ -72,21 +62,11 @@ public class Lock extends MemEvent {
         return new Lock(this);
     }
 
-    // Compilation
-    // -----------------------------------------------------------------------------------------------------------------
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
 
-    @Override
-    public List<Event> compile(Arch target) {
-    	Preconditions.checkNotNull(target, "Target cannot be null");
-
-        List<Event> events = eventSequence(
-                newLoad(reg, address, mo),
-                newJump(new Atom(reg, NEQ, IConst.ZERO), label),
-                newStore(address, IConst.ONE, mo)
-        );
-        for(Event e : events) {
-            e.addFilters(LOCK, RMW);
-        }
-        return events;
-    }
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visitLock(this);
+	}
 }

@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -54,4 +55,12 @@ public class Store extends MemEvent implements RegReaderData {
     public Store getCopy(){
         return new Store(this);
     }
+
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visitStore(this);
+	}
 }

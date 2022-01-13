@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -56,4 +58,12 @@ public class Load extends MemEvent implements RegWriter {
     public Load getCopy(){
         return new Load(this);
     }
+
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visitLoad(this);
+	}
 }

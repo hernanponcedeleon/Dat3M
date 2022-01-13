@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class Skip extends Event {
 	
@@ -23,5 +24,13 @@ public class Skip extends Event {
 	@Override
 	public Skip getCopy(){
 		return new Skip(this);
+	}
+
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visitSkip(this);
 	}
 }

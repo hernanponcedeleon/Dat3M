@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class Cmp extends Skip {
 
@@ -40,4 +41,12 @@ public class Cmp extends Skip {
     public Cmp getCopy(){
         return new Cmp(this);
     }
+
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visitCmp(this);
+	}
 }

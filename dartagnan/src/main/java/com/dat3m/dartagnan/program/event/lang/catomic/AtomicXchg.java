@@ -1,19 +1,11 @@
 package com.dat3m.dartagnan.program.event.lang.catomic;
 
-import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-
-import java.util.List;
-
-import static com.dat3m.dartagnan.configuration.Arch.POWER;
-import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.Tag.ARMv8.*;
-import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderData {
 
@@ -44,55 +36,11 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
         return new AtomicXchg(this);
     }
 
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
 
-    // Compilation
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    public List<Event> compile(Arch target) {
-        List<Event> events;
-        switch(target) {
-            case NONE:
-            case TSO: {
-                Load load = newRMWLoad(resultRegister, address, mo);
-                Store store = newRMWStore(load, address, value, mo);
-                events = eventSequence(
-                        load,
-                        store
-                );
-                break;
-            }
-            case POWER:
-            case ARM8:
-                String loadMo = extractLoadMoFromCMo(mo);
-                String storeMo = extractStoreMoFromCMo(mo);
-
-                Load load = newRMWLoadExclusive(resultRegister, address, loadMo);
-                Store store = newRMWStoreExclusive(address, value, storeMo, true);
-                Label label = newLabel("FakeDep");
-                Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-
-                Fence optionalMemoryBarrier = null;
-                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(MO_ACQ)) ? Power.newISyncBarrier() : null;
-                if(target.equals(POWER)) {
-                    optionalMemoryBarrier = mo.equals(MO_SC) ? Power.newSyncBarrier()
-                            : storeMo.equals(MO_REL) ? Power.newLwSyncBarrier()
-                            : null;
-                }
-
-                // All events for POWER and ARM8
-                events = eventSequence(
-                        optionalMemoryBarrier,
-                        load,
-                        fakeCtrlDep,
-                        label,
-                        store,
-                        optionalISyncBarrier
-                );
-                break;
-            default:
-                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName());
-        }
-        return events;
-    }
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visitAtomicXchg(this);
+	}
 }

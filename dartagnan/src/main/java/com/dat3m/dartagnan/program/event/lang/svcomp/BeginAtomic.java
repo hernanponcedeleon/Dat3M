@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.lang.svcomp;
 
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class BeginAtomic extends Event {
 	
@@ -28,5 +29,13 @@ public class BeginAtomic extends Event {
     		end.notify(copy);
     	}
 		return copy;
+	}
+
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visitBeginAtomic(this);
 	}
 }

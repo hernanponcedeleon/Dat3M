@@ -1,15 +1,8 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
-import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Store;
-import com.google.common.base.Preconditions;
-
-import java.util.List;
-
-import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
-import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
 public class InitLock extends Store {
@@ -39,14 +32,11 @@ public class InitLock extends Store {
         return new InitLock(this);
     }
 
-    // Compilation
-    // -----------------------------------------------------------------------------------------------------------------
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
 
-    @Override
-    public List<Event> compile(Arch target) {
-    	Preconditions.checkNotNull(target, "Target cannot be null");
-        return eventSequence(
-                newStore(address, value, mo)
-        );
-    }
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visitInitLock(this);
+	}
 }

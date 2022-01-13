@@ -1,15 +1,12 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.collect.ImmutableSet;
-
-import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
@@ -44,12 +41,11 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
         return dataRegs;
     }
 
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
 
-    // Compilation
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    public List<Event> compile(Arch target) {
-        throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + getClass().getName());
-    }
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visitRMWAbstract(this);
+	}
 }

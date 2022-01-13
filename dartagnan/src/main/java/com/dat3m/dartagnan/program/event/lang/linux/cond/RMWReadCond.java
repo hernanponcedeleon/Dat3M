@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -57,4 +58,12 @@ public abstract class RMWReadCond extends Load implements RegWriter, RegReaderDa
 	public RMWReadCond getCopy(){
         throw new ProgramProcessingException(getClass().getName() + " cannot be unrolled: event must be generated during compilation");
     }
+
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visitRMWReadCond(this);
+	}
 }

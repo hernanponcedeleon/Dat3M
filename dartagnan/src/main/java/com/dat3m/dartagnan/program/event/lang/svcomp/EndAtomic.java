@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event.lang.svcomp;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -104,5 +105,13 @@ public class EndAtomic extends Event {
     @Override
 	public EndAtomic getCopy(){
 		return new EndAtomic(this);
+	}
+
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visitEndAtomic(this);
 	}
 }

@@ -1,17 +1,15 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
-
-import java.util.List;
 
 public class CondJump extends Event implements RegReaderData {
 
@@ -99,13 +97,11 @@ public class CondJump extends Event implements RegReaderData {
     	return new CondJump(this);
     }
 
-    // Compilation
-    // -----------------------------------------------------------------------------------------------------------------
+	// Visitor
+	// -----------------------------------------------------------------------------------------------------------------
 
-    @Override
-    public List<Event> compile(Arch target) {
-    	Preconditions.checkNotNull(target, "Target cannot be null");
-    	Preconditions.checkState(successor != null, "Malformed CondJump event");
-        return super.compile(target);
-    }
+	@Override
+	public <T> T accept(EventVisitor<T> visitor) {
+		return visitor.visitCondJump(this);
+	}
 }
