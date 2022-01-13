@@ -11,12 +11,13 @@ import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 
 public interface EventVisitor<T> {
-    
+
+	T visitEvent(Event e);
+
 	// Basic events
 	default T visitAssume(Assume e) { return visitEvent(e); };
 	default T visitCmp(Cmp e) { return visitSkip(e); };
 	default T visitCondJump(CondJump e) { return visitEvent(e); };
-	default T visitEvent(Event e) { throw new UnsupportedOperationException("Missing implementation of visitMethod for " + getClass().getSimpleName()); };
 	default T visitExecutionStatus(ExecutionStatus e) { return visitEvent(e); };
 	default T visitFence(Fence e) { return visitEvent(e); };
 	default T visitFunCall(FunCall e) { return visitEvent(e); };
