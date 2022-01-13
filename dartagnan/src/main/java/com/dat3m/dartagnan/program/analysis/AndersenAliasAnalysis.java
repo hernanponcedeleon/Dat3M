@@ -239,8 +239,10 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                     IExpr rhs = ((IExprBin) exp).getRHS();
                     //FIXME Address extends IConst
                     if(rhs instanceof IConst) {
-                        //TODO array overflow
-                        addTarget.accept(reg,new Location(target.base,target.offset+((IConst)rhs).getValueAsInt()));
+                        int o = target.offset + ((IConst)rhs).getValueAsInt();
+                        if(o < target.base.size()) {
+                            addTarget.accept(reg,new Location(target.base,target.offset+o));
+                        }
                     } else {
                         addTargetArray.accept(reg,target.base);
                     }
