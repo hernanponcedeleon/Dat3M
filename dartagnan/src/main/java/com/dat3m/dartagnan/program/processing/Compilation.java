@@ -176,9 +176,10 @@ public class Compilation implements ProgramProcessor {
 
     private class Visitor implements EventVisitor<List<Event>> {
 
-    	Arch target;
+    	private final Arch target;
     	
     	public Visitor(Arch target) {
+        	Preconditions.checkNotNull(target, "Target cannot be null");
     		this.target = target;
     	}
     	
@@ -189,14 +190,12 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visit(CondJump e) {
-        	Preconditions.checkNotNull(target, "Target cannot be null");
         	Preconditions.checkState(e.getSuccessor() != null, "Malformed CondJump event");
     		return visit((Event)e);
     	}
 
     	@Override
     	public List<Event> visit(Create e) {
-        	Preconditions.checkNotNull(target, "Target cannot be null");
 
             Fence optionalBarrierBefore = null;
             Fence optionalBarrierAfter = null;
@@ -231,7 +230,6 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visit(End e) {
-        	Preconditions.checkNotNull(target, "Target cannot be null");
         	
             Fence optionalBarrierBefore = null;
             Fence optionalBarrierAfter = null;
@@ -265,15 +263,13 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visit(InitLock e) {
-        	Preconditions.checkNotNull(target, "Target cannot be null");
-            return eventSequence(
+    		return eventSequence(
                     newStore(e.getAddress(), e.getMemValue(), e.getMo())
             );
     	}
 
     	@Override
     	public List<Event> visit(Join e) {
-        	Preconditions.checkNotNull(target, "Target cannot be null");
 
             List<Event> events = new ArrayList<>();
             Register resultRegister = e.getResultRegister();
@@ -306,7 +302,6 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visit(Lock e) {
-        	Preconditions.checkNotNull(target, "Target cannot be null");
 
             Register resultRegister = e.getResultRegister();
     		String mo = e.getMo();
@@ -326,7 +321,6 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visit(Start e) {
-        	Preconditions.checkNotNull(target, "Target cannot be null");
 
             List<Event> events = new ArrayList<>();
             Register resultRegister = e.getResultRegister();
@@ -360,7 +354,6 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visit(Unlock e) {
-        	Preconditions.checkNotNull(target, "Target cannot be null");
 
             Register resultRegister = e.getResultRegister();
     		IExpr address = e.getAddress();
@@ -416,7 +409,8 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visit(RMWCmpXchg e) {
-    		Preconditions.checkArgument(target == Arch.NONE, "Compilation to " + target + " is not supported for " + getClass().getName());
+    		Preconditions.checkArgument(target == Arch.NONE, 
+    				"Compilation to " + target + " is not supported for " + getClass().getName());
 
     		Register resultRegister = e.getResultRegister();
     		ExprInterface cmp = e.getCmp();
