@@ -13,66 +13,70 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 public interface EventVisitor<T> {
     
 	// Basic events
-	default T visit(Assume e) { return visit((Event)e); };
-	default T visit(Cmp e) { return visit((Skip)e); };
-	default T visit(CondJump e) { return visit((Event)e); };
-	default T visit(Event e) { return visit((Event)e); };
-	default T visit(ExecutionStatus e) { return visit((Event)e); };
-	default T visit(Fence e) { return visit((Event)e); };
-	default T visit(FunCall e) { return visit((Event)e); };
-	default T visit(FunRet e) { return visit((Event)e); };
-	default T visit(IfAsJump e) { return visit((CondJump)e); };
-	default T visit(Init e) { return visit((MemEvent)e); };
-	default T visit(Label e) { return visit((Event)e); };
-	default T visit(Load e) { return visit((MemEvent)e); };
-	default T visit(Local e) { return visit((Event)e); };
-	default T visit(MemEvent e) { return visit((Event)e); };
-	default T visit(Skip e) { return visit((Event)e); };
-	default T visit(Store e) { return visit((MemEvent)e); };
+	default T visitAssume(Assume e) { return visitEvent(e); };
+	default T visitCmp(Cmp e) { return visitSkip(e); };
+	default T visitCondJump(CondJump e) { return visitEvent(e); };
+	default T visitEvent(Event e) { throw new UnsupportedOperationException("Missing implementation of visitMethod for " + getClass().getSimpleName()); };
+	default T visitExecutionStatus(ExecutionStatus e) { return visitEvent(e); };
+	default T visitFence(Fence e) { return visitEvent(e); };
+	default T visitFunCall(FunCall e) { return visitEvent(e); };
+	default T visitFunRet(FunRet e) { return visitEvent(e); };
+	default T visitIfAsJump(IfAsJump e) { return visitCondJump(e); };
+	default T visitInit(Init e) { return visitMemEvent(e); };
+	default T visitLabel(Label e) { return visitEvent(e); };
+	default T visitLoad(Load e) { return visitMemEvent(e); };
+	default T visitLocal(Local e) { return visitEvent(e); };
+	default T visitMemEvent(MemEvent e) { return visitEvent(e); };
+	default T visitSkip(Skip e) { return visitEvent(e); };
+	default T visitStore(Store e) { return visitMemEvent(e); };
 
 	// Pthread Events
-	default T visit(Create e) { return visit((Store)e); };
-	default T visit(End e) { return visit((Store)e); };
-	default T visit(InitLock e) { return visit((Store)e); };
-	default T visit(Join e) { return visit((Load)e); };
-	default T visit(Lock e) { return visit((MemEvent)e); };
-	default T visit(Start e) { return visit((Load)e); };
-	default T visit(Unlock e) { return visit((MemEvent)e); };
+	default T visitCreate(Create e) { return visitStore(e); };
+	default T visitEnd(End e) { return visitStore(e); };
+	default T visitInitLock(InitLock e) { return visitStore(e); };
+	default T visitJoin(Join e) { return visitLoad(e); };
+	default T visitLock(Lock e) { return visitMemEvent(e); };
+	default T visitStart(Start e) { return visitLoad(e); };
+	default T visitUnlock(Unlock e) { return visitMemEvent(e); };
 	
+	// RMW Events
+	default T visitRMWStore(RMWStore e) { return visitStore(e); };
+	default T visitRMWStoreExclusive(RMWStoreExclusive e) { return visitStore(e); };
+
 	// AARCH64 Events
-	default T visit(StoreExclusive e) { return visit((Store)e); };
+	default T visitStoreExclusive(StoreExclusive e) { return visitStore(e); };
 
 	// Linux Events
-	default T visit(RMWAbstract e) { return visit((MemEvent)e); };
-	default T visit(RMWAddUnless e) { return visit((RMWAbstract)e); };
-	default T visit(RMWCmpXchg e) { return visit((RMWAbstract)e); };
-	default T visit(RMWFetchOp e) { return visit((RMWAbstract)e); };
-	default T visit(RMWOp e) { return visit((RMWAbstract)e); };
-	default T visit(RMWOpAndTest e) { return visit((RMWAbstract)e); };
-	default T visit(RMWOpReturn e) { return visit((RMWAbstract)e); };
-	default T visit(RMWXchg e) { return visit((RMWAbstract)e); };
+	default T visitRMWAbstract(RMWAbstract e) { return visitMemEvent(e); };
+	default T visitRMWAddUnless(RMWAddUnless e) { return visitRMWAbstract(e); };
+	default T visitRMWCmpXchg(RMWCmpXchg e) { return visitRMWAbstract(e); };
+	default T visitRMWFetchOp(RMWFetchOp e) { return visitRMWAbstract(e); };
+	default T visitRMWOp(RMWOp e) { return visitRMWAbstract(e); };
+	default T visitRMWOpAndTest(RMWOpAndTest e) { return visitRMWAbstract(e); };
+	default T visitRMWOpReturn(RMWOpReturn e) { return visitRMWAbstract(e); };
+	default T visitRMWXchg(RMWXchg e) { return visitRMWAbstract(e); };
 
 	// Linux Cond Events
-	default T visit(FenceCond e) { return visit((Fence)e); };
-	default T visit(RMWReadCond e) { return visit((Load)e); };
-	default T visit(RMWReadCondCmp e) { return visit((RMWReadCond)e); };
-	default T visit(RMWReadCondUnless e) { return visit((RMWReadCond)e); };
-	default T visit(RMWStoreCond e) { return visit((RMWStore)e); };
+	default T visitFenceCond(FenceCond e) { return visitFence(e); };
+	default T visitRMWReadCond(RMWReadCond e) { return visitLoad(e); };
+	default T visitRMWReadCondCmp(RMWReadCondCmp e) { return visitRMWReadCond(e); };
+	default T visitRMWReadCondUnless(RMWReadCondUnless e) { return visitRMWReadCond(e); };
+	default T visitRMWStoreCond(RMWStoreCond e) { return visitRMWStore(e); };
 
 	// TSO Events
-	default T visit(Xchg e) { return visit((MemEvent)e); };
+	default T visitXchg(Xchg e) { return visitMemEvent(e); };
 
 	// Atomic Events
-	default T visit(AtomicAbstract e) { return visit((MemEvent)e); };
-	default T visit(AtomicCmpXchg e) { return visit((AtomicAbstract)e); };
-	default T visit(AtomicFetchOp e) { return visit((AtomicAbstract)e); };
-	default T visit(AtomicLoad e) { return visit((MemEvent)e); };
-	default T visit(AtomicStore e) { return visit((MemEvent)e); };
-	default T visit(AtomicThreadFence e) { return visit((Fence)e); };
-	default T visit(AtomicXchg e) { return visit((AtomicAbstract)e); };
-	default T visit(Dat3mCAS e) { return visit((AtomicAbstract)e); };
+	default T visitAtomicAbstract(AtomicAbstract e) { return visitMemEvent(e); };
+	default T visitAtomicCmpXchg(AtomicCmpXchg e) { return visitAtomicAbstract(e); };
+	default T visitAtomicFetchOp(AtomicFetchOp e) { return visitAtomicAbstract(e); };
+	default T visitAtomicLoad(AtomicLoad e) { return visitMemEvent(e); };
+	default T visitAtomicStore(AtomicStore e) { return visitMemEvent(e); };
+	default T visitAtomicThreadFence(AtomicThreadFence e) { return visitFence(e); };
+	default T visitAtomicXchg(AtomicXchg e) { return visitAtomicAbstract(e); };
+	default T visitDat3mCAS(Dat3mCAS e) { return visitAtomicAbstract(e); };
 
 	// SVCOMP Events
-	default T visit(BeginAtomic e) { return visit((Event)e); };
-	default T visit(EndAtomic e) { return visit((Event)e); };
+	default T visitBeginAtomic(BeginAtomic e) { return visitEvent(e); };
+	default T visitEndAtomic(EndAtomic e) { return visitEvent(e); };
 }

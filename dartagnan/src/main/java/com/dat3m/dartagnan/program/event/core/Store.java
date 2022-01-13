@@ -61,6 +61,6 @@ public class Store extends MemEvent implements RegReaderData {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitStore(this);
 	}
 }

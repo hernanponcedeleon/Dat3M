@@ -64,6 +64,6 @@ public abstract class RMWReadCond extends Load implements RegWriter, RegReaderDa
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitRMWReadCond(this);
 	}
 }

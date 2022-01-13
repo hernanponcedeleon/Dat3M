@@ -67,6 +67,6 @@ public class Lock extends MemEvent {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitLock(this);
 	}
 }

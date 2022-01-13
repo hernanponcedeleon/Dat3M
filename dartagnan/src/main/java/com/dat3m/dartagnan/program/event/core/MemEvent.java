@@ -68,6 +68,6 @@ public abstract class MemEvent extends Event {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitMemEvent(this);
 	}
 }

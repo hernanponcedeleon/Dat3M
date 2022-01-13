@@ -46,6 +46,6 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitAtomicAbstract(this);
 	}
 }

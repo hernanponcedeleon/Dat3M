@@ -61,6 +61,6 @@ public class FenceCond extends Fence {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitFenceCond(this);
 	}
 }

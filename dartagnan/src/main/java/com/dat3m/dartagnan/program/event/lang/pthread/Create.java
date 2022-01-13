@@ -42,6 +42,6 @@ public class Create extends Store {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitCreate(this);
 	}
 }

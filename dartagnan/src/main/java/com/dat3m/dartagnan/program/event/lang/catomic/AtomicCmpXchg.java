@@ -56,6 +56,6 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitAtomicCmpXchg(this);
 	}
 }

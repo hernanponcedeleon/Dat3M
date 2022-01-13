@@ -31,6 +31,6 @@ public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegRead
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitRMWReadCondUnless(this);
 	}
 }

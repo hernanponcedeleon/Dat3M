@@ -50,6 +50,6 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitRMWFetchOp(this);
 	}
 }

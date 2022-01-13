@@ -76,6 +76,6 @@ public class ExecutionStatus extends Event implements RegWriter {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitExecutionStatus(this);
 	}
 }

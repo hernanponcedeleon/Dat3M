@@ -53,6 +53,6 @@ public class IfAsJump extends CondJump {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitIfAsJump(this);
 	}
 }

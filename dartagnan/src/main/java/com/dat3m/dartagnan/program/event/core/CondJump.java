@@ -102,6 +102,6 @@ public class CondJump extends Event implements RegReaderData {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitCondJump(this);
 	}
 }

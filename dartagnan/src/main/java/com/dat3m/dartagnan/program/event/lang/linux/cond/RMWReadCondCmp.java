@@ -23,6 +23,6 @@ public class RMWReadCondCmp extends RMWReadCond implements RegWriter, RegReaderD
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitRMWReadCondCmp(this);
 	}
 }

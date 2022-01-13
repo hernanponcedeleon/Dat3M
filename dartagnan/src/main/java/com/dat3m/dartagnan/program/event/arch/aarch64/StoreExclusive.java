@@ -47,6 +47,6 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitStoreExclusive(this);
 	}
 }

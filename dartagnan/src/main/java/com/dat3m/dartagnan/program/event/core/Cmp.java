@@ -47,6 +47,6 @@ public class Cmp extends Skip {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitCmp(this);
 	}
 }

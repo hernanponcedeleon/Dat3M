@@ -64,6 +64,6 @@ public class Load extends MemEvent implements RegWriter {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitLoad(this);
 	}
 }

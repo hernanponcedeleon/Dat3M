@@ -184,18 +184,18 @@ public class Compilation implements ProgramProcessor {
     	}
     	
     	@Override
-    	public List<Event> visit(Event e) {
+    	public List<Event> visitEvent(Event e) {
     		return Collections.singletonList(e);
     	};
 
     	@Override
-    	public List<Event> visit(CondJump e) {
+    	public List<Event> visitCondJump(CondJump e) {
         	Preconditions.checkState(e.getSuccessor() != null, "Malformed CondJump event");
-    		return visit((Event)e);
+    		return visitEvent(e);
     	}
 
     	@Override
-    	public List<Event> visit(Create e) {
+    	public List<Event> visitCreate(Create e) {
 
             Fence optionalBarrierBefore = null;
             Fence optionalBarrierAfter = null;
@@ -229,7 +229,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(End e) {
+    	public List<Event> visitEnd(End e) {
         	
             Fence optionalBarrierBefore = null;
             Fence optionalBarrierAfter = null;
@@ -262,14 +262,14 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(InitLock e) {
+    	public List<Event> visitInitLock(InitLock e) {
     		return eventSequence(
                     newStore(e.getAddress(), e.getMemValue(), e.getMo())
             );
     	}
 
     	@Override
-    	public List<Event> visit(Join e) {
+    	public List<Event> visitJoin(Join e) {
 
             List<Event> events = new ArrayList<>();
             Register resultRegister = e.getResultRegister();
@@ -301,7 +301,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(Lock e) {
+    	public List<Event> visitLock(Lock e) {
 
             Register resultRegister = e.getResultRegister();
     		String mo = e.getMo();
@@ -320,7 +320,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(Start e) {
+    	public List<Event> visitStart(Start e) {
 
             List<Event> events = new ArrayList<>();
             Register resultRegister = e.getResultRegister();
@@ -353,7 +353,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(Unlock e) {
+    	public List<Event> visitUnlock(Unlock e) {
 
             Register resultRegister = e.getResultRegister();
     		IExpr address = e.getAddress();
@@ -373,7 +373,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(StoreExclusive e) {
+    	public List<Event> visitStoreExclusive(StoreExclusive e) {
             Preconditions.checkArgument(target == Arch.ARM8, 
             		"Compilation to " + target + " is not supported for " + getClass().getName());
 
@@ -387,7 +387,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(RMWAddUnless e) {
+    	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
             Preconditions.checkArgument(target == Arch.NONE, 
             		"Compilation to " + target + " is not supported for " + getClass().getName());
 
@@ -408,7 +408,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(RMWCmpXchg e) {
+    	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
     		Preconditions.checkArgument(target == Arch.NONE, 
     				"Compilation to " + target + " is not supported for " + getClass().getName());
 
@@ -439,7 +439,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(RMWFetchOp e) {
+    	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
             Preconditions.checkArgument(target == Arch.NONE, 
             		"Compilation to " + target + " is not supported for " + getClass().getName());
 
@@ -470,7 +470,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(RMWOp e) {
+    	public List<Event> visitRMWOp(RMWOp e) {
             Preconditions.checkArgument(target == Arch.NONE, 
             		"Compilation to " + target + " is not supported for " + getClass().getName());
 
@@ -489,7 +489,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(RMWOpAndTest e) {
+    	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
             Preconditions.checkArgument(target == Arch.NONE, 
             		"Compilation to " + target + " is not supported for " + getClass().getName());
 
@@ -516,7 +516,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(RMWOpReturn e) {
+    	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
             Preconditions.checkArgument(target == Arch.NONE, 
             		"Compilation to " + target + " is not supported for " + getClass().getName());
 
@@ -541,7 +541,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(RMWXchg e) {
+    	public List<Event> visitRMWXchg(RMWXchg e) {
             Preconditions.checkArgument(target == Arch.NONE, "Compilation to " + target + 
             		" is not supported for " + getClass().getName());
 
@@ -570,7 +570,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(Xchg e) {
+    	public List<Event> visitXchg(Xchg e) {
             Preconditions.checkArgument(target == Arch.TSO, "Compilation to " + target + 
             		" is not supported for " + getClass().getName());
             
@@ -594,13 +594,13 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(AtomicAbstract e) {
+    	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
     		throw new UnsupportedOperationException("Compilation to " + target + 
     				" is not supported for " + getClass().getName());
     	}
 
     	@Override
-    	public List<Event> visit(AtomicCmpXchg e) {
+    	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
     		Register resultRegister = e.getResultRegister();
     		IExpr address = e.getAddress();
     		ExprInterface value = e.getMemValue();
@@ -696,7 +696,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(AtomicFetchOp e) {
+    	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
     		Register resultRegister = e.getResultRegister();
     		IOpBin op = e.getOp();
     		IExpr value = (IExpr) e.getMemValue();
@@ -759,7 +759,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(AtomicLoad e) {
+    	public List<Event> visitAtomicLoad(AtomicLoad e) {
     		Register resultRegister = e.getResultRegister();
     		IExpr address = e.getAddress();
     		String mo = e.getMo();
@@ -810,7 +810,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(AtomicStore e) {
+    	public List<Event> visitAtomicStore(AtomicStore e) {
     		ExprInterface value = e.getMemValue();
     		IExpr address = e.getAddress();
     		String mo = e.getMo();
@@ -851,7 +851,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(AtomicThreadFence e) {
+    	public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
     		String mo = e.getMo();
             Fence fence = null;
             switch (target) {
@@ -877,7 +877,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(AtomicXchg e) {
+    	public List<Event> visitAtomicXchg(AtomicXchg e) {
     		Register resultRegister = e.getResultRegister();
     		ExprInterface value = e.getMemValue();
     		IExpr address = e.getAddress();
@@ -930,7 +930,7 @@ public class Compilation implements ProgramProcessor {
     	}
 
     	@Override
-    	public List<Event> visit(Dat3mCAS e) {
+    	public List<Event> visitDat3mCAS(Dat3mCAS e) {
     		Register resultRegister = e.getResultRegister();
     		ExprInterface value = e.getMemValue();
     		IExpr address = e.getAddress();

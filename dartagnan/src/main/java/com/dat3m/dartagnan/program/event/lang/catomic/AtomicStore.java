@@ -61,6 +61,6 @@ public class AtomicStore extends MemEvent implements RegReaderData {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitAtomicStore(this);
 	}
 }

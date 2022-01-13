@@ -51,6 +51,6 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitRMWAddUnless(this);
 	}
 }

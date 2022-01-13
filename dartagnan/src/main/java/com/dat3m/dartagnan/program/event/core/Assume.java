@@ -65,6 +65,6 @@ public class Assume extends Event implements RegReaderData {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitAssume(this);
 	}
 }

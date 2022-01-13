@@ -112,6 +112,6 @@ public class EndAtomic extends Event {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitEndAtomic(this);
 	}
 }

@@ -51,6 +51,6 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitRMWOp(this);
 	}
 }

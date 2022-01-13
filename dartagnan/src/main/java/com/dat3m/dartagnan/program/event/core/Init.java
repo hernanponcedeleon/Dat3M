@@ -42,6 +42,6 @@ public class Init extends MemEvent {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitInit(this);
 	}
 }

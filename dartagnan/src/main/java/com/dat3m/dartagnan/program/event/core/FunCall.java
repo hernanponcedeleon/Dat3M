@@ -40,6 +40,6 @@ public class FunCall extends Event {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitFunCall(this);
 	}
 }

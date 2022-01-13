@@ -49,6 +49,6 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitRMWOpAndTest(this);
 	}
 }

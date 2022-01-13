@@ -89,6 +89,6 @@ public class Local extends Event implements RegWriter, RegReaderData {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitLocal(this);
 	}
 }

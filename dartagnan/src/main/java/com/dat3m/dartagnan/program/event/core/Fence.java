@@ -39,6 +39,6 @@ public class Fence extends Event {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitFence(this);
 	}
 }

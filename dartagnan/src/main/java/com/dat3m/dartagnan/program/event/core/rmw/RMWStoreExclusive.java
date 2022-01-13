@@ -66,6 +66,6 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitRMWStoreExclusive(this);
 	}
 }

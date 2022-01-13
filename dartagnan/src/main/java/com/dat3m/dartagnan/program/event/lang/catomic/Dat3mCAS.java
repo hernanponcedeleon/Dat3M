@@ -48,6 +48,6 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitDat3mCAS(this);
 	}
 }

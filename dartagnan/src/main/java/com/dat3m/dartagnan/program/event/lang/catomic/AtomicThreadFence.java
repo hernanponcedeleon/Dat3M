@@ -39,6 +39,6 @@ public class AtomicThreadFence extends Fence {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitAtomicThreadFence(this);
 	}
 }

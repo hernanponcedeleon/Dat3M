@@ -60,6 +60,6 @@ public class Join extends Load {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitJoin(this);
 	}
 }

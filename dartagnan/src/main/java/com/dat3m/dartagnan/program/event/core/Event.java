@@ -154,7 +154,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitEvent(this);
 	}
 
 	// Encoding

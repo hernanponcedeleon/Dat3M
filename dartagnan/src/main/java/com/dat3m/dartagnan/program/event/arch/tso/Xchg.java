@@ -63,6 +63,6 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visit(this);
+		return visitor.visitXchg(this);
 	}
 }
