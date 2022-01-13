@@ -7,25 +7,9 @@ import java.util.*;
 
 public class Memory {
 
-    private final Set<Address> map;
-    private final Collection<Address> arrays;
+    private final ArrayList<Address> arrays = new ArrayList<>();
 
     private int nextIndex = 1;
-
-    public Memory() {
-        map = new HashSet<>();
-        arrays = new ArrayList<>();
-    }
-
-    /**
-     * @param a
-     * Address associated with this instance.
-     * @return
-     * The address points to a static location.
-     */
-    public boolean isStatic(Address a) {
-        return map.contains(a);
-    }
 
     public Address malloc(int size) {
     	Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
@@ -43,13 +27,11 @@ public class Memory {
      */
     public Address newLocation() {
         Address address = new Address(nextIndex++,1);
-        map.add(address);
+        arrays.add(address);
         return address;
     }
 
     public ImmutableSet<Address> getAllAddresses() {
-        Set<Address> result = new HashSet<>(map);
-        result.addAll(arrays);
-        return ImmutableSet.copyOf(result);
+        return ImmutableSet.copyOf(arrays);
     }
 }

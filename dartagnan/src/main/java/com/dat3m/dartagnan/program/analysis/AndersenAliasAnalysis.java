@@ -168,25 +168,23 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             if(variable instanceof Register){
                 // Process rules with *variable:
                 for (Location address : graph.getAddresses(variable)) {
-                    if(program.getMemory().isStatic(address.base)) {
-                        for (MemEvent e : graph.getEvents((Register) variable)) {
-                            // p = *variable:
-                            if (e instanceof RegWriter) {
-                                // Add edge from location to p
-                                if (graph.addEdge(address, ((RegWriter) e).getResultRegister())) {
-                                    // Add location to variables if edge is new.
-                                    variables.add(address);
-                                }
-                            } else if (e instanceof Store) {
-                                // *variable = register
-                                ExprInterface value = e.getMemValue();
-                                if (value instanceof Register) {
-                                    Register register = (Register) value;
-                                    // Add edge from register to location
-                                    if (graph.addEdge(register, address)) {
-                                        // Add register to variables if edge is new.
-                                        variables.add(register);
-                                    }
+                    for(MemEvent e : graph.getEvents((Register)variable)) {
+                        // p = *variable:
+                        if(e instanceof RegWriter) {
+                            // Add edge from location to p
+                            if(graph.addEdge(address,((RegWriter)e).getResultRegister())) {
+                                // Add location to variables if edge is new.
+                                variables.add(address);
+                            }
+                        } else if(e instanceof Store) {
+                            // *variable = register
+                            ExprInterface value = e.getMemValue();
+                            if(value instanceof Register) {
+                                Register register = (Register) value;
+                                // Add edge from register to location
+                                if(graph.addEdge(register,address)) {
+                                    // Add register to variables if edge is new.
+                                    variables.add(register);
                                 }
                             }
                         }
