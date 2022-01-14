@@ -30,7 +30,13 @@ import static com.dat3m.dartagnan.expression.op.IOpUn.BV2INT;
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2UINT;
 
 
-// FIXME this is buggy> It currently fails CLocks and also casues problems with weaver/chl-match-subst.wvr.c, weaver/chl-match-symm.wvr.c and weaver/chl-match-trans.wvr.c
+// FIXME this is buggy
+// The problem is that in a program like this
+// r1 <- 0
+// goto b2
+// r1 <- 1
+// b2
+// The maps at b2 contains 1 instead of 0 (or top in the more general case)
 public class ConstantPropagation implements ProgramProcessor {
 	
     private final static Logger logger = LogManager.getLogger(ConstantPropagation.class);
