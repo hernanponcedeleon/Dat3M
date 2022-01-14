@@ -92,7 +92,7 @@ public class ConstantPropagation implements ProgramProcessor {
         	}
         	
         	// Event creation
-        	if(current instanceof MemEvent) {
+        	if(current instanceof MemEvent && !current.is(Tag.C11.PTHREAD)) {
         		MemEvent m = (MemEvent)current;
         		String mo = m.getMo();
 
