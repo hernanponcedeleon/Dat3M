@@ -201,6 +201,8 @@ public class Compilation implements ProgramProcessor {
 
             Fence optionalBarrierBefore = null;
             Fence optionalBarrierAfter = null;
+            Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo(), e.getCLine());
+            store.addFilters(C11.PTHREAD);
 
             switch (target){
                 case NONE:
@@ -223,7 +225,7 @@ public class Compilation implements ProgramProcessor {
 
             return eventSequence(
                     optionalBarrierBefore,
-                    newStore(e.getAddress(), e.getMemValue(), e.getMo(), e.getCLine()),
+                    store,
                     optionalBarrierAfter
             );
     	}
@@ -234,6 +236,7 @@ public class Compilation implements ProgramProcessor {
             Fence optionalBarrierBefore = null;
             Fence optionalBarrierAfter = null;
             Store store = newStore(e.getAddress(), IConst.ZERO, e.getMo());
+            store.addFilters(C11.PTHREAD);
 
             switch (target){
                 case NONE:
@@ -263,8 +266,10 @@ public class Compilation implements ProgramProcessor {
 
     	@Override
     	public List<Event> visitInitLock(InitLock e) {
-    		return eventSequence(
-                    newStore(e.getAddress(), e.getMemValue(), e.getMo())
+    		Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo());
+    		store.addFilters(Tag.C11.LOCK);
+			return eventSequence(
+                    store
             );
     	}
 
@@ -274,6 +279,7 @@ public class Compilation implements ProgramProcessor {
             List<Event> events = new ArrayList<>();
             Register resultRegister = e.getResultRegister();
     		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+            load.addFilters(C11.PTHREAD);
             events.add(load);
 
             switch (target) {
@@ -324,6 +330,7 @@ public class Compilation implements ProgramProcessor {
             List<Event> events = new ArrayList<>();
             Register resultRegister = e.getResultRegister();
     		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+    		load.addFilters(C11.PTHREAD);
             events.add(load);
 
             switch (target) {

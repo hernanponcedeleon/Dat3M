@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event.lang.pthread;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -22,6 +23,7 @@ public class Unlock extends Store {
         this.reg = reg;
         this.label = label;
         this.label.addListener(this);
+        addFilters(C11.LOCK);
     }
 
 	private Unlock(Unlock other){
