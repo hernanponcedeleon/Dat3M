@@ -201,8 +201,6 @@ public class Compilation implements ProgramProcessor {
 
             Fence optionalBarrierBefore = null;
             Fence optionalBarrierAfter = null;
-            Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo(), e.getCLine());
-            store.addFilters(C11.PTHREAD);
 
             switch (target){
                 case NONE:
@@ -225,7 +223,7 @@ public class Compilation implements ProgramProcessor {
 
             return eventSequence(
                     optionalBarrierBefore,
-                    store,
+                    newStore(e.getAddress(), e.getMemValue(), e.getMo(), e.getCLine()),
                     optionalBarrierAfter
             );
     	}
@@ -276,7 +274,6 @@ public class Compilation implements ProgramProcessor {
             List<Event> events = new ArrayList<>();
             Register resultRegister = e.getResultRegister();
     		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
-            load.addFilters(C11.PTHREAD);
             events.add(load);
 
             switch (target) {
@@ -311,7 +308,7 @@ public class Compilation implements ProgramProcessor {
     		List<Event> events = eventSequence(
                     newLoad(resultRegister, e.getAddress(), mo),
                     newJump(new Atom(resultRegister, NEQ, IConst.ZERO), e.getLabel()),
-                    newStore(e.getAddress(), IConst.ONE, mo)
+                    newStore(e.getAddress(), e.getMemValue(), mo)
             );
             
     		for(Event child : events) {
@@ -364,7 +361,7 @@ public class Compilation implements ProgramProcessor {
     		List<Event> events = eventSequence(
                     newLoad(resultRegister, address, mo),
                     newJump(new Atom(resultRegister, NEQ, IConst.ONE), e.getLabel()),
-                    newStore(address, IConst.ZERO, mo)
+                    newStore(address, e.getMemValue(), mo)
             );
             
     		for(Event child : events) {
