@@ -201,7 +201,10 @@ public class ConstantPropagation implements ProgramProcessor {
     private IExpr evaluate(IExpr input, Integer threadId) {
     	// TODO If we extend this to BExpr too, we might reduce IfExprs further by also evaluating the guard.
     	
-    	if(input instanceof IConst || input instanceof INonDet) {
+    	if(input instanceof INonDet) {
+    		return new ITop();
+    	}
+    	if(input instanceof IConst) {
     		return input;
     	}
     	if(input instanceof Register) {
