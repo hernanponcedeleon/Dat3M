@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -19,6 +20,7 @@ public class Join extends Load {
         this.pthread_t = pthread_t;
         this.label = label;
         this.label.addListener(this);
+        addFilters(Tag.C11.PTHREAD);
     }
 
     public Join(Join other){
