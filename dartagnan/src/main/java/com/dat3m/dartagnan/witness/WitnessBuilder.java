@@ -137,7 +137,9 @@ public class WitnessBuilder {
 				edge = new Edge(new Node("N" + nextNode), new Node("N" + (nextNode + 1)));
 				edge.addAttribute(THREADID.toString(), valueOf(eventThreadMap.get(e)));
 				edge.addAttribute(STARTLINE.toString(), valueOf(e.getCLine()));
-
+				
+				// End is also WRITE and PTHREAD, but it does not have
+				// CLines and thus won't create an edge (as expected)
 				if (e.hasFilter(WRITE) && e.hasFilter(PTHREAD)) {
 					edge.addAttribute(CREATETHREAD.toString(), valueOf(threads));
 					threads++;
