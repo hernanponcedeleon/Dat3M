@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.parsers.witness;
 
 import com.dat3m.dartagnan.parsers.XMLLexer;
 import com.dat3m.dartagnan.parsers.XMLParser;
-import com.dat3m.dartagnan.parsers.program.utils.ParserErrorListener;
+import com.dat3m.dartagnan.exception.ParserErrorListener;
 import com.dat3m.dartagnan.parsers.witness.visitors.VisitorXML;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import org.antlr.v4.runtime.CharStream;
@@ -33,8 +33,8 @@ public class ParserWitness {
 		if(graph.hasAttributed("producer")) {
 			logger.info("Witness graph produced by " + graph.getAttributed("producer"));
 		}
-		logger.info("Witness graph stats: #nodes " + graph.getNodes().size());
-		logger.info("Witness graph stats: #edges " + graph.getEdges().size());
+		logger.info("Witness graph stats: #Nodes " + graph.getNodes().size());
+		logger.info("Witness graph stats: #Edges " + graph.getEdges().size());
 
         return graph;
     }

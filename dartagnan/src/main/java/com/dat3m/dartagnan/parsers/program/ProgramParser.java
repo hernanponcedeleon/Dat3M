@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.parsers.program;
 
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.Program;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -23,7 +23,7 @@ public class ProgramParser {
             compileWithClang(file);
             compileWithSmack(file);
             String name = file.getName().substring(0, file.getName().lastIndexOf('.'));
-            return new ProgramParser().parse(new File(System.getenv().get("DAT3M_HOME") + "/output/" + name + ".bpl"));    		
+            return new ProgramParser().parse(new File(System.getenv("DAT3M_HOME") + "/output/" + name + ".bpl"));    		
     	}
 
         Program program;
@@ -48,7 +48,7 @@ public class ProgramParser {
                 }
                 compileWithClang(CFile);
 	            compileWithSmack(CFile);
-	            File BplFile = new File(System.getenv().get("DAT3M_HOME") + "/output/" + name + ".bpl");
+	            File BplFile = new File(System.getenv("DAT3M_HOME") + "/output/" + name + ".bpl");
 	            BplFile.deleteOnExit();
 	            Program p = new ProgramParser().parse(BplFile);
 	            CFile.delete();

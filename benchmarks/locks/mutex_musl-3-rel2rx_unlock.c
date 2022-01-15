@@ -66,16 +66,13 @@ static inline void mutex_lock(mutex_t *m)
 
     if (mutex_lock_fastpath(m))
         return;
-    atomic_thread_fence(memory_order_relaxed);
 
     while (mutex_lock_slowpath_check(m) == 0) {
-        atomic_thread_fence(memory_order_relaxed);
         atomic_fetch_add_explicit(&m->waiters, 1, memory_order_relaxed);
         int r = 1;
         if (!atomic_compare_exchange_strong_explicit(&m->lock, &r, 2,
                                  memory_order_relaxed,
                                  memory_order_relaxed))
-            atomic_thread_fence(memory_order_relaxed);
         __futex_wait(&m->lock, 2);
         atomic_fetch_sub_explicit(&m->waiters, 1, memory_order_relaxed);
     }
@@ -92,17 +89,17 @@ static inline void mutex_unlock(mutex_t *m)
 // main.c
 //
 int shared;
-mutex_t* mutex;
+mutex_t mutex;
 
 void *thread_n(void *arg)
 {
     intptr_t index = ((intptr_t) arg);
 
-    mutex_lock(mutex);
+    mutex_lock(&mutex);
     shared = index;
     int r = shared;
     assert(r == index);
-    mutex_unlock(mutex);
+    mutex_unlock(&mutex);
     return NULL;
 }
 
@@ -111,8 +108,7 @@ void *thread_n(void *arg)
 int main()
 {
     pthread_t t0, t1, t2;
-    mutex = malloc(sizeof(mutex_t));
-    mutex_init(mutex);
+    mutex_init(&mutex);
 
     pthread_create(&t0, NULL, thread_n, (void *) 0);
     pthread_create(&t1, NULL, thread_n, (void *) 1);

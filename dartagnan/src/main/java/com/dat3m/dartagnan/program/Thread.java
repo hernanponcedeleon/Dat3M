@@ -1,16 +1,11 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.program.event.CondJump;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.utils.ThreadCache;
-import com.dat3m.dartagnan.program.utils.preprocessing.BranchReordering;
-import com.dat3m.dartagnan.program.utils.preprocessing.DeadCodeElimination;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.program.event.EventCache;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.google.common.base.Preconditions;
 
 import java.util.HashMap;
 import java.util.List;
@@ -24,15 +19,11 @@ public class Thread {
     private Event exit;
 
     private final Map<String, Register> registers;
-    private ThreadCache cache;
+    private EventCache cache;
 
     public Thread(String name, int id, Event entry){
-        if(id < 0){
-            throw new IllegalArgumentException("Invalid thread ID");
-        }
-        if(entry == null){
-            throw new IllegalArgumentException("Thread entry event must be not null");
-        }
+    	Preconditions.checkArgument(id >= 0, "Invalid thread ID");
+    	Preconditions.checkNotNull(entry, "Thread entry event must be not null");
         entry.setThread(this);
         this.name = name;
         this.id = id;
@@ -57,15 +48,15 @@ public class Thread {
         return id;
     }
 
-    public ThreadCache getCache(){
+    public EventCache getCache(){
         if(cache == null){
-            cache = new ThreadCache(entry.getSuccessors());
+            cache = new EventCache(entry.getSuccessors());
         }
         return cache;
     }
 
     public List<Event> getEvents() {
-        return getCache().getEvents(FilterBasic.get(EType.ANY));
+        return getCache().getEvents(FilterBasic.get(Tag.ANY));
     }
 
     public void clearCache(){
@@ -78,7 +69,7 @@ public class Thread {
 
     public Register addRegister(String name, int precision){
         if(registers.containsKey(name)){
-            throw new RuntimeException("Register " + id + ":" + name + " already exists");
+            throw new MalformedProgramException("Register " + id + ":" + name + " already exists");
         }
         cache = null;
         Register register = new Register(name, id, precision);
@@ -126,73 +117,4 @@ public class Thread {
 
         return id == ((Thread) obj).id;
     }
-
-    public void simplify() {
-        entry.simplify(null);
-        cache = null;
-    }
-
-    public int setFId(int nextId) {
-        nextId = entry.setFId(0);
-        cache = null;
-        return nextId;
-    }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public int unroll(int bound, int nextId){
-    	while(bound > 0) {
-    		entry.unroll(bound, null);
-    		bound--;
-    	}
-        nextId = entry.setUId(nextId);
-        updateExit(entry);
-        cache = null;
-        return nextId;
-    }
-
-
-    // Compilation
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public int compile(Arch target, int nextId) {
-        nextId = entry.compile(target, nextId, null);
-        updateExit(entry);
-        cache = null;
-        return nextId;
-    }
-
-    // Encoding
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public BooleanFormula encodeCF(SolverContext ctx){
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
-    	BooleanFormula guard = bmgr.makeTrue();
-    	for(Event e : entry.getSuccessors()) {
-    		enc = bmgr.and(enc, e.encodeCF(ctx, guard));
-    		guard = e.cf();
-    		if(e instanceof CondJump) {
-    			guard = bmgr.and(guard, bmgr.not(((CondJump)e).getGuard().toBoolFormula(e, ctx)));
-    		}
-    	}
-    	return enc;
-    }
-
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // -------------------------------- Preprocessing -----------------------------------
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public int eliminateDeadCode(int startId) {
-        new DeadCodeElimination(this).apply(startId);
-        clearCache();
-        return getExit().getOId() + 1;
-    }
-    
-    public void reorderBranches() {
-        new BranchReordering(this).apply();
-    }
-
 }

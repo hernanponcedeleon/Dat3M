@@ -9,7 +9,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.exception.ParsingException;
 
 public class SVCOMPSanitizer {
 
@@ -20,7 +20,7 @@ public class SVCOMPSanitizer {
 	}
 
 	public File run(int bound) throws ParsingException {
-		File tmp = new File(System.getenv().get("DAT3M_HOME") + "/output/" + file.getName().substring(0, file.getName().lastIndexOf('.')) + "_tmp.c");
+		File tmp = new File(System.getenv("DAT3M_HOME") + "/output/" + file.getName().substring(0, file.getName().lastIndexOf('.')) + "_tmp.c");
 		try {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file.getAbsolutePath())));
 			PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(tmp)));		

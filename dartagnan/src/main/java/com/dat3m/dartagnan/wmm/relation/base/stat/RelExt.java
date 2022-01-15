@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
@@ -27,8 +27,8 @@ public class RelExt extends StaticRelation {
                 Thread t1 = threads.get(i);
                 for (int j = i + 1; j < threads.size(); j++) {
                     Thread t2 = threads.get(j);
-                    for(Event e1 : t1.getCache().getEvents(FilterBasic.get(EType.VISIBLE))){
-                        for(Event e2 : t2.getCache().getEvents(FilterBasic.get(EType.VISIBLE))){
+                    for(Event e1 : t1.getCache().getEvents(FilterBasic.get(Tag.VISIBLE))){
+                        for(Event e2 : t2.getCache().getEvents(FilterBasic.get(Tag.VISIBLE))){
                             maxTupleSet.add(new Tuple(e1, e2));
                             maxTupleSet.add(new Tuple(e2, e1));
                         }

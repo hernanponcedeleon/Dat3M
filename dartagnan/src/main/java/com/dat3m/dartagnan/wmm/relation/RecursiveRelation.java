@@ -1,13 +1,13 @@
 package com.dat3m.dartagnan.wmm.relation;
 
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Collections;
 import java.util.List;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -36,11 +36,21 @@ public class RecursiveRelation extends Relation {
         return name;
     }
 
-    public void initialise(VerificationTask task, SolverContext ctx){
+    @Override
+    public void initializeEncoding(SolverContext ctx){
         if(doRecurse){
             doRecurse = false;
-            super.initialise(task, ctx);
-            r1.initialise(task, ctx);
+            super.initializeEncoding(ctx);
+            r1.initializeEncoding(ctx);
+        }
+    }
+
+    @Override
+    public void initializeRelationAnalysis(VerificationTask task, Context context) {
+        if(doRecurse){
+            doRecurse = false;
+            super.initializeRelationAnalysis(task, context);
+            r1.initializeRelationAnalysis(task, context);
         }
     }
 
@@ -102,16 +112,6 @@ public class RecursiveRelation extends Relation {
         if(doRecurse){
             doRecurse = false;
             r1.addEncodeTupleSet(encodeTupleSet);
-        }
-    }
-
-    @Override
-    public void setRecursiveGroupId(int id){
-        if(doRecurse){
-            doRecurse = false;
-            forceUpdateRecursiveGroupId = true;
-            recursiveGroupId = id;
-            r1.setRecursiveGroupId(id);
         }
     }
 

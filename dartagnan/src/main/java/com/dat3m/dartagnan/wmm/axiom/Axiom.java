@@ -1,9 +1,11 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
 import com.dat3m.dartagnan.utils.dependable.Dependent;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -20,13 +22,20 @@ public abstract class Axiom implements Dependent<Relation> {
     protected Relation rel;
 
     protected VerificationTask task;
+    protected Context analysisContext;
 
     Axiom(Relation rel) {
         this.rel = rel;
     }
 
-    public void initialise(VerificationTask task, SolverContext ctx) {
+    public void initializeEncoding(SolverContext ctx) {
+        Preconditions.checkState(this.task != null,
+                "No available relation data to encode. Perform RelationAnalysis before encoding.");
+    }
+
+    public void initializeRelationAnalysis(VerificationTask task, Context context) {
         this.task = task;
+        this.analysisContext = context;
     }
 
     @Override
@@ -38,10 +47,6 @@ public abstract class Axiom implements Dependent<Relation> {
         return rel;
     }
 
-    public BooleanFormula encodeRelAndConsistency(SolverContext ctx) {
-    	return ctx.getFormulaManager().getBooleanFormulaManager().and(rel.encode(ctx), consistent(ctx));
-    }
-    
     @Override
     public abstract String toString();
 

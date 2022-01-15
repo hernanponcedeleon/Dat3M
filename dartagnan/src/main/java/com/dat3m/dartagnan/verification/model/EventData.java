@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.Event;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.program.utils.EType.*;
+import static com.dat3m.dartagnan.program.event.Tag.*;
 
 
 //EventData represents all data associated with an event in a concrete model.
@@ -16,7 +16,7 @@ public class EventData implements Comparable<EventData> {
     private int localId = -1;
     private BigInteger value;
     private BigInteger accessedAddress;
-    private int importance;
+    private int coIndex = Integer.MIN_VALUE;
     private boolean wasExecuted;
 
     EventData(Event e) {
@@ -26,11 +26,13 @@ public class EventData implements Comparable<EventData> {
     public Event getEvent() {
     	return event;
     }
+    public Thread getThread() {
+        return event.getThread();
+    }
 
     public int getId() {
     	return id;
     }
-    
     void setId(int newId) {
     	id = newId;
     }
@@ -38,7 +40,6 @@ public class EventData implements Comparable<EventData> {
     public int getLocalId() {
     	return localId;
     }
-    
     void setLocalId(int newId) {
     	localId = newId;
     }
@@ -46,7 +47,6 @@ public class EventData implements Comparable<EventData> {
     public BigInteger getAccessedAddress() {
     	return accessedAddress;
     }
-    
     void setAccessedAddress(BigInteger address) {
     	accessedAddress = address;
     }
@@ -54,7 +54,6 @@ public class EventData implements Comparable<EventData> {
     public BigInteger getValue() {
     	return value;
     }
-    
     void setValue(BigInteger val) {
     	value = val;
     }
@@ -62,30 +61,19 @@ public class EventData implements Comparable<EventData> {
     public EventData getReadFrom() {
     	return readFrom;
     }
-    
     void setReadFrom(EventData store) {
     	readFrom = store;
-    }
-
-    public int getImportance() {
-    	return importance;
-    }
-    
-    void setImportance(int importance) {
-    	this.importance = importance;
     }
 
     public boolean wasExecuted() {
     	return wasExecuted;
     }
-
     void setWasExecuted(boolean flag) {
     	wasExecuted = flag;
     }
 
-    public Thread getThread() {
-    	return event.getThread();
-    }
+    public int getCoherenceIndex() { return coIndex; }
+    void setCoherenceIndex(int index) { coIndex = index; }
 
     public boolean isMemoryEvent() { return event.is(MEMORY); }
     public boolean isInit() {
@@ -101,7 +89,7 @@ public class EventData implements Comparable<EventData> {
     	return event.is(EXCL);
     }
     public boolean isLock() {
-    	return event.is(LOCK);
+    	return event.is(C11.LOCK);
     }
     public boolean isRMW() {
     	return event.is(RMW);

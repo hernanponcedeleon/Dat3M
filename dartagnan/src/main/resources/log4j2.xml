@@ -4,11 +4,11 @@
   <Appenders>
 
     <Console name="Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{HH:mm:ss} [%-5level] %C{1}.%M - %msg%n"/>
+      <PatternLayout pattern="%d{HH:mm:ss} [%level] %C{1}.%M - %msg%n"/>
     </Console>
 	
     <File name="File" fileName="output/logs/${sys:LOGNAME}.log">
-	    <PatternLayout pattern="%d{HH:mm:ss} [%-5level] %C{1}.%M - %msg%n"/>
+	    <PatternLayout pattern="%d{HH:mm:ss} [%level] %C{1}.%M - %msg%n"/>
     </File>
 
     <Console name="Refinement_Console" target="SYSTEM_OUT">
@@ -22,7 +22,7 @@
   </Appenders>
   
   <Loggers>
-    <Logger name="com.dat3m.dartagnan.analysis.Refinement" level="off" additivity="false">
+    <Logger name="com.dat3m.dartagnan.verification.solving.Refinement" level="info" additivity="false">
       <AppenderRef ref="Refinement_Console"/>
       <AppenderRef ref="Refinement_File"/>
     </Logger>
@@ -30,6 +30,5 @@
       <AppenderRef ref="Console"/>
       <AppenderRef ref="File"/>
     </Root>
-    
   </Loggers>
 </Configuration>

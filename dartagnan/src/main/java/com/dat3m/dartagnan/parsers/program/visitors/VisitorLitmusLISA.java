@@ -11,15 +11,14 @@ import com.dat3m.dartagnan.parsers.LitmusLISABaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusLISAParser;
 import com.dat3m.dartagnan.parsers.LitmusLISAVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
-import com.dat3m.dartagnan.program.EventFactory;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Fence;
-import com.dat3m.dartagnan.program.event.Label;
+import com.dat3m.dartagnan.program.event.core.Fence;
+import com.dat3m.dartagnan.program.event.core.Label;
 import org.antlr.v4.runtime.misc.Interval;
-import static com.dat3m.dartagnan.program.arch.linux.utils.EType.*;
-import static com.dat3m.dartagnan.program.arch.linux.utils.Mo.*;
 
 import java.math.BigInteger;
 
@@ -82,7 +81,7 @@ public class VisitorLitmusLISA
 
     @Override
     public Object visitVariableDeclaratorLocationLocation(LitmusLISAParser.VariableDeclaratorLocationLocationContext ctx) {
-        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText(), -1);
+        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText());
         return null;
     }
 
@@ -119,11 +118,11 @@ public class VisitorLitmusLISA
         String mo = ctx.mo() != null ? ctx.mo().getText() : "NA";
         switch(mo) {
         	case "acquire":
-        		mo = ACQUIRE;
+        		mo = Tag.C11.MO_ACQUIRE;
         		break;
         	case "deref":
         	case "lderef":
-        		mo = RELAXED;
+        		mo = Tag.C11.MO_RELAXED;
         		break;
         	case "once":
         		mo = "Once";
@@ -150,7 +149,7 @@ public class VisitorLitmusLISA
         switch(mo) {
         	case "release":
         	case "assign":
-        		mo = RELEASE;
+        		mo = Tag.C11.MO_RELEASE;
         		break;
         	case "once":
         		mo = "Once";
@@ -171,19 +170,19 @@ public class VisitorLitmusLISA
 				child = EventFactory.Linux.newMemoryBarrier();
 				break;
 			case "rmb":
-				child = EventFactory.newFence(RMB);
+				child = EventFactory.newFence(Tag.Linux.MO_RMB);
 				break;
 			case "wmb":
-				child = EventFactory.newFence(WMB);
+				child = EventFactory.newFence(Tag.Linux.MO_WMB);
 				break;
 			case "rcu_read_lock":
-				child = EventFactory.newFence(RCU_LOCK);
+				child = EventFactory.newFence(Tag.Linux.RCU_LOCK);
 				break;
 			case "rcu_read_unlock":
-				child = EventFactory.newFence(RCU_UNLOCK);
+				child = EventFactory.newFence(Tag.Linux.RCU_UNLOCK);
 				break;
 			case "sync":
-				child = EventFactory.newFence(RCU_SYNC);
+				child = EventFactory.newFence(Tag.Linux.RCU_SYNC);
 				break;
 			default:
 				throw new ParsingException(String.format("Fence %s not recognized", name));
@@ -211,7 +210,7 @@ public class VisitorLitmusLISA
 	
 	@Override
 	public Object visitLocation(LitmusLISAParser.LocationContext ctx) {
-		return programBuilder.getOrCreateLocation(ctx.getText(), -1).getAddress();
+		return programBuilder.getOrCreateLocation(ctx.getText()).getAddress();
 	}
 
 	@Override
@@ -226,15 +225,15 @@ public class VisitorLitmusLISA
 
 	@Override
 	public Object visitAdd(LitmusLISAParser.AddContext ctx) {
-		ExprInterface e1 = (ExprInterface) ctx.expression(0).accept(this);
-		ExprInterface e2 = (ExprInterface) ctx.expression(1).accept(this);
+		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
+		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
 		return new IExprBin(e1, IOpBin.PLUS, e2);
 	}
 
 	@Override
 	public Object visitXor(LitmusLISAParser.XorContext ctx) {
-		ExprInterface e1 = (ExprInterface) ctx.expression(0).accept(this);
-		ExprInterface e2 = (ExprInterface) ctx.expression(1).accept(this);
+		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
+		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
 		return new IExprBin(e1, IOpBin.XOR, e2);
 	}
 

@@ -39,6 +39,11 @@ export DAT3M_HOME=<Dat3M's root>
 export PATH=$DAT3M_HOME/:$PATH
 ```
 
+At least the following compiler flag needs to be set, further can be added  
+```
+export CFLAGS="-I$DAT3M_HOME/include"
+```
+
 If you are verifying C code, be sure both `clang` and `smack` are in your `PATH`.
 
 To build the tool run
@@ -82,16 +87,14 @@ For programs written in `.c` and `.bpl`, `<target>` specifies the architectures 
 - none
 - tso
 - power
-- arm
 - arm8
 
 Program written in `.litmus` format do not require such option.
 
 Other optional arguments include:
-- `-a, --alias`: specifies the alias-analysis used. Option `andersen` (the default one) uses a control-flow-insensitive method. Option `cfs` uses a control-flow-sensitive method. Option `none` performs no alias analysis.
 - `-unroll`: unrolling bound for the BMC (default is 1).
 - `-solver`: specifies which SMT solver to use as a backend. Since we use [JavaSMT](https://github.com/sosy-lab/java-smt), several SMT solvers are supported depending on the OS and the used SMT logic (default is Z3).
-- `-method`: specifies which solving method to use. Options `incremental` (the default one) and `assume` solve a monolithic formula using incremental/assume-based SMT solving. Option `refinement` uses a customized solver for memory consistency.  
+- `-method`: specifies which solving method to use. Option `caat` (the default one) uses a customized solver for memory consistency. Options `incremental` and `assume` solve a monolithic formula using incremental/assume-based SMT solving. 
 
 Dartagnan supports input non-determinism, assumptions and assertions using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) commands `__VERIFIER_nondet_X`, `__VERIFIER_assume` and `__VERIFIER_assert`.
 
@@ -107,18 +110,19 @@ Authors and Contact
 ======
 **Maintainer:**
 
-* [Hernán Ponce de León](mailto:hernan.ponce@unibw.de)
+* [Hernán Ponce de León](https://hernanponcedeleon.github.io)
 
 **Developers:**
 
-* [Thomas Haas](mailto:t.haas@tu-braunschweig.de)
+* [Thomas Haas](https://www.tcs.cs.tu-bs.de/group/haas/home.html)
+* [René Pascal Maseli](https://www.tcs.cs.tu-bs.de/group/maseli/home.html)
 
 **Former Developers:**
 
 * Florian Furbach
 * Natalia Gavrilenko
 
-Please feel free to contact us in case of questions or to send feedback.
+Please feel free to [contact us](mailto:hernan.ponce@unibw.de) in case of questions or to send feedback.
 
 References
 ======

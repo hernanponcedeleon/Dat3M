@@ -3,13 +3,11 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.*;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-
-import java.math.BigInteger;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class BExprUn extends BExpr {
 
@@ -35,26 +33,8 @@ public class BExprUn extends BExpr {
     }
 
     @Override
-    public Formula getLastValueExpr(SolverContext ctx){
-    	FormulaManager fmgr = ctx.getFormulaManager();
-		
-		BooleanFormula expr = b.getLastValueExpr(ctx) instanceof BitvectorFormula ? 
-				fmgr.getBitvectorFormulaManager().greaterThan((BitvectorFormula)b.getLastValueExpr(ctx), fmgr.getBitvectorFormulaManager().makeBitvector(b.getPrecision(), (BigInteger.ONE)), false):
-				fmgr.getIntegerFormulaManager().greaterThan((IntegerFormula)b.getLastValueExpr(ctx), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE));
-        
-		return fmgr.getBooleanFormulaManager().ifThenElse(op.encode(expr, ctx), 
-				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE), 
-				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
-    }
-
-    @Override
     public ImmutableSet<Register> getRegs() {
         return b.getRegs();
-    }
-
-    @Override
-    public ImmutableSet<Location> getLocs() {
-        return b.getLocs();
     }
 
     @Override
@@ -66,11 +46,6 @@ public class BExprUn extends BExpr {
     public boolean getBoolValue(Event e, Model model, SolverContext ctx){
         return op.combine(b.getBoolValue(e, model, ctx));
     }
-
-	@Override
-	public BConst reduce() {
-		return new BConst(!((BConst)b.reduce()).getValue());
-	}
 
     @Override
     public <T> T visit(ExpressionVisitor<T> visitor) {

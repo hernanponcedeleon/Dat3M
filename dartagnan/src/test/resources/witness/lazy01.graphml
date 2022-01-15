@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<key attr.name="architecture" attr.type="string" for="graph" id="architecture"/>
+<key attr.name="creationtime" attr.type="string" for="graph" id="creationtime"/>
+<key attr.name="producer" attr.type="string" for="graph" id="producer"/>
+<key attr.name="programfile" attr.type="string" for="graph" id="programfile"/>
+<key attr.name="programhash" attr.type="string" for="graph" id="programhash"/>
+<key attr.name="sourcecodelang" attr.type="string" for="graph" id="sourcecodelang"/>
+<key attr.name="specification" attr.type="string" for="graph" id="specification"/>
+<key attr.name="witness-type" attr.type="string" for="graph" id="witness-type"/>
+<key attr.name="unroll-bound" attr.type="string" for="graph" id="unroll-bound"/>
+<key attr.name="entry" attr.type="boolean" for="node" id="entry"/>
+<key attr.name="violation" attr.type="boolean" for="node" id="violation"/>
+<key attr.name="createThread" attr.type="string" for="edge" id="createThread"/>
+<key attr.name="threadId" attr.type="string" for="edge" id="threadId"/>
+<key attr.name="enterFunction" attr.type="string" for="edge" id="enterFunction"/>
+<key attr.name="startline" attr.type="string" for="edge" id="startline"/>
+<key attr.name="event-id" attr.type="string" for="edge" id="event-id"/>
+<key attr.name="loaded-value" attr.type="string" for="edge" id="loaded-value"/>
+<key attr.name="stored-value" attr.type="string" for="edge" id="stored-value"/>
+<graph edgedefault="directed">
+  <data key="architecture">32bit</data>
+  <data key="creationtime">2022-01-03T10:10:28Z</data>
+  <data key="producer">Dartagnan</data>
+  <data key="programfile">../sv-benchmarks/c/pthread/lazy01.i</data>
+  <data key="programhash">b5d87933b05ad3566f9bc28daac5c0aeceb8a45433a1cac3d51a8d34f7f284f0</data>
+  <data key="sourcecodelang">C</data>
+  <data key="specification">CHECK( init(main()), LTL(G ! call(reach_error())))</data>
+  <data key="unroll-bound">1</data>
+  <data key="witness-type">violation_witness</data>
+  <node id="N0">
+    <data key="entry">true</data>
+  </node>
+  <node id="N1">
+  </node>
+  <node id="N2">
+  </node>
+  <node id="N3">
+  </node>
+  <node id="N4">
+  </node>
+  <node id="N5">
+  </node>
+  <node id="N6">
+  </node>
+  <node id="N7">
+  </node>
+  <node id="N8">
+  </node>
+  <node id="N9">
+    <data key="violation">true</data>
+  </node>
+  <edge source="N0" target="N1">
+    <data key="createThread">0</data>
+  </edge>
+  <edge source="N1" target="N2">
+    <data key="enterFunction">main</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N2" target="N3">
+    <data key="createThread">1</data>
+    <data key="event-id">8</data>
+    <data key="startline">732</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N3" target="N4">
+    <data key="createThread">2</data>
+    <data key="event-id">10</data>
+    <data key="startline">733</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N4" target="N5">
+    <data key="createThread">3</data>
+    <data key="event-id">12</data>
+    <data key="startline">734</data>
+    <data key="stored-value">1</data>
+    <data key="threadId">0</data>
+  </edge>
+  <edge source="N5" target="N6">
+    <data key="event-id">27</data>
+    <data key="startline">707</data>
+    <data key="stored-value">3</data>
+    <data key="threadId">1</data>
+  </edge>
+  <edge source="N6" target="N7">
+    <data key="event-id">38</data>
+    <data key="startline">714</data>
+    <data key="stored-value">2</data>
+    <data key="threadId">2</data>
+  </edge>
+  <edge source="N7" target="N8">
+    <data key="startline">721</data>
+    <data key="threadId">3</data>
+  </edge>
+  <edge source="N8" target="N9">
+    <data key="startline">722</data>
+    <data key="threadId">3</data>
+  </edge>
+</graph></graphml>
