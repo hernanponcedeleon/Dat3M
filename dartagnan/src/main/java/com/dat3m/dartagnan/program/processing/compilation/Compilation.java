@@ -41,6 +41,7 @@ public class Compilation implements ProgramProcessor {
 
     private Compilation(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
+        Preconditions.checkNotNull(target);
     }
 
     public static Compilation fromConfig(Configuration config) throws InvalidConfigurationException {
@@ -60,9 +61,23 @@ public class Compilation implements ProgramProcessor {
         }
         Preconditions.checkArgument(program.isUnrolled(), "The program needs to be unrolled before compilation.");
 
+        EventVisitor<List<Event>> visitor;
+        switch(target) {
+            case NONE:
+                visitor = new VisitorNone(); break;
+            case TSO:
+                visitor = new VisitorTso(); break;
+            case POWER:
+                visitor = new VisitorPower(); break;
+            case ARM8:
+                visitor = new VisitorArm8(); break;
+            default:
+                throw new UnsupportedOperationException(String.format("Compilation to %s is not supported.", target));
+        }
+
         int nextId = 0;
         for(Thread thread : program.getThreads()){
-            nextId = compileThread(thread, nextId);
+            nextId = compileThread(thread, nextId, visitor);
 
             int fId = 0;
             for (Event e : thread.getEvents()) {
@@ -76,25 +91,7 @@ public class Compilation implements ProgramProcessor {
         logger.info("Program compiled to {}", target);
     }
 
-    private int compileThread(Thread thread, int nextId) {
-        EventVisitor<List<Event>> visitor = null;
-        switch(target) {
-	    	case NONE:
-	    		visitor = new VisitorNone();
-	    		break;
-	    	case TSO:
-	    		visitor = new VisitorTso();
-	    		break;
-	    	case POWER:
-	    		visitor = new VisitorPower();
-	    		break;
-	    	case ARM8:
-	    		visitor = new VisitorArm8();
-	    		break;
-	    	default:
-	    		throw new UnsupportedOperationException("Compilation to %s is not supported.");
-        }
-
+    private int compileThread(Thread thread, int nextId, EventVisitor<List<Event>> visitor) {
     	Event pred = thread.getEntry();
         Event toBeCompiled = pred.getSuccessor();
         pred.setCId(nextId++);

@@ -26,7 +26,7 @@
       <AppenderRef ref="Refinement_Console"/>
       <AppenderRef ref="Refinement_File"/>
     </Logger>
-    <Root level="off">
+    <Root level="info">
       <AppenderRef ref="Console"/>
       <AppenderRef ref="File"/>
     </Root>

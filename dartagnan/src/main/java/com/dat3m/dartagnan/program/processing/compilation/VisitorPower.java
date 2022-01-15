@@ -1,34 +1,26 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.*;
+import com.dat3m.dartagnan.expression.op.BOpUn;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory.*;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.EventFactory.Power;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.Create;
+import com.dat3m.dartagnan.program.event.lang.pthread.End;
+import com.dat3m.dartagnan.program.event.lang.pthread.Join;
+import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import org.sosy_lab.common.configuration.Options;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
-import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
-import static com.dat3m.dartagnan.program.event.EventFactory.newExecutionStatus;
-import static com.dat3m.dartagnan.program.event.EventFactory.newFakeCtrlDep;
-import static com.dat3m.dartagnan.program.event.EventFactory.newGoto;
-import static com.dat3m.dartagnan.program.event.EventFactory.newJump;
-import static com.dat3m.dartagnan.program.event.EventFactory.newJumpUnless;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLabel;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLoad;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLocal;
-import static com.dat3m.dartagnan.program.event.EventFactory.newRMWLoadExclusive;
-import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStoreExclusive;
-import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
+import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 
 @Options
@@ -57,37 +49,33 @@ public class VisitorPower extends VisitorBase implements EventVisitor<List<Event
 
 	@Override
 	public List<Event> visitJoin(Join e) {
-        List<Event> events = new ArrayList<>();
         Register resultRegister = e.getResultRegister();
 		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
         load.addFilters(C11.PTHREAD);
-        events.add(load);
         Label label = newLabel("Jump_" + e.getOId());
-        events.addAll(eventSequence(
+
+        return eventSequence(
+                load,
                 newFakeCtrlDep(resultRegister, label),
                 label,
-                Power.newISyncBarrier()
-        ));
-        events.add(newJumpUnless(new Atom(resultRegister, EQ, IConst.ZERO), e.getLabel()));
-        
-        return events;
+                Power.newISyncBarrier(),
+                newJumpUnless(new Atom(resultRegister, EQ, IConst.ZERO), e.getLabel())
+        );
 	}
 
 	@Override
 	public List<Event> visitStart(Start e) {
-        List<Event> events = new ArrayList<>();
         Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
-        events.add(load);
+        Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
         Label label = newLabel("Jump_" + e.getOId());
-        events.addAll(eventSequence(
+
+        return eventSequence(
+                load,
                 newFakeCtrlDep(resultRegister, label),
                 label,
-                Power.newISyncBarrier()
-        ));
-        events.add(newJumpUnless(new Atom(resultRegister, EQ, IConst.ONE), e.getLabel()));
-        
-        return events;
+                Power.newISyncBarrier(),
+                newJumpUnless(new Atom(resultRegister, EQ, IConst.ONE), e.getLabel())
+        );
 	}
 
 	@Override

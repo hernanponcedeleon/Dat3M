@@ -1,16 +1,20 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.*;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory.*;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.EventFactory.Linux;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWReadCondCmp;
+import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWReadCondUnless;
+import com.dat3m.dartagnan.program.event.lang.pthread.Create;
+import com.dat3m.dartagnan.program.event.lang.pthread.End;
+import com.dat3m.dartagnan.program.event.lang.pthread.Join;
+import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import org.sosy_lab.common.configuration.Options;
 
@@ -20,16 +24,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
-import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
-import static com.dat3m.dartagnan.program.event.EventFactory.newGoto;
-import static com.dat3m.dartagnan.program.event.EventFactory.newJump;
-import static com.dat3m.dartagnan.program.event.EventFactory.newJumpUnless;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLabel;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLoad;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLocal;
-import static com.dat3m.dartagnan.program.event.EventFactory.newRMWLoad;
-import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStore;
-import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
+import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 @Options
 public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>> {
@@ -86,7 +81,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
                 Linux.newConditionalMemoryBarrier(load),
                 load,
                 Linux.newRMWStoreCond(load, e.getAddress(), new IExprBin(dummy, IOpBin.PLUS, (IExpr) e.getMemValue()), Tag.Linux.MO_RELAXED),
-                newLocal(resultRegister, new Atom(dummy, COpBin.NEQ, e.getCmp())),
+                newLocal(resultRegister, new Atom(dummy, NEQ, e.getCmp())),
                 Linux.newConditionalMemoryBarrier(load)
         );
 	}
@@ -173,7 +168,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
                 load,
                 newLocal(dummy, new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue())),
                 newRMWStore(load, address, dummy, Tag.Linux.MO_RELAXED),
-                newLocal(resultRegister, new Atom(dummy, COpBin.EQ, new IConst(BigInteger.ZERO, precision))),
+                newLocal(resultRegister, new Atom(dummy, EQ, new IConst(BigInteger.ZERO, precision))),
                 Linux.newMemoryBarrier()
         );
 	}

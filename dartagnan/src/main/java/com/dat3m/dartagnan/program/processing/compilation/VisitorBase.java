@@ -1,27 +1,28 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Atom;
+import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
-import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.lang.catomic.*;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.lang.catomic.AtomicAbstract;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
-
 import org.sosy_lab.common.configuration.Options;
 
 import java.util.Collections;
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
-import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
-import static com.dat3m.dartagnan.program.event.EventFactory.newJump;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLoad;
-import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
+import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.RMW;
 
 @Options

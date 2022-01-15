@@ -2,14 +2,17 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory.*;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.EventFactory.X86;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.Create;
+import com.dat3m.dartagnan.program.event.lang.pthread.End;
+import com.dat3m.dartagnan.program.event.lang.pthread.Join;
+import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import org.sosy_lab.common.configuration.Options;
 
@@ -17,16 +20,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
-import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
-import static com.dat3m.dartagnan.program.event.EventFactory.newGoto;
-import static com.dat3m.dartagnan.program.event.EventFactory.newJump;
-import static com.dat3m.dartagnan.program.event.EventFactory.newJumpUnless;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLabel;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLoad;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLocal;
-import static com.dat3m.dartagnan.program.event.EventFactory.newRMWLoad;
-import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStore;
-import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
+import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 @Options
 public class VisitorTso extends VisitorBase implements EventVisitor<List<Event>> {
@@ -103,8 +97,6 @@ public class VisitorTso extends VisitorBase implements EventVisitor<List<Event>>
         int threadId = resultRegister.getThreadId();
 		int precision = resultRegister.getPrecision();
 
-		List<Event> events;
-
 		Register regExpected = new Register(null, threadId, precision);
         Load loadExpected = newLoad(regExpected, expectedAddr, null);
         Register regValue = new Register(null, threadId, precision);
@@ -117,7 +109,7 @@ public class VisitorTso extends VisitorBase implements EventVisitor<List<Event>>
         CondJump gotoCasEnd = newGoto(casEnd);
         Store storeExpected = newStore(expectedAddr, regValue, null);
 
-        events = eventSequence(
+        return eventSequence(
                 // Indentation shows the branching structure
                 loadExpected,
                 loadValue,
@@ -129,8 +121,6 @@ public class VisitorTso extends VisitorBase implements EventVisitor<List<Event>>
                     storeExpected,
                 casEnd
         );
-
-        return events;
 	}
 
 	@Override
