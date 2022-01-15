@@ -7,20 +7,16 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.EventFactory.AArch64;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import org.sosy_lab.common.configuration.Options;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
@@ -36,19 +32,12 @@ import static com.dat3m.dartagnan.program.event.EventFactory.newRMWLoadExclusive
 import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStoreExclusive;
 import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
-import static com.dat3m.dartagnan.program.processing.compilation.Compilation.commonVisitLock;
-import static com.dat3m.dartagnan.program.processing.compilation.Compilation.commonVisitUnlock;
 
 @Options
-public class VisitorArm8 implements EventVisitor<List<Event>> {
+public class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 
 	protected VisitorArm8() {}
 	
-	@Override
-	public List<Event> visitEvent(Event e) {
-		return Collections.singletonList(e);
-	};
-
 	@Override
 	public List<Event> visitCreate(Create e) {
         Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo(), e.getCLine());
@@ -71,13 +60,6 @@ public class VisitorArm8 implements EventVisitor<List<Event>> {
 	}
 
 	@Override
-	public List<Event> visitInitLock(InitLock e) {
-		return eventSequence(
-                newStore(e.getAddress(), e.getMemValue(), e.getMo())
-        );
-	}
-
-	@Override
 	public List<Event> visitJoin(Join e) {
         List<Event> events = new ArrayList<>();
         Register resultRegister = e.getResultRegister();
@@ -88,11 +70,6 @@ public class VisitorArm8 implements EventVisitor<List<Event>> {
         events.add(newJumpUnless(new Atom(resultRegister, EQ, IConst.ZERO), e.getLabel()));
         
         return events;
-	}
-
-	@Override
-	public List<Event> visitLock(Lock e) {
-		return commonVisitLock(e);
 	}
 
 	@Override
@@ -107,11 +84,6 @@ public class VisitorArm8 implements EventVisitor<List<Event>> {
 	}
 
 	@Override
-	public List<Event> visitUnlock(Unlock e) {
-		return commonVisitUnlock(e);
-	}
-
-	@Override
 	public List<Event> visitStoreExclusive(StoreExclusive e) {
         RMWStoreExclusive store = newRMWStoreExclusive(e.getAddress(), e.getMemValue(), e.getMo());
         
@@ -119,56 +91,6 @@ public class VisitorArm8 implements EventVisitor<List<Event>> {
                 store,
                 newExecutionStatus(e.getResultRegister(), store)
         );
-	}
-
-	@Override
-	public List<Event> visitRMWAbstract(RMWAbstract e) {
-		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
-	};
-	
-	@Override
-	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
-		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
-	};
-
-	@Override
-	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
-		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
-	};
-	
-	@Override
-	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
-		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
-	};
-	
-	@Override
-	public List<Event> visitRMWOp(RMWOp e) {
-		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
-	};
-	
-	@Override
-	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
-		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
-	};
-	
-	@Override
-	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
-		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
-	};
-	
-	@Override
-	public List<Event> visitRMWXchg(RMWXchg e) {
-		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
-	};
-
-	@Override
-	public List<Event> visitXchg(Xchg e) {
-		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
-	}
-
-	@Override
-	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
-		throw new IllegalArgumentException("Compilation to " + ARM8 + " is not supported for " + e.getClass().getName());
 	}
 
 	@Override

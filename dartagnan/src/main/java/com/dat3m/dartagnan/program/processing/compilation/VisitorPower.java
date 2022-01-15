@@ -6,20 +6,15 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.EventFactory.Power;
 import com.dat3m.dartagnan.program.event.Tag.C11;
-import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import org.sosy_lab.common.configuration.Options;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
@@ -35,19 +30,12 @@ import static com.dat3m.dartagnan.program.event.EventFactory.newRMWLoadExclusive
 import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStoreExclusive;
 import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
-import static com.dat3m.dartagnan.program.processing.compilation.Compilation.commonVisitLock;
-import static com.dat3m.dartagnan.program.processing.compilation.Compilation.commonVisitUnlock;
 
 @Options
-public class VisitorPower implements EventVisitor<List<Event>> {
+public class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 
 	protected VisitorPower() {}
 	
-	@Override
-	public List<Event> visitEvent(Event e) {
-		return Collections.singletonList(e);
-	};
-
 	@Override
 	public List<Event> visitCreate(Create e) {
         Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo(), e.getCLine());
@@ -64,13 +52,6 @@ public class VisitorPower implements EventVisitor<List<Event>> {
         return eventSequence(
         		Power.newSyncBarrier(),
         		newStore(e.getAddress(), IConst.ZERO, e.getMo())
-        );
-	}
-
-	@Override
-	public List<Event> visitInitLock(InitLock e) {
-		return eventSequence(
-                newStore(e.getAddress(), e.getMemValue(), e.getMo())
         );
 	}
 
@@ -93,11 +74,6 @@ public class VisitorPower implements EventVisitor<List<Event>> {
 	}
 
 	@Override
-	public List<Event> visitLock(Lock e) {
-		return commonVisitLock(e);
-	}
-
-	@Override
 	public List<Event> visitStart(Start e) {
         List<Event> events = new ArrayList<>();
         Register resultRegister = e.getResultRegister();
@@ -112,60 +88,6 @@ public class VisitorPower implements EventVisitor<List<Event>> {
         events.add(newJumpUnless(new Atom(resultRegister, EQ, IConst.ONE), e.getLabel()));
         
         return events;
-	}
-
-	@Override
-	public List<Event> visitUnlock(Unlock e) {
-		return commonVisitUnlock(e);
-	}
-
-	@Override
-	public List<Event> visitStoreExclusive(StoreExclusive e) {
-		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
-	};
-
-	@Override
-	public List<Event> visitRMWAbstract(RMWAbstract e) {
-		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
-	};
-	
-	@Override
-	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
-		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
-	};
-	@Override
-	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
-		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
-	};
-	@Override
-	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
-		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
-	};
-	@Override
-	public List<Event> visitRMWOp(RMWOp e) {
-		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
-	};
-	@Override
-	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
-		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
-	};
-	@Override
-	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
-		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
-	};
-	@Override
-	public List<Event> visitRMWXchg(RMWXchg e) {
-		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
-	};
-
-	@Override
-	public List<Event> visitXchg(Xchg e) {
-		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
-	}
-
-	@Override
-	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
-		throw new IllegalArgumentException("Compilation to " + POWER + " is not supported for " + e.getClass().getName());
 	}
 
 	@Override

@@ -1,16 +1,9 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.processing.ProgramProcessor;
 import com.google.common.base.Preconditions;
@@ -24,12 +17,6 @@ import org.sosy_lab.common.configuration.Options;
 import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
-import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
-import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
-import static com.dat3m.dartagnan.program.event.EventFactory.newJump;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLoad;
-import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
-import static com.dat3m.dartagnan.program.event.Tag.RMW;
 
 @Options
 public class Compilation implements ProgramProcessor {
@@ -131,43 +118,4 @@ public class Compilation implements ProgramProcessor {
         thread.clearCache();
         return nextId;
     }
-
-    // =============================================================================================
-    // =========================================== Common ==========================================
-    // =============================================================================================
-
-    public static List<Event> commonVisitLock(Lock e) {
-        Register resultRegister = e.getResultRegister();
-		String mo = e.getMo();
-		
-		List<Event> events = eventSequence(
-                newLoad(resultRegister, e.getAddress(), mo),
-                newJump(new Atom(resultRegister, NEQ, IConst.ZERO), e.getLabel()),
-                newStore(e.getAddress(), IConst.ONE, mo)
-        );
-        
-		for(Event child : events) {
-            child.addFilters(C11.LOCK, RMW);
-        }
-        
-		return events;
-    }
-    
-	public static List<Event> commonVisitUnlock(Unlock e) {
-        Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		
-		List<Event> events = eventSequence(
-                newLoad(resultRegister, address, mo),
-                newJump(new Atom(resultRegister, NEQ, IConst.ONE), e.getLabel()),
-                newStore(address, IConst.ZERO, mo)
-        );
-        
-		for(Event child : events) {
-            child.addFilters(C11.LOCK, RMW);
-        }
-        
-		return events;
-	}
 }

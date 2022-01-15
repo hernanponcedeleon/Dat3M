@@ -6,8 +6,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.EventFactory.Linux;
 import com.dat3m.dartagnan.program.event.Tag.C11;
-import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
@@ -20,7 +18,6 @@ import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 
-import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
@@ -33,19 +30,12 @@ import static com.dat3m.dartagnan.program.event.EventFactory.newLocal;
 import static com.dat3m.dartagnan.program.event.EventFactory.newRMWLoad;
 import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStore;
 import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
-import static com.dat3m.dartagnan.program.processing.compilation.Compilation.commonVisitLock;
-import static com.dat3m.dartagnan.program.processing.compilation.Compilation.commonVisitUnlock;
 
 @Options
-public class VisitorNone implements EventVisitor<List<Event>> {
+public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>> {
 
 	protected VisitorNone() {}
 	
-	@Override
-	public List<Event> visitEvent(Event e) {
-		return Collections.singletonList(e);
-	};
-
 	@Override
 	public List<Event> visitCreate(Create e) {
 
@@ -65,13 +55,6 @@ public class VisitorNone implements EventVisitor<List<Event>> {
 	}
 
 	@Override
-	public List<Event> visitInitLock(InitLock e) {
-		return eventSequence(
-                newStore(e.getAddress(), e.getMemValue(), e.getMo())
-        );
-	}
-
-	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
 		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
@@ -84,11 +67,6 @@ public class VisitorNone implements EventVisitor<List<Event>> {
 	}
 
 	@Override
-	public List<Event> visitLock(Lock e) {
-		return commonVisitLock(e);
-	}
-
-	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
 
@@ -96,11 +74,6 @@ public class VisitorNone implements EventVisitor<List<Event>> {
         		newLoad(resultRegister, e.getAddress(), e.getMo()),
         		newJumpUnless(new Atom(resultRegister, EQ, IConst.ONE), e.getLabel())
         );
-	}
-
-	@Override
-	public List<Event> visitUnlock(Unlock e) {
-		return commonVisitUnlock(e);
 	}
 
 	@Override
@@ -117,11 +90,6 @@ public class VisitorNone implements EventVisitor<List<Event>> {
                 Linux.newConditionalMemoryBarrier(load)
         );
 	}
-
-	@Override
-	public List<Event> visitStoreExclusive(StoreExclusive e) {
-		throw new IllegalArgumentException("Compilation to " + NONE + " is not supported for " + e.getClass().getName());
-	};
 
 	@Override
 	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
@@ -253,16 +221,6 @@ public class VisitorNone implements EventVisitor<List<Event>> {
                 optionalUpdateReg,
                 optionalMbAfter
         );
-	}
-
-	@Override
-	public List<Event> visitXchg(Xchg e) {
-		throw new IllegalArgumentException("Compilation to " + NONE + " is not supported for " + e.getClass().getName());
-	}
-
-	@Override
-	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
-		throw new IllegalArgumentException("Compilation to " + NONE + " is not supported for " + e.getClass().getName());
 	}
 
 	@Override
