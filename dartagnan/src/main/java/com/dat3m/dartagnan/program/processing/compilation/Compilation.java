@@ -104,8 +104,9 @@ public class Compilation implements ProgramProcessor {
 	    	case ARM8:
 	    		visitor = new VisitorArm8();
 	    		break;
+	    	default:
+	    		throw new UnsupportedOperationException("Compilation to %s is not supported.");
         }
-        Preconditions.checkState(visitor != null, String.format("Compilation to %s is not supported.", target));
 
     	Event pred = thread.getEntry();
         Event toBeCompiled = pred.getSuccessor();
