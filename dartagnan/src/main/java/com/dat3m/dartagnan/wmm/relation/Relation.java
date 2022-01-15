@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.encoding.Encoder;
-import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.Context;
@@ -191,10 +191,10 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
             e1 = e2;
             e2 = temp;
         }
-        BranchEquivalence eq = analysisContext.requires(BranchEquivalence.class);
-        if (eq.isImplied(e1, e2) && e2.cfImpliesExec()) {
+        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+        if (exec.isImplied(e1, e2)) {
             return e1.exec();
-        } else if (eq.isImplied(e2 ,e1) && e1.cfImpliesExec()) {
+        } else if (exec.isImplied(e2 ,e1)) {
             return e2.exec();
         }
         return ctx.getFormulaManager().getBooleanFormulaManager().and(e1.exec(), e2.exec());
@@ -205,8 +205,8 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     }
 
     protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {
-        BranchEquivalence eq = analysisContext.requires(BranchEquivalence.class);
-        tupleSet.removeIf(t -> eq.areMutuallyExclusive(t.getFirst(), t.getSecond()));
+        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+        tupleSet.removeIf(t -> exec.areMutuallyExclusive(t.getFirst(), t.getSecond()));
     }
 
     // ========================== Utility methods =========================

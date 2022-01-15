@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -79,7 +79,7 @@ public class Acyclic extends Axiom {
                       and b is implied by either a or c.
                     - It is possible to reduce must(rel) but that may give a less precise result.
          */
-        BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
+        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
         TupleSet minSet = rel.getMinTupleSet();
 
         // (1) Approximate transitive closure of minSet (only gets computed when crossEdges are available)
@@ -93,19 +93,16 @@ public class Acyclic extends Axiom {
 
             List<Event> ingoing = new ArrayList<>();
             ingoing.add(e1); // ingoing events + self
-            if (e1.cfImpliesExec()) {
-                minSet.getBySecond(e1).stream().map(Tuple::getFirst)
-                        .filter(e -> eq.isImplied(e, e1))
-                        .forEach(ingoing::add);
-            }
+            minSet.getBySecond(e1).stream().map(Tuple::getFirst)
+                    .filter(e -> exec.isImplied(e, e1))
+                    .forEach(ingoing::add);
+
 
             List<Event> outgoing = new ArrayList<>();
             outgoing.add(e2); // outgoing edges + self
-            if (e2.cfImpliesExec()) {
-                minSet.getByFirst(e2).stream().map(Tuple::getSecond)
-                        .filter(e -> eq.isImplied(e, e2))
-                        .forEach(outgoing::add);
-            }
+            minSet.getByFirst(e2).stream().map(Tuple::getSecond)
+                    .filter(e -> exec.isImplied(e, e2))
+                    .forEach(outgoing::add);
 
             for (Event in : ingoing) {
                 for (Event out : outgoing) {
@@ -117,7 +114,7 @@ public class Acyclic extends Axiom {
         // (2) Approximate reduction of transitive must-set: red(must(r)+).
         // Note: We reduce the transitive closure which may have more edges
         // that can be used to perform reduction
-        TupleSet reduct = TupleSet.approximateTransitiveMustReduction(eq, transMinSet);
+        TupleSet reduct = TupleSet.approximateTransitiveMustReduction(exec, transMinSet);
 
         // Remove (must(r)+ \ red(must(r)+)
         encodeSet.removeIf(t -> transMinSet.contains(t) && !reduct.contains(t));

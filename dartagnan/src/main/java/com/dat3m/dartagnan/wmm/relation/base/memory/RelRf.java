@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
-import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -80,7 +80,7 @@ public class RelRf extends Relation {
         maxTupleSet.removeIf(Tuple::isBackward);
 
         // Remove past reads
-        BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
+        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
         AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
         Set<Tuple> deletedTuples = new HashSet<>();
         for (Event r : task.getProgram().getCache().getEvents(FilterBasic.get(READ))) {
@@ -105,8 +105,7 @@ public class RelRf extends Relation {
                 for (MemEvent w2 : possibleWrites.subList(i + 1, possibleWrites.size())) {
                     // w2 dominates w1 if it aliases with it and it is guaranteed to execute if either w1 or the read are
                     // executed
-                    if (w2.cfImpliesExec()
-                            && (eq.isImplied(w1, w2) || eq.isImplied(read, w2))
+                    if ((exec.isImplied(w1, w2) || exec.isImplied(read, w2))
                             && (alias.mustAlias(w1, w2) || alias.mustAlias(w2, read))) {
                         deletedWrites.add(w1);
                         break;
@@ -133,7 +132,7 @@ public class RelRf extends Relation {
         int sizeBefore = maxTupleSet.size();
 
         // Atomics blocks: BeginAtomic -> EndAtomic
-        BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
+        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
         AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
         FilterAbstract filter = FilterIntersection.get(FilterBasic.get(RMW), FilterBasic.get(SVCOMP.SVCOMPATOMIC));
         for(Event end : task.getProgram().getCache().getEvents(filter)) {
@@ -155,8 +154,8 @@ public class RelRf extends Relation {
                 // execute before the read and that aliases with it,
                 // then the read won't be able to read any external writes
                 boolean hasImpliedWrites = writes.stream()
-                        .anyMatch(w -> w.cfImpliesExec() && w.getCId() < r.getCId()
-                                && eq.isImplied(r, w) && alias.mustAlias(r, w));
+                        .anyMatch(w -> w.getCId() < r.getCId()
+                                && exec.isImplied(r, w) && alias.mustAlias(r, w));
                 if (hasImpliedWrites) {
                     maxTupleSet.removeIf(t -> t.getSecond() == r && t.isCrossThread());
                 }

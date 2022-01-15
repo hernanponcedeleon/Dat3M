@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.wmm.utils;
 
-import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.google.common.collect.Iterables;
@@ -239,7 +239,7 @@ public class TupleSet implements Set<Tuple>{
 
     // =============== Static utility functions =================
 
-    public static TupleSet approximateTransitiveMustReduction(BranchEquivalence eq, TupleSet minSet) {
+    public static TupleSet approximateTransitiveMustReduction(ExecutionAnalysis exec, TupleSet minSet) {
         // Approximative must-transitive reduction of minSet:
         TupleSet reduct = new TupleSet();
         Iterable<Event> codomain = Iterables.transform(minSet, Tuple::getSecond);
@@ -253,7 +253,7 @@ public class TupleSet implements Set<Tuple>{
                 boolean redundant = false;
                 for (DependencyGraph<Event>.Node mid : deps.subList(0, i)) {
                     Event e2 = mid.getContent();
-                    if (e2.cfImpliesExec() && (eq.isImplied(e1, e2) || eq.isImplied(e3, e2))) {
+                    if (exec.isImplied(e1, e2) || exec.isImplied(e3, e2)) {
                         if (minSet.contains(new Tuple(e2, e3))) {
                             redundant = true;
                             break;

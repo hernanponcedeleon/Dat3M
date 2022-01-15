@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
-import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -49,14 +49,14 @@ public class RelTrans extends UnaryRelation {
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             //TODO: Make sure this is correct and efficient
-            BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             minTupleSet = new TupleSet(r1.getMinTupleSet());
             boolean changed;
             int size = minTupleSet.size();
             do {
                 minTupleSet.addAll(minTupleSet.postComposition(r1.getMinTupleSet(),
-                        (t1, t2) -> t1.getSecond().cfImpliesExec() &&
-                                (eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()))));
+                        (t1, t2) -> exec.isImplied(t1.getFirst(), t1.getSecond())
+                                || exec.isImplied(t2.getSecond(), t1.getSecond())));
                 changed = minTupleSet.size() != size;
                 size = minTupleSet.size();
             } while (changed);
