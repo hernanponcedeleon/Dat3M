@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.processing;
+package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Atom;
@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.processing.ProgramProcessor;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -92,16 +93,16 @@ public class Compilation implements ProgramProcessor {
         EventVisitor<List<Event>> visitor = null;
         switch(target) {
 	    	case NONE:
-	    		visitor = new CompilationVisitorNone();
+	    		visitor = new VisitorNone();
 	    		break;
 	    	case TSO:
-	    		visitor = new CompilationVisitorTso();
+	    		visitor = new VisitorTso();
 	    		break;
 	    	case POWER:
-	    		visitor = new CompilationVisitorPower();
+	    		visitor = new VisitorPower();
 	    		break;
 	    	case ARM8:
-	    		visitor = new CompilationVisitorArm();
+	    		visitor = new VisitorArm8();
 	    		break;
         }
         Preconditions.checkState(visitor != null, String.format("Compilation to %s is not supported.", target));

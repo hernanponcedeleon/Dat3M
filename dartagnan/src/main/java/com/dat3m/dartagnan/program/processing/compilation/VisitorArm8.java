@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.processing;
+package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BExprUn;
@@ -69,11 +69,11 @@ import static com.dat3m.dartagnan.program.event.EventFactory.newRMWLoadExclusive
 import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStoreExclusive;
 import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
-import static com.dat3m.dartagnan.program.processing.Compilation.commonVisitLock;
-import static com.dat3m.dartagnan.program.processing.Compilation.commonVisitUnlock;
+import static com.dat3m.dartagnan.program.processing.compilation.Compilation.commonVisitLock;
+import static com.dat3m.dartagnan.program.processing.compilation.Compilation.commonVisitUnlock;
 
 @Options
-public class CompilationVisitorArm implements EventVisitor<List<Event>> {
+public class VisitorArm8 implements EventVisitor<List<Event>> {
 
 	@Override
 	public List<Event> visitEvent(Event e) {
