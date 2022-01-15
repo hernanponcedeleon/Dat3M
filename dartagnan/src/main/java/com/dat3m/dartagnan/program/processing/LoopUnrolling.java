@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.dat3m.dartagnan.utils.printer.Printer;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,7 +22,7 @@ import org.sosy_lab.common.configuration.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 @Options
 public class LoopUnrolling implements ProgramProcessor {
@@ -41,6 +42,11 @@ public class LoopUnrolling implements ProgramProcessor {
         Preconditions.checkArgument(bound >= 1, "The unrolling bound must be positive.");
         this.bound = bound;
     }
+
+    @Option(name = PRINT_PROGRAM_AFTER_UNROLLING,
+            description = "Prints the program after unrolling.",
+            secure = true)
+    private boolean print = false;
 
     // =====================================================================
 
@@ -74,10 +80,15 @@ public class LoopUnrolling implements ProgramProcessor {
         program.clearCache(false);
         program.markAsUnrolled();
 
-        logger.info("Program unrolled {} times", bound);
-        
         updateAssertions(program);
-    }
+
+        logger.info("Program unrolled {} times", bound);
+        if(print) {
+        	System.out.println("===== Program after unrolling =====");
+        	System.out.println(new Printer().print(program));
+        	System.out.println("===================================");
+        }
+}
 
     private int unrollThread(Thread t, int bound, int nextId){
         while(bound > 0) {
