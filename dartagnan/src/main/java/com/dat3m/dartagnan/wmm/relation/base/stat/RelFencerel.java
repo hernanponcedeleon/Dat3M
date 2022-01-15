@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
@@ -37,15 +37,12 @@ public class RelFencerel extends StaticRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             minTupleSet = new TupleSet();
             for(Thread t : task.getProgram().getThreads()){
                 List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));
                 List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(Tag.MEMORY));
                 for (Event fence : fences) {
-                    if (!fence.cfImpliesExec()) {
-                        continue;
-                    }
                     int numEventsBeforeFence = (int) memEvents.stream()
                             .mapToInt(Event::getCId).filter(id -> id < fence.getCId())
                             .count();
@@ -53,9 +50,9 @@ public class RelFencerel extends StaticRelation {
                     List<Event> eventsAfter = memEvents.subList(numEventsBeforeFence, memEvents.size());
 
                     for (Event e1 : eventsBefore) {
-                        boolean isImpliedByE1 = eq.isImplied(e1, fence);
+                        boolean isImpliedByE1 = exec.isImplied(e1, fence);
                         for (Event e2 : eventsAfter) {
-                            if (isImpliedByE1 || eq.isImplied(e2, fence)) {
+                            if (isImpliedByE1 || exec.isImplied(e2, fence)) {
                                 minTupleSet.add(new Tuple(e1, e2));
                             }
                         }

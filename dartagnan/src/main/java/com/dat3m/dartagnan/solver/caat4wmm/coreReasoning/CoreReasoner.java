@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.solver.caat4wmm.coreReasoning;
 
-import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
@@ -28,12 +28,12 @@ public class CoreReasoner {
 
     private final ExecutionGraph executionGraph;
     private final Wmm memoryModel;
-    private final BranchEquivalence eq;
+    private final ExecutionAnalysis exec;
 
     public CoreReasoner(VerificationTask task, ExecutionGraph executionGraph) {
         this.executionGraph = executionGraph;
         this.memoryModel = task.getMemoryModel();
-        this.eq = task.getAnalysisContext().requires(BranchEquivalence.class);
+        this.exec = task.getAnalysisContext().requires(ExecutionAnalysis.class);
     }
 
 
@@ -98,8 +98,8 @@ public class CoreReasoner {
             Event ev = ((ExecLiteral) lit).getData();
             return reason.stream().filter(e -> e instanceof RelLiteral)
                     .map(RelLiteral.class::cast)
-                    .anyMatch(e -> eq.isImplied(e.getData().getFirst(), ev)
-                            || eq.isImplied(e.getData().getSecond(), ev));
+                    .anyMatch(e -> exec.isImplied(e.getData().getFirst(), ev)
+                            || exec.isImplied(e.getData().getSecond(), ev));
 
         });
     }
@@ -115,12 +115,9 @@ public class CoreReasoner {
             e2 = temp;
         }
 
-        if (!e1.cfImpliesExec() || !e2.cfImpliesExec()) {
+        if (exec.isImplied(e1, e2)) {
             coreReasons.add(new ExecLiteral(e1));
-            coreReasons.add(new ExecLiteral(e2));
-        } else if (eq.isImplied(e1, e2)) {
-            coreReasons.add(new ExecLiteral(e1));
-        } else if (eq.isImplied(e2, e1)) {
+        } else if (exec.isImplied(e2, e1)) {
             coreReasons.add(new ExecLiteral(e2));
         } else {
             coreReasons.add(new ExecLiteral(e1));
@@ -136,10 +133,10 @@ public class CoreReasoner {
         EventData f = fenceGraph.getNextFence(e1);
 
         coreReasons.add(new ExecLiteral(f.getEvent()));
-        if (!eq.isImplied(f.getEvent(), e1.getEvent())) {
+        if (!exec.isImplied(f.getEvent(), e1.getEvent())) {
             coreReasons.add(new ExecLiteral(e1.getEvent()));
         }
-        if (!eq.isImplied(f.getEvent(), e2.getEvent())) {
+        if (!exec.isImplied(f.getEvent(), e2.getEvent())) {
             coreReasons.add(new ExecLiteral(e2.getEvent()));
         }
     }
