@@ -67,6 +67,8 @@ import static com.dat3m.dartagnan.program.processing.compilation.Compilation.com
 @Options
 public class VisitorTso implements EventVisitor<List<Event>> {
 
+	protected VisitorTso() {}
+
 	@Override
 	public List<Event> visitEvent(Event e) {
 		return Collections.singletonList(e);

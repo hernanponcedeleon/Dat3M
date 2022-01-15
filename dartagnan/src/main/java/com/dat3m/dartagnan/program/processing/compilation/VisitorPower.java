@@ -74,6 +74,8 @@ import static com.dat3m.dartagnan.program.processing.compilation.Compilation.com
 @Options
 public class VisitorPower implements EventVisitor<List<Event>> {
 
+	protected VisitorPower() {}
+	
 	@Override
 	public List<Event> visitEvent(Event e) {
 		return Collections.singletonList(e);
