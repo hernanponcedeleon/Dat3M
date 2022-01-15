@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory.*;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
@@ -14,7 +13,6 @@ import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import org.sosy_lab.common.configuration.Options;
 
 import java.util.List;
 
@@ -22,8 +20,7 @@ import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
-@Options
-public class VisitorTso extends VisitorBase implements EventVisitor<List<Event>> {
+class VisitorTso extends VisitorBase implements EventVisitor<List<Event>> {
 
 	protected VisitorTso() {}
 

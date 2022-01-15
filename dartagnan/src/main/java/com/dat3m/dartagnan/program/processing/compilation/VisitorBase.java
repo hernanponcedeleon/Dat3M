@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
-import org.sosy_lab.common.configuration.Options;
 
 import java.util.Collections;
 import java.util.List;
@@ -25,8 +24,7 @@ import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.RMW;
 
-@Options
-public class VisitorBase implements EventVisitor<List<Event>> {
+class VisitorBase implements EventVisitor<List<Event>> {
 
 	protected VisitorBase() {}
 	

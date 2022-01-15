@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory.*;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
@@ -16,7 +15,6 @@ import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import org.sosy_lab.common.configuration.Options;
 
 import java.util.List;
 
@@ -25,8 +23,7 @@ import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 
-@Options
-public class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
+class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 
 	protected VisitorArm8() {}
 	
