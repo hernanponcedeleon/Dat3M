@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
-import com.google.common.base.Preconditions;
 
 public interface EventVisitor<T> {
 
@@ -18,10 +17,7 @@ public interface EventVisitor<T> {
 	// Basic events
 	default T visitAssume(Assume e) { return visitEvent(e); };
 	default T visitCmp(Cmp e) { return visitSkip(e); };
-	default T visitCondJump(CondJump e) { 
-    	Preconditions.checkState(e.getSuccessor() != null, "Malformed CondJump event");
-		return visitEvent(e);
-	};
+	default T visitCondJump(CondJump e) { return visitEvent(e); };
 	default T visitExecutionStatus(ExecutionStatus e) { return visitEvent(e); };
 	default T visitFence(Fence e) { return visitEvent(e); };
 	default T visitFunCall(FunCall e) { return visitEvent(e); };

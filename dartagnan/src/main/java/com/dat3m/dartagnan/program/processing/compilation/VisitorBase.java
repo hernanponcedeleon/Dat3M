@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.google.common.base.Preconditions;
+
 import org.sosy_lab.common.configuration.Options;
 
 import java.util.Collections;
@@ -30,6 +32,12 @@ public class VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitEvent(Event e) {
 		return Collections.singletonList(e);
+	};
+
+	@Override
+	public List<Event> visitCondJump(CondJump e) {
+    	Preconditions.checkState(e.getSuccessor() != null, "Malformed CondJump event");
+		return visitEvent(e);
 	};
 
 	@Override
