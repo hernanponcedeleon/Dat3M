@@ -259,4 +259,10 @@ public class VisitorLitmusLISA
 		ExprInterface e2 = (ExprInterface) ctx.expression(1).accept(this);
 		return new Atom(e1, COpBin.EQ, e2);
 	}
+	
+	@Override
+	public Object visitParaExpr(LitmusLISAParser.ParaExprContext ctx) {
+		return ctx.expression().accept(this);
+	}
+
 }

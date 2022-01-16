@@ -86,7 +86,7 @@ load
     ;
 
 local
-    :   Local register LPar* expression RPar*
+    :   Local register expression
     ;
 
 store
@@ -117,6 +117,11 @@ expression
     |	eq
     |	neq
     |	xor
+    |   paraExpr
+    ;
+
+paraExpr
+    : LPar expression RPar
     ;
 
 add
