@@ -86,7 +86,7 @@ load
     ;
 
 local
-    :   Local register LPar expression RPar
+    :   Local register LPar* expression RPar*
     ;
 
 store
