@@ -15329,6 +15329,7 @@ litmus/LISA/Z6.3+poreleaserelease+poreleaserelease+poonceonce.litmus,1
 litmus/LISA/MP+pooncerelease+poonceonce.litmus,1
 litmus/LISA/3.LB+fencembonceonce+pooncerelease+poacquireonce.litmus,0
 litmus/LISA/Z6.1+fencembonceonce+fencembonceonce+poacquireonce.litmus,0
+litmus/LISA/wwc+o-branch-o+o-branch-o+o.litmus,1
 litmus/LISA/MP+poreleaserelease+poacquireonce.litmus,0
 litmus/LISA/WRR+2W+poonceonce+poreleaseonce+Release.litmus,1
 litmus/LISA/LB-GWR+R-A+R-A+R-Oc+R-Oc.litmus,1
