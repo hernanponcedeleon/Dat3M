@@ -48,4 +48,9 @@ public class OptionNames {
 	public static final String SANITIZE = "svcomp.sanitize";
 	public static final String OPTIMIZATION = "svcomp.optimization";
 	public static final String INTEGER_ENCODING = "svcomp.integerEncoding";
+
+	// Debugging Options
+	public static final String PRINT_PROGRAM_AFTER_SIMPLIFICATION = "printer.afterSimplification";
+	public static final String PRINT_PROGRAM_AFTER_UNROLLING = "printer.afterUnrolling";
+	public static final String PRINT_PROGRAM_AFTER_COMPILATION = "printer.afterCompilation";
 }

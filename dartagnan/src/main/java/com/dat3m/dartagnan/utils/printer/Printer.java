@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Init;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 
@@ -94,6 +95,9 @@ public class Printer {
                 	throw new RuntimeException("Unrecognized event id type " + idType);
             }
             result.append(idSb);
+            if(!(event instanceof Label)) {
+            	result.append("   ");
+            }
             result.append(padding, idSb.length(), padding.length());
             result.append(event).append("\n");
         }

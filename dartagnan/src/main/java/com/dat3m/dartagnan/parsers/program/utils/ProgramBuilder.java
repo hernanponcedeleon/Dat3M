@@ -40,12 +40,8 @@ public class ProgramBuilder {
         Program program = new Program(memory, ImmutableSet.copyOf(locations.values()));
         buildInitThreads();
         for(Thread thread : threads.values()){
+        	addChild(thread.getId(), getOrCreateLabel("END_OF_T" + thread.getId()));
             validateLabels(thread);
-            // The boogie visitor creates the label by itself because it need it for EventFactory.Pthread.newStart
-            // thus we check if the label exists to avoid having it twice
-            if(!hasLabel("END_OF_T" + thread.getId())) {
-            	addChild(thread.getId(), getOrCreateLabel("END_OF_T" + thread.getId()));
-            }
             program.add(thread);
         }
         program.setAss(ass);
