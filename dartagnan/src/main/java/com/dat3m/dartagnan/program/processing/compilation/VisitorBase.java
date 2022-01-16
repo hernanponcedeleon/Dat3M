@@ -109,6 +109,11 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	};
 	
 	@Override
+	public List<Event> visitRMWFetch(RMWFetch e) {
+		throw new IllegalArgumentException("Compilation for " + e.getClass().getName() + " is not supported by " + getClass().getName());
+	};
+	
+	@Override
 	public List<Event> visitRMWOp(RMWOp e) {
 		throw new IllegalArgumentException("Compilation for " + e.getClass().getName() + " is not supported by " + getClass().getName());
 	};

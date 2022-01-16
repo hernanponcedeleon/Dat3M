@@ -162,6 +162,16 @@ public class VisitorLitmusLISA
 	}
 	
 	@Override
+	public Object visitRmw(LitmusLISAParser.RmwContext ctx) {
+        Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
+		IExpr value = (IExpr) ctx.value().accept(this);
+        IExpr address = (IExpr) ctx.expression().accept(this);
+        String mo = ctx.mo() != null ? ctx.mo().getText() : "NA";
+
+        return programBuilder.addChild(mainThread, EventFactory.Linux.newRMWFetch(address, reg, value, mo));
+	}
+
+	@Override
 	public Object visitFence(LitmusLISAParser.FenceContext ctx) {
         String name = ctx.mofence().getText();
 		Fence child = EventFactory.newFence(name);

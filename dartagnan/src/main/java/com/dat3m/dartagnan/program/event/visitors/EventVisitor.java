@@ -52,6 +52,7 @@ public interface EventVisitor<T> {
 	default T visitRMWAddUnless(RMWAddUnless e) { return visitRMWAbstract(e); };
 	default T visitRMWCmpXchg(RMWCmpXchg e) { return visitRMWAbstract(e); };
 	default T visitRMWFetchOp(RMWFetchOp e) { return visitRMWAbstract(e); };
+	default T visitRMWFetch(RMWFetch e) { return visitRMWAbstract(e); };
 	default T visitRMWOp(RMWOp e) { return visitRMWAbstract(e); };
 	default T visitRMWOpAndTest(RMWOpAndTest e) { return visitRMWAbstract(e); };
 	default T visitRMWOpReturn(RMWOpReturn e) { return visitRMWAbstract(e); };
