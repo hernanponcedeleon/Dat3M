@@ -62,10 +62,11 @@ instruction
     :
     |   fence
     |   jump
-    |   label
     |   load
     |   local
     |   store
+    |   rmw
+    |   label
     ;
     
 jump
@@ -90,6 +91,10 @@ local
 
 store
     :   Store LBracket mo? RBracket expression value
+    ;
+
+rmw
+    :   Rmw LBracket mo? RBracket register value expression
     ;
 
 fence
@@ -165,7 +170,7 @@ Fence
     ;
 
 Jump  
-	:   'b' LBracket RBracket 
+	:   'b' LBracket RBracket
     ;
 
 LitmusLanguage
@@ -207,7 +212,11 @@ Register
 
 
 Store
-	:   'w'
+    :   'w'
+    ;
+    
+Rmw
+    :   'rmw'
     ;
     
 Xor
