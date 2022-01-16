@@ -1,21 +1,17 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
+import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusLISABaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusLISAParser;
 import com.dat3m.dartagnan.parsers.LitmusLISAVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
-import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Fence;
 import com.dat3m.dartagnan.program.event.core.Label;
 import org.antlr.v4.runtime.misc.Interval;
@@ -211,7 +207,7 @@ public class VisitorLitmusLISA
 	public Object visitJump(LitmusLISAParser.JumpContext ctx) {
         Label label = programBuilder.getOrCreateLabel(ctx.labelName().getText());
         Register reg = (Register) ctx.register().accept(this);
-        Atom cond = new Atom(reg, COpBin.EQ, IConst.ZERO);
+        Atom cond = new Atom(reg, COpBin.EQ, IConst.ONE);
 		return programBuilder.addChild(mainThread, EventFactory.newJump(cond, label));
 	}
 
@@ -257,7 +253,7 @@ public class VisitorLitmusLISA
 	public Object visitNeq(LitmusLISAParser.NeqContext ctx) {
 		ExprInterface e1 = (ExprInterface) ctx.expression(0).accept(this);
 		ExprInterface e2 = (ExprInterface) ctx.expression(1).accept(this);
-		return new Atom(e1, COpBin.EQ, e2);
+		return new Atom(e1, COpBin.NEQ, e2);
 	}
 	
 	@Override
