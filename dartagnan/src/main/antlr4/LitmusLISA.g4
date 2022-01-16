@@ -82,7 +82,7 @@ labelName
     ;
 
 load
-    :   Load LBracket mo? RBracket register expression
+    :   Load mo? RBracket register expression
     ;
 
 local
@@ -90,15 +90,15 @@ local
     ;
 
 store
-    :   Store LBracket mo? RBracket expression value
+    :   Store mo? RBracket expression value
     ;
 
 rmw
-    :   Rmw LBracket mo? RBracket register value expression
+    :   Rmw mo? RBracket register value expression
     ;
 
 fence
-    :   Fence LBracket mofence? RBracket
+    :   Fence mofence? RBracket
     ;
 
 value
@@ -166,7 +166,7 @@ Neq
     ;
 
 Fence
-    :   'f'
+    :   'f' LBracket
     ;
 
 Jump  
@@ -178,7 +178,7 @@ LitmusLanguage
     ;
     
 Load  
-	:   'r'
+	:   'r' LBracket
     ;
 
 Local  
@@ -212,11 +212,11 @@ Register
 
 
 Store
-    :   'w'
+    :   'w' LBracket
     ;
     
 Rmw
-    :   'rmw'
+    :   'rmw' LBracket
     ;
     
 Xor
