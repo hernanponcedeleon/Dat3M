@@ -211,7 +211,6 @@ public class VisitorLitmusLISA
 	public Object visitJump(LitmusLISAParser.JumpContext ctx) {
         Label label = programBuilder.getOrCreateLabel(ctx.labelName().getText());
         Register reg = (Register) ctx.register().accept(this);
-        // TODO check if this is the semantics
         Atom cond = new Atom(reg, COpBin.EQ, IConst.ZERO);
 		return programBuilder.addChild(mainThread, EventFactory.newJump(cond, label));
 	}
