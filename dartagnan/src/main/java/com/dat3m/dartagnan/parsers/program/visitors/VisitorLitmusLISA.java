@@ -118,11 +118,11 @@ public class VisitorLitmusLISA
         String mo = ctx.mo() != null ? ctx.mo().getText() : "NA";
         switch(mo) {
         	case "acquire":
-        		mo = Tag.C11.MO_ACQUIRE;
+        		mo = Tag.Linux.MO_ACQUIRE;
         		break;
         	case "deref":
         	case "lderef":
-        		mo = Tag.C11.MO_RELAXED;
+        		mo = Tag.Linux.MO_RELAXED;
         		break;
         	case "once":
         		mo = "Once";
@@ -149,7 +149,7 @@ public class VisitorLitmusLISA
         switch(mo) {
         	case "release":
         	case "assign":
-        		mo = Tag.C11.MO_RELEASE;
+        		mo = Tag.Linux.MO_RELEASE;
         		break;
         	case "once":
         		mo = "Once";
