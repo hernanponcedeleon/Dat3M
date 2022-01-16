@@ -69,7 +69,7 @@ instruction
     ;
     
 jump
-    :   Jump LBracket RBracket register labelName
+    :   Jump register labelName
     ;
 
 label
@@ -165,7 +165,7 @@ Fence
     ;
 
 Jump  
-	:   'b'
+	:   'b' LBracket RBracket 
     ;
 
 LitmusLanguage
