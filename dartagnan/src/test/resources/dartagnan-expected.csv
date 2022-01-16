@@ -10312,6 +10312,7 @@ litmus/C/manual/memory_barriers/C-mp+o-wb-o+o-data-o.litmus,0
 litmus/C/manual/memory_barriers/C-mp+o-wb-o+o-rb+o.litmus,0
 litmus/C/manual/memory_barriers/C-wo+ro-mb-ro+wo-mb-ro.litmus,0
 litmus/C/manual/memory_barriers/C-wo+ro-rb-ro+wo-mb-ro.litmus,1
+litmus/C/manual/memory_barriers/C-wwc+o-branch-o+o-branch-o+o.litmus,1
 litmus/C/manual/memory_barriers/release-ordering.litmus,1
 litmus/C/manual/plain/C-AlanStern.2018.01.11a.litmus,0
 litmus/C/manual/plain/C-OOTA.litmus,0
@@ -15328,7 +15329,6 @@ litmus/LISA/Z6.3+poreleaserelease+poreleaserelease+poonceonce.litmus,1
 litmus/LISA/MP+pooncerelease+poonceonce.litmus,1
 litmus/LISA/3.LB+fencembonceonce+pooncerelease+poacquireonce.litmus,0
 litmus/LISA/Z6.1+fencembonceonce+fencembonceonce+poacquireonce.litmus,0
-litmus/LISA/wwc+o-branch-o+o-branch-o+o.litmus,1
 litmus/LISA/MP+poreleaserelease+poacquireonce.litmus,0
 litmus/LISA/WRR+2W+poonceonce+poreleaseonce+Release.litmus,1
 litmus/LISA/LB-GWR+R-A+R-A+R-Oc+R-Oc.litmus,1
