@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.processing.ProgramProcessor;
+import com.dat3m.dartagnan.utils.printer.Printer;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,7 +17,7 @@ import org.sosy_lab.common.configuration.Options;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 @Options
 public class Compilation implements ProgramProcessor {
@@ -34,6 +35,11 @@ public class Compilation implements ProgramProcessor {
 
     public Arch getTarget() { return target; }
     public void setTarget(Arch target) { this.target = target;}
+
+    @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
+            description = "Prints the program after compilation.",
+            secure = true)
+    private boolean print = false;
 
     // =====================================================================
 
@@ -89,6 +95,11 @@ public class Compilation implements ProgramProcessor {
         program.clearCache(false);
         program.markAsCompiled();
         logger.info("Program compiled to {}", target);
+        if(print) {
+        	System.out.println("===== Program after compilation =====");
+        	System.out.println(new Printer().print(program));
+        	System.out.println("=====================================");
+        }
     }
 
     private int compileThread(Thread thread, int nextId, EventVisitor<List<Event>> visitor) {
