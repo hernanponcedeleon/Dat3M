@@ -260,10 +260,14 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             	} else {
             	    addresses = graph.getAddresses(address);
             	}
-            } else if (address instanceof Address) {
-                addresses = ImmutableSet.of(new Location((Address) address,0));
             } else {
-                addresses = maxAddressSet;
+                Constant addressConstant = new Constant(address);
+                if(addressConstant.failed) {
+                    addresses = maxAddressSet;
+                } else {
+                    Verify.verify(addressConstant.location!=null,"memory event accessing a pure constant address");
+                    addresses = ImmutableSet.of(addressConstant.location);
+                }
             }
             if (addresses.size() == 0) {
                 addresses = maxAddressSet;
