@@ -300,6 +300,11 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             location = null;
             failed = true;
         }
+
+        @Override
+        public String toString() {
+            return failed ? "failed" : String.valueOf(location);
+        }
     }
 
     private static final class Location {
@@ -321,6 +326,11 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         @Override
         public boolean equals(Object o) {
             return this==o || o instanceof Location && base.equals(((Location)o).base) && offset == ((Location)o).offset;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s[%d]",base,offset);
         }
     }
 
