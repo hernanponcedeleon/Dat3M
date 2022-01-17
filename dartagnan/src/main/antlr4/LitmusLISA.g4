@@ -34,7 +34,7 @@ variableDeclaratorLocationLocation
     ;
 
 variableList
-    :   Locations LBracket variable (Semi variable)* Semi? RBracket
+    :   Locations LBracket variable Ast? (Semi variable Ast?)* Semi? RBracket
     ;
 
 variable
@@ -123,7 +123,7 @@ expression
     ;
 
 arrayAccess
-    : location '+' value
+    : location Plus value
     ;
 
 paraExpr
