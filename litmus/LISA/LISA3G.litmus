@@ -8,6 +8,8 @@ LISA LISA3G
  * converts litmus tests to auxiliary-variable form.  "Cycle" prohibited.
  *)
 {
+1:r1=0;
+1:r2=0;
 x0 = 0;
 x1 = 0;
 }
