@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
@@ -11,9 +10,9 @@ import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Fence;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.memory.Address;
+
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
@@ -55,7 +54,6 @@ public class VisitorLitmusLISA
 
 
     // ----------------------------------------------------------------------------------------------------------------
-    // Variable declarator list, e.g., { 0:EAX=0; 1:EAX=1; x=2; }
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusLISAParser.VariableDeclaratorLocationContext ctx) {
@@ -111,23 +109,8 @@ public class VisitorLitmusLISA
 	public Object visitLoad(LitmusLISAParser.LoadContext ctx) {
         Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
         IExpr address = (IExpr) ctx.expression().accept(this);
-        String mo = ctx.mo() != null ? ctx.mo().getText() : "NA";
-        switch(mo) {
-        	case "acquire":
-        		mo = Tag.Linux.MO_ACQUIRE;
-        		break;
-        	case "deref":
-        	case "lderef":
-        		mo = Tag.Linux.MO_RELAXED;
-        		break;
-        	case "once":
-        		mo = "Once";
-        		break;
-        	default:
-        		mo = "NA";
-        		break;
-        }
-        return programBuilder.addChild(mainThread, EventFactory.newLoad(reg, address, mo));
+        String mo = ctx.mo() != null ? ctx.mo().getText() : null;
+		return programBuilder.addChild(mainThread, EventFactory.newLoad(reg, address, mo));
 	}
 
 	@Override
@@ -141,19 +124,7 @@ public class VisitorLitmusLISA
 	public Object visitStore(LitmusLISAParser.StoreContext ctx) {
 		IExpr value = (IExpr) ctx.value().accept(this);
         IExpr address = (IExpr) ctx.expression().accept(this);
-        String mo = ctx.mo() != null ? ctx.mo().getText() : "NA";
-        switch(mo) {
-        	case "release":
-        	case "assign":
-        		mo = Tag.Linux.MO_RELEASE;
-        		break;
-        	case "once":
-        		mo = "Once";
-        		break;
-        	default:
-        		mo = "NA";
-        		break;
-        }
+        String mo = ctx.mo() != null ? ctx.mo().getText() : null;
         return programBuilder.addChild(mainThread, EventFactory.newStore(address, value, mo));
 	}
 	
@@ -162,38 +133,14 @@ public class VisitorLitmusLISA
         Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
 		IExpr value = (IExpr) ctx.value().accept(this);
         IExpr address = (IExpr) ctx.expression().accept(this);
-        String mo = ctx.mo() != null ? ctx.mo().getText() : "NA";
-
+        String mo = ctx.mo() != null ? ctx.mo().getText() : null;
         return programBuilder.addChild(mainThread, EventFactory.Linux.newRMWFetch(address, reg, value, mo));
 	}
 
 	@Override
 	public Object visitFence(LitmusLISAParser.FenceContext ctx) {
-        String name = ctx.mofence().getText();
-		Fence child = EventFactory.newFence(name);
-		switch(name) {
-			case "mb":
-				child = EventFactory.Linux.newMemoryBarrier();
-				break;
-			case "rmb":
-				child = EventFactory.newFence(Tag.Linux.MO_RMB);
-				break;
-			case "wmb":
-				child = EventFactory.newFence(Tag.Linux.MO_WMB);
-				break;
-			case "rcu_read_lock":
-				child = EventFactory.newFence(Tag.Linux.RCU_LOCK);
-				break;
-			case "rcu_read_unlock":
-				child = EventFactory.newFence(Tag.Linux.RCU_UNLOCK);
-				break;
-			case "sync":
-				child = EventFactory.newFence(Tag.Linux.RCU_SYNC);
-				break;
-			default:
-				throw new ParsingException(String.format("Fence %s not recognized", name));
-		}
-        return programBuilder.addChild(mainThread, child);
+        String mo = ctx.mo() != null ? ctx.mo().getText() : null;
+        return programBuilder.addChild(mainThread, EventFactory.newFence(mo));
 	}
 	
 	@Override
@@ -243,6 +190,13 @@ public class VisitorLitmusLISA
 	}
 
 	@Override
+	public Object visitAnd(LitmusLISAParser.AndContext ctx) {
+		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
+		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
+		return new IExprBin(e1, IOpBin.AND, e2);
+	}
+
+	@Override
 	public Object visitEq(LitmusLISAParser.EqContext ctx) {
 		ExprInterface e1 = (ExprInterface) ctx.expression(0).accept(this);
 		ExprInterface e2 = (ExprInterface) ctx.expression(1).accept(this);
@@ -259,6 +213,13 @@ public class VisitorLitmusLISA
 	@Override
 	public Object visitParaExpr(LitmusLISAParser.ParaExprContext ctx) {
 		return ctx.expression().accept(this);
+	}
+
+	@Override
+	public Object visitArrayAccess(LitmusLISAParser.ArrayAccessContext ctx) {
+		Address base = (Address) ctx.location().accept(this);
+		IExpr offset = (IExpr) ctx.value().accept(this);
+		return new IExprBin(base, IOpBin.PLUS, offset);
 	}
 
 }

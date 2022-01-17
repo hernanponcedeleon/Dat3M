@@ -98,7 +98,7 @@ rmw
     ;
 
 fence
-    :   Fence mofence? RBracket
+    :   Fence mo? RBracket
     ;
 
 value
@@ -112,12 +112,18 @@ location
 
 expression
     :   value
-    |	location
+    |   location
+    |   paraExpr
+    |   arrayAccess
     |	add
     |	eq
     |	neq
-    |	xor
-    |   paraExpr
+    |   xor
+    |   and
+    ;
+
+arrayAccess
+    : location '+' value
     ;
 
 paraExpr
@@ -125,28 +131,28 @@ paraExpr
     ;
 
 add
-	: Add expression expression
-	;
-
-mo
-    :   Mo
+    : Add expression expression
     ;
 
-mofence
-    :   Mofence
+and
+    : And expression expression
     ;
 
 eq
-	: Eq expression expression
-	;
+    : Eq expression expression
+    ;
 
 neq
-	: Neq expression expression
-	;
+    : Neq expression expression
+    ;
 
 xor
-	: Xor expression expression
-	;
+    : Xor expression expression
+    ;
+
+mo
+    :   Identifier
+    ;
 
 register
     :   Register
@@ -160,6 +166,10 @@ assertionValue
 
 Add
     :   'add'
+    ;
+
+And
+    :   'and'
     ;
 
 Eq
@@ -194,34 +204,16 @@ Locations
     :   'locations'
     ;
 
-Mo
-    :   'once'
-    |   'acquire'
-    |   'release'
-    |   'assign'
-    |   'deref'
-    ;
-
-Mofence
-    :   'mb'
-    |   'rmb'
-    |   'wmb'
-    |   'rcu_read_lock'
-    |   'rcu_read_unlock'
-    |   'sync'
-    ;
-    
 Register
     :   'r' DigitSequence
     ;
 
-
-Store
-    :   'w' LBracket
-    ;
-    
 Rmw
     :   'rmw' LBracket
+    ;
+    
+Store
+    :   'w' LBracket
     ;
     
 Xor
