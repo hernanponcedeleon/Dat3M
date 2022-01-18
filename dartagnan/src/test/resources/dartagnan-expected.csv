@@ -13285,3 +13285,5 @@ litmus/AARCH64/ATOM/Z6.5+poxxs.litmus,1
 litmus/LISA/AARCH64/CoRR.litmus,0
 litmus/LISA/AARCH64/RWC+dmb.sys+pos.litmus,0
 litmus/LISA/AARCH64/ARMARM04+BIS.litmus,1
+litmus/LISA/AARCH64/IRIW+dmb.sys.litmus,0
+litmus/LISA/AARCH64/R+po-addr-popl+rfila.litmus,0
