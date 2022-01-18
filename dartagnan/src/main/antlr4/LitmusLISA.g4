@@ -115,11 +115,13 @@ expression
     |   location
     |   paraExpr
     |   arrayAccess
-    |	add
     |	eq
     |	neq
+    |   add
+    |   sub
     |   xor
     |   and
+    |   or
     ;
 
 arrayAccess
@@ -132,6 +134,10 @@ paraExpr
 
 add
     : Add expression expression
+    ;
+
+sub
+    : Sub expression expression
     ;
 
 and
@@ -148,6 +154,10 @@ neq
 
 xor
     : Xor expression expression
+    ;
+
+or
+    : Or expression expression
     ;
 
 mo
@@ -204,6 +214,10 @@ Locations
     :   'locations'
     ;
 
+Or
+    :   'or'
+    ;
+
 Register
     :   'r' DigitSequence
     ;
@@ -214,6 +228,10 @@ Rmw
     
 Store
     :   'w' LBracket
+    ;
+    
+Sub
+    :   'sub'
     ;
     
 Xor

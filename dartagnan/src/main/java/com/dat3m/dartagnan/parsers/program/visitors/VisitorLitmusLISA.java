@@ -183,10 +183,24 @@ public class VisitorLitmusLISA
 	}
 
 	@Override
+	public Object visitSub(LitmusLISAParser.SubContext ctx) {
+		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
+		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
+		return new IExprBin(e1, IOpBin.MINUS, e2);
+	}
+
+	@Override
 	public Object visitXor(LitmusLISAParser.XorContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
 		return new IExprBin(e1, IOpBin.XOR, e2);
+	}
+
+	@Override
+	public Object visitOr(LitmusLISAParser.OrContext ctx) {
+		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
+		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
+		return new IExprBin(e1, IOpBin.OR, e2);
 	}
 
 	@Override
