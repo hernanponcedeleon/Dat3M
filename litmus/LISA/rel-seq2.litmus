@@ -1,9 +1,0 @@
-LISA rel-seq2
-""
-{
-}
- P0             | P1               | P2              ;
- w[once] x 1    | rmw[once] r1 3 y | r[acquire] r1 y ;
- w[release] y 1 |                  | r[once] r2 x    ;
- w[once] y 2    |                  |                 ;
-exists (1:r1=2 /\ 2:r1=3 /\ 2:r2=0)
