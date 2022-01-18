@@ -161,7 +161,7 @@ or
     ;
 
 mo
-    :   Identifier
+    :   Identifier (Period Identifier)*
     ;
 
 register
