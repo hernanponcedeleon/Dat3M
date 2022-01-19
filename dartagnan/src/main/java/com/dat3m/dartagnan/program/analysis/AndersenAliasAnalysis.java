@@ -241,7 +241,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                     if(rhs instanceof IConst) {
                         int o = target.offset + ((IConst)rhs).getValueAsInt();
                         if(o < target.base.size()) {
-                            addTarget.accept(reg,new Location(target.base,target.offset+o));
+                            addTarget.accept(reg,new Location(target.base,o));
                         }
                     } else {
                         addTargetArray.accept(reg,target.base);
