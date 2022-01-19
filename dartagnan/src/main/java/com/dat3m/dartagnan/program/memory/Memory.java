@@ -11,22 +11,15 @@ public class Memory {
 
     private int nextIndex = 1;
 
-    public Address malloc(int size) {
-    	Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
-
-        Address address = new Address(nextIndex,size);
-        nextIndex += size;
-        arrays.add(address);
-        return address;
-    }
-
     /**
      * Creates a new static location.
      * @return
      * Points to the created location.
      */
-    public Address newLocation() {
-        Address address = new Address(nextIndex++,1);
+    public Address newLocation(int size) {
+        Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
+        Address address = new Address(nextIndex,size);
+        nextIndex += size;
         arrays.add(address);
         return address;
     }

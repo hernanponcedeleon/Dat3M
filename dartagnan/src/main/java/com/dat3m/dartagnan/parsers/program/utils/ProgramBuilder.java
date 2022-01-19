@@ -118,7 +118,7 @@ public class ProgramBuilder {
     public void addDeclarationArray(String name, List<IConst> values){
         checkArgument(!pointers.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
         int size = values.size();
-        Address address = memory.malloc(size);
+        Address address = memory.newLocation(size);
         iValueMap.put(address,values);
         locations.put(name,address);
         pointers.put(name,address);
@@ -137,7 +137,7 @@ public class ProgramBuilder {
 
     public Address getOrCreateLocation(String name){
         if(!locations.containsKey(name)){
-            Address address = memory.newLocation();
+            Address address = memory.newLocation(1);
             locations.put(name,address);
             iValueMap.put(address,List.of(new IConst(DEFAULT_INIT_VALUE, address.getPrecision())));
         }

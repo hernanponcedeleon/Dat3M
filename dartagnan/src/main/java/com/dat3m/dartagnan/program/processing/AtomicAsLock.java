@@ -38,7 +38,7 @@ public class AtomicAsLock implements ProgramProcessor {
 
 	@Override
 	public void run(Program program) {
-		Address a = program.getMemory().newLocation();
+		Address a = program.getMemory().newLocation(1);
 		for(Thread t : program.getThreads()) {
 			run(a,t);
 		}
