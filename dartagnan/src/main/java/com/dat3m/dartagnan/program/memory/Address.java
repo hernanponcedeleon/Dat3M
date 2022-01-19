@@ -12,6 +12,7 @@ import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 
 import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -21,6 +22,8 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
     private final int index;
     private final int size;
 
+    private final HashMap<Integer,IConst> initialValues = new HashMap<>();
+
     Address(int index, int s) {
         super(BigInteger.valueOf(index), -1);
         this.index = index;
@@ -29,6 +32,14 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
 
     public int size() {
         return size;
+    }
+
+    public void setInitialValue(int offset, IConst value) {
+        initialValues.put(offset,value);
+    }
+
+    public IConst getInitialValue(int offset) {
+        return initialValues.getOrDefault(offset,IConst.ZERO);
     }
 
     public IExpr add(int offset) {

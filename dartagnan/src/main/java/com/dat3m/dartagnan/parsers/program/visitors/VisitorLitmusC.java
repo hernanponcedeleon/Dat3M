@@ -21,7 +21,6 @@ import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class VisitorLitmusC
@@ -66,21 +65,19 @@ public class VisitorLitmusC
 
     @Override
     public Object visitGlobalDeclaratorLocation(LitmusCParser.GlobalDeclaratorLocationContext ctx) {
-    	BigInteger value = ProgramBuilder.DEFAULT_INIT_VALUE;
         if (ctx.initConstantValue() != null) {
-            value = new BigInteger(ctx.initConstantValue().constant().getText());
+            BigInteger value = new BigInteger(ctx.initConstantValue().constant().getText());
+            programBuilder.initLocEqConst(ctx.varName().getText(),new IConst(value,-1));
         }
-        programBuilder.initLocEqConst(ctx.varName().getText(), new IConst(value, -1));
         return null;
     }
 
     @Override
     public Object visitGlobalDeclaratorRegister(LitmusCParser.GlobalDeclaratorRegisterContext ctx) {
-        BigInteger value = ProgramBuilder.DEFAULT_INIT_VALUE;
         if (ctx.initConstantValue() != null) {
-            value = new BigInteger(ctx.initConstantValue().constant().getText());
+            BigInteger value = new BigInteger(ctx.initConstantValue().constant().getText());
+            programBuilder.initRegEqConst(ctx.threadId().id,ctx.varName().getText(),new IConst(value,-1));
         }
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName().getText(), new IConst(value, -1));
         return null;
     }
 
@@ -122,7 +119,7 @@ public class VisitorLitmusC
         Integer size = ctx.DigitSequence() != null ? Integer.parseInt(ctx.DigitSequence().getText()) : null;
 
         if(ctx.initArray() == null && size != null && size > 0){
-            programBuilder.addDeclarationArray(name, Collections.nCopies(size, new IConst(BigInteger.ZERO, -1)));
+            programBuilder.addDeclarationArray(name,size);
             return null;
         }
         if(ctx.initArray() != null){
@@ -138,11 +135,15 @@ public class VisitorLitmusC
                             values.add(address);
                         } else {
                             address = programBuilder.getOrCreateLocation(varName);
-                            values.add(elCtx.Ast() == null ? address : programBuilder.getInitValue(address));
+                            values.add(elCtx.Ast() == null ? address : address.getInitialValue(0));
                         }
                     }
                 }
-                programBuilder.addDeclarationArray(name, values);
+                programBuilder.addDeclarationArray(name,values.size());
+                Address address = programBuilder.getLocation(name);
+                for(int i = 0; i < values.size(); i++) {
+                    address.setInitialValue(i,values.get(i));
+                }
                 return null;
             }
         }

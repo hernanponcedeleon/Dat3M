@@ -173,7 +173,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 					size = Integer.parseInt(tmp);
 				}
 				if(size > 0) {
-					programBuilder.addDeclarationArray(name, Collections.nCopies(size, IConst.ZERO));
+					programBuilder.addDeclarationArray(name,size);
 				} else {
 					// Since we treat all globally defined variables as arrays
 					// (e.g. an int variable results in an array of size 4 since

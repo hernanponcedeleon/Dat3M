@@ -45,7 +45,7 @@ public class AtomicAsLock implements ProgramProcessor {
 		//TODO unmodifiable thread list?
 		program.getThreads().add(new Thread(
 			1+program.getThreads().stream().mapToInt(Thread::getId).max().orElse(-1),
-			newInit(a,0,new IConst(BigInteger.ZERO,-1))));
+			newInit(a,0)));
 	}
 
 	private void run(Address address, Thread thread) {

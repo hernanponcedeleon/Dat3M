@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.program.memory.Address;
 
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class StdProcedures {
@@ -110,12 +109,11 @@ public class StdProcedures {
 			tmp = tmp.substring(tmp.lastIndexOf('(')+1);
 			size = Integer.parseInt(tmp);			
 		}
-		List<IConst> values = Collections.nCopies(size, new IConst(BigInteger.ZERO, -1));
 		String ptr = ctx.call_params().Ident(0).getText();
 		Register start = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ptr);
 		// Several threads can use the same pointer name but when using addDeclarationArray, 
 		// the name should be unique, thus we add the process identifier.
-		visitor.programBuilder.addDeclarationArray(visitor.currentScope.getID() + ":" + ptr, values);
+		visitor.programBuilder.addDeclarationArray(visitor.currentScope.getID() + ":" + ptr,size);
 		Address adds = visitor.programBuilder.getLocation(visitor.currentScope.getID() + ":" + ptr);
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(start, adds));
 		visitor.allocationRegs.add(start);

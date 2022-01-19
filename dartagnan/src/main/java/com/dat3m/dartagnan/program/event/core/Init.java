@@ -10,13 +10,11 @@ public class Init extends MemEvent {
 
 	private final Address base;
 	private final int offset;
-	private final IConst value;
 	
-	public Init(Address b, int o, IConst value) {
+	public Init(Address b, int o) {
 		super(b.add(o), null);
 		base = b;
 		offset = o;
-		this.value = value;
 		addFilters(Tag.ANY, Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.INIT);
 	}
 
@@ -29,23 +27,23 @@ public class Init extends MemEvent {
 	}
 
 	public IConst getValue(){
-		return value;
+		return base.getInitialValue(offset);
 	}
 
 	@Override
 	public void initializeEncoding(SolverContext ctx) {
 		super.initializeEncoding(ctx);
-		memValueExpr = value.toIntFormula(ctx);
+		memValueExpr = getValue().toIntFormula(ctx);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%d] := %s",base,offset,value);
+		return String.format("%s[%d] := %s",base,offset,getValue());
 	}
 
 	@Override
 	public IConst getMemValue(){
-		return value;
+		return getValue();
 	}
 
 	// Visitor

@@ -14,20 +14,16 @@ import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Memory;
 
-import java.math.BigInteger;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class ProgramBuilder {
 
-	public static final BigInteger DEFAULT_INIT_VALUE = BigInteger.ZERO;
-
     private final Map<Integer, Thread> threads = new HashMap<>();
 
     private final Map<String,Address> locations = new HashMap<>();
 
-    private final Map<Address,List<IConst>> iValueMap = new HashMap<>();
     private final Memory memory = new Memory();
 
     private final Map<String, Label> labels = new HashMap<>();
@@ -84,18 +80,18 @@ public class ProgramBuilder {
 
     public void initLocEqLocPtr(String leftName, String rightName){
         Address location = getOrCreateLocation(leftName);
-        iValueMap.put(location,List.of(getOrCreateLocation(rightName)));
+        location.setInitialValue(0,getOrCreateLocation(rightName));
     }
 
     public void initLocEqLocVal(String leftName, String rightName){
         Address left = getOrCreateLocation(leftName);
         Address right = getOrCreateLocation(rightName);
-        iValueMap.put(left,List.copyOf(iValueMap.get(right)));
+        left.setInitialValue(0,right.getInitialValue(0));
     }
 
     public void initLocEqConst(String locName, IConst iValue){
         Address location = getOrCreateLocation(locName);
-        iValueMap.put(location,List.of(iValue));
+        location.setInitialValue(0,iValue);
     }
 
     public void initRegEqLocPtr(int regThread, String regName, String locName, int precision){
@@ -107,18 +103,16 @@ public class ProgramBuilder {
     public void initRegEqLocVal(int regThread, String regName, String locName, int precision){
         Address loc = getOrCreateLocation(locName);
         Register reg = getOrCreateRegister(regThread, regName, precision);
-        addChild(regThread, EventFactory.newLocal(reg, iValueMap.get(loc).get(0)));
+        addChild(regThread,EventFactory.newLocal(reg,loc.getInitialValue(0)));
     }
 
     public void initRegEqConst(int regThread, String regName, IConst iValue){
         addChild(regThread, EventFactory.newLocal(getOrCreateRegister(regThread, regName, iValue.getPrecision()), iValue));
     }
 
-    public void addDeclarationArray(String name, List<IConst> values){
+    public void addDeclarationArray(String name, int size){
         checkArgument(!locations.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
-        int size = values.size();
         Address address = memory.newLocation(size);
-        iValueMap.put(address,values);
         locations.put(name,address);
     }
 
@@ -137,7 +131,6 @@ public class ProgramBuilder {
         if(!locations.containsKey(name)){
             Address address = memory.newLocation(1);
             locations.put(name,address);
-            iValueMap.put(address,List.of(new IConst(DEFAULT_INIT_VALUE, address.getPrecision())));
         }
         return locations.get(name);
     }
@@ -178,11 +171,6 @@ public class ProgramBuilder {
         return labels.get(name);
     }
 
-    public IConst getInitValue(Address address){
-        List<IConst> result = iValueMap.get(address);
-        return result != null ? result.get(0) : new IConst(DEFAULT_INIT_VALUE,address.getPrecision());
-    }
-
     // ----------------------------------------------------------------------------------------------------------------
     // Private utility
 
@@ -196,9 +184,9 @@ public class ProgramBuilder {
 
     private void buildInitThreads(){
         int nextThreadId = nextThreadId();
-        for(Map.Entry<Address,List<IConst>> entry : iValueMap.entrySet()) {
-            for(int i = 0; i < entry.getValue().size(); i++) {
-                Event e = EventFactory.newInit(entry.getKey(),i,entry.getValue().get(i));
+        for(Address a : memory.getAllAddresses()) {
+            for(int i = 0; i < a.size(); i++) {
+                Event e = EventFactory.newInit(a,i);
                 Thread thread = new Thread(nextThreadId,e);
                 threads.put(nextThreadId,thread);
                 nextThreadId++;

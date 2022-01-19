@@ -76,8 +76,8 @@ public class EventFactory {
     	return fence;
     }
 
-    public static Init newInit(Address base, int offset, IConst value) {
-        return new Init(base,offset,value);
+    public static Init newInit(Address base, int offset) {
+        return new Init(base,offset);
     }
 
     // ------------------------------------------ Local events ------------------------------------------
