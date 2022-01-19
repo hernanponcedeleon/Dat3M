@@ -116,7 +116,7 @@ public class StdProcedures {
 		// Several threads can use the same pointer name but when using addDeclarationArray, 
 		// the name should be unique, thus we add the process identifier.
 		visitor.programBuilder.addDeclarationArray(visitor.currentScope.getID() + ":" + ptr, values);
-		Address adds = visitor.programBuilder.getPointer(visitor.currentScope.getID() + ":" + ptr);
+		Address adds = visitor.programBuilder.getLocation(visitor.currentScope.getID() + ":" + ptr);
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(start, adds));
 		visitor.allocationRegs.add(start);
 	}

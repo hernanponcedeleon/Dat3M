@@ -90,7 +90,7 @@ public class VisitorLitmusC
             programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText());
         } else {
             String rightName = ctx.varName(1).getText();
-            Address address = programBuilder.getPointer(rightName);
+            Address address = programBuilder.getLocation(rightName);
             if(address != null){
                 programBuilder.initLocEqConst(ctx.varName(0).getText(), address);
             } else {
@@ -106,7 +106,7 @@ public class VisitorLitmusC
             programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), -1);
         } else {
             String rightName = ctx.varName(1).getText();
-            Address address = programBuilder.getPointer(rightName);
+            Address address = programBuilder.getLocation(rightName);
             if(address != null){
                 programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), address);
             } else {
@@ -133,7 +133,7 @@ public class VisitorLitmusC
                         values.add(new IConst(new BigInteger(elCtx.constant().getText()), -1));
                     } else {
                         String varName = elCtx.varName().getText();
-                        Address address = programBuilder.getPointer(varName);
+                        Address address = programBuilder.getLocation(varName);
                         if(address != null){
                             values.add(address);
                         } else {
@@ -171,7 +171,7 @@ public class VisitorLitmusC
         if(ctx != null){
             for(LitmusCParser.VarNameContext varName : ctx.varName()){
                 String name = varName.getText();
-                Address pointer = programBuilder.getPointer(name);
+                Address pointer = programBuilder.getLocation(name);
                 if(pointer != null){
                     Register register = programBuilder.getOrCreateRegister(scope, name, -1);
                     programBuilder.addChild(currentThread, EventFactory.newLocal(register, pointer));

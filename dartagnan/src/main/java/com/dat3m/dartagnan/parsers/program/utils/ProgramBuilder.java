@@ -26,7 +26,6 @@ public class ProgramBuilder {
     private final Map<Integer, Thread> threads = new HashMap<>();
 
     private final Map<String,Address> locations = new HashMap<>();
-    private final Map<String, Address> pointers = new HashMap<>();
 
     private final Map<Address,List<IConst>> iValueMap = new HashMap<>();
     private final Memory memory = new Memory();
@@ -116,12 +115,11 @@ public class ProgramBuilder {
     }
 
     public void addDeclarationArray(String name, List<IConst> values){
-        checkArgument(!pointers.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
+        checkArgument(!locations.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
         int size = values.size();
         Address address = memory.newLocation(size);
         iValueMap.put(address,values);
         locations.put(name,address);
-        pointers.put(name,address);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -183,10 +181,6 @@ public class ProgramBuilder {
     public IConst getInitValue(Address address){
         List<IConst> result = iValueMap.get(address);
         return result != null ? result.get(0) : new IConst(DEFAULT_INIT_VALUE,address.getPrecision());
-    }
-
-    public Address getPointer(String name){
-        return pointers.get(name);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
