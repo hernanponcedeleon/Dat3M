@@ -17,6 +17,7 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
 
     private final int index;
     private final int size;
+    BigInteger value;
 
     private final HashMap<Integer,IConst> initialValues = new HashMap<>();
 
@@ -44,13 +45,13 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
 
     public Formula getLastMemValueExpr(SolverContext ctx, int offset) {
         checkArgument(0<=offset && offset<size,"Array out of bounds.");
-        String name = "last_val_at_memory_" + (index + offset);
+        String name = String.format("last_val_at_memory_%d_%d",index,offset);
         return ctx.getFormulaManager().getIntegerFormulaManager().makeVariable(name);
     }
 
     @Override
     public BigInteger getValue() {
-        return BigInteger.valueOf(index);
+        return value != null ? value : BigInteger.valueOf(index);
     }
 
     @Override

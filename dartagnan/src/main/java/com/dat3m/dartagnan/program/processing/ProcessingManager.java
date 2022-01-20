@@ -44,6 +44,7 @@ public class ProcessingManager implements ProgramProcessor {
 
         programProcessors.addAll(Arrays.asList(
                 atomicBlocksAsLocks ? AtomicAsLock.fromConfig(config) : null,
+                p->p.getMemory().fixAddressValues(),
                 DeadCodeElimination.fromConfig(config),
                 BranchReordering.fromConfig(config),
                 Simplifier.fromConfig(config),
