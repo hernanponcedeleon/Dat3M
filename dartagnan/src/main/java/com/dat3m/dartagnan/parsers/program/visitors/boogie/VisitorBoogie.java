@@ -175,12 +175,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				if(size > 0) {
 					programBuilder.addDeclarationArray(name,size);
 				} else {
-					// Since we treat all globally defined variables as arrays
-					// (e.g. an int variable results in an array of size 4 since
-					// boogie works at the byte granularity), we need this for char
-					// variables which would result in a single variable but we will
-					// treat it as an array of size 1
-					programBuilder.getOrCreateLocation(name + "[0]");
+					programBuilder.getOrCreateLocation(name);
 				}
 			} else {
 				constantsTypeMap.put(name, precision);
@@ -681,9 +676,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			// This improves the blow-up
 			if(initMode && !(value instanceof Address)) {
 				ExprInterface lhs = address;
-				BigInteger rhs = BigInteger.ZERO;
+				int rhs = 0;
 				while(lhs instanceof IExprBin) {
-					rhs = rhs.add(((IExprBin)lhs).getRHS().reduce().getValue());
+					rhs += ((IExprBin)lhs).getRHS().reduce().getValueAsInt();
 					lhs = ((IExprBin)lhs).getLHS();
 				}
 				String text = ctx.expr(1).getText();				
@@ -692,10 +687,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 					text = split[split.length - 1];
 					text = text.substring(text.indexOf("(")+1, text.indexOf(","));
 				}
-				// This needs to be consistent with the naming
-				// used in ProgramBuilder for arrays
-				text += "[" + rhs + "]";
-				programBuilder.initLocEqConst(text, value.reduce());
+				programBuilder.getOrCreateLocation(text).appendInitialValue(rhs,value.reduce());
 				return null;
 			}
 			Store child = EventFactory.newStore(address, value, null, currentLine);

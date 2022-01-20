@@ -13,10 +13,13 @@ import java.util.HashMap;
 import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.google.common.base.Preconditions.checkArgument;
 
+/**
+ * Associated with an array of memory locations.
+ */
 public class Address extends IConst implements ExprInterface, LastValueInterface {
 
     private final int index;
-    private final int size;
+    private int size;
     BigInteger value;
 
     private final HashMap<Integer,IConst> initialValues = new HashMap<>();
@@ -26,25 +29,62 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
         size = s;
     }
 
+    /**
+     * @return
+     * Number of fields in this array.
+     */
     public int size() {
         return size;
     }
 
-    public void setInitialValue(int offset, IConst value) {
-        initialValues.put(offset,value);
-    }
-
+    /**
+     * Updates the initial value at a certain field of this array.
+     * @param offset
+     * Non-negative number of fields before the target.
+     * @return
+     * Readable value at the start of each execution.
+     */
     public IConst getInitialValue(int offset) {
         return initialValues.getOrDefault(offset,IValue.ZERO);
     }
 
+    /**
+     * Defines the initial value at a certain field of this array.
+     * @param offset
+     * Non-negative number of fields before the target.
+     * @param value
+     * New value to be read at the start of each execution.
+     */
+    public void setInitialValue(int offset, IConst value) {
+        checkArgument(offset >= 0 && offset < size, "array index out of bounds");
+        initialValues.put(offset,value);
+    }
+
+    /**
+     * Updates the initial value at a certain field of this array.
+     * Resizes this array if the index exceeds the bounds.
+     * @param offset
+     * Non-negative number of fields before the target.
+     * @param value
+     * New value to be read at the start of each execution.
+     */
+    public void appendInitialValue(int offset, IConst value) {
+        checkArgument(offset >= 0, "array index out of bounds");
+        //The current implementation of Smack does not provide proper size information on static arrays.
+        //Instead, it indicates the size in the Boogie file by initializing each of the fields in a special procedure.
+        if(size <= offset) {
+            size = offset + 1;
+        }
+        initialValues.put(offset,value);
+    }
+
     public IExpr add(int offset) {
-        checkArgument(0<=offset && offset<size,"Array out of bounds.");
+        checkArgument(0<=offset && offset<size, "array index out of bounds");
         return offset == 0 ? this : new IExprBin(this,PLUS,new IValue(BigInteger.valueOf(offset),getPrecision()));
     }
 
     public Formula getLastMemValueExpr(SolverContext ctx, int offset) {
-        checkArgument(0<=offset && offset<size,"Array out of bounds.");
+        checkArgument(0<=offset && offset<size, "array index out of bounds");
         String name = String.format("last_val_at_memory_%d_%d",index,offset);
         return ctx.getFormulaManager().getIntegerFormulaManager().makeVariable(name);
     }
