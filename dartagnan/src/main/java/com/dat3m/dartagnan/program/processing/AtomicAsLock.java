@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -64,8 +64,8 @@ public class AtomicAsLock implements ProgramProcessor {
 			boolean begin = event instanceof BeginAtomic;
 			if(begin || event instanceof EndAtomic) {
 				Event load = EventFactory.newLoad(register,address,null);
-				Event check = EventFactory.newJump(new Atom(register,NEQ,new IConst(begin?BigInteger.ZERO:BigInteger.ONE,-1)),end);
-				Event store = EventFactory.newStore(address,new IConst(begin?BigInteger.ONE:BigInteger.ZERO,-1),null);
+				Event check = EventFactory.newJump(new Atom(register,NEQ,begin?IValue.ZERO:IValue.ONE),end);
+				Event store = EventFactory.newStore(address,begin?IValue.ONE:IValue.ZERO,null);
 				load.setOId(event.getOId());
 				check.setOId(event.getOId());
 				store.setOId(event.getOId());

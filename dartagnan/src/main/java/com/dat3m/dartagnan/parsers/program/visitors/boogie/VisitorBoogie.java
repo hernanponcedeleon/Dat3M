@@ -310,7 +310,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		event.addFilters(Tag.ASSERTION);
 		programBuilder.addChild(threadCount, event);
        	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-		programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, new IConst(BigInteger.ONE, -1)), end));
+		programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end));
     	return null;
     }
     
@@ -346,7 +346,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			event.addFilters(Tag.ASSERTION);
 			programBuilder.addChild(threadCount, event);
 	       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-			programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, new IConst(BigInteger.ONE, -1)), end));
+			programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end));
 			return null;
 		}
 
@@ -748,12 +748,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitBv_expr(Bv_exprContext ctx) {
 		String value = ctx.getText().split("bv")[0];
 		int precision = Integer.parseInt(ctx.getText().split("bv")[1]);
-		return new IConst(value, precision);
+		return new IValue(new BigInteger(value),precision);
 	}
 
 	@Override
 	public Object visitInt_expr(Int_exprContext ctx) {
-		return new IConst(ctx.getText(), -1);
+		return new IValue(new BigInteger(ctx.getText()),-1);
 	}
 	
 	@Override

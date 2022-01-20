@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import java.math.BigInteger;
 
 import com.dat3m.dartagnan.asserts.*;
-import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
@@ -71,7 +71,7 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
         LastValueInterface expr1;
         LitmusAssertionsParser.AssertionValueContext left = ctx.assertionValue(0);
         if(left.constant() != null) {
-            expr1 = new IConst(new BigInteger(left.constant().getText()), -1);
+            expr1 = new IValue(new BigInteger(left.constant().getText()), -1);
         } else if(left.threadId() != null) {
             expr1 = programBuilder.getOrErrorRegister(left.threadId().id, left.varName().getText());
         } else {
@@ -86,7 +86,7 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
         LastValueInterface expr2;
         LitmusAssertionsParser.AssertionValueContext right = ctx.assertionValue(1);
         if(right.constant() != null) {
-            expr2 = new IConst(new BigInteger(right.constant().getText()), -1);
+            expr2 = new IValue(new BigInteger(right.constant().getText()), -1);
         } else if(right.threadId() != null) {
             expr2 = programBuilder.getOrErrorRegister(right.threadId().id, right.varName().getText());
         } else {

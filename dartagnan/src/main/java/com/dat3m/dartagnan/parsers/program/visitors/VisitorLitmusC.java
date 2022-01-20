@@ -67,7 +67,7 @@ public class VisitorLitmusC
     public Object visitGlobalDeclaratorLocation(LitmusCParser.GlobalDeclaratorLocationContext ctx) {
         if (ctx.initConstantValue() != null) {
             BigInteger value = new BigInteger(ctx.initConstantValue().constant().getText());
-            programBuilder.initLocEqConst(ctx.varName().getText(),new IConst(value,-1));
+            programBuilder.initLocEqConst(ctx.varName().getText(),new IValue(value,-1));
         }
         return null;
     }
@@ -76,7 +76,7 @@ public class VisitorLitmusC
     public Object visitGlobalDeclaratorRegister(LitmusCParser.GlobalDeclaratorRegisterContext ctx) {
         if (ctx.initConstantValue() != null) {
             BigInteger value = new BigInteger(ctx.initConstantValue().constant().getText());
-            programBuilder.initRegEqConst(ctx.threadId().id,ctx.varName().getText(),new IConst(value,-1));
+            programBuilder.initRegEqConst(ctx.threadId().id,ctx.varName().getText(),new IValue(value,-1));
         }
         return null;
     }
@@ -127,7 +127,7 @@ public class VisitorLitmusC
                 List<IConst> values = new ArrayList<>();
                 for(LitmusCParser.ArrayElementContext elCtx : ctx.initArray().arrayElement()){
                     if(elCtx.constant() != null){
-                        values.add(new IConst(new BigInteger(elCtx.constant().getText()), -1));
+                        values.add(new IValue(new BigInteger(elCtx.constant().getText()), -1));
                     } else {
                         String varName = elCtx.varName().getText();
                         Address address = programBuilder.getLocation(varName);
@@ -366,7 +366,7 @@ public class VisitorLitmusC
     @Override
     public ExprInterface visitReConst(LitmusCParser.ReConstContext ctx){
         Register register = getReturnRegister(false);
-        IConst result = new IConst(new BigInteger(ctx.getText()), -1);
+        IValue result = new IValue(new BigInteger(ctx.getText()), -1);
         return assignToReturnRegister(register, result);
     }
 
@@ -474,7 +474,7 @@ public class VisitorLitmusC
     }
 
     private IExpr returnExpressionOrDefault(LitmusCParser.ReContext ctx, BigInteger defaultValue){
-        return ctx != null ? (IExpr)ctx.accept(this) : new IConst(defaultValue, -1);
+        return ctx != null ? (IExpr)ctx.accept(this) : new IValue(defaultValue, -1);
     }
 
     private Register getReturnRegister(boolean createOnNull){

@@ -18,7 +18,6 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.memory.Address;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -237,7 +236,7 @@ public class EventFactory {
         }
 
         public static AtomicFetchOp newIncrement(Register register, IExpr address, String mo) {
-            return newFetchOp(register, address, new IConst(BigInteger.ONE, -1), IOpBin.PLUS, mo);
+            return newFetchOp(register, address, IValue.ONE, IOpBin.PLUS, mo);
         }
 
         public static AtomicLoad newLoad(Register register, IExpr address, String mo) {

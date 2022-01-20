@@ -95,7 +95,7 @@ public class SvcompProcedures {
 		event.addFilters(Tag.ASSERTION);
 		visitor.programBuilder.addChild(visitor.threadCount, event);
        	Label end = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-       	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newJump(new Atom(ass, NEQ, new IConst(BigInteger.ONE, -1)), end));
+       	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newJump(new Atom(ass, NEQ, IValue.ONE), end));
 	}
 
 	private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -109,8 +109,8 @@ public class SvcompProcedures {
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		LinkedList<Event> events = new LinkedList<>();
         events.add(EventFactory.newLoad(register, lockAddress, null));
-        events.add(EventFactory.newJump(new Atom(register, NEQ, new IConst(begin ? BigInteger.ZERO : BigInteger.ONE, -1)), label));
-        events.add(EventFactory.newStore(lockAddress, new IConst(begin ? BigInteger.ONE : BigInteger.ZERO, -1), null));
+        events.add(EventFactory.newJump(new Atom(register, NEQ, begin?IValue.ZERO:IValue.ONE), label));
+        events.add(EventFactory.newStore(lockAddress, begin?IValue.ONE:IValue.ZERO, null));
         for(Event e : events) {
         	e.addFilters(Tag.C11.LOCK, Tag.RMW);
         	visitor.programBuilder.addChild(visitor.threadCount, e);

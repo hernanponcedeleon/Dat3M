@@ -32,8 +32,8 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
     }
 
     @Override
-    public IExpr visit(IConst iConst) {
-        return iConst;
+    public IValue visit(IValue iValue) {
+        return iValue;
     }
 
     @Override

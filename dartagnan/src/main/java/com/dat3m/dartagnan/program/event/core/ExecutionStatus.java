@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
-import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -56,9 +56,9 @@ public class ExecutionStatus extends Event implements RegWriter {
         int precision = register.getPrecision();
 		BooleanFormula enc = bmgr.and(
 				bmgr.implication(event.exec(),
-						generalEqual(regResultExpr, new IConst(BigInteger.ZERO, precision).toIntFormula(this, ctx), ctx)),
+						generalEqual(regResultExpr, new IValue(BigInteger.ZERO, precision).toIntFormula(this, ctx), ctx)),
 				bmgr.implication(bmgr.not(event.exec()),
-						generalEqual(regResultExpr, new IConst(BigInteger.ONE, precision).toIntFormula(this, ctx), ctx))
+						generalEqual(regResultExpr, new IValue(BigInteger.ONE, precision).toIntFormula(this, ctx), ctx))
         );
         return bmgr.and(super.encodeExec(ctx), enc);
     }
