@@ -145,6 +145,7 @@ public class SVCOMPRunner extends BaseOptions {
 			cmd.add(boogieName);
 			cmd.add(String.format("--%s=%s", PROPERTY, r.property.asStringOption()));
 			cmd.add(String.format("--%s=%s", BOUND, bound));
+			cmd.add(String.format("--%s=%s", WITNESS_ORIGINAL_PROGRAM_PATH, programPath));
 			cmd.addAll(filterOptions(config));
 
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd);

@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.processing.Compilation;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
+import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.configuration.Arch;
 

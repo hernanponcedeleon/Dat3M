@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
-import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -29,10 +29,10 @@ public class RelRangeIdentity extends UnaryRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            BranchEquivalence eq = analysisContext.get(BranchEquivalence.class);
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             minTupleSet = new TupleSet();
             r1.getMinTupleSet().stream()
-                    .filter(t -> t.getFirst().cfImpliesExec() && eq.isImplied(t.getSecond(), t.getFirst()))
+                    .filter(t -> exec.isImplied(t.getSecond(), t.getFirst()))
                     .map(t -> new Tuple(t.getSecond(), t.getSecond()))
                     .forEach(minTupleSet::add);
         }

@@ -293,8 +293,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         		Address loc = programBuilder.getOrCreateLocation(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
         		programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(loc));
          	}
-        	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-         	programBuilder.addChild(threadCount, label);
     	}
     }
     

@@ -5,24 +5,45 @@ import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.utils.printer.Printer;
 import com.google.common.base.Preconditions;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_SIMPLIFICATION;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
+@Options
 public class Simplifier implements ProgramProcessor {
 
-    private static final Logger logger = LogManager.getLogger(Simplifier.class);
+    // =========================== Configurables ===========================
+
+	@Option(name = PRINT_PROGRAM_AFTER_SIMPLIFICATION,
+            description = "Prints the program after simplification.",
+            secure = true)
+    private boolean print = false;
+
+    // =====================================================================
+
+	private static final Logger logger = LogManager.getLogger(Simplifier.class);
 
     private Simplifier() { }
+
+    private Simplifier(Configuration config) throws InvalidConfigurationException {
+        this();
+        config.inject(this);
+    }
 
     public static Simplifier newInstance() {
         return new Simplifier();
     }
 
     public static Simplifier fromConfig(Configuration config) throws InvalidConfigurationException {
-        return newInstance(); // There is nothing to configure
+        return new Simplifier(config);
     }
 
     @Override
@@ -38,6 +59,11 @@ public class Simplifier implements ProgramProcessor {
         program.clearCache(false);
 
         logger.info("post-simplification: " + program.getEvents().size() + " events");
+        if(print) {
+        	System.out.println("===== Program after simplification =====");
+        	System.out.println(new Printer().print(program));
+        	System.out.println("========================================");
+        }
     }
 
     private boolean simplify(Thread t) {

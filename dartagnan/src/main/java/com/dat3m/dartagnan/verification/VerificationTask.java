@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
@@ -106,6 +107,7 @@ public class VerificationTask {
 
     public void performStaticProgramAnalyses() throws InvalidConfigurationException {
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
+        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, analysisContext, config));
         analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, config));
         analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
 
