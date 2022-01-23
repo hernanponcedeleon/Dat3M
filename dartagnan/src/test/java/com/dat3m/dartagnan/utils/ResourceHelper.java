@@ -2,13 +2,7 @@ package com.dat3m.dartagnan.utils;
 
 import com.google.common.collect.ImmutableMap;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.*;
 import java.util.HashMap;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -39,15 +33,36 @@ public class ResourceHelper {
         return expectedResults;
     }
 
+    public static Result readExpected(String filepath, String property) {
+        try (BufferedReader br = new BufferedReader(new FileReader(filepath))) {
+            while (!(br.readLine()).contains(property)) {
+                continue;
+            }
+            return br.readLine().contains("false") ? FAIL : PASS;
+
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            System.exit(0);
+        }
+        return null;
+    }
+
     public static void initialiseCSVFile(Class<?> testingClass, String name) throws IOException {
-        Files.deleteIfExists(Paths.get(getCSVFileName(testingClass, name)));
-    	try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(testingClass, name), true))) {
+        File file = new File(getCSVFileName(testingClass, name));
+        file.delete();
+        if (file.getParentFile() != null) {
+            file.getParentFile().mkdirs();
+        }
+    	try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, false))) {
             writer.append("benchmark, time");
             writer.newLine();    		
     	}
     }
 
     public static String getCSVFileName(Class<?> testingClass, String name) {
-        return String.format("%s/output/%s-%s.csv", System.getenv("DAT3M_HOME"), testingClass.getSimpleName(), name);
+        int dirIndex = name.lastIndexOf("/");
+        String dirPrefix = dirIndex == -1 ? "" : name.substring(0, dirIndex + 1);
+        String fileName = dirIndex == -1 ? name : name.substring(dirIndex + 1);
+        return String.format("%s/output/%s%s-%s.csv", System.getenv("DAT3M_HOME"), dirPrefix, testingClass.getSimpleName(), fileName);
     }
 }

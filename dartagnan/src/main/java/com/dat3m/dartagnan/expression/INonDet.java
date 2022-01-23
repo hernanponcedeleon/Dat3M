@@ -1,34 +1,20 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-
-import static com.dat3m.dartagnan.expression.INonDetTypes.UCHAR;
-import static com.dat3m.dartagnan.expression.INonDetTypes.UINT;
-import static com.dat3m.dartagnan.expression.INonDetTypes.ULONG;
-import static com.dat3m.dartagnan.expression.INonDetTypes.USHORT;
-import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
-import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.google.common.base.Verify;
+import com.google.common.primitives.UnsignedInteger;
+import com.google.common.primitives.UnsignedLong;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
 
-import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.FormulaType;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
+import static com.dat3m.dartagnan.expression.INonDetTypes.*;
+import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
+import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
-import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.primitives.UnsignedInteger;
-import com.google.common.primitives.UnsignedLong;
-
+// TODO why is INonDet not a IConst?
 public class INonDet extends IExpr implements ExprInterface {
 	
 	private final INonDetTypes type;
@@ -52,26 +38,10 @@ public class INonDet extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public Formula getLastValueExpr(SolverContext ctx) {
-		String name = Integer.toString(hashCode());
-		FormulaManager fmgr = ctx.getFormulaManager();
-		return precision > 0 ? 
-				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) : 
-				fmgr.getIntegerFormulaManager().makeVariable(name);
-	}
-
-	@Override
 	public BigInteger getIntValue(Event e, Model model, SolverContext ctx) {
 		Object value = model.evaluate(toIntFormula(e, ctx));
-		if(value != null) {
-			return new BigInteger(value.toString());			
-		}
-        throw new RuntimeException("No value in the model for " + this);
-	}
-
-	@Override
-	public ImmutableSet<Register> getRegs() {
-		return ImmutableSet.of();
+		Verify.verify(value != null, "No value in the model for " + this);
+		return new BigInteger(value.toString());			
 	}
 
 	@Override

@@ -1,92 +1,119 @@
 package com.dat3m.dartagnan.verification;
 
-import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Baseline;
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
+import com.dat3m.dartagnan.wmm.axiom.Empty;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
+import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
-import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
-import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_ADD_ACYCLIC_DEP_RF;
+import static com.dat3m.dartagnan.configuration.Baseline.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+
+import java.util.EnumSet;
 
 /*
  A RefinementTask is a VerificationTask with an additional baseline memory model.
  The intention is that such a task is solved by any solving strategy that starts from the
  baseline memory model and refines it iteratively towards the target memory model.
- Currently, we only have a Saturation-based solver to solve such tasks but any CEGAR-like approach could be used.
+ Currently, we only have a custom theory solver (CAAT) to solve such tasks but any CEGAR-like approach could be used.
  */
+@Options
 public class RefinementTask extends VerificationTask {
 
-    private final Wmm baselineModel;
+	private static final Logger logger = LogManager.getLogger(RefinementTask.class);
 
-    public RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, WitnessGraph witness, Arch target,
-                          Settings settings) {
-        super(program, targetMemoryModel, witness, target, settings);
-        this.baselineModel = baselineModel;
+    private final Wmm baselineModel;
+    private Context baselineContext;
+    private WmmEncoder baselineWmmEncoder;
+
+
+    // =========================== Configurables ===========================
+
+	@Option(name=BASELINE,
+			description="Refinement starts from this baseline WMM.",
+			secure=true,
+			toUppercase=true)
+		private EnumSet<Baseline> baselines = EnumSet.noneOf(Baseline.class);
+
+    // ======================================================================
+
+    private RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, WitnessGraph witness, Configuration config)
+    throws InvalidConfigurationException {
+        super(program, targetMemoryModel, witness, config);
+        config.inject(this);
+        this.baselineModel = baselineModel != null ? baselineModel : createDefaultWmm();
     }
 
     public Wmm getBaselineModel() {
         return baselineModel;
     }
 
-    // For now, we return a constant. But we can add options for this later on.
-    //TODO: This is a Saturation-specific information and should not be part of this class
-    public int getMaxSaturationDepth() {
-        return GlobalSettings.SATURATION_MAX_DEPTH;
-    }
+    public WmmEncoder getBaselineWmmEncoder() { return baselineWmmEncoder; }
 
-    public BooleanFormula encodeBaselineWmmRelations(SolverContext ctx) {
-        return baselineModel.encodeRelations(ctx);
-    }
-
-    public BooleanFormula encodeBaselineWmmConsistency(SolverContext ctx) {
-        return baselineModel.encodeConsistency(ctx);
+    @Override
+    public void performStaticWmmAnalyses() throws InvalidConfigurationException {
+        super.performStaticWmmAnalyses();
+        VerificationTask newTask = new VerificationTask(getProgram(), baselineModel, getWitness(), getConfig());
+        baselineContext = Context.createCopyFrom(getAnalysisContext());
+        baselineContext.invalidate(WmmAnalysis.class);
+        baselineContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(baselineModel, getConfig()));
+        baselineContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(newTask, baselineContext, getConfig()));
     }
 
     @Override
-    public void initialiseEncoding(SolverContext ctx) {
-        super.initialiseEncoding(ctx);
-        baselineModel.initialise(this, ctx);
+    public void initializeEncoders(SolverContext ctx) throws InvalidConfigurationException {
+        super.initializeEncoders(ctx);
+        this.baselineWmmEncoder = WmmEncoder.fromConfig(baselineModel, baselineContext, getConfig());
+        baselineWmmEncoder.initializeEncoding(ctx);
+		logger.info("{}: {}", BASELINE, baselines);
     }
 
-    public static RefinementTask fromVerificationTaskWithDefaultBaselineWMM(VerificationTask task) {
-        return new RefinementTask(
-                task.getProgram(),
-                task.getMemoryModel(),
-                createDefaultWmm(),
-                task.getWitness(),
-                task.getTarget(),
-                task.getSettings()
-        );
+    public static RefinementTask fromVerificationTaskWithDefaultBaselineWMM(VerificationTask task)
+            throws InvalidConfigurationException {
+        return new RefinementTaskBuilder()
+                .withWitness(task.getWitness())
+                .withConfig(task.getConfig())
+                .build(task.getProgram(), task.getMemoryModel());
     }
 
-    private static Wmm createDefaultWmm() {
+    private Wmm createDefaultWmm() {
         Wmm baseline = new Wmm();
-        baseline.setEncodeCo(false);
-
-        if (!GlobalSettings.REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM) {
-            return baseline;
-        }
-
         RelationRepository repo = baseline.getRelationRepository();
-
-        // ====== Locally consistent baseline WMM ======
-        // ---- acyclic(po-loc | rf) ----
-        Relation poloc = repo.getRelation(POLOC);
         Relation rf = repo.getRelation(RF);
-        Relation porf = new RelUnion(poloc, rf);
-        repo.addRelation(porf);
-        baseline.addAxiom(new Acyclic(porf));
 
-        // ---- acyclic (dep | rf) ----
-        if (REFINEMENT_ADD_ACYCLIC_DEP_RF) {
+        if(baselines.contains(UNIPROC)) {
+	        // ---- acyclic(po-loc | rf) ----
+	        Relation poloc = repo.getRelation(POLOC);
+	        Relation co = repo.getRelation(CO);
+	        Relation fr = repo.getRelation(FR);
+	        Relation porf = new RelUnion(poloc, rf);
+	        repo.addRelation(porf);
+	        Relation porfco = new RelUnion(porf, co);
+	        repo.addRelation(porfco);
+	        Relation porfcofr = new RelUnion(porfco, fr);
+	        repo.addRelation(porfcofr);
+	        baseline.addAxiom(new Acyclic(porfcofr));
+        }
+        if(baselines.contains(NO_OOTA)) {
+            // ---- acyclic (dep | rf) ----
             Relation data = repo.getRelation(DATA);
             Relation ctrl = repo.getRelation(CTRL);
             Relation addr = repo.getRelation(ADDR);
@@ -98,7 +125,53 @@ public class RefinementTask extends VerificationTask {
             repo.addRelation(hb);
             baseline.addAxiom(new Acyclic(hb));
         }
-
+        if(baselines.contains(ATOMIC_RMW)) {
+    		// ---- empty (rmw & fre;coe) ----
+            Relation rmw = repo.getRelation(RMW);
+            Relation coe = repo.getRelation(COE);
+            Relation fre = repo.getRelation(FRE);
+            Relation frecoe = new RelComposition(fre, coe);
+            repo.addRelation(frecoe);
+            Relation rmwANDfrecoe = new RelIntersection(rmw, frecoe);
+            repo.addRelation(rmwANDfrecoe);
+            baseline.addAxiom(new Empty(rmwANDfrecoe));
+        }
+        
         return baseline;
+    }
+
+    // ==================== Builder =====================
+
+    public static class RefinementTaskBuilder extends VerificationTaskBuilder {
+
+        private Wmm baselineModel;
+
+        @Override
+        public RefinementTaskBuilder withWitness(WitnessGraph witness) {
+            super.withWitness(witness);
+            return this;
+        }
+
+        @Override
+        public RefinementTaskBuilder withTarget(Arch target) {
+            super.withTarget(target);
+            return this;
+        }
+
+        @Override
+        public RefinementTaskBuilder withConfig(Configuration config) {
+            super.withConfig(config);
+            return this;
+        }
+
+        public RefinementTaskBuilder withBaselineWMM(Wmm baselineModel) {
+            this.baselineModel = baselineModel;
+            return this;
+        }
+
+        @Override
+        public RefinementTask build(Program program, Wmm memoryModel) throws InvalidConfigurationException {
+            return new RefinementTask(program, memoryModel, baselineModel, witness, config.build());
+        }
     }
 }

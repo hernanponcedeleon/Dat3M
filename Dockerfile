@@ -39,5 +39,8 @@ RUN cd home && \
 RUN cd home && \
     git clone https://gitlab.com/sosy-lab/benchmarking/sv-benchmarks.git
 
+# symlink for clang
+RUN ln -s clang-12 /usr/bin/clang
+
 ENV DAT3M_HOME=/home/Dat3M
 ENV PATH=$DAT3M_HOME/:$PATH

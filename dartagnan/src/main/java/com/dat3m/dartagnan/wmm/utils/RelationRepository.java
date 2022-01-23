@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.wmm.utils;
 
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.RelCrit;
@@ -20,8 +20,7 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
-
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+import com.google.common.base.Preconditions;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -29,6 +28,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 public class RelationRepository {
 
@@ -60,12 +61,13 @@ public class RelationRepository {
         try{
             Method method = cls.getMethod("makeTerm", argClasses);
             String term = (String)method.invoke(null, args);
-            Relation relation = relationMap.get(term);
-
-            if(relation == null){
+            Relation relation;
+            if(containsRelation(term)) {
+            	relation = relationMap.get(term);
+            } else {
                 Constructor<?> constructor = cls.getConstructor(argClasses);
                 relation = (Relation)constructor.newInstance(args);
-                addRelation(relation);
+                addRelation(relation);            	
             }
             return relation;
         } catch (Exception e){
@@ -76,10 +78,9 @@ public class RelationRepository {
 
     public void updateRelation(Relation relation){
         if(relation.getIsNamed()){
-            if(relationMap.get(relation.getName()) != null){
-                throw new RuntimeException("Relation " + relation.getName() + " is already declared");
-            }
-            relationMap.put(relation.getName(), relation);
+            String name = relation.getName();
+            Preconditions.checkState(!relationMap.containsKey(name), "Relation " + name + " is already declared");
+            relationMap.put(name, relation);
         }
     }
 
@@ -107,7 +108,7 @@ public class RelationRepository {
             return new Class<?>[]{String.class};
         }
 
-        throw new RuntimeException("Method getArgsForClass is not implemented for " + cls.getName());
+        throw new UnsupportedOperationException("Method getArgsForClass is not implemented for " + cls.getName());
     }
 
     private Relation getBasicRelation(String name){
@@ -145,11 +146,11 @@ public class RelationRepository {
             case FR:
                 return getRelation(RelComposition.class, getRelation(RFINV), getRelation(CO)).setName(FR);
             case RW:
-                return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.WRITE));
+                return getRelation(RelCartesian.class, FilterBasic.get(Tag.READ), FilterBasic.get(Tag.WRITE));
             case RM:
-                return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.MEMORY));
+                return getRelation(RelCartesian.class, FilterBasic.get(Tag.READ), FilterBasic.get(Tag.MEMORY));
             case RV:
-                return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.VISIBLE));
+                return getRelation(RelCartesian.class, FilterBasic.get(Tag.READ), FilterBasic.get(Tag.VISIBLE));
             case IDDTRANS:
                 return getRelation(RelTrans.class, getRelation(IDD));
             case DATA:

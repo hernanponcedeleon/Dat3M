@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -36,10 +36,10 @@ public class RelComposition extends BinaryRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            BranchEquivalence eq = task.getBranchEquivalence();
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             minTupleSet = r1.getMinTupleSet().postComposition(r2.getMinTupleSet(),
-                    (t1, t2) -> t1.getSecond().cfImpliesExec() &&
-                            (eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond())));
+                    (t1, t2) -> exec.isImplied(t1.getFirst(), t1.getSecond())
+                            || exec.isImplied(t2.getSecond(), t1.getSecond()));
             removeMutuallyExclusiveTuples(minTupleSet);
         }
         return minTupleSet;
@@ -57,10 +57,10 @@ public class RelComposition extends BinaryRelation {
     @Override
     public TupleSet getMinTupleSetRecursive(){
         if(recursiveGroupId > 0 && maxTupleSet != null){
-            BranchEquivalence eq = task.getBranchEquivalence();
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             minTupleSet = r1.getMinTupleSetRecursive().postComposition(r2.getMinTupleSetRecursive(),
-                    (t1, t2) -> t1.getSecond().cfImpliesExec() &&
-                            (eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond())));
+                    (t1, t2) -> exec.isImplied(t1.getFirst(), t1.getSecond())
+                            || exec.isImplied(t2.getSecond(), t1.getSecond()));
             removeMutuallyExclusiveTuples(minTupleSet);
             return minTupleSet;
         }
@@ -70,9 +70,9 @@ public class RelComposition extends BinaryRelation {
     @Override
     public TupleSet getMaxTupleSetRecursive(){
         if(recursiveGroupId > 0 && maxTupleSet != null){
-            BranchEquivalence eq = task.getBranchEquivalence();
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             maxTupleSet = r1.getMaxTupleSetRecursive().postComposition(r2.getMaxTupleSetRecursive(),
-                    (t1, t2) -> !eq.areMutuallyExclusive(t1.getFirst(), t2.getSecond()));
+                    (t1, t2) -> !exec.areMutuallyExclusive(t1.getFirst(), t2.getSecond()));
             return maxTupleSet;
         }
         return getMaxTupleSet();

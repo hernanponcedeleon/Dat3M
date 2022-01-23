@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -9,15 +10,14 @@ import com.dat3m.dartagnan.parsers.LitmusAArch64BaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAArch64Parser;
 import com.dat3m.dartagnan.parsers.LitmusAArch64Visitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.arch.aarch64.event.StoreExclusive;
-import com.dat3m.dartagnan.program.event.Cmp;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Label;
-import com.dat3m.dartagnan.program.event.Load;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
+import com.dat3m.dartagnan.program.event.core.Cmp;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Load;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
@@ -81,7 +81,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
 
     @Override
     public Object visitVariableDeclaratorLocationLocation(LitmusAArch64Parser.VariableDeclaratorLocationLocationContext ctx) {
-        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText(), -1);
+        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText());
         return null;
     }
 
@@ -171,7 +171,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        StoreExclusive event = EventFactory.Arm8.newExclusiveStore(statusReg, address, register, ctx.storeExclusiveInstruction().mo);
+        StoreExclusive event = EventFactory.AArch64.newExclusiveStore(statusReg, address, register, ctx.storeExclusiveInstruction().mo);
         return programBuilder.addChild(mainThread, event);
     }
 

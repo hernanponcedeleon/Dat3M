@@ -3,12 +3,11 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.*;
-
-import java.math.BigInteger;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class Atom extends BExpr implements ExprInterface {
 	
@@ -27,32 +26,9 @@ public class Atom extends BExpr implements ExprInterface {
 		return op.encode(lhs.toIntFormula(e, ctx), rhs.toIntFormula(e, ctx), ctx);
 	}
 
-	@Override
-	public Formula getLastValueExpr(SolverContext ctx){
-		boolean bp = getPrecision() > 0;
-		FormulaManager fmgr = ctx.getFormulaManager();
-
-		Formula tbranch = bp? 
-				fmgr.getBitvectorFormulaManager().makeBitvector(getPrecision(), BigInteger.ONE) : 
-				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE);
-		
-		Formula fbranch = bp? 
-				fmgr.getBitvectorFormulaManager().makeBitvector(getPrecision(), BigInteger.ZERO) : 
-				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO);
-				
-		return fmgr.getBooleanFormulaManager().ifThenElse(op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx), 
-				tbranch, 
-				fbranch);
-	}
-
     @Override
 	public ImmutableSet<Register> getRegs() {
 		return new ImmutableSet.Builder<Register>().addAll(lhs.getRegs()).addAll(rhs.getRegs()).build();
-	}
-
-	@Override
-	public ImmutableSet<Location> getLocs() {
-		return new ImmutableSet.Builder<Location>().addAll(lhs.getLocs()).addAll(rhs.getLocs()).build();
 	}
 
     @Override
@@ -76,57 +52,6 @@ public class Atom extends BExpr implements ExprInterface {
     public ExprInterface getRHS() {
     	return rhs;
     }
-
-    @Override
-	public BConst reduce() {
-    	// Reduction for IExpr
-    	if(lhs instanceof IExpr && rhs instanceof IExpr) {
-        	BigInteger v1 = ((IExpr)lhs).reduce().getIntValue();
-        	BigInteger v2 = ((IExpr)lhs).reduce().getIntValue();
-            switch(op) {
-            	case EQ:
-            		return new BConst(v1.compareTo(v2) == 0);
-            	case NEQ:
-            		return new BConst(v1.compareTo(v2) != 0);
-	            case LT:
-	            case ULT:
-	                return new BConst(v1.compareTo(v2) < 0);
-	            case LTE:
-	            case ULTE:
-	                return new BConst(v1.compareTo(v2) <= 0);
-	            case GT:
-	            case UGT:
-	                return new BConst(v1.compareTo(v2) > 0);
-	            case GTE:
-	            case UGTE:
-	                return new BConst(v1.compareTo(v2) >= 0);
-	            default:
-	                throw new UnsupportedOperationException("Reduce not supported for " + this);
-            }            
-    	}
-    	// Reduction for BExpr
-    	if(lhs instanceof BConst && rhs instanceof BConst) {
-    		boolean v1 = ((BConst)lhs).reduce().getValue();
-    		boolean v2 = ((BConst)lhs).reduce().getValue();
-            switch(op) {
-	            case EQ:
-	            	return new BConst(v1 == v2);
-	            case NEQ:
-	            	return new BConst(v1 != v2);
-	            default:
-	                throw new UnsupportedOperationException("Reduce not supported for " + this);
-            }
-    	}
-        throw new UnsupportedOperationException("Reduce not supported for " + this);
-	}
-
-	@Override
-	public int getPrecision() {
-		if(lhs.getPrecision() != rhs.getPrecision()) {
-            throw new RuntimeException("The type of " + lhs + " and " + rhs + " does not match");
-		}
-		return lhs.getPrecision();
-	}
 
 	@Override
 	public <T> T visit(ExpressionVisitor<T> visitor) {

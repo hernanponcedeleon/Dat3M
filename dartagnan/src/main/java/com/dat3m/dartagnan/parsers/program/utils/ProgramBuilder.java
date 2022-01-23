@@ -1,16 +1,17 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.CondJump;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Label;
-import com.dat3m.dartagnan.program.event.Skip;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -39,6 +40,7 @@ public class ProgramBuilder {
         Program program = new Program(memory, ImmutableSet.copyOf(locations.values()));
         buildInitThreads();
         for(Thread thread : threads.values()){
+        	addChild(thread.getId(), getOrCreateLabel("END_OF_T" + thread.getId()));
             validateLabels(thread);
             program.add(thread);
         }
@@ -61,7 +63,7 @@ public class ProgramBuilder {
 
     public Event addChild(int thread, Event child){
         if(!threads.containsKey(thread)){
-            throw new RuntimeException("Thread " + thread + " is not initialised");
+            throw new MalformedProgramException("Thread " + thread + " is not initialised");
         }
         child.setOId(lastOrigId++);
         threads.get(thread).append(child);
@@ -79,30 +81,30 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Declarators
 
-    public void initLocEqLocPtr(String leftName, String rightName, int precision){
-        Location location = getOrCreateLocation(leftName, precision);
-        iValueMap.put(location.getAddress(), getOrCreateLocation(rightName, precision).getAddress());
+    public void initLocEqLocPtr(String leftName, String rightName){
+        Location location = getOrCreateLocation(leftName);
+        iValueMap.put(location.getAddress(), getOrCreateLocation(rightName).getAddress());
     }
 
-    public void initLocEqLocVal(String leftName, String rightName, int precision){
-        Location left = getOrCreateLocation(leftName, precision);
-        Location right = getOrCreateLocation(rightName, precision);
+    public void initLocEqLocVal(String leftName, String rightName){
+        Location left = getOrCreateLocation(leftName);
+        Location right = getOrCreateLocation(rightName);
         iValueMap.put(left.getAddress(), iValueMap.get(right.getAddress()));
     }
 
     public void initLocEqConst(String locName, IConst iValue){
-        Location location = getOrCreateLocation(locName, iValue.getPrecision());
+        Location location = getOrCreateLocation(locName);
         iValueMap.put(location.getAddress(), iValue);
     }
 
     public void initRegEqLocPtr(int regThread, String regName, String locName, int precision){
-        Location loc = getOrCreateLocation(locName, precision);
+        Location loc = getOrCreateLocation(locName);
         Register reg = getOrCreateRegister(regThread, regName, precision);
         addChild(regThread, EventFactory.newLocal(reg, loc.getAddress()));
     }
 
     public void initRegEqLocVal(int regThread, String regName, String locName, int precision){
-        Location loc = getOrCreateLocation(locName, precision);
+        Location loc = getOrCreateLocation(locName);
         Register reg = getOrCreateRegister(regThread, regName, precision);
         addChild(regThread, EventFactory.newLocal(reg, iValueMap.get(loc.getAddress())));
     }
@@ -111,9 +113,9 @@ public class ProgramBuilder {
         addChild(regThread, EventFactory.newLocal(getOrCreateRegister(regThread, regName, iValue.getPrecision()), iValue));
     }
 
-    public void addDeclarationArray(String name, List<IConst> values, int precision){
+    public void addDeclarationArray(String name, List<IConst> values){
         int size = values.size();
-        List<Address> addresses = memory.malloc(name, size, precision);
+        List<Address> addresses = memory.malloc(name, size);
         for(int i = 0; i < size; i++){
             String varName = name + "[" + i + "]";
             Address address = addresses.get(i);
@@ -121,10 +123,6 @@ public class ProgramBuilder {
             iValueMap.put(address, values.get(i));
         }
         pointers.put(name, addresses.get(0));
-    }
-
-    public void addDeclarationArray(String name, List<IConst> values){
-    	addDeclarationArray(name, values, -1);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -138,9 +136,9 @@ public class ProgramBuilder {
         return locations.get(name);
     }
 
-    public Location getOrCreateLocation(String name, int precision){
+    public Location getOrCreateLocation(String name){
         if(!locations.containsKey(name)){
-            Location location = memory.getOrCreateLocation(name, precision);
+            Location location = memory.getOrCreateLocation(name);
             locations.put(name, location);
             iValueMap.put(location.getAddress(), new IConst(Location.DEFAULT_INIT_VALUE, location.getAddress().getPrecision()));
         }
@@ -151,7 +149,7 @@ public class ProgramBuilder {
         if(locations.containsKey(name)){
             return locations.get(name);
         }
-        throw new ParsingException("Location " + name + " has not been initialised");
+        throw new IllegalStateException("Location " + name + " has not been initialised");
     }
 
     public Register getRegister(int thread, String name){
@@ -178,7 +176,7 @@ public class ProgramBuilder {
                 return register;
             }
         }
-        throw new ParsingException("Register " + thread + ":" + name + " is not initialised");
+        throw new IllegalStateException("Register " + thread + ":" + name + " is not initialised");
     }
 
     public boolean hasLabel(String name) {
@@ -219,7 +217,7 @@ public class ProgramBuilder {
         }
     }
 
-    private void validateLabels(Thread thread) throws ParsingException {
+    private void validateLabels(Thread thread) throws MalformedProgramException {
         Map<String, Label> threadLabels = new HashMap<>();
         Set<String> referencedLabels = new HashSet<>();
         Event e = thread.getEntry();
@@ -229,7 +227,7 @@ public class ProgramBuilder {
             } else if(e instanceof Label){
                 Label label = labels.remove(((Label) e).getName());
                 if(label == null){
-                    throw new ParsingException("Duplicated label " + ((Label) e).getName());
+                    throw new MalformedProgramException("Duplicated label " + ((Label) e).getName());
                 }
                 threadLabels.put(label.getName(), label);
             }
@@ -238,7 +236,7 @@ public class ProgramBuilder {
 
         for(String labelName : referencedLabels){
             if(!threadLabels.containsKey(labelName)){
-                throw new ParsingException("Illegal jump to label " + labelName);
+                throw new MalformedProgramException("Illegal jump to label " + labelName);
             }
         }
     }

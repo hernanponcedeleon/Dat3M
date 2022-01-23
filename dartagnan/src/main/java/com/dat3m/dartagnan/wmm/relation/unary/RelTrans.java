@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -38,8 +39,8 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx){
-        super.initialise(task, ctx);
+    public void initializeRelationAnalysis(VerificationTask task, Context context) {
+        super.initializeRelationAnalysis(task, context);
         fullEncodeTupleSet = new TupleSet();
         transitiveReachabilityMap = null;
     }
@@ -48,14 +49,14 @@ public class RelTrans extends UnaryRelation {
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             //TODO: Make sure this is correct and efficient
-            BranchEquivalence eq = task.getBranchEquivalence();
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             minTupleSet = new TupleSet(r1.getMinTupleSet());
             boolean changed;
             int size = minTupleSet.size();
             do {
                 minTupleSet.addAll(minTupleSet.postComposition(r1.getMinTupleSet(),
-                        (t1, t2) -> t1.getSecond().cfImpliesExec() &&
-                                (eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()))));
+                        (t1, t2) -> exec.isImplied(t1.getFirst(), t1.getSecond())
+                                || exec.isImplied(t2.getSecond(), t1.getSecond())));
                 changed = minTupleSet.size() != size;
                 size = minTupleSet.size();
             } while (changed);
@@ -63,6 +64,7 @@ public class RelTrans extends UnaryRelation {
         }
         return minTupleSet;
     }
+
 
     @Override
     public TupleSet getMaxTupleSet(){
@@ -86,6 +88,7 @@ public class RelTrans extends UnaryRelation {
 
         TupleSet fullActiveSet = getFullEncodeTupleSet(activeSet);
         if(fullEncodeTupleSet.addAll(fullActiveSet)){
+            fullActiveSet.removeAll(getMinTupleSet());
             r1.addEncodeTupleSet(fullActiveSet);
         }
     }
@@ -99,7 +102,11 @@ public class RelTrans extends UnaryRelation {
         TupleSet r1Max = r1.getMaxTupleSet();
         for(Tuple tuple : fullEncodeTupleSet){
             if (minSet.contains(tuple)) {
-                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
+                if(Relation.PostFixApprox) {
+                    enc = bmgr.and(enc, bmgr.implication(getExecPair(tuple, ctx), this.getSMTVar(tuple, ctx)));
+                } else {
+                    enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
+                }
                 continue;
             }
 
@@ -115,7 +122,8 @@ public class RelTrans extends UnaryRelation {
             for(Tuple t : r1Max.getByFirst(e1)){
                 Event e3 = t.getSecond();
                 if(e3.getCId() != e1.getCId() && e3.getCId() != e2.getCId() && transitiveReachabilityMap.get(e3).contains(e2)){
-                    orClause = bmgr.or(orClause, bmgr.and(r1.getSMTVar(t, ctx), this.getSMTVar(e3, e2, ctx)));
+                    BooleanFormula tVar = minSet.contains(t) ? this.getSMTVar(t, ctx) : r1.getSMTVar(t, ctx);
+                    orClause = bmgr.or(orClause, bmgr.and(tVar, this.getSMTVar(e3, e2, ctx)));
                 }
             }
 

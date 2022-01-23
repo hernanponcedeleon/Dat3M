@@ -1,17 +1,12 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.program.event.core.Event;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+
 import java.math.BigInteger;
 
-import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
-
-import com.dat3m.dartagnan.program.event.Event;
-
-public abstract class IExpr implements ExprInterface {
+public abstract class IExpr implements ExprInterface, Reducible {
 
     @Override
 	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
@@ -26,9 +21,12 @@ public abstract class IExpr implements ExprInterface {
         return getIntValue(e, model, ctx).signum() == 1;
     }
 
-	@Override
 	public IExpr getBase() {
-		return this;
+		throw new UnsupportedOperationException("getBase() not supported for " + this);
+	}
+	
+	public int getPrecision() {
+		throw new UnsupportedOperationException("getPrecision() not supported for " + this);
 	}
 	
 	@Override

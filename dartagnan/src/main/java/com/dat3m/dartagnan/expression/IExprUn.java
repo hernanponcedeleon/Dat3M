@@ -3,8 +3,7 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.Model;
@@ -14,10 +13,10 @@ import java.math.BigInteger;
 
 public class IExprUn extends IExpr {
 
-	private final ExprInterface b;
+	private final IExpr b;
 	private final IOpUn op;
 
-    public IExprUn(IOpUn op, ExprInterface b) {
+    public IExprUn(IOpUn op, IExpr b) {
         this.b = b;
         this.op = op;
     }
@@ -26,18 +25,13 @@ public class IExprUn extends IExpr {
 		return op;
 	}
 
-	public ExprInterface getInner() {
+	public IExpr getInner() {
 		return b;
 	}
 
 	@Override
 	public Formula toIntFormula(Event e, SolverContext ctx) {
 		return op.encode(b.toIntFormula(e, ctx), ctx);
-	}
-
-	@Override
-	public Formula getLastValueExpr(SolverContext ctx) {
-        return op.encode(b.getLastValueExpr(ctx), ctx);
 	}
 
 	@Override
@@ -49,11 +43,6 @@ public class IExprUn extends IExpr {
 	public ImmutableSet<Register> getRegs() {
         return b.getRegs();
 	}
-	@Override
-	public ImmutableSet<Location> getLocs() {
-		return b.getLocs();
-	}
-
     @Override
     public String toString() {
         return "(" + op + b + ")";
@@ -61,11 +50,11 @@ public class IExprUn extends IExpr {
 
     @Override
 	public IConst reduce() {
-		IConst inner = (IConst)b.reduce();
+		IConst inner = b.reduce();
         switch(op){
 			case MINUS:
-			return new IConst(inner.getIntValue().negate(), b.getPrecision());
-			case BV2UINT:
+			return new IConst(inner.getValue().negate(), b.getPrecision());
+			case BV2UINT: case BV2INT:
 			case INT2BV1: case INT2BV8: case INT2BV16: case INT2BV32: case INT2BV64: 
 			case TRUNC6432: case TRUNC6416: case TRUNC648: case TRUNC641: case TRUNC3216: case TRUNC328: case TRUNC321: case TRUNC168: case TRUNC161: case TRUNC81:
 			case ZEXT18: case ZEXT116: case ZEXT132: case ZEXT164: case ZEXT816: case ZEXT832: case ZEXT864: case ZEXT1632: case ZEXT1664: case ZEXT3264: 
@@ -78,14 +67,26 @@ public class IExprUn extends IExpr {
 
 	@Override
 	public int getPrecision() {
-		return b.getPrecision();
+        switch(op){
+			case MINUS:
+				return b.getPrecision();
+			case BV2UINT: case BV2INT:
+				return -1;
+			case INT2BV1: case TRUNC321: case TRUNC641: case TRUNC161: case TRUNC81:
+				return 1;
+			case INT2BV8: case TRUNC648: case TRUNC328: case TRUNC168: case ZEXT18: case SEXT18:
+				return 8;
+			case INT2BV16: case TRUNC6416: case TRUNC3216: case ZEXT116: case ZEXT816: case SEXT116: case SEXT816:
+				return 16;
+			case INT2BV32: case TRUNC6432: case ZEXT132: case ZEXT832: case ZEXT1632: case SEXT132: case SEXT832: case SEXT1632:
+				return 32;
+			case INT2BV64: case ZEXT164: case ZEXT864: case ZEXT1664: case ZEXT3264: case SEXT164: case SEXT864: case SEXT1664: case SEXT3264:
+				return 64;
+			default:
+		        throw new UnsupportedOperationException("getPrecision not supported for " + this);				
+        }
 	}
 	
-	@Override
-	public IExpr getBase() {
-		throw new UnsupportedOperationException("getBase not supported for " + this);
-	}
-
 	@Override
 	public <T> T visit(ExpressionVisitor<T> visitor) {
 		return visitor.visit(this);

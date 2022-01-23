@@ -1,21 +1,21 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.parsers.LitmusX86BaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusX86Parser;
 import com.dat3m.dartagnan.parsers.LitmusX86Visitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.misc.Interval;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.MFENCE;
-
 import java.math.BigInteger;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.MFENCE;
 
 public class VisitorLitmusX86
         extends LitmusX86BaseVisitor<Object>
@@ -78,7 +78,7 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitVariableDeclaratorLocationLocation(LitmusX86Parser.VariableDeclaratorLocationLocationContext ctx) {
-        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText(), -1);
+        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText());
         return null;
     }
 
@@ -118,13 +118,13 @@ public class VisitorLitmusX86
     @Override
     public Object visitLoadLocationToRegister(LitmusX86Parser.LoadLocationToRegisterContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
-        Location location = programBuilder.getOrCreateLocation(ctx.location().getText(), -1);
+        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
         return programBuilder.addChild(mainThread, EventFactory.newLoad(register, location.getAddress(), "_rx"));
     }
 
     @Override
     public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
-        Location location = programBuilder.getOrCreateLocation(ctx.location().getText(), -1);
+        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
         IConst constant = new IConst(new BigInteger(ctx.constant().getText()), -1);
         return programBuilder.addChild(mainThread, EventFactory.newStore(location.getAddress(), constant, "_rx"));
     }
@@ -132,14 +132,14 @@ public class VisitorLitmusX86
     @Override
     public Object visitStoreRegisterToLocation(LitmusX86Parser.StoreRegisterToLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
-        Location location = programBuilder.getOrCreateLocation(ctx.location().getText(), -1);
+        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
         return programBuilder.addChild(mainThread, EventFactory.newStore(location.getAddress(), register, "_rx"));
     }
 
     @Override
     public Object visitExchangeRegisterLocation(LitmusX86Parser.ExchangeRegisterLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
-        Location location = programBuilder.getOrCreateLocation(ctx.location().getText(), -1);
+        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
         return programBuilder.addChild(mainThread, EventFactory.X86.newExchange(location.getAddress(), register));
     }
 
