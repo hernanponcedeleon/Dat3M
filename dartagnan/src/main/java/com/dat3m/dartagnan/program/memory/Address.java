@@ -38,13 +38,14 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
     }
 
     /**
-     * Updates the initial value at a certain field of this array.
+     * Initial value at a certain field of this array.
      * @param offset
      * Non-negative number of fields before the target.
      * @return
      * Readable value at the start of each execution.
      */
     public IConst getInitialValue(int offset) {
+        checkArgument(offset >= 0 && offset < size, "array index out of bounds");
         return initialValues.getOrDefault(offset,IValue.ZERO);
     }
 
@@ -78,11 +79,27 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
         initialValues.put(offset,value);
     }
 
+    /**
+     * Expresses the address of a field of this array.
+     * @param offset
+     * Non-negative number of fields before the target field.
+     * @return
+     * Points to the target.
+     */
     public IExpr add(int offset) {
         checkArgument(0<=offset && offset<size, "array index out of bounds");
         return offset == 0 ? this : new IExprBin(this,PLUS,new IValue(BigInteger.valueOf(offset),getPrecision()));
     }
 
+    /**
+     * Encodes the final state of a location.
+     * @param ctx
+     * Builder of formulas.
+     * @param offset
+     * Non-negative number of fields before the target field.
+     * @return
+     * Variable associated with the value at the location after the execution ended.
+     */
     public Formula getLastMemValueExpr(SolverContext ctx, int offset) {
         checkArgument(0<=offset && offset<size, "array index out of bounds");
         String name = String.format("last_val_at_memory_%d_%d",index,offset);
