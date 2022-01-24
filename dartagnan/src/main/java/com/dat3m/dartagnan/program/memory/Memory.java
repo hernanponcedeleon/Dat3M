@@ -17,7 +17,7 @@ public class Memory {
      * @return
      * Points to the created location.
      */
-    public Address newLocation(int size) {
+    public Address allocate(int size) {
         Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
         Address address = new Address(nextIndex++,size);
         arrays.add(address);

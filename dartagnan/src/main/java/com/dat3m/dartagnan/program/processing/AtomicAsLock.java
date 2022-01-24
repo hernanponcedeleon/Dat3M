@@ -15,8 +15,6 @@ import com.dat3m.dartagnan.program.memory.Address;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.math.BigInteger;
-
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.newInit;
 import static com.dat3m.dartagnan.program.event.EventFactory.newLabel;
@@ -38,7 +36,7 @@ public class AtomicAsLock implements ProgramProcessor {
 
 	@Override
 	public void run(Program program) {
-		Address a = program.getMemory().newLocation(1);
+		Address a = program.getMemory().allocate(1);
 		for(Thread t : program.getThreads()) {
 			run(a,t);
 		}

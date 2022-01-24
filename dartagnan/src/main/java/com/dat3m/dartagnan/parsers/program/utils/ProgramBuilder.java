@@ -112,7 +112,7 @@ public class ProgramBuilder {
 
     public void addDeclarationArray(String name, int size){
         checkArgument(!locations.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
-        Address address = memory.newLocation(size);
+        Address address = memory.allocate(size);
         locations.put(name,address);
     }
 
@@ -128,11 +128,7 @@ public class ProgramBuilder {
     }
 
     public Address getOrCreateLocation(String name){
-        if(!locations.containsKey(name)){
-            Address address = memory.newLocation(1);
-            locations.put(name,address);
-        }
-        return locations.get(name);
+        return locations.computeIfAbsent(name,k->memory.allocate(1));
     }
 
     public Register getRegister(int thread, String name){
