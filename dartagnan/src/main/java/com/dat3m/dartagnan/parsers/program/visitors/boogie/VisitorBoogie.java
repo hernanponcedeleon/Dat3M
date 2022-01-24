@@ -50,7 +50,6 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.handleStdFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.SVCOMPPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.handleSvcompFunction;
-import static com.google.common.base.Preconditions.checkState;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
 
@@ -647,8 +646,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
             return register;
         }
         Address address = programBuilder.getAddress(name);
-        checkState(address != null, "undefined variable %s", name);
-        return address;
+        if(address != null) {
+            return address;
+        }
+        throw new ParsingException("Variable " + name + " is not defined");
 	}
 
 	@Override
