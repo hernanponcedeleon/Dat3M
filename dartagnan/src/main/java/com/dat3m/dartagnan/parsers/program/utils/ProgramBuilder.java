@@ -79,31 +79,26 @@ public class ProgramBuilder {
     // Declarators
 
     public void initLocEqLocPtr(String leftName, String rightName){
-        Address location = getOrCreateLocation(leftName);
-        location.setInitialValue(0,getOrCreateLocation(rightName));
+        initLocEqConst(leftName,getOrCreateAddress(rightName));
     }
 
     public void initLocEqLocVal(String leftName, String rightName){
-        Address left = getOrCreateLocation(leftName);
-        Address right = getOrCreateLocation(rightName);
-        left.setInitialValue(0,right.getInitialValue(0));
+        initLocEqConst(leftName,getInitialValue(rightName));
     }
 
     public void initLocEqConst(String locName, IConst iValue){
-        Address location = getOrCreateLocation(locName);
-        location.setInitialValue(0,iValue);
+        getOrCreateAddress(locName).setInitialValue(0,iValue);
     }
 
     public void initRegEqLocPtr(int regThread, String regName, String locName, int precision){
-        Address loc = getOrCreateLocation(locName);
+        Address address = getOrCreateAddress(locName);
         Register reg = getOrCreateRegister(regThread, regName, precision);
-        addChild(regThread, EventFactory.newLocal(reg, loc));
+        addChild(regThread, EventFactory.newLocal(reg, address));
     }
 
     public void initRegEqLocVal(int regThread, String regName, String locName, int precision){
-        Address loc = getOrCreateLocation(locName);
         Register reg = getOrCreateRegister(regThread, regName, precision);
-        addChild(regThread,EventFactory.newLocal(reg,loc.getInitialValue(0)));
+        addChild(regThread,EventFactory.newLocal(reg,getInitialValue(locName)));
     }
 
     public void initRegEqConst(int regThread, String regName, IConst iValue){
@@ -116,6 +111,10 @@ public class ProgramBuilder {
         locations.put(name,address);
     }
 
+    private IConst getInitialValue(String name) {
+        return getOrCreateAddress(name).getInitialValue(0);
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Utility
 
@@ -123,11 +122,11 @@ public class ProgramBuilder {
         return threads.get(thread).getExit();
     }
 
-    public Address getLocation(String name){
+    public Address getAddress(String name){
         return locations.get(name);
     }
 
-    public Address getOrCreateLocation(String name){
+    public Address getOrCreateAddress(String name){
         return locations.computeIfAbsent(name,k->memory.allocate(1));
     }
 

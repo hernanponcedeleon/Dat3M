@@ -87,7 +87,7 @@ public class VisitorLitmusC
             programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText());
         } else {
             String rightName = ctx.varName(1).getText();
-            Address address = programBuilder.getLocation(rightName);
+            Address address = programBuilder.getAddress(rightName);
             if(address != null){
                 programBuilder.initLocEqConst(ctx.varName(0).getText(), address);
             } else {
@@ -103,7 +103,7 @@ public class VisitorLitmusC
             programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), -1);
         } else {
             String rightName = ctx.varName(1).getText();
-            Address address = programBuilder.getLocation(rightName);
+            Address address = programBuilder.getAddress(rightName);
             if(address != null){
                 programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), address);
             } else {
@@ -129,18 +129,12 @@ public class VisitorLitmusC
                     if(elCtx.constant() != null){
                         values.add(new IValue(new BigInteger(elCtx.constant().getText()), -1));
                     } else {
-                        String varName = elCtx.varName().getText();
-                        Address address = programBuilder.getLocation(varName);
-                        if(address != null){
-                            values.add(address);
-                        } else {
-                            address = programBuilder.getOrCreateLocation(varName);
-                            values.add(elCtx.Ast() == null ? address : address.getInitialValue(0));
-                        }
+                        Address address = programBuilder.getOrCreateAddress(elCtx.varName().getText());
+                        values.add(elCtx.Ast() == null ? address : address.getInitialValue(0));
                     }
                 }
                 programBuilder.addDeclarationArray(name,values.size());
-                Address address = programBuilder.getLocation(name);
+                Address address = programBuilder.getAddress(name);
                 for(int i = 0; i < values.size(); i++) {
                     address.setInitialValue(i,values.get(i));
                 }
@@ -172,15 +166,9 @@ public class VisitorLitmusC
         if(ctx != null){
             for(LitmusCParser.VarNameContext varName : ctx.varName()){
                 String name = varName.getText();
-                Address pointer = programBuilder.getLocation(name);
-                if(pointer != null){
-                    Register register = programBuilder.getOrCreateRegister(scope, name, -1);
-                    programBuilder.addChild(currentThread, EventFactory.newLocal(register, pointer));
-                } else {
-                    Address location = programBuilder.getOrCreateLocation(varName.getText());
-                    Register register = programBuilder.getOrCreateRegister(scope, varName.getText(), -1);
-                    programBuilder.addChild(currentThread, EventFactory.newLocal(register, location));
-                }
+                Address address = programBuilder.getOrCreateAddress(name);
+                Register register = programBuilder.getOrCreateRegister(scope, name, -1);
+                programBuilder.addChild(currentThread, EventFactory.newLocal(register, address));
             }
         }
         return null;
@@ -451,17 +439,17 @@ public class VisitorLitmusC
             if(register != null){
                 return register;
             }
-            Address location = programBuilder.getLocation(ctx.getText());
-            if(location != null){
+            Address address = programBuilder.getAddress(ctx.getText());
+            if(address != null){
                 register = programBuilder.getOrCreateRegister(scope, null, -1);
-                programBuilder.addChild(currentThread, EventFactory.newLoad(register, location, "NA"));
+                programBuilder.addChild(currentThread, EventFactory.newLoad(register, address, "NA"));
                 return register;
             }
             return programBuilder.getOrCreateRegister(scope, ctx.getText(), -1);
         }
-        Address location = programBuilder.getOrCreateLocation(ctx.getText());
+        Address address = programBuilder.getOrCreateAddress(ctx.getText());
         Register register = programBuilder.getOrCreateRegister(scope, null, -1);
-        programBuilder.addChild(currentThread, EventFactory.newLoad(register, location, "NA"));
+        programBuilder.addChild(currentThread, EventFactory.newLoad(register, address, "NA"));
         return register;
     }
 

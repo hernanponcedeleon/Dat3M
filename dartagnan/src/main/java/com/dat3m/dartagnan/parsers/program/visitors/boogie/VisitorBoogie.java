@@ -50,6 +50,7 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.handleStdFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.SVCOMPPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.handleSvcompFunction;
+import static com.google.common.base.Preconditions.checkState;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
 
@@ -175,7 +176,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				if(size > 0) {
 					programBuilder.addDeclarationArray(name,size);
 				} else {
-					programBuilder.getOrCreateLocation(name);
+					programBuilder.getOrCreateAddress(name);
 				}
 			} else {
 				constantsTypeMap.put(name, precision);
@@ -197,7 +198,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		 for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
     			 String name = ident.getText();
     			 if(!smackDummyVariables.contains(name)) {
-        			 programBuilder.getOrCreateLocation(name);
+        			 programBuilder.getOrCreateAddress(name);
     			 }
     		 }
     	 }
@@ -213,7 +214,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				if(constantsTypeMap.containsKey(name)) {
 	                throw new ParsingException("Variable " + name + " is already defined as a constant");
 				}
-				if(programBuilder.getLocation(name) != null) {
+				if(programBuilder.getAddress(name) != null) {
 	                throw new ParsingException("Variable " + name + " is already defined globally");
 				}
 				programBuilder.getOrCreateRegister(scope, currentScope.getID() + ":" + name, precision);
@@ -237,11 +238,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		String name = ctx.proc_sign().Ident().getText();
             programBuilder.initThread(name, threadCount);
             if(threadCount != 1) {
-            	// Used to allow execution of threads after they have been created (pthread_create)
-        		Address loc = programBuilder.getOrCreateLocation(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
-        		Register reg = programBuilder.getOrCreateRegister(threadCount, null, -1);
-               	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-               	programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, loc, label));
+                // Used to allow execution of threads after they have been created (pthread_create)
+                Address address = programBuilder.getOrCreateAddress(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
+                Register reg = programBuilder.getOrCreateRegister(threadCount, null, -1);
+                Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+                programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, address, label));
             }
     	}
 
@@ -285,8 +286,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	if(create) {
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
-        		Address loc = programBuilder.getOrCreateLocation(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
-        		programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(loc));
+        		Address address = programBuilder.getOrCreateAddress(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
+        		programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(address));
          	}
     	}
     }
@@ -459,9 +460,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				programBuilder.addChild(threadCount, child);	        		
 	            continue;
 	        }
-	        Address location = programBuilder.getLocation(name);
-	        if(location != null){
-	            Store child = EventFactory.newStore(location, value, null, currentLine);
+	        Address address = programBuilder.getAddress(name);
+	        if(address != null){
+	            Store child = EventFactory.newStore(address, value, null, currentLine);
 				programBuilder.addChild(threadCount, child);
 	            continue;
 	        }
@@ -645,16 +646,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         if(register != null){
             return register;
         }
-        Address location = programBuilder.getLocation(name);
-        if(location != null){
-       		return location;
-        }
-        // It might be the start of an array
-        location = programBuilder.getLocation(name+"[0]");
-        if(location != null){
-       		return location;
-        }
-        throw new ParsingException("Variable " + name + " is not defined");
+        Address address = programBuilder.getAddress(name);
+        checkState(address != null, "undefined variable %s", name);
+        return address;
 	}
 
 	@Override
@@ -687,7 +681,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 					text = split[split.length - 1];
 					text = text.substring(text.indexOf("(")+1, text.indexOf(","));
 				}
-				programBuilder.getOrCreateLocation(text).appendInitialValue(rhs,value.reduce());
+				programBuilder.getOrCreateAddress(text).appendInitialValue(rhs,value.reduce());
 				return null;
 			}
 			Store child = EventFactory.newStore(address, value, null, currentLine);
