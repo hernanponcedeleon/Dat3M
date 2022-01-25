@@ -5,10 +5,8 @@
 #include <stdatomic.h>
 #include <assert.h>
 
-extern int __VERIFIER_nondet_int(void);
-
 int current_numa_node() {
-    return 0;
+    return __VERIFIER_nondet_uint();
 }
 
 _Bool keep_lock_local() {
