@@ -84,13 +84,13 @@ static inline void cna_unlock(cna_lock_t *lock, cna_node_t *me)
         /* Is there a node in the secondary queue? */
         if(me->spin == 1) {
             /* If not, try to set tail to NULL, indicating that both main and secondary queues are empty */
-            if(atomic_compare_exchange_strong_explicit(&lock->tail, me, NULL, memory_order_seq_cst, memory_order_seq_cst) == me) {
+            if(atomic_compare_exchange_strong_explicit(&lock->tail, &me, NULL, memory_order_seq_cst, memory_order_seq_cst) == me) {
                 return;
             }
         } else {
             /* Otherwise, try to set tail to the last node in the secondary queue */
             cna_node_t *secHead = (cna_node_t *) me->spin;
-            if(atomic_compare_exchange_strong_explicit(&lock->tail, me, secHead->secTail, memory_order_seq_cst, memory_order_seq_cst) == me) {
+            if(atomic_compare_exchange_strong_explicit(&lock->tail, &me, secHead->secTail, memory_order_seq_cst, memory_order_seq_cst) == me) {
                 /* If successful, pass the lock to the head of the secondary queue */
                 atomic_store_explicit(&secHead->spin, 1, memory_order_release);
                 return;
