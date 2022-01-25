@@ -5,6 +5,17 @@
 #include <stdatomic.h>
 #include <assert.h>
 
+extern int __VERIFIER_nondet_int(void);
+
+int current_numa_node() {
+    return 0;
+//    return __VERIFIER_nondet_int();
+}
+
+_Bool keep_lock_local() {
+    return __VERIFIER_nondet_int() != 0;
+}
+
 typedef struct cna_node {
     _Atomic(uintptr_t) spin;
     int socket;
@@ -20,7 +31,7 @@ cna_node_t* find_successor(cna_node_t *me) {
     cna_node_t *next = me->next;
     int mySocket = me->socket;
     
-//    if (mySocket == -1) mySocket = current_numa_node();
+    if (mySocket == -1) mySocket = current_numa_node();
     if (next->socket == mySocket) return next;
     
     cna_node_t *secHead = next;
@@ -57,35 +68,42 @@ static inline void cna_lock(cna_lock_t *lock, cna_node_t *me)
     if(! tail) {me-> spin = 1;return;}
 
     /* Someone there, need to link in */
-    //me->socket = current_numa_node();
+    me->socket = current_numa_node();
     atomic_store_explicit(&tail->next, me, memory_order_release);
 
     /* Wait for the lock to become available */
-    atomic_load_explicit(&me->spin, memory_order_acquire);
-    while(!me->spin){
+    while(!atomic_load_explicit(&me->spin, memory_order_acquire)){
         //CPU_PAUSE();
     }
 }
 
 static inline void cna_unlock(cna_lock_t *lock, cna_node_t *me)
 {
+    /* Is there a successor in the main queue? */
     if(!atomic_load_explicit(&me->next, memory_order_acquire)) {
+        /* Is there a node in the secondary queue? */
         if(me->spin == 1) {
-            if(atomic_compare_exchange_strong_explicit(&lock->tail, me, NULL, memory_order_seq_cst, memory_order_seq_cst) == me) return;
+            /* If not, try to set tail to NULL, indicating that both main and secondary queues are empty */
+            if(atomic_compare_exchange_strong_explicit(&lock->tail, me, NULL, memory_order_seq_cst, memory_order_seq_cst) == me) {
+                return;
+            }
         } else {
+            /* Otherwise, try to set tail to the last node in the secondary queue */
             cna_node_t *secHead = (cna_node_t *) me->spin;
             if(atomic_compare_exchange_strong_explicit(&lock->tail, me, secHead->secTail, memory_order_seq_cst, memory_order_seq_cst) == me) {
+                /* If successful, pass the lock to the head of the secondary queue */
                 atomic_store_explicit(&secHead->spin, 1, memory_order_release);
                 return;
             }
         }
+        /* Wait for successor to appear */
         while(me->next == NULL){
             //CPU_PAUSE();
         }
     }
+    /* Determine the next lock holder and pass the lock by setting its spin field */
     cna_node_t *succ = NULL;
-    if (//keep_lock_local() &&
-        (succ = find_successor(me))) {
+    if (keep_lock_local() && (succ = find_successor(me))) {
         atomic_store_explicit(&succ->spin, me->spin, memory_order_release);
     } else if(me-> spin > 1) {
         succ = (cna_node_t *) me->spin;
@@ -97,7 +115,7 @@ static inline void cna_unlock(cna_lock_t *lock, cna_node_t *me)
 }
 
 cna_lock_t lock;
-cna_node_t node[3];
+cna_node_t node[4];
 int shared = 0;
 
 void *thread_n(void *arg)
@@ -114,10 +132,12 @@ void *thread_n(void *arg)
 
 int main()
 {
-    pthread_t t0, t1, t2;
+    pthread_t t0, t1, t2, t3;
 
     pthread_create(&t0, NULL, thread_n, (void *) 0);
     pthread_create(&t1, NULL, thread_n, (void *) 1);
+    pthread_create(&t2, NULL, thread_n, (void *) 2);
+    pthread_create(&t3, NULL, thread_n, (void *) 3);
     
     return 0;
 }
