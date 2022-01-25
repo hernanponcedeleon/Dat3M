@@ -9,7 +9,6 @@ extern int __VERIFIER_nondet_int(void);
 
 int current_numa_node() {
     return 0;
-//    return __VERIFIER_nondet_int();
 }
 
 _Bool keep_lock_local() {
@@ -24,7 +23,7 @@ typedef struct cna_node {
 } cna_node_t;
 
 typedef struct {
-    _Atomic(struct cna_node_t *) tail;
+    _Atomic(cna_node_t *) tail;
 } cna_lock_t ;
 
 cna_node_t* find_successor(cna_node_t *me) {
