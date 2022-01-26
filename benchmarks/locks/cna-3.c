@@ -6,7 +6,7 @@
 #include <assert.h>
 
 extern int __VERIFIER_nondet_int(void);
-extern void __VERIFIER_assume(_Bool cond);
+extern void __VERIFIER_assume(int cond);
 
 int current_numa_node() {
     int node = __VERIFIER_nondet_int();
