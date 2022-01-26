@@ -357,10 +357,6 @@ public class EventFactory {
             return new RMWFetchOp(address, register, value, op, mo);
         }
 
-        public static RMWFetch newRMWFetch(IExpr address, Register register, IExpr value, String mo) {
-            return new RMWFetch(address, register, value, mo);
-        }
-
         public static RMWOp newRMWOp(IExpr address, Register register, IExpr value, IOpBin op) {
             return new RMWOp(address, register, value, op);
         }

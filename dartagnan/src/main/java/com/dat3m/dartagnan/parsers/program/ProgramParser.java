@@ -15,7 +15,7 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_AARCH64     = "AARCH64";
     private static final String TYPE_LITMUS_PPC         = "PPC";
     private static final String TYPE_LITMUS_X86         = "X86";
-    private static final String TYPE_LITMUS_LISA         = "LISA";
+    private static final String TYPE_LITMUS_LISA        = "LISA";
     private static final String TYPE_LITMUS_C           = "C";
 
     public Program parse(File file) throws Exception {

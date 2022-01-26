@@ -11,9 +11,15 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.memory.Address;
 
 import org.antlr.v4.runtime.misc.Interval;
+
+import static com.dat3m.dartagnan.program.event.EventFactory.newLocal;
+import static com.dat3m.dartagnan.program.event.EventFactory.newRMWLoad;
+import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStore;
 
 import java.math.BigInteger;
 
@@ -110,14 +116,16 @@ public class VisitorLitmusLISA
         Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
         IExpr address = (IExpr) ctx.expression().accept(this);
         String mo = ctx.mo() != null ? ctx.mo().getText() : null;
-		return programBuilder.addChild(mainThread, EventFactory.newLoad(reg, address, mo));
+		programBuilder.addChild(mainThread, EventFactory.newLoad(reg, address, mo));
+		return null;
 	}
 
 	@Override
 	public Object visitLocal(LitmusLISAParser.LocalContext ctx) {
         Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
 		ExprInterface e = (ExprInterface) ctx.expression().accept(this);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(reg, e));
+        programBuilder.addChild(mainThread, EventFactory.newLocal(reg, e));
+		return null;
 	}
 
 	@Override
@@ -125,7 +133,9 @@ public class VisitorLitmusLISA
 		IExpr value = (IExpr) ctx.value().accept(this);
         IExpr address = (IExpr) ctx.expression().accept(this);
         String mo = ctx.mo() != null ? ctx.mo().getText() : null;
-        return programBuilder.addChild(mainThread, EventFactory.newStore(address, value, mo));
+        programBuilder.addChild(mainThread, EventFactory.newStore(address, value, mo));
+		return null;
+
 	}
 	
 	@Override
@@ -134,20 +144,28 @@ public class VisitorLitmusLISA
 		IExpr value = (IExpr) ctx.value().accept(this);
         IExpr address = (IExpr) ctx.expression().accept(this);
         String mo = ctx.mo() != null ? ctx.mo().getText() : null;
-        return programBuilder.addChild(mainThread, EventFactory.Linux.newRMWFetch(address, reg, value, mo));
+        Register dummyReg = programBuilder.getOrCreateRegister(mainThread, "dummy", -1);
+		Load load = newRMWLoad(dummyReg, address, mo);
+        RMWStore store = newRMWStore(load, address, value, mo);
+        programBuilder.addChild(mainThread, load);
+        programBuilder.addChild(mainThread, store);
+        programBuilder.addChild(mainThread, newLocal(reg, dummyReg));
+		return null;
 	}
 
 	@Override
 	public Object visitFence(LitmusLISAParser.FenceContext ctx) {
         String mo = ctx.mo() != null ? ctx.mo().getText() : null;
-        return programBuilder.addChild(mainThread, EventFactory.newFence(mo));
+        programBuilder.addChild(mainThread, EventFactory.newFence(mo));
+		return null;
 	}
 	
 	@Override
 	public Object visitLabel(LitmusLISAParser.LabelContext ctx) {
 		String name = ctx.getText();
         Label label = programBuilder.getOrCreateLabel(name.substring(0, name.length()-1));
-		return programBuilder.addChild(mainThread, label);
+		programBuilder.addChild(mainThread, label);
+		return null;
 	}
 
 	@Override
@@ -155,7 +173,8 @@ public class VisitorLitmusLISA
         Label label = programBuilder.getOrCreateLabel(ctx.labelName().getText());
         Register reg = (Register) ctx.register().accept(this);
         Atom cond = new Atom(reg, COpBin.EQ, IConst.ONE);
-		return programBuilder.addChild(mainThread, EventFactory.newJump(cond, label));
+		programBuilder.addChild(mainThread, EventFactory.newJump(cond, label));
+		return null;
 	}
 
 	// Other

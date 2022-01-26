@@ -13291,3 +13291,4 @@ litmus/LISA/LKMM/sb+rel-acq+rel-acq.litmus,1
 litmus/LISA/LKMM/S+o-mb-o+o-mb-o2.litmus,0
 litmus/LISA/LKMM/rcu-relacq1.litmus,1
 litmus/LISA/LKMM/RW-R3.litmus,0
+litmus/LISA/X86/2+2W+mfence-rmws.litmus,1

@@ -137,32 +137,6 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 	}
 
 	@Override
-	public List<Event> visitRMWFetch(RMWFetch e) {
-        Register resultRegister = e.getResultRegister();
-        String mo = e.getMo();
-        IExpr address = e.getAddress();
-        ExprInterface value = e.getMemValue();
-
-        Register dummy = resultRegister;
-		if(resultRegister == value){
-            dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-        }
-
-		Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
-		Load load = newRMWLoad(dummy, address, Tag.Linux.loadMO(mo));
-        Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
-        Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
-
-        return eventSequence(
-                optionalMbBefore,
-                load,
-                newRMWStore(load, address, value, Tag.Linux.storeMO(mo)),
-                optionalUpdateReg,
-                optionalMbAfter
-        );
-	}
-
-	@Override
 	public List<Event> visitRMWOp(RMWOp e) {
         IExpr address = e.getAddress();
         Register resultRegister = e.getResultRegister();
