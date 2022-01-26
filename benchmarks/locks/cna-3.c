@@ -6,7 +6,9 @@
 #include <assert.h>
 
 int current_numa_node() {
-    return __VERIFIER_nondet_uint();
+    int node = __VERIFIER_nondet_int();
+    __VERIFIER_assume(node != -1);
+    return node;
 }
 
 _Bool keep_lock_local() {
