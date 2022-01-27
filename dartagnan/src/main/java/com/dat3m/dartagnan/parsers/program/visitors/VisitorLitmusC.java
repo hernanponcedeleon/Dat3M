@@ -129,8 +129,15 @@ public class VisitorLitmusC
                     if(elCtx.constant() != null){
                         values.add(new IValue(new BigInteger(elCtx.constant().getText()), -1));
                     } else {
-                        Address address = programBuilder.getOrCreateAddress(elCtx.varName().getText());
-                        values.add(elCtx.Ast() == null ? address : address.getInitialValue(0));
+                        String varName = elCtx.varName().getText();
+                        //see test/resources/arrays/ok/C-array-ok-17.litmus
+                        Address address = programBuilder.getAddress(varName);
+                        if(address != null){
+                            values.add(address);
+                        } else {
+                            address = programBuilder.getOrCreateAddress(varName);
+                            values.add(elCtx.Ast() == null ? address : address.getInitialValue(0));
+                        }
                     }
                 }
                 programBuilder.addDeclarationArray(name,values.size());
