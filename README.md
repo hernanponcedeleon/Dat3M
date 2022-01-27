@@ -11,7 +11,7 @@ Requirements
 ======
 * [Maven](https://maven.apache.org/)
 * [Java](https://openjdk.java.net/projects/jdk/16/) 8 or above
-* [Smack](https://github.com/smackers/smack) 2.5.0 or above (only to verify C programs)
+* [Smack](https://github.com/smackers/smack) 2.8.0 or above (only to verify C programs)
 * [Clang](https://clang.llvm.org) the concrete version depends on Smack (only to verify C programs)
 
 Installation
