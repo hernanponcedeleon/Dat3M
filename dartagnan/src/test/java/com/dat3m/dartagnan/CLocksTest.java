@@ -105,8 +105,39 @@ public class CLocksTest extends AbstractCTest {
                 {"mutex_musl-3-rel2rx_futex", POWER, UNKNOWN},
                 {"mutex_musl-3-rel2rx_unlock", TSO, UNKNOWN},
                 {"mutex_musl-3-rel2rx_unlock", ARM8, FAIL},
-                {"mutex_musl-3-rel2rx_unlock", POWER, FAIL}
-        });
+                {"mutex_musl-3-rel2rx_unlock", POWER, FAIL},
+                {"cna-4", TSO, UNKNOWN},
+                {"cna-4", ARM8, UNKNOWN},
+                {"cna-4", POWER, UNKNOWN},
+                {"cna-4-rel2rx_unlock1", TSO, UNKNOWN},
+                {"cna-4-rel2rx_unlock1", ARM8, FAIL},
+                // I would have expected this to be FAIL, but we report UNKNOWN
+                {"cna-4-rel2rx_unlock1", POWER, FAIL},
+                {"cna-4-rel2rx_unlock2", TSO, UNKNOWN},
+                {"cna-4-rel2rx_unlock2", ARM8, FAIL},
+                {"cna-4-rel2rx_unlock2", POWER, FAIL},
+                {"cna-4-rel2rx_unlock3", TSO, UNKNOWN},
+                {"cna-4-rel2rx_unlock3", ARM8, FAIL},
+                {"cna-4-rel2rx_unlock3", POWER, FAIL},
+                {"cna-4-rel2rx_unlock4", TSO, UNKNOWN},
+                {"cna-4-rel2rx_unlock4", ARM8, FAIL},
+                {"cna-4-rel2rx_unlock4", POWER, FAIL},
+                {"cna-4-rel2rx_lock", TSO, UNKNOWN},
+                {"cna-4-rel2rx_lock", ARM8, UNKNOWN},
+                {"cna-4-rel2rx_lock", POWER, UNKNOWN},
+                {"cna-4-acq2rx_lock", TSO, UNKNOWN},
+                {"cna-4-acq2rx_lock", ARM8, FAIL},
+                {"cna-4-acq2rx_lock", POWER, FAIL},
+                {"cna-4-acq2rx_unlock", TSO, UNKNOWN},
+                {"cna-4-acq2rx_unlock", ARM8, UNKNOWN},
+                {"cna-4-acq2rx_unlock", POWER, UNKNOWN},
+                {"cna-4-acq2rx_succ1", TSO, UNKNOWN},
+                {"cna-4-acq2rx_succ1", ARM8, UNKNOWN},
+                {"cna-4-acq2rx_succ1", POWER, UNKNOWN},
+                {"cna-4-acq2rx_succ2", TSO, UNKNOWN},
+                {"cna-4-acq2rx_succ2", ARM8, UNKNOWN},
+                {"cna-4-acq2rx_succ2", POWER, UNKNOWN}
+		});
     }
 
 	//@Test
