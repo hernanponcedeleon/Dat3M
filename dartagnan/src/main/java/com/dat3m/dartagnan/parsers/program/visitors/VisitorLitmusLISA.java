@@ -11,15 +11,9 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.memory.Address;
 
 import org.antlr.v4.runtime.misc.Interval;
-
-import static com.dat3m.dartagnan.program.event.EventFactory.newLocal;
-import static com.dat3m.dartagnan.program.event.EventFactory.newRMWLoad;
-import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStore;
 
 import java.math.BigInteger;
 
@@ -144,12 +138,7 @@ public class VisitorLitmusLISA
 		IExpr value = (IExpr) ctx.value().accept(this);
         IExpr address = (IExpr) ctx.expression().accept(this);
         String mo = ctx.mo() != null ? ctx.mo().getText() : null;
-        Register dummyReg = programBuilder.getOrCreateRegister(mainThread, "dummy", -1);
-		Load load = newRMWLoad(dummyReg, address, mo);
-        RMWStore store = newRMWStore(load, address, value, mo);
-        programBuilder.addChild(mainThread, load);
-        programBuilder.addChild(mainThread, store);
-        programBuilder.addChild(mainThread, newLocal(reg, dummyReg));
+        programBuilder.addChild(mainThread, EventFactory.LISA.newRMW(address, reg, value, mo));
 		return null;
 	}
 
