@@ -73,8 +73,8 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public IExpr visit(IConst iConst) {
-        return iConst;
+    public IValue visit(IValue iValue) {
+        return iValue;
     }
 
     @Override
@@ -93,7 +93,7 @@ public class ExprSimplifier extends ExprTransformer {
             BigInteger val = lc.getValue();
             switch (op) {
                 case MULT:
-                    return val.compareTo(BigInteger.ZERO) == 0 ? IConst.ZERO : val.equals(BigInteger.ONE) ? rhs : new IExprBin(lhs, op, rhs);
+                    return val.compareTo(BigInteger.ZERO) == 0 ? IValue.ZERO : val.equals(BigInteger.ONE) ? rhs : new IExprBin(lhs, op, rhs);
                 case PLUS:
                     return val.compareTo(BigInteger.ZERO) == 0 ? rhs : new IExprBin(lhs, op, rhs);
                 default:
@@ -105,7 +105,7 @@ public class ExprSimplifier extends ExprTransformer {
         BigInteger val = rc.getValue();
         switch (op) {
             case MULT:
-                return val.compareTo(BigInteger.ZERO) == 0 ? IConst.ZERO : val.equals(BigInteger.ONE) ? lhs : new IExprBin(lhs, op, rhs);
+                return val.compareTo(BigInteger.ZERO) == 0 ? IValue.ZERO : val.equals(BigInteger.ONE) ? lhs : new IExprBin(lhs, op, rhs);
             case PLUS:
             case MINUS:
                 return val.compareTo(BigInteger.ZERO) == 0 ? lhs : new IExprBin(lhs, op, rhs);

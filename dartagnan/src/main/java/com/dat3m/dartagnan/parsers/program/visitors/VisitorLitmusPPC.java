@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExprBin;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusPPCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusPPCParser;
@@ -65,13 +65,13 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusPPCParser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.initLocEqConst(ctx.location().getText(), new IConst(new BigInteger(ctx.constant().getText()), -1));
+        programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), -1));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusPPCParser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IConst(new BigInteger(ctx.constant().getText()), -1));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IValue(new BigInteger(ctx.constant().getText()), -1));
         return null;
     }
 
@@ -116,7 +116,7 @@ public class VisitorLitmusPPC
     @Override
     public Object visitLi(LitmusPPCParser.LiContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
-        IConst constant = new IConst(new BigInteger(ctx.constant().getText()), -1);
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), -1);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
     }
 
@@ -157,7 +157,7 @@ public class VisitorLitmusPPC
     public Object visitAddi(LitmusPPCParser.AddiContext ctx) {
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), -1);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        IConst constant = new IConst(new BigInteger(ctx.constant().getText()), -1);
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), -1);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.PLUS, constant)));
     }
 
