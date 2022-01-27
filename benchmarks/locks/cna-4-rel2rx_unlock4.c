@@ -25,7 +25,7 @@ int current_numa_node() {
 }
  
 _Bool keep_lock_local() {
-    return __VERIFIER_nondet_int() != 0;
+    return __VERIFIER_nondet_int() < 0;
 }
  
 typedef struct cna_node {
