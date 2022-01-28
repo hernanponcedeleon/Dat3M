@@ -16,6 +16,9 @@ import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
+import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBegin;
+import com.dat3m.dartagnan.program.event.lang.svcomp.LoopEnd;
+import com.dat3m.dartagnan.program.event.lang.svcomp.LoopStart;
 import com.dat3m.dartagnan.program.memory.Address;
 
 import java.util.Arrays;
@@ -274,8 +277,19 @@ public class EventFactory {
         public static EndAtomic newEndAtomic(BeginAtomic begin) {
             return new EndAtomic(begin);
         }
-    }
 
+        public static LoopBegin newLoopBegin() {
+            return new LoopBegin();
+        }
+
+        public static LoopStart newLoopStart() {
+            return new LoopStart();
+        }
+
+        public static LoopEnd newLoopEnd() {
+            return new LoopEnd();
+        }
+    }
 
     // =============================================================================================
     // ============================================ ARM ============================================
