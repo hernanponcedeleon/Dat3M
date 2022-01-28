@@ -205,7 +205,7 @@ public class RelCo extends Relation {
 
             if (encodeLastCo) {
                 // TODO: This encoding should be extracted as it is orthogonal to how co itself gets encoded.
-                BooleanFormula lastCoExpr = fmgr.makeVariable(BooleanType, "co_last(" + w1.repr() + ")");
+                BooleanFormula lastCoExpr = getLastCoVar(w1, ctx);
                 enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
 
                 for (Event i : eventsInit) {
@@ -253,5 +253,9 @@ public class RelCo extends Relation {
     public IntegerFormula getIntVar(Event write, SolverContext ctx) {
     	Preconditions.checkArgument(write.is(WRITE), "Cannot get an int-var for non-writes.");
         return intVar(term, write, ctx);
+    }
+
+    public BooleanFormula getLastCoVar(Event write, SolverContext ctx) {
+        return ctx.getFormulaManager().makeVariable(BooleanType, "co_last(" + write.repr() + ")");
     }
 }

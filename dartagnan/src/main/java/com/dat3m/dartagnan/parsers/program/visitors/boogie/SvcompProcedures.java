@@ -28,7 +28,7 @@ public class SvcompProcedures {
 //			"assume_abort_if_not",
 			"__VERIFIER_loop_begin",
 			"__VERIFIER_spin_start",
-			"__VERIFIER_spin_end",
+			"__VERIFIER_spin_end.i32",
 			"__VERIFIER_atomic_begin",
 			"__VERIFIER_atomic_end",
 			"__VERIFIER_nondet_bool",
@@ -52,7 +52,7 @@ public class SvcompProcedures {
 		case "__VERIFIER_spin_start":
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopStart());
 			break;
-		case "__VERIFIER_spin_end":
+		case "__VERIFIER_spin_end.i32":
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopEnd());
 			break;
 		case "__VERIFIER_assert":
