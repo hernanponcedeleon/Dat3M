@@ -56,7 +56,7 @@ public class PropertyEncoder implements Encoder {
         logger.info("Encoding bound events execution");
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return program.getCache().getEvents(FilterBasic.get(Tag.BOUND))
+        return program.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.BOUND), FilterBasic.get(Tag.SPINLOOP)))
                 .stream().map(Event::exec).reduce(bmgr.makeFalse(), bmgr::or);
     }
 
