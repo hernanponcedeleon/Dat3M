@@ -36,7 +36,7 @@ public class Compilation {
 				}
 			}
     		logger.info("Compiling with smack");
-        	logger.debug("Running " + String.join("", cmd));
+        	logger.debug("Running " + String.join(" ", cmd));
     		tries++;
         	proc = processBuilder.start();
         	proc.waitFor();
@@ -50,7 +50,7 @@ public class Compilation {
     	cmd.add(file.getAbsolutePath());
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
     	logger.info("Compiling with clang");
-    	logger.debug("Running " + String.join("", cmd));
+    	logger.debug("Running " + String.join(" ", cmd));
     	Process proc = processBuilder.start();
     	proc.waitFor();
     	if(proc.exitValue() == 1) {
