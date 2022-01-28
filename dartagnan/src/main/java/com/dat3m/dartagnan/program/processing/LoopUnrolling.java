@@ -117,7 +117,7 @@ public class LoopUnrolling implements ProgramProcessor {
             if (cur instanceof CondJump && ((CondJump) cur).getLabel().getOId() < cur.getOId()) {
                 CondJump jump = (CondJump) cur;
                 Label label = jump.getLabel();
-                if (bound > 1 && !jump.hasFilter(Tag.SPINLOOP)) {
+                if (bound > 1) {
                     predecessor = copyPath(label, successor, predecessor);
                 }
 
