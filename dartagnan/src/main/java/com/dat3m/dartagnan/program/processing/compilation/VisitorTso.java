@@ -38,7 +38,7 @@ class VisitorTso extends VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitEnd(End e) {
         return eventSequence(
-        		newStore(e.getAddress(), IConst.ZERO, e.getMo()),
+        		newStore(e.getAddress(), IValue.ZERO, e.getMo()),
                 X86.newMemoryFence()
         );
 	}
@@ -51,7 +51,7 @@ class VisitorTso extends VisitorBase implements EventVisitor<List<Event>> {
         
         return eventSequence(
         		load,
-        		newJumpUnless(new Atom(resultRegister, EQ, IConst.ZERO), e.getLabel())
+        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), e.getLabel())
         );
 	}
 
@@ -61,7 +61,7 @@ class VisitorTso extends VisitorBase implements EventVisitor<List<Event>> {
 
         return eventSequence(
         		newLoad(resultRegister, e.getAddress(), e.getMo()),
-        		newJumpUnless(new Atom(resultRegister, EQ, IConst.ONE), e.getLabel())
+        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), e.getLabel())
         );
 	}
 
@@ -100,7 +100,7 @@ class VisitorTso extends VisitorBase implements EventVisitor<List<Event>> {
         Load loadValue = newRMWLoad(regValue, address, mo);
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
         Label casFail = newLabel("CAS_fail");
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
+        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
         Store storeValue = newRMWStore(loadValue, address, value, mo);
         Label casEnd = newLabel("CAS_end");
         CondJump gotoCasEnd = newGoto(casEnd);
@@ -186,7 +186,7 @@ class VisitorTso extends VisitorBase implements EventVisitor<List<Event>> {
         Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, e.getExpectedValue()));
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casEnd);
+        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
         Load load = newRMWLoad(regValue, address, mo);
         Store store = newRMWStore(load, address, e.getMemValue(), mo);
 

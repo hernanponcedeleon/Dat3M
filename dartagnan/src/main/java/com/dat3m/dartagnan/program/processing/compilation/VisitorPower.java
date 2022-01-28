@@ -40,7 +40,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	public List<Event> visitEnd(End e) {
         return eventSequence(
         		Power.newSyncBarrier(),
-        		newStore(e.getAddress(), IConst.ZERO, e.getMo())
+        		newStore(e.getAddress(), IValue.ZERO, e.getMo())
         );
 	}
 
@@ -56,7 +56,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 newFakeCtrlDep(resultRegister, label),
                 label,
                 Power.newISyncBarrier(),
-                newJumpUnless(new Atom(resultRegister, EQ, IConst.ZERO), e.getLabel())
+                newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), e.getLabel())
         );
 	}
 
@@ -71,7 +71,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 newFakeCtrlDep(resultRegister, label),
                 label,
                 Power.newISyncBarrier(),
-                newJumpUnless(new Atom(resultRegister, EQ, IConst.ONE), e.getLabel())
+                newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), e.getLabel())
         );
 	}
 
@@ -92,7 +92,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
+        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
 
         // Power does not have mo tags, thus we use null
@@ -263,7 +263,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casEnd);
+        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
         Load load = newRMWLoadExclusive(regValue, address, null);
         Store store = newRMWStoreExclusive(address, value, null, true);
 

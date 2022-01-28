@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 
 import org.sosy_lab.common.configuration.Configuration;
@@ -44,6 +45,7 @@ public class ProcessingManager implements ProgramProcessor {
 
         programProcessors.addAll(Arrays.asList(
                 atomicBlocksAsLocks ? AtomicAsLock.fromConfig(config) : null,
+                Memory.fixateMemoryValues(),
                 DeadCodeElimination.fromConfig(config),
                 BranchReordering.fromConfig(config),
                 Simplifier.fromConfig(config),

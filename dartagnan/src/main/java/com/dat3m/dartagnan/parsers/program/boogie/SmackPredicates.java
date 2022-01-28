@@ -4,15 +4,12 @@ import static com.dat3m.dartagnan.expression.op.BOpBin.AND;
 import static com.dat3m.dartagnan.expression.op.COpBin.LTE;
 import static com.dat3m.dartagnan.expression.op.COpBin.GTE;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
+
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.BExprBin;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.IfExpr;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.exception.ParsingException;
 
 public class SmackPredicates {
@@ -112,10 +109,11 @@ public class SmackPredicates {
 				throw new ParsingException("Function " + name + " has no implementation");
 			}
 		}
-		Atom c1 = new Atom(var, GTE, new IConst(min, var.getPrecision()));
-		Atom c2 = new Atom(var, LTE, new IConst(max, var.getPrecision()));
+		IValue maxValue = new IValue(new BigInteger(max),var.getPrecision());
+		Atom c1 = new Atom(var,GTE,new IValue(new BigInteger(min),var.getPrecision()));
+		Atom c2 = new Atom(var,LTE,maxValue);
 		BExprBin guard = new BExprBin(c1, AND, c2);
-		IExpr fbranch = new IExprBin(var, MOD, new IConst(max, var.getPrecision()));
+		IExpr fbranch = new IExprBin(var,MOD,maxValue);
 		return new IfExpr(guard, var, fbranch);
 	}
 }
