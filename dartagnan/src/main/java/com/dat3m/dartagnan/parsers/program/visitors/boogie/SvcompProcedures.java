@@ -28,8 +28,7 @@ public class SvcompProcedures {
 //			"assume_abort_if_not",
 			"__VERIFIER_loop_begin",
 			"__VERIFIER_spin_start",
-			// This one takes one input parameter and thus the name.
-			"__VERIFIER_spin_end.i32",
+			"__VERIFIER_spin_end",
 			"__VERIFIER_atomic_begin",
 			"__VERIFIER_atomic_end",
 			"__VERIFIER_nondet_bool",
@@ -53,7 +52,7 @@ public class SvcompProcedures {
 		case "__VERIFIER_spin_start":
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopStart());
 			break;
-		case "__VERIFIER_spin_end.i32":
+		case "__VERIFIER_spin_end":
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopEnd());
 			break;
 		case "__VERIFIER_assert":
