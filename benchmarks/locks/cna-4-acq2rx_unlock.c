@@ -19,15 +19,23 @@ extern void __VERIFIER_assume(int cond);
 #endif
 
 int current_numa_node() {
+#ifdef GENMC
     int node = __VERIFIER_nondet_int();
     __VERIFIER_assume(node != -1);
     return node;
+#else
+    return __VERIFIER_nondet_int();
+#endif
 }
  
 _Bool keep_lock_local() {
+#ifdef GENMC
     return __VERIFIER_nondet_int() < 0;
+#else
+    return __VERIFIER_nondet_bool();
+#endif
 }
- 
+
 typedef struct cna_node {
     _Atomic(uintptr_t) spin;
     _Atomic(int) socket;
