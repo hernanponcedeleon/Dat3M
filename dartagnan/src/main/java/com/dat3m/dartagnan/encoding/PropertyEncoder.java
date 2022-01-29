@@ -7,9 +7,9 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.lang.svcomp.LoopStart;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
 import com.dat3m.dartagnan.verification.Context;
@@ -125,13 +125,12 @@ public class PropertyEncoder implements Encoder {
 
         // Find spin pairs of all threads
         for (Thread t : program.getThreads()) {
-            List<Event> spinStarts = t.getEvents().stream().filter(e -> e instanceof LoopStart).collect(Collectors.toList());
+            List<Event> spinStarts = t.getEvents().stream().filter(e -> e instanceof Label && e.is(Tag.SPINLOOP)).collect(Collectors.toList());
             List<SpinPair> spinPairs = new ArrayList<>();
             for (Event start : spinStarts) {
                 Load load = null;
-                Event cur = start;
+                Event cur = start.getSuccessor();
                 while (!cur.is(Tag.SPINLOOP)) {
-                    cur = cur.getSuccessor();
                     if (cur.is(Tag.READ)) {
                         // Todo: Multiple loads are no problem in principle: all of them have to return a co-maximal write.
                         Verify.verify(load == null, "Found two loads in a single spinloop.");
@@ -139,6 +138,7 @@ public class PropertyEncoder implements Encoder {
                     } else if (cur.is(Tag.MEMORY)) {
                         throw new IllegalStateException("Spinloop contains a non-read memory event?!");
                     }
+                    cur = cur.getSuccessor();
                 }
                 spinPairs.add(new SpinPair(load, cur));
             }
@@ -182,12 +182,12 @@ public class PropertyEncoder implements Encoder {
                 }
                 BooleanFormula otherStuck = isStuckMap.get(t2);
                 // There are two ways to define "done":
-                // (1) isDone <=> no spin loop bound was reached
-                // (2) isDone <=> no loop bound was reached
+                // (1) isDone <=> no spin loop bound was reached (can generate false positives)
+                // (2) isDone <=> no loop bound was reached (seems to be the correct definition)
                 // We use the second definition for now
 
-                /*BooleanFormula isDone = spinloopsMap.get(t2).stream().map(pair -> bmgr.not(pair.bound.exec()))
-                        .reduce(bmgr.makeTrue(), bmgr::and);*/
+                //BooleanFormula isDone = spinloopsMap.get(t2).stream().map(pair -> bmgr.not(pair.bound.exec()))
+                //        .reduce(bmgr.makeTrue(), bmgr::and);
                 BooleanFormula isDone = t2.getCache().getEvents(FilterBasic.get(Tag.BOUND)).stream().map(e -> bmgr.not(e.exec()))
                         .reduce(bmgr.makeTrue(), bmgr::and);
                 othersStuckOrDone = bmgr.and(othersStuckOrDone, bmgr.or(otherStuck, isDone));
