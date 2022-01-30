@@ -54,8 +54,8 @@ public class FindSpinLoops implements ProgramProcessor {
     public void run(Program program) {
         Preconditions.checkArgument(!program.isUnrolled(), getClass().getSimpleName() + " should be performed before unrolling.");
         for(Thread thread : program.getThreads()){
-            //markAnnotatedSpinLoops(thread);
-            detectAndMarkSpinloops(thread);
+            markAnnotatedSpinLoops(thread);
+            detectAndMarkSpinLoops(thread);
         }
         program.clearCache(false);
 
@@ -82,10 +82,11 @@ public class FindSpinLoops implements ProgramProcessor {
         t.clearCache();
     }
 
-    private void detectAndMarkSpinloops(Thread t) {
+    private void detectAndMarkSpinLoops(Thread t) {
         Event curr = t.getEntry();
         while (curr != null) {
-            if (curr instanceof Label) {
+            // Find start of spinloop that is not already marked.
+            if (curr instanceof Label && !curr.is(Tag.SPINLOOP)) {
                 Label label = (Label) curr;
                 Optional<Event> listener = label.getListeners().stream().filter(x -> x.getOId() > label.getOId()).findFirst();
                 if (listener.isPresent()) {

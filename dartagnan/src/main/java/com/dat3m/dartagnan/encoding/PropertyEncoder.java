@@ -18,7 +18,6 @@ import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelRf;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.google.common.base.Verify;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -109,40 +108,34 @@ public class PropertyEncoder implements Encoder {
 
     public BooleanFormula encodeLiveness(SolverContext ctx) {
 
-        // We assume a spinloop has exactly one load it performs
-        // The pair is the load + the bound event (which is reached if the spinloop does not terminate)
-        class SpinPair {
-            public final Load load;
-            public final Event bound;
-            public SpinPair(Load load, Event bound) {
-                this.load = load;
-                this.bound = bound;
-            }
+        // We assume a spinloop to consist of a tagged label and bound jump.
+        // Further, we assume that the spinloops are indeed correct, i.e., side-effect free
+        class SpinLoop {
+            public List<Load> loads = new ArrayList<>();
+            public Event bound;
         }
+
         logger.info("Encoding liveness");
 
-        Map<Thread, List<SpinPair>> spinloopsMap = new HashMap<>();
-
-        // Find spin pairs of all threads
+        Map<Thread, List<SpinLoop>> spinloopsMap = new HashMap<>();
+        // Find spinloops of all threads
         for (Thread t : program.getThreads()) {
             List<Event> spinStarts = t.getEvents().stream().filter(e -> e instanceof Label && e.is(Tag.SPINLOOP)).collect(Collectors.toList());
-            List<SpinPair> spinPairs = new ArrayList<>();
+            List<SpinLoop> spinLoops = new ArrayList<>();
+            spinloopsMap.put(t, spinLoops);
+
             for (Event start : spinStarts) {
-                Load load = null;
+                SpinLoop loop = new SpinLoop();
                 Event cur = start.getSuccessor();
                 while (!cur.is(Tag.SPINLOOP)) {
                     if (cur.is(Tag.READ)) {
-                        // Todo: Multiple loads are no problem in principle: all of them have to return a co-maximal write.
-                        Verify.verify(load == null, "Found two loads in a single spinloop.");
-                        load = (Load)cur;
-                    } else if (cur.is(Tag.MEMORY)) {
-                        throw new IllegalStateException("Spinloop contains a non-read memory event?!");
+                        loop.loads.add((Load)cur);
                     }
                     cur = cur.getSuccessor();
                 }
-                spinPairs.add(new SpinPair(load, cur));
+                loop.bound = cur;
+                spinLoops.add(loop);
             }
-            spinloopsMap.put(t, spinPairs);
         }
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
@@ -152,18 +145,22 @@ public class PropertyEncoder implements Encoder {
         // while reading from a co-maximal write.
         Map<Thread, BooleanFormula> isStuckMap = new HashMap<>();
         for (Thread t : program.getThreads()) {
-            List<SpinPair> pairs = spinloopsMap.get(t);
-            if (pairs.isEmpty()) {
+            List<SpinLoop> loops = spinloopsMap.get(t);
+            if (loops.isEmpty()) {
                 continue;
             }
 
             BooleanFormula isStuck = bmgr.makeFalse();
-            for (SpinPair pair : pairs) {
-                BooleanFormula coMaximalLoad = bmgr.makeFalse();
-                for (Tuple rfEdge : rf.getMaxTupleSet().getBySecond(pair.load)) {
-                    coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(rf.getSMTVar(rfEdge, ctx), co.getLastCoVar(rfEdge.getFirst(), ctx)));
+            for (SpinLoop pair : loops) {
+                BooleanFormula allCoMaximalLoad = bmgr.makeTrue();
+                for (Load load : pair.loads) {
+                    BooleanFormula coMaximalLoad = bmgr.makeFalse();
+                    for (Tuple rfEdge : rf.getMaxTupleSet().getBySecond(load)) {
+                        coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(rf.getSMTVar(rfEdge, ctx), co.getLastCoVar(rfEdge.getFirst(), ctx)));
+                    }
+                    allCoMaximalLoad = bmgr.and(allCoMaximalLoad, coMaximalLoad);
                 }
-                isStuck  = bmgr.or(isStuck, bmgr.and(pair.bound.exec(), coMaximalLoad));
+                isStuck  = bmgr.or(isStuck, bmgr.and(pair.bound.exec(), allCoMaximalLoad));
             }
             isStuckMap.put(t, isStuck);
         }
