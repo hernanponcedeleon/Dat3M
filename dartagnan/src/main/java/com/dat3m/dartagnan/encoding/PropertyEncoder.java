@@ -159,43 +159,27 @@ public class PropertyEncoder implements Encoder {
 
             BooleanFormula isStuck = bmgr.makeFalse();
             for (SpinPair pair : pairs) {
-                Event bound = pair.bound;
-                Load load = pair.load;
                 BooleanFormula coMaximalLoad = bmgr.makeFalse();
-                for (Tuple rfEdge : rf.getMaxTupleSet().getBySecond(load)) {
+                for (Tuple rfEdge : rf.getMaxTupleSet().getBySecond(pair.load)) {
                     coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(rf.getSMTVar(rfEdge, ctx), co.getLastCoVar(rfEdge.getFirst(), ctx)));
                 }
-                isStuck  = bmgr.or(isStuck, bmgr.and(bound.exec(), coMaximalLoad));
+                isStuck  = bmgr.or(isStuck, bmgr.and(pair.bound.exec(), coMaximalLoad));
             }
             isStuckMap.put(t, isStuck);
         }
 
-        // Encode liveness: We have a liveness violation if there exists a thread t such that
-        // t is stuck and all other threads are either stuck or finished their execution
-        BooleanFormula livenessViolation = bmgr.makeFalse();
-        for (Thread t : isStuckMap.keySet()) {
-            BooleanFormula isStuck = isStuckMap.get(t);
-            BooleanFormula othersStuckOrDone = bmgr.makeTrue();
-            for (Thread t2 : isStuckMap.keySet()) {
-                if (t2 == t) {
-                    continue;
-                }
-                BooleanFormula otherStuck = isStuckMap.get(t2);
-                // There are two ways to define "done":
-                // (1) isDone <=> no spin loop bound was reached (can generate false positives)
-                // (2) isDone <=> no loop bound was reached (seems to be the correct definition)
-                // We use the second definition for now
+        // LivenessViolation <=> allStuckOrDone /\ atLeastOneStuck
+        BooleanFormula allStuckOrDone = bmgr.makeTrue();
+        BooleanFormula atLeastOneStuck = bmgr.makeFalse();
+        for (Thread t : program.getThreads()) {
+            BooleanFormula isStuck = isStuckMap.getOrDefault(t, bmgr.makeFalse());
+            BooleanFormula isDone = t.getCache().getEvents(FilterBasic.get(Tag.BOUND)).stream()
+                    .map(e -> bmgr.not(e.exec())).reduce(bmgr.makeTrue(), bmgr::and);
 
-                //BooleanFormula isDone = spinloopsMap.get(t2).stream().map(pair -> bmgr.not(pair.bound.exec()))
-                //        .reduce(bmgr.makeTrue(), bmgr::and);
-                BooleanFormula isDone = t2.getCache().getEvents(FilterBasic.get(Tag.BOUND)).stream().map(e -> bmgr.not(e.exec()))
-                        .reduce(bmgr.makeTrue(), bmgr::and);
-                othersStuckOrDone = bmgr.and(othersStuckOrDone, bmgr.or(otherStuck, isDone));
-            }
-            livenessViolation = bmgr.or(livenessViolation, bmgr.and(isStuck, othersStuckOrDone));
+            atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
+            allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, isDone));
         }
-
-        return livenessViolation;
+        return bmgr.and(allStuckOrDone, atLeastOneStuck);
     }
 
     public BooleanFormula encodeDataRaces(SolverContext ctx) {
