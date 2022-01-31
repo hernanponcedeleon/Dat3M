@@ -4,6 +4,11 @@
 #include <pthread.h>
 #include <stdatomic.h>
 #include <assert.h>
+#ifdef GENMC
+#include <genmc.h>
+#else
+#include <dat3m.h>
+#endif
 
 extern int __VERIFIER_nondet_int(void);
 extern void __VERIFIER_assume(int cond);
@@ -13,29 +18,27 @@ extern void __VERIFIER_assume(int cond);
         tmp = cond, __VERIFIER_spin_end(!tmp), tmp;)
 
 #ifdef GENMC
-#include <genmc.h>
-#else
-#include <dat3m.h>
-#endif
-
+__thread intptr_t tindex;
+atomic_bool threshold_reached = 0;
+ 
 int current_numa_node() {
-#ifdef GENMC
-    int node = __VERIFIER_nondet_int();
-    __VERIFIER_assume(node != -1);
-    return node;
-#else
-    return __VERIFIER_nondet_uint();
-#endif
+    return (tindex < 2);
 }
  
 _Bool keep_lock_local() {
-#ifdef GENMC
-    return __VERIFIER_nondet_int() < 0;
-#else
-    return __VERIFIER_nondet_bool();
-#endif
+    return threshold_reached;
 }
+#else
+int current_numa_node() {
+    return __VERIFIER_nondet_uint();
+}
+ 
+_Bool keep_lock_local() {
+    return __VERIFIER_nondet_bool();
+}
+#endif
 
+ 
 typedef struct cna_node {
     _Atomic(uintptr_t) spin;
     _Atomic(int) socket;
@@ -156,10 +159,14 @@ int shared = 0;
  
 void *run(void *arg)
 {
-    intptr_t index = ((intptr_t) arg);
-    cna_lock(&lock, &node[index]);
+#ifdef GENMC
+    tindex = ((intptr_t) arg);
+#else
+    intptr_t tindex = ((intptr_t) arg);
+#endif
+    cna_lock(&lock, &node[tindex]);
     shared++;
-    cna_unlock(&lock, &node[index]);
+    cna_unlock(&lock, &node[tindex]);
     return NULL;
 }
  
@@ -172,6 +179,10 @@ int main()
     pthread_create(&t2, NULL, run, (void *) 2);
     pthread_create(&t3, NULL, run, (void *) 3);
  
+#ifdef GENMC
+    atomic_store_explicit(&threshold_reached, 1, memory_order_relaxed);
+#endif
+
     pthread_join(t0, 0);
     pthread_join(t1, 0);
     pthread_join(t2, 0);
@@ -181,3 +192,4 @@ int main()
    
     return 0;
 }
+
