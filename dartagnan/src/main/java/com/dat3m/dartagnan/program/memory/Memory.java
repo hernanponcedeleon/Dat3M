@@ -10,37 +10,42 @@ import java.util.*;
 
 public class Memory {
 
-    private final ArrayList<MemoryObject> arrays = new ArrayList<>();
+    private final ArrayList<MemoryObject> objects = new ArrayList<>();
 
     private int nextIndex = 1;
 
     /**
-     * Creates a new static location.
+     * Creates a new object.
      * @return
      * Points to the created location.
      */
     public MemoryObject allocate(int size) {
         Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
         MemoryObject address = new MemoryObject(nextIndex++,size);
-        arrays.add(address);
+        objects.add(address);
         return address;
     }
 
-    public ImmutableSet<MemoryObject> getAllAddresses() {
-        return ImmutableSet.copyOf(arrays);
+    /**
+     * Accesses all shared variables.
+     * @return
+     * Copy of the complete collection of allocated objects.
+     */
+    public ImmutableSet<MemoryObject> getObjects() {
+        return ImmutableSet.copyOf(objects);
     }
 
     /**
      * Creates a new processing primitive that recalculates addresses.
      * @return
-     * When provided a program, repositions its allocated addresses.
+     * When provided a program, repositions its allocated objects.
      */
     public static FixateMemoryValues fixateMemoryValues() {
         return new FixateMemoryValues();
     }
 
     /**
-     * Recomputes the values for all addresses,
+     * Recomputes the values for all objects,
      * so that their arrays do not overlap.
      */
     public static final class FixateMemoryValues implements ProgramProcessor {
@@ -48,8 +53,8 @@ public class Memory {
         @Override
         public void run(Program program) {
             BigInteger i = BigInteger.ONE;
-            for(MemoryObject a : program.getMemory().arrays) {
-                a.value = i;
+            for(MemoryObject a : program.getMemory().objects) {
+                a.address = i;
                 i = i.add(BigInteger.valueOf(a.size()));
             }
         }

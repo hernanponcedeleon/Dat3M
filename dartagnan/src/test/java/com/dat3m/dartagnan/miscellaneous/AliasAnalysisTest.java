@@ -47,9 +47,8 @@ public class AliasAnalysisTest {
     private void program0(Class<?extends AliasAnalysis> method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = new ProgramBuilder();
 
-        b.addDeclarationArray("x",2);
-        MemoryObject x = b.getAddress("x");
-        MemoryObject y = b.getOrCreateAddress("y");
+        MemoryObject x = b.newObject("x",2);
+        MemoryObject y = b.getOrNewObject("y");
 
         b.initThread(0);
         Register r0 = b.getOrCreateRegister(0,"r0",-1);
@@ -86,8 +85,7 @@ public class AliasAnalysisTest {
 
     private void program1(Class<?extends AliasAnalysis> method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = new ProgramBuilder();
-        b.addDeclarationArray("x",3);
-        MemoryObject x = b.getAddress("x");
+        MemoryObject x = b.newObject("x",3);
         x.setInitialValue(0,x);
 
         b.initThread(0);
@@ -122,8 +120,7 @@ public class AliasAnalysisTest {
 
     private void program2(Class<?extends AliasAnalysis> method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = new ProgramBuilder();
-        b.addDeclarationArray("x",3);
-        MemoryObject x = b.getAddress("x");
+        MemoryObject x = b.newObject("x",3);
 
         b.initThread(0);
         Register r0 = b.getOrCreateRegister(0,"r0",-1);
@@ -163,8 +160,7 @@ public class AliasAnalysisTest {
 
     private void program3(Class<?extends AliasAnalysis> method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = new ProgramBuilder();
-        b.addDeclarationArray("x",3);
-        MemoryObject x = b.getAddress("x");
+        MemoryObject x = b.newObject("x",3);
         x.setInitialValue(0,x);
 
         b.initThread(0);
@@ -199,9 +195,9 @@ public class AliasAnalysisTest {
 
     private void program4(Class<?extends AliasAnalysis> method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = new ProgramBuilder();
-        MemoryObject x = b.getOrCreateAddress("x");
-        MemoryObject y = b.getOrCreateAddress("y");
-        MemoryObject z = b.getOrCreateAddress("z");
+        MemoryObject x = b.getOrNewObject("x");
+        MemoryObject y = b.getOrNewObject("y");
+        MemoryObject z = b.getOrNewObject("z");
 
         b.initThread(0);
         Register r0 = b.getOrCreateRegister(0,"r0",-1);
@@ -237,9 +233,9 @@ public class AliasAnalysisTest {
 
     private void program5(Class<?extends AliasAnalysis> method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = new ProgramBuilder();
-        MemoryObject x = b.getOrCreateAddress("x");
-        MemoryObject y = b.getOrCreateAddress("y");
-        MemoryObject z = b.getOrCreateAddress("z");
+        MemoryObject x = b.getOrNewObject("x");
+        MemoryObject y = b.getOrNewObject("y");
+        MemoryObject z = b.getOrNewObject("z");
 
         b.initThread(0);
         Register r0 = b.getOrCreateRegister(0,"r0",-1);

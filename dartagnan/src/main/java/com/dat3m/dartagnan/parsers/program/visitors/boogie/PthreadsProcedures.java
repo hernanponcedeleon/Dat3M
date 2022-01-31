@@ -77,8 +77,8 @@ public class PthreadsProcedures {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
 		// We assume pthread_create always succeeds
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, IValue.ZERO));
-		MemoryObject address = visitor.programBuilder.getOrCreateAddress(String.format("%s(%s)_active", threadPtr, visitor.pool.getCreatorFromPtr(threadPtr)));
-		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(threadPtr, threadName, address, visitor.currentLine));
+        MemoryObject object = visitor.programBuilder.getOrNewObject(String.format("%s(%s)_active", threadPtr, visitor.pool.getCreatorFromPtr(threadPtr)));
+        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(threadPtr, threadName, object, visitor.currentLine));
 	}
 	
 	private static void pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -88,10 +88,10 @@ public class PthreadsProcedures {
 		if(visitor.pool.getPtrFromReg(callReg) == null) {
         	throw new UnsupportedOperationException("pthread_join cannot be handled");
 		}
-		MemoryObject address = visitor.programBuilder.getOrCreateAddress(String.format("%s(%s)_active", visitor.pool.getPtrFromReg(callReg), visitor.pool.getCreatorFromPtr(visitor.pool.getPtrFromReg(callReg))));
+        MemoryObject object = visitor.programBuilder.getOrNewObject(String.format("%s(%s)_active", visitor.pool.getPtrFromReg(callReg), visitor.pool.getCreatorFromPtr(visitor.pool.getPtrFromReg(callReg))));
         Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
         Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(visitor.pool.getPtrFromReg(callReg), reg, address, label));
+        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(visitor.pool.getPtrFromReg(callReg), reg, object, label));
 	}
 
 	private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {

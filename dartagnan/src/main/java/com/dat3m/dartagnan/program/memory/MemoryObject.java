@@ -20,7 +20,7 @@ public class MemoryObject extends IConst implements ExprInterface, LastValueInte
 
     private final int index;
     private int size;
-    BigInteger value;
+    BigInteger address;
 
     private final HashMap<Integer,IConst> initialValues = new HashMap<>();
 
@@ -108,7 +108,7 @@ public class MemoryObject extends IConst implements ExprInterface, LastValueInte
 
     @Override
     public BigInteger getValue() {
-        return value != null ? value : BigInteger.valueOf(index);
+        return address != null ? address : BigInteger.valueOf(index);
     }
 
     @Override

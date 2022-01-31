@@ -51,7 +51,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     private AndersenAliasAnalysis(Program program) {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
         ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
-        for(MemoryObject a : program.getMemory().getAllAddresses()) {
+        for(MemoryObject a : program.getMemory().getObjects()) {
             for(int i = 0; i < a.size(); i++) {
                 builder.add(new Location(a,i));
             }
