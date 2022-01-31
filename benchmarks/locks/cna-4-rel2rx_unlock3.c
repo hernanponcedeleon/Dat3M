@@ -8,14 +8,14 @@
 extern int __VERIFIER_nondet_int(void);
 extern void __VERIFIER_assume(int cond);
 
-#ifdef GENMC
-#include <genmc.h>
 #define await_while(cond)                                                  \
     for (int tmp = (__VERIFIER_loop_begin(), 0); __VERIFIER_spin_start(),  \
         tmp = cond, __VERIFIER_spin_end(!tmp), tmp;)
+
+#ifdef GENMC
+#include <genmc.h>
 #else
-#define await_while(cond)                                                  \
-    while(cond)
+#include <dat3m.h>
 #endif
 
 int current_numa_node() {
