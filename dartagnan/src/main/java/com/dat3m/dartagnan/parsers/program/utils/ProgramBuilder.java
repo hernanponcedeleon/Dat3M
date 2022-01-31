@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
-import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.Memory;
 
 import java.util.*;
@@ -22,7 +22,7 @@ public class ProgramBuilder {
 
     private final Map<Integer, Thread> threads = new HashMap<>();
 
-    private final Map<String,Address> locations = new HashMap<>();
+    private final Map<String,MemoryObject> locations = new HashMap<>();
 
     private final Memory memory = new Memory();
 
@@ -91,7 +91,7 @@ public class ProgramBuilder {
     }
 
     public void initRegEqLocPtr(int regThread, String regName, String locName, int precision){
-        Address address = getOrCreateAddress(locName);
+        MemoryObject address = getOrCreateAddress(locName);
         Register reg = getOrCreateRegister(regThread, regName, precision);
         addChild(regThread, EventFactory.newLocal(reg, address));
     }
@@ -107,7 +107,7 @@ public class ProgramBuilder {
 
     public void addDeclarationArray(String name, int size){
         checkArgument(!locations.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
-        Address address = memory.allocate(size);
+        MemoryObject address = memory.allocate(size);
         locations.put(name,address);
     }
 
@@ -122,11 +122,11 @@ public class ProgramBuilder {
         return threads.get(thread).getExit();
     }
 
-    public Address getAddress(String name){
+    public MemoryObject getAddress(String name){
         return locations.get(name);
     }
 
-    public Address getOrCreateAddress(String name){
+    public MemoryObject getOrCreateAddress(String name){
         return locations.computeIfAbsent(name,k->memory.allocate(1));
     }
 
@@ -179,7 +179,7 @@ public class ProgramBuilder {
 
     private void buildInitThreads(){
         int nextThreadId = nextThreadId();
-        for(Address a : memory.getAllAddresses()) {
+        for(MemoryObject a : memory.getAllAddresses()) {
             for(int i = 0; i < a.size(); i++) {
                 Event e = EventFactory.newInit(a,i);
                 Thread thread = new Thread(nextThreadId,e);

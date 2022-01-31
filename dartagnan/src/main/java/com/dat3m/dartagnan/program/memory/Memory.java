@@ -10,7 +10,7 @@ import java.util.*;
 
 public class Memory {
 
-    private final ArrayList<Address> arrays = new ArrayList<>();
+    private final ArrayList<MemoryObject> arrays = new ArrayList<>();
 
     private int nextIndex = 1;
 
@@ -19,14 +19,14 @@ public class Memory {
      * @return
      * Points to the created location.
      */
-    public Address allocate(int size) {
+    public MemoryObject allocate(int size) {
         Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
-        Address address = new Address(nextIndex++,size);
+        MemoryObject address = new MemoryObject(nextIndex++,size);
         arrays.add(address);
         return address;
     }
 
-    public ImmutableSet<Address> getAllAddresses() {
+    public ImmutableSet<MemoryObject> getAllAddresses() {
         return ImmutableSet.copyOf(arrays);
     }
 
@@ -48,7 +48,7 @@ public class Memory {
         @Override
         public void run(Program program) {
             BigInteger i = BigInteger.ONE;
-            for(Address a : program.getMemory().arrays) {
+            for(MemoryObject a : program.getMemory().arrays) {
                 a.value = i;
                 i = i.add(BigInteger.valueOf(a.size()));
             }

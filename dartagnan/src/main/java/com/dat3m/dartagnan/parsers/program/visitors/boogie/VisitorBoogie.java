@@ -22,7 +22,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
-import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -238,7 +238,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
             programBuilder.initThread(name, threadCount);
             if(threadCount != 1) {
                 // Used to allow execution of threads after they have been created (pthread_create)
-                Address address = programBuilder.getOrCreateAddress(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
+                MemoryObject address = programBuilder.getOrCreateAddress(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
                 Register reg = programBuilder.getOrCreateRegister(threadCount, null, -1);
                 Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
                 programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, address, label));
@@ -285,7 +285,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	if(create) {
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
-        		Address address = programBuilder.getOrCreateAddress(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
+                MemoryObject address = programBuilder.getOrCreateAddress(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
         		programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(address));
          	}
     	}
@@ -432,7 +432,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			}
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
-	        	if(ctx.getText().contains("$load.") || value instanceof Address) {
+	        	if(ctx.getText().contains("$load.") || value instanceof MemoryObject) {
 	        		try {
 		    			// This names are global so we don't use currentScope.getID(), but per thread.
 		    			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText(), -1);
@@ -459,7 +459,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				programBuilder.addChild(threadCount, child);	        		
 	            continue;
 	        }
-	        Address address = programBuilder.getAddress(name);
+            MemoryObject address = programBuilder.getAddress(name);
 	        if(address != null){
 	            Store child = EventFactory.newStore(address, value, null, currentLine);
 				programBuilder.addChild(threadCount, child);
@@ -645,7 +645,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         if(register != null){
             return register;
         }
-        Address address = programBuilder.getAddress(name);
+        MemoryObject address = programBuilder.getAddress(name);
         if(address != null) {
             return address;
         }
@@ -669,7 +669,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			IExpr address = (IExpr)ctx.expr(1).accept(this);
 			IExpr value = (IExpr)ctx.expr(2).accept(this);
 			// This improves the blow-up
-			if(initMode && !(value instanceof Address)) {
+			if(initMode && !(value instanceof MemoryObject)) {
 				ExprInterface lhs = address;
 				int rhs = 0;
 				while(lhs instanceof IExprBin) {

@@ -16,7 +16,7 @@ import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.Arrays;
 import java.util.List;
@@ -75,7 +75,7 @@ public class EventFactory {
     	return fence;
     }
 
-    public static Init newInit(Address base, int offset) {
+    public static Init newInit(MemoryObject base, int offset) {
         return new Init(base,offset);
     }
 
@@ -181,13 +181,13 @@ public class EventFactory {
     public static class Pthread {
         private Pthread() {}
 
-        public static Create newCreate(Register pthread_t, String routine, Address address, int cLine) {
+        public static Create newCreate(Register pthread_t, String routine, MemoryObject address, int cLine) {
             Create create = new Create(pthread_t, routine, address);
             create.setCLine(cLine);
             return create;
         }
 
-        public static End newEnd(Address address){
+        public static End newEnd(MemoryObject address){
             return new End(address);
         }
 
@@ -195,7 +195,7 @@ public class EventFactory {
             return new InitLock(name, address, value);
         }
 
-        public static Join newJoin(Register pthread_t, Register reg, Address address, Label label) {
+        public static Join newJoin(Register pthread_t, Register reg, MemoryObject address, Label label) {
             return new Join(pthread_t, reg, address, label);
         }
 
@@ -203,7 +203,7 @@ public class EventFactory {
             return new Lock(name, address, reg, label);
         }
 
-        public static Start newStart(Register reg, Address address, Label label) {
+        public static Start newStart(Register reg, MemoryObject address, Label label) {
             return new Start(reg, address, label);
         }
 
@@ -393,7 +393,7 @@ public class EventFactory {
     public static class X86 {
         private X86() {}
 
-        public static Xchg newExchange(Address address, Register register) {
+        public static Xchg newExchange(MemoryObject address, Register register) {
             return new Xchg(address, register);
         }
 

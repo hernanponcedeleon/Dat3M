@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -114,7 +114,7 @@ public class StdProcedures {
 		// Several threads can use the same pointer name but when using addDeclarationArray, 
 		// the name should be unique, thus we add the process identifier.
 		visitor.programBuilder.addDeclarationArray(visitor.currentScope.getID() + ":" + ptr,size);
-		Address adds = visitor.programBuilder.getAddress(visitor.currentScope.getID() + ":" + ptr);
+		MemoryObject adds = visitor.programBuilder.getAddress(visitor.currentScope.getID() + ":" + ptr);
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(start, adds));
 		visitor.allocationRegs.add(start);
 	}

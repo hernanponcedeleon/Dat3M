@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.event.EventFactory.Linux;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWReadCond;
-import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import org.junit.Test;
 
@@ -23,7 +23,7 @@ public class UnrollExceptionsTest {
     public void RMWStore() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
-    	Address address = pb.getOrCreateAddress("X");
+        MemoryObject address = pb.getOrCreateAddress("X");
     	Load load = EventFactory.newRMWLoad(pb.getOrCreateRegister(0, "r1", 32), address, null);
 		pb.addChild(0, EventFactory.newRMWStore(load, address, IValue.ONE, null));
     	LoopUnrolling processor = LoopUnrolling.newInstance();
@@ -35,7 +35,7 @@ public class UnrollExceptionsTest {
     public void RMWStoreCon() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
-    	Address address = pb.getOrCreateAddress("X");
+        MemoryObject address = pb.getOrCreateAddress("X");
     	RMWReadCond load = Linux.newRMWReadCondCmp(pb.getOrCreateRegister(0, "r1", 32), BConst.TRUE, address, null);
 		pb.addChild(0, Linux.newRMWStoreCond(load, address, IValue.ONE, null));
     	LoopUnrolling processor = LoopUnrolling.newInstance();
@@ -57,7 +57,7 @@ public class UnrollExceptionsTest {
     public void FenceCond() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
-    	Address address = pb.getOrCreateAddress("X");
+        MemoryObject address = pb.getOrCreateAddress("X");
     	RMWReadCond load = Linux.newRMWReadCondCmp(pb.getOrCreateRegister(0, "r1", 32), BConst.TRUE, address, null);
 		pb.addChild(0, Linux.newConditionalBarrier(load, null));
     	LoopUnrolling processor = LoopUnrolling.newInstance();
@@ -69,7 +69,7 @@ public class UnrollExceptionsTest {
     public void ExecutionStatus() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
-    	Address address = pb.getOrCreateAddress("X");
+        MemoryObject address = pb.getOrCreateAddress("X");
         RMWStoreExclusive store = newRMWStoreExclusive(address, IValue.ONE, null);
 		pb.addChild(0, EventFactory.newExecutionStatus(pb.getOrCreateRegister(0, "r1", 32), store));
     	LoopUnrolling processor = LoopUnrolling.newInstance();

@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
@@ -13,10 +13,10 @@ import org.sosy_lab.java_smt.api.SolverContext;
  */
 public class Init extends MemEvent {
 
-	private final Address base;
+	private final MemoryObject base;
 	private final int offset;
 	
-	public Init(Address b, int o) {
+	public Init(MemoryObject b, int o) {
 		super(b.add(o), null);
 		base = b;
 		offset = o;
@@ -28,7 +28,7 @@ public class Init extends MemEvent {
 	 * @return
 	 * Address of the array whose field is initialized in this event.
 	 */
-	public Address getBase() {
+	public MemoryObject getBase() {
 		return base;
 	}
 

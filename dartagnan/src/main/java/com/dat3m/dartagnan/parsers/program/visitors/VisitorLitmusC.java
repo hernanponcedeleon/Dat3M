@@ -16,7 +16,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.IfAsJump;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
@@ -87,7 +87,7 @@ public class VisitorLitmusC
             programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText());
         } else {
             String rightName = ctx.varName(1).getText();
-            Address address = programBuilder.getAddress(rightName);
+            MemoryObject address = programBuilder.getAddress(rightName);
             if(address != null){
                 programBuilder.initLocEqConst(ctx.varName(0).getText(), address);
             } else {
@@ -103,7 +103,7 @@ public class VisitorLitmusC
             programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), -1);
         } else {
             String rightName = ctx.varName(1).getText();
-            Address address = programBuilder.getAddress(rightName);
+            MemoryObject address = programBuilder.getAddress(rightName);
             if(address != null){
                 programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), address);
             } else {
@@ -131,7 +131,7 @@ public class VisitorLitmusC
                     } else {
                         String varName = elCtx.varName().getText();
                         //see test/resources/arrays/ok/C-array-ok-17.litmus
-                        Address address = programBuilder.getAddress(varName);
+                        MemoryObject address = programBuilder.getAddress(varName);
                         if(address != null){
                             values.add(address);
                         } else {
@@ -141,7 +141,7 @@ public class VisitorLitmusC
                     }
                 }
                 programBuilder.addDeclarationArray(name,values.size());
-                Address address = programBuilder.getAddress(name);
+                MemoryObject address = programBuilder.getAddress(name);
                 for(int i = 0; i < values.size(); i++) {
                     address.setInitialValue(i,values.get(i));
                 }
@@ -173,7 +173,7 @@ public class VisitorLitmusC
         if(ctx != null){
             for(LitmusCParser.VarNameContext varName : ctx.varName()){
                 String name = varName.getText();
-                Address address = programBuilder.getOrCreateAddress(name);
+                MemoryObject address = programBuilder.getOrCreateAddress(name);
                 Register register = programBuilder.getOrCreateRegister(scope, name, -1);
                 programBuilder.addChild(currentThread, EventFactory.newLocal(register, address));
             }
@@ -409,7 +409,7 @@ public class VisitorLitmusC
         }
 
         ExprInterface value = (ExprInterface)ctx.re().accept(this);
-        if(variable instanceof Address || variable instanceof Register){
+        if(variable instanceof MemoryObject || variable instanceof Register){
             Event event = EventFactory.newStore((IExpr) variable, value, "NA");
             return programBuilder.addChild(currentThread, event);
         }
@@ -446,7 +446,7 @@ public class VisitorLitmusC
             if(register != null){
                 return register;
             }
-            Address address = programBuilder.getAddress(ctx.getText());
+            MemoryObject address = programBuilder.getAddress(ctx.getText());
             if(address != null){
                 register = programBuilder.getOrCreateRegister(scope, null, -1);
                 programBuilder.addChild(currentThread, EventFactory.newLoad(register, address, "NA"));
@@ -454,7 +454,7 @@ public class VisitorLitmusC
             }
             return programBuilder.getOrCreateRegister(scope, ctx.getText(), -1);
         }
-        Address address = programBuilder.getOrCreateAddress(ctx.getText());
+        MemoryObject address = programBuilder.getOrCreateAddress(ctx.getText());
         Register register = programBuilder.getOrCreateRegister(scope, null, -1);
         programBuilder.addChild(currentThread, EventFactory.newLoad(register, address, "NA"));
         return register;

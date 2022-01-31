@@ -16,7 +16,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 /**
  * Associated with an array of memory locations.
  */
-public class Address extends IConst implements ExprInterface, LastValueInterface {
+public class MemoryObject extends IConst implements ExprInterface, LastValueInterface {
 
     private final int index;
     private int size;
@@ -24,7 +24,7 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
 
     private final HashMap<Integer,IConst> initialValues = new HashMap<>();
 
-    Address(int index, int s) {
+    MemoryObject(int index, int s) {
         this.index = index;
         size = s;
     }
@@ -139,7 +139,7 @@ public class Address extends IConst implements ExprInterface, LastValueInterface
             return false;
         }
 
-        return index == ((Address)obj).index;
+        return index == ((MemoryObject)obj).index;
     }
 
     @Override
