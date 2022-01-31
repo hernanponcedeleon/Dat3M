@@ -12,6 +12,8 @@ import com.dat3m.dartagnan.program.memory.Address;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -49,7 +51,11 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     // ================================ Construction ================================
 
-    FieldSensitiveAndersen(Program program) {
+    public static FieldSensitiveAndersen fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
+        return new FieldSensitiveAndersen(program);
+    }
+
+    private FieldSensitiveAndersen(Program program) {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
         for(Event e : program.getCache().getEvents(FilterBasic.get(Tag.MEMORY))) {
             processLocs((MemEvent)e);
