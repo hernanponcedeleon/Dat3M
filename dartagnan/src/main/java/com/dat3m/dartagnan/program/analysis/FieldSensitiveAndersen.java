@@ -214,7 +214,9 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     private static List<Location> fields(Collection<Location> v, int offset, int alignment) {
         return v.stream()
                 .flatMap(l->range(0,div(l.base.size(),alignment))
-                        .mapToObj(i->new Location(l.base,l.offset+offset+i*alignment)))
+                        .map(i->l.offset+offset+i*alignment)
+                        .filter(i->0<=i&&i<l.base.size())
+                        .mapToObj(i->new Location(l.base,i)))
                 .filter(l->0<=l.offset&&l.offset<l.base.size())
                 .collect(toList());
     }
