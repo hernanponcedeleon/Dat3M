@@ -27,10 +27,15 @@ import static java.util.stream.IntStream.range;
 
 /**
  * Offset- and alignment-enhanced inclusion-based pointer analysis based on Andersen's.
+ * This implementation is insensitive to control-flow, but field-sensitive.
  * <p>
  * The edges of the inclusion graph are labeled with sets of offset-alignment pairs.
- * Expressions with more precise behavior have the form `base [+ constant * register]* + constant`.
- * This implementation is insensitive to control-flow, but field-sensitive.
+ * Expressions with well-defined behavior have the form `base [+ constant * register]* + constant`.
+ * Bases are either {@link Register variables} or {@link Address direct references to structures}.
+ * Non-conforming expressions are probed for bases, which contribute in the most general manner:
+ * Any structure that occurs
+ * <p>
+ * Structures, that never occurs in any expression, are considered unreachable.
  *
  * @author xeren
  */

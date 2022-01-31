@@ -33,7 +33,7 @@ public interface AliasAnalysis {
     @Options
     final class InjectionTarget {
         @Option(name = ALIAS_METHOD,
-                description = "General type of analysis, with ")
+                description = "General type of analysis that approximates the 'loc' relationship between memory events.")
         private Class<?extends AliasAnalysis> method = FieldSensitiveAndersen.class;
     }
 }
