@@ -24,7 +24,7 @@ int current_numa_node() {
     __VERIFIER_assume(node != -1);
     return node;
 #else
-    return __VERIFIER_nondet_int();
+    return __VERIFIER_nondet_uint();
 #endif
 }
  
