@@ -6,9 +6,12 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
+import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.catomic.AtomicAbstract;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
@@ -133,6 +136,21 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		throw new IllegalArgumentException("Compilation for " + e.getClass().getName() + " is not supported by " + getClass().getName());
 	}
 
+	@Override
+	public List<Event> visitRMW(RMW e) {
+        Register resultRegister = e.getResultRegister();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+        Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision()); 
+		Load load = newRMWLoad(dummyReg, address, mo);
+        RMWStore store = newRMWStore(load, address, e.getMemValue(), mo);
+		return eventSequence(
+        		load,
+                store,
+                newLocal(resultRegister, dummyReg)
+        );
+	}
+	
 	@Override
 	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
 		throw new IllegalArgumentException("Compilation for " + e.getClass().getName() + " is not supported by " + getClass().getName());
