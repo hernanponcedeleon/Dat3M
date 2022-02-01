@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
+import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
@@ -413,6 +414,18 @@ public class EventFactory {
 
         public static Fence newMemoryFence() {
             return newFence(MFENCE);
+        }
+    }
+
+
+    // =============================================================================================
+    // =========================================== LISA ============================================
+    // =============================================================================================
+    public static class LISA {
+        private LISA() {}
+
+        public static RMW newRMW(IExpr address, Register register, IExpr value, String mo) {
+            return new RMW(address, register, value, mo);
         }
     }
 
