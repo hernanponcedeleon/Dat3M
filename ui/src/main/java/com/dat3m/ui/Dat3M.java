@@ -88,9 +88,9 @@ public class Dat3M extends JFrame implements ActionListener {
 	}
 
 	private void runTest(){
-		UiOptions options = optionsPane.getOptions();
 		testResult = null;
 		try {
+			UiOptions options = optionsPane.getOptions();
 			Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
 			Program program = new ProgramParser().parse(programEditor.getEditorPane().getText(), programEditor.getLoadedFormat());
 			try {
