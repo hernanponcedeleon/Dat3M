@@ -55,7 +55,7 @@ static inline int spinlock_tryacquire(struct spinlock_s *l)
 
 static inline void spinlock_release(struct spinlock_s *l)
 {
-    atomic_store_explicit(&l->lock, 0, memory_order_release);
+    atomic_store_explicit(&l->lock, 0, memory_order_relaxed);
 }
 
 // main.c
