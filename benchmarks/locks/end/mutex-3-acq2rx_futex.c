@@ -5,6 +5,8 @@
 #include <stdatomic.h>
 #include <assert.h>
 
+#define ITERS 1
+
 // futex.h
 //
 static atomic_int sig;
@@ -101,12 +103,18 @@ void *thread_n(void *arg)
 {
     intptr_t index = ((intptr_t) arg);
 
+    int rpt = ITERS;
+again:
+
     mutex_lock(&mutex);
     shared = index;
     int r = shared;
     assert(r == index);
     sum++;
     mutex_unlock(&mutex);
+    
+    if (--rpt) goto again;
+
     return NULL;
 }
 
@@ -124,7 +132,7 @@ int main()
     pthread_join(t1, 0);
     pthread_join(t2, 0);
 
-    assert(sum == 3);
+    assert(sum == 3 * ITERS);
 
     return 0;
 }

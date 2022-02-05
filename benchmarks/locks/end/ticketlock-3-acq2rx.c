@@ -5,6 +5,8 @@
 #include <stdatomic.h>
 #include <assert.h>
 
+#define ITERS 1
+
 // ticketlock.h
 //
 struct ticketlock_s {
@@ -69,12 +71,18 @@ void *thread_n(void *arg)
 {
     intptr_t index = ((intptr_t) arg);
 
+    int rpt = ITERS;
+again:
+
     ticketlock_acquire(&lock);
     shared = index;
     int r = shared;
     assert(r == index);
     sum++;
     ticketlock_release(&lock);
+    
+    if (--rpt) goto again;
+
     return NULL;
 }
 
@@ -94,7 +102,7 @@ int main()
     pthread_join(t1, 0);
     pthread_join(t2, 0);
 
-    assert(sum == 3);
+    assert(sum == 3 * ITERS);
 
     return 0;
 }

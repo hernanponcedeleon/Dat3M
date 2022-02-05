@@ -5,6 +5,8 @@
 #include <stdatomic.h>
 #include <assert.h>
 
+#define ITERS 1
+
 // ttaslock.h
 //
 struct ttaslock_s {
@@ -59,12 +61,18 @@ void *thread_n(void *arg)
 {
     intptr_t index = ((intptr_t) arg);
 
+    int rpt = ITERS;
+again:
+
     ttaslock_acquire(&lock);
     shared = index;
     int r = shared;
     assert(r == index);
     sum++;
     ttaslock_release(&lock);
+    
+    if (--rpt) goto again;
+    
     return NULL;
 }
 
@@ -88,7 +96,7 @@ int main()
     pthread_join(t4, 0);
     pthread_join(t5, 0);
 
-    assert(sum == 5);
-    
+    assert(sum == 5 * ITERS);
+
     return 0;
 }
