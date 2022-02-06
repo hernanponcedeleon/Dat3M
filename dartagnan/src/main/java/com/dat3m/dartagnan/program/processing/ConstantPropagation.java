@@ -25,6 +25,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2INT;
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2UINT;
@@ -73,6 +74,7 @@ public class ConstantPropagation implements ProgramProcessor {
 
         while (current != null) {
         	Event e = current;
+        	int id = e.getCId();
 
         	// Compute information to propagate. It cannot be computed before-hand
         	// because registers can be overwritten, thus the event creation has 
@@ -91,7 +93,9 @@ public class ConstantPropagation implements ProgramProcessor {
         	}
         	// The label can be reach by the predecessor and at least one jump
         	// We don't need to consider the final label END_OF_TX
-        	if(e instanceof Label && e.getListeners().size() > 0 && !e.equals(e.getThread().getExit())) {
+        	if(e instanceof Label && e.getListeners()
+        			.stream().filter(l -> l.getCId() < id)
+        			.collect(Collectors.toList()).size() > 0 && !e.equals(e.getThread().getExit())) {
         		// TODO here we need a proper join
         		// Right now we just clean up the whole information we have
         		// It still does a whole propagation inside a block (i.e. between jumps)
