@@ -30,13 +30,6 @@ import static com.dat3m.dartagnan.expression.op.IOpUn.BV2INT;
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2UINT;
 
 
-// FIXME this is buggy
-// The problem is that in a program like this
-// r1 <- 0
-// goto b2
-// r1 <- 1
-// b2
-// The maps at b2 contains 1 instead of 0 (or top in the more general case)
 public class ConstantPropagation implements ProgramProcessor {
 	
     private final static Logger logger = LogManager.getLogger(ConstantPropagation.class);
@@ -95,6 +88,15 @@ public class ConstantPropagation implements ProgramProcessor {
         		if(l.getExpr() instanceof IExpr) {
             		propagationMap.get(currentThreadId).put(l.getResultRegister(), evaluate((IExpr)l.getExpr(), currentThreadId));
         		}
+        	}
+        	// The label can be reach by the predecessor and at least one jump
+        	// We don't need to consider the final label END_OF_TX
+        	if(e instanceof Label && e.getListeners().size() > 0 && !e.equals(e.getThread().getExit())) {
+        		// TODO here we need a proper join
+        		// Right now we just clean up the whole information we have
+        		// It still does a whole propagation inside a block (i.e. between jumps)
+        		// and seems to be sufficient to propagate in most of the cases.
+        		propagationMap.put(currentThreadId, new HashMap<>());
         	}
         	
         	// Event creation
@@ -168,21 +170,19 @@ public class ConstantPropagation implements ProgramProcessor {
     				e = EventFactory.newStore(newAddress, newValue, mo);
             	}
         	}
-// Locals are still causing problems
-        	
         	// Local events coming from assertions cause problems because the encoding of 
         	// AssertInline uses getResultRegisterExpr() which gets a value when calling
         	// Local.initialise() which is never the case for the new Event e below.
         	else if(current instanceof Local && ((Local)current).getExpr() instanceof IExpr && !current.is(Tag.ASSERTION)) {
-//        		Register reg = ((Local)current).getResultRegister();
-//        		
-//        		IExpr oldValue = (IExpr) ((Local)current).getExpr();
-//        		IExpr newValue = evaluate(oldValue, currentThreadId);
-//        		newValue = newValue instanceof ITop ? oldValue : newValue; 
-//        		Preconditions.checkState(newValue != null, 
-//        				String.format("Expression %s got no value after constant propagation analysis", oldValue));
-//        		
-//        		e = EventFactory.newLocal(reg, newValue);
+        		Register reg = ((Local)current).getResultRegister();
+        		
+        		IExpr oldValue = (IExpr) ((Local)current).getExpr();
+        		IExpr newValue = evaluate(oldValue, currentThreadId);
+        		newValue = newValue instanceof ITop ? oldValue : newValue; 
+        		Preconditions.checkState(newValue != null, 
+        				String.format("Expression %s got no value after constant propagation analysis", oldValue));
+        		
+        		e = EventFactory.newLocal(reg, newValue);
         	}
 
         	// Update propagation counter
