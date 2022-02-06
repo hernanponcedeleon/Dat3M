@@ -12,6 +12,9 @@ import com.google.common.collect.ImmutableSet;
 
 import static com.dat3m.dartagnan.program.event.Tag.C11.*;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class AtomicStore extends MemEvent implements RegReaderData {
 
     private final ExprInterface value;
@@ -22,7 +25,9 @@ public class AtomicStore extends MemEvent implements RegReaderData {
         Preconditions.checkArgument(!mo.equals(MO_ACQUIRE) && !mo.equals(MO_ACQUIRE_RELEASE),
         		getClass().getName() + " can not have memory order: " + mo);
         this.value = value;
-        this.dataRegs = value.getRegs();
+        Set<Register> regs = new HashSet<Register>(value.getRegs());
+        regs.addAll(address.getRegs());
+        this.dataRegs = ImmutableSet.copyOf(regs);
         addFilters(Tag.ANY, Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.REG_READER);
     }
 
