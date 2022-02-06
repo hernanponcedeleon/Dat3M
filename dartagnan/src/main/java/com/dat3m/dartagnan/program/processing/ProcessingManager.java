@@ -35,7 +35,7 @@ public class ProcessingManager implements ProgramProcessor {
 	@Option(name= CONSTANT_PROPAGATION,
 			description="Performs constant propagation.",
 			secure=true)
-		private boolean constantPropagation = false;
+		private boolean constantPropagation = true;
 
     // ======================================================================
 
@@ -49,6 +49,7 @@ public class ProcessingManager implements ProgramProcessor {
                 Simplifier.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
+                DeadStoreElimination.fromConfig(config),
                 Compilation.fromConfig(config),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null
         ));
