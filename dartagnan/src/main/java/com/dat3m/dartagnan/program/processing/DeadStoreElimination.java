@@ -6,9 +6,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-
-import static com.dat3m.dartagnan.program.event.Tag.READ;
-import static com.dat3m.dartagnan.program.event.Tag.REG_WRITER;
+import static com.dat3m.dartagnan.program.event.Tag.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +18,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 public class DeadStoreElimination implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(DeadStoreElimination.class);
+    private Program program;
 
     private DeadStoreElimination() { }
 
@@ -33,6 +32,7 @@ public class DeadStoreElimination implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
+    	this.program = program;
         logger.info("#Events before DSE: " + program.getEvents().size());
 
         for (Thread t : program.getThreads()) {
@@ -61,7 +61,11 @@ public class DeadStoreElimination implements ProgramProcessor {
     			boolean notUsedByMemEvent = e.getSuccessors().stream()
     					.filter(s -> s instanceof MemEvent && !removed.contains(s))
     					.noneMatch(s -> ((MemEvent)s).getAddress().getRegs().contains(rw.getResultRegister()));
-				if(notUsedByRegReader && notUsedByMemEvent) {
+    			// We use register to pass the parameters to new threads
+    			boolean notUsedByOtherThread = program.getEvents().stream()
+    					.filter(o -> !o.getThread().equals(e.getThread()) && o instanceof RegReaderData && !removed.contains(o))
+    					.noneMatch(s -> ((RegReaderData)s).getDataRegs().contains(rw.getResultRegister()));
+				if(notUsedByRegReader && notUsedByMemEvent && notUsedByOtherThread) {
     				removed.add(e);
     			}
     		}
