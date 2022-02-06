@@ -4,6 +4,8 @@ public class OptionNames {
 
 	// Base Options
 	public static final String PROPERTY = "property";
+	public static final String BOUND = "bound";
+	public static final String TARGET = "target";
 	public static final String METHOD = "method";
 	public static final String SOLVER = "solver";
 	public static final String TIMEOUT = "timeout";
@@ -20,8 +22,6 @@ public class OptionNames {
 	public static final String BREAK_SYMMETRY_BY_SYNC_DEGREE = "encoding.symmetry.orderBySyncDegree";
 	
 	// Program Processing Options
-	public static final String BOUND = "program.processing.loopBound";
-	public static final String TARGET = "program.processing.compilationTarget";
 	public static final String DETERMINISTIC_REORDERING = "program.processing.detReordering";
 	public static final String REDUCE_SYMMETRY = "program.processing.reduceSymmetry";
 	public static final String ATOMIC_BLOCKS_AS_LOCKS = "program.processing.atomicBlocksAsLocks";
@@ -48,4 +48,9 @@ public class OptionNames {
 	public static final String SANITIZE = "svcomp.sanitize";
 	public static final String OPTIMIZATION = "svcomp.optimization";
 	public static final String INTEGER_ENCODING = "svcomp.integerEncoding";
+
+	// Debugging Options
+	public static final String PRINT_PROGRAM_AFTER_SIMPLIFICATION = "printer.afterSimplification";
+	public static final String PRINT_PROGRAM_AFTER_UNROLLING = "printer.afterUnrolling";
+	public static final String PRINT_PROGRAM_AFTER_COMPILATION = "printer.afterCompilation";
 }

@@ -124,10 +124,7 @@ public abstract class AbstractLitmusTest {
     @Test
     @CSVLogger.FileName("csv/two-solvers")
     public void test() throws Exception {
-        if (programProvider.get().getAss() != null) {
-            // @HP: Is the check for assertion != null needed?
-            assertEquals(expected, TwoSolvers.run(contextProvider.get(), proverProvider.get(), prover2Provider.get(), taskProvider.get()));
-        }
+    	assertEquals(expected, TwoSolvers.run(contextProvider.get(), proverProvider.get(), prover2Provider.get(), taskProvider.get()));
     }
 
     //@Test

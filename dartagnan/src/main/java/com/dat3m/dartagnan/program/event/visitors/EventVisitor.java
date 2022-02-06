@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.visitors;
 
 import com.dat3m.dartagnan.program.event.arch.tso.*;
 import com.dat3m.dartagnan.program.event.arch.aarch64.*;
+import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
@@ -66,6 +67,9 @@ public interface EventVisitor<T> {
 
 	// TSO Events
 	default T visitXchg(Xchg e) { return visitMemEvent(e); };
+
+	// LISA Events
+	default T visitRMW(RMW e) { return visitMemEvent(e); };
 
 	// Atomic Events
 	default T visitAtomicAbstract(AtomicAbstract e) { return visitMemEvent(e); };

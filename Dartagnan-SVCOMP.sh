@@ -25,7 +25,7 @@ else
 
     FLAGS="--method=assume"
     if ! grep -q "pthread" $PROGRAMPATH; then
-        FLAGS+=" -o O3 -e bit-vector cat/sc.cat"
+        FLAGS+=" --svcomp.optimization=O3 --svcomp.integerEncoding=bit-vector cat/sc.cat"
     else
         FLAGS+=" --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat"
     fi

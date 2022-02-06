@@ -111,7 +111,7 @@ public class Dartagnan extends BaseOptions {
                     .setOption(PHANTOM_REFERENCES, valueOf(o.usePhantomReferences()))
                     .build();
             try (SolverContext ctx = SolverContextFactory.createSolverContext(
-                    config,
+            		solverConfig,
                     BasicLogManager.create(solverConfig),
                     sdm.getNotifier(),
                     o.getSolver());
