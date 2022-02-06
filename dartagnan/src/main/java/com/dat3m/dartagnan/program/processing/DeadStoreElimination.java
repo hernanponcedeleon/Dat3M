@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 
@@ -54,9 +55,13 @@ public class DeadStoreElimination implements ProgramProcessor {
     		// We cannot remove load events
     		if(e.is(REG_WRITER) && !e.is(READ)) {
     			RegWriter rw = (RegWriter)e;
-    			if(e.getSuccessors().stream()
+    			boolean notUsedByRegReader = e.getSuccessors().stream()
     					.filter(s -> s instanceof RegReaderData && !removed.contains(s))
-    					.noneMatch(s -> ((RegReaderData)s).getDataRegs().contains(rw.getResultRegister()))) {
+    					.noneMatch(s -> ((RegReaderData)s).getDataRegs().contains(rw.getResultRegister()));
+    			boolean notUsedByMemEvent = e.getSuccessors().stream()
+    					.filter(s -> s instanceof MemEvent && !removed.contains(s))
+    					.noneMatch(s -> ((MemEvent)s).getAddress().getRegs().contains(rw.getResultRegister()));
+				if(notUsedByRegReader && notUsedByMemEvent) {
     				removed.add(e);
     			}
     		}
