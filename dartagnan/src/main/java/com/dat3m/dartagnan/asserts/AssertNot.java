@@ -1,8 +1,12 @@
 package com.dat3m.dartagnan.asserts;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import com.dat3m.dartagnan.program.Register;
 import com.google.common.base.Preconditions;
 
 public class AssertNot extends AbstractAssert {
@@ -27,4 +31,11 @@ public class AssertNot extends AbstractAssert {
     public String toString() {
         return "!" + child.toString();
     }
+
+    @Override
+	public List<Register> getRegs() {
+		List<Register> regs = new ArrayList<>();
+		regs.addAll(child.getRegs());
+		return regs;
+	}
 }

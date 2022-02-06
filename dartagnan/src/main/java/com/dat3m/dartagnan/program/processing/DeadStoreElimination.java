@@ -65,7 +65,8 @@ public class DeadStoreElimination implements ProgramProcessor {
     			boolean notUsedByOtherThread = program.getEvents().stream()
     					.filter(o -> !o.getThread().equals(e.getThread()) && o instanceof RegReaderData && !removed.contains(o))
     					.noneMatch(s -> ((RegReaderData)s).getDataRegs().contains(rw.getResultRegister()));
-				if(notUsedByRegReader && notUsedByMemEvent && notUsedByOtherThread) {
+    			boolean notUsedByAssertion = !program.getAss().getRegs().contains(rw.getResultRegister());
+				if(notUsedByRegReader && notUsedByMemEvent && notUsedByOtherThread && notUsedByAssertion) {
     				removed.add(e);
     			}
     		}

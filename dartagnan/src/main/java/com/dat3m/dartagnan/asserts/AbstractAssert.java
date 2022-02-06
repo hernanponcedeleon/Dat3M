@@ -1,7 +1,11 @@
 package com.dat3m.dartagnan.asserts;
 
+import java.util.List;
+
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import com.dat3m.dartagnan.program.Register;
 
 //TODO: None of the Assert classes implement equals or hashcode.
 public abstract class AbstractAssert {
@@ -40,4 +44,6 @@ public abstract class AbstractAssert {
     }
 
     public abstract BooleanFormula encode(SolverContext ctx);
+    
+    public abstract List<Register> getRegs();
 }
