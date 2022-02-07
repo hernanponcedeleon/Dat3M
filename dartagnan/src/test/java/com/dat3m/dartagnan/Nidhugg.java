@@ -27,7 +27,7 @@ public class Nidhugg {
     public static Iterable<Object[]> data() throws IOException {
 
     	// We want the files to be created every time we run the unit tests
-        initialiseCSVFile(Nidhugg.class, "nidhugg", "tso");
+        initialiseCSVFile(Nidhugg.class, "nidhugg");
 
 		List<Object[]> data = new ArrayList<>();
 
@@ -69,7 +69,7 @@ public class Nidhugg {
     @Test(timeout = TIMEOUT)
     public void test() {
     	
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "nidhugg", "tso"), true)))
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "nidhugg"), true)))
            {
         		writer.newLine();
         		writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");

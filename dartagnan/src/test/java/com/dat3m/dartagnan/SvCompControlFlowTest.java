@@ -1,68 +1,58 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.analysis.Method;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.rules.Provider;
+import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
-import static com.dat3m.dartagnan.utils.ResourceHelper.initialiseCSVFile;
 
 @RunWith(Parameterized.class)
 public class SvCompControlFlowTest extends AbstractSvCompTest {
 
-	@Parameterized.Parameters(name = "{index}: {0} bound={2}")
+    public SvCompControlFlowTest(String name, int bound) {
+        super(name, bound);
+    }
+
+    @Override
+    protected Provider<String> getProgramPathProvider() {
+        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "boogie/cf/" + name + "-O3.bpl");
+    }
+
+    @Override
+    protected Provider<Wmm> getWmmProvider() {
+        return Providers.createWmmFromName(() -> "sc");
+    }
+
+    @Parameterized.Parameters(name = "{index}: {0}, bound={1}")
     public static Iterable<Object[]> data() throws IOException {
-        Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/sc.cat"));
+        return Arrays.asList(new Object[][] {
+                {"s3_clnt_2.cil-1", 6},
+                {"s3_clnt_3.cil-1", 1},
+                {"s3_srvr_1.cil-1", 4},
+                {"s3_srvr_2.cil-2", 4},
+                {"s3_srvr_6.cil-1", 1},
+                {"s3_srvr_10.cil", 1},
+                {"s3_srvr_13.cil", 4},
+                {"test_locks_5", 1},
+                {"test_locks_6", 1},
+                {"test_locks_7", 1},
+                {"test_locks_8", 1},
+                {"test_locks_9", 1},
+                {"test_locks_10", 1},
+                {"test_locks_11", 1},
+                {"test_locks_12", 1},
+                {"test_locks_13", 1},
+                {"test_locks_14-1", 1},
+                {"test_locks_14-2", 1},
+                {"test_locks_15-1", 1},
+                {"test_locks_15-2", 1}
+        });
 
-        Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
-        Settings s4 = new Settings(Alias.CFIS, 4, TIMEOUT);
-        Settings s6 = new Settings(Alias.CFIS, 6, TIMEOUT);
-
-    	// We want the files to be created every time we run the unit tests
-        for(Method method : Method.values()) {
-        	initialiseCSVFile(SvCompControlFlowTest.class, method.asStringOption(), "");
-        }
-        
-        List<Object[]> data = new ArrayList<>();
-
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/kbfiltr_simpl1.cil-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/kbfiltr_simpl2.cil-1-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/s3_clnt_2.cil-1-O3.bpl", wmm, s6});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/s3_clnt_3.cil-1-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/s3_srvr_1.cil-1-O3.bpl", wmm, s4});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/s3_srvr_2.cil-2-O3.bpl", wmm, s4});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/s3_srvr_6.cil-1-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/s3_srvr_10.cil-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/s3_srvr_13.cil-O3.bpl", wmm, s4});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_5-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_6-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_7-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_8-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_9-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_10-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_11-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_12-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_13-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_14-1-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_14-2-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_15-1-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_15-2-O3.bpl", wmm, s1});
-        
-
-        return data;
     }
 
-    public SvCompControlFlowTest(String path, Wmm wmm, Settings settings) {
-    	super(path, wmm, settings);
-    }
 }

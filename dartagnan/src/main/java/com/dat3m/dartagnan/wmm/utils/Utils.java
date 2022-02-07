@@ -1,14 +1,13 @@
 package com.dat3m.dartagnan.wmm.utils;
 
-import com.dat3m.dartagnan.program.event.Event;
-
-import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
-import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
-
+import com.dat3m.dartagnan.program.event.core.Event;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
+import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
 
 public class Utils {
 

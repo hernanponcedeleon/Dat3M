@@ -1,14 +1,17 @@
 package com.dat3m.dartagnan.wmm.relation;
 
-import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.encoding.Encoder;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -23,7 +26,8 @@ import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
  *
  * @author Florian Furbach
  */
-public abstract class Relation implements Dependent<Relation> {
+//TODO: Remove "Encoder" once we split data and operations appropriately
+public abstract class Relation implements Encoder, Dependent<Relation> {
 
     public static boolean PostFixApprox = false;
 
@@ -31,21 +35,23 @@ public abstract class Relation implements Dependent<Relation> {
     protected String term;
 
     protected VerificationTask task;
+    protected Context analysisContext;
 
     protected boolean isEncoded;
 
-    protected TupleSet minTupleSet;
-    protected TupleSet maxTupleSet;
-    protected TupleSet encodeTupleSet;
+    protected TupleSet minTupleSet = null;
+    protected TupleSet maxTupleSet = null;
+    protected TupleSet encodeTupleSet = null;
 
     protected int recursiveGroupId = 0;
     protected boolean forceUpdateRecursiveGroupId = false;
     protected boolean isRecursive = false;
     protected boolean forceDoEncode = false;
 
-    public Relation() {}
+    public Relation() { }
 
     public Relation(String name) {
+        this();
         this.name = name;
     }
 
@@ -67,17 +73,27 @@ public abstract class Relation implements Dependent<Relation> {
         return recursiveGroupId;
     }
 
-    public void initialise(VerificationTask task, SolverContext ctx){
-        this.task = task;
-        this.minTupleSet = null;
-        this.maxTupleSet = null;
+    // TODO: The following two methods are provided because currently Relations are treated as three things:
+    //  data objects, static analysers (relation analysis) and encoders of said data objects.
+    //  Once we split these aspects, we might get rid of these methods
+
+    // Due to being an encoder
+    public void initializeEncoding(SolverContext ctx) {
+        Preconditions.checkState(this.maxTupleSet != null && this.minTupleSet != null,
+                "No available relation data to encode. Perform RelationAnalysis before encoding.");
         this.isEncoded = false;
-        encodeTupleSet = new TupleSet();
+        this.encodeTupleSet = new TupleSet();
     }
 
-    /*
-    TODO: getMinTupleSet is no yet used extensively
-     */
+    // TODO: We misuse <task> as data object and analysis information object.
+    // Due to partaking in relation analysis
+    public void initializeRelationAnalysis(VerificationTask task, Context context) {
+        this.task = task;
+        this.analysisContext = context;
+        this.maxTupleSet = null;
+        this.minTupleSet = null;
+    }
+
     public abstract TupleSet getMinTupleSet();
 
     public abstract TupleSet getMaxTupleSet();
@@ -175,10 +191,10 @@ public abstract class Relation implements Dependent<Relation> {
             e1 = e2;
             e2 = temp;
         }
-        BranchEquivalence eq = task.getBranchEquivalence();
-        if (eq.isImplied(e1, e2) && e2.cfImpliesExec()) {
+        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+        if (exec.isImplied(e1, e2)) {
             return e1.exec();
-        } else if (eq.isImplied(e2 ,e1) && e1.cfImpliesExec()) {
+        } else if (exec.isImplied(e2 ,e1)) {
             return e2.exec();
         }
         return ctx.getFormulaManager().getBooleanFormulaManager().and(e1.exec(), e2.exec());
@@ -189,8 +205,8 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {
-        BranchEquivalence eq = task.getBranchEquivalence();
-        tupleSet.removeIf(t -> eq.areMutuallyExclusive(t.getFirst(), t.getSecond()));
+        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+        tupleSet.removeIf(t -> exec.areMutuallyExclusive(t.getFirst(), t.getSecond()));
     }
 
     // ========================== Utility methods =========================

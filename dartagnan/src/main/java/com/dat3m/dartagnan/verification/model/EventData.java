@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.Event;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.program.utils.EType.*;
+import static com.dat3m.dartagnan.program.event.Tag.*;
 
 
 //EventData represents all data associated with an event in a concrete model.
@@ -89,7 +89,7 @@ public class EventData implements Comparable<EventData> {
     	return event.is(EXCL);
     }
     public boolean isLock() {
-    	return event.is(LOCK);
+    	return event.is(C11.LOCK);
     }
     public boolean isRMW() {
     	return event.is(RMW);

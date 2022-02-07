@@ -1,31 +1,29 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.CondJump;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Label;
-import com.dat3m.dartagnan.program.event.Skip;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.*;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class ProgramBuilder {
 
     private final Map<Integer, Thread> threads = new HashMap<>();
 
-    private final Map<String, Location> locations = new HashMap<>();
-    private final Map<String, Address> pointers = new HashMap<>();
+    private final Map<String,Address> locations = new HashMap<>();
 
-    private final Map<IExpr, IConst> iValueMap = new HashMap<>();
     private final Memory memory = new Memory();
 
     private final Map<String, Label> labels = new HashMap<>();
@@ -36,9 +34,10 @@ public class ProgramBuilder {
     private int lastOrigId = 0;
 
     public Program build(){
-        Program program = new Program(memory, ImmutableSet.copyOf(locations.values()));
+        Program program = new Program(memory);
         buildInitThreads();
         for(Thread thread : threads.values()){
+        	addChild(thread.getId(), getOrCreateLabel("END_OF_T" + thread.getId()));
             validateLabels(thread);
             program.add(thread);
         }
@@ -61,7 +60,7 @@ public class ProgramBuilder {
 
     public Event addChild(int thread, Event child){
         if(!threads.containsKey(thread)){
-            throw new RuntimeException("Thread " + thread + " is not initialised");
+            throw new MalformedProgramException("Thread " + thread + " is not initialised");
         }
         child.setOId(lastOrigId++);
         threads.get(thread).append(child);
@@ -79,52 +78,41 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Declarators
 
-    public void initLocEqLocPtr(String leftName, String rightName, int precision){
-        Location location = getOrCreateLocation(leftName, precision);
-        iValueMap.put(location.getAddress(), getOrCreateLocation(rightName, precision).getAddress());
+    public void initLocEqLocPtr(String leftName, String rightName){
+        initLocEqConst(leftName,getOrCreateAddress(rightName));
     }
 
-    public void initLocEqLocVal(String leftName, String rightName, int precision){
-        Location left = getOrCreateLocation(leftName, precision);
-        Location right = getOrCreateLocation(rightName, precision);
-        iValueMap.put(left.getAddress(), iValueMap.get(right.getAddress()));
+    public void initLocEqLocVal(String leftName, String rightName){
+        initLocEqConst(leftName,getInitialValue(rightName));
     }
 
     public void initLocEqConst(String locName, IConst iValue){
-        Location location = getOrCreateLocation(locName, iValue.getPrecision());
-        iValueMap.put(location.getAddress(), iValue);
+        getOrCreateAddress(locName).setInitialValue(0,iValue);
     }
 
     public void initRegEqLocPtr(int regThread, String regName, String locName, int precision){
-        Location loc = getOrCreateLocation(locName, precision);
+        Address address = getOrCreateAddress(locName);
         Register reg = getOrCreateRegister(regThread, regName, precision);
-        addChild(regThread, EventFactory.newLocal(reg, loc.getAddress()));
+        addChild(regThread, EventFactory.newLocal(reg, address));
     }
 
     public void initRegEqLocVal(int regThread, String regName, String locName, int precision){
-        Location loc = getOrCreateLocation(locName, precision);
         Register reg = getOrCreateRegister(regThread, regName, precision);
-        addChild(regThread, EventFactory.newLocal(reg, iValueMap.get(loc.getAddress())));
+        addChild(regThread,EventFactory.newLocal(reg,getInitialValue(locName)));
     }
 
     public void initRegEqConst(int regThread, String regName, IConst iValue){
         addChild(regThread, EventFactory.newLocal(getOrCreateRegister(regThread, regName, iValue.getPrecision()), iValue));
     }
 
-    public void addDeclarationArray(String name, List<IConst> values, int precision){
-        int size = values.size();
-        List<Address> addresses = memory.malloc(name, size, precision);
-        for(int i = 0; i < size; i++){
-            String varName = name + "[" + i + "]";
-            Address address = addresses.get(i);
-            locations.put(varName, new Location(varName, address));
-            iValueMap.put(address, values.get(i));
-        }
-        pointers.put(name, addresses.get(0));
+    public void addDeclarationArray(String name, int size){
+        checkArgument(!locations.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
+        Address address = memory.allocate(size);
+        locations.put(name,address);
     }
 
-    public void addDeclarationArray(String name, List<IConst> values){
-    	addDeclarationArray(name, values, -1);
+    private IConst getInitialValue(String name) {
+        return getOrCreateAddress(name).getInitialValue(0);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -134,24 +122,12 @@ public class ProgramBuilder {
         return threads.get(thread).getExit();
     }
 
-    public Location getLocation(String name){
+    public Address getAddress(String name){
         return locations.get(name);
     }
 
-    public Location getOrCreateLocation(String name, int precision){
-        if(!locations.containsKey(name)){
-            Location location = memory.getOrCreateLocation(name, precision);
-            locations.put(name, location);
-            iValueMap.put(location.getAddress(), new IConst(Location.DEFAULT_INIT_VALUE, location.getAddress().getPrecision()));
-        }
-        return locations.get(name);
-    }
-
-    public Location getOrErrorLocation(String name){
-        if(locations.containsKey(name)){
-            return locations.get(name);
-        }
-        throw new ParsingException("Location " + name + " has not been initialised");
+    public Address getOrCreateAddress(String name){
+        return locations.computeIfAbsent(name,k->memory.allocate(1));
     }
 
     public Register getRegister(int thread, String name){
@@ -178,7 +154,7 @@ public class ProgramBuilder {
                 return register;
             }
         }
-        throw new ParsingException("Register " + thread + ":" + name + " is not initialised");
+        throw new IllegalStateException("Register " + thread + ":" + name + " is not initialised");
     }
 
     public boolean hasLabel(String name) {
@@ -188,14 +164,6 @@ public class ProgramBuilder {
     public Label getOrCreateLabel(String name){
         labels.putIfAbsent(name, EventFactory.newLabel(name));
         return labels.get(name);
-    }
-
-    public IConst getInitValue(Address address){
-        return iValueMap.getOrDefault(address, new IConst(Location.DEFAULT_INIT_VALUE, address.getPrecision()));
-    }
-
-    public Address getPointer(String name){
-        return pointers.get(name);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -211,15 +179,17 @@ public class ProgramBuilder {
 
     private void buildInitThreads(){
         int nextThreadId = nextThreadId();
-        for (Map.Entry<IExpr, IConst> entry : iValueMap.entrySet()) {
-            Event e = EventFactory.newInit(entry.getKey(), entry.getValue());
-            Thread thread = new Thread(nextThreadId, e);
-            threads.put(nextThreadId, thread);
-            nextThreadId++;
+        for(Address a : memory.getAllAddresses()) {
+            for(int i = 0; i < a.size(); i++) {
+                Event e = EventFactory.newInit(a,i);
+                Thread thread = new Thread(nextThreadId,e);
+                threads.put(nextThreadId,thread);
+                nextThreadId++;
+            }
         }
     }
 
-    private void validateLabels(Thread thread) throws ParsingException {
+    private void validateLabels(Thread thread) throws MalformedProgramException {
         Map<String, Label> threadLabels = new HashMap<>();
         Set<String> referencedLabels = new HashSet<>();
         Event e = thread.getEntry();
@@ -229,7 +199,7 @@ public class ProgramBuilder {
             } else if(e instanceof Label){
                 Label label = labels.remove(((Label) e).getName());
                 if(label == null){
-                    throw new ParsingException("Duplicated label " + ((Label) e).getName());
+                    throw new MalformedProgramException("Duplicated label " + ((Label) e).getName());
                 }
                 threadLabels.put(label.getName(), label);
             }
@@ -238,7 +208,7 @@ public class ProgramBuilder {
 
         for(String labelName : referencedLabels){
             if(!threadLabels.containsKey(labelName)){
-                throw new ParsingException("Illegal jump to label " + labelName);
+                throw new MalformedProgramException("Illegal jump to label " + labelName);
             }
         }
     }

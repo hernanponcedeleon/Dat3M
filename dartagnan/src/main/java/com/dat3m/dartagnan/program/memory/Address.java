@@ -1,60 +1,119 @@
 package com.dat3m.dartagnan.program.memory;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
-import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.*;
+import com.dat3m.dartagnan.program.event.core.Event;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 
-import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
-import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
+import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
+import static com.google.common.base.Preconditions.checkArgument;
 
-public class Address extends IConst implements ExprInterface {
+/**
+ * Associated with an array of memory locations.
+ */
+public class Address extends IConst implements ExprInterface, LastValueInterface {
 
     private final int index;
-    private BigInteger constantValue;
+    private int size;
+    BigInteger value;
 
-    Address(int index, int precision){
-        super(BigInteger.valueOf(index), precision);
+    private final HashMap<Integer,IConst> initialValues = new HashMap<>();
+
+    Address(int index, int s) {
         this.index = index;
+        size = s;
     }
 
-    public boolean hasConstantValue() {
-     	return this.constantValue != null;
-     }
+    /**
+     * @return
+     * Number of fields in this array.
+     */
+    public int size() {
+        return size;
+    }
 
-    public BigInteger getConstantValue() {
-     	return this.constantValue;
-     }
+    /**
+     * Initial value at a certain field of this array.
+     * @param offset
+     * Non-negative number of fields before the target.
+     * @return
+     * Readable value at the start of each execution.
+     */
+    public IConst getInitialValue(int offset) {
+        checkArgument(offset >= 0 && offset < size, "array index out of bounds");
+        return initialValues.getOrDefault(offset,IValue.ZERO);
+    }
 
-    public void setConstantValue(BigInteger value) {
-     	this.constantValue = value;
-     }
+    /**
+     * Defines the initial value at a certain field of this array.
+     * @param offset
+     * Non-negative number of fields before the target.
+     * @param value
+     * New value to be read at the start of each execution.
+     */
+    public void setInitialValue(int offset, IConst value) {
+        checkArgument(offset >= 0 && offset < size, "array index out of bounds");
+        initialValues.put(offset,value);
+    }
+
+    /**
+     * Updates the initial value at a certain field of this array.
+     * Resizes this array if the index exceeds the bounds.
+     * @param offset
+     * Non-negative number of fields before the target.
+     * @param value
+     * New value to be read at the start of each execution.
+     */
+    public void appendInitialValue(int offset, IConst value) {
+        checkArgument(offset >= 0, "array index out of bounds");
+        //The current implementation of Smack does not provide proper size information on static arrays.
+        //Instead, it indicates the size in the Boogie file by initializing each of the fields in a special procedure.
+        if(size <= offset) {
+            size = offset + 1;
+        }
+        initialValues.put(offset,value);
+    }
+
+    /**
+     * Expresses the address of a field of this array.
+     * @param offset
+     * Non-negative number of fields before the target field.
+     * @return
+     * Points to the target.
+     */
+    public IExpr add(int offset) {
+        checkArgument(0<=offset && offset<size, "array index out of bounds");
+        return offset == 0 ? this : new IExprBin(this,PLUS,new IValue(BigInteger.valueOf(offset),getPrecision()));
+    }
+
+    /**
+     * Encodes the final state of a location.
+     * @param ctx
+     * Builder of formulas.
+     * @param offset
+     * Non-negative number of fields before the target field.
+     * @return
+     * Variable associated with the value at the location after the execution ended.
+     */
+    public Formula getLastMemValueExpr(SolverContext ctx, int offset) {
+        checkArgument(0<=offset && offset<size, "array index out of bounds");
+        String name = String.format("last_val_at_memory_%d_%d",index,offset);
+        return ctx.getFormulaManager().getIntegerFormulaManager().makeVariable(name);
+    }
 
     @Override
-    public ImmutableSet<Register> getRegs(){
-        return ImmutableSet.of();
+    public BigInteger getValue() {
+        return value != null ? value : BigInteger.valueOf(index);
     }
 
     @Override
-    public Formula toIntFormula(Event e, SolverContext ctx){
-        return toIntFormula(ctx);
-    }
-
-    @Override
-    public Formula getLastValueExpr(SolverContext ctx){
-        return toIntFormula(ctx);
-    }
-
-    public Formula getLastMemValueExpr(SolverContext ctx){
-        FormulaManager fmgr = ctx.getFormulaManager();
-		String name = "last_val_at_memory_" + index;
-		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
-		return fmgr.makeVariable(type, name);
+    public int getPrecision() {
+        return -1;
     }
 
     @Override
@@ -81,27 +140,6 @@ public class Address extends IConst implements ExprInterface {
         }
 
         return index == ((Address)obj).index;
-    }
-
-    @Override
-    public Formula toIntFormula(SolverContext ctx){
-		FormulaManager fmgr = ctx.getFormulaManager();
-		if(constantValue != null) {
-			return precision > 0 ? 
-					fmgr.getBitvectorFormulaManager().makeBitvector(precision, constantValue) : 
-					fmgr.getIntegerFormulaManager().makeNumber(constantValue);
-    	}
-		String name = "memory_" + index;
-		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
-		return fmgr.makeVariable(type, name);
-    }
-
-    @Override
-    public BigInteger getIntValue(Event e, Model model, SolverContext ctx){
-        if (hasConstantValue()) {
-            return constantValue;
-        }
-        return new BigInteger(model.evaluate(toIntFormula(ctx)).toString());
     }
 
     @Override

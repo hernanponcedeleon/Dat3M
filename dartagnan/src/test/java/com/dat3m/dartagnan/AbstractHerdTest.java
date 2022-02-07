@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.AbstractDartagnanTest.TIMEOUT;
+import static com.dat3m.dartagnan.AbstractLitmusTest.TIMEOUT;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 
 public abstract class AbstractHerdTest {
@@ -49,7 +49,7 @@ public abstract class AbstractHerdTest {
 
     @Test(timeout = TIMEOUT)
     public void testHerd() {
-    	try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "herd", ""), true)))
+    	try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "herd"), true)))
     	{
     		writer.newLine();
     		writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");

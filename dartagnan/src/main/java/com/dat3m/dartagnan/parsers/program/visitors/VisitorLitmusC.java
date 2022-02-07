@@ -1,29 +1,26 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser;
 import com.dat3m.dartagnan.parsers.LitmusCVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
-import com.dat3m.dartagnan.program.event.CondJump;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.IfAsJump;
-import com.dat3m.dartagnan.program.event.Label;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.IfAsJump;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
-import com.dat3m.dartagnan.program.utils.EType;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class VisitorLitmusC
@@ -68,35 +65,33 @@ public class VisitorLitmusC
 
     @Override
     public Object visitGlobalDeclaratorLocation(LitmusCParser.GlobalDeclaratorLocationContext ctx) {
-    	BigInteger value = Location.DEFAULT_INIT_VALUE;
         if (ctx.initConstantValue() != null) {
-            value = new BigInteger(ctx.initConstantValue().constant().getText());
+            BigInteger value = new BigInteger(ctx.initConstantValue().constant().getText());
+            programBuilder.initLocEqConst(ctx.varName().getText(),new IValue(value,-1));
         }
-        programBuilder.initLocEqConst(ctx.varName().getText(), new IConst(value, -1));
         return null;
     }
 
     @Override
     public Object visitGlobalDeclaratorRegister(LitmusCParser.GlobalDeclaratorRegisterContext ctx) {
-        BigInteger value = Location.DEFAULT_INIT_VALUE;
         if (ctx.initConstantValue() != null) {
-            value = new BigInteger(ctx.initConstantValue().constant().getText());
+            BigInteger value = new BigInteger(ctx.initConstantValue().constant().getText());
+            programBuilder.initRegEqConst(ctx.threadId().id,ctx.varName().getText(),new IValue(value,-1));
         }
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName().getText(), new IConst(value, -1));
         return null;
     }
 
     @Override
     public Object visitGlobalDeclaratorLocationLocation(LitmusCParser.GlobalDeclaratorLocationLocationContext ctx) {
         if(ctx.Ast() == null){
-            programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText(), -1);
+            programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText());
         } else {
             String rightName = ctx.varName(1).getText();
-            Address address = programBuilder.getPointer(rightName);
+            Address address = programBuilder.getAddress(rightName);
             if(address != null){
                 programBuilder.initLocEqConst(ctx.varName(0).getText(), address);
             } else {
-                programBuilder.initLocEqLocVal(ctx.varName(0).getText(), ctx.varName(1).getText(), -1);
+                programBuilder.initLocEqLocVal(ctx.varName(0).getText(), ctx.varName(1).getText());
             }
         }
         return null;
@@ -108,7 +103,7 @@ public class VisitorLitmusC
             programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), -1);
         } else {
             String rightName = ctx.varName(1).getText();
-            Address address = programBuilder.getPointer(rightName);
+            Address address = programBuilder.getAddress(rightName);
             if(address != null){
                 programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), address);
             } else {
@@ -124,7 +119,7 @@ public class VisitorLitmusC
         Integer size = ctx.DigitSequence() != null ? Integer.parseInt(ctx.DigitSequence().getText()) : null;
 
         if(ctx.initArray() == null && size != null && size > 0){
-            programBuilder.addDeclarationArray(name, Collections.nCopies(size, new IConst(BigInteger.ZERO, -1)));
+            programBuilder.addDeclarationArray(name,size);
             return null;
         }
         if(ctx.initArray() != null){
@@ -132,19 +127,24 @@ public class VisitorLitmusC
                 List<IConst> values = new ArrayList<>();
                 for(LitmusCParser.ArrayElementContext elCtx : ctx.initArray().arrayElement()){
                     if(elCtx.constant() != null){
-                        values.add(new IConst(new BigInteger(elCtx.constant().getText()), -1));
+                        values.add(new IValue(new BigInteger(elCtx.constant().getText()), -1));
                     } else {
                         String varName = elCtx.varName().getText();
-                        Address address = programBuilder.getPointer(varName);
+                        //see test/resources/arrays/ok/C-array-ok-17.litmus
+                        Address address = programBuilder.getAddress(varName);
                         if(address != null){
                             values.add(address);
                         } else {
-                            address = programBuilder.getOrCreateLocation(varName, -1).getAddress();
-                            values.add(elCtx.Ast() == null ? address : programBuilder.getInitValue(address));
+                            address = programBuilder.getOrCreateAddress(varName);
+                            values.add(elCtx.Ast() == null ? address : address.getInitialValue(0));
                         }
                     }
                 }
-                programBuilder.addDeclarationArray(name, values);
+                programBuilder.addDeclarationArray(name,values.size());
+                Address address = programBuilder.getAddress(name);
+                for(int i = 0; i < values.size(); i++) {
+                    address.setInitialValue(i,values.get(i));
+                }
                 return null;
             }
         }
@@ -173,15 +173,9 @@ public class VisitorLitmusC
         if(ctx != null){
             for(LitmusCParser.VarNameContext varName : ctx.varName()){
                 String name = varName.getText();
-                Address pointer = programBuilder.getPointer(name);
-                if(pointer != null){
-                    Register register = programBuilder.getOrCreateRegister(scope, name, -1);
-                    programBuilder.addChild(currentThread, EventFactory.newLocal(register, pointer));
-                } else {
-                    Location location = programBuilder.getOrCreateLocation(varName.getText(), -1);
-                    Register register = programBuilder.getOrCreateRegister(scope, varName.getText(), -1);
-                    programBuilder.addChild(currentThread, EventFactory.newLocal(register, location.getAddress()));
-                }
+                Address address = programBuilder.getOrCreateAddress(name);
+                Register register = programBuilder.getOrCreateRegister(scope, name, -1);
+                programBuilder.addChild(currentThread, EventFactory.newLocal(register, address));
             }
         }
         return null;
@@ -201,7 +195,7 @@ public class VisitorLitmusC
         for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
             expressionContext.accept(this);
         CondJump jumpToEnd = EventFactory.newGoto(endL);
-        jumpToEnd.addFilters(EType.IFI);
+        jumpToEnd.addFilters(Tag.IFI);
 		programBuilder.addChild(currentThread, jumpToEnd);
         
         programBuilder.addChild(currentThread, elseL);
@@ -220,7 +214,7 @@ public class VisitorLitmusC
     @Override
     public IExpr visitReAtomicOpReturn(LitmusCParser.ReAtomicOpReturnContext ctx){
         Register register = getReturnRegister(true);
-        ExprInterface value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
+        IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
         Event event = EventFactory.Linux.newRMWOpReturn(getAddress(ctx.address), register, value, ctx.op, ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -230,7 +224,7 @@ public class VisitorLitmusC
     @Override
     public IExpr visitReAtomicFetchOp(LitmusCParser.ReAtomicFetchOpContext ctx){
         Register register = getReturnRegister(true);
-        ExprInterface value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
+        IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
         Event event = EventFactory.Linux.newRMWFetchOp(getAddress(ctx.address), register, value, ctx.op, ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -239,7 +233,7 @@ public class VisitorLitmusC
     @Override
     public IExpr visitReAtomicOpAndTest(LitmusCParser.ReAtomicOpAndTestContext ctx){
         Register register = getReturnRegister(true);
-        ExprInterface value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
+        IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
         Event event = EventFactory.Linux.newRMWOpAndTest(getAddress(ctx.address), register, value, ctx.op);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -249,7 +243,7 @@ public class VisitorLitmusC
     @Override
     public IExpr visitReAtomicAddUnless(LitmusCParser.ReAtomicAddUnlessContext ctx){
         Register register = getReturnRegister(true);
-        ExprInterface value = (ExprInterface)ctx.value.accept(this);
+        IExpr value = (IExpr)ctx.value.accept(this);
         ExprInterface cmp = (ExprInterface)ctx.cmp.accept(this);
         programBuilder.addChild(currentThread, EventFactory.Linux.newRMWAddUnless(getAddress(ctx.address), register, cmp, value));
         return register;
@@ -258,7 +252,7 @@ public class VisitorLitmusC
     @Override
     public IExpr visitReXchg(LitmusCParser.ReXchgContext ctx){
         Register register = getReturnRegister(true);
-        ExprInterface value = (ExprInterface)ctx.value.accept(this);
+        IExpr value = (IExpr)ctx.value.accept(this);
         Event event = EventFactory.Linux.newRMWExchange(getAddress(ctx.address), register, value, ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -268,7 +262,7 @@ public class VisitorLitmusC
     public IExpr visitReCmpXchg(LitmusCParser.ReCmpXchgContext ctx){
         Register register = getReturnRegister(true);
         ExprInterface cmp = (ExprInterface)ctx.cmp.accept(this);
-        ExprInterface value = (ExprInterface)ctx.value.accept(this);
+        IExpr value = (IExpr)ctx.value.accept(this);
         Event event = EventFactory.Linux.newRMWCompareExchange(getAddress(ctx.address), register, cmp, value, ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -313,8 +307,8 @@ public class VisitorLitmusC
     @Override
     public ExprInterface visitReOpArith(LitmusCParser.ReOpArithContext ctx){
         Register register = getReturnRegister(false);
-        ExprInterface v1 = (ExprInterface)ctx.re(0).accept(this);
-        ExprInterface v2 = (ExprInterface)ctx.re(1).accept(this);
+        IExpr v1 = (IExpr)ctx.re(0).accept(this);
+        IExpr v2 = (IExpr)ctx.re(1).accept(this);
         IExpr result = new IExprBin(v1, ctx.opArith().op, v2);
         return assignToReturnRegister(register, result);
     }
@@ -367,7 +361,7 @@ public class VisitorLitmusC
     @Override
     public ExprInterface visitReConst(LitmusCParser.ReConstContext ctx){
         Register register = getReturnRegister(false);
-        IConst result = new IConst(new BigInteger(ctx.getText()), -1);
+        IValue result = new IValue(new BigInteger(ctx.getText()), -1);
         return assignToReturnRegister(register, result);
     }
 
@@ -377,7 +371,7 @@ public class VisitorLitmusC
 
     @Override
     public Object visitNreAtomicOp(LitmusCParser.NreAtomicOpContext ctx){
-        ExprInterface value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
+    	IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
         Register register = programBuilder.getOrCreateRegister(scope, null, -1);
         Event event = EventFactory.Linux.newRMWOp(getAddress(ctx.address), register, value, ctx.op);
         return programBuilder.addChild(currentThread, event);
@@ -386,8 +380,8 @@ public class VisitorLitmusC
     @Override
     public Object visitNreStore(LitmusCParser.NreStoreContext ctx){
         ExprInterface value = (ExprInterface)ctx.value.accept(this);
-        if(ctx.mo.equals(Mo.MB)){
-            Event event = EventFactory.newStore(getAddress(ctx.address), value, Mo.RELAXED);
+        if(ctx.mo.equals(Tag.Linux.MO_MB)){
+            Event event = EventFactory.newStore(getAddress(ctx.address), value, Tag.Linux.MO_RELAXED);
             programBuilder.addChild(currentThread, event);
             return programBuilder.addChild(currentThread, EventFactory.Linux.newMemoryBarrier());
         }
@@ -452,17 +446,17 @@ public class VisitorLitmusC
             if(register != null){
                 return register;
             }
-            Location location = programBuilder.getLocation(ctx.getText());
-            if(location != null){
+            Address address = programBuilder.getAddress(ctx.getText());
+            if(address != null){
                 register = programBuilder.getOrCreateRegister(scope, null, -1);
-                programBuilder.addChild(currentThread, EventFactory.newLoad(register, location.getAddress(), "NA"));
+                programBuilder.addChild(currentThread, EventFactory.newLoad(register, address, "NA"));
                 return register;
             }
             return programBuilder.getOrCreateRegister(scope, ctx.getText(), -1);
         }
-        Location location = programBuilder.getOrCreateLocation(ctx.getText(), -1);
+        Address address = programBuilder.getOrCreateAddress(ctx.getText());
         Register register = programBuilder.getOrCreateRegister(scope, null, -1);
-        programBuilder.addChild(currentThread, EventFactory.newLoad(register, location.getAddress(), "NA"));
+        programBuilder.addChild(currentThread, EventFactory.newLoad(register, address, "NA"));
         return register;
     }
 
@@ -474,8 +468,8 @@ public class VisitorLitmusC
         throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
 
-    private ExprInterface returnExpressionOrDefault(LitmusCParser.ReContext ctx, BigInteger defaultValue){
-        return ctx != null ? (ExprInterface)ctx.accept(this) : new IConst(defaultValue, -1);
+    private IExpr returnExpressionOrDefault(LitmusCParser.ReContext ctx, BigInteger defaultValue){
+        return ctx != null ? (IExpr)ctx.accept(this) : new IValue(defaultValue, -1);
     }
 
     private Register getReturnRegister(boolean createOnNull){

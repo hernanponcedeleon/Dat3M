@@ -1,220 +1,187 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.analysis.Method;
-import com.dat3m.dartagnan.analysis.Refinement;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
-import com.dat3m.dartagnan.utils.TestHelper;
+import com.dat3m.dartagnan.utils.rules.CSVLogger;
+import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.verification.RefinementTask;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
+import com.dat3m.dartagnan.verification.solving.AssumeSolver;
+import com.dat3m.dartagnan.verification.solving.RefinementSolver;
+import com.dat3m.dartagnan.configuration.Arch;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
-import static com.dat3m.dartagnan.utils.ResourceHelper.*;
+import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
-import static com.dat3m.dartagnan.wmm.utils.Arch.*;
+import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class CLocksTest {
+public class CLocksTest extends AbstractCTest {
 
 	static final int TIMEOUT = 1800000;
 
-    private final String path;
-    private final Wmm wmm;
-    private final Arch target;
-    private final Settings settings;
-    private final Result expected;
+    public CLocksTest(String name, Arch target, Result expected) {
+        super(name, target, expected);
+    }
 
-	@Parameterized.Parameters(name = "{index}: {0} target={2}")
+    @Override
+    protected Provider<String> getProgramPathProvider() {
+        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "locks/" + name + ".bpl");
+    }
+
+    @Override
+    protected long getTimeout() {
+        return 60000;
+    }
+
+	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
-        Wmm tso = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/tso.cat"));
-        Wmm power = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/power.cat"));
-        Wmm arm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat"));
 
-        Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
-
-    	// We want the files to be created every time we run the unit tests
-        for(Method method : Method.values()) {
-        	for(Arch arch : Arch.values()) {
-        		initialiseCSVFile(CLocksTest.class, method.asStringOption(), arch.toString());
-        	}
-        }
-
-		List<Object[]> data = new ArrayList<>();
-
-        // Known to be safe
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5.bpl", power, POWER, s1, UNKNOWN});
-
-        // These expected result were obtained from refinement. Cannot guarantee they are correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-acq2rx.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-acq2rx.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-acq2rx.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-rel2rx.bpl", tso, TSO, s1, UNKNOWN});
-        // These two I expect to be correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-rel2rx.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-rel2rx.bpl", power, POWER, s1, FAIL});
-
-        // Known to be safe
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3.bpl", power, POWER, s1, UNKNOWN});
-
-        // We don't yet know what expected should be and currently we timeout
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3-acq2rx.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3-acq2rx.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3-acq2rx.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3-rel2rx.bpl", tso, TSO, s1, UNKNOWN});
-
-        // These expected result were obtained from refinement. Cannot guarantee they are correct
-        // These two I expect to be correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3-rel2rx.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-3-rel2rx.bpl", power, POWER, s1, FAIL});
-
-        // Known to be safe
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3.bpl", power, POWER, s1, UNKNOWN});
-
-        // These expected result were obtained from refinement. Cannot guarantee they are correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-acq2rx-futex.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-acq2rx-futex.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-acq2rx-futex.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-acq2rx-lock.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-acq2rx-lock.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-acq2rx-lock.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-rel2rx-futex.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-rel2rx-futex.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-rel2rx-futex.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-rel2rx-unlock.bpl", tso, TSO, s1, UNKNOWN});
-        // These two I expect to be correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-rel2rx-unlock.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-3-rel2rx-unlock.bpl", power, POWER, s1, FAIL});
-
-        // Known to be safe
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/spinlock-5.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/spinlock-5.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/spinlock-5.bpl", power, POWER, s1, UNKNOWN});
-        // These I expect to be correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/spinlock-5-acq2rx.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/spinlock-5-acq2rx.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/spinlock-5-acq2rx.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/spinlock-5-rel2rx.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/spinlock-5-rel2rx.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/spinlock-5-rel2rx.bpl", power, POWER, s1, FAIL});
-        
-        // Known to be safe
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/linuxrwlock-3.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/linuxrwlock-3.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/linuxrwlock-3.bpl", power, POWER, s1, UNKNOWN});
-        // These I expect to be correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/linuxrwlock-3-acq2rx.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/linuxrwlock-3-acq2rx.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/linuxrwlock-3-acq2rx.bpl", power, POWER, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/linuxrwlock-3-rel2rx.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/linuxrwlock-3-rel2rx.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/linuxrwlock-3-rel2rx.bpl", power, POWER, s1, FAIL});
-        
-        // Known to be safe
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3.bpl", power, POWER, s1, UNKNOWN});
-
-        // These expected result were obtained from refinement. Cannot guarantee they are correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-futex.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-futex.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-futex.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-lock.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-lock.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-acq2rx-lock.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-futex.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-futex.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-futex.bpl", power, POWER, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-unlock.bpl", tso, TSO, s1, UNKNOWN});
-        // This two I expect to be correct
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-unlock.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-3-rel2rx-unlock.bpl", power, POWER, s1, FAIL});
-
-        return data;
+		return Arrays.asList(new Object[][]{
+	            {"ttas-5", TSO, UNKNOWN},
+	            {"ttas-5", ARM8, UNKNOWN},
+	            {"ttas-5", POWER, UNKNOWN},
+	            {"ttas-5-acq2rx", TSO, UNKNOWN},
+	            {"ttas-5-acq2rx", ARM8, UNKNOWN},
+	            {"ttas-5-acq2rx", POWER, UNKNOWN},
+	            {"ttas-5-rel2rx", TSO, UNKNOWN},
+	            {"ttas-5-rel2rx", ARM8, FAIL},
+	            {"ttas-5-rel2rx", POWER, FAIL},
+	            {"ticketlock-3", TSO, UNKNOWN},
+	            {"ticketlock-3", ARM8, UNKNOWN},
+	            {"ticketlock-3", POWER, UNKNOWN},
+	            {"ticketlock-3-acq2rx", TSO, UNKNOWN},
+	            {"ticketlock-3-acq2rx", ARM8, UNKNOWN},
+	            {"ticketlock-3-acq2rx", POWER, UNKNOWN},
+	            {"ticketlock-3-rel2rx", TSO, UNKNOWN},
+	            {"ticketlock-3-rel2rx", ARM8, FAIL},
+	            {"ticketlock-3-rel2rx", POWER, FAIL},
+                {"mutex-3", TSO, UNKNOWN},
+                {"mutex-3", ARM8, UNKNOWN},
+                {"mutex-3", POWER, UNKNOWN},
+                {"mutex-3-acq2rx_futex", TSO, UNKNOWN},
+                {"mutex-3-acq2rx_futex", ARM8, UNKNOWN},
+                {"mutex-3-acq2rx_futex", POWER, UNKNOWN},
+                {"mutex-3-acq2rx_lock", TSO, UNKNOWN},
+                {"mutex-3-acq2rx_lock", ARM8, UNKNOWN},
+                {"mutex-3-acq2rx_lock", POWER, UNKNOWN},
+                {"mutex-3-rel2rx_futex", TSO, UNKNOWN},
+                {"mutex-3-rel2rx_futex", ARM8, UNKNOWN},
+                {"mutex-3-rel2rx_futex", POWER, UNKNOWN},
+                {"mutex-3-rel2rx_unlock", TSO, UNKNOWN},
+                {"mutex-3-rel2rx_unlock", ARM8, FAIL},
+                {"mutex-3-rel2rx_unlock", POWER, FAIL},
+                {"spinlock-5", TSO, UNKNOWN},
+                {"spinlock-5", ARM8, UNKNOWN},
+                {"spinlock-5", POWER, UNKNOWN},
+                {"spinlock-5-acq2rx", TSO, UNKNOWN},
+                {"spinlock-5-acq2rx", ARM8, UNKNOWN},
+                {"spinlock-5-acq2rx", POWER, UNKNOWN},
+                {"spinlock-5-rel2rx", TSO, UNKNOWN},
+                {"spinlock-5-rel2rx", ARM8, FAIL},
+                {"spinlock-5-rel2rx", POWER, FAIL},
+                {"linuxrwlock-3", TSO, UNKNOWN},
+                {"linuxrwlock-3", ARM8, UNKNOWN},
+                {"linuxrwlock-3", POWER, UNKNOWN},
+                {"linuxrwlock-3-acq2rx", TSO, UNKNOWN},
+                {"linuxrwlock-3-acq2rx", ARM8, FAIL},
+                {"linuxrwlock-3-acq2rx", POWER, FAIL},
+                {"linuxrwlock-3-rel2rx", TSO, UNKNOWN},
+                {"linuxrwlock-3-rel2rx", ARM8, FAIL},
+                {"linuxrwlock-3-rel2rx", POWER, FAIL},
+                {"mutex_musl-3", TSO, UNKNOWN},
+                {"mutex_musl-3", ARM8, UNKNOWN},
+                {"mutex_musl-3", POWER, UNKNOWN},
+                {"mutex_musl-3-acq2rx_futex", TSO, UNKNOWN},
+                {"mutex_musl-3-acq2rx_futex", ARM8, UNKNOWN},
+                {"mutex_musl-3-acq2rx_futex", POWER, UNKNOWN},
+                {"mutex_musl-3-acq2rx_lock", TSO, UNKNOWN},
+                {"mutex_musl-3-acq2rx_lock", ARM8, UNKNOWN},
+                {"mutex_musl-3-acq2rx_lock", POWER, UNKNOWN},
+                {"mutex_musl-3-rel2rx_futex", TSO, UNKNOWN},
+                {"mutex_musl-3-rel2rx_futex", ARM8, UNKNOWN},
+                {"mutex_musl-3-rel2rx_futex", POWER, UNKNOWN},
+                {"mutex_musl-3-rel2rx_unlock", TSO, UNKNOWN},
+                {"mutex_musl-3-rel2rx_unlock", ARM8, FAIL},
+                {"mutex_musl-3-rel2rx_unlock", POWER, FAIL},
+                {"cna-4", TSO, UNKNOWN},
+                {"cna-4", ARM8, UNKNOWN},
+                {"cna-4", POWER, UNKNOWN},
+                {"cna-4-rel2rx_unlock1", TSO, UNKNOWN},
+                {"cna-4-rel2rx_unlock1", ARM8, FAIL},
+                // I would have expected this to be FAIL, but we report UNKNOWN
+                {"cna-4-rel2rx_unlock1", POWER, FAIL},
+                {"cna-4-rel2rx_unlock2", TSO, UNKNOWN},
+                {"cna-4-rel2rx_unlock2", ARM8, FAIL},
+                {"cna-4-rel2rx_unlock2", POWER, FAIL},
+                {"cna-4-rel2rx_unlock3", TSO, UNKNOWN},
+                {"cna-4-rel2rx_unlock3", ARM8, FAIL},
+                {"cna-4-rel2rx_unlock3", POWER, FAIL},
+                {"cna-4-rel2rx_unlock4", TSO, UNKNOWN},
+                {"cna-4-rel2rx_unlock4", ARM8, FAIL},
+                {"cna-4-rel2rx_unlock4", POWER, FAIL},
+                {"cna-4-rel2rx_lock", TSO, UNKNOWN},
+                {"cna-4-rel2rx_lock", ARM8, UNKNOWN},
+                {"cna-4-rel2rx_lock", POWER, UNKNOWN},
+                {"cna-4-acq2rx_lock", TSO, UNKNOWN},
+                {"cna-4-acq2rx_lock", ARM8, FAIL},
+                {"cna-4-acq2rx_lock", POWER, FAIL},
+                {"cna-4-acq2rx_unlock", TSO, UNKNOWN},
+                {"cna-4-acq2rx_unlock", ARM8, UNKNOWN},
+                {"cna-4-acq2rx_unlock", POWER, UNKNOWN},
+                {"cna-4-acq2rx_succ1", TSO, UNKNOWN},
+                {"cna-4-acq2rx_succ1", ARM8, UNKNOWN},
+                {"cna-4-acq2rx_succ1", POWER, UNKNOWN},
+                {"cna-4-acq2rx_succ2", TSO, UNKNOWN},
+                {"cna-4-acq2rx_succ2", ARM8, UNKNOWN},
+                {"cna-4-acq2rx_succ2", POWER, UNKNOWN}
+		});
     }
 
-    public CLocksTest(String path, Wmm wmm, Arch target, Settings settings, Result expected) {
-        this.path = path;
-        this.wmm = wmm;
-        this.target = target;
-        this.settings = settings;
-        this.expected = expected;
-    }
-
-    @Test(timeout = TIMEOUT)
-    public void testAssume() {
-        try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "assume", target.toString()), true)))
-        {
-            Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, target, settings);
-
+	//@Test
+	@CSVLogger.FileName("csv/assume")
+	public void testAssume() throws Exception {
+		try(BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "assume"), true))) {
             writer.newLine();
-            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
+            writer.append(taskProvider.get().getProgram().getName()).append(", ");
             // The flush() is required to write the content in the presence of timeouts
             writer.flush();
 
             long start = System.currentTimeMillis();
-            assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
+			assertEquals(expected, AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
             long solvingTime = System.currentTimeMillis() - start;
             
             writer.append(expected.equals(UNKNOWN) ? "\\gtick" : "\\redcross").append(", ").append(Long.toString(solvingTime));
         } catch (Exception e){
-        	System.out.println(String.format("%s failed with the following msg: %s", path, e.getMessage()));
+        	System.out.println(String.format("%s failed with the following msg: %s", taskProvider.get().getProgram().getName(), e.getMessage()));
         }
-    }
+	}
 
-    @Test(timeout = TIMEOUT)
-    public void testRefinement() {
-        try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement", target.toString()), true)))
-        {
-            Program program = new ProgramParser().parse(new File(path));
-            VerificationTask task = new VerificationTask(program, wmm, target, settings);
-
+	@Test
+	@CSVLogger.FileName("csv/refinement")
+	public void testRefinement() throws Exception {
+		try(BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement"), true))) {
             writer.newLine();
-            writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");
+            writer.append(taskProvider.get().getProgram().getName()).append(", ");
             // The flush() is required to write the content in the presence of timeouts
             writer.flush();
 
             long start = System.currentTimeMillis();
-            assertEquals(expected, Refinement.runAnalysisSaturationSolver(ctx, prover,
-                    RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
+            assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(),
+    				RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(taskProvider.get())));
             long solvingTime = System.currentTimeMillis() - start;
             
-            // We treat UNKNOWN as PASS because we know the loops are just spin-loops
             writer.append(expected.equals(UNKNOWN) ? "\\gtick" : "\\redcross").append(", ").append(Long.toString(solvingTime));
         } catch (Exception e){
-        	System.out.println(String.format("%s failed with the following msg: %s", path, e.getMessage()));
+        	System.out.println(String.format("%s failed with the following msg: %s", taskProvider.get().getProgram().getName(), e.getMessage()));
         }
-    }
+	}
 }

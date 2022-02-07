@@ -1,21 +1,21 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
-import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.google.common.collect.Sets;
-import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.collect.Sets;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -41,8 +41,8 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    public void initialise(VerificationTask task, SolverContext ctx){
-        super.initialise(task, ctx);
+    public void initializeRelationAnalysis(VerificationTask task, Context context) {
+        super.initializeRelationAnalysis(task, context);
         identityEncodeTupleSet = new TupleSet();
         transEncodeTupleSet = new TupleSet();
     }
@@ -51,7 +51,7 @@ public class RelTransRef extends RelTrans {
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             super.getMinTupleSet();
-            for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(EType.VISIBLE))){
+            for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(Tag.VISIBLE))){
                 minTupleSet.add(new Tuple(e, e));
             }
         }
@@ -65,13 +65,16 @@ public class RelTransRef extends RelTrans {
             for (Map.Entry<Event, Set<Event>> entry : transitiveReachabilityMap.entrySet()) {
                 entry.getValue().remove(entry.getKey());
             }
-            for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(EType.VISIBLE))){
+            for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(Tag.VISIBLE))){
                 maxTupleSet.add(new Tuple(e, e));
             }
         }
         return maxTupleSet;
     }
 
+    //TODO: This is ugly code that produces encodeSets which are too large
+    // However, the encoding does not care about the encodeSet and instead encodes (transEncode + identityEncode)
+    // which is what the encodeSet of this relation should be
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
         TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));

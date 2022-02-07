@@ -11,9 +11,9 @@ import com.dat3m.dartagnan.program.Register;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.dat3m.dartagnan.program.EventFactory.Atomic;
-import static com.dat3m.dartagnan.program.EventFactory.newStore;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.intToMo;
+import static com.dat3m.dartagnan.program.event.EventFactory.Atomic;
+import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
+import static com.dat3m.dartagnan.program.event.Tag.C11.intToMo;
 
 public class AtomicProcedures {
 
@@ -78,7 +78,7 @@ public class AtomicProcedures {
 		ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr().get(1).accept(visitor);
 		String mo = null;
 		if(ctx.call_params().exprs().expr().size() > 2) {
-			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getIntValue().intValue());
+			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getValueAsInt());
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newStore(add, value, mo))
 				.setCLine(visitor.currentLine);
@@ -89,7 +89,7 @@ public class AtomicProcedures {
 		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
 		String mo = null;
 		if(ctx.call_params().exprs().expr().size() > 1) {
-			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(1).accept(visitor)).getIntValue().intValue());
+			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(1).accept(visitor)).getValueAsInt());
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newLoad(reg, add, mo))
 				.setCLine(visitor.currentLine);
@@ -98,7 +98,7 @@ public class AtomicProcedures {
 	private static void atomicFetchOp(VisitorBoogie visitor, Call_cmdContext ctx) {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
 		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
-		ExprInterface value = (IExpr)ctx.call_params().exprs().expr().get(1).accept(visitor);
+		IExpr value = (IExpr)ctx.call_params().exprs().expr().get(1).accept(visitor);
 		String mo = null;
 		IOpBin op;
 		if(ctx.getText().contains("_add")) {
@@ -115,7 +115,7 @@ public class AtomicProcedures {
 			throw new RuntimeException("AtomicFetchOp operation cannot be handled");
 		}
 		if(ctx.call_params().exprs().expr().size() > 2) {
-			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getIntValue().intValue());
+			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getValueAsInt());
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newFetchOp(reg, add, value, op, mo))
 				.setCLine(visitor.currentLine);
@@ -124,10 +124,10 @@ public class AtomicProcedures {
 	private static void atomicXchg(VisitorBoogie visitor, Call_cmdContext ctx) {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
 		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
-		ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr().get(1).accept(visitor);
+		IExpr value = (IExpr)ctx.call_params().exprs().expr().get(1).accept(visitor);
 		String mo = null;
 		if(ctx.call_params().exprs().expr().size() > 2) {
-			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getIntValue().intValue());
+			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getValueAsInt());
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newExchange(reg, add, value, mo))
 				.setCLine(visitor.currentLine);
@@ -138,17 +138,17 @@ public class AtomicProcedures {
 		List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 		IExpr addr = (IExpr) params.get(0).accept(visitor);
 		IExpr expectedVal = (IExpr) params.get(1).accept(visitor);
-		ExprInterface desiredVal = (ExprInterface) params.get(2).accept(visitor);
+		IExpr desiredVal = (IExpr) params.get(2).accept(visitor);
 		String mo = null;
 		if(params.size() > 3) {
-			mo = intToMo(((IConst) params.get(3).accept(visitor)).getIntValue().intValue());
+			mo = intToMo(((IConst) params.get(3).accept(visitor)).getValueAsInt());
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newDat3mCAS(reg, addr, expectedVal, desiredVal, mo))
 				.setCLine(visitor.currentLine);
 	}
 
 	private static void atomicThreadFence(VisitorBoogie visitor, Call_cmdContext ctx) {
-		String mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(0).accept(visitor)).getIntValue().intValue());
+		String mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(0).accept(visitor)).getValueAsInt());
 		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newFence(mo))
 				.setCLine(visitor.currentLine);
 	}
@@ -158,11 +158,11 @@ public class AtomicProcedures {
 		List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 		IExpr addr = (IExpr) params.get(0).accept(visitor);
 		IExpr expectedAddr = (IExpr) params.get(1).accept(visitor); // NOTE: We assume a register here
-		ExprInterface desiredVal = (ExprInterface) params.get(2).accept(visitor);
+		IExpr desiredVal = (IExpr) params.get(2).accept(visitor);
 		String mo = null;
 		boolean strong = ctx.getText().contains("strong");
 		if(params.size() > 3) {
-			mo = intToMo(((IConst) params.get(3).accept(visitor)).getIntValue().intValue());
+			mo = intToMo(((IConst) params.get(3).accept(visitor)).getValueAsInt());
 			// NOTE: We forget about the 5th parameter (MO on fail) because it is never used
 			// (see issue #123 for an explanation)
 		}

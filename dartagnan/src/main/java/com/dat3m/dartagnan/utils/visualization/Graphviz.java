@@ -6,7 +6,7 @@ import java.io.Writer;
 
 /*
     A simple class that allows creation of .dot files
-    that can be visualized via Graphviz (e.g. "dot -Tpdf input.dot > output.pdf")
+    that can be visualized via Graphviz (e.g. "dot -Tpdf input.dot -o output.pdf")
  */
 public class Graphviz {
     private StringBuilder text;

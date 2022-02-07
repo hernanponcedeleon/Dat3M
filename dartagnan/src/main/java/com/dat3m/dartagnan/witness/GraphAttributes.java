@@ -29,6 +29,6 @@ public enum GraphAttributes {
 		case WITNESSTYPE:
 			return "witness-type";
 		}
-		throw new RuntimeException(this + " cannot be converted to String");
+		throw new UnsupportedOperationException(this + " cannot be converted to String");
 	}
 }

@@ -12,7 +12,7 @@ public class HerdPPC extends AbstractHerdTest {
     @Parameterized.Parameters(name = "{index}: {0} {1}")
     public static Iterable<Object[]> data() throws IOException {
     	// We want the files to be created every time we run the unit tests
-        initialiseCSVFile(HerdPPC.class, "herd", "");
+        initialiseCSVFile(HerdPPC.class, "herd");
 
         return buildParameters("litmus/PPC/", "cat/power.cat");
     }

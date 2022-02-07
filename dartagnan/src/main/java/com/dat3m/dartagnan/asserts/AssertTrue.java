@@ -12,11 +12,6 @@ public class AssertTrue extends AbstractAssert {
     }
 
     @Override
-    public AbstractAssert removeLocAssertions(boolean replaceByTrue) {
-        return this;
-    }
-
-    @Override
     public String toString(){
         return "true";
     }

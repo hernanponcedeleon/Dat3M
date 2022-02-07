@@ -12,7 +12,7 @@ public enum NodeAttributes {
 		case VIOLATION:
 			return "violation";
 		default:
-			throw new RuntimeException(this + " cannot be converted to String");
+			throw new UnsupportedOperationException(this + " cannot be converted to String");
 		}
 	}
 }

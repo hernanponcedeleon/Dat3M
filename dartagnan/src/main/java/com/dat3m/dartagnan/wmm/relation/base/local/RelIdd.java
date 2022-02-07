@@ -1,18 +1,17 @@
 package com.dat3m.dartagnan.wmm.relation.base.local;
 
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.utils.RegReaderData;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.IDD;
-
-import java.util.*;
-
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.util.Collection;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.IDD;
 
 public class RelIdd extends BasicRegRelation {
 
@@ -24,7 +23,7 @@ public class RelIdd extends BasicRegRelation {
     @Override
     public TupleSet getMinTupleSet() {
         if(minTupleSet == null){
-            mkTupleSets(task.getProgram().getCache().getEvents(FilterBasic.get(EType.REG_READER)));
+            mkTupleSets(task.getProgram().getCache().getEvents(FilterBasic.get(Tag.REG_READER)));
         }
         return minTupleSet;
     }
@@ -32,14 +31,14 @@ public class RelIdd extends BasicRegRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            mkTupleSets(task.getProgram().getCache().getEvents(FilterBasic.get(EType.REG_READER)));
+            mkTupleSets(task.getProgram().getCache().getEvents(FilterBasic.get(Tag.REG_READER)));
         }
         return maxTupleSet;
     }
 
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
-        return doEncodeApprox(task.getProgram().getCache().getEvents(FilterBasic.get(EType.REG_READER)), ctx);
+        return doEncodeApprox(task.getProgram().getCache().getEvents(FilterBasic.get(Tag.REG_READER)), ctx);
     }
 
     @Override

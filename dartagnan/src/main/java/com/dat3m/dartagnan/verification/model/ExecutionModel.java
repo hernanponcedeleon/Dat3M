@@ -3,18 +3,19 @@ package com.dat3m.dartagnan.verification.model;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.utils.RegReaderData;
-import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
-import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
-import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
+import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -207,7 +208,7 @@ public class ExecutionModel {
     }
 
     public void initialize(Model model, SolverContext ctx, boolean extractCoherences) {
-        initialize(model, ctx, FilterBasic.get(EType.VISIBLE), extractCoherences);
+        initialize(model, ctx, FilterBasic.get(Tag.VISIBLE), extractCoherences);
     }
 
     public void initialize(Model model, SolverContext ctx, FilterAbstract eventFilter, boolean extractCoherences) {
@@ -271,9 +272,7 @@ public class ExecutionModel {
                 if (e instanceof BeginAtomic) {
                     atomicBegin = id;
                 } else if (e instanceof EndAtomic) {
-                    if (atomicBegin == -1) {
-                        throw new IllegalStateException("EndAtomic without matching BeginAtomic in model");
-                    }
+                	Preconditions.checkState(atomicBegin != -1, "EndAtomic without matching BeginAtomic in model");
                     atomicBlockRanges.add(ImmutableList.of(atomicBegin, id));
                     atomicBegin = -1;
                 }
@@ -343,7 +342,7 @@ public class ExecutionModel {
                     addressInitMap.put(address, data);
                 }
             } else {
-                throw new RuntimeException("Unexpected memory event");
+                throw new UnsupportedOperationException("Unexpected memory event " + data.getEvent());
             }
 
         } else if (data.isFence()) {
@@ -398,7 +397,7 @@ public class ExecutionModel {
             addrDepMap.put(eventMap.get(e), deps);
         }
 
-        if (e.is(EType.VISIBLE)) {
+        if (e.is(Tag.VISIBLE)) {
             // ---- Track ctrl dependency ----
             // TODO: This may be done more efficiently, as many events share the same set of ctrldeps.
             ctrlDepMap.put(eventMap.get(e), new HashSet<>(curCtrlDeps));

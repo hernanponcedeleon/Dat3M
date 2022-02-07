@@ -12,7 +12,7 @@ public class HerdLinux extends AbstractHerdTest {
     @Parameterized.Parameters(name = "{index}: {0} {4}")
     public static Iterable<Object[]> data() throws IOException {
     	// We want the files to be created every time we run the unit tests
-        initialiseCSVFile(HerdLinux.class, "herd", "");
+        initialiseCSVFile(HerdLinux.class, "herd");
 
         return buildParameters("litmus/C/", "cat/linux-kernel.cat");
     }

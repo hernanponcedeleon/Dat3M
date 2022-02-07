@@ -1,11 +1,9 @@
 package com.dat3m.dartagnan.parsers.cat.visitors;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ID;
-
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
-import com.dat3m.dartagnan.parsers.CatVisitor;
 import com.dat3m.dartagnan.parsers.CatParser;
-import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
+import com.dat3m.dartagnan.parsers.CatVisitor;
+import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
@@ -16,6 +14,8 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
 import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.relation.unary.*;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ID;
 
 public class VisitorRelation extends CatBaseVisitor<Relation> implements CatVisitor<Relation> {
 

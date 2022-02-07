@@ -5,19 +5,20 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
-import com.dat3m.dartagnan.utils.options.DartagnanOptions;
+import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.solving.*;
 import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import org.apache.commons.cli.HelpFormatter;
+import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
@@ -25,66 +26,78 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Set;
 
-import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
-import static com.dat3m.dartagnan.analysis.Analysis.RACES;
-import static com.dat3m.dartagnan.analysis.Base.*;
-import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
-import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisSaturationSolver;
+import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
+import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
+import static com.dat3m.dartagnan.configuration.Property.RACES;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
+import static java.lang.String.valueOf;
 
-public class Dartagnan {
+@Options
+public class Dartagnan extends BaseOptions {
 
-	private static final Logger logger = LogManager.getLogger(Dartagnan.class);  
-	
-    public static void main(String[] args) throws Exception {
+	private static final Logger logger = LogManager.getLogger(Dartagnan.class);
+
+	private static final Set<String> supportedFormats = 
+    		ImmutableSet.copyOf(Arrays.asList(".litmus", ".bpl", ".c", ".i"));
+
+	private Dartagnan(Configuration config) throws InvalidConfigurationException {
+		config.recursiveInject(this);
+	}
+
+	public static void main(String[] args) throws Exception {
     	
-    	CreateGitInfo();
-    	LogGlobalSettings();
-    	
-        DartagnanOptions options = new DartagnanOptions();
-        try {
-            options.parse(args);
-        }
-        catch (Exception e){
-            if(e instanceof UnsupportedOperationException){
-                System.out.println(e.getMessage());
-            }
-            new HelpFormatter().printHelp("DARTAGNAN", options);
-            System.exit(1);
+        if(Arrays.asList(args).contains("--help")) {
+            collectOptions();
             return;
-        }        
-        
-        Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
-        Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));        	
-
-        Arch target = p.getArch();
-        if(target == null){
-            target = options.getTarget();
         }
 
-        logger.info("Program path: " + options.getProgramFilePath());
-        logger.info("CAT file path: " + options.getTargetModelFilePath());
-        logger.info("Bound: " + options.getSettings().getBound());
-        logger.info("Alias Analysis: " + options.getSettings().getAlias());
-        logger.info("Target: " + target);
+    	CreateGitInfo();
 
+    	String[] argKeyword = Arrays.stream(args)
+				.filter(s->s.startsWith("-"))
+				.toArray(String[]::new);
+		Configuration config = Configuration.fromCmdLineArguments(argKeyword); // TODO: We don't parse configs yet
+		Dartagnan o = new Dartagnan(config);
+
+		if(Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(a::endsWith))) {
+			throw new IllegalArgumentException("Input program not given or format not recognized");
+		}
+		// get() is guaranteed to success
+		File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith)).findFirst().get());
+		logger.info("Program path: " + fileProgram);
+
+		if(Arrays.stream(args).noneMatch(a -> a.endsWith(".cat"))) {
+			throw new IllegalArgumentException("CAT model not given or format not recognized");
+		}
+		// get() is guaranteed to success		
+		File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst().get());		
+		logger.info("CAT file path: " + fileModel);	
+        
+		Wmm mcm = new ParserCat().parse(fileModel);
+        Program p = new ProgramParser().parse(fileProgram);
+        
         WitnessGraph witness = new WitnessGraph();
-        if(options.getWitnessPath() != null) {
-        	logger.info("Witness path: " + options.getWitnessPath());
-        	witness = new ParserWitness().parse(new File(options.getWitnessPath()));
-        }        
+        if(o.runValidator()) {
+        	logger.info("Witness path: " + o.getWitnessPath());
+        	witness = new ParserWitness().parse(new File(o.getWitnessPath()));
+        }
 
-        Settings settings = options.getSettings();
-        VerificationTask task = new VerificationTask(p, mcm, witness, target, settings);
+        VerificationTask task = VerificationTask.builder()
+                .withConfig(config)
+                .withWitness(witness)
+                .build(p, mcm);
 
         ShutdownManager sdm = ShutdownManager.create();
     	Thread t = new Thread(() -> {
 			try {
-				if(options.getSettings().getSolverTimeout() > 0) {
+				if(o.hasTimeout()) {
 					// Converts timeout from secs to millisecs
-					Thread.sleep(1000L * options.getSettings().getSolverTimeout());
+					Thread.sleep(1000L * o.getTimeout());
 					sdm.requestShutdown("Shutdown Request");
 					logger.warn("Shutdown Request");
 				}
@@ -94,51 +107,47 @@ public class Dartagnan {
 
     	try {
             t.start();
-            Configuration config = Configuration.builder()
-                    .setOption("solver.z3.usePhantomReferences", "true")
+            Configuration solverConfig = Configuration.builder()
+                    .setOption(PHANTOM_REFERENCES, valueOf(o.usePhantomReferences()))
                     .build();
             try (SolverContext ctx = SolverContextFactory.createSolverContext(
-                    config,
-                    BasicLogManager.create(config),
+            		solverConfig,
+                    BasicLogManager.create(solverConfig),
                     sdm.getNotifier(),
-                    options.getSMTSolver());
+                    o.getSolver());
                  ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
             {
-                Result result;
-                switch (options.getAnalysis()) {
-                    case RACES:
-                        result = checkForRaces(ctx, task);
+                Result result = UNKNOWN;
+                switch (o.getProperty()) {
+                	case RACES:
+                    	result = DataRaceSolver.run(ctx, prover, task);
                         break;
+					case LIVENESS:
                     case REACHABILITY:
-                        switch (options.getMethod()) {
-                            case TWO:
-                                try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-                                    result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
+                    	switch (o.getMethod()) {
+                        	case TWO:
+                            	try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+                                	result = TwoSolvers.run(ctx, prover, prover2, task);
                                 }
                                 break;
                             case INCREMENTAL:
-                                result = runAnalysisIncrementalSolver(ctx, prover, task);
+                            	result = IncrementalSolver.run(ctx, prover, task);
                                 break;
                             case ASSUME:
-                                result = runAnalysisAssumeSolver(ctx, prover, task);
+                            	result = AssumeSolver.run(ctx, prover, task);
+                            	break;
+                            case CAAT:
+                            	result = RefinementSolver.run(ctx, prover,
+                            			RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
                                 break;
-                            case REFINEMENT:
-                                result = runAnalysisSaturationSolver(ctx, prover,
-                                        RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
-                                break;
-                            default:
-                                throw new RuntimeException("Unrecognized method mode: " + options.getMethod());
                         }
                         break;
-                    default:
-                        throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
                 }
 
                 // Verification ended, we can interrupt the timeout Thread
                 t.interrupt();
 
-                if (options.getProgramFilePath().endsWith(".litmus")) {
-                    System.out.println("Settings: " + options.getSettings());
+                if (fileProgram.getName().endsWith(".litmus")) {
                     if (p.getAssFilter() != null) {
                         System.out.println("Filter " + (p.getAssFilter()));
                     }
@@ -148,9 +157,16 @@ public class Dartagnan {
                     System.out.println(result);
                 }
 
-                if (options.createWitness() != null && options.getAnalysis() != RACES) {
-                    new WitnessBuilder(p, ctx, prover, result, options).write();
-                }
+				try {
+					WitnessBuilder w = new WitnessBuilder(task, ctx, prover, result);
+	                // We only write witnesses for REACHABILITY (if the path to the original C file was given) 
+					// and if we are not doing witness validation
+	                if (!o.getProperty().equals(RACES) && w.canBeBuilt() && !o.runValidator()) {
+						w.build().write();
+	                }
+				} catch(InvalidConfigurationException e) {
+					logger.warn(e.getMessage());
+				}
             }
         } catch (InterruptedException e){
         	logger.warn("Timeout elapsed. The SMT solver was stopped");

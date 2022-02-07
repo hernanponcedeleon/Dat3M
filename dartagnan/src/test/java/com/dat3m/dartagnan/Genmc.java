@@ -27,7 +27,7 @@ public class Genmc {
     public static Iterable<Object[]> data() throws IOException {
 
     	// We want the files to be created every time we run the unit tests
-        initialiseCSVFile(Genmc.class, "genMC", "");
+        initialiseCSVFile(Genmc.class, "genMC");
 
 		List<Object[]> data = new ArrayList<>();
 
@@ -69,7 +69,7 @@ public class Genmc {
     @Test(timeout = TIMEOUT)
     public void test() {
     	
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "genMC", ""), true)))
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "genMC"), true)))
            {
         		writer.newLine();
         		writer.append(path.substring(path.lastIndexOf("/") + 1)).append(", ");

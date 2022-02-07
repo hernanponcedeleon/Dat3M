@@ -1,14 +1,9 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.program.event.core.Event;
+import org.sosy_lab.java_smt.api.*;
+
 import java.math.BigInteger;
-
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
-
-import com.dat3m.dartagnan.program.event.Event;
 
 public abstract class BExpr implements ExprInterface {
 
@@ -26,21 +21,6 @@ public abstract class BExpr implements ExprInterface {
         return getBoolValue(e, model, ctx) ? BigInteger.ONE : BigInteger.ZERO;
     }
     
-	@Override
-	public int getPrecision() {
-		throw new UnsupportedOperationException("getPrecision() not supported for " + this);
-	}
-	
-	@Override
-	public IExpr getBase() {
-		return null;
-	}
-
-	@Override
-	public BConst reduce() {
-        throw new UnsupportedOperationException("Reduce not supported for " + this);
-	}
-
 	public boolean isTrue() {
 		return this.equals(BConst.TRUE);
 	}

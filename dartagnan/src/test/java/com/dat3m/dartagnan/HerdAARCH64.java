@@ -13,7 +13,7 @@ public class HerdAARCH64 extends AbstractHerdTest {
     @Parameterized.Parameters(name = "{index}: {0} {1}")
     public static Iterable<Object[]> data() throws IOException {
     	// We want the files to be created every time we run the unit tests
-        initialiseCSVFile(HerdAARCH64.class, "herd", "");
+        initialiseCSVFile(HerdAARCH64.class, "herd");
 
 		return buildParameters("litmus/AARCH64/", "aarch64/tso.cat");
     }

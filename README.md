@@ -9,10 +9,10 @@
 
 Requirements
 ======
-* [Maven](https://maven.apache.org/) (if you want to build the tools. If not see the [release](https://github.com/hernanponcedeleon/Dat3M/releases) section)
-* [Java 8](https://openjdk.java.net/projects/jdk/16/) or above (if you want to compile from source)
-* [Smack 2.5.0](https://github.com/smackers/smack) or above (only to verify C programs)
-* [Clang](https://clang.llvm.org) the concrete version depends on your `smack` version
+* [Maven](https://maven.apache.org/)
+* [Java](https://openjdk.java.net/projects/jdk/16/) 8 or above
+* [Smack](https://github.com/smackers/smack) 2.8.0 or above (only to verify C programs)
+* [Clang](https://clang.llvm.org) the concrete version depends on Smack (only to verify C programs)
 
 Installation
 ======
@@ -36,7 +36,11 @@ docker run -w /home/Dat3M -v /sys/fs/cgroup:/sys/fs/cgroup:rw -it dartagnan /bin
 Set Dat3M's home and add it to the path
 ```
 export DAT3M_HOME=<Dat3M's root>
-export PATH=$DAT3M_HOME/:$PATH
+```
+
+At least the following compiler flag needs to be set, further can be added  
+```
+export CFLAGS="-I$DAT3M_HOME/include"
 ```
 
 If you are verifying C code, be sure both `clang` and `smack` are in your `PATH`.
@@ -45,14 +49,6 @@ To build the tool run
 ```
 mvn clean install -DskipTests
 ```
-
-**Unit Tests**
-
-We provide a set of unit tests that can be run by
-```
-mvn test
-```
-**Note:** there are almost 40K tests, running them can take several hs.
 
 Usage
 ======
@@ -75,26 +71,22 @@ There are three possible results for the verification:
 You can also run Dartagnan from the console:
 
 ```
-java -jar dartagnan/target/dartagnan-3.0.0.jar -cat <CAT file> [-t <target>] -i <program file> [options]
+java -jar dartagnan/target/dartagnan-3.0.0.jar <CAT file> [--target=<arch>] <program file> [options]
 ```
-The `-cat` option specifies the path to the CAT file.
-
-For programs written in `.c` and `.bpl`, `<target>` specifies the architectures to which the program will be compiled. It must be one of the following: 
+For programs written in `.c` and `.bpl`, value `<arch>` specifies the architectures to which the program will be compiled. It must be one of the following: 
 - none
 - tso
 - power
-- arm
 - arm8
 
 Program written in `.litmus` format do not require such option.
 
-Other optional arguments include:
-- `-a, --alias`: specifies the alias-analysis used. Option `andersen` (the default one) uses a control-flow-insensitive method. Option `cfs` uses a control-flow-sensitive method. Option `none` performs no alias analysis.
-- `-unroll`: unrolling bound for the BMC (default is 1).
-- `-solver`: specifies which SMT solver to use as a backend. Since we use [JavaSMT](https://github.com/sosy-lab/java-smt), several SMT solvers are supported depending on the OS and the used SMT logic (default is Z3).
-- `-method`: specifies which solving method to use. Options `incremental` (the default one) and `assume` solve a monolithic formula using incremental/assume-based SMT solving. Option `refinement` uses a customized solver for memory consistency.  
+Further options can be specified using `--<option>=<value>`. Common options include:
+- `unroll`: unrolling bound for the BMC (default is 1).
+- `solver`: specifies which SMT solver to use as a backend. Since we use [JavaSMT](https://github.com/sosy-lab/java-smt), several SMT solvers are supported depending on the OS and the used SMT logic (default is Z3).
+- `method`: specifies which solving method to use. Option `caat` (the default one) uses a customized solver for memory consistency. Options `incremental` and `assume` solve a monolithic formula using incremental/assume-based SMT solving. 
 
-Dartagnan supports input non-determinism, assumptions and assertions using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) commands `__VERIFIER_nondet_X`, `__VERIFIER_assume` and `__VERIFIER_assert`.
+Dartagnan supports input non-determinism and assertions using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) commands `__VERIFIER_nondet_X` and `__VERIFIER_assert`.
 
 **SV-COMP Experiments**
 
@@ -108,18 +100,19 @@ Authors and Contact
 ======
 **Maintainer:**
 
-* [Hernán Ponce de León](mailto:hernan.ponce@unibw.de)
+* [Hernán Ponce de León](https://hernanponcedeleon.github.io)
 
 **Developers:**
 
-* [Thomas Haas](mailto:t.haas@tu-braunschweig.de)
+* [Thomas Haas](https://www.tcs.cs.tu-bs.de/group/haas/home.html)
+* [René Pascal Maseli](https://www.tcs.cs.tu-bs.de/group/maseli/home.html)
 
 **Former Developers:**
 
 * Florian Furbach
 * Natalia Gavrilenko
 
-Please feel free to contact us in case of questions or to send feedback.
+Please feel free to [contact us](mailto:hernan.ponce@unibw.de) in case of questions or to send feedback.
 
 References
 ======

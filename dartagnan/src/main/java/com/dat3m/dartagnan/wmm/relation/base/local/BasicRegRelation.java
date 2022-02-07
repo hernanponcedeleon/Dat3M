@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.wmm.relation.base.local;
 
-import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 
 abstract class BasicRegRelation extends StaticRelation {
 
@@ -30,7 +30,7 @@ abstract class BasicRegRelation extends StaticRelation {
     void mkTupleSets(Collection<Event> regReaders) {
         maxTupleSet = new TupleSet();
         minTupleSet = new TupleSet();
-        BranchEquivalence eq = task.getBranchEquivalence();
+        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
         ImmutableMap<Register, ImmutableList<Event>> regWriterMap = task.getProgram().getCache().getRegWriterMap();
         for(Event regReader : regReaders){
             for(Register register : getRegisters(regReader)){
@@ -42,18 +42,18 @@ abstract class BasicRegRelation extends StaticRelation {
 
                 // =========================
                 List<Event> possibleWriters = writers.stream()
-                        .filter(x -> x.getCId() < regReader.getCId() && !eq.areMutuallyExclusive(x, regReader))
+                        .filter(x -> x.getCId() < regReader.getCId() && !exec.areMutuallyExclusive(x, regReader))
                         .collect(Collectors.toList());
 
                 List<Event> impliedWriters = possibleWriters
-                        .stream().filter(x -> eq.isImplied(regReader, x) && x.cfImpliesExec())
+                        .stream().filter(x -> exec.isImplied(regReader, x))
                         .collect(Collectors.toList());
                 if (!impliedWriters.isEmpty()) {
                     Event lastImplied = impliedWriters.get(impliedWriters.size() - 1);
                     possibleWriters.removeIf(x -> x.getCId() < lastImplied.getCId());
                 }
                 possibleWriters.removeIf(x -> possibleWriters.stream()
-                        .anyMatch(y -> (x.getCId() < y.getCId()) && y.cfImpliesExec() && eq.isImplied(x ,y)));
+                        .anyMatch(y -> x.getCId() < y.getCId() && exec.isImplied(x ,y)));
 
                 // --- Min sets ---
                 if (possibleWriters.size() == 1) {
@@ -62,7 +62,7 @@ abstract class BasicRegRelation extends StaticRelation {
                 } else {
                     // there are multiple regWriters, but some are exclusive to all others
                     for (Event writer : possibleWriters) {
-                        if (possibleWriters.stream().allMatch(x -> x == writer || eq.areMutuallyExclusive(x, writer))) {
+                        if (possibleWriters.stream().allMatch(x -> x == writer || exec.areMutuallyExclusive(x, writer))) {
                             minTupleSet.add(new Tuple(writer, regReader));
                         }
                     }
@@ -93,7 +93,7 @@ abstract class BasicRegRelation extends StaticRelation {
 
                 if(writers.isEmpty() || writers.get(0).getCId() >= regReader.getCId()){
                 	BooleanFormula equal = generalEqual(register.toIntFormula(regReader, ctx),
-                										new IConst(BigInteger.ZERO, register.getPrecision()).toIntFormula(ctx), ctx);
+                										new IValue(BigInteger.ZERO, register.getPrecision()).toIntFormula(ctx), ctx);
                     enc = bmgr.and(enc, equal);
                 } else {
 

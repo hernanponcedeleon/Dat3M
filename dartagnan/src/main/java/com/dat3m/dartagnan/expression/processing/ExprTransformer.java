@@ -3,8 +3,6 @@ package com.dat3m.dartagnan.expression.processing;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
-
 
 public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface> {
 
@@ -34,33 +32,28 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
     }
 
     @Override
-    public IExpr visit(IConst iConst) {
-        return iConst;
+    public IValue visit(IValue iValue) {
+        return iValue;
     }
 
     @Override
     public IExpr visit(IExprBin iBin) {
-        return new IExprBin(iBin.getLHS().visit(this), iBin.getOp(), iBin.getRHS().visit(this));
+        return new IExprBin((IExpr) iBin.getLHS().visit(this), iBin.getOp(), (IExpr) iBin.getRHS().visit(this));
     }
 
     @Override
     public IExpr visit(IExprUn iUn) {
-        return new IExprUn(iUn.getOp(), iUn.getInner().visit(this));
+        return new IExprUn(iUn.getOp(), (IExpr) iUn.getInner().visit(this));
     }
 
     @Override
     public ExprInterface visit(IfExpr ifExpr) {
-        return new IfExpr((BExpr)ifExpr.getGuard().visit(this), ifExpr.getTrueBranch().visit(this), ifExpr.getFalseBranch().visit(this));
+        return new IfExpr((BExpr)ifExpr.getGuard().visit(this), (IExpr)ifExpr.getTrueBranch().visit(this), (IExpr)ifExpr.getFalseBranch().visit(this));
     }
 
     @Override
     public IExpr visit(INonDet iNonDet) {
         return iNonDet;
-    }
-
-    @Override
-    public ExprInterface visit(Location loc) {
-        return loc;
     }
 
     @Override

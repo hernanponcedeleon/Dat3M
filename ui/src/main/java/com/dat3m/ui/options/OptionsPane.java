@@ -1,22 +1,16 @@
 package com.dat3m.ui.options;
 
-import com.dat3m.dartagnan.analysis.Method;
-import com.dat3m.dartagnan.utils.Settings;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.configuration.Method;
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.ui.button.ClearButton;
 import com.dat3m.ui.button.TestButton;
-import com.dat3m.ui.icon.IconCode;
-import com.dat3m.ui.icon.IconHelper;
 import com.dat3m.ui.options.utils.ControlCode;
 import com.dat3m.ui.utils.UiOptions;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
-
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -35,7 +29,6 @@ public class OptionsPane extends JPanel implements ActionListener {
 	
     private final JLabel iconPane;
 
-    private final Selector<Alias> aliasPane;
     private final Selector<Method> methodPane;
     private final Selector<Solvers> solverPane;
     
@@ -52,12 +45,8 @@ public class OptionsPane extends JPanel implements ActionListener {
     public OptionsPane(){
         super(new GridLayout(1,0));
 
-        int height = Math.min(getIconHeight(), (int) Math.round(Toolkit.getDefaultToolkit().getScreenSize().getHeight()) * 7 / 18);
         iconPane = new JLabel();
 
-        aliasPane = new Selector<>(Alias.orderedValues(), ControlCode.ALIAS);
-        aliasPane.setSelectedItem(Alias.getDefault());
-        
         methodPane = new Selector<>(Method.orderedValues(), ControlCode.METHOD);
         methodPane.setSelectedItem(Method.getDefault());
         
@@ -98,16 +87,12 @@ public class OptionsPane extends JPanel implements ActionListener {
     }
 
     public UiOptions getOptions(){
-        Settings settings = new Settings(
-                (Alias)aliasPane.getSelectedItem(),
-                Integer.parseInt(boundField.getText()),
-                Integer.parseInt(timeoutField.getText())
-        );
-
+        int bound = Integer.parseInt(boundField.getText());
+        int timeout = Integer.parseInt(timeoutField.getText());
         Arch target = (Arch)targetPane.getSelectedItem();
         Method method = (Method)methodPane.getSelectedItem();
         Solvers solver = (Solvers)solverPane.getSelectedItem();
-        return new UiOptions(target, method, solver, settings);
+        return new UiOptions(target, method, bound, solver, timeout);
     }
 
     private int getIconHeight(){
@@ -135,7 +120,7 @@ public class OptionsPane extends JPanel implements ActionListener {
 
         JSplitPane graphPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         graphPane.setDividerSize(0);
-        JComponent[] panes = { targetPane, aliasPane, methodPane, solverPane, boundsPane, testButton, clearButton, graphPane, scrollConsole };
+        JComponent[] panes = { targetPane, methodPane, solverPane, boundsPane, testButton, clearButton, graphPane, scrollConsole };
         Iterator<JComponent> it = Arrays.asList(panes).iterator();
         JComponent current = iconPane;
         current.setBorder(emptyBorder);
