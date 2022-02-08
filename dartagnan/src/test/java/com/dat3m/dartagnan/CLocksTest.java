@@ -11,22 +11,17 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class CLocksTest extends AbstractCTest {
-
-	static final int TIMEOUT = 1800000;
-
+	
     public CLocksTest(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
@@ -43,8 +38,8 @@ public class CLocksTest extends AbstractCTest {
 
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
-
-		return Arrays.asList(new Object[][]{
+		
+    	return Arrays.asList(new Object[][]{
 	            {"ttas-5", TSO, UNKNOWN},
 	            {"ttas-5", ARM8, UNKNOWN},
 	            {"ttas-5", POWER, UNKNOWN},
@@ -145,42 +140,16 @@ public class CLocksTest extends AbstractCTest {
 		});
     }
 
-	@Test
+//    @Test
 	@CSVLogger.FileName("csv/assume")
 	public void testAssume() throws Exception {
-		try(BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "assume"), true))) {
-            writer.newLine();
-            writer.append(taskProvider.get().getProgram().getName()).append(", ");
-            // The flush() is required to write the content in the presence of timeouts
-            writer.flush();
-
-            long start = System.currentTimeMillis();
-			assertEquals(expected, AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
-            long solvingTime = System.currentTimeMillis() - start;
-            
-            writer.append(expected.equals(UNKNOWN) || expected.equals(PASS) ? "\\gtick" : "\\redcross").append(", ").append(Long.toString(solvingTime));
-        } catch (Exception e){
-        	System.out.println(String.format("%s failed with the following msg: %s", taskProvider.get().getProgram().getName(), e.getMessage()));
-        }
+		assertEquals(expected, AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
 	}
 
-	@Test
+    @Test
 	@CSVLogger.FileName("csv/refinement")
 	public void testRefinement() throws Exception {
-		try(BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "refinement"), true))) {
-            writer.newLine();
-            writer.append(taskProvider.get().getProgram().getName()).append(", ");
-            // The flush() is required to write the content in the presence of timeouts
-            writer.flush();
-
-            long start = System.currentTimeMillis();
-            assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(),
-    				RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(taskProvider.get())));
-            long solvingTime = System.currentTimeMillis() - start;
-            
-            writer.append(expected.equals(UNKNOWN) || expected.equals(PASS) ? "\\gtick" : "\\redcross").append(", ").append(Long.toString(solvingTime));
-        } catch (Exception e){
-        	System.out.println(String.format("%s failed with the following msg: %s", taskProvider.get().getProgram().getName(), e.getMessage()));
-        }
+		assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(),
+				RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(taskProvider.get())));
 	}
 }

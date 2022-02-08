@@ -76,7 +76,7 @@ public abstract class AbstractSvCompTest {
 
     // Special rules
     protected final Timeout timeout = Timeout.millis(getTimeout());
-    protected final CSVLogger csvLogger = CSVLogger.create(() -> name);
+    protected final CSVLogger csvLogger = CSVLogger.create(() -> name, expectedResultProvider);
     protected final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
 
     @Rule

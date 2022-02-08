@@ -21,7 +21,7 @@ public abstract class AbstractCTest {
 
     protected String name;
     protected Arch target;
-    protected final Result expected;
+    protected Result expected;
 
     public AbstractCTest(String name, Arch target, Result expected) {
         this.name = name;
@@ -62,7 +62,7 @@ public abstract class AbstractCTest {
 
     // Special rules
     protected final Timeout timeout = Timeout.millis(getTimeout());
-    protected final CSVLogger csvLogger = CSVLogger.create(() -> String.format("%s-%s", name, target));
+    protected final CSVLogger csvLogger = CSVLogger.create(() -> name, () -> expected);
     protected final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
 
     @Rule

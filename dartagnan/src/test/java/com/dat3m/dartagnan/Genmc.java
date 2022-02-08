@@ -11,7 +11,6 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.CLocksTest.TIMEOUT;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 import static com.dat3m.dartagnan.utils.ResourceHelper.initialiseCSVFile;
 
@@ -66,7 +65,7 @@ public class Genmc {
         this.path = path;
     }
 
-    @Test(timeout = TIMEOUT)
+    @Test
     public void test() {
     	
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "genMC"), true)))

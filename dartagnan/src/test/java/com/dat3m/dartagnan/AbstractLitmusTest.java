@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.verification.solving.TwoSolvers;
 import com.dat3m.dartagnan.wmm.Wmm;
+
 import com.dat3m.dartagnan.configuration.Arch;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.utils.ResourceHelper.*;
 import static com.google.common.io.Files.getNameWithoutExtension;
 import static org.junit.Assert.assertEquals;
 
@@ -95,13 +97,15 @@ public abstract class AbstractLitmusTest {
     protected final Provider<Integer> timeoutProvider = getTimeoutProvider();
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
+    protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
+    	getExpectedResults().get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, targetProvider, boundProvider, timeoutProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
     protected final Provider<ProverEnvironment> prover2Provider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
 
     private final Timeout timeout = Timeout.millis(getTimeout());
-    private final CSVLogger csvLogger = CSVLogger.create(nameProvider);
+    private final CSVLogger csvLogger = CSVLogger.create(filePathProvider, expectedResultProvider);
     private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
 
     @Rule
@@ -114,6 +118,7 @@ public abstract class AbstractLitmusTest {
             .around(programProvider)
             .around(wmmProvider)
             .around(taskProvider)
+            .around(expectedResultProvider)
             .around(csvLogger)
             .around(timeout)
             // Context/Prover need to be created inside test-thread spawned by <timeout>
