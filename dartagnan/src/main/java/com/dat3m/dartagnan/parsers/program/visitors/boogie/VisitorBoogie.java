@@ -165,18 +165,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			String type = ctx.typed_idents().type().getText();
 			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
 			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name) && ATOMICPROCEDURES.stream().noneMatch(name::startsWith)) {
-				int size = 0;
-				String tmp = ctx.getText();
-				if(ctx.getText().contains(":allocSize")) {
-					tmp = tmp.split(":allocSize")[1];
-					tmp = tmp.split("}")[0];
-					size = Integer.parseInt(tmp);
-				}
-				if(size > 0) {
-					programBuilder.newObject(name,size);
-				} else {
-					programBuilder.getOrNewObject(name);
-				}
+				int size = ctx.getText().contains(":allocSize")
+					? Integer.parseInt(ctx.getText().split(":allocSize")[1].split("}")[0])
+					: 1;
+				programBuilder.newObject(name,size);
 			} else {
 				constantsTypeMap.put(name, precision);
 			}
@@ -193,15 +185,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
     @Override
     public Object visitVar_decl(Var_declContext ctx) {
-    	 for(Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
-    		 for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
-    			 String name = ident.getText();
-    			 if(!smackDummyVariables.contains(name)) {
-        			 programBuilder.getOrNewObject(name);
-    			 }
-    		 }
-    	 }
-    	 return null;
+        for(Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
+            for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
+                String name = ident.getText();
+                if(!smackDummyVariables.contains(name)) {
+                    programBuilder.newObject(name,1);
+                }
+            }
+        }
+        return null;
     }
     
 	public Object visitLocal_vars(Local_varsContext ctx, int scope) {
