@@ -33,7 +33,7 @@ public class CLocksTSO extends AbstractCTest {
 
     @Override
     protected long getTimeout() {
-        return 60000;
+        return 300000;
     }
 
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
@@ -42,25 +42,25 @@ public class CLocksTSO extends AbstractCTest {
 	            {"ttas-5", TSO, UNKNOWN},
 	            {"ttas-5-acq2rx", TSO, UNKNOWN},
 	            {"ttas-5-rel2rx", TSO, UNKNOWN},
-	            {"ticketlock-3", TSO, PASS},
-	            {"ticketlock-3-acq2rx", TSO, PASS},
-	            {"ticketlock-3-rel2rx", TSO, PASS},
-                {"mutex-3", TSO, UNKNOWN},
-                {"mutex-3-acq2rx_futex", TSO, UNKNOWN},
-                {"mutex-3-acq2rx_lock", TSO, UNKNOWN},
-                {"mutex-3-rel2rx_futex", TSO, UNKNOWN},
-                {"mutex-3-rel2rx_unlock", TSO, UNKNOWN},
+	            {"ticketlock-6", TSO, PASS},
+	            {"ticketlock-6-acq2rx", TSO, PASS},
+	            {"ticketlock-6-rel2rx", TSO, PASS},
+                {"mutex-4", TSO, UNKNOWN},
+                {"mutex-4-acq2rx_futex", TSO, UNKNOWN},
+                {"mutex-4-acq2rx_lock", TSO, UNKNOWN},
+                {"mutex-4-rel2rx_futex", TSO, UNKNOWN},
+                {"mutex-4-rel2rx_unlock", TSO, UNKNOWN},
                 {"spinlock-5", TSO, UNKNOWN},
                 {"spinlock-5-acq2rx", TSO, UNKNOWN},
                 {"spinlock-5-rel2rx", TSO, UNKNOWN},
                 {"linuxrwlock-3", TSO, UNKNOWN},
                 {"linuxrwlock-3-acq2rx", TSO, UNKNOWN},
                 {"linuxrwlock-3-rel2rx", TSO, UNKNOWN},
-                {"mutex_musl-3", TSO, UNKNOWN},
-                {"mutex_musl-3-acq2rx_futex", TSO, UNKNOWN},
-                {"mutex_musl-3-acq2rx_lock", TSO, UNKNOWN},
-                {"mutex_musl-3-rel2rx_futex", TSO, UNKNOWN},
-                {"mutex_musl-3-rel2rx_unlock", TSO, UNKNOWN},
+                {"mutex_musl-4", TSO, UNKNOWN},
+                {"mutex_musl-4-acq2rx_futex", TSO, UNKNOWN},
+                {"mutex_musl-4-acq2rx_lock", TSO, UNKNOWN},
+                {"mutex_musl-4-rel2rx_futex", TSO, UNKNOWN},
+                {"mutex_musl-4-rel2rx_unlock", TSO, UNKNOWN},
 //                {"cna-4", TSO, UNKNOWN},
 //                {"cna-4-rel2rx_unlock1", TSO, UNKNOWN},
 //                {"cna-4-rel2rx_unlock2", TSO, UNKNOWN},

@@ -34,9 +34,9 @@ public class Genmc {
         data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ttas-5-acq2rx.c"});
         data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ttas-5-rel2rx.c"});
 
-        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ticketlock-3.c"});
-        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ticketlock-3-acq2rx.c"});
-        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ticketlock-3-rel2rx.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ticketlock-6.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ticketlock-6-acq2rx.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ticketlock-6-rel2rx.c"});
 
         data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-4.c"});
         data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-4-acq2rx-futex.c"});

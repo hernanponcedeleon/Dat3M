@@ -33,34 +33,34 @@ public class CLocksPower extends AbstractCTest {
 
     @Override
     protected long getTimeout() {
-        return 60000;
+        return 300000;
     }
 
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
 	            {"ttas-5", POWER, UNKNOWN},
-	            {"ttas-5-acq2rx", POWER, UNKNOWN},
+	            {"ttas-5-acq2rx", POWER, FAIL},
 	            {"ttas-5-rel2rx", POWER, FAIL},
-	            {"ticketlock-3", POWER, PASS},
-	            {"ticketlock-3-acq2rx", POWER, PASS},
-	            {"ticketlock-3-rel2rx", POWER, FAIL},
-                {"mutex-3", POWER, UNKNOWN},
-                {"mutex-3-acq2rx_futex", POWER, UNKNOWN},
-                {"mutex-3-acq2rx_lock", POWER, UNKNOWN},
-                {"mutex-3-rel2rx_futex", POWER, UNKNOWN},
-                {"mutex-3-rel2rx_unlock", POWER, FAIL},
+	            {"ticketlock-6", POWER, PASS},
+	            {"ticketlock-6-acq2rx", POWER, FAIL},
+	            {"ticketlock-6-rel2rx", POWER, FAIL},
+                {"mutex-4", POWER, UNKNOWN},
+                {"mutex-4-acq2rx_futex", POWER, UNKNOWN},
+                {"mutex-4-acq2rx_lock", POWER, FAIL},
+                {"mutex-4-rel2rx_futex", POWER, UNKNOWN},
+                {"mutex-4-rel2rx_unlock", POWER, FAIL},
                 {"spinlock-5", POWER, UNKNOWN},
-                {"spinlock-5-acq2rx", POWER, UNKNOWN},
+                {"spinlock-5-acq2rx", POWER, FAIL},
                 {"spinlock-5-rel2rx", POWER, FAIL},
                 {"linuxrwlock-3", POWER, UNKNOWN},
                 {"linuxrwlock-3-acq2rx", POWER, FAIL},
                 {"linuxrwlock-3-rel2rx", POWER, FAIL},
-                {"mutex_musl-3", POWER, UNKNOWN},
-                {"mutex_musl-3-acq2rx_futex", POWER, UNKNOWN},
-                {"mutex_musl-3-acq2rx_lock", POWER, UNKNOWN},
-                {"mutex_musl-3-rel2rx_futex", POWER, UNKNOWN},
-                {"mutex_musl-3-rel2rx_unlock", POWER, FAIL},
+                {"mutex_musl-4", POWER, UNKNOWN},
+                {"mutex_musl-4-acq2rx_futex", POWER, UNKNOWN},
+                {"mutex_musl-4-acq2rx_lock", POWER, FAIL},
+                {"mutex_musl-4-rel2rx_futex", POWER, UNKNOWN},
+                {"mutex_musl-4-rel2rx_unlock", POWER, FAIL},
 //                {"cna-4", POWER, UNKNOWN},
 //                // I would have expected this to be FAIL, but we report UNKNOWN
 //                {"cna-4-rel2rx_unlock1", POWER, FAIL},
