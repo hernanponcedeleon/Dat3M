@@ -38,11 +38,11 @@ public class Genmc {
         data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ticketlock-3-acq2rx.c"});
         data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/ticketlock-3-rel2rx.c"});
 
-        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-3.c"});
-        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-3-acq2rx-futex.c"});
-        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-3-acq2rx-lock.c"});
-        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-3-rel2rx-futex.c"});
-        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-3-rel2rx-unlock.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-4.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-4-acq2rx-futex.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-4-acq2rx-lock.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-4-rel2rx-futex.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex-4-rel2rx-unlock.c"});
 
         data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/spinlock-5.c"});
         data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/spinlock-5-acq2rx.c"});
@@ -52,11 +52,11 @@ public class Genmc {
         data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/linuxrwlock-3-acq2rx.c"});
         data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/linuxrwlock-3-rel2rx.c"});
         
-        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex_musl-3.c"});
-        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex_musl-3-acq2rx-futex.c"});
-        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex_musl-3-acq2rx-lock.c"});
-        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex_musl-3-rel2rx-futex.c"});
-        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex_musl-3-rel2rx-unlock.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex_musl-4.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex_musl-4-acq2rx-futex.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex_musl-4-acq2rx-lock.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex_musl-4-rel2rx-futex.c"});
+        data.add(new Object[]{System.getenv("DAT3M_HOME") + "/benchmarks/locks/mutex_musl-4-rel2rx-unlock.c"});
 
         return data;
     }
@@ -65,7 +65,7 @@ public class Genmc {
         this.path = path;
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void test() {
     	
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(getCSVFileName(getClass(), "genMC"), true)))
@@ -79,6 +79,7 @@ public class Genmc {
             	ArrayList<String> cmd = new ArrayList<String>();
             	cmd.add("genmc");
             	cmd.add("-imm");
+            	cmd.add("-unroll=2");
             	cmd.add(path);
             	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
 
@@ -96,7 +97,7 @@ public class Genmc {
 	   				}
 	   			}
 	   			long solvingTime = System.currentTimeMillis() - start;
-                String result = output.contains("violation") ? "\\redcross" : "\\gtick";
+                String result = output.contains("violation") ? "FAIL" : output.contains("No errors were detected") ? "PASS" : "ERROR";
 
                 writer.append(result).append(", ").append(Long.toString(solvingTime));
            } catch (Exception e){
