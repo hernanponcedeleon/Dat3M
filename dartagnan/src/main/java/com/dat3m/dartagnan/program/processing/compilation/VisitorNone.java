@@ -42,7 +42,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 	@Override
 	public List<Event> visitEnd(End e) {
         return eventSequence(
-                newStore(e.getAddress(), IConst.ZERO, e.getMo())
+                newStore(e.getAddress(), IValue.ZERO, e.getMo())
         );
 	}
 
@@ -54,7 +54,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
         
         return eventSequence(
         		load,
-        		newJumpUnless(new Atom(resultRegister, EQ, IConst.ZERO), e.getLabel())
+        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), e.getLabel())
         );
 	}
 
@@ -64,7 +64,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 
         return eventSequence(
         		newLoad(resultRegister, e.getAddress(), e.getMo()),
-        		newJumpUnless(new Atom(resultRegister, EQ, IConst.ONE), e.getLabel())
+        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), e.getLabel())
         );
 	}
 
@@ -165,7 +165,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
                 load,
                 newLocal(dummy, new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue())),
                 newRMWStore(load, address, dummy, Tag.Linux.MO_RELAXED),
-                newLocal(resultRegister, new Atom(dummy, EQ, new IConst(BigInteger.ZERO, precision))),
+                newLocal(resultRegister, new Atom(dummy, EQ, new IValue(BigInteger.ZERO, precision))),
                 Linux.newMemoryBarrier()
         );
 	}
@@ -231,7 +231,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
+        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
         Load loadValue = newRMWLoad(regValue, address, mo);
         Store storeValue = newRMWStore(loadValue, address, e.getMemValue(), mo);
@@ -310,7 +310,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
         Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casEnd);
+        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
 
         Load load = newRMWLoad(regValue, address, mo);
         Store store = newRMWStore(load, address, value, mo);

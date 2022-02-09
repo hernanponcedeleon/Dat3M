@@ -22,8 +22,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
-import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -166,23 +165,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			String type = ctx.typed_idents().type().getText();
 			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
 			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name) && ATOMICPROCEDURES.stream().noneMatch(name::startsWith)) {
-				int size = 0;
-				String tmp = ctx.getText();
-				if(ctx.getText().contains(":allocSize")) {
-					tmp = tmp.split(":allocSize")[1];
-					tmp = tmp.split("}")[0];
-					size = Integer.parseInt(tmp);
-				} 
-				if(size > 0) {
-					programBuilder.addDeclarationArray(name, Collections.nCopies(size, IConst.ZERO));										
-				} else {
-					// Since we treat all globally defined variables as arrays 
-					// (e.g. an int variable results in an array of size 4 since 
-					// boogie works at the byte granularity), we need this for char 
-					// variables which would result in a single variable but we will 
-					// treat it as an array of size 1
-					programBuilder.getOrCreateLocation(name + "[0]");
-				}
+				int size = ctx.getText().contains(":allocSize")
+					? Integer.parseInt(ctx.getText().split(":allocSize")[1].split("}")[0])
+					: 1;
+				programBuilder.newObject(name,size);
 			} else {
 				constantsTypeMap.put(name, precision);
 			}
@@ -199,15 +185,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
     @Override
     public Object visitVar_decl(Var_declContext ctx) {
-    	 for(Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
-    		 for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
-    			 String name = ident.getText();
-    			 if(!smackDummyVariables.contains(name)) {
-        			 programBuilder.getOrCreateLocation(name);
-    			 }
-    		 }
-    	 }
-    	 return null;
+        for(Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
+            for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
+                String name = ident.getText();
+                if(!smackDummyVariables.contains(name)) {
+                    programBuilder.newObject(name,1);
+                }
+            }
+        }
+        return null;
     }
     
 	public Object visitLocal_vars(Local_varsContext ctx, int scope) {
@@ -219,7 +205,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				if(constantsTypeMap.containsKey(name)) {
 	                throw new ParsingException("Variable " + name + " is already defined as a constant");
 				}
-				if(programBuilder.getLocation(name) != null) {
+				if(programBuilder.getObject(name) != null) {
 	                throw new ParsingException("Variable " + name + " is already defined globally");
 				}
 				programBuilder.getOrCreateRegister(scope, currentScope.getID() + ":" + name, precision);
@@ -243,11 +229,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		String name = ctx.proc_sign().Ident().getText();
             programBuilder.initThread(name, threadCount);
             if(threadCount != 1) {
-            	// Used to allow execution of threads after they have been created (pthread_create)
-        		Location loc = programBuilder.getOrCreateLocation(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
-        		Register reg = programBuilder.getOrCreateRegister(threadCount, null, -1);
-               	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-               	programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, loc.getAddress(), label));
+                // Used to allow execution of threads after they have been created (pthread_create)
+                MemoryObject object = programBuilder.getOrNewObject(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
+                Register reg = programBuilder.getOrCreateRegister(threadCount, null, -1);
+                Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+                programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, object, label));
             }
     	}
 
@@ -291,8 +277,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	if(create) {
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
-        		Location loc = programBuilder.getOrCreateLocation(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
-        		programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(loc.getAddress()));
+                MemoryObject object = programBuilder.getOrNewObject(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
+                programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(object));
          	}
     	}
     }
@@ -311,7 +297,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		event.addFilters(Tag.ASSERTION);
 		programBuilder.addChild(threadCount, event);
        	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-		programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, new IConst(BigInteger.ONE, -1)), end));
+		programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end));
     	return null;
     }
     
@@ -347,7 +333,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			event.addFilters(Tag.ASSERTION);
 			programBuilder.addChild(threadCount, event);
 	       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-			programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, new IConst(BigInteger.ONE, -1)), end));
+			programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end));
 			return null;
 		}
 
@@ -438,7 +424,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			}
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
-	        	if(ctx.getText().contains("$load.") || value instanceof Address) {
+	        	if(ctx.getText().contains("$load.") || value instanceof MemoryObject) {
 	        		try {
 		    			// This names are global so we don't use currentScope.getID(), but per thread.
 		    			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText(), -1);
@@ -465,9 +451,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				programBuilder.addChild(threadCount, child);	        		
 	            continue;
 	        }
-	        Location location = programBuilder.getLocation(name);
-	        if(location != null){
-	            Store child = EventFactory.newStore(location.getAddress(), value, null, currentLine);
+            MemoryObject object = programBuilder.getObject(name);
+            if(object != null){
+                Store child = EventFactory.newStore(object, value, null, currentLine);
 				programBuilder.addChild(threadCount, child);
 	            continue;
 	        }
@@ -651,14 +637,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         if(register != null){
             return register;
         }
-        Location location = programBuilder.getLocation(name);
-        if(location != null){
-       		return location.getAddress();
-        }
-        // It might be the start of an array
-        location = programBuilder.getLocation(name+"[0]");
-        if(location != null){
-       		return location.getAddress();
+        MemoryObject object = programBuilder.getObject(name);
+        if(object != null) {
+            return object;
         }
         throw new ParsingException("Variable " + name + " is not defined");
 	}
@@ -680,11 +661,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			IExpr address = (IExpr)ctx.expr(1).accept(this);
 			IExpr value = (IExpr)ctx.expr(2).accept(this);
 			// This improves the blow-up
-			if(initMode && !(value instanceof Address)) {
+			if(initMode && !(value instanceof MemoryObject)) {
 				ExprInterface lhs = address;
-				BigInteger rhs = BigInteger.ZERO;
+				int rhs = 0;
 				while(lhs instanceof IExprBin) {
-					rhs = rhs.add(((IExprBin)lhs).getRHS().reduce().getValue());
+					rhs += ((IExprBin)lhs).getRHS().reduce().getValueAsInt();
 					lhs = ((IExprBin)lhs).getLHS();
 				}
 				String text = ctx.expr(1).getText();				
@@ -693,10 +674,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 					text = split[split.length - 1];
 					text = text.substring(text.indexOf("(")+1, text.indexOf(","));
 				}
-				// This needs to be consistent with the naming  
-				// used in ProgramBuilder for arrays
-				text += "[" + rhs + "]";
-				programBuilder.initLocEqConst(text, value.reduce());
+				programBuilder.getOrNewObject(text).appendInitialValue(rhs,value.reduce());
 				return null;
 			}
 			Store child = EventFactory.newStore(address, value, null, currentLine);
@@ -749,12 +727,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitBv_expr(Bv_exprContext ctx) {
 		String value = ctx.getText().split("bv")[0];
 		int precision = Integer.parseInt(ctx.getText().split("bv")[1]);
-		return new IConst(value, precision);
+		return new IValue(new BigInteger(value),precision);
 	}
 
 	@Override
 	public Object visitInt_expr(Int_exprContext ctx) {
-		return new IConst(ctx.getText(), -1);
+		return new IValue(new BigInteger(ctx.getText()),-1);
 	}
 	
 	@Override

@@ -1,11 +1,12 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
-import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -208,16 +209,16 @@ public class RelCo extends Relation {
                 enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
 
                 for (Event i : eventsInit) {
-                    MemEvent init = (MemEvent) i;
+                    Init init = (Init) i;
                     if (!alias.mayAlias(w1, init)) {
                         continue;
                     }
 
-                    Address address = (Address) init.getAddress();
+                    IExpr address = init.getAddress();
                     IntegerFormula a1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
-                    IntegerFormula a2 = convertToIntegerFormula(address.toIntFormula(ctx), ctx);
+                    IntegerFormula a2 = convertToIntegerFormula(address.toIntFormula(init,ctx), ctx);
                     IntegerFormula v1 = convertToIntegerFormula(w1.getMemValueExpr(), ctx);
-                    IntegerFormula v2 = convertToIntegerFormula(address.getLastMemValueExpr(ctx), ctx);
+                    IntegerFormula v2 = convertToIntegerFormula(init.getBase().getLastMemValueExpr(ctx,init.getOffset()), ctx);
                     BooleanFormula sameAddress = imgr.equal(a1, a2);
                     BooleanFormula sameValue = imgr.equal(v1, v2);
                     enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));

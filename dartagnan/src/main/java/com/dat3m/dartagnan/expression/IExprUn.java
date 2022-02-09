@@ -53,7 +53,7 @@ public class IExprUn extends IExpr {
 		IConst inner = b.reduce();
         switch(op){
 			case MINUS:
-			return new IConst(inner.getValue().negate(), b.getPrecision());
+			return new IValue(inner.getValue().negate(), b.getPrecision());
 			case BV2UINT: case BV2INT:
 			case INT2BV1: case INT2BV8: case INT2BV16: case INT2BV32: case INT2BV64: 
 			case TRUNC6432: case TRUNC6416: case TRUNC648: case TRUNC641: case TRUNC3216: case TRUNC328: case TRUNC321: case TRUNC168: case TRUNC161: case TRUNC81:

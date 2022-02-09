@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
@@ -56,8 +56,8 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		
 		List<Event> events = eventSequence(
                 newLoad(resultRegister, e.getAddress(), mo),
-                newJump(new Atom(resultRegister, NEQ, IConst.ZERO), e.getLabel()),
-                newStore(e.getAddress(), IConst.ONE, mo)
+                newJump(new Atom(resultRegister, NEQ, IValue.ZERO), e.getLabel()),
+                newStore(e.getAddress(), IValue.ONE, mo)
         );
         
 		for(Event child : events) {
@@ -75,8 +75,8 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		
 		List<Event> events = eventSequence(
                 newLoad(resultRegister, address, mo),
-                newJump(new Atom(resultRegister, NEQ, IConst.ONE), e.getLabel()),
-                newStore(address, IConst.ZERO, mo)
+                newJump(new Atom(resultRegister, NEQ, IValue.ONE), e.getLabel()),
+                newStore(address, IValue.ZERO, mo)
         );
         
 		for(Event child : events) {

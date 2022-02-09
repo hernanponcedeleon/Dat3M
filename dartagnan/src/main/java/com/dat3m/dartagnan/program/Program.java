@@ -7,9 +7,7 @@ import com.dat3m.dartagnan.program.event.EventCache;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,21 +18,19 @@ public class Program {
 	private AbstractAssert ass;
     private AbstractAssert assFilter;
 	private final List<Thread> threads;
-	private final ImmutableSet<Location> locations;
 	private final Memory memory;
 	private Arch arch;
     private EventCache cache;
     private boolean isUnrolled;
     private boolean isCompiled;
 
-    public Program(Memory memory, ImmutableSet<Location> locations){
-        this("", memory, locations);
+    public Program(Memory memory){
+        this("", memory);
     }
 
-	public Program (String name, Memory memory, ImmutableSet<Location> locations) {
+	public Program (String name, Memory memory) {
 		this.name = name;
 		this.memory = memory;
-		this.locations = locations;
 		this.threads = new ArrayList<>();
 	}
 
@@ -101,13 +97,9 @@ public class Program {
         }
     	cache = null;
     }
-    
+
     public List<Thread> getThreads() {
         return threads;
-    }
-
-    public ImmutableSet<Location> getLocations(){
-        return locations;
     }
 
 	public List<Event> getEvents(){
