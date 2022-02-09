@@ -22,8 +22,6 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class CLocksPower extends AbstractCTest {
 
-	static final int TIMEOUT = 1800000;
-
     public CLocksPower(String name, Arch target, Result expected) {
         super(name, target, expected);
     }

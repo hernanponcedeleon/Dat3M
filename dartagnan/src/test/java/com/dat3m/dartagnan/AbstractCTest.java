@@ -35,7 +35,7 @@ public abstract class AbstractCTest {
     protected abstract long getTimeout();
 
     protected Provider<Integer> getBoundProvider() {
-        return Provider.fromSupplier(() -> 1);
+        return Provider.fromSupplier(() -> 2);
     }
 
     protected Provider<Integer> getTimeoutProvider() {
