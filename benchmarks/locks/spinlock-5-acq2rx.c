@@ -62,6 +62,7 @@ static inline void spinlock_release(struct spinlock_s *l)
 //
 int shared;
 spinlock_t lock;
+int sum = 0;
 
 void *thread_n(void *arg)
 {
@@ -71,6 +72,7 @@ void *thread_n(void *arg)
     shared = index;
     int r = shared;
     assert(r == index);
+    sum++;
     spinlock_release(&lock);
     return NULL;
 }
@@ -88,5 +90,13 @@ int main()
     pthread_create(&t3, NULL, thread_n, (void *) 3);
     pthread_create(&t4, NULL, thread_n, (void *) 4);
 
+    pthread_join(t0, 0);
+    pthread_join(t1, 0);
+    pthread_join(t2, 0);
+    pthread_join(t3, 0);
+    pthread_join(t4, 0);
+    
+    assert(sum == 5);
+    
     return 0;
 }

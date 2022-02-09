@@ -53,6 +53,7 @@ static inline void ttaslock_release(struct ttaslock_s *l)
 //
 int shared;
 ttaslock_t lock;
+int sum = 0;
 
 void *thread_n(void *arg)
 {
@@ -62,6 +63,7 @@ void *thread_n(void *arg)
     shared = index;
     int r = shared;
     assert(r == index);
+    sum++;
     ttaslock_release(&lock);
     return NULL;
 }
@@ -79,6 +81,14 @@ int main()
     pthread_create(&t3, NULL, thread_n, (void *) 2);
     pthread_create(&t4, NULL, thread_n, (void *) 3);
     pthread_create(&t5, NULL, thread_n, (void *) 4);
+
+    pthread_join(t1, 0);
+    pthread_join(t2, 0);
+    pthread_join(t3, 0);
+    pthread_join(t4, 0);
+    pthread_join(t5, 0);
+
+    assert(sum == 5);
 
     return 0;
 }

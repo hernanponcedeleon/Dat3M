@@ -5,23 +5,25 @@
 #include <stdatomic.h>
 #include <assert.h>
 
+#define ITERS 1
+
 // futex.h
 //
 static atomic_int sig;
 
 static inline void __futex_wait(atomic_int *m, int v)
 {
-    int s = atomic_load_explicit(&sig, memory_order_acquire);
-    if (atomic_load_explicit(m, memory_order_acquire) != v)
+    int s = atomic_load_explicit(&sig, memory_order_relaxed);
+    if (atomic_load_explicit(m, memory_order_relaxed) != v)
         return;
 
-    while (atomic_load_explicit(&sig, memory_order_acquire) == s)
+    while (atomic_load_explicit(&sig, memory_order_relaxed) == s)
         ;
 }
 
 static inline void __futex_wake(atomic_int *m, int v)
 {
-    atomic_fetch_add_explicit(&sig, 1, memory_order_relaxed);
+    atomic_fetch_add_explicit(&sig, 1, memory_order_release);
 }
 
 // mutex_musl.h
@@ -89,12 +91,15 @@ static inline void mutex_unlock(mutex_t *m)
 // main.c
 //
 int shared;
+int sum;
 mutex_t mutex;
-int sum = 0;
 
 void *thread_n(void *arg)
 {
     intptr_t index = ((intptr_t) arg);
+
+    int rpt = ITERS;
+again:
 
     mutex_lock(&mutex);
     shared = index;
@@ -102,6 +107,9 @@ void *thread_n(void *arg)
     assert(r == index);
     sum++;
     mutex_unlock(&mutex);
+    
+    if (--rpt) goto again;
+
     return NULL;
 }
 
@@ -109,18 +117,20 @@ void *thread_n(void *arg)
 //
 int main()
 {
-    pthread_t t0, t1, t2;
+    pthread_t t0, t1, t2, t3;
     mutex_init(&mutex);
 
     pthread_create(&t0, NULL, thread_n, (void *) 0);
     pthread_create(&t1, NULL, thread_n, (void *) 1);
     pthread_create(&t2, NULL, thread_n, (void *) 2);
+    pthread_create(&t3, NULL, thread_n, (void *) 3);
     
-    pthread_join(t0,0);
-    pthread_join(t1,0);
-    pthread_join(t2,0);
+    pthread_join(t0, 0);
+    pthread_join(t1, 0);
+    pthread_join(t2, 0);
+    pthread_join(t3, 0);
     
-    assert(sum == 3);
+    assert(sum == 4 * ITERS);
 
     return 0;
 }

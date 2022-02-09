@@ -90,6 +90,7 @@ static inline void mutex_unlock(mutex_t *m)
 //
 int shared;
 mutex_t mutex;
+int sum = 0;
 
 void *thread_n(void *arg)
 {
@@ -99,6 +100,7 @@ void *thread_n(void *arg)
     shared = index;
     int r = shared;
     assert(r == index);
+    sum++;
     mutex_unlock(&mutex);
     return NULL;
 }
@@ -114,6 +116,13 @@ int main()
     pthread_create(&t1, NULL, thread_n, (void *) 1);
     pthread_create(&t2, NULL, thread_n, (void *) 2);
     pthread_create(&t3, NULL, thread_n, (void *) 3);
+
+    pthread_join(t0,0);
+    pthread_join(t1,0);
+    pthread_join(t2,0);
+    pthread_join(t3,0);
     
+    assert(sum == 4);
+
     return 0;
 }

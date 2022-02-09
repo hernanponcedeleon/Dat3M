@@ -156,7 +156,8 @@ static inline void cna_unlock(cna_lock_t *lock, cna_node_t *me)
 cna_lock_t lock;
 cna_node_t node[4];
 int shared = 0;
- 
+int sum = 0;
+
 void *run(void *arg)
 {
 #ifdef GENMC
@@ -165,7 +166,10 @@ void *run(void *arg)
     intptr_t tindex = ((intptr_t) arg);
 #endif
     cna_lock(&lock, &node[tindex]);
-    shared++;
+    shared = index;
+    int r = shared;
+    assert(r == index);
+    sum++;
     cna_unlock(&lock, &node[tindex]);
     return NULL;
 }
@@ -188,8 +192,7 @@ int main()
     pthread_join(t2, 0);
     pthread_join(t3, 0);
  
-    assert (shared == 4); // check mutual exclusion
+    assert (sum == 4); // check mutual exclusion
    
     return 0;
 }
-

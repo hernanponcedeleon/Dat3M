@@ -127,12 +127,14 @@ static inline void write_unlock(rwlock_t *rw)
 
 rwlock_t mylock;
 int shareddata;
+int sum = 0;
 
 void *threadR(void *arg)
 {
     read_lock(&mylock);
     int r = shareddata;
     assert(r == shareddata);
+    sum++;
     read_unlock(&mylock);
     return NULL;
 }
@@ -142,6 +144,7 @@ void *threadW(void *arg)
     write_lock(&mylock);
     shareddata = 42;
     assert(42 == shareddata);
+    sum++;
     write_unlock(&mylock);
     return NULL;
 }
@@ -153,11 +156,13 @@ void *threadRW(void *arg)
             read_lock(&mylock);
             int r = shareddata;
             assert(r == shareddata);
+            sum++;
             read_unlock(&mylock);
         } else {
             write_lock(&mylock);
             shareddata = i;
             assert(shareddata == i);
+            sum++;
             write_unlock(&mylock);
         }
     }
@@ -173,10 +178,14 @@ int main()
     atomic_init(&mylock.lock, RW_LOCK_BIAS);
     
     pthread_create(&W0, NULL, threadW, NULL);
-    
     pthread_create(&R0, NULL, threadR, NULL);
-
     pthread_create(&RW0, NULL, threadRW, NULL);
+
+    pthread_join(W0, 0);
+    pthread_join(R0, 0);
+    pthread_join(RW0, 0);
+
+    assert(sum == 3);
 
     return 0;
 }
