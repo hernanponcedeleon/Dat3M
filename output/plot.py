@@ -17,16 +17,16 @@ mapping_title = dict([
     ('Linux', 'LKMM')
 ])
 
-mapping_files = dict([
-    ('two-TSO', pd.read_csv(path + 'X86Test-two.csv')),
-    ('refinement-TSO', pd.read_csv(path + 'X86Test-refinement.csv')),
-    ('two-Power', pd.read_csv(path + 'PPCTest-two.csv')),
-    ('refinement-Power', pd.read_csv(path + 'PPCTest-refinement.csv')),
-    ('two-ARM8', pd.read_csv(path + 'AARCH64Test-two.csv')),
-    ('refinement-ARM8', pd.read_csv(path + 'AARCH64Test-refinement.csv')),
-    ('two-Linux', pd.read_csv(path + 'LinuxTest-two.csv')),
-    ('refinement-Linux', pd.read_csv(path + 'LinuxTest-refinement.csv'))
-])
+#mapping_files = dict([
+#    ('two-TSO', pd.read_csv(path + 'X86Test-two.csv')),
+#    ('refinement-TSO', pd.read_csv(path + 'X86Test-refinement.csv')),
+#    ('two-Power', pd.read_csv(path + 'PPCTest-two.csv')),
+#    ('refinement-Power', pd.read_csv(path + 'PPCTest-refinement.csv')),
+#    ('two-ARM8', pd.read_csv(path + 'AARCH64Test-two.csv')),
+#    ('refinement-ARM8', pd.read_csv(path + 'AARCH64Test-refinement.csv')),
+#    ('two-Linux', pd.read_csv(path + 'LinuxTest-two.csv')),
+#    ('refinement-Linux', pd.read_csv(path + 'LinuxTest-refinement.csv'))
+#])
 
 ##################################################
 ### Generates bar char for the lock benchmarks ###
@@ -35,7 +35,7 @@ mapping_files = dict([
 methods = ["assume", "refinement"]
 arch = ["TSO", "Power", "ARM8"]
 
-genmc = pd.read_csv(path + 'genMCTest-genMC.csv')
+genmc = pd.read_csv(path + 'Genmc-genMC.csv')
 genmc_df = pd.DataFrame(genmc)
 
 ##################################################
@@ -44,17 +44,22 @@ genmc_df = pd.DataFrame(genmc)
 
 df = df_empty = pd.DataFrame({'benchmark' : []})
 df['benchmark'] = genmc.iloc[:, 0].apply(lambda x: x.replace(".c", ""))
+## we use this to order benchmarks based on result
+df['GenMC-res'] = genmc.iloc[:, 1]
 ## colums are: benchmark, result, time
 df['GenMC'] = genmc.iloc[:, 2]
 
 for a in arch:
     for m in methods:
-        current_df = pd.DataFrame(pd.read_csv(path + "CLocksTest-" + m + "-" + a + ".csv"))
+        current_df = pd.DataFrame(pd.read_csv(path + "CLocks" + a + "-" + m + ".csv"))
         ## colums are: benchmark, result, time
         df[mapping_method[m]] = current_df.iloc[:, 2]
 
+    my_colors = ['tab:green', 'tab:orange', 'tab:blue']
+
+    df.sort_values(by=['GenMC-res'], inplace=True)
     plt.figure()
-    df.set_index('benchmark').sort_index().plot.bar(log=True, width=0.8)
+    df.set_index('benchmark').plot.bar(log=True, width=0.8, color=my_colors)
     plt.title(mapping_title[a])
     plt.xticks(rotation=45, ha="right")
     plt.xlabel("")
@@ -70,18 +75,21 @@ for a in arch:
 
 df = df_empty = pd.DataFrame({'benchmark' : []})
 df['benchmark'] = genmc.iloc[:, 0].apply(lambda x: x.replace(".c", ""))
+## we use this to order benchmarks based on result
+df['GenMC-res'] = genmc.iloc[:, 1]
 ## colums are: benchmark, result, time
 df['GenMC'] = genmc.iloc[:, 2]
 
 for a in arch:
-    current_df = pd.DataFrame(pd.read_csv(path + "CLocksTest-refinement-" + a + ".csv"))
+    current_df = pd.DataFrame(pd.read_csv(path + "CLocks" + a + "-refinement.csv"))
     ## colums are: benchmark, result, time
     df[mapping_method["refinement"]] = current_df.iloc[:, 2]
 
     my_colors = ['tab:green', 'tab:blue']
 
+    df.sort_values(by=['GenMC-res'], inplace=True)
     plt.figure()
-    df.set_index('benchmark').sort_index().plot.bar(log=True, width=0.8, color=my_colors)
+    df.set_index('benchmark').plot.bar(log=True, width=0.8, color=my_colors)
     plt.title(mapping_title[a])
     plt.xticks(rotation=45, ha="right")
     plt.xlabel("")
@@ -97,17 +105,20 @@ for a in arch:
 
 df = df_empty = pd.DataFrame({'benchmark' : []})
 df['benchmark'] = genmc.iloc[:, 0].apply(lambda x: x.replace(".c", ""))
+## we use this to order benchmarks based on result
+df['GenMC-res'] = genmc.iloc[:, 1]
 
 for a in arch:
     for m in methods:
-        current_df = pd.DataFrame(pd.read_csv(path + "CLocksTest-" + m + "-" + a + ".csv"))
+        current_df = pd.DataFrame(pd.read_csv(path + "CLocks" + a + "-" + m + ".csv"))
         ## colums are: benchmark, result, time
         df[mapping_method[m]] = current_df.iloc[:, 2]
 
     my_colors = ['tab:orange', 'tab:blue']
 
+    df.sort_values(by=['GenMC-res'], inplace=True)
     plt.figure()
-    df.set_index('benchmark').sort_index().plot.bar(log=True, width=0.8, color=my_colors)
+    df.set_index('benchmark').plot.bar(log=True, width=0.8, color=my_colors)
     plt.title(mapping_title[a])
     plt.xticks(rotation=45, ha="right")
     plt.xlabel("")
@@ -128,7 +139,7 @@ df['GenMC'] = genmc.iloc[:, 1]
 
 for a in arch:
     for m in methods:
-        current_df = pd.DataFrame(pd.read_csv(path + "CLocksTest-" + m + "-" + a + ".csv"))
+        current_df = pd.DataFrame(pd.read_csv(path + "CLocks" + a + "-" + m + ".csv"))
         ## colums are: benchmark, result, time
         df[mapping_method[m]] = current_df.iloc[:, 1]
 
@@ -159,33 +170,33 @@ for a in arch:
     plt.savefig("Figures/table-" + a + ".png", bbox_inches='tight', dpi=200)
     plt.close()
 
-##################################################
-### Generates plots for the litmus tests ###
-##################################################
-
-arch = ["TSO", "Power", "ARM8", "Linux"]
-
-for a in arch:
-    plt.figure()
-    f, ax = plt.subplots(figsize=(6, 6))
-    ax.plot([0, 1], [0, 1], color='r', transform=ax.transAxes)
-    plt.title(mapping_title[a])
-    plt.xlabel("Dartagnan time (ms)")
-    limit = 1000
-    if a == "TSO":
-        limit = 60
-    if a == "Power":
-        limit = 120
-    if a == "ARM8":
-        limit = 90
-    if a == "Linux":
-        limit = 1000
-    plt.xlim([0, limit])
-    plt.ylim([0, limit])
-    plt.ylabel("Refinement time (ms)")
-    plt.plot(
-        mapping_files["two-" + a].iloc[:, 2],
-        mapping_files["refinement-" + a].iloc[:, 2],
-        's')
-    plt.savefig("Figures/litmus-" + a + ".png")
-    plt.close()
+###################################################
+#### Generates plots for the litmus tests ###
+###################################################
+#
+#arch = ["TSO", "Power", "ARM8", "Linux"]
+#
+#for a in arch:
+#    plt.figure()
+#    f, ax = plt.subplots(figsize=(6, 6))
+#    ax.plot([0, 1], [0, 1], color='r', transform=ax.transAxes)
+#    plt.title(mapping_title[a])
+#    plt.xlabel("Dartagnan time (ms)")
+#    limit = 1000
+#    if a == "TSO":
+#        limit = 60
+#    if a == "Power":
+#        limit = 120
+#    if a == "ARM8":
+#        limit = 90
+#    if a == "Linux":
+#        limit = 1000
+#    plt.xlim([0, limit])
+#    plt.ylim([0, limit])
+#    plt.ylabel("Refinement time (ms)")
+#    plt.plot(
+#        mapping_files["two-" + a].iloc[:, 2],
+#        mapping_files["refinement-" + a].iloc[:, 2],
+#        's')
+#    plt.savefig("Figures/litmus-" + a + ".png")
+#    plt.close()
