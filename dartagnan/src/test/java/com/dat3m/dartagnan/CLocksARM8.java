@@ -36,6 +36,11 @@ public class CLocksARM8 extends AbstractCTest {
         return 300000;
     }
 
+    @Override
+    protected Provider<Integer> getBoundProvider() {
+        return Provider.fromSupplier(() -> 2);
+    }
+
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
@@ -61,16 +66,6 @@ public class CLocksARM8 extends AbstractCTest {
                 {"mutex_musl-4-acq2rx_lock", ARM8, FAIL},
                 {"mutex_musl-4-rel2rx_futex", ARM8, UNKNOWN},
                 {"mutex_musl-4-rel2rx_unlock", ARM8, FAIL},
-//                {"cna-4", ARM8, UNKNOWN},
-//                {"cna-4-rel2rx_unlock1", ARM8, FAIL},
-//                {"cna-4-rel2rx_unlock2", ARM8, FAIL},
-//                {"cna-4-rel2rx_unlock3", ARM8, FAIL},
-//                {"cna-4-rel2rx_unlock4", ARM8, FAIL},
-//                {"cna-4-rel2rx_lock", ARM8, UNKNOWN},
-//                {"cna-4-acq2rx_lock", ARM8, FAIL},
-//                {"cna-4-acq2rx_unlock", ARM8, UNKNOWN},
-//                {"cna-4-acq2rx_succ1", ARM8, UNKNOWN},
-//                {"cna-4-acq2rx_succ2", ARM8, UNKNOWN},
 		});
     }
 

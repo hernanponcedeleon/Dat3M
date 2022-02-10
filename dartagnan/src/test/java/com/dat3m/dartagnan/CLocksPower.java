@@ -36,6 +36,11 @@ public class CLocksPower extends AbstractCTest {
         return 300000;
     }
 
+    @Override
+    protected Provider<Integer> getBoundProvider() {
+        return Provider.fromSupplier(() -> 2);
+    }
+
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
@@ -61,17 +66,6 @@ public class CLocksPower extends AbstractCTest {
                 {"mutex_musl-4-acq2rx_lock", POWER, FAIL},
                 {"mutex_musl-4-rel2rx_futex", POWER, UNKNOWN},
                 {"mutex_musl-4-rel2rx_unlock", POWER, FAIL},
-//                {"cna-4", POWER, UNKNOWN},
-//                // I would have expected this to be FAIL, but we report UNKNOWN
-//                {"cna-4-rel2rx_unlock1", POWER, FAIL},
-//                {"cna-4-rel2rx_unlock2", POWER, FAIL},
-//                {"cna-4-rel2rx_unlock3", POWER, FAIL},
-//                {"cna-4-rel2rx_unlock4", POWER, FAIL},
-//                {"cna-4-rel2rx_lock", POWER, UNKNOWN},
-//                {"cna-4-acq2rx_lock", POWER, FAIL},
-//                {"cna-4-acq2rx_unlock", POWER, UNKNOWN},
-//                {"cna-4-acq2rx_succ1", POWER, UNKNOWN},
-//                {"cna-4-acq2rx_succ2", POWER, UNKNOWN}
 		});
     }
 

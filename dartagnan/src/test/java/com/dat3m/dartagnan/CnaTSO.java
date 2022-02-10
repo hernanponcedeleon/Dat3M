@@ -20,9 +20,9 @@ import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class CLocksTSO extends AbstractCTest {
+public class CnaTSO extends AbstractCTest {
 
-    public CLocksTSO(String name, Arch target, Result expected) {
+    public CnaTSO(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
 
@@ -38,34 +38,22 @@ public class CLocksTSO extends AbstractCTest {
 
     @Override
     protected Provider<Integer> getBoundProvider() {
-        return Provider.fromSupplier(() -> 2);
+        return Provider.fromSupplier(() -> 4);
     }
 
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-	            {"ttas-5", TSO, UNKNOWN},
-	            {"ttas-5-acq2rx", TSO, UNKNOWN},
-	            {"ttas-5-rel2rx", TSO, UNKNOWN},
-	            {"ticketlock-6", TSO, PASS},
-	            {"ticketlock-6-acq2rx", TSO, PASS},
-	            {"ticketlock-6-rel2rx", TSO, PASS},
-                {"mutex-4", TSO, UNKNOWN},
-                {"mutex-4-acq2rx_futex", TSO, UNKNOWN},
-                {"mutex-4-acq2rx_lock", TSO, UNKNOWN},
-                {"mutex-4-rel2rx_futex", TSO, UNKNOWN},
-                {"mutex-4-rel2rx_unlock", TSO, UNKNOWN},
-                {"spinlock-5", TSO, UNKNOWN},
-                {"spinlock-5-acq2rx", TSO, UNKNOWN},
-                {"spinlock-5-rel2rx", TSO, UNKNOWN},
-                {"linuxrwlock-3", TSO, UNKNOWN},
-                {"linuxrwlock-3-acq2rx", TSO, UNKNOWN},
-                {"linuxrwlock-3-rel2rx", TSO, UNKNOWN},
-                {"mutex_musl-4", TSO, UNKNOWN},
-                {"mutex_musl-4-acq2rx_futex", TSO, UNKNOWN},
-                {"mutex_musl-4-acq2rx_lock", TSO, UNKNOWN},
-                {"mutex_musl-4-rel2rx_futex", TSO, UNKNOWN},
-                {"mutex_musl-4-rel2rx_unlock", TSO, UNKNOWN},
+                {"cna-4", TSO, PASS},
+                {"cna-4-rel2rx_unlock1", TSO, PASS},
+                {"cna-4-rel2rx_unlock2", TSO, PASS},
+                {"cna-4-rel2rx_unlock3", TSO, PASS},
+                {"cna-4-rel2rx_unlock4", TSO, PASS},
+                {"cna-4-rel2rx_lock", TSO, PASS},
+                {"cna-4-acq2rx_lock", TSO, PASS},
+                {"cna-4-acq2rx_unlock", TSO, PASS},
+                {"cna-4-acq2rx_succ1", TSO, PASS},
+                {"cna-4-acq2rx_succ2", TSO, PASS},
 		});
     }
 
