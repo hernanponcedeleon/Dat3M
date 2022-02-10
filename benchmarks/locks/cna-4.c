@@ -13,6 +13,52 @@
 extern int __VERIFIER_nondet_int(void);
 extern void __VERIFIER_assume(int cond);
 
+#ifdef ACQ2RX_LOCK
+#define mo_acq2rx_lock memory_order_relaxed
+#else
+#define mo_acq2rx_lock memory_order_acquire
+#endif
+#ifdef ACQ2RX_SUCC1
+#define mo_acq2rx_succ1 memory_order_relaxed
+#else
+#define mo_acq2rx_succ1 memory_order_acquire
+#endif
+#ifdef ACQ2RX_SUCC2
+#define mo_acq2rx_succ2 memory_order_relaxed
+#else
+#define mo_acq2rx_succ2 memory_order_acquire
+#endif
+#ifdef ACQ2RX_UNLOCK
+#define mo_acq2rx_unlock memory_order_relaxed
+#else
+#define mo_acq2rx_unlock memory_order_acquire
+#endif
+#ifdef REL2RX_LOCK
+#define mo_rel2rx_lock memory_order_relaxed
+#else
+#define mo_rel2rx_lock memory_order_release
+#endif
+#ifdef REL2RX_UNLOCK1
+#define mo_rel2rx_unlock1 memory_order_relaxed
+#else
+#define mo_rel2rx_unlock1 memory_order_release
+#endif
+#ifdef REL2RX_UNLOCK2
+#define mo_rel2rx_unlock2 memory_order_relaxed
+#else
+#define mo_rel2rx_unlock2 memory_order_release
+#endif
+#ifdef REL2RX_UNLOCK3
+#define mo_rel2rx_unlock3 memory_order_relaxed
+#else
+#define mo_rel2rx_unlock3 memory_order_release
+#endif
+#ifdef REL2RX_UNLOCK4
+#define mo_rel2rx_unlock4 memory_order_relaxed
+#else
+#define mo_rel2rx_unlock4 memory_order_release
+#endif
+
 #define await_while(cond)                                                  \
     for (int tmp = (__VERIFIER_loop_begin(), 0); __VERIFIER_spin_start(),  \
         tmp = cond, __VERIFIER_spin_end(!tmp), tmp;)
@@ -59,7 +105,7 @@ cna_node_t* find_successor(cna_node_t *me) {
    
     cna_node_t *secHead = next;
     cna_node_t *secTail = next;
-    cna_node_t *cur = atomic_load_explicit(&next->next, memory_order_acquire);
+    cna_node_t *cur = atomic_load_explicit(&next->next, mo_acq2rx_succ1);
    
     while(cur) {
         if(atomic_load_explicit(&cur->socket, memory_order_relaxed) == mySocket) {
@@ -76,7 +122,7 @@ cna_node_t* find_successor(cna_node_t *me) {
             return cur;
         }
         secTail = cur;
-        cur = atomic_load_explicit(&cur->next, memory_order_acquire);
+        cur = atomic_load_explicit(&cur->next, mo_acq2rx_succ2);
     }
     return NULL;
 }
@@ -98,10 +144,10 @@ static inline void cna_lock(cna_lock_t *lock, cna_node_t *me)
  
     /* Someone there, need to link in */
     atomic_store_explicit(&me->socket, current_numa_node(), memory_order_relaxed);
-    atomic_store_explicit(&tail->next, me, memory_order_release);
+    atomic_store_explicit(&tail->next, me, mo_rel2rx_lock);
  
     /* Wait for the lock to become available */
-    await_while(!atomic_load_explicit(&me->spin, memory_order_acquire)) {
+    await_while(!atomic_load_explicit(&me->spin, mo_acq2rx_lock)) {
         //CPU_PAUSE();
     }
 }
@@ -109,7 +155,7 @@ static inline void cna_lock(cna_lock_t *lock, cna_node_t *me)
 static inline void cna_unlock(cna_lock_t *lock, cna_node_t *me)
 {
     /* Is there a successor in the main queue? */
-    if(!atomic_load_explicit(&me->next, memory_order_acquire)) {
+    if(!atomic_load_explicit(&me->next, mo_acq2rx_unlock)) {
         /* Is there a node in the secondary queue? */
         if(atomic_load_explicit(&me->spin, memory_order_relaxed) == 1) {
             /* If not, try to set tail to NULL, indicating that both main and secondary queues are empty */
@@ -125,7 +171,7 @@ static inline void cna_unlock(cna_lock_t *lock, cna_node_t *me)
                 atomic_load_explicit(&secHead->secTail, memory_order_relaxed),
                 memory_order_seq_cst, memory_order_seq_cst)) {
                 /* If successful, pass the lock to the head of the secondary queue */
-                atomic_store_explicit(&secHead->spin, 1, memory_order_release);
+                atomic_store_explicit(&secHead->spin, 1, mo_rel2rx_unlock1);
                 return;
             }
         }
@@ -139,17 +185,17 @@ static inline void cna_unlock(cna_lock_t *lock, cna_node_t *me)
     if (keep_lock_local() && (succ = find_successor(me))) {
         atomic_store_explicit(&succ->spin,
             atomic_load_explicit(&me->spin, memory_order_relaxed),
-            memory_order_release);
+            mo_rel2rx_unlock2);
     } else if(atomic_load_explicit(&me->spin, memory_order_relaxed) > 1) {
         succ = (cna_node_t *) atomic_load_explicit(&me->spin, memory_order_relaxed);
         atomic_store_explicit(
             &((cna_node_t *)atomic_load_explicit(&succ->secTail, memory_order_relaxed))->next,
             atomic_load_explicit(&me->next, memory_order_relaxed),
             memory_order_relaxed);
-        atomic_store_explicit(&succ->spin, 1, memory_order_release);
+        atomic_store_explicit(&succ->spin, 1, mo_rel2rx_unlock3);
     } else {
         succ = (cna_node_t*) atomic_load_explicit(&me->next, memory_order_relaxed);
-        atomic_store_explicit(&succ->spin, 1, memory_order_release);
+        atomic_store_explicit(&succ->spin, 1, mo_rel2rx_unlock4);
     }
 }
  
@@ -196,3 +242,4 @@ int main()
    
     return 0;
 }
+
