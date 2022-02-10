@@ -5,23 +5,44 @@
 #include <stdatomic.h>
 #include <assert.h>
 
+#ifdef ACQ2RX
+#define mo_lock memory_order_relaxed
+#else
+#define mo_lock memory_order_acquire
+#endif
+#ifdef ACQ2RX_FUTEX
+#define mo_wait memory_order_relaxed
+#else
+#define mo_wait memory_order_acquire
+#endif
+#ifdef REL2RX
+#define mo_unlock memory_order_relaxed
+#else
+#define mo_unlock memory_order_release
+#endif
+#ifdef REL2RX_FUTEX
+#define mo_wake memory_order_relaxed
+#else
+#define mo_wake memory_order_release
+#endif
+
 // futex.h
 //
 static atomic_int sig;
 
 static inline void __futex_wait(atomic_int *m, int v)
 {
-    int s = atomic_load_explicit(&sig, memory_order_acquire);
-    if (atomic_load_explicit(m, memory_order_acquire) != v)
+    int s = atomic_load_explicit(&sig, mo_wait);
+    if (atomic_load_explicit(m, mo_wait) != v)
         return;
 
-    while (atomic_load_explicit(&sig, memory_order_acquire) == s)
+    while (atomic_load_explicit(&sig, mo_wait) == s)
         ;
 }
 
 static inline void __futex_wake(atomic_int *m, int v)
 {
-    atomic_fetch_add_explicit(&sig, 1, memory_order_release);
+    atomic_fetch_add_explicit(&sig, 1, mo_wake);
 }
 
 // mutex_musl.h
@@ -49,8 +70,8 @@ static inline int mutex_lock_fastpath(mutex_t *m)
 {
     int r = 0;
     return atomic_compare_exchange_strong_explicit(&m->lock, &r, 1,
-                               memory_order_acquire,
-                               memory_order_acquire);
+                               mo_lock,
+                               mo_lock);
 }
 
 static inline int mutex_lock_slowpath_check(mutex_t *m)
@@ -80,7 +101,7 @@ static inline void mutex_lock(mutex_t *m)
 
 static inline void mutex_unlock(mutex_t *m)
 {
-    int old = atomic_exchange_explicit(&m->lock, 0, memory_order_release);
+    int old = atomic_exchange_explicit(&m->lock, 0, mo_unlock);
     if (atomic_load_explicit(&m->waiters, memory_order_relaxed) > 0 || old != 1)
         __futex_wake(&m->lock, 1);
 }
@@ -116,7 +137,7 @@ int main()
     pthread_create(&t1, NULL, thread_n, (void *) 1);
     pthread_create(&t2, NULL, thread_n, (void *) 2);
     pthread_create(&t3, NULL, thread_n, (void *) 3);
-
+    
     pthread_join(t0,0);
     pthread_join(t1,0);
     pthread_join(t2,0);

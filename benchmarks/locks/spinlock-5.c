@@ -5,6 +5,17 @@
 #include <stdatomic.h>
 #include <assert.h>
 
+#ifdef ACQ2RX
+#define mo_lock memory_order_relaxed
+#else
+#define mo_lock memory_order_acquire
+#endif
+#ifdef REL2RX
+#define mo_unlock memory_order_relaxed
+#else
+#define mo_unlock memory_order_release
+#endif
+
 // spinlock.h
 //
 struct spinlock_s {
@@ -36,8 +47,8 @@ static inline int try_get_lock(struct spinlock_s *l)
 {
     int val = 0;
     return atomic_compare_exchange_strong_explicit(&l->lock, &val, 1,
-                               memory_order_acquire,
-                               memory_order_acquire);
+                               mo_lock,
+                               mo_lock);
 }
 
 static inline void spinlock_acquire(struct spinlock_s *l)
@@ -55,7 +66,7 @@ static inline int spinlock_tryacquire(struct spinlock_s *l)
 
 static inline void spinlock_release(struct spinlock_s *l)
 {
-    atomic_store_explicit(&l->lock, 0, memory_order_release);
+    atomic_store_explicit(&l->lock, 0, mo_unlock);
 }
 
 // main.c

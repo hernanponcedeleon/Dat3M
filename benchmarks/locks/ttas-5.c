@@ -5,6 +5,17 @@
 #include <stdatomic.h>
 #include <assert.h>
 
+#ifdef ACQ2RX
+#define mo_lock memory_order_relaxed
+#else
+#define mo_lock memory_order_acquire
+#endif
+#ifdef REL2RX
+#define mo_unlock memory_order_relaxed
+#else
+#define mo_unlock memory_order_release
+#endif
+
 // ttaslock.h
 //
 struct ttaslock_s {
@@ -32,7 +43,7 @@ static inline void await_for_lock(struct ttaslock_s *l)
 
 static inline int try_acquire(struct ttaslock_s *l)
 {
-    return atomic_exchange_explicit(&l->state, 1, memory_order_acquire);
+    return atomic_exchange_explicit(&l->state, 1, mo_lock);
 }
 
 static inline void ttaslock_acquire(struct ttaslock_s *l)
@@ -46,7 +57,7 @@ static inline void ttaslock_acquire(struct ttaslock_s *l)
 
 static inline void ttaslock_release(struct ttaslock_s *l)
 {
-    atomic_store_explicit(&l->state, 0, memory_order_release);
+    atomic_store_explicit(&l->state, 0, mo_unlock);
 }
 
 // main.c

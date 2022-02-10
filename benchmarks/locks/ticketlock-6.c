@@ -5,6 +5,17 @@
 #include <stdatomic.h>
 #include <assert.h>
 
+#ifdef ACQ2RX
+#define mo_lock memory_order_relaxed
+#else
+#define mo_lock memory_order_acquire
+#endif
+#ifdef REL2RX
+#define mo_unlock memory_order_relaxed
+#else
+#define mo_unlock memory_order_release
+#endif
+
 // ticketlock.h
 //
 struct ticketlock_s {
@@ -33,7 +44,7 @@ static inline int get_next_ticket(struct ticketlock_s *l)
 
 static inline void await_for_ticket(struct ticketlock_s *l, int ticket)
 {
-    while (atomic_load_explicit(&l->owner, memory_order_acquire) != ticket)
+    while (atomic_load_explicit(&l->owner, mo_lock) != ticket)
         ;
 }
 
@@ -56,7 +67,7 @@ static inline int ticketlock_tryacquire(struct ticketlock_s *l)
 static inline void ticketlock_release(struct ticketlock_s *l)
 {
     int owner = atomic_load_explicit(&l->owner, memory_order_relaxed);
-    atomic_store_explicit(&l->owner, owner + 1, memory_order_release);
+    atomic_store_explicit(&l->owner, owner + 1, mo_unlock);
 }
 
 // main.c
@@ -92,14 +103,14 @@ int main()
     pthread_create(&t3, NULL, thread_n, (void *) 3);
     pthread_create(&t4, NULL, thread_n, (void *) 4);
     pthread_create(&t5, NULL, thread_n, (void *) 5);
-    
+
     pthread_join(t0, 0);
     pthread_join(t1, 0);
     pthread_join(t2, 0);
     pthread_join(t3, 0);
     pthread_join(t4, 0);
     pthread_join(t5, 0);
-    
+
     assert(sum == 6);
     
     return 0;
