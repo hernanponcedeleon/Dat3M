@@ -212,9 +212,9 @@ void *run(void *arg)
     intptr_t tindex = ((intptr_t) arg);
 #endif
     cna_lock(&lock, &node[tindex]);
-    shared = index;
+    shared = tindex;
     int r = shared;
-    assert(r == index);
+    assert(r == tindex);
     sum++;
     cna_unlock(&lock, &node[tindex]);
     return NULL;
