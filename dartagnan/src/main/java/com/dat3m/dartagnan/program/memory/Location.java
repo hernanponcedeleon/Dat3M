@@ -6,10 +6,10 @@ import org.sosy_lab.java_smt.api.*;
 public class Location implements LastValueInterface {
 
 	private final String name;
-	private final Address base;
+	private final MemoryObject base;
 	private final int offset;
 
-	public Location(String name, Address b, int o) {
+	public Location(String name, MemoryObject b, int o) {
 		this.name = name;
 		base = b;
 		offset = o;

@@ -8,10 +8,12 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -25,10 +27,15 @@ import static java.util.stream.IntStream.range;
 
 /**
  * Offset- and alignment-enhanced inclusion-based pointer analysis based on Andersen's.
+ * This implementation is insensitive to control-flow, but field-sensitive.
  * <p>
  * The edges of the inclusion graph are labeled with sets of offset-alignment pairs.
- * Expressions with more precise behavior have the form `base [+ constant * register]* + constant`.
- * This implementation is insensitive to control-flow, but field-sensitive.
+ * Expressions with well-defined behavior have the form `base [+ constant * register]* + constant`.
+ * Bases are either {@link Register variables} or {@link MemoryObject direct references to structures}.
+ * Non-conforming expressions are probed for bases, which contribute in the most general manner:
+ * Any structure that occurs
+ * <p>
+ * Structures, that never occurs in any expression, are considered unreachable.
  *
  * @author xeren
  */
@@ -49,7 +56,11 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     // ================================ Construction ================================
 
-    FieldSensitiveAndersen(Program program) {
+    public static FieldSensitiveAndersen fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
+        return new FieldSensitiveAndersen(program);
+    }
+
+    private FieldSensitiveAndersen(Program program) {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
         for(Event e : program.getCache().getEvents(FilterBasic.get(Tag.MEMORY))) {
             processLocs((MemEvent)e);
@@ -187,10 +198,10 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     private static final class Location {
 
-        final Address base;
+        final MemoryObject base;
         final int offset;
 
-        Location(Address b, int o) {
+        Location(MemoryObject b, int o) {
             base = b;
             offset = o;
         }
@@ -214,7 +225,9 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     private static List<Location> fields(Collection<Location> v, int offset, int alignment) {
         return v.stream()
                 .flatMap(l->range(0,div(l.base.size(),alignment))
-                        .mapToObj(i->new Location(l.base,l.offset+offset+i*alignment)))
+                        .map(i->l.offset+offset+i*alignment)
+                        .filter(i->0<=i&&i<l.base.size())
+                        .mapToObj(i->new Location(l.base,i)))
                 .filter(l->0<=l.offset&&l.offset<l.base.size())
                 .collect(toList());
     }
@@ -224,12 +237,12 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     }
 
     private static final class Result {
-        final Address address;
+        final MemoryObject address;
         final Register register;
         final BigInteger offset;
         final int alignment;
 
-        Result(Address b, Register r, BigInteger o, int a) {
+        Result(MemoryObject b, Register r, BigInteger o, int a) {
             address = b;
             register = r;
             offset = o;
@@ -244,7 +257,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     private static final class Collector implements ExpressionVisitor<Result> {
 
-        final HashSet<Address> address = new HashSet<>();
+        final HashSet<MemoryObject> address = new HashSet<>();
         final HashSet<Register> register = new HashSet<>();
         Result result;
 
@@ -290,7 +303,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
                 if(l.address!=null && r.address!=null) {
                     return null;
                 }
-                Address base = l.address!=null ? l.address : r.address;
+                MemoryObject base = l.address!=null ? l.address : r.address;
                 BigInteger offset = l.offset.add(r.offset);
                 if(base!=null) {
                     return new Result(base,null,offset,min(min(l.alignment,l.register), min(r.alignment,r.register)));
@@ -318,7 +331,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
 
         @Override
-        public Result visit(Address a) {
+        public Result visit(MemoryObject a) {
             address.add(a);
             return new Result(a,null,BigInteger.ZERO,0);
         }

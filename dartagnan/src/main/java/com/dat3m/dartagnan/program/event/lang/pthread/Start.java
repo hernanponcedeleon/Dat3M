@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
 public class Start extends Load {
@@ -13,7 +13,7 @@ public class Start extends Load {
 	private Label label;
     private Label label4Copy;
 
-	public Start(Register reg, Address address, Label label){
+	public Start(Register reg, MemoryObject address, Label label){
 		super(reg, address, MO_SC);
         this.label = label;
         this.label.addListener(this);

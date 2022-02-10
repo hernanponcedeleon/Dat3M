@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -109,13 +109,11 @@ public class StdProcedures {
 			tmp = tmp.substring(tmp.lastIndexOf('(')+1);
 			size = Integer.parseInt(tmp);			
 		}
-		String ptr = ctx.call_params().Ident(0).getText();
-		Register start = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ptr);
-		// Several threads can use the same pointer name but when using addDeclarationArray, 
-		// the name should be unique, thus we add the process identifier.
-		visitor.programBuilder.addDeclarationArray(visitor.currentScope.getID() + ":" + ptr,size);
-		Address adds = visitor.programBuilder.getAddress(visitor.currentScope.getID() + ":" + ptr);
-		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(start, adds));
+		//Uniquely identify the allocated storage in the entire program
+		String ptr = visitor.currentScope.getID()+":"+ctx.call_params().Ident(0).getText();
+		Register start = visitor.programBuilder.getRegister(visitor.threadCount,ptr);
+		MemoryObject object = visitor.programBuilder.newObject(ptr,size);
+		visitor.programBuilder.addChild(visitor.threadCount,EventFactory.newLocal(start,object));
 		visitor.allocationRegs.add(start);
 	}
 	

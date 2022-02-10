@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import org.antlr.v4.runtime.misc.Interval;
 
@@ -170,7 +170,7 @@ public class VisitorLitmusLISA
 	
 	@Override
 	public Object visitLocation(LitmusLISAParser.LocationContext ctx) {
-		return programBuilder.getOrCreateAddress(ctx.getText());
+		return programBuilder.getOrNewObject(ctx.getText());
 	}
 
 	@Override
@@ -180,7 +180,7 @@ public class VisitorLitmusLISA
 
 	@Override
 	public Object visitConstant(LitmusLISAParser.ConstantContext ctx) {
-		return new IValue(new BigInteger(ctx.getText()), -1);
+		return new IValue(new BigInteger(ctx.getText()),-1);
 	}
 
 	@Override
@@ -239,7 +239,7 @@ public class VisitorLitmusLISA
 
 	@Override
 	public Object visitArrayAccess(LitmusLISAParser.ArrayAccessContext ctx) {
-		Address base = (Address) ctx.location().accept(this);
+		MemoryObject base = (MemoryObject) ctx.location().accept(this);
 		IExpr offset = (IExpr) ctx.value().accept(this);
 		return new IExprBin(base, IOpBin.PLUS, offset);
 	}

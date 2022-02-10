@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsVisitor;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
-import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.Location;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -83,7 +83,7 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
         if(ctx.threadId() != null) {
             return programBuilder.getOrErrorRegister(ctx.threadId().id,name);
         }
-        Address base = programBuilder.getAddress(name);
+        MemoryObject base = programBuilder.getObject(name);
         checkState(base != null, "uninitialized location %s", name);
         TerminalNode offset = ctx.DigitSequence();
         int o = offset == null ? 0 : Integer.parseInt(offset.getText());

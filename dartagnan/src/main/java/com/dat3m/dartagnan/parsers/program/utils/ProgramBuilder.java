@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
-import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.Memory;
 
 import java.util.*;
@@ -22,7 +22,7 @@ public class ProgramBuilder {
 
     private final Map<Integer, Thread> threads = new HashMap<>();
 
-    private final Map<String,Address> locations = new HashMap<>();
+    private final Map<String,MemoryObject> locations = new HashMap<>();
 
     private final Memory memory = new Memory();
 
@@ -79,7 +79,7 @@ public class ProgramBuilder {
     // Declarators
 
     public void initLocEqLocPtr(String leftName, String rightName){
-        initLocEqConst(leftName,getOrCreateAddress(rightName));
+        initLocEqConst(leftName, getOrNewObject(rightName));
     }
 
     public void initLocEqLocVal(String leftName, String rightName){
@@ -87,13 +87,13 @@ public class ProgramBuilder {
     }
 
     public void initLocEqConst(String locName, IConst iValue){
-        getOrCreateAddress(locName).setInitialValue(0,iValue);
+        getOrNewObject(locName).setInitialValue(0,iValue);
     }
 
     public void initRegEqLocPtr(int regThread, String regName, String locName, int precision){
-        Address address = getOrCreateAddress(locName);
+        MemoryObject object = getOrNewObject(locName);
         Register reg = getOrCreateRegister(regThread, regName, precision);
-        addChild(regThread, EventFactory.newLocal(reg, address));
+        addChild(regThread, EventFactory.newLocal(reg, object));
     }
 
     public void initRegEqLocVal(int regThread, String regName, String locName, int precision){
@@ -105,14 +105,8 @@ public class ProgramBuilder {
         addChild(regThread, EventFactory.newLocal(getOrCreateRegister(regThread, regName, iValue.getPrecision()), iValue));
     }
 
-    public void addDeclarationArray(String name, int size){
-        checkArgument(!locations.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
-        Address address = memory.allocate(size);
-        locations.put(name,address);
-    }
-
     private IConst getInitialValue(String name) {
-        return getOrCreateAddress(name).getInitialValue(0);
+        return getOrNewObject(name).getInitialValue(0);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -122,12 +116,19 @@ public class ProgramBuilder {
         return threads.get(thread).getExit();
     }
 
-    public Address getAddress(String name){
+    public MemoryObject getObject(String name) {
         return locations.get(name);
     }
 
-    public Address getOrCreateAddress(String name){
+    public MemoryObject getOrNewObject(String name) {
         return locations.computeIfAbsent(name,k->memory.allocate(1));
+    }
+
+    public MemoryObject newObject(String name, int size) {
+        checkArgument(!locations.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
+        MemoryObject result = memory.allocate(size);
+        locations.put(name,result);
+        return result;
     }
 
     public Register getRegister(int thread, String name){
@@ -179,7 +180,7 @@ public class ProgramBuilder {
 
     private void buildInitThreads(){
         int nextThreadId = nextThreadId();
-        for(Address a : memory.getAllAddresses()) {
+        for(MemoryObject a : memory.getObjects()) {
             for(int i = 0; i < a.size(); i++) {
                 Event e = EventFactory.newInit(a,i);
                 Thread thread = new Thread(nextThreadId,e);
