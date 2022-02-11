@@ -60,7 +60,6 @@ public class ReachabilityResult {
                 Result result = Result.UNKNOWN;
                 Arch arch = program.getArch() != null ? program.getArch() : options.getTarget();
                 VerificationTask task = VerificationTask.builder()
-                        .withConfig(options.getConfiguration())
                         .withBound(options.getBound())
                         .withSolverTimeout(options.getTimeout())
                         .withTarget(arch)
