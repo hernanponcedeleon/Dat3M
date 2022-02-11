@@ -2,26 +2,21 @@ package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.LastValueInterface;
 import org.sosy_lab.java_smt.api.*;
-import java.math.BigInteger;
 
 public class Location implements LastValueInterface {
 
-	public static final BigInteger DEFAULT_INIT_VALUE = BigInteger.ZERO;
-
 	private final String name;
-	private final Address address;
+	private final MemoryObject base;
+	private final int offset;
 
-	public Location(String name, Address address) {
+	public Location(String name, MemoryObject b, int o) {
 		this.name = name;
-		this.address = address;
+		base = b;
+		offset = o;
 	}
 	
 	public String getName() {
 		return name;
-	}
-
-	public Address getAddress() {
-		return address;
 	}
 
 	@Override
@@ -31,7 +26,7 @@ public class Location implements LastValueInterface {
 
 	@Override
 	public int hashCode(){
-		return address.hashCode();
+		return base.hashCode() + offset;
 	}
 
 	@Override
@@ -41,12 +36,12 @@ public class Location implements LastValueInterface {
 		} else if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
-
-		return address.hashCode() == obj.hashCode();
+		Location o = (Location)obj;
+		return base.equals(o.base) && offset == o.offset;
 	}
 
 	@Override
 	public Formula getLastValueExpr(SolverContext ctx){
-		return address.getLastMemValueExpr(ctx);
+		return base.getLastMemValueExpr(ctx,offset);
 	}
 }

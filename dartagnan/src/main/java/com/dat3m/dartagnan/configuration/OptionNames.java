@@ -28,6 +28,7 @@ public class OptionNames {
 	public static final String CONSTANT_PROPAGATION = "program.processing.constantPropagation";
 	
 	// Program Property Options
+	public static final String ALIAS_METHOD = "program.analysis.alias";
 	public static final String ALWAYS_SPLIT_ON_JUMPS = "program.analysis.cf.alwaysSplitOnJump";
 	public static final String MERGE_BRANCHES = "program.analysis.cf.mergeBranches";
 

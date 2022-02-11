@@ -16,13 +16,11 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.IfAsJump;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class VisitorLitmusC
@@ -67,21 +65,19 @@ public class VisitorLitmusC
 
     @Override
     public Object visitGlobalDeclaratorLocation(LitmusCParser.GlobalDeclaratorLocationContext ctx) {
-    	BigInteger value = Location.DEFAULT_INIT_VALUE;
         if (ctx.initConstantValue() != null) {
-            value = new BigInteger(ctx.initConstantValue().constant().getText());
+            BigInteger value = new BigInteger(ctx.initConstantValue().constant().getText());
+            programBuilder.initLocEqConst(ctx.varName().getText(),new IValue(value,-1));
         }
-        programBuilder.initLocEqConst(ctx.varName().getText(), new IConst(value, -1));
         return null;
     }
 
     @Override
     public Object visitGlobalDeclaratorRegister(LitmusCParser.GlobalDeclaratorRegisterContext ctx) {
-        BigInteger value = Location.DEFAULT_INIT_VALUE;
         if (ctx.initConstantValue() != null) {
-            value = new BigInteger(ctx.initConstantValue().constant().getText());
+            BigInteger value = new BigInteger(ctx.initConstantValue().constant().getText());
+            programBuilder.initRegEqConst(ctx.threadId().id,ctx.varName().getText(),new IValue(value,-1));
         }
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName().getText(), new IConst(value, -1));
         return null;
     }
 
@@ -91,9 +87,9 @@ public class VisitorLitmusC
             programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText());
         } else {
             String rightName = ctx.varName(1).getText();
-            Address address = programBuilder.getPointer(rightName);
-            if(address != null){
-                programBuilder.initLocEqConst(ctx.varName(0).getText(), address);
+            MemoryObject object = programBuilder.getObject(rightName);
+            if(object != null){
+                programBuilder.initLocEqConst(ctx.varName(0).getText(), object);
             } else {
                 programBuilder.initLocEqLocVal(ctx.varName(0).getText(), ctx.varName(1).getText());
             }
@@ -107,9 +103,9 @@ public class VisitorLitmusC
             programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), -1);
         } else {
             String rightName = ctx.varName(1).getText();
-            Address address = programBuilder.getPointer(rightName);
-            if(address != null){
-                programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), address);
+            MemoryObject object = programBuilder.getObject(rightName);
+            if(object != null){
+                programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), object);
             } else {
                 programBuilder.initRegEqLocVal(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), -1);
             }
@@ -123,7 +119,7 @@ public class VisitorLitmusC
         Integer size = ctx.DigitSequence() != null ? Integer.parseInt(ctx.DigitSequence().getText()) : null;
 
         if(ctx.initArray() == null && size != null && size > 0){
-            programBuilder.addDeclarationArray(name, Collections.nCopies(size, new IConst(BigInteger.ZERO, -1)));
+            programBuilder.newObject(name,size);
             return null;
         }
         if(ctx.initArray() != null){
@@ -131,19 +127,23 @@ public class VisitorLitmusC
                 List<IConst> values = new ArrayList<>();
                 for(LitmusCParser.ArrayElementContext elCtx : ctx.initArray().arrayElement()){
                     if(elCtx.constant() != null){
-                        values.add(new IConst(new BigInteger(elCtx.constant().getText()), -1));
+                        values.add(new IValue(new BigInteger(elCtx.constant().getText()), -1));
                     } else {
                         String varName = elCtx.varName().getText();
-                        Address address = programBuilder.getPointer(varName);
-                        if(address != null){
-                            values.add(address);
+                        //see test/resources/arrays/ok/C-array-ok-17.litmus
+                        MemoryObject object = programBuilder.getObject(varName);
+                        if(object != null){
+                            values.add(object);
                         } else {
-                            address = programBuilder.getOrCreateLocation(varName).getAddress();
-                            values.add(elCtx.Ast() == null ? address : programBuilder.getInitValue(address));
+                            object = programBuilder.getOrNewObject(varName);
+                            values.add(elCtx.Ast() == null ? object : object.getInitialValue(0));
                         }
                     }
                 }
-                programBuilder.addDeclarationArray(name, values);
+                MemoryObject object = programBuilder.newObject(name,values.size());
+                for(int i = 0; i < values.size(); i++) {
+                    object.setInitialValue(i,values.get(i));
+                }
                 return null;
             }
         }
@@ -172,15 +172,9 @@ public class VisitorLitmusC
         if(ctx != null){
             for(LitmusCParser.VarNameContext varName : ctx.varName()){
                 String name = varName.getText();
-                Address pointer = programBuilder.getPointer(name);
-                if(pointer != null){
-                    Register register = programBuilder.getOrCreateRegister(scope, name, -1);
-                    programBuilder.addChild(currentThread, EventFactory.newLocal(register, pointer));
-                } else {
-                    Location location = programBuilder.getOrCreateLocation(varName.getText());
-                    Register register = programBuilder.getOrCreateRegister(scope, varName.getText(), -1);
-                    programBuilder.addChild(currentThread, EventFactory.newLocal(register, location.getAddress()));
-                }
+                MemoryObject object = programBuilder.getOrNewObject(name);
+                Register register = programBuilder.getOrCreateRegister(scope, name, -1);
+                programBuilder.addChild(currentThread, EventFactory.newLocal(register, object));
             }
         }
         return null;
@@ -366,7 +360,7 @@ public class VisitorLitmusC
     @Override
     public ExprInterface visitReConst(LitmusCParser.ReConstContext ctx){
         Register register = getReturnRegister(false);
-        IConst result = new IConst(new BigInteger(ctx.getText()), -1);
+        IValue result = new IValue(new BigInteger(ctx.getText()), -1);
         return assignToReturnRegister(register, result);
     }
 
@@ -414,7 +408,7 @@ public class VisitorLitmusC
         }
 
         ExprInterface value = (ExprInterface)ctx.re().accept(this);
-        if(variable instanceof Address || variable instanceof Register){
+        if(variable instanceof MemoryObject || variable instanceof Register){
             Event event = EventFactory.newStore((IExpr) variable, value, "NA");
             return programBuilder.addChild(currentThread, event);
         }
@@ -451,17 +445,17 @@ public class VisitorLitmusC
             if(register != null){
                 return register;
             }
-            Location location = programBuilder.getLocation(ctx.getText());
-            if(location != null){
+            MemoryObject object = programBuilder.getObject(ctx.getText());
+            if(object != null){
                 register = programBuilder.getOrCreateRegister(scope, null, -1);
-                programBuilder.addChild(currentThread, EventFactory.newLoad(register, location.getAddress(), "NA"));
+                programBuilder.addChild(currentThread, EventFactory.newLoad(register, object, "NA"));
                 return register;
             }
             return programBuilder.getOrCreateRegister(scope, ctx.getText(), -1);
         }
-        Location location = programBuilder.getOrCreateLocation(ctx.getText());
+        MemoryObject object = programBuilder.getOrNewObject(ctx.getText());
         Register register = programBuilder.getOrCreateRegister(scope, null, -1);
-        programBuilder.addChild(currentThread, EventFactory.newLoad(register, location.getAddress(), "NA"));
+        programBuilder.addChild(currentThread, EventFactory.newLoad(register, object, "NA"));
         return register;
     }
 
@@ -474,7 +468,7 @@ public class VisitorLitmusC
     }
 
     private IExpr returnExpressionOrDefault(LitmusCParser.ReContext ctx, BigInteger defaultValue){
-        return ctx != null ? (IExpr)ctx.accept(this) : new IConst(defaultValue, -1);
+        return ctx != null ? (IExpr)ctx.accept(this) : new IValue(defaultValue, -1);
     }
 
     private Register getReturnRegister(boolean createOnNull){

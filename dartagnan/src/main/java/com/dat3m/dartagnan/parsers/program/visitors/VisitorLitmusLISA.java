@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import org.antlr.v4.runtime.misc.Interval;
 
@@ -57,13 +57,13 @@ public class VisitorLitmusLISA
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusLISAParser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.initLocEqConst(ctx.location().getText(), new IConst(new BigInteger(ctx.constant().getText()), -1));
+        programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), -1));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusLISAParser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IConst(new BigInteger(ctx.constant().getText()), -1));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IValue(new BigInteger(ctx.constant().getText()), -1));
         return null;
     }
 
@@ -161,7 +161,7 @@ public class VisitorLitmusLISA
 	public Object visitJump(LitmusLISAParser.JumpContext ctx) {
         Label label = programBuilder.getOrCreateLabel(ctx.labelName().getText());
         Register reg = (Register) ctx.register().accept(this);
-        Atom cond = new Atom(reg, COpBin.EQ, IConst.ONE);
+        Atom cond = new Atom(reg, COpBin.EQ, IValue.ONE);
 		programBuilder.addChild(mainThread, EventFactory.newJump(cond, label));
 		return null;
 	}
@@ -170,7 +170,7 @@ public class VisitorLitmusLISA
 	
 	@Override
 	public Object visitLocation(LitmusLISAParser.LocationContext ctx) {
-		return programBuilder.getOrCreateLocation(ctx.getText()).getAddress();
+		return programBuilder.getOrNewObject(ctx.getText());
 	}
 
 	@Override
@@ -180,7 +180,7 @@ public class VisitorLitmusLISA
 
 	@Override
 	public Object visitConstant(LitmusLISAParser.ConstantContext ctx) {
-		return new IConst(ctx.getText(), -1);
+		return new IValue(new BigInteger(ctx.getText()),-1);
 	}
 
 	@Override
@@ -239,7 +239,7 @@ public class VisitorLitmusLISA
 
 	@Override
 	public Object visitArrayAccess(LitmusLISAParser.ArrayAccessContext ctx) {
-		Address base = (Address) ctx.location().accept(this);
+		MemoryObject base = (MemoryObject) ctx.location().accept(this);
 		IExpr offset = (IExpr) ctx.value().accept(this);
 		return new IExprBin(base, IOpBin.PLUS, offset);
 	}

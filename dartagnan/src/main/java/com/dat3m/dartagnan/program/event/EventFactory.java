@@ -17,9 +17,8 @@ import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -77,8 +76,8 @@ public class EventFactory {
     	return fence;
     }
 
-    public static Init newInit(IExpr address, IConst value) {
-        return new Init(address, value);
+    public static Init newInit(MemoryObject base, int offset) {
+        return new Init(base,offset);
     }
 
     // ------------------------------------------ Local events ------------------------------------------
@@ -183,13 +182,13 @@ public class EventFactory {
     public static class Pthread {
         private Pthread() {}
 
-        public static Create newCreate(Register pthread_t, String routine, Address address, int cLine) {
+        public static Create newCreate(Register pthread_t, String routine, MemoryObject address, int cLine) {
             Create create = new Create(pthread_t, routine, address);
             create.setCLine(cLine);
             return create;
         }
 
-        public static End newEnd(Address address){
+        public static End newEnd(MemoryObject address){
             return new End(address);
         }
 
@@ -197,7 +196,7 @@ public class EventFactory {
             return new InitLock(name, address, value);
         }
 
-        public static Join newJoin(Register pthread_t, Register reg, Address address, Label label) {
+        public static Join newJoin(Register pthread_t, Register reg, MemoryObject address, Label label) {
             return new Join(pthread_t, reg, address, label);
         }
 
@@ -205,7 +204,7 @@ public class EventFactory {
             return new Lock(name, address, reg, label);
         }
 
-        public static Start newStart(Register reg, Address address, Label label) {
+        public static Start newStart(Register reg, MemoryObject address, Label label) {
             return new Start(reg, address, label);
         }
 
@@ -238,7 +237,7 @@ public class EventFactory {
         }
 
         public static AtomicFetchOp newIncrement(Register register, IExpr address, String mo) {
-            return newFetchOp(register, address, new IConst(BigInteger.ONE, -1), IOpBin.PLUS, mo);
+            return newFetchOp(register, address, IValue.ONE, IOpBin.PLUS, mo);
         }
 
         public static AtomicLoad newLoad(Register register, IExpr address, String mo) {
@@ -395,7 +394,7 @@ public class EventFactory {
     public static class X86 {
         private X86() {}
 
-        public static Xchg newExchange(Address address, Register register) {
+        public static Xchg newExchange(MemoryObject address, Register register) {
             return new Xchg(address, register);
         }
 

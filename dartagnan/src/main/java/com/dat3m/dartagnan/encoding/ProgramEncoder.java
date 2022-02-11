@@ -156,7 +156,7 @@ public class ProgramEncoder implements Encoder {
         FormulaManager fmgr = ctx.getFormulaManager();
         IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 
-        BooleanFormula[] addrExprs = memory.getAllAddresses().stream()
+        BooleanFormula[] addrExprs = memory.getObjects().stream()
                 .map(addr -> imgr.equal(convertToIntegerFormula(addr.toIntFormula(ctx), ctx),
                         imgr.makeNumber(addr.getValue().intValue())))
                 .toArray(BooleanFormula[]::new);

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.base.local;
 
-import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -93,7 +93,7 @@ abstract class BasicRegRelation extends StaticRelation {
 
                 if(writers.isEmpty() || writers.get(0).getCId() >= regReader.getCId()){
                 	BooleanFormula equal = generalEqual(register.toIntFormula(regReader, ctx),
-                										new IConst(BigInteger.ZERO, register.getPrecision()).toIntFormula(ctx), ctx);
+                										new IValue(BigInteger.ZERO, register.getPrecision()).toIntFormula(ctx), ctx);
                     enc = bmgr.and(enc, equal);
                 } else {
 

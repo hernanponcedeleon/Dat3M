@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -19,7 +19,7 @@ public class Lock extends Store {
     private Label label4Copy;
 
 	public Lock(String name, IExpr address, Register reg, Label label){
-		super(address, IConst.ONE, MO_SC);
+		super(address, IValue.ONE, MO_SC);
 		this.name = name;
         this.reg = reg;
         this.label = label;

@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpUn;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -245,10 +246,20 @@ public class ConstantPropagation implements ProgramProcessor {
     }
     
     private static class ITop extends IConst {
-    	
-    	private ITop() {
-    		super(BigInteger.ZERO, -1);
-    	}
-    
+
+        @Override
+        public BigInteger getValue() {
+            return BigInteger.ZERO;
+        }
+
+        @Override
+        public int getPrecision() {
+            return -1;
+        }
+
+        @Override
+        public <T> T visit(ExpressionVisitor<T> visitor) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

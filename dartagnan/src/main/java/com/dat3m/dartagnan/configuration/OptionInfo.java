@@ -9,10 +9,16 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.google.common.base.Verify.verify;
 
 /**
  * Collects all {@link Option}s of a program.
@@ -29,31 +35,40 @@ public final class OptionInfo implements Comparable<OptionInfo> {
      */
     public static void collectOptions() {
 
+        stream()
+                .sorted()
+                .forEach(System.out::print);
+    }
+
+    public static Stream<OptionInfo> stream() {
+        return classes().flatMap(OptionInfo::collectOptions);
+    }
+
+    private static Stream<Class<?>> classes() {
         ClassPath classPath;
         try {
             classPath = ClassPath.from(OptionInfo.class.getClassLoader());
         } catch(IOException e) {
-            return;
+            return Stream.empty();
         }
 
-        classPath.getAllClasses().stream()
-                .flatMap(OptionInfo::collectOptions)
-                .sorted()
-                .forEach(System.out::print);
+        return classPath.getAllClasses().stream().flatMap(OptionInfo::load);
+    }
+
+    private static Stream<Class<?>> load(ClassPath.ClassInfo i) {
+        try {
+            return Stream.of(i.load());
+        } catch(LinkageError e) {
+            return Stream.empty();
+        }
     }
 
     /**
      * This method collects every {@link Option} of a class.
      *
-     * @param i class where to take the Option from
+     * @param c class where to take the Option from
      */
-    private static Stream<OptionInfo> collectOptions(ClassPath.ClassInfo i) {
-        Class<?> c;
-        try {
-            c = i.load();
-        } catch(LinkageError e) {
-            return Stream.empty();
-        }
+    private static Stream<OptionInfo> collectOptions(Class<?> c) {
 
         Options o = c.getAnnotation(Options.class);
         if(o == null) {
@@ -83,7 +98,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
             if(o == null) {
                 return Stream.empty();
             }
-            return Stream.of(new OptionInfo(this,o,f,f.getType()));
+            return Stream.of(new OptionInfo(this,o,f,f.getGenericType()));
         }
 
         Stream<OptionInfo> of(Method m) {
@@ -91,20 +106,52 @@ public final class OptionInfo implements Comparable<OptionInfo> {
             if(o == null) {
                 return Stream.empty();
             }
-            return Stream.of(new OptionInfo(this,o,m,m.getParameterTypes()[0]));
+            return Stream.of(new OptionInfo(this,o,m,m.getGenericParameterTypes()[0]));
         }
     }
 
     private final ClassInfo parent;
     private final Option option;
     private final Member member;
+    private final Type type;
     private final Class<?> domain;
 
-    private OptionInfo(ClassInfo i, Option o, Member m, Class<?> d) {
+    private OptionInfo(ClassInfo i, Option o, Member m, Type t) {
         parent = i;
         option = o;
         member = m;
-        domain = d;
+        type = t;
+        Type raw = t instanceof ParameterizedType ? ((ParameterizedType)t).getRawType() : t;
+        verify(raw instanceof Class);
+        domain = (Class<?>)raw;
+    }
+
+    public String getName() {
+        return option.name();
+    }
+
+    public Class<?> getDomain() {
+        return domain;
+    }
+
+    public Stream<String> getAvailableValues() {
+        if(domain.isEnum()) {
+            return Stream.of(domain.getEnumConstants()).map(Object::toString);
+        }
+        if(domain.equals(Class.class)) {
+            verify(type instanceof ParameterizedType);
+            Type[] argument = ((ParameterizedType)type).getActualTypeArguments();
+            verify(argument.length == 1);
+            verify(argument[0] instanceof WildcardType);
+            WildcardType variable = (WildcardType)argument[0];
+            verify(variable.getLowerBounds().length == 0);
+            Type[] bound = variable.getUpperBounds();
+            verify(bound.length == 1);
+            verify(bound[0] instanceof Class);
+            Class<?> base = (Class<?>)bound[0];
+            return classes().filter(base::isAssignableFrom).filter(c->!Modifier.isAbstract(c.getModifiers())).map(Class::getName);
+        }
+        return Stream.empty();
     }
 
     @Override

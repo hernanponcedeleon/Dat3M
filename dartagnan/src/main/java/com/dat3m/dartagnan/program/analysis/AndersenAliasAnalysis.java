@@ -10,33 +10,53 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 
 /**
+ * Inclusion-based pointer analysis by Andersen.
+ * <p>
+ * Each register and memory location gets a variable set of pointers.
+ * A graph denotes inclusion relationships between pointer sets.
+ * Iteratively, the sets of pointers are populated based on this graph.
+ * Memory operations can generate new edges during the process.
  *
  * @author flo
+ * @author xeren
  */
 public class AndersenAliasAnalysis implements AliasAnalysis {
 
+    ///When a pointer set gains new content, it is added to this queue
     private final Queue<Object> variables = new ArrayDeque<>();
-    private final ImmutableSet<Address> maxAddressSet;
+    ///Super set of all pointer sets in this analysis
+    private final ImmutableSet<Location> maxAddressSet;
     private final Graph graph = new Graph();
 
-    private final Map<MemEvent, ImmutableSet<Address>> eventAddressSpaceMap = new HashMap<>();
+    private final Map<MemEvent, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
 
     // ================================ Construction ================================
 
     private AndersenAliasAnalysis(Program program) {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
-        maxAddressSet = program.getMemory().getAllAddresses();
+        ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
+        for(MemoryObject a : program.getMemory().getObjects()) {
+            for(int i = 0; i < a.size(); i++) {
+                builder.add(new Location(a,i));
+            }
+        }
+        maxAddressSet = builder.build();
         run(program);
     }
 
@@ -57,7 +77,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         return getMaxAddressSet(x).size() == 1 && getMaxAddressSet(x).containsAll(getMaxAddressSet(y));
     }
 
-    private ImmutableSet<Address> getMaxAddressSet(MemEvent e) {
+    private ImmutableSet<Location> getMaxAddressSet(MemEvent e) {
         return eventAddressSpaceMap.get(e);
     }
 
@@ -76,29 +96,46 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             IExpr address = e.getAddress();
 
             // Collect for each v events of form: p = *v, *v = q
-            if (address instanceof Register) {
+            if(address instanceof Register) {
                 graph.addEvent((Register) address, e);
-            } else if (address instanceof Address) {
-                if (e instanceof Init) {
-                    // Rule loc = &loc2 -> lo(loc) = {loc2} (only possible in init events)
-                    Location loc = program.getMemory().getLocationForAddress((Address) address);
-                    IExpr value = ((Init) e).getValue();
-                    if (loc != null && value instanceof Address) {
-                        graph.addAddress(loc, (Address)value);
-                        variables.add(loc);
-                    }
-                }
-            } else {
+                continue;
+            }
+            Constant addressConstant = new Constant(address);
+            if(addressConstant.failed) {
                 // r = *(CompExpr) -> loc(r) = max
                 if (e instanceof RegWriter) {
                     Register register = ((RegWriter) e).getResultRegister();
                     graph.addAllAddresses(register, maxAddressSet);
                     variables.add(register);
                 }
-                // We allow for more address calculations
-                //e.setMaxAddressSet(maxAddressSet);
+                //FIXME if e is a store event, then all locations should include its values
                 eventAddressSpaceMap.put(e, maxAddressSet);
+                continue;
             }
+            //address is a constant
+            Location location = addressConstant.location;
+            if(location == null) {
+                throw new RuntimeException("memory event accessing a pure constant address");
+            }
+            eventAddressSpaceMap.put(e,ImmutableSet.of(location));
+            if(e instanceof RegWriter) {
+                graph.addEdge(location,((RegWriter)e).getResultRegister());
+                continue;
+            }
+            //event is a store operation
+            Verify.verify(e.is(Tag.WRITE),"memory event that is neither tagged \"W\" nor a register writer");
+            ExprInterface value = e.getMemValue();
+            if(value instanceof Register) {
+                graph.addEdge(value,location);
+                continue;
+            }
+            Constant v = new Constant(value);
+            if(v.failed) {
+                graph.addAllAddresses(location,maxAddressSet);
+            } else if(v.location != null) {
+                graph.addAddress(location,v.location);
+            }
+            variables.add(location);
         }
     }
 
@@ -115,11 +152,12 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                 } else if (expr instanceof IExprBin && ((IExprBin)expr).getBase() instanceof Register) {
                 	graph.addAllAddresses(register, maxAddressSet);
                     variables.add(register);
-                } else if (expr instanceof Address) {
+                } else if (expr instanceof MemoryObject) {
                     // r = &a
-                    graph.addAddress(register, (Address) expr);
+                    graph.addAddress(register,new Location((MemoryObject) expr,0));
                     variables.add(register);
                 }
+                //FIXME if the expression is too complicated, the register should receive maxAddressSet
             }
         }
     }
@@ -129,27 +167,24 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             Object variable = variables.poll();
             if(variable instanceof Register){
                 // Process rules with *variable:
-                for (Address address : graph.getAddresses(variable)) {
-                    Location location = program.getMemory().getLocationForAddress(address);
-                    if (location != null) {
-                        for (MemEvent e : graph.getEvents((Register) variable)) {
-                            // p = *variable:
-                            if (e instanceof RegWriter) {
-                                // Add edge from location to p
-                                if (graph.addEdge(location, ((RegWriter) e).getResultRegister())) {
-                                    // Add location to variables if edge is new.
-                                    variables.add(location);
-                                }
-                            } else if (e instanceof Store) {
-                                // *variable = register
-                                ExprInterface value = e.getMemValue();
-                                if (value instanceof Register) {
-                                    Register register = (Register) value;
-                                    // Add edge from register to location
-                                    if (graph.addEdge(register, location)) {
-                                        // Add register to variables if edge is new.
-                                        variables.add(register);
-                                    }
+                for (Location address : graph.getAddresses(variable)) {
+                    for(MemEvent e : graph.getEvents((Register)variable)) {
+                        // p = *variable:
+                        if(e instanceof RegWriter) {
+                            // Add edge from location to p
+                            if(graph.addEdge(address,((RegWriter)e).getResultRegister())) {
+                                // Add location to variables if edge is new.
+                                variables.add(address);
+                            }
+                        } else if(e instanceof Store) {
+                            // *variable = register
+                            ExprInterface value = e.getMemValue();
+                            if(value instanceof Register) {
+                                Register register = (Register) value;
+                                // Add edge from register to location
+                                if(graph.addEdge(register,address)) {
+                                    // Add register to variables if edge is new.
+                                    variables.add(register);
                                 }
                             }
                         }
@@ -167,8 +202,11 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
 
     private void processResults(Program program) {
     	// Used to have pointer analysis when having arrays and structures
-    	Map<Register, Address> bases = new HashMap<>();
-    	Map<Register, Integer> offsets = new HashMap<>();
+        Map<Register,Set<Location>> targets = new HashMap<>();
+        BiConsumer<Register,Location> addTarget = (r,l)->targets.put(r,Set.of(l));
+        BiConsumer<Register,MemoryObject> addTargetArray = (r,b)->targets.put(r,IntStream.range(0,b.size())
+                .mapToObj(i->new Location(b,i))
+                .collect(Collectors.toSet()));
     	for (Event ev : program.getCache().getEvents(FilterBasic.get(Tag.LOCAL))) {
     		// Not only Local events have EType.LOCAL tag
     		if(!(ev instanceof Local)) {
@@ -177,42 +215,57 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     		Local l = (Local)ev;
     		ExprInterface exp = l.getExpr();
     		Register reg = l.getResultRegister();
-			if(exp instanceof Address) {
-    			bases.put(reg, (Address)exp);
-                offsets.put(reg, 0);
+			if(exp instanceof MemoryObject) {
+                addTarget.accept(reg,new Location((MemoryObject)exp,0));
             } else if(exp instanceof IExprBin) {
     			IExpr base = ((IExprBin)exp).getBase();
-    			if(base instanceof Address) {
-    				bases.put(reg, (Address)base);
-    				if(((IExprBin) exp).getRHS() instanceof IConst) {
-        				offsets.put(reg, ((IConst)((IExprBin) exp).getRHS()).getValueAsInt());    					
-    				}
-    			} else if(base instanceof Register && bases.containsKey(base)) {
-    				bases.put(reg, bases.get(base));
-    				if(((IExprBin) exp).getRHS() instanceof IConst) {
-        				offsets.put(reg, ((IConst)((IExprBin) exp).getRHS()).getValueAsInt());    					
-    				}
+    			if(base instanceof MemoryObject) {
+                    IExpr rhs = ((IExprBin) exp).getRHS();
+                    //FIXME Address extends IConst
+                    if(rhs instanceof IConst) {
+                        addTarget.accept(reg,new Location((MemoryObject)base,((IConst)rhs).getValueAsInt()));
+                    } else {
+                        addTargetArray.accept(reg,(MemoryObject)base);
+                    }
+                    continue;
+                }
+                if(!(base instanceof Register)) {
+                    continue;
+                }
+                //accept register2 = register1 + constant
+                for(Location target : targets.getOrDefault(base,Set.of())) {
+                    IExpr rhs = ((IExprBin) exp).getRHS();
+                    //FIXME Address extends IConst
+                    if(rhs instanceof IConst) {
+                        int o = target.offset + ((IConst)rhs).getValueAsInt();
+                        if(o < target.base.size()) {
+                            addTarget.accept(reg,new Location(target.base,o));
+                        }
+                    } else {
+                        addTargetArray.accept(reg,target.base);
+                    }
     			}
     		}
     	}
 
         for (Event e : program.getCache().getEvents(FilterBasic.get(Tag.MEMORY))) {
             IExpr address = ((MemEvent) e).getAddress();
-            Set<Address> addresses;
+            Set<Location> addresses;
             if (address instanceof Register) {
-            	if(bases.containsKey(address) && program.getMemory().isArrayPointer(bases.get(address))) {
-            		if(offsets.containsKey(address)) {
-                		addresses = ImmutableSet.of(program.getMemory().getArrayFromPointer(bases.get(address)).get(offsets.get(address)));
-            		} else {
-                		addresses = new HashSet<>(program.getMemory().getArrayFromPointer(bases.get(address)));
-            		}
+                Set<Location> target = targets.get(address);
+                if(target != null) {
+                    addresses = target;
             	} else {
             	    addresses = graph.getAddresses(address);
             	}
-            } else if (address instanceof Address) {
-                addresses = ImmutableSet.of(((Address) address));
             } else {
-                addresses = maxAddressSet;
+                Constant addressConstant = new Constant(address);
+                if(addressConstant.failed) {
+                    addresses = maxAddressSet;
+                } else {
+                    Verify.verify(addressConstant.location!=null,"memory event accessing a pure constant address");
+                    addresses = ImmutableSet.of(addressConstant.location);
+                }
             }
             if (addresses.size() == 0) {
                 addresses = maxAddressSet;
@@ -222,10 +275,71 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
     }
 
+    private static final class Constant {
+
+        final Location location;
+        //implies location == null
+        final boolean failed;
+
+        /**
+         * Tries to match an expression as a constant address.
+         */
+        Constant(ExprInterface x) {
+            if(x instanceof IConst) {
+                location = x instanceof MemoryObject ? new Location((MemoryObject)x,0) : null;
+                failed = false;
+                return;
+            }
+            if(x instanceof IExprBin && ((IExprBin)x).getOp() == PLUS) {
+                IExpr lhs = ((IExprBin)x).getLHS();
+                IExpr rhs = ((IExprBin)x).getRHS();
+                if(lhs instanceof MemoryObject && rhs instanceof IConst && !(rhs instanceof MemoryObject)) {
+                    location = new Location((MemoryObject)lhs,((IConst)rhs).getValueAsInt());
+                    failed = false;
+                    return;
+                }
+            }
+            location = null;
+            failed = true;
+        }
+
+        @Override
+        public String toString() {
+            return failed ? "failed" : String.valueOf(location);
+        }
+    }
+
+    private static final class Location {
+
+        final MemoryObject base;
+        final int offset;
+
+        Location(MemoryObject b, int o) {
+            Preconditions.checkArgument(0 <= o && o < b.size(),"Array out of bounds");
+            base = b;
+            offset = o;
+        }
+
+        @Override
+        public int hashCode() {
+            return base.hashCode() + offset;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return this==o || o instanceof Location && base.equals(((Location)o).base) && offset == ((Location)o).offset;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s[%d]",base,offset);
+        }
+    }
+
     private static class Graph {
 
         private final Map<Object, Set<Object>> edges = new HashMap<>();
-        private final Map<Object, Set<Address>> addresses = new HashMap<>();
+        private final Map<Object, Set<Location>> addresses = new HashMap<>();
         private final Map<Register, Set<MemEvent>> events = new HashMap<>();
 
         boolean addEdge(Object v1, Object v2){
@@ -236,15 +350,15 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             return edges.getOrDefault(v, ImmutableSet.of());
         }
 
-        void addAddress(Object v, Address a){
+        void addAddress(Object v, Location a){
             addresses.computeIfAbsent(v, key -> new HashSet<>()).add(a);
         }
 
-        boolean addAllAddresses(Object v, Set<Address> s){
+        boolean addAllAddresses(Object v, Set<Location> s){
             return addresses.computeIfAbsent(v, key -> new HashSet<>()).addAll(s);
         }
 
-        Set<Address> getAddresses(Object v){
+        Set<Location> getAddresses(Object v){
             return addresses.getOrDefault(v, ImmutableSet.of());
         }
 
