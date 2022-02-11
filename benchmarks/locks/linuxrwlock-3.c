@@ -98,7 +98,6 @@ void *threadR(void *arg)
     read_lock(&mylock);
     int r = shareddata;
     assert(r == shareddata);
-    sum++;
     read_unlock(&mylock);
     return NULL;
 }
@@ -120,7 +119,6 @@ void *threadRW(void *arg)
             read_lock(&mylock);
             int r = shareddata;
             assert(r == shareddata);
-            sum++;
             read_unlock(&mylock);
         } else {
             write_lock(&mylock);
@@ -149,7 +147,8 @@ int main()
     pthread_join(R0, 0);
     pthread_join(RW0, 0);
 
-    assert(sum == 3);
+    // Only write threads increment sum
+    assert(sum == 2);
 
     return 0;
 }
