@@ -1,7 +1,12 @@
 package com.dat3m.dartagnan.asserts;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import com.dat3m.dartagnan.program.Register;
 
 public class AssertCompositeAnd extends AbstractAssert {
 
@@ -22,4 +27,12 @@ public class AssertCompositeAnd extends AbstractAssert {
     public String toString() {
         return a1 + " && " + a2;
     }
+    
+	@Override
+	public List<Register> getRegs() {
+		List<Register> regs = new ArrayList<>();
+		regs.addAll(a1.getRegs());
+		regs.addAll(a2.getRegs());
+		return regs;
+	}
 }

@@ -31,7 +31,6 @@ import static com.dat3m.dartagnan.expression.op.IOpUn.BV2INT;
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2UINT;
 
 
-// FIXME this is buggy> It currently fails CLocks and also casues problems with weaver/chl-match-subst.wvr.c, weaver/chl-match-symm.wvr.c and weaver/chl-match-trans.wvr.c
 public class ConstantPropagation implements ProgramProcessor {
 	
     private final static Logger logger = LogManager.getLogger(ConstantPropagation.class);
@@ -91,9 +90,18 @@ public class ConstantPropagation implements ProgramProcessor {
             		propagationMap.get(currentThreadId).put(l.getResultRegister(), evaluate((IExpr)l.getExpr(), currentThreadId));
         		}
         	}
+        	// The label can be reach by the predecessor and at least one jump
+        	// We don't need to consider the final label END_OF_TX
+        	if(e instanceof Label && e.getListeners().size() > 0 && !e.equals(e.getThread().getExit())) {
+        		// TODO here we need a proper join
+        		// Right now we just clean up the whole information we have
+        		// It still does a whole propagation inside a block (i.e. between jumps)
+        		// and seems to be sufficient to propagate in most of the cases.
+        		propagationMap.put(currentThreadId, new HashMap<>());
+        	}
         	
         	// Event creation
-        	if(current instanceof MemEvent) {
+        	if(current instanceof MemEvent && !current.is(Tag.C11.PTHREAD) && !current.is(Tag.C11.LOCK)) {
         		MemEvent m = (MemEvent)current;
         		String mo = m.getMo();
 
@@ -163,21 +171,19 @@ public class ConstantPropagation implements ProgramProcessor {
     				e = EventFactory.newStore(newAddress, newValue, mo);
             	}
         	}
-// Locals are still causing problems
-        	
         	// Local events coming from assertions cause problems because the encoding of 
         	// AssertInline uses getResultRegisterExpr() which gets a value when calling
         	// Local.initialise() which is never the case for the new Event e below.
         	else if(current instanceof Local && ((Local)current).getExpr() instanceof IExpr && !current.is(Tag.ASSERTION)) {
-//        		Register reg = ((Local)current).getResultRegister();
-//        		
-//        		IExpr oldValue = (IExpr) ((Local)current).getExpr();
-//        		IExpr newValue = evaluate(oldValue, currentThreadId);
-//        		newValue = newValue instanceof ITop ? oldValue : newValue; 
-//        		Preconditions.checkState(newValue != null, 
-//        				String.format("Expression %s got no value after constant propagation analysis", oldValue));
-//        		
-//        		e = EventFactory.newLocal(reg, newValue);
+        		Register reg = ((Local)current).getResultRegister();
+        		
+        		IExpr oldValue = (IExpr) ((Local)current).getExpr();
+        		IExpr newValue = evaluate(oldValue, currentThreadId);
+        		newValue = newValue instanceof ITop ? oldValue : newValue; 
+        		Preconditions.checkState(newValue != null, 
+        				String.format("Expression %s got no value after constant propagation analysis", oldValue));
+        		
+        		e = EventFactory.newLocal(reg, newValue);
         	}
 
         	// Update propagation counter
@@ -202,7 +208,10 @@ public class ConstantPropagation implements ProgramProcessor {
     private IExpr evaluate(IExpr input, Integer threadId) {
     	// TODO If we extend this to BExpr too, we might reduce IfExprs further by also evaluating the guard.
     	
-    	if(input instanceof IConst || input instanceof INonDet) {
+    	if(input instanceof INonDet) {
+    		return new ITop();
+    	}
+    	if(input instanceof IConst) {
     		return input;
     	}
     	if(input instanceof Register) {
