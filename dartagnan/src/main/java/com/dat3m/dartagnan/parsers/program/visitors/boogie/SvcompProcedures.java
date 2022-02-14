@@ -41,7 +41,9 @@ public class SvcompProcedures {
 			"__VERIFIER_nondet_long",
 			"__VERIFIER_nondet_ulong",
 			"__VERIFIER_nondet_char",
-			"__VERIFIER_nondet_uchar");
+			"__VERIFIER_nondet_uchar",
+			"__VERIFIER_lkmm_fence",
+			"__VERIFIER_atomicrmw_noret");
 
 	public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
@@ -54,6 +56,14 @@ public class SvcompProcedures {
 			break;
 		case "__VERIFIER_spin_end":
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopEnd());
+			break;
+		case "__VERIFIER_lkmm_fence":
+			System.out.println("WARNING: __VERIFIER_lkmm_fence not implemented!!!");
+			// TODO implement
+			break;
+		case "__VERIFIER_atomicrmw_noret":
+			System.out.println("WARNING: __VERIFIER_atomicrmw_noret not implemented!!!");
+			// TODO implement
 			break;
 		case "__VERIFIER_assert":
 			__VERIFIER_assert(visitor, ctx);
