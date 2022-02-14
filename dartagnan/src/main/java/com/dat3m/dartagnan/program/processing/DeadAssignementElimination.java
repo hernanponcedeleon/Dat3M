@@ -15,18 +15,19 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-public class DeadStoreElimination implements ProgramProcessor {
+// This is just Dead Store Elimination, but the use of the term "Store" can be confusing in our setting 
+public class DeadAssignementElimination implements ProgramProcessor {
 
-    private static final Logger logger = LogManager.getLogger(DeadStoreElimination.class);
+    private static final Logger logger = LogManager.getLogger(DeadAssignementElimination.class);
     private Program program;
 
-    private DeadStoreElimination() { }
+    private DeadAssignementElimination() { }
 
-    public static DeadStoreElimination newInstance() {
-        return new DeadStoreElimination();
+    public static DeadAssignementElimination newInstance() {
+        return new DeadAssignementElimination();
     }
 
-    public static DeadStoreElimination fromConfig(Configuration config) throws InvalidConfigurationException {
+    public static DeadAssignementElimination fromConfig(Configuration config) throws InvalidConfigurationException {
         return newInstance();
     }
 
