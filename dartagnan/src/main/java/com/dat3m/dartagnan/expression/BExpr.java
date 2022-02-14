@@ -11,9 +11,17 @@ public abstract class BExpr implements ExprInterface {
     public Formula toIntFormula(Event e, SolverContext ctx) {
     	FormulaManager fmgr = ctx.getFormulaManager();
 		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-		return fmgr.getBooleanFormulaManager().ifThenElse(toBoolFormula(e, ctx), 
-				imgr.makeNumber(BigInteger.ONE), 
-				imgr.makeNumber(BigInteger.ZERO));
+		BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+		Formula zero, one;
+		if(getRegs().stream().anyMatch(r -> r.getPrecision() > 0)) {
+    		int precision = getRegs().stream().findFirst().get().getPrecision();
+    		zero = bvmgr.makeBitvector(precision, BigInteger.ZERO);
+    		one = bvmgr.makeBitvector(precision, BigInteger.ONE);
+    	} else {
+    		zero = imgr.makeNumber(BigInteger.ZERO);
+    		one = imgr.makeNumber(BigInteger.ONE);
+    	}
+		return fmgr.getBooleanFormulaManager().ifThenElse(toBoolFormula(e, ctx), one , zero);
     }
 
     @Override

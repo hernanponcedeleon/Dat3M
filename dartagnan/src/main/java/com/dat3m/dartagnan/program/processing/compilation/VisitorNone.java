@@ -231,7 +231,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
+        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, new IValue(BigInteger.ONE, precision)), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
         Load loadValue = newRMWLoad(regValue, address, mo);
         Store storeValue = newRMWStore(loadValue, address, e.getMemValue(), mo);
