@@ -49,6 +49,7 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProced
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.STDPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.handleStdFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.SVCOMPPROCEDURES;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LkmmProcedures.*;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.handleSvcompFunction;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
@@ -354,6 +355,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(STDPROCEDURES.stream().anyMatch(name::startsWith)) {
 			handleStdFunction(this, ctx);
+			return null;
+		}
+		if(LKMMPROCEDURES.stream().anyMatch(name::startsWith)) {
+			handleLkmmFunction(this, ctx);
 			return null;
 		}
 		if(name.contains("__VERIFIER_atomic_")) {
