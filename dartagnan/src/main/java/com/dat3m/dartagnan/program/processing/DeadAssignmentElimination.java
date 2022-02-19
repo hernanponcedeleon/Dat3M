@@ -51,7 +51,7 @@ public class DeadAssignmentElimination implements ProgramProcessor {
     	List<Event> removed = new ArrayList<>();
     	
     	// We traverse the events in inverse order and mark those that can be removed
-    	List<Event> sorted = thread.getEvents();
+    	ArrayList<Event> sorted = new ArrayList<Event>(thread.getEvents());
     	sorted.sort(Comparator.reverseOrder());
     	for(Event e : sorted) {
     		// We cannot remove load events
