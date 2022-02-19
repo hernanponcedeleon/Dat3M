@@ -38,7 +38,6 @@ public class ConstantPropagation implements ProgramProcessor {
     private int propagations = 0;
     
 	// TODO we need a proper class for lattices. The inner map is nothing more than a map lattice.
-    private final Map<Integer, Map<Register, IExpr>> propagationMap = new HashMap<>();
 
     // =========================== Configurables ===========================
 
@@ -66,9 +65,8 @@ public class ConstantPropagation implements ProgramProcessor {
 
 	private void run(Thread thread) {
 		
-		int currentThreadId = thread.getId();
-		propagationMap.put(currentThreadId, new HashMap<>());
-		
+	    Map<Register, IExpr> propagationMap = new HashMap<>();
+
         Event pred = thread.getEntry();
         Event current = pred.getSuccessor();
 
@@ -81,13 +79,13 @@ public class ConstantPropagation implements ProgramProcessor {
         	// For RegWriters interacting with memory, we assign TOP
         	if(current instanceof RegWriter) {
         		RegWriter rw = (RegWriter)e;
-        		propagationMap.get(currentThreadId).put(rw.getResultRegister(), new ITop());
+        		propagationMap.put(rw.getResultRegister(), new ITop());
         	}
         	// For Locals, we update
         	if(current instanceof Local) {
         		Local l = (Local)e;
         		if(l.getExpr() instanceof IExpr) {
-            		propagationMap.get(currentThreadId).put(l.getResultRegister(), evaluate((IExpr)l.getExpr(), currentThreadId));
+            		propagationMap.put(l.getResultRegister(), evaluate((IExpr)l.getExpr(), propagationMap));
         		}
         	}
         	// The label can be reach by the predecessor and at least one jump
@@ -97,7 +95,7 @@ public class ConstantPropagation implements ProgramProcessor {
         		// Right now we just clean up the whole information we have
         		// It still does a whole propagation inside a block (i.e. between jumps)
         		// and seems to be sufficient to propagate in most of the cases.
-        		propagationMap.put(currentThreadId, new HashMap<>());
+        		propagationMap = new HashMap<>();
         	}
         	
         	// Event creation
@@ -109,13 +107,13 @@ public class ConstantPropagation implements ProgramProcessor {
         		Register reg = current instanceof RegWriter ? ((RegWriter)current).getResultRegister() : null;
 
         		IExpr oldAddress = m.getAddress();
-        		IExpr newAddress = evaluate(oldAddress, currentThreadId);
+        		IExpr newAddress = evaluate(oldAddress, propagationMap);
         		newAddress = newAddress instanceof ITop ? oldAddress : newAddress;
 				Verify.verifyNotNull(newAddress,
 						"Expression %s got no value after constant propagation analysis", oldAddress);
 
         		IExpr oldValue = (IExpr) ((MemEvent)current).getMemValue();
-        		IExpr newValue = evaluate(oldValue, currentThreadId);
+        		IExpr newValue = evaluate(oldValue, propagationMap);
         		newValue = newValue instanceof ITop ? oldValue : newValue;
 				Verify.verifyNotNull(newValue,
 						"Expression %s got no value after constant propagation analysis", oldValue);
@@ -127,7 +125,7 @@ public class ConstantPropagation implements ProgramProcessor {
     				e = Atomic.newStore(newAddress, newValue, mo);
             	} else if(current instanceof AtomicCmpXchg) {
             		IExpr oldExpectedAddr = ((AtomicCmpXchg)current).getExpectedAddr();
-            		IExpr newExpectedAddr = evaluate(oldExpectedAddr, currentThreadId);
+            		IExpr newExpectedAddr = evaluate(oldExpectedAddr, propagationMap);
 					Verify.verifyNotNull(newExpectedAddr,
                 			"Register %s got no value after constant propagation analysis", oldExpectedAddr);
     				e = Atomic.newCompareExchange(reg, newAddress, newExpectedAddr, newValue, mo, current.is(Tag.STRONG));
@@ -178,7 +176,7 @@ public class ConstantPropagation implements ProgramProcessor {
         		Register reg = ((Local)current).getResultRegister();
         		
         		IExpr oldValue = (IExpr) ((Local)current).getExpr();
-        		IExpr newValue = evaluate(oldValue, currentThreadId);
+        		IExpr newValue = evaluate(oldValue, propagationMap);
         		newValue = newValue instanceof ITop ? oldValue : newValue; 
         		Verify.verify(newValue != null, 
         				String.format("Expression %s got no value after constant propagation analysis", oldValue));
@@ -205,7 +203,7 @@ public class ConstantPropagation implements ProgramProcessor {
 	}
 
 	// TODO Once we have a lattice class this should be moved there.
-    private IExpr evaluate(IExpr input, Integer threadId) {
+    private IExpr evaluate(IExpr input, Map<Register, IExpr> map) {
     	// TODO If we extend this to BExpr too, we might reduce IfExprs further by also evaluating the guard.
     	
     	if(input instanceof INonDet) {
@@ -218,7 +216,7 @@ public class ConstantPropagation implements ProgramProcessor {
     		// When pthread create passes arguments, the new thread starts with a Local
     		// where the RHS is a Register from the parent thread and thus we might not 
     		// have the key in the map.
-			return propagationMap.get(threadId).getOrDefault(input, input);
+			return map.getOrDefault(input, input);
     	}
     	if(input instanceof IExprUn) {
     		IExprUn un = (IExprUn)input;
@@ -227,19 +225,19 @@ public class ConstantPropagation implements ProgramProcessor {
     		if(op.equals(BV2INT) || op.equals(BV2UINT)) {
     			return input;
     		}
-			IExpr inner = evaluate(un.getInner(), threadId);
+			IExpr inner = evaluate(un.getInner(), map);
 			return inner instanceof ITop ? inner : new IExprUn(op, inner);
     	}
     	if(input instanceof IExprBin) {
     		IExprBin bin = (IExprBin)input;
-    		IExpr lhs = evaluate(bin.getLHS(), threadId);
-			IExpr rhs = evaluate(bin.getRHS(), threadId);
+    		IExpr lhs = evaluate(bin.getLHS(), map);
+			IExpr rhs = evaluate(bin.getRHS(), map);
 			return lhs instanceof ITop ? lhs : rhs instanceof ITop ? rhs : new IExprBin(lhs, bin.getOp(), rhs);
     	}
     	if(input instanceof IfExpr) {
     		IfExpr ife = (IfExpr)input;
-    		IExpr tbranch = evaluate(ife.getTrueBranch(), threadId);
-			IExpr fbranch = evaluate(ife.getFalseBranch(), threadId);
+    		IExpr tbranch = evaluate(ife.getTrueBranch(), map);
+			IExpr fbranch = evaluate(ife.getFalseBranch(), map);
 			return tbranch instanceof ITop ? tbranch : fbranch instanceof ITop ? fbranch : new IfExpr(ife.getGuard(), tbranch, fbranch);
     	}
 		throw new UnsupportedOperationException(String.format("IExpr %s not supported", input));
