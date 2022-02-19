@@ -83,7 +83,8 @@ public class ConstantPropagation implements ProgramProcessor {
         	// For Locals, we update
         	if(current instanceof Local) {
         		Local l = (Local)e;
-        		if(l.getExpr() instanceof IExpr) {
+        		// IfExpr may still contain registers (instead of the corresponding constant) in the guard, thus we don't consider them constants
+        		if(l.getExpr() instanceof IExpr && !(l.getExpr() instanceof IfExpr)) {
             		propagationMap.put(l.getResultRegister(), evaluate((IExpr)l.getExpr(), propagationMap));
         		}
         	}
