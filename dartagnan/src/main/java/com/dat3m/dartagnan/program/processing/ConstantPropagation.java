@@ -97,7 +97,7 @@ public class ConstantPropagation implements ProgramProcessor {
         		propagationMapLabel.put(label, merge(propagationMap, propagationMapLabel.getOrDefault(label, new HashMap<>())));
         	}
         	if(current instanceof Label) {
-        		propagationMap = propagationMapLabel.get(current);
+        		propagationMap = propagationMapLabel.getOrDefault(current, new HashMap<>());
         	}
         	
         	// Event creation
@@ -246,6 +246,8 @@ public class ConstantPropagation implements ProgramProcessor {
     }
     
     private Map<Register, IExpr> merge (Map<Register, IExpr> x, Map<Register, IExpr> y) {
+    	Preconditions.checkNotNull(x);
+    	Preconditions.checkNotNull(y);
 
     	Map<Register, IExpr> merged = new HashMap<>(x);
     	
