@@ -180,7 +180,7 @@ public class ConstantPropagation implements ProgramProcessor {
         		IExpr oldValue = (IExpr) ((Local)current).getExpr();
         		IExpr newValue = evaluate(oldValue, currentThreadId);
         		newValue = newValue instanceof ITop ? oldValue : newValue; 
-        		Preconditions.checkState(newValue != null, 
+        		Verify.verify(newValue != null, 
         				String.format("Expression %s got no value after constant propagation analysis", oldValue));
         		
         		e = EventFactory.newLocal(reg, newValue);

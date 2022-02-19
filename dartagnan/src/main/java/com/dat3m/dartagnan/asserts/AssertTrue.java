@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.asserts;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -23,6 +23,6 @@ public class AssertTrue extends AbstractAssert {
 
     @Override
 	public List<Register> getRegs() {
-		return new ArrayList<>();
+		return Collections.emptyList();
 	}
 }
