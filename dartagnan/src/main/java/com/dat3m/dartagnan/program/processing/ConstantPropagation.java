@@ -37,8 +37,6 @@ public class ConstantPropagation implements ProgramProcessor {
 
     private int propagations = 0;
     
-	// TODO we need a proper class for lattices. The inner map is nothing more than a map lattice.
-
     // =========================== Configurables ===========================
 
     // =====================================================================
@@ -57,7 +55,7 @@ public class ConstantPropagation implements ProgramProcessor {
     public void run(Program program) {
         Preconditions.checkArgument(program.isUnrolled(), "The program needs to be unrolled before constant propagation.");
         Preconditions.checkArgument(!program.isCompiled(), "Constant propagation needs to be run before compilation.");
-        for(Thread thread : program.getThreads()){
+        for(Thread thread : program.getThreads()) {
             run(thread);
         }
         logger.info(String.format("Propagations done: %s (out of %s events)", propagations, program.getEvents().size()));
@@ -66,6 +64,7 @@ public class ConstantPropagation implements ProgramProcessor {
 	private void run(Thread thread) {
 		
 	    Map<Register, IExpr> propagationMap = new HashMap<>();
+	    Map<Label, Map<Register, IExpr>> propagationMapLabel = new HashMap<>();
 
         Event pred = thread.getEntry();
         Event current = pred.getSuccessor();
@@ -88,14 +87,17 @@ public class ConstantPropagation implements ProgramProcessor {
             		propagationMap.put(l.getResultRegister(), evaluate((IExpr)l.getExpr(), propagationMap));
         		}
         	}
-        	// The label can be reach by the predecessor and at least one jump
-        	// We don't need to consider the final label END_OF_TX
-        	if(e instanceof Label && e.getListeners().size() > 0 && !e.equals(e.getThread().getExit())) {
-        		// TODO here we need a proper join
-        		// Right now we just clean up the whole information we have
-        		// It still does a whole propagation inside a block (i.e. between jumps)
-        		// and seems to be sufficient to propagate in most of the cases.
-        		propagationMap = new HashMap<>();
+        	if(current instanceof CondJump) {
+        		Label label = ((CondJump)current).getLabel();
+        		propagationMapLabel.put(label, merge(propagationMap, propagationMapLabel.getOrDefault(label, new HashMap<>())));
+        	}
+        	// This and the above cannot be merged because for cases where current is a jump and successor is a label, we need to merge twice
+        	if(current.getSuccessor() instanceof Label) {
+        		Label label = (Label)current.getSuccessor();
+        		propagationMapLabel.put(label, merge(propagationMap, propagationMapLabel.getOrDefault(label, new HashMap<>())));
+        	}
+        	if(current instanceof Label) {
+        		propagationMap = propagationMapLabel.get(current);
         	}
         	
         	// Event creation
@@ -243,11 +245,32 @@ public class ConstantPropagation implements ProgramProcessor {
 		throw new UnsupportedOperationException(String.format("IExpr %s not supported", input));
     }
     
+    private Map<Register, IExpr> merge (Map<Register, IExpr> x, Map<Register, IExpr> y) {
+
+    	Map<Register, IExpr> merged = new HashMap<>(x);
+    	
+    	for(Register reg : y.keySet()) {
+    		if(!merged.containsKey(reg)) {
+        		merged.put(reg, y.get(reg));    			
+    		} else if(!merged.get(reg).equals(y.get(reg))){
+    			merged.put(reg, new ITop());
+    		}
+    	}
+
+    	return merged;
+		
+    }
+    
     private static class ITop extends IConst {
 
         @Override
         public BigInteger getValue() {
             return BigInteger.ZERO;
+        }
+
+        @Override
+        public String toString() {
+            return "T";
         }
 
         @Override
