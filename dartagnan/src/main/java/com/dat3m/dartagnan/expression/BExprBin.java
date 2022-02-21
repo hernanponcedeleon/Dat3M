@@ -3,13 +3,11 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.*;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-
-import java.math.BigInteger;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class BExprBin extends BExpr {
 
@@ -41,30 +39,8 @@ public class BExprBin extends BExpr {
     }
 
     @Override
-    public Formula getLastValueExpr(SolverContext ctx){
-        FormulaManager fmgr = ctx.getFormulaManager();
-		
-		BooleanFormula expr1 = b1.getLastValueExpr(ctx) instanceof BitvectorFormula ? 
-				fmgr.getBitvectorFormulaManager().greaterThan((BitvectorFormula)b1.getLastValueExpr(ctx), fmgr.getBitvectorFormulaManager().makeBitvector(b1.getPrecision(), (BigInteger.ONE)), false):
-				fmgr.getIntegerFormulaManager().greaterThan((IntegerFormula)b1.getLastValueExpr(ctx), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE));
-       
-		BooleanFormula expr2 = b2.getLastValueExpr(ctx) instanceof BitvectorFormula ? 
-				fmgr.getBitvectorFormulaManager().greaterThan((BitvectorFormula)b2.getLastValueExpr(ctx), fmgr.getBitvectorFormulaManager().makeBitvector(b2.getPrecision(), (BigInteger.ONE)), false):
-				fmgr.getIntegerFormulaManager().greaterThan((IntegerFormula)b2.getLastValueExpr(ctx), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE));
-        
-		return fmgr.getBooleanFormulaManager().ifThenElse(op.encode(expr1, expr2, ctx), 
-				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE), 
-				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
-    }
-
-    @Override
     public ImmutableSet<Register> getRegs() {
         return new ImmutableSet.Builder<Register>().addAll(b1.getRegs()).addAll(b2.getRegs()).build();
-    }
-
-    @Override
-    public ImmutableSet<Location> getLocs() {
-        return new ImmutableSet.Builder<Location>().addAll(b1.getLocs()).addAll(b2.getLocs()).build();
     }
 
     @Override
@@ -76,19 +52,6 @@ public class BExprBin extends BExpr {
     public boolean getBoolValue(Event e, Model model, SolverContext ctx){
         return op.combine(b1.getBoolValue(e, model, ctx), b2.getBoolValue(e, model, ctx));
     }
-
-    @Override
-	public BConst reduce() {
-    	boolean v1 = ((BConst)b1.reduce()).getValue();
-    	boolean v2 = ((BConst)b2.reduce()).getValue();
-		switch(op) {
-        case AND:
-        	return new BConst(v1 && v2);
-        case OR:
-        	return new BConst(v1 || v2);
-        }
-        throw new UnsupportedOperationException("Reduce not supported for " + this);
-	}
 
     @Override
     public <T> T visit(ExpressionVisitor<T> visitor) {

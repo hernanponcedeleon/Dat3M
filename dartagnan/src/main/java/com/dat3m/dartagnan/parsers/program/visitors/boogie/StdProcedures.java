@@ -1,18 +1,18 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class StdProcedures {
@@ -102,21 +102,18 @@ public class StdProcedures {
 	private static void alloc(VisitorBoogie visitor, Call_cmdContext ctx) {
 		int size;
 		try {
-			size = ((IConst)((ExprInterface)ctx.call_params().exprs().expr(0).accept(visitor)).reduce()).getIntValue().intValue();
+			size = ((IExpr)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValueAsInt();
 		} catch (Exception e) {
 			String tmp = ctx.call_params().getText();
 			tmp = tmp.contains(",") ? tmp.substring(0, tmp.indexOf(',')) : tmp.substring(0, tmp.indexOf(')')); 
 			tmp = tmp.substring(tmp.lastIndexOf('(')+1);
 			size = Integer.parseInt(tmp);			
 		}
-		List<IConst> values = Collections.nCopies(size, new IConst(BigInteger.ZERO, -1));
-		String ptr = ctx.call_params().Ident(0).getText();
-		Register start = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ptr);
-		// Several threads can use the same pointer name but when using addDeclarationArray, 
-		// the name should be unique, thus we add the process identifier.
-		visitor.programBuilder.addDeclarationArray(visitor.currentScope.getID() + ":" + ptr, values, start.getPrecision());
-		Address adds = visitor.programBuilder.getPointer(visitor.currentScope.getID() + ":" + ptr);
-		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(start, adds));
+		//Uniquely identify the allocated storage in the entire program
+		String ptr = visitor.currentScope.getID()+":"+ctx.call_params().Ident(0).getText();
+		Register start = visitor.programBuilder.getRegister(visitor.threadCount,ptr);
+		MemoryObject object = visitor.programBuilder.newObject(ptr,size);
+		visitor.programBuilder.addChild(visitor.threadCount,EventFactory.newLocal(start,object));
 		visitor.allocationRegs.add(start);
 	}
 	
@@ -124,11 +121,11 @@ public class StdProcedures {
     	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
     	visitor.assertionIndex++;
     	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
-    	if(expr instanceof IConst && ((IConst)expr).getIntValue().compareTo(BigInteger.ONE) == 0) {
+    	if(expr instanceof IConst && ((IConst)expr).getValue().compareTo(BigInteger.ONE) == 0) {
     		return;
     	}
     	Local event = EventFactory.newLocal(ass, expr);
-		event.addFilters(EType.ASSERTION);
+		event.addFilters(Tag.ASSERTION);
 		visitor.programBuilder.addChild(visitor.threadCount, event);
 	}
 

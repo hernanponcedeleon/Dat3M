@@ -1,16 +1,19 @@
 package com.dat3m.dartagnan.asserts;
 
+import java.util.List;
+
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import com.dat3m.dartagnan.program.memory.Location;
-import com.google.common.collect.ImmutableSet;
+import com.dat3m.dartagnan.program.Register;
+import com.google.common.base.Preconditions;
 
 public class AssertNot extends AbstractAssert {
 
     private final AbstractAssert child;
 
     public AssertNot(AbstractAssert child){
+    	Preconditions.checkNotNull(child, "Empty assertion clause in " + this.getClass().getName());
         this.child = child;
     }
 
@@ -19,25 +22,17 @@ public class AssertNot extends AbstractAssert {
     }
 
     @Override
-    public ImmutableSet<Location> getLocs() {
-        return child.getLocs();
-    }
-
-    @Override
-    public AbstractAssert removeLocAssertions(boolean replaceByTrue) {
-        return new AssertNot(child.removeLocAssertions(replaceByTrue));
-    }
-
-    @Override
     public BooleanFormula encode(SolverContext ctx) {
-        if(child != null){
-            return ctx.getFormulaManager().getBooleanFormulaManager().not(child.encode(ctx));
-        }
-        throw new RuntimeException("Empty assertion clause in " + this.getClass().getName());
+    	return ctx.getFormulaManager().getBooleanFormulaManager().not(child.encode(ctx));
     }
 
     @Override
     public String toString() {
         return "!" + child.toString();
     }
+
+    @Override
+	public List<Register> getRegs() {
+		return child.getRegs();
+	}
 }

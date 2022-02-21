@@ -1,9 +1,11 @@
 package com.dat3m.dartagnan.asserts;
 
-import com.dat3m.dartagnan.program.memory.Location;
-import com.google.common.collect.ImmutableSet;
+import java.util.List;
+
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import com.dat3m.dartagnan.program.Register;
 
 //TODO: None of the Assert classes implement equals or hashcode.
 public abstract class AbstractAssert {
@@ -30,12 +32,6 @@ public abstract class AbstractAssert {
         return type != null && (type.equals(ASSERT_TYPE_NOT_EXISTS) || type.equals(ASSERT_TYPE_FORALL));
     }
 
-    public ImmutableSet<Location> getLocs() {
-    	return ImmutableSet.of();
-    }
-
-    public abstract AbstractAssert removeLocAssertions(boolean replaceByTrue);
-
     public String toStringWithType(){
         if(type != null){
             AbstractAssert child = this;
@@ -48,4 +44,6 @@ public abstract class AbstractAssert {
     }
 
     public abstract BooleanFormula encode(SolverContext ctx);
+    
+    public abstract List<Register> getRegs();
 }

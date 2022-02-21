@@ -1,17 +1,13 @@
 package com.dat3m.dartagnan.asserts;
 
-import java.math.BigInteger;
-
-import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.core.Local;
+import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
 
-import com.dat3m.dartagnan.program.event.Local;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AssertInline extends AbstractAssert {
 	
@@ -38,12 +34,15 @@ public class AssertInline extends AbstractAssert {
     }
 
     @Override
-    public AbstractAssert removeLocAssertions(boolean replaceByTrue) {
-        return this;
-    }
-
-    @Override
     public String toString(){
         return "!" + e.getResultRegister();
     }
+    
+	@Override
+	public List<Register> getRegs() {
+		List<Register> regs = new ArrayList<>();
+		regs.add(e.getResultRegister());
+		regs.addAll(e.getExpr().getRegs());
+		return regs;
+	}
 }

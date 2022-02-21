@@ -1,12 +1,11 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
-import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.*;
-
-import java.math.BigInteger;
+import com.dat3m.dartagnan.program.event.core.Event;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class BConst extends BExpr implements ExprInterface {
 
@@ -26,17 +25,6 @@ public class BConst extends BExpr implements ExprInterface {
 	}
 
 	@Override
-	public Formula getLastValueExpr(SolverContext ctx){
-		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
-		return value ? imgr.makeNumber(BigInteger.ONE) : imgr.makeNumber(BigInteger.ZERO);
-	}
-
-    @Override
-	public ImmutableSet<Register> getRegs() {
-		return ImmutableSet.of();
-	}
-
-	@Override
 	public String toString() {
 		return value ? "True" : "False";
 	}
@@ -46,11 +34,6 @@ public class BConst extends BExpr implements ExprInterface {
 		return value;
 	}
 
-	@Override
-	public BConst reduce() {
-		return this;
-	}
-	
 	public boolean getValue() {
 		return value;
 	}

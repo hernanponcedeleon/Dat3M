@@ -1,9 +1,10 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.program.utils.Utils;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.expression.utils.Utils;
+import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -14,7 +15,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Collection;
 
-import static com.dat3m.dartagnan.program.utils.EType.MEMORY;
+import static com.dat3m.dartagnan.program.event.Tag.MEMORY;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.LOC;
 
 public class RelLoc extends Relation {
@@ -26,11 +27,10 @@ public class RelLoc extends Relation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
+            AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
             minTupleSet = new TupleSet();
             for (Tuple t : getMaxTupleSet()) {
-                MemEvent e1 = (MemEvent) t.getFirst();
-                MemEvent e2 = (MemEvent) t.getSecond();
-                if (e1.getMaxAddressSet().size() == 1 && e2.getMaxAddressSet().size() == 1) {
+                if (alias.mustAlias((MemEvent) t.getFirst(), (MemEvent) t.getSecond())) {
                     minTupleSet.add(t);
                 }
             }
@@ -41,13 +41,12 @@ public class RelLoc extends Relation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
+            AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
             maxTupleSet = new TupleSet();
             Collection<Event> events = task.getProgram().getCache().getEvents(FilterBasic.get(MEMORY));
             for(Event e1 : events){
                 for(Event e2 : events){
-                    //TODO: loc should be reflexive according to
-                    // "Syntax and semantics of the weak consistency model specification language cat"
-                    if(e1.getCId() != e2.getCId() && MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent)e2)){
+                    if(alias.mayAlias((MemEvent) e1, (MemEvent)e2)){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }

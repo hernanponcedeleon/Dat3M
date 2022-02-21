@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -29,10 +29,10 @@ public class RelDomainIdentity extends UnaryRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            BranchEquivalence eq = task.getBranchEquivalence();
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             minTupleSet = new TupleSet();
             r1.getMinTupleSet().stream()
-                    .filter(t -> t.getSecond().cfImpliesExec() && eq.isImplied(t.getFirst(), t.getSecond()))
+                    .filter(t -> exec.isImplied(t.getFirst(), t.getSecond()))
                     .map(t -> new Tuple(t.getFirst(), t.getFirst()))
                     .forEach(minTupleSet::add);
         }

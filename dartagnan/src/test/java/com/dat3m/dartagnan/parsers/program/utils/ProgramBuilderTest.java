@@ -4,6 +4,8 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import org.junit.Test;
 
+import com.dat3m.dartagnan.exception.MalformedProgramException;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,7 +26,7 @@ public class ProgramBuilderTest {
                     .forEach(f -> {
                                 try {
                                     new ProgramParser().parse(new File(f.toString()));
-                                } catch (ParsingException e) {
+                                } catch (MalformedProgramException e) {
                                     // Test succeeded
                                 } catch (Exception e) {
                                     fail("Missing resource file");

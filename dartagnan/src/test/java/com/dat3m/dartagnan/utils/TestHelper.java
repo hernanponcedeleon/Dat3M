@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.utils;
 
-import org.sosy_lab.common.ShutdownManager;
+import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
+
+import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.log.BasicLogManager;
@@ -13,13 +15,17 @@ public class TestHelper {
     }
 
     public static SolverContext createContext() throws InvalidConfigurationException {
-            Configuration config = Configuration.builder()
-                    .setOption("solver.z3.usePhantomReferences", "true")
-                    .build();
-            return SolverContextFactory.createSolverContext(
-                    config,
-                    BasicLogManager.create(config),
-                    ShutdownManager.create().getNotifier(),
-                    SolverContextFactory.Solvers.Z3);
+        return createContextWithShutdownNotifier(ShutdownNotifier.createDummy());
+    }
+
+    public static SolverContext createContextWithShutdownNotifier(ShutdownNotifier notifier) throws InvalidConfigurationException {
+        Configuration config = Configuration.builder()
+                .setOption(PHANTOM_REFERENCES, "true")
+                .build();
+        return SolverContextFactory.createSolverContext(
+                config,
+                BasicLogManager.create(config),
+                notifier,
+                SolverContextFactory.Solvers.Z3);
     }
 }
