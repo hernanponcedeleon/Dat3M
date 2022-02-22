@@ -93,6 +93,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	 
 	private final List<String> smackDummyVariables = Arrays.asList("$M.0", "$exn", "$exnv", "$CurrAddr", "$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", "$0.ref", "$1.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global", "$CurrAddr");
 
+	// Pthread create/join and thead start/end requires barriers 
+	// for the LKMM becasue SC is not a tag there
+	protected boolean lkmm = false;
+	
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
 	}
@@ -135,6 +139,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	if(procedures.containsKey(name)) {
     		throw new ParsingException("Procedure " + name + " is already defined");
     	}
+		if(LKMMPROCEDURES.stream().anyMatch(name::startsWith)) {
+			lkmm = true;
+		}
     	if(name.equals("main") && ctx.proc_sign().proc_sign_in() != null) {
     		threadCallingValues.put(threadCount, new ArrayList<>());
         	for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
@@ -235,6 +242,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
                 Register reg = programBuilder.getOrCreateRegister(threadCount, null, -1);
                 Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
                 programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, object, label));
+                if(lkmm) {
+                	programBuilder.addChild(threadCount, EventFactory.Linux.newMemoryBarrier());
+                }
             }
     	}
 
@@ -278,6 +288,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	if(create) {
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
+                if(lkmm) {
+                	programBuilder.addChild(threadCount, EventFactory.Linux.newMemoryBarrier());
+                }
                 MemoryObject object = programBuilder.getOrNewObject(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
                 programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(object));
          	}

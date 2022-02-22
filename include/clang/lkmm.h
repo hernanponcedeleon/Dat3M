@@ -6,7 +6,8 @@ typedef enum memory_order {
   memory_order_acquire = __ATOMIC_ACQUIRE,
   memory_order_release = __ATOMIC_RELEASE,
   memory_order_acq_rel = __ATOMIC_ACQ_REL,
-  memory_order_seq_cst = __ATOMIC_SEQ_CST
+  memory_order_seq_cst = __ATOMIC_SEQ_CST,
+  memory_order_mb,
 } memory_order;
 
 /*******************************************************************************
@@ -14,15 +15,15 @@ typedef enum memory_order {
  ******************************************************************************/
 
 /* ONCE */
-#define READ_ONCE(x)     __READ_ONCE(&x)
-#define WRITE_ONCE(x, v) __WRITE_ONCE(&x, v)
+#define READ_ONCE(x)     __LKMM_READ_ONCE(&x)
+#define WRITE_ONCE(x, v) __LKMM_WRITE_ONCE(&x, v)
 
 /* atomic_signal_fence(memory_order_relaxed) is useless for barrier() */
 #define barrier() __asm__ __volatile__ (""   : : : "memory")
 
 /* Acquire/Release and friends */
-#define smp_load_acquire(p)      atomic_load_explicit(p, memory_order_acquire)
-#define smp_store_release(p, v)  atomic_store_explicit(p, v, memory_order_release)
+#define smp_load_acquire(p)      __LKMM_load(p, memory_order_acquire)
+#define smp_store_release(p, v)  __LKMM_store(p, v, memory_order_release)
 #define rcu_dereference(p)       READ_ONCE(p)
 #define rcu_assign_pointer(p, v) smp_store_release(&(p), v)
 #define smp_store_mb(x, v)                    \
@@ -32,34 +33,14 @@ do {                                \
 } while (0)
 
 /* Exchange */
-#define __xchg(p, v, m)                \
-    atomic_exchange_explicit(p, v, m)
-#define xchg(p, v)                            \
-({                                    \
-    __typeof__((v)) _v_ = (v);                    \
-    smp_mb__before_atomic();                    \
-    _v_ = __xchg(p, v, memory_order_relaxed);            \
-    smp_mb__after_atomic();                        \
-    _v_;                                \
-})
+#define __xchg(p, v, m) __LKMM_xchg(p, v, m)
+#define xchg(p, v) __xchg(p, v, memory_order_mb);
 #define xchg_relaxed(p, v) __xchg(p, v, memory_order_relaxed)
 #define xchg_release(p, v) __xchg(p, v, memory_order_release)
 #define xchg_acquire(p, v) __xchg(p, v, memory_order_acquire)
 
-#define __cmpxchg(p, o, n, s, f)                    \
-({                                    \
-    __typeof__((o)) _o_ = (o);                    \
-    (atomic_compare_exchange_strong_explicit(p, &_o_, n, s, f));    \
-    _o_;                                \
-})
-#define cmpxchg(p, o, n)                        \
-({                                    \
-    __typeof__((o)) _o_ = (o);                    \
-    smp_mb__before_atomic();                    \
-    _o_ = __cmpxchg(p, o, n, memory_order_relaxed, memory_order_relaxed); \
-    smp_mb__after_atomic();                        \
-    _o_;                                \
-})
+#define __cmpxchg(p, o, n, s, f) __LKMM_cmpxchg(p, o, n, s, f)
+#define cmpxchg(p, o, n) __cmpxchg(p, o, n, memory_order_mb, memory_order_mb)
 #define cmpxchg_relaxed(p, o, n)                \
     __cmpxchg(p, o, n, memory_order_relaxed, memory_order_relaxed)
 #define cmpxchg_acquire(p, o, n)                \
@@ -102,17 +83,10 @@ typedef atomic64_t  atomic_long_t;
 /* Value-returning atomics */
 #define __atomic_fetch_add(i, v, m) atomic_fetch_add_explicit(&(v)->counter, i, m)
 #define __atomic_fetch_sub(i, v, m) atomic_fetch_sub_explicit(&(v)->counter, i, m)
-#define __atomic_add_return(i, v, m) atomic_add_fetch_explicit(&(v)->counter, i, m)
-#define __atomic_sub_return(i, v, m) atomic_sub_fetch_explicit(&(v)->counter, i, m)
+#define __atomic_add_return(i, v, m) __LKMM_atomic_add_return(&(v)->counter, i, m)
+#define __atomic_sub_return(i, v, m) __LKMM_atomic_sub_return(&(v)->counter, i, m)
 
-#define atomic_add_return(i, v)                        \
-({                                    \
-    __typeof__((i)) _i_ = (i);                    \
-    smp_mb__before_atomic();                    \
-    _i_ = __atomic_add_return(i, v, memory_order_relaxed);        \
-    smp_mb__after_atomic();                        \
-    _i_;                                \
-})
+#define atomic_add_return(i, v) __atomic_add_return(i, v, memory_order_mb)
 #define atomic_add_return_relaxed(i, v) __atomic_add_return(i, v, memory_order_relaxed)
 #define atomic_add_return_acquire(i, v) __atomic_add_return(i, v, memory_order_acquire)
 #define atomic_add_return_release(i, v) __atomic_add_return(i, v, memory_order_release)
@@ -138,14 +112,7 @@ typedef atomic64_t  atomic_long_t;
 #define atomic_fetch_inc_acquire(v) atomic_fetch_add_acquire(1, v)
 #define atomic_fetch_inc_release(v) atomic_fetch_add_release(1, v)
 
-#define atomic_sub_return(i, v)                        \
-({                                    \
-    __typeof__((i)) _i_ = (i);                    \
-    smp_mb__before_atomic();                    \
-    _i_ = __atomic_sub_return(i, v, memory_order_relaxed);        \
-    smp_mb__after_atomic();                        \
-    _i_;                                \
-})
+#define atomic_sub_return(i, v) __atomic_sub_return(i, v, memory_order_mb)
 #define atomic_sub_return_relaxed(i, v) __atomic_sub_return(i, v, memory_order_relaxed)
 #define atomic_sub_return_acquire(i, v) __atomic_sub_return(i, v, memory_order_acquire)
 #define atomic_sub_return_release(i, v) __atomic_sub_return(i, v, memory_order_release)

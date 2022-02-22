@@ -114,6 +114,17 @@ public final class Tag {
             return mo.equals(MO_RELEASE) ? MO_RELEASE : MO_RELAXED;
         }
 
+        public static String intToMo(int i) {
+            switch(i) {
+                case 0: return MO_RELAXED;
+                case 2: return MO_ACQUIRE;
+                case 3: return MO_RELEASE;
+                case 6: return MO_MB;
+                default:
+                    throw new UnsupportedOperationException("The memory order is not recognized");
+            }
+        }
+
         public static String toText(String mo){
             switch (mo){
                 case MO_RELAXED:

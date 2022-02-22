@@ -77,6 +77,9 @@ public class PthreadsProcedures {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
 		// We assume pthread_create always succeeds
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, IValue.ZERO));
+		if(visitor.lkmm) {
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newMemoryBarrier());
+		}
         MemoryObject object = visitor.programBuilder.getOrNewObject(String.format("%s(%s)_active", threadPtr, visitor.pool.getCreatorFromPtr(threadPtr)));
         visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(threadPtr, threadName, object, visitor.currentLine));
 	}
@@ -92,6 +95,9 @@ public class PthreadsProcedures {
         Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
         Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
         visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(visitor.pool.getPtrFromReg(callReg), reg, object, label));
+        if(visitor.lkmm) {
+        	visitor.programBuilder.addChild(visitor.threadCount,EventFactory.Linux.newMemoryBarrier());
+        }
 	}
 
 	private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {
