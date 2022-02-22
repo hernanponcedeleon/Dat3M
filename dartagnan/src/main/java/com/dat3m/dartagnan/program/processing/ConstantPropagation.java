@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpUn;
+import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -118,6 +119,7 @@ public class ConstantPropagation implements ProgramProcessor {
 	// Creates a copy of the provided event, using the <propagationMap> to simplify expressions.
 	// Can return the original event if no simplifications are performed
 	private Event getSimplifiedCopy(Event ev, Map<Register, IExpr> propagationMap) {
+		ExprSimplifier simplifier = new ExprSimplifier();
 		Event copy = ev;
 		if(ev instanceof MemEvent && !ev.is(Tag.C11.PTHREAD) && !ev.is(Tag.C11.LOCK)) {
 			MemEvent m = (MemEvent) ev;
@@ -128,13 +130,17 @@ public class ConstantPropagation implements ProgramProcessor {
 
 			IExpr oldAddress = m.getAddress();
 			IExpr newAddress = evaluate(oldAddress, propagationMap);
-			newAddress = newAddress instanceof ITop ? oldAddress : newAddress;
+			newAddress = newAddress instanceof ITop ?
+					(IExpr) oldAddress.visit(simplifier) :
+					(IExpr) newAddress.visit(simplifier);
 			Verify.verifyNotNull(newAddress,
 					"Expression %s got no value after constant propagation analysis", oldAddress);
 
 			IExpr oldValue = (IExpr) ((MemEvent) ev).getMemValue();
 			IExpr newValue = evaluate(oldValue, propagationMap);
-			newValue = newValue instanceof ITop ? oldValue : newValue;
+			newValue = newValue instanceof ITop ?
+					(IExpr) oldValue.visit(simplifier) :
+					(IExpr) newValue.visit(simplifier);
 			Verify.verifyNotNull(newValue,
 					"Expression %s got no value after constant propagation analysis", oldValue);
 
@@ -197,7 +203,9 @@ public class ConstantPropagation implements ProgramProcessor {
 
 			IExpr oldValue = (IExpr) ((Local) ev).getExpr();
 			IExpr newValue = evaluate(oldValue, propagationMap);
-			newValue = newValue instanceof ITop ? oldValue : newValue;
+			newValue = newValue instanceof ITop ?
+					(IExpr) oldValue.visit(simplifier) :
+					(IExpr) newValue.visit(simplifier);
 			Verify.verify(newValue != null,
 					String.format("Expression %s got no value after constant propagation analysis", oldValue));
 

@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
+import static com.dat3m.dartagnan.expression.op.IOpBin.R_SHIFT;
+
 import java.math.BigInteger;
 
 //TODO: This is buggy for now, because Addresses are treated as IConst
@@ -84,7 +86,10 @@ public class ExprSimplifier extends ExprTransformer {
         IOpBin op = iBin.getOp();
         if (! (lhs instanceof IConst || rhs instanceof IConst)) {
             return new IExprBin(lhs, iBin.getOp(), rhs);
-        } else if (lhs instanceof IConst && rhs instanceof IConst) {
+        } else if (lhs instanceof IConst && rhs instanceof IConst
+        		// If we reduce MemoryObject as a normal IConst, we loose the fact that it is a Memory Object
+        		// We cannot call reduce for R_SHIFT (lack of implementation)
+        		&& !(lhs instanceof MemoryObject) && iBin.getOp() != R_SHIFT) {
             return new IExprBin(lhs, iBin.getOp(), rhs).reduce();
         }
 
