@@ -1,13 +1,12 @@
 package com.dat3m.dartagnan.miscellaneous;
 
+import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
-import com.dat3m.dartagnan.program.analysis.AndersenAliasAnalysis;
-import com.dat3m.dartagnan.program.analysis.FieldSensitiveAndersen;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -19,6 +18,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.math.BigInteger;
 
+import static com.dat3m.dartagnan.configuration.Alias.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_METHOD;
 import static com.dat3m.dartagnan.expression.IValue.*;
 import static com.dat3m.dartagnan.expression.op.COpBin.*;
@@ -36,15 +36,15 @@ public class AliasAnalysisTest {
 
     @Test
     public void fieldsensitive0() throws InvalidConfigurationException {
-        program0(FieldSensitiveAndersen.class,MAY,MAY,NONE,NONE,NONE,NONE);
+        program0(FIELD_SENSITIVE,MAY,MAY,NONE,NONE,NONE,NONE);
     }
 
     @Test
     public void fieldinsensitive0() throws InvalidConfigurationException {
-        program0(AndersenAliasAnalysis.class,MAY,NONE,MAY,NONE,MAY,NONE);
+        program0(FIELD_INSENSITIVE,MAY,NONE,MAY,NONE,MAY,NONE);
     }
 
-    private void program0(Class<?extends AliasAnalysis> method, Result... expect) throws InvalidConfigurationException {
+    private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = new ProgramBuilder();
 
         MemoryObject x = b.newObject("x",2);
@@ -75,15 +75,15 @@ public class AliasAnalysisTest {
 
     @Test
     public void fieldsensitive1() throws InvalidConfigurationException {
-        program1(FieldSensitiveAndersen.class,NONE,NONE,MUST,MUST,NONE,NONE);
+        program1(FIELD_SENSITIVE,NONE,NONE,MUST,MUST,NONE,NONE);
     }
 
     @Test
     public void fieldinsensitive1() throws InvalidConfigurationException {
-        program1(AndersenAliasAnalysis.class,NONE,NONE,MUST,MAY,MAY,MAY);
+        program1(FIELD_INSENSITIVE,NONE,NONE,MUST,MAY,MAY,MAY);
     }
 
-    private void program1(Class<?extends AliasAnalysis> method, Result... expect) throws InvalidConfigurationException {
+    private void program1(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = new ProgramBuilder();
         MemoryObject x = b.newObject("x",3);
         x.setInitialValue(0,x);
@@ -110,15 +110,15 @@ public class AliasAnalysisTest {
 
     @Test
     public void fieldsensitive2() throws InvalidConfigurationException {
-        program2(FieldSensitiveAndersen.class,NONE,NONE,NONE,MAY,NONE,MAY);
+        program2(FIELD_SENSITIVE,NONE,NONE,NONE,MAY,NONE,MAY);
     }
 
     @Test
     public void fieldinsensitive2() throws InvalidConfigurationException {
-        program2(AndersenAliasAnalysis.class,NONE,NONE,NONE,MAY,MAY,MAY);
+        program2(FIELD_INSENSITIVE,NONE,NONE,NONE,MAY,MAY,MAY);
     }
 
-    private void program2(Class<?extends AliasAnalysis> method, Result... expect) throws InvalidConfigurationException {
+    private void program2(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = new ProgramBuilder();
         MemoryObject x = b.newObject("x",3);
 
@@ -150,15 +150,15 @@ public class AliasAnalysisTest {
 
     @Test
     public void fieldsensitive3() throws InvalidConfigurationException {
-        program3(FieldSensitiveAndersen.class,MUST,NONE,NONE,MAY,MAY,MAY);
+        program3(FIELD_SENSITIVE,MUST,NONE,NONE,MAY,MAY,MAY);
     }
 
     @Test
     public void fieldinsensitive3() throws InvalidConfigurationException {
-        program3(AndersenAliasAnalysis.class,MUST,NONE,NONE,MAY,MAY,MAY);
+        program3(FIELD_INSENSITIVE,MUST,NONE,NONE,MAY,MAY,MAY);
     }
 
-    private void program3(Class<?extends AliasAnalysis> method, Result... expect) throws InvalidConfigurationException {
+    private void program3(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = new ProgramBuilder();
         MemoryObject x = b.newObject("x",3);
         x.setInitialValue(0,x);
@@ -185,15 +185,15 @@ public class AliasAnalysisTest {
 
     @Test
     public void fieldsensitive4() throws InvalidConfigurationException {
-        program4(FieldSensitiveAndersen.class,MAY,MAY,NONE,NONE,NONE,NONE);
+        program4(FIELD_SENSITIVE,MAY,MAY,NONE,NONE,NONE,NONE);
     }
 
     @Test
     public void fieldinsensitive4() throws InvalidConfigurationException {
-        program4(AndersenAliasAnalysis.class,NONE,MUST,NONE,NONE,NONE,NONE);
+        program4(FIELD_INSENSITIVE,NONE,MUST,NONE,NONE,NONE,NONE);
     }
 
-    private void program4(Class<?extends AliasAnalysis> method, Result... expect) throws InvalidConfigurationException {
+    private void program4(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = new ProgramBuilder();
         MemoryObject x = b.getOrNewObject("x");
         MemoryObject y = b.getOrNewObject("y");
@@ -223,15 +223,15 @@ public class AliasAnalysisTest {
 
     @Test
     public void fieldsensitive5() throws InvalidConfigurationException {
-        program5(FieldSensitiveAndersen.class,MAY,MAY,NONE,NONE,NONE,NONE);
+        program5(FIELD_SENSITIVE,MAY,MAY,NONE,NONE,NONE,NONE);
     }
 
     @Test
     public void fieldinsensitive5() throws InvalidConfigurationException {
-        program5(AndersenAliasAnalysis.class,MUST,NONE,NONE,NONE,NONE,NONE);
+        program5(FIELD_INSENSITIVE,MUST,NONE,NONE,NONE,NONE,NONE);
     }
 
-    private void program5(Class<?extends AliasAnalysis> method, Result... expect) throws InvalidConfigurationException {
+    private void program5(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = new ProgramBuilder();
         MemoryObject x = b.getOrNewObject("x");
         MemoryObject y = b.getOrNewObject("y");
@@ -279,11 +279,11 @@ public class AliasAnalysisTest {
         return new IExprBin(lhs,MULT,new IValue(BigInteger.valueOf(rhs),-1));
     }
 
-    private AliasAnalysis analyze(ProgramBuilder builder, Class<?extends AliasAnalysis> method) throws InvalidConfigurationException {
+    private AliasAnalysis analyze(ProgramBuilder builder, Alias method) throws InvalidConfigurationException {
         Program program = builder.build();
         LoopUnrolling.newInstance().run(program);
         Compilation.newInstance().run(program);
-        return AliasAnalysis.fromConfig(program,Configuration.builder().setOption(ALIAS_METHOD,method.getName()).build());
+        return AliasAnalysis.fromConfig(program,Configuration.builder().setOption(ALIAS_METHOD,method.asStringOption()).build());
     }
 
     private void assertAlias(Result expect, AliasAnalysis a, MemEvent x, MemEvent y) {
