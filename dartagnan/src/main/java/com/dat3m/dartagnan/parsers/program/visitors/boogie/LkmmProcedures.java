@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -24,7 +25,8 @@ public class LkmmProcedures {
 			"__LKMM_atomic_add_return",
 			"__LKMM_atomic_sub_return",
 			"__LKMM_WRITE_ONCE",
-			"__LKMM_READ_ONCE");
+			"__LKMM_READ_ONCE",
+			"__LKMM_FENCE");
 
 	public static void handleLkmmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
@@ -84,6 +86,25 @@ public class LkmmProcedures {
 			Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
 			IExpr address = (IExpr)ctx.call_params().exprs().expr(0).accept(visitor);
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLoad(reg, address, "Once"));
+			return;			
+		}
+		if(name.startsWith("__LKMM_FENCE")) {
+			String text = ctx.call_params().exprs().expr(0).getText();
+			String fence;
+			switch(Integer.parseInt(text)) {
+				case 6:
+					fence = "Mb";
+					break;
+				case 7:
+					fence = "Wmb";
+					break;
+				case 8:
+					fence = "Rmb";
+					break;
+				default:
+					throw new ParsingException("Unrecognized fence " + text);
+			}
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newFence(fence));
 			return;			
 		}
 		throw new UnsupportedOperationException(name + " procedure is not part of LKMMPROCEDURES");

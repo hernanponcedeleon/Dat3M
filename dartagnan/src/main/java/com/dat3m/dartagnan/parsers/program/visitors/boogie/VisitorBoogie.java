@@ -131,6 +131,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		pool.addIntPtr(threadCount + 1, next);
     		visitProc_decl(procedures.get(nextName), true, threadCallingValues.get(threadCount));	
     	}
+    	logger.info("#Threads (including main): " + threadCount);
     	return programBuilder.build();
     }
 

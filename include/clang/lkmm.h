@@ -8,6 +8,8 @@ typedef enum memory_order {
   memory_order_acq_rel = __ATOMIC_ACQ_REL,
   memory_order_seq_cst = __ATOMIC_SEQ_CST,
   memory_order_mb,
+  memory_order_wmb,
+  memory_order_rmb,
 } memory_order;
 
 /*******************************************************************************
@@ -18,8 +20,10 @@ typedef enum memory_order {
 #define READ_ONCE(x)     __LKMM_READ_ONCE(&x)
 #define WRITE_ONCE(x, v) __LKMM_WRITE_ONCE(&x, v)
 
-/* atomic_signal_fence(memory_order_relaxed) is useless for barrier() */
-#define barrier() __asm__ __volatile__ (""   : : : "memory")
+/* Fences */
+#define smp_mb()  __LKMM_FENCE(memory_order_mb)
+#define smp_rmb() __LKMM_FENCE(memory_order_rmb)
+#define smp_wmb() __LKMM_FENCE(memory_order_wmb)
 
 /* Acquire/Release and friends */
 #define smp_load_acquire(p)      __LKMM_load(p, memory_order_acquire)
