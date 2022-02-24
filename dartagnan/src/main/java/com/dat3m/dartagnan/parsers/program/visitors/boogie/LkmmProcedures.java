@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
@@ -11,6 +12,8 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.Linux;
 import com.dat3m.dartagnan.program.event.core.Event;
+
+import static com.dat3m.dartagnan.expression.op.IOpBin.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -22,8 +25,7 @@ public class LkmmProcedures {
 			"__LKMM_store",
 			"__LKMM_xchg",
 			"__LKMM_cmpxchg",
-			"__LKMM_atomic_add_return",
-			"__LKMM_atomic_sub_return",
+			"__LKMM_atomic_fetch_op",
 			"__LKMM_WRITE_ONCE",
 			"__LKMM_READ_ONCE",
 			"__LKMM_FENCE");
@@ -72,6 +74,28 @@ public class LkmmProcedures {
 			IExpr desiredVal = (IExpr) params.get(2).accept(visitor);
 			String mo = Linux.intToMo(((IConst) params.get(3).accept(visitor)).getValueAsInt());
 	        Event event = EventFactory.Linux.newRMWCompareExchange(address, reg, expectedVal, desiredVal, mo);
+	        visitor.programBuilder.addChild(visitor.threadCount, event);
+			return;
+		}
+		if(name.startsWith("__LKMM_atomic_fetch_op")) {
+			Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
+			List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
+			IExpr address = (IExpr) params.get(0).accept(visitor);
+			IExpr value = (IExpr) params.get(1).accept(visitor);
+			String mo = Linux.intToMo(((IConst) params.get(2).accept(visitor)).getValueAsInt());
+			IOpBin op;
+			String opText = params.get(3).getText();
+			switch(Integer.parseInt(opText)) {
+				case 0:
+					op = PLUS;
+					break;
+				case 1:
+					op = MINUS;
+					break;
+				default:
+					throw new ParsingException("Unrecognized operation " + opText);
+			}
+	        Event event = EventFactory.Linux.newRMWFetchOp(address, reg, value, op, mo);
 	        visitor.programBuilder.addChild(visitor.threadCount, event);
 			return;
 		}

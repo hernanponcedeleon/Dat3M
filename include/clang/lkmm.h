@@ -21,6 +21,9 @@ typedef enum memory_order {
 #define WRITE_ONCE(x, v) __LKMM_WRITE_ONCE(&x, v)
 
 /* Fences */
+
+#define barrier() __asm__ __volatile__ (""   : : : "memory")
+
 #define smp_mb()  __LKMM_FENCE(memory_order_mb)
 #define smp_rmb() __LKMM_FENCE(memory_order_rmb)
 #define smp_wmb() __LKMM_FENCE(memory_order_wmb)
@@ -85,8 +88,8 @@ typedef atomic64_t  atomic_long_t;
 #define atomic_dec(v) atomic_sub(1, v)
 
 /* Value-returning atomics */
-#define __atomic_fetch_add(i, v, m) atomic_fetch_add_explicit(&(v)->counter, i, m)
-#define __atomic_fetch_sub(i, v, m) atomic_fetch_sub_explicit(&(v)->counter, i, m)
+#define __atomic_fetch_add(i, v, m) __LKMM_atomic_fetch_op(&(v)->counter, i, m, 0)
+#define __atomic_fetch_sub(i, v, m) __LKMM_atomic_fetch_op(&(v)->counter, i, m, 1)
 #define __atomic_add_return(i, v, m) __LKMM_atomic_add_return(&(v)->counter, i, m)
 #define __atomic_sub_return(i, v, m) __LKMM_atomic_sub_return(&(v)->counter, i, m)
 
@@ -95,14 +98,7 @@ typedef atomic64_t  atomic_long_t;
 #define atomic_add_return_acquire(i, v) __atomic_add_return(i, v, memory_order_acquire)
 #define atomic_add_return_release(i, v) __atomic_add_return(i, v, memory_order_release)
 
-#define atomic_fetch_add(i, v)                        \
-({                                    \
-    __typeof__((i)) _i_ = (i);                    \
-    smp_mb__before_atomic();                    \
-    _i_ = __atomic_fetch_add(i, v, memory_order_relaxed);        \
-    smp_mb__after_atomic();                        \
-    _i_;                                \
-})
+#define atomic_fetch_add(i, v)  __atomic_fetch_add(i, v, memory_order_mb)
 #define atomic_fetch_add_relaxed(i, v) __atomic_fetch_add(i, v, memory_order_relaxed)
 #define atomic_fetch_add_acquire(i, v) __atomic_fetch_add(i, v, memory_order_acquire)
 #define atomic_fetch_add_release(i, v) __atomic_fetch_add(i, v, memory_order_release)
@@ -121,14 +117,7 @@ typedef atomic64_t  atomic_long_t;
 #define atomic_sub_return_acquire(i, v) __atomic_sub_return(i, v, memory_order_acquire)
 #define atomic_sub_return_release(i, v) __atomic_sub_return(i, v, memory_order_release)
 
-#define atomic_fetch_sub(i, v)                        \
-({                                    \
-    __typeof__((i)) _i_ = (i);                    \
-    smp_mb__before_atomic();                    \
-    _i_ = __atomic_fetch_sub(i, v, memory_order_relaxed);        \
-    smp_mb__after_atomic();                        \
-    _i_;                                \
-})
+#define atomic_fetch_sub(i, v) __atomic_fetch_sub(i, v, memory_order_mb)
 #define atomic_fetch_sub_relaxed(i, v) __atomic_fetch_sub(i, v, memory_order_relaxed)
 #define atomic_fetch_sub_acquire(i, v) __atomic_fetch_sub(i, v, memory_order_acquire)
 #define atomic_fetch_sub_release(i, v) __atomic_fetch_sub(i, v, memory_order_release)
