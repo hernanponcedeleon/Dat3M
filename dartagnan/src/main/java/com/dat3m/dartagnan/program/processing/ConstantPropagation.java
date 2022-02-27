@@ -200,7 +200,8 @@ public class ConstantPropagation implements ProgramProcessor {
 					String.format("Expression %s got no value after constant propagation analysis", oldValue));
 			copy = EventFactory.newLocal(reg, newValue);
 		}
-		else if(ev instanceof CondJump) {
+		// We don't want to optimize bound events
+		else if(ev instanceof CondJump && !ev.is(Tag.BOUND)) {
 			CondJump jump = (CondJump) ev;
 			BExpr oldCond = jump.getGuard();
 			ExprInterface newCond = evaluate(jump.getGuard(), propagationMap);
@@ -260,25 +261,25 @@ public class ConstantPropagation implements ProgramProcessor {
 			IExpr fbranch = (IExpr) evaluate(ife.getFalseBranch(), map);
 			return tbranch instanceof ITop ? tbranch : fbranch instanceof ITop ? fbranch : new IfExpr(newGuard, tbranch, fbranch).visit(simplifier);
     	}
-    	// The simplifier currently causes problems on BExpr when and IfExpr ends up inside them
-    	// Thus we avoid the simplification step for the moment
+    	// The inner expression can be IfExpr which cause problems with the simplifier
+    	// Thus we check if the return of the evaluations are not BExpr (this also includes ITop)
     	if(input instanceof Atom) {
     		Atom atom = (Atom)input;
     		ExprInterface lhs = evaluate(atom.getLHS(), map);
     		ExprInterface rhs = evaluate(atom.getRHS(), map);
-			return lhs instanceof ITop ? lhs : rhs instanceof ITop ? rhs : new Atom(lhs, atom.getOp(), rhs);
+			return !(lhs instanceof BExpr && rhs instanceof BExpr) ? new ITop() : new Atom(lhs, atom.getOp(), rhs).visit(simplifier);
     	}
     	if(input instanceof BExprUn) {
     		BExprUn un = (BExprUn)input;
     		BOpUn op = un.getOp();
     		ExprInterface inner = (ExprInterface) evaluate(un.getInner(), map);
-			return inner instanceof ITop ? inner : new BExprUn(op, inner);
+			return !(inner instanceof BExpr) ? new ITop() : new BExprUn(op, inner).visit(simplifier);
     	}
     	if(input instanceof BExprBin) {
     		BExprBin bin = (BExprBin)input;
     		ExprInterface lhs = evaluate(bin.getLHS(), map);
     		ExprInterface rhs = evaluate(bin.getRHS(), map);
-			return lhs instanceof ITop ? lhs : rhs instanceof ITop ? rhs : new BExprBin(lhs, bin.getOp(), rhs);
+    		return !(lhs instanceof BExpr && rhs instanceof BExpr) ? new ITop() : new BExprBin(lhs, bin.getOp(), rhs).visit(simplifier);
     	}
 		throw new UnsupportedOperationException(String.format("Expression %s not supported", input));
     }
