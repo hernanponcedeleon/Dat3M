@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
@@ -30,7 +31,6 @@ import java.util.Map;
 
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2INT;
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2UINT;
-
 
 public class ConstantPropagation implements ProgramProcessor {
 	
@@ -64,8 +64,8 @@ public class ConstantPropagation implements ProgramProcessor {
 
 	private void run(Thread thread) {
 		
-	    Map<Register, IExpr> propagationMap = new HashMap<>();
-	    Map<Label, Map<Register, IExpr>> propagationMapLabel = new HashMap<>();
+	    Map<Register, ExprInterface> propagationMap = new HashMap<>();
+	    Map<Label, Map<Register, ExprInterface>> propagationMapLabel = new HashMap<>();
 
         Event pred = thread.getEntry();
         Event current = pred.getSuccessor();
@@ -83,10 +83,7 @@ public class ConstantPropagation implements ProgramProcessor {
         	// For Locals, we update
         	if(current instanceof Local) {
         		Local l = (Local)current;
-        		// IfExpr may still contain registers (instead of the corresponding constant) in the guard, thus we don't consider them constants
-        		if(l.getExpr() instanceof IExpr && !(l.getExpr() instanceof IfExpr)) {
-            		propagationMap.put(l.getResultRegister(), evaluate((IExpr)l.getExpr(), propagationMap));
-        		}
+            	propagationMap.put(l.getResultRegister(), evaluate(l.getExpr(), propagationMap));
         	}
         	if(current instanceof CondJump) {
 				CondJump jump = (CondJump)current;
@@ -118,8 +115,7 @@ public class ConstantPropagation implements ProgramProcessor {
 
 	// Creates a copy of the provided event, using the <propagationMap> to simplify expressions.
 	// Can return the original event if no simplifications are performed
-	private Event getSimplifiedCopy(Event ev, Map<Register, IExpr> propagationMap) {
-		ExprSimplifier simplifier = new ExprSimplifier();
+	private Event getSimplifiedCopy(Event ev, Map<Register, ExprInterface> propagationMap) {
 		Event copy = ev;
 		if(ev instanceof MemEvent && !ev.is(Tag.C11.PTHREAD) && !ev.is(Tag.C11.LOCK)) {
 			MemEvent m = (MemEvent) ev;
@@ -129,18 +125,14 @@ public class ConstantPropagation implements ProgramProcessor {
 			Register reg = ev instanceof RegWriter ? ((RegWriter) ev).getResultRegister() : null;
 
 			IExpr oldAddress = m.getAddress();
-			IExpr newAddress = evaluate(oldAddress, propagationMap);
-			newAddress = newAddress instanceof ITop ?
-					(IExpr) oldAddress.visit(simplifier) :
-					(IExpr) newAddress.visit(simplifier);
+			IExpr newAddress = (IExpr) evaluate(oldAddress, propagationMap);
+			newAddress = newAddress instanceof ITop ? oldAddress : newAddress;
 			Verify.verifyNotNull(newAddress,
 					"Expression %s got no value after constant propagation analysis", oldAddress);
 
 			IExpr oldValue = (IExpr) ((MemEvent) ev).getMemValue();
-			IExpr newValue = evaluate(oldValue, propagationMap);
-			newValue = newValue instanceof ITop ?
-					(IExpr) oldValue.visit(simplifier) :
-					(IExpr) newValue.visit(simplifier);
+			IExpr newValue = (IExpr) evaluate(oldValue, propagationMap);
+			newValue = newValue instanceof ITop ? oldValue : newValue;
 			Verify.verifyNotNull(newValue,
 					"Expression %s got no value after constant propagation analysis", oldValue);
 
@@ -151,7 +143,7 @@ public class ConstantPropagation implements ProgramProcessor {
 				copy = Atomic.newStore(newAddress, newValue, mo);
 			} else if(ev instanceof AtomicCmpXchg) {
 				IExpr oldExpectedAddr = ((AtomicCmpXchg) ev).getExpectedAddr();
-				IExpr newExpectedAddr = evaluate(oldExpectedAddr, propagationMap);
+				IExpr newExpectedAddr = (IExpr) evaluate(oldExpectedAddr, propagationMap);
 				Verify.verifyNotNull(newExpectedAddr,
 						"Register %s got no value after constant propagation analysis", oldExpectedAddr);
 				copy = Atomic.newCompareExchange(reg, newAddress, newExpectedAddr, newValue, mo, ev.is(Tag.STRONG));
@@ -201,17 +193,21 @@ public class ConstantPropagation implements ProgramProcessor {
 		else if(ev instanceof Local && ((Local) ev).getExpr() instanceof IExpr && !ev.is(Tag.ASSERTION)) {
 			Register reg = ((Local) ev).getResultRegister();
 
-			IExpr oldValue = (IExpr) ((Local) ev).getExpr();
-			IExpr newValue = evaluate(oldValue, propagationMap);
-			newValue = newValue instanceof ITop ?
-					(IExpr) oldValue.visit(simplifier) :
-					(IExpr) newValue.visit(simplifier);
+			ExprInterface oldValue = ((Local) ev).getExpr();
+			ExprInterface newValue = evaluate(oldValue, propagationMap);
+			newValue = newValue instanceof ITop ? oldValue : newValue;
 			Verify.verify(newValue != null,
 					String.format("Expression %s got no value after constant propagation analysis", oldValue));
-
 			copy = EventFactory.newLocal(reg, newValue);
 		}
-
+		else if(ev instanceof CondJump) {
+			CondJump jump = (CondJump) ev;
+			BExpr oldCond = jump.getGuard();
+			ExprInterface newCond = evaluate(jump.getGuard(), propagationMap);
+			newCond = newCond instanceof ITop ? oldCond : newCond;
+			copy = EventFactory.newJump((BExpr)newCond, jump.getLabel());
+		}
+		
 		if (copy != ev) {
 			// We made a real copy
 			copy.setOId(ev.getOId());
@@ -225,20 +221,20 @@ public class ConstantPropagation implements ProgramProcessor {
 	}
 
 	// TODO Once we have a lattice class this should be moved there.
-    private IExpr evaluate(IExpr input, Map<Register, IExpr> map) {
-    	// TODO If we extend this to BExpr too, we might reduce IfExprs further by also evaluating the guard.
-    	
-    	if(input instanceof INonDet) {
+    private ExprInterface evaluate(ExprInterface input, Map<Register, ExprInterface> map) {
+		ExprSimplifier simplifier = new ExprSimplifier();
+
+    	if(input instanceof INonDet || input instanceof BNonDet) {
     		return new ITop();
     	}
-    	if(input instanceof IConst) {
+    	if(input instanceof IConst || input instanceof BConst) {
     		return input;
     	}
     	if(input instanceof Register) {
     		// When pthread create passes arguments, the new thread starts with a Local
     		// where the RHS is a Register from the parent thread and thus we might not 
     		// have the key in the map.
-			return map.getOrDefault(input, input);
+			return map.getOrDefault(input, (IExpr) input);
     	}
     	if(input instanceof IExprUn) {
     		IExprUn un = (IExprUn)input;
@@ -247,29 +243,51 @@ public class ConstantPropagation implements ProgramProcessor {
     		if(op.equals(BV2INT) || op.equals(BV2UINT)) {
     			return input;
     		}
-			IExpr inner = evaluate(un.getInner(), map);
-			return inner instanceof ITop ? inner : new IExprUn(op, inner);
+			IExpr inner = (IExpr) evaluate(un.getInner(), map);
+			return inner instanceof ITop ? inner : new IExprUn(op, inner).visit(simplifier);
     	}
     	if(input instanceof IExprBin) {
     		IExprBin bin = (IExprBin)input;
-    		IExpr lhs = evaluate(bin.getLHS(), map);
-			IExpr rhs = evaluate(bin.getRHS(), map);
-			return lhs instanceof ITop ? lhs : rhs instanceof ITop ? rhs : new IExprBin(lhs, bin.getOp(), rhs);
+    		IExpr lhs = (IExpr) evaluate(bin.getLHS(), map);
+			IExpr rhs = (IExpr) evaluate(bin.getRHS(), map);
+			return lhs instanceof ITop ? lhs : rhs instanceof ITop ? rhs : new IExprBin(lhs, bin.getOp(), rhs).visit(simplifier);
     	}
     	if(input instanceof IfExpr) {
     		IfExpr ife = (IfExpr)input;
-    		IExpr tbranch = evaluate(ife.getTrueBranch(), map);
-			IExpr fbranch = evaluate(ife.getFalseBranch(), map);
-			return tbranch instanceof ITop ? tbranch : fbranch instanceof ITop ? fbranch : new IfExpr(ife.getGuard(), tbranch, fbranch);
+    		ExprInterface guard = evaluate(ife.getGuard(), map);
+			BExpr newGuard = guard instanceof ITop? ife.getGuard() : (BExpr) guard;
+    		IExpr tbranch = (IExpr) evaluate(ife.getTrueBranch(), map);
+			IExpr fbranch = (IExpr) evaluate(ife.getFalseBranch(), map);
+			return tbranch instanceof ITop ? tbranch : fbranch instanceof ITop ? fbranch : new IfExpr(newGuard, tbranch, fbranch).visit(simplifier);
     	}
-		throw new UnsupportedOperationException(String.format("IExpr %s not supported", input));
+    	// The simplifier currently causes problems on BExpr when and IfExpr ends up inside them
+    	// Thus we avoid the simplification step for the moment
+    	if(input instanceof Atom) {
+    		Atom atom = (Atom)input;
+    		ExprInterface lhs = evaluate(atom.getLHS(), map);
+    		ExprInterface rhs = evaluate(atom.getRHS(), map);
+			return lhs instanceof ITop ? lhs : rhs instanceof ITop ? rhs : new Atom(lhs, atom.getOp(), rhs);
+    	}
+    	if(input instanceof BExprUn) {
+    		BExprUn un = (BExprUn)input;
+    		BOpUn op = un.getOp();
+    		ExprInterface inner = (ExprInterface) evaluate(un.getInner(), map);
+			return inner instanceof ITop ? inner : new BExprUn(op, inner);
+    	}
+    	if(input instanceof BExprBin) {
+    		BExprBin bin = (BExprBin)input;
+    		ExprInterface lhs = evaluate(bin.getLHS(), map);
+    		ExprInterface rhs = evaluate(bin.getRHS(), map);
+			return lhs instanceof ITop ? lhs : rhs instanceof ITop ? rhs : new BExprBin(lhs, bin.getOp(), rhs);
+    	}
+		throw new UnsupportedOperationException(String.format("Expression %s not supported", input));
     }
     
-    private Map<Register, IExpr> merge (Map<Register, IExpr> x, Map<Register, IExpr> y) {
+    private Map<Register, ExprInterface> merge (Map<Register, ExprInterface> x, Map<Register, ExprInterface> y) {
     	Preconditions.checkNotNull(x);
     	Preconditions.checkNotNull(y);
 
-    	Map<Register, IExpr> merged = new HashMap<>(x);
+    	Map<Register, ExprInterface> merged = new HashMap<>(x);
     	
     	for(Register reg : y.keySet()) {
     		if(!merged.containsKey(reg)) {
