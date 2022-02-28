@@ -8,20 +8,14 @@ import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.EventFactory.AArch64;
-import com.dat3m.dartagnan.program.event.EventFactory.Atomic;
-import com.dat3m.dartagnan.program.event.EventFactory.Linux;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.linux.*;
+import com.dat3m.dartagnan.program.event.lang.catomic.AtomicCmpXchg;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -34,10 +28,6 @@ import static com.dat3m.dartagnan.expression.op.IOpUn.BV2UINT;
 
 public class ConstantPropagation implements ProgramProcessor {
 	
-    private final static Logger logger = LogManager.getLogger(ConstantPropagation.class);
-
-    private int propagations = 0;
-    
     // =========================== Configurables ===========================
 
     // =====================================================================
@@ -59,14 +49,13 @@ public class ConstantPropagation implements ProgramProcessor {
         for(Thread thread : program.getThreads()) {
             run(thread);
         }
-        logger.info(String.format("Propagations done: %s (out of %s events)", propagations, program.getEvents().size()));
     }
 
 	private void run(Thread thread) {
 		
 	    Map<Register, ExprInterface> propagationMap = new HashMap<>();
 	    Map<Label, Map<Register, ExprInterface>> propagationMapLabel = new HashMap<>();
-
+	    
         Event pred = thread.getEntry();
         Event current = pred.getSuccessor();
 
@@ -95,13 +84,7 @@ public class ConstantPropagation implements ProgramProcessor {
         		propagationMap = merge(propagationMap, propagationMapLabel.getOrDefault(current, new HashMap<>()));
         	}
 
-			Event copy = getSimplifiedCopy(current, propagationMap);
-			if (copy != current) {
-				propagations++; // Update propagation counter
-			}
-
-			pred.setSuccessor(copy);
-			pred = copy;
+			current.accept(new ConstantPropagationVisitor(propagationMap));
             current = current.getSuccessor();
 
 			if (resetPropMap) {
@@ -113,116 +96,8 @@ public class ConstantPropagation implements ProgramProcessor {
         thread.clearCache();
 	}
 
-	// Creates a copy of the provided event, using the <propagationMap> to simplify expressions.
-	// Can return the original event if no simplifications are performed
-	private Event getSimplifiedCopy(Event ev, Map<Register, ExprInterface> propagationMap) {
-		Event copy = ev;
-		if(ev instanceof MemEvent && !ev.is(Tag.C11.PTHREAD) && !ev.is(Tag.C11.LOCK)) {
-			MemEvent m = (MemEvent) ev;
-			String mo = m.getMo();
-
-			// All events for which we use reg are RegWriters
-			Register reg = ev instanceof RegWriter ? ((RegWriter) ev).getResultRegister() : null;
-
-			IExpr oldAddress = m.getAddress();
-			IExpr newAddress = (IExpr) evaluate(oldAddress, propagationMap);
-			newAddress = newAddress instanceof ITop ? oldAddress : newAddress;
-			Verify.verifyNotNull(newAddress,
-					"Expression %s got no value after constant propagation analysis", oldAddress);
-
-			IExpr oldValue = (IExpr) ((MemEvent) ev).getMemValue();
-			IExpr newValue = (IExpr) evaluate(oldValue, propagationMap);
-			newValue = newValue instanceof ITop ? oldValue : newValue;
-			Verify.verifyNotNull(newValue,
-					"Expression %s got no value after constant propagation analysis", oldValue);
-
-			// Atomic Events
-			if(ev instanceof AtomicLoad) {
-				copy = Atomic.newLoad(reg, newAddress, mo);
-			} else if(ev instanceof AtomicStore) {
-				copy = Atomic.newStore(newAddress, newValue, mo);
-			} else if(ev instanceof AtomicCmpXchg) {
-				IExpr oldExpectedAddr = ((AtomicCmpXchg) ev).getExpectedAddr();
-				IExpr newExpectedAddr = (IExpr) evaluate(oldExpectedAddr, propagationMap);
-				Verify.verifyNotNull(newExpectedAddr,
-						"Register %s got no value after constant propagation analysis", oldExpectedAddr);
-				copy = Atomic.newCompareExchange(reg, newAddress, newExpectedAddr, newValue, mo, ev.is(Tag.STRONG));
-			} else if(ev instanceof AtomicXchg) {
-				copy = Atomic.newExchange(reg, newAddress, newValue, mo);
-			} else if(ev instanceof AtomicFetchOp) {
-				copy = Atomic.newFetchOp(reg, newAddress, newValue, ((AtomicFetchOp) ev).getOp(), mo);
-			}
-			// Linux Events
-			else if(ev instanceof RMWAddUnless) {
-				copy = Linux.newRMWAddUnless(newAddress, reg, ((RMWAddUnless) ev).getCmp(), newValue);
-			} else if(ev instanceof RMWCmpXchg) {
-				copy = Linux.newRMWCompareExchange(newAddress, reg, ((RMWCmpXchg) ev).getCmp(), newValue, mo);
-			} else if(ev instanceof RMWFetchOp) {
-				copy = Linux.newRMWFetchOp(newAddress, reg, newValue, ((RMWFetchOp) ev).getOp(), mo);
-			} else if(ev instanceof RMWOp) {
-				copy = Linux.newRMWOp(newAddress, reg, newValue, ((RMWOp) ev).getOp());
-			} else if(ev instanceof RMWOpAndTest) {
-				copy = Linux.newRMWOpAndTest(newAddress, reg, newValue, ((RMWOpAndTest) ev).getOp());
-			} else if(ev instanceof RMWOpReturn) {
-				copy = Linux.newRMWOpReturn(newAddress, reg, newValue, ((RMWOpReturn) ev).getOp(), mo);
-			} else if(ev instanceof RMWXchg) {
-				copy = Linux.newRMWExchange(newAddress, reg, newValue, mo);
-			}
-			// Exclusive events
-			else if(ev.is(Tag.EXCL)) {
-				if(ev instanceof Load) {
-					copy = EventFactory.newRMWLoadExclusive(reg, newAddress, mo);
-				} else if (ev instanceof StoreExclusive) {
-					copy = AArch64.newExclusiveStore(reg, newAddress, newValue, mo);
-				} else {
-					// Other EXCL events are generated during compilation (which have not yet occurred)
-					throw new UnsupportedOperationException(String.format("Exclusive event %s not supported by %s",
-							ev.getClass().getSimpleName(), getClass().getSimpleName()));
-				}
-			}
-			// Basic Events
-			else if(ev instanceof Load) {
-				copy = EventFactory.newLoad(reg, newAddress, mo);
-			} else if(ev instanceof Store) {
-				copy = EventFactory.newStore(newAddress, newValue, mo);
-			}
-		}
-		// Local events coming from assertions cause problems because the encoding of
-		// AssertInline uses getResultRegisterExpr() which gets a value when calling
-		// Local.initialise() which is never the case for the new Event e below.
-		else if(ev instanceof Local && ((Local) ev).getExpr() instanceof IExpr && !ev.is(Tag.ASSERTION)) {
-			Register reg = ((Local) ev).getResultRegister();
-
-			ExprInterface oldValue = ((Local) ev).getExpr();
-			ExprInterface newValue = evaluate(oldValue, propagationMap);
-			newValue = newValue instanceof ITop ? oldValue : newValue;
-			Verify.verify(newValue != null,
-					String.format("Expression %s got no value after constant propagation analysis", oldValue));
-			copy = EventFactory.newLocal(reg, newValue);
-		}
-		// We don't want to optimize bound events
-		else if(ev instanceof CondJump && !ev.is(Tag.BOUND)) {
-			CondJump jump = (CondJump) ev;
-			BExpr oldCond = jump.getGuard();
-			ExprInterface newCond = evaluate(jump.getGuard(), propagationMap);
-			newCond = newCond instanceof ITop ? oldCond : newCond;
-			copy = EventFactory.newJump((BExpr)newCond, jump.getLabel());
-		}
-		
-		if (copy != ev) {
-			// We made a real copy
-			copy.setOId(ev.getOId());
-			copy.setUId(ev.getUId());
-			copy.setCId(ev.getCId());
-			copy.setCLine(ev.getCLine());
-			copy.setThread(ev.getThread());
-		}
-
-		return copy;
-	}
-
 	// TODO Once we have a lattice class this should be moved there.
-    private ExprInterface evaluate(ExprInterface input, Map<Register, ExprInterface> map) {
+	private ExprInterface evaluate(ExprInterface input, Map<Register, ExprInterface> map) {
 		ExprSimplifier simplifier = new ExprSimplifier();
 
     	if(input instanceof INonDet || input instanceof BNonDet) {
@@ -302,7 +177,7 @@ public class ConstantPropagation implements ProgramProcessor {
 		
     }
     
-    private static class ITop extends IConst {
+    private class ITop extends IConst {
 
         @Override
         public BigInteger getValue() {
@@ -323,5 +198,96 @@ public class ConstantPropagation implements ProgramProcessor {
         public <T> T visit(ExpressionVisitor<T> visitor) {
             throw new UnsupportedOperationException();
         }
+    }
+    
+    private class ConstantPropagationVisitor implements EventVisitor<Event> {
+
+    	private Map<Register, ExprInterface> map;
+    	
+    	protected ConstantPropagationVisitor(Map<Register, ExprInterface> map) {
+    		this.map = map;
+    	}
+    	
+    	@Override
+    	public Event visitEvent(Event e) {
+    		return e;
+    	};
+    	
+    	@Override
+    	public Event visitLoad(Load e) {
+    		setAddress(e);
+    		return e;
+    	};
+    	
+    	@Override
+    	public Event visitStore(Store e) {
+    		setAddress(e);
+    		return e;
+    	};
+    		
+    	@Override
+    	public Event visitMemEvent(MemEvent e) {
+    		setAddress(e);
+    		setMemValue(e);
+    		return e;
+    	};
+
+    	@Override
+    	public Event visitLocal(Local e) {
+    		ExprInterface oldExpr = e.getExpr();
+    		ExprInterface newExpr = evaluate(oldExpr, map);
+    		Verify.verifyNotNull(newExpr,
+    				"Expression %s got no value after constant propagation analysis", oldExpr);
+    		if(!(newExpr instanceof ITop) && e.getExpr() instanceof IExpr && !e.is(Tag.ASSERTION)) {
+    			e.setExpr(newExpr);
+    		}
+    		return e;
+    	};
+    	
+    	@Override
+    	public Event visitCondJump(CondJump e) {
+    		ExprInterface oldGuard = e.getGuard();
+    		ExprInterface newGuard = evaluate(oldGuard, map);
+    		Verify.verifyNotNull(newGuard,
+    				"Expression %s got no value after constant propagation analysis", oldGuard);
+    		if(!(newGuard instanceof ITop)) {
+    			e.setGuard((BExpr) newGuard);
+    		}
+    		return e;
+    	};
+    	
+    	@Override
+    	public Event visitAtomicCmpXchg(AtomicCmpXchg e) {
+    		setAddress(e);
+    		setMemValue(e);
+    		IExpr oldExpectedAddr = e.getExpectedAddr();
+    		IExpr newExpectedAddr = (IExpr) evaluate(oldExpectedAddr, map);
+    		Verify.verifyNotNull(newExpectedAddr,
+    				"Expression %s got no value after constant propagation analysis", oldExpectedAddr);
+    		if(!(newExpectedAddr instanceof ITop) && !e.is(Tag.C11.PTHREAD) && !e.is(Tag.C11.LOCK)) {
+    			e.setExpectedAddr(newExpectedAddr);
+    		}
+    		return e;
+    	}
+    	
+    	private void setAddress(MemEvent e) {
+    		IExpr oldAddress = e.getAddress();
+    		IExpr newAddress = (IExpr) evaluate(oldAddress, map);
+    		Verify.verifyNotNull(newAddress,
+    				"Expression %s got no value after constant propagation analysis", oldAddress);
+    		if(!(newAddress instanceof ITop) && !e.is(Tag.C11.PTHREAD) && !e.is(Tag.C11.LOCK)) {
+    			e.setAddress(newAddress);
+    		}
+    	}
+
+    	private void setMemValue(MemEvent e) {
+    		ExprInterface oldValue = e.getMemValue();
+    		ExprInterface newValue = evaluate(oldValue, map);
+    		Verify.verifyNotNull(newValue,
+    				"Expression %s got no value after constant propagation analysis", oldValue);
+    		if(!(newValue instanceof ITop) && !e.is(Tag.C11.PTHREAD) && !e.is(Tag.C11.LOCK)) {
+    			e.setMemValue(newValue);;
+    		}
+    	}
     }
 }
