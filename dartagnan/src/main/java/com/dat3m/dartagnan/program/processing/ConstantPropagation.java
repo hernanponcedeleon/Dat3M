@@ -126,15 +126,18 @@ public class ConstantPropagation implements ProgramProcessor {
     		IExprBin bin = (IExprBin)input;
     		IExpr lhs = (IExpr) evaluate(bin.getLHS(), map);
 			IExpr rhs = (IExpr) evaluate(bin.getRHS(), map);
-			return lhs instanceof ITop ? lhs : rhs instanceof ITop ? rhs : new IExprBin(lhs, bin.getOp(), rhs).visit(simplifier);
+			return lhs instanceof ITop || rhs instanceof ITop ? 
+					new ITop() :
+					new IExprBin(lhs, bin.getOp(), rhs).visit(simplifier);
     	}
     	if(input instanceof IfExpr) {
     		IfExpr ife = (IfExpr)input;
     		ExprInterface guard = evaluate(ife.getGuard(), map);
-			BExpr newGuard = guard instanceof ITop ? ife.getGuard() : (BExpr)guard;
     		IExpr tbranch = (IExpr) evaluate(ife.getTrueBranch(), map);
 			IExpr fbranch = (IExpr) evaluate(ife.getFalseBranch(), map);
-			return tbranch instanceof ITop ? tbranch : fbranch instanceof ITop ? fbranch : new IfExpr(newGuard, tbranch, fbranch).visit(simplifier);
+			return tbranch instanceof ITop || fbranch instanceof ITop || guard instanceof ITop ? 
+					new ITop() :
+					new IfExpr((BExpr) guard, tbranch, fbranch).visit(simplifier);
     	}
     	// The inner expression can be IfExpr which cause problems with the simplifier
     	// Thus we check if the return of the evaluations are not BExpr (this also includes ITop)
