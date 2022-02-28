@@ -225,6 +225,7 @@ public class ConstantPropagation implements ProgramProcessor {
     	@Override
     	public Event visitStore(Store e) {
     		setAddress(e);
+    		setMemValue(e);
     		return e;
     	};
     		
