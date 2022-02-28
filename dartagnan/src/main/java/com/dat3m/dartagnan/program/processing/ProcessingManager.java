@@ -52,6 +52,7 @@ public class ProcessingManager implements ProgramProcessor {
                 LoopUnrolling.fromConfig(config),
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
                 DeadAssignmentElimination.fromConfig(config),
+                RemoveDeadCondJumps.fromConfig(config),
                 Compilation.fromConfig(config),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null
         ));
