@@ -33,8 +33,4 @@ public abstract class IExpr implements ExprInterface, Reducible {
 	public IConst reduce() {
 		throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
-
-	public IExpr simplify() {
-		return this;
-	}
 }
