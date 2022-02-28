@@ -51,7 +51,7 @@ public class Store extends MemEvent implements RegReaderData {
     @Override
     public void setMemValue(ExprInterface value){
         this.value = value;
-        dataRegs = value.getRegs();
+        this.dataRegs = value.getRegs();
     }
 
     // Unrolling

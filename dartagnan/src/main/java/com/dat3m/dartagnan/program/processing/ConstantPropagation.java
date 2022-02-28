@@ -110,7 +110,7 @@ public class ConstantPropagation implements ProgramProcessor {
     		// When pthread create passes arguments, the new thread starts with a Local
     		// where the RHS is a Register from the parent thread and thus we might not 
     		// have the key in the map.
-			return map.getOrDefault(input, (IExpr) input);
+			return map.getOrDefault(input, input);
     	}
     	if(input instanceof IExprUn) {
     		IExprUn un = (IExprUn)input;
@@ -131,7 +131,7 @@ public class ConstantPropagation implements ProgramProcessor {
     	if(input instanceof IfExpr) {
     		IfExpr ife = (IfExpr)input;
     		ExprInterface guard = evaluate(ife.getGuard(), map);
-			BExpr newGuard = guard instanceof ITop? ife.getGuard() : (BExpr) guard;
+			BExpr newGuard = guard instanceof ITop ? ife.getGuard() : (BExpr)guard;
     		IExpr tbranch = (IExpr) evaluate(ife.getTrueBranch(), map);
 			IExpr fbranch = (IExpr) evaluate(ife.getFalseBranch(), map);
 			return tbranch instanceof ITop ? tbranch : fbranch instanceof ITop ? fbranch : new IfExpr(newGuard, tbranch, fbranch).visit(simplifier);
@@ -147,7 +147,7 @@ public class ConstantPropagation implements ProgramProcessor {
     	if(input instanceof BExprUn) {
     		BExprUn un = (BExprUn)input;
     		BOpUn op = un.getOp();
-    		ExprInterface inner = (ExprInterface) evaluate(un.getInner(), map);
+    		ExprInterface inner = evaluate(un.getInner(), map);
 			return !(inner instanceof BExpr) ? new ITop() : new BExprUn(op, inner).visit(simplifier);
     	}
     	if(input instanceof BExprBin) {
