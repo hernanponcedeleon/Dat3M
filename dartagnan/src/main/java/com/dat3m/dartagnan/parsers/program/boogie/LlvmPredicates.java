@@ -13,16 +13,6 @@ import static com.dat3m.dartagnan.expression.op.COpBin.*;
 public class LlvmPredicates {
 
 	public static List<String> LLVMPREDICATES = Arrays.asList(
-			"$ule.ref", "$ule.ref.bool",
-			"$ult.ref", "$ult.ref.bool",
-			"$uge.ref", "$uge.ref.bool",
-			"$ugt.ref", "$ugt.ref.bool",
-			"$sle.ref", "$sle.ref.bool",
-			"$slt.ref", "$slt.ref.bool",
-			"$sge.ref", "$sge.ref.bool",
-			"$sgt.ref", "$sgt.ref.bool",
-			"$eq.ref", "$eq.ref.bool",
-			"$ne.ref", "$ne.ref.bool",
 			"$ule.i8", "$ule.i16", "$ule.i32", "$ule.i64",
 			"$ult.i8", "$ult.i16", "$ult.i32", "$ult.i64",
 			"$uge.i8", "$uge.i16", "$uge.i32", "$uge.i64",
@@ -44,8 +34,18 @@ public class LlvmPredicates {
 			"$eq.i8.bool", "$eq.i16.bool", "$eq.i32.bool", "$eq.i64.bool",
 			"$ne.i8.bool", "$ne.i16.bool", "$ne.i32.bool", "$ne.i64.bool",
 			// Our toIntFormula implementation always convert BExpr to integer variables
-			// (never to bit-vector), thus we need to parse functions like "$ule.bv8"
+			// (never to bit-vector), thus we need to parse functions like "$ule.ref" or "$ule.bv8"
 			// using smack definition which will create the constants 1 and 0 as BV
+			"$ule.ref.bool",
+			"$ult.ref.bool",
+			"$uge.ref.bool",
+			"$ugt.ref.bool",
+			"$sle.ref.bool",
+			"$slt.ref.bool",
+			"$sge.ref.bool",
+			"$sgt.ref.bool",
+			"$eq.ref.bool",
+			"$ne.ref.bool",
 			"$ule.bv8.bool", "$ule.bv16.bool", "$ule.bv32.bool", "$ule.bv64.bool",
 			"$ult.bv8.bool", "$ult.bv16.bool", "$ult.bv32.bool", "$ult.bv64.bool",
 			"$uge.bv8.bool", "$uge.bv16.bool", "$uge.bv32.bool", "$uge.bv64.bool",
