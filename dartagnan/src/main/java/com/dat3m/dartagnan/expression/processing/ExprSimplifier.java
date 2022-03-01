@@ -32,6 +32,10 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public BExpr visit(BExprBin bBin) {
+    	// Due to constant propagation we are not guaranteed to get BExprs
+    	if(!(bBin.getLHS().visit(this) instanceof BExpr && bBin.getRHS().visit(this) instanceof BExpr)) {
+    		return bBin;
+    	}
         BExpr lhs = (BExpr) bBin.getLHS().visit(this);
         BExpr rhs = (BExpr) bBin.getRHS().visit(this);
         switch (bBin.getOp()) {
@@ -59,10 +63,8 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public BExpr visit(BExprUn bUn) {
-    	// Due to the optimization in LlvmFunctions 
-    	// to parse xor.x1 as boolean negation, we can
-    	// have registers as the inner of a negation
-    	if(bUn.getInner().visit(this) instanceof Register) {
+    	// Due to constant propagation we are not guaranteed to get BExprs
+    	if(!(bUn.getInner().visit(this) instanceof BConst)) {
     		return bUn;
     	}
         BExpr inner = (BExpr) bUn.getInner().visit(this);
