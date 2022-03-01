@@ -92,11 +92,16 @@ public class ExprSimplifier extends ExprTransformer {
         IOpBin op = iBin.getOp();
         if (! (lhs instanceof IConst || rhs instanceof IConst)) {
             return new IExprBin(lhs, iBin.getOp(), rhs);
-        } else if (lhs instanceof IConst && rhs instanceof IConst
-        		// If we reduce MemoryObject as a normal IConst, we loose the fact that it is a Memory Object
-        		// We cannot call reduce for R_SHIFT (lack of implementation)
-        		&& !(lhs instanceof MemoryObject) && iBin.getOp() != R_SHIFT) {
-            return new IExprBin(lhs, iBin.getOp(), rhs).reduce();
+        } else if (lhs instanceof IConst && rhs instanceof IConst) {
+    		// If we reduce MemoryObject as a normal IConst, we loose the fact that it is a Memory Object
+    		// We cannot call reduce for R_SHIFT (lack of implementation)
+    		if(!(lhs instanceof MemoryObject) && iBin.getOp() != R_SHIFT) {
+    			return new IExprBin(lhs, iBin.getOp(), rhs).reduce();
+    		}
+    		// Rule to reduce &mem + 0
+    		if(lhs instanceof MemoryObject && rhs.equals(IValue.ZERO)) {
+    			return lhs;
+    		}
         }
 
         if (lhs instanceof IConst) {
@@ -119,7 +124,19 @@ public class ExprSimplifier extends ExprTransformer {
                 return val.compareTo(BigInteger.ZERO) == 0 ? IValue.ZERO : val.equals(BigInteger.ONE) ? lhs : new IExprBin(lhs, op, rhs);
             case PLUS:
             case MINUS:
-                return val.compareTo(BigInteger.ZERO) == 0 ? lhs : new IExprBin(lhs, op, rhs);
+            	if(val.compareTo(BigInteger.ZERO) == 0) {
+            		return lhs;
+            	}
+            	// Rule for associativity (rhs is IConst) since we cannot reduce MemoryObjects
+            	// Either op can be +/-, but this does not affect correctness
+            	// e.g. (&mem + x) - y -> &mem + reduced(x - y)
+            	if(lhs instanceof IExprBin && ((IExprBin)lhs).getRHS() instanceof IConst) {
+        			IExprBin lhsBin = (IExprBin)lhs;
+            		IExpr newLHS = lhsBin.getLHS();
+					IExpr newRHS = new IExprBin(lhsBin.getRHS(), lhsBin.getOp(), rhs).reduce();
+					return new IExprBin(newLHS, op, newRHS);
+            	}
+            	return new IExprBin(lhs, op, rhs);
             default:
                 return new IExprBin(lhs, op, rhs);
         }
