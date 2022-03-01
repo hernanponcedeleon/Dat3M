@@ -139,25 +139,23 @@ public class ConstantPropagation implements ProgramProcessor {
 					new ITop() :
 					new IfExpr((BExpr) guard, tbranch, fbranch).visit(simplifier);
     	}
-    	// The inner expression can be IfExpr which cause problems with the simplifier
-    	// Thus we check if the return of the evaluations are not BExpr (this also includes ITop)
     	if(input instanceof Atom) {
     		Atom atom = (Atom)input;
     		ExprInterface lhs = evaluate(atom.getLHS(), map);
     		ExprInterface rhs = evaluate(atom.getRHS(), map);
-			return !(lhs instanceof BExpr && rhs instanceof BExpr) ? new ITop() : new Atom(lhs, atom.getOp(), rhs).visit(simplifier);
+			return (lhs instanceof ITop | rhs instanceof ITop) ? new ITop() : new Atom(lhs, atom.getOp(), rhs).visit(simplifier);
     	}
     	if(input instanceof BExprUn) {
     		BExprUn un = (BExprUn)input;
     		BOpUn op = un.getOp();
     		ExprInterface inner = evaluate(un.getInner(), map);
-			return !(inner instanceof BExpr) ? new ITop() : new BExprUn(op, inner).visit(simplifier);
+			return inner instanceof ITop ? new ITop() : new BExprUn(op, inner).visit(simplifier);
     	}
     	if(input instanceof BExprBin) {
     		BExprBin bin = (BExprBin)input;
     		ExprInterface lhs = evaluate(bin.getLHS(), map);
     		ExprInterface rhs = evaluate(bin.getRHS(), map);
-    		return !(lhs instanceof BExpr && rhs instanceof BExpr) ? new ITop() : new BExprBin(lhs, bin.getOp(), rhs).visit(simplifier);
+    		return (lhs instanceof ITop | rhs instanceof ITop) ? new ITop() : new BExprBin(lhs, bin.getOp(), rhs).visit(simplifier);
     	}
 		throw new UnsupportedOperationException(String.format("Expression %s not supported", input));
     }
@@ -242,7 +240,7 @@ public class ConstantPropagation implements ProgramProcessor {
     		ExprInterface newExpr = evaluate(oldExpr, map);
     		Verify.verifyNotNull(newExpr,
     				"Expression %s got no value after constant propagation analysis", oldExpr);
-    		if(!(newExpr instanceof ITop) && e.getExpr() instanceof IExpr && !e.is(Tag.ASSERTION)) {
+    		if(!(newExpr instanceof ITop) && !e.is(Tag.ASSERTION)) {
     			e.setExpr(newExpr);
     		}
     		return e;
