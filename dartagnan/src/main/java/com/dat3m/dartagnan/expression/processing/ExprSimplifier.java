@@ -22,6 +22,18 @@ public class ExprSimplifier extends ExprTransformer {
             IConst rc = (IConst) rhs;
             return new BConst(atom.getOp().combine(lc.getValue(), rc.getValue()));
         }
+        // Due to constant propagation, and the lack of a proper type system
+        // we can end up with comparisons like "False == 1"
+        if (lhs instanceof BConst && rhs instanceof IConst) {
+            BConst lc = (BConst) lhs;
+            IConst rc = (IConst) rhs;
+            return new BConst(atom.getOp().combine(lc.getValue(), rc.getValue()));
+        }
+        if (lhs instanceof IConst && rhs instanceof BConst) {
+            IConst lc = (IConst) lhs;
+            BConst rc = (BConst) rhs;
+            return new BConst(atom.getOp().combine(lc.getValue(), rc.getValue()));
+        }
         return new Atom(lhs, atom.getOp(), rhs);
     }
 

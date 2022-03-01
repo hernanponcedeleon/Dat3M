@@ -115,4 +115,28 @@ public enum COpBin {
         }
         throw new UnsupportedOperationException("Illegal operator " + this + " in COpBin");
     }
+
+    // Due to constant propagation, and the lack of a proper type system
+    // we can end up with comparisons like "False == 1", thus the following two methods
+    public boolean combine(boolean a, BigInteger b){
+        switch(this){
+            case EQ:
+                return ((b.compareTo(BigInteger.ONE) == 0) == a);
+            case NEQ:
+                return ((b.compareTo(BigInteger.ONE) == 0) != a);
+		default:
+	        throw new UnsupportedOperationException("Illegal operator " + this + " in COpBin");
+        }
+    }
+
+    public boolean combine(BigInteger a, boolean b){
+        switch(this){
+            case EQ:
+                return ((a.compareTo(BigInteger.ONE) == 0) == b);
+            case NEQ:
+                return ((a.compareTo(BigInteger.ONE) == 0) != b);
+		default:
+	        throw new UnsupportedOperationException("Illegal operator " + this + " in COpBin");
+        }
+    }
 }
