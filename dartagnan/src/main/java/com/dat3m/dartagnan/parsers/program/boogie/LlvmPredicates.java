@@ -13,6 +13,16 @@ import static com.dat3m.dartagnan.expression.op.COpBin.*;
 public class LlvmPredicates {
 
 	public static List<String> LLVMPREDICATES = Arrays.asList(
+			"$ule.ref", "$ule.ref.bool",
+			"$ult.ref", "$ult.ref.bool",
+			"$uge.ref", "$uge.ref.bool",
+			"$ugt.ref", "$ugt.ref.bool",
+			"$sle.ref", "$sle.ref.bool",
+			"$slt.ref", "$slt.ref.bool",
+			"$sge.ref", "$sge.ref.bool",
+			"$sgt.ref", "$sgt.ref.bool",
+			"$eq.ref", "$eq.ref.bool",
+			"$ne.ref", "$ne.ref.bool",
 			"$ule.i8", "$ule.i16", "$ule.i32", "$ule.i64",
 			"$ult.i8", "$ult.i16", "$ult.i32", "$ult.i64",
 			"$uge.i8", "$uge.i16", "$uge.i32", "$uge.i64",
