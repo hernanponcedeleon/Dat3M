@@ -59,6 +59,12 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public BExpr visit(BExprUn bUn) {
+    	// Due to the optimization in LlvmFunctions 
+    	// to parse xor.x1 as boolean negation, we can
+    	// have registers as the inner of a negation
+    	if(bUn.getInner().visit(this) instanceof Register) {
+    		return bUn;
+    	}
         BExpr inner = (BExpr) bUn.getInner().visit(this);
         if (inner instanceof BConst) {
             return inner.isTrue() ? BConst.FALSE : BConst.TRUE;
