@@ -67,14 +67,19 @@ public class ConstantPropagation implements ProgramProcessor {
         	// because registers can be overwritten, thus the event creation has 
         	// to be done immediately after computing the information.
         	// For RegWriters interacting with memory, we assign TOP
+			// (we actually use the result register that is unconstrained
+			// but like this the solver keeps relations between variables)
         	if(current instanceof RegWriter) {
         		RegWriter rw = (RegWriter)current;
-        		propagationMap.put(rw.getResultRegister(), new ITop());
+        		propagationMap.put(rw.getResultRegister(), rw.getResultRegister());
         	}
         	// For Locals, we update
         	if(current instanceof Local) {
         		Local l = (Local)current;
-            	propagationMap.put(l.getResultRegister(), evaluate(l.getExpr(), propagationMap));
+        		// We cannot update the map with the evaluation if the resultRegister is also in the RHS
+        		if(!l.getExpr().getRegs().contains(l.getResultRegister())) {
+                	propagationMap.put(l.getResultRegister(), evaluate(l.getExpr(), propagationMap));        			
+        		}
         	}
         	if(current instanceof CondJump) {
 				CondJump jump = (CondJump)current;
