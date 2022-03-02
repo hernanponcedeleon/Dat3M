@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -267,6 +268,12 @@ public class ConstantPropagation implements ProgramProcessor {
     	
     	@Override
     	public Event visitXchg(Xchg e) {
+    		setAddress(e);
+    		return e;
+    	};
+    	
+    	@Override
+    	public Event visitRMW(RMW e) {
     		setAddress(e);
     		return e;
     	};
