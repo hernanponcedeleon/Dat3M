@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -33,7 +34,7 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        Preconditions.checkArgument(program.isUnrolled(), "The program needs to be unrolled before removing dead ifs.");
+        Preconditions.checkArgument(program.isUnrolled(), "The program needs to be unrolled before performing " + getClass().getSimpleName());
         logger.info(String.format("#Events before %s: %s", getClass().getSimpleName(), + program.getEvents().size()));
 
         for (Thread t : program.getThreads()) {
@@ -56,9 +57,15 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
         while (current != null) {
         	if(current instanceof CondJump) {
         		CondJump jump = (CondJump)current;
-        		List<Event> predecessors = predecessorsMap.getOrDefault(jump.getLabel(), new ArrayList<>());
-        		predecessors.add(jump);
-            	predecessorsMap.put(jump.getLabel(), predecessors);
+        		// After constant propagation some jumps have False as condition and are dead
+        		// But we still need to keep BOUND events
+        		if(jump.isDead() && !jump.is(Tag.BOUND)) {
+        			removed.add(jump);
+        		} else {
+            		List<Event> predecessors = predecessorsMap.getOrDefault(jump.getLabel(), new ArrayList<>());
+            		predecessors.add(jump);
+                	predecessorsMap.put(jump.getLabel(), predecessors);
+        		}
         	}
         	if(current.getSuccessor() instanceof Label) {
             	if(current instanceof CondJump && ((CondJump)current).isGoto()) {
@@ -74,7 +81,8 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
         // We check which ifs can be removed
         for(Event label : predecessorsMap.keySet()) {
         	Event next = label.getSuccessor();
-			if(next instanceof CondJump && predecessorsMap.get(label).stream().allMatch(e -> mutuallyExclusiveIfs((CondJump)next, e))) {
+        	// We never remove BOUND events
+			if(next instanceof CondJump && !next.is(Tag.BOUND) && predecessorsMap.get(label).stream().allMatch(e -> mutuallyExclusiveIfs((CondJump)next, e))) {
 				removed.add(next);
 			}
         }

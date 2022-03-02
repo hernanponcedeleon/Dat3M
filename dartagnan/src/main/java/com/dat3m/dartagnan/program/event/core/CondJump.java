@@ -42,6 +42,10 @@ public class CondJump extends Event implements RegReaderData {
     	return expr.isTrue();
     }
     
+    public boolean isDead() {
+    	return expr.isFalse();
+    }
+    
     public Label getLabel(){
         return label;
     }
