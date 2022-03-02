@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.catomic.AtomicCmpXchg;
@@ -68,7 +69,7 @@ public class ConstantPropagation implements ProgramProcessor {
         	// For RegWriters interacting with memory, we assign TOP
         	if(current instanceof RegWriter) {
         		RegWriter rw = (RegWriter)current;
-        		propagationMap.put(rw.getResultRegister(), rw.getResultRegister());
+        		propagationMap.put(rw.getResultRegister(), new ITop());
         	}
         	// For Locals, we update
         	if(current instanceof Local) {
@@ -222,13 +223,6 @@ public class ConstantPropagation implements ProgramProcessor {
     	};
     	
     	@Override
-    	public Event visitStore(Store e) {
-    		setAddress(e);
-    		setMemValue(e);
-    		return e;
-    	};
-    		
-    	@Override
     	public Event visitMemEvent(MemEvent e) {
     		setAddress(e);
     		setMemValue(e);
@@ -260,6 +254,12 @@ public class ConstantPropagation implements ProgramProcessor {
     	};
     	
     	@Override
+    	public Event visitXchg(Xchg e) {
+    		setAddress(e);
+    		return e;
+    	};
+    	
+    	@Override
     	public Event visitAtomicLoad(AtomicLoad e) {
     		setAddress(e);
     		return e;
@@ -273,7 +273,7 @@ public class ConstantPropagation implements ProgramProcessor {
     		IExpr newExpectedAddr = (IExpr) evaluate(oldExpectedAddr, map);
     		Verify.verifyNotNull(newExpectedAddr,
     				"Expression %s got no value after constant propagation analysis", oldExpectedAddr);
-    		if(!(newExpectedAddr instanceof ITop) && !e.is(Tag.C11.PTHREAD) && !e.is(Tag.C11.LOCK)) {
+    		if(!(newExpectedAddr instanceof ITop)) {
     			e.setExpectedAddr(newExpectedAddr);
     		}
     		return e;
