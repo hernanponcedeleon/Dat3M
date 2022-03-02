@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.catomic.AtomicCmpXchg;
+import com.dat3m.dartagnan.program.event.lang.catomic.AtomicLoad;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -67,7 +68,7 @@ public class ConstantPropagation implements ProgramProcessor {
         	// For RegWriters interacting with memory, we assign TOP
         	if(current instanceof RegWriter) {
         		RegWriter rw = (RegWriter)current;
-        		propagationMap.put(rw.getResultRegister(), new ITop());
+        		propagationMap.put(rw.getResultRegister(), rw.getResultRegister());
         	}
         	// For Locals, we update
         	if(current instanceof Local) {
@@ -84,7 +85,7 @@ public class ConstantPropagation implements ProgramProcessor {
         		propagationMap = merge(propagationMap, propagationMapLabel.getOrDefault(current, new HashMap<>()));
         	}
 
-			current.accept(new ConstantPropagationVisitor(propagationMap));
+        	current.accept(new ConstantPropagationVisitor(propagationMap));
             current = current.getSuccessor();
 
 			if (resetPropMap) {
@@ -259,6 +260,12 @@ public class ConstantPropagation implements ProgramProcessor {
     	};
     	
     	@Override
+    	public Event visitAtomicLoad(AtomicLoad e) {
+    		setAddress(e);
+    		return e;
+    	};
+    	
+    	@Override
     	public Event visitAtomicCmpXchg(AtomicCmpXchg e) {
     		setAddress(e);
     		setMemValue(e);
@@ -277,7 +284,7 @@ public class ConstantPropagation implements ProgramProcessor {
     		IExpr newAddress = (IExpr) evaluate(oldAddress, map);
     		Verify.verifyNotNull(newAddress,
     				"Expression %s got no value after constant propagation analysis", oldAddress);
-    		if(!(newAddress instanceof ITop) && !e.is(Tag.C11.PTHREAD) && !e.is(Tag.C11.LOCK)) {
+    		if(!(newAddress instanceof ITop)) {
     			e.setAddress(newAddress);
     		}
     	}
@@ -287,7 +294,7 @@ public class ConstantPropagation implements ProgramProcessor {
     		ExprInterface newValue = evaluate(oldValue, map);
     		Verify.verifyNotNull(newValue,
     				"Expression %s got no value after constant propagation analysis", oldValue);
-    		if(!(newValue instanceof ITop) && !e.is(Tag.C11.PTHREAD) && !e.is(Tag.C11.LOCK)) {
+    		if(!(newValue instanceof ITop)) {
     			e.setMemValue(newValue);;
     		}
     	}
