@@ -78,7 +78,14 @@ public class ConstantPropagation implements ProgramProcessor {
         		Local l = (Local)current;
         		// We cannot update the map with the evaluation if the resultRegister is also in the RHS
         		if(!l.getExpr().getRegs().contains(l.getResultRegister())) {
-                	propagationMap.put(l.getResultRegister(), evaluate(l.getExpr(), propagationMap));        			
+                	ExprInterface value = evaluate(l.getExpr(), propagationMap);
+                	if(value instanceof ITop && l.getExpr() instanceof Register) {
+                		// Even if we do not know the concrete value, Registers have a constant value
+                		// thus we add them to the map to achieve more propagations
+                		propagationMap.put(l.getResultRegister(), l.getExpr());
+                	} else {
+                		propagationMap.put(l.getResultRegister(), value);	
+                	}
         		}
         	}
         	if(current instanceof CondJump) {
