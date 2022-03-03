@@ -43,9 +43,7 @@ public class LFDSTest extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-            {"SafeStack-3-3-1", TSO, FAIL},
             {"SafeStack-3-3-1", ARM8, FAIL},
-            {"SafeStack-3-3-1", POWER, FAIL},
             {"dglm-3", TSO, UNKNOWN},
             {"dglm-3", ARM8, UNKNOWN},
             {"dglm-3", POWER, UNKNOWN},
