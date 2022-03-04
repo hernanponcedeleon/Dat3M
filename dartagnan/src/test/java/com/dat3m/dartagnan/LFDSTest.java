@@ -46,12 +46,21 @@ public class LFDSTest extends AbstractCTest {
             {"dglm-3", TSO, UNKNOWN},
             {"dglm-3", ARM8, UNKNOWN},
             {"dglm-3", POWER, UNKNOWN},
+            {"dglm-3-CAS-relaxed", TSO, UNKNOWN},
+            {"dglm-3-CAS-relaxed", ARM8, FAIL},
+            {"dglm-3-CAS-relaxed", POWER, FAIL},
             {"ms-3", TSO, UNKNOWN},
             {"ms-3", ARM8, UNKNOWN},
             {"ms-3", POWER, UNKNOWN},
+            {"ms-3-CAS-relaxed", TSO, UNKNOWN},
+            {"ms-3-CAS-relaxed", ARM8, FAIL},
+            {"ms-3-CAS-relaxed", POWER, FAIL},
             {"treiber-3", TSO, UNKNOWN},
             {"treiber-3", ARM8, UNKNOWN},
             {"treiber-3", POWER, UNKNOWN},
+            {"treiber-3-CAS-relaxed", TSO, UNKNOWN},
+            {"treiber-3-CAS-relaxed", ARM8, FAIL},
+            {"treiber-3-CAS-relaxed", POWER, FAIL},
         });
     }
 
