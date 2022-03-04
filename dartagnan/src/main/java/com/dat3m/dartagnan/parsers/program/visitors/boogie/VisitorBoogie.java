@@ -232,7 +232,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
             if(threadCount != 1) {
                 // Used to allow execution of threads after they have been created (pthread_create)
                 MemoryObject object = programBuilder.getOrNewObject(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
-                Register reg = programBuilder.getOrCreateRegister(threadCount, null, -1);
+                Register reg = programBuilder.getOrCreateRegister(threadCount, null, ARCH_PRECISION);
                 Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
                 programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, object, label));
             }
