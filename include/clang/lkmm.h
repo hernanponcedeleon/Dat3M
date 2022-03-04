@@ -79,17 +79,45 @@ typedef atomic64_t  atomic_long_t;
 #define atomic_set_release(v, i) smp_store_release(&(v)->counter, (i))
 
 /* Non-value-returning atomics */
-#define __atomic_add(i, v, m) atomic_fetch_add_explicit(&(v)->counter, i, m)
-#define __atomic_sub(i, v, m) atomic_fetch_sub_explicit(&(v)->counter, i, m)
+#define __atomic_add(i, v, m) __LKMM_atomic_op(&(v)->counter, i, m, 0)
+#define __atomic_sub(i, v, m) __LKMM_atomic_op(&(v)->counter, i, m, 1)
+#define __atomic_and(i, v, m) __LKMM_atomic_op(&(v)->counter, i, m, 2)
+#define __atomic_or(i, v, m) __LKMM_atomic_op(&(v)->counter, i, m, 3)
 
 #define atomic_add(i, v) __atomic_add(i, v, memory_order_relaxed)
 #define atomic_sub(i, v) __atomic_sub(i, v, memory_order_relaxed)
 #define atomic_inc(v) atomic_add(1, v)
 #define atomic_dec(v) atomic_sub(1, v)
+#define atomic_and(i, v) __atomic_and(i, v, memory_order_relaxed)
+#define atomic_andnot(i, v) __atomic_and(-(i), v, memory_order_relaxed)
+#define atomic_or(i, v) __atomic_or(i, v, memory_order_relaxed)
 
 /* Value-returning atomics */
 #define __atomic_fetch_add(i, v, m) __LKMM_atomic_fetch_op(&(v)->counter, i, m, 0)
 #define __atomic_fetch_sub(i, v, m) __LKMM_atomic_fetch_op(&(v)->counter, i, m, 1)
+#define __atomic_fetch_and(i, v, m) __LKMM_atomic_fetch_op(&(v)->counter, i, m, 2)
+#define __atomic_fetch_or(i, v, m) __LKMM_atomic_fetch_op(&(v)->counter, i, m, 3)
+
+#define atomic_fetch_add(i, v)  __atomic_fetch_add(i, v, memory_order_mb)
+#define atomic_fetch_add_relaxed(i, v) __atomic_fetch_add(i, v, memory_order_relaxed)
+#define atomic_fetch_add_acquire(i, v) __atomic_fetch_add(i, v, memory_order_acquire)
+#define atomic_fetch_add_release(i, v) __atomic_fetch_add(i, v, memory_order_release)
+
+#define atomic_fetch_sub(i, v) __atomic_fetch_sub(i, v, memory_order_mb)
+#define atomic_fetch_sub_relaxed(i, v) __atomic_fetch_sub(i, v, memory_order_relaxed)
+#define atomic_fetch_sub_acquire(i, v) __atomic_fetch_sub(i, v, memory_order_acquire)
+#define atomic_fetch_sub_release(i, v) __atomic_fetch_sub(i, v, memory_order_release)
+
+#define atomic_fetch_and(i, v)  __atomic_fetch_and(i, v, memory_order_mb)
+#define atomic_fetch_and_relaxed(i, v) __atomic_fetch_and(i, v, memory_order_relaxed)
+#define atomic_fetch_and_acquire(i, v) __atomic_fetch_and(i, v, memory_order_acquire)
+#define atomic_fetch_and_release(i, v) __atomic_fetch_and(i, v, memory_order_release)
+
+#define atomic_fetch_or(i, v)  __atomic_fetch_or(i, v, memory_order_mb)
+#define atomic_fetch_or_relaxed(i, v) __atomic_fetch_or(i, v, memory_order_relaxed)
+#define atomic_fetch_or_acquire(i, v) __atomic_fetch_or(i, v, memory_order_acquire)
+#define atomic_fetch_or_release(i, v) __atomic_fetch_or(i, v, memory_order_release)
+
 #define __atomic_add_return(i, v, m) __LKMM_atomic_add_return(&(v)->counter, i, m)
 #define __atomic_sub_return(i, v, m) __LKMM_atomic_sub_return(&(v)->counter, i, m)
 
@@ -97,11 +125,6 @@ typedef atomic64_t  atomic_long_t;
 #define atomic_add_return_relaxed(i, v) __atomic_add_return(i, v, memory_order_relaxed)
 #define atomic_add_return_acquire(i, v) __atomic_add_return(i, v, memory_order_acquire)
 #define atomic_add_return_release(i, v) __atomic_add_return(i, v, memory_order_release)
-
-#define atomic_fetch_add(i, v)  __atomic_fetch_add(i, v, memory_order_mb)
-#define atomic_fetch_add_relaxed(i, v) __atomic_fetch_add(i, v, memory_order_relaxed)
-#define atomic_fetch_add_acquire(i, v) __atomic_fetch_add(i, v, memory_order_acquire)
-#define atomic_fetch_add_release(i, v) __atomic_fetch_add(i, v, memory_order_release)
 
 #define atomic_inc_return(v)         atomic_add_return(1, v)
 #define atomic_inc_return_relaxed(v) atomic_add_return_relaxed(1, v)
@@ -116,11 +139,6 @@ typedef atomic64_t  atomic_long_t;
 #define atomic_sub_return_relaxed(i, v) __atomic_sub_return(i, v, memory_order_relaxed)
 #define atomic_sub_return_acquire(i, v) __atomic_sub_return(i, v, memory_order_acquire)
 #define atomic_sub_return_release(i, v) __atomic_sub_return(i, v, memory_order_release)
-
-#define atomic_fetch_sub(i, v) __atomic_fetch_sub(i, v, memory_order_mb)
-#define atomic_fetch_sub_relaxed(i, v) __atomic_fetch_sub(i, v, memory_order_relaxed)
-#define atomic_fetch_sub_acquire(i, v) __atomic_fetch_sub(i, v, memory_order_acquire)
-#define atomic_fetch_sub_release(i, v) __atomic_fetch_sub(i, v, memory_order_release)
 
 #define atomic_dec_return(v)         atomic_sub_return(1, v)
 #define atomic_dec_return_relaxed(v) atomic_sub_return_relaxed(1, v)
