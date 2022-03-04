@@ -85,8 +85,8 @@ public class LkmmProcedures {
 			IExpr value = (IExpr) params.get(1).accept(visitor);
 			String mo = Linux.intToMo(((IConst) params.get(2).accept(visitor)).getValueAsInt());
 			IOpBin op;
-			String opText = params.get(3).getText();
-			switch(Integer.parseInt(opText)) {
+			int opAsInt = ((IConst)params.get(3).accept(visitor)).getValueAsInt();
+			switch(opAsInt) {
 				case 0:
 					op = PLUS;
 					break;
@@ -100,7 +100,7 @@ public class LkmmProcedures {
 					op = OR;
 					break;
 				default:
-					throw new ParsingException("Unrecognized operation " + opText);
+					throw new ParsingException("Unrecognized operation " + opAsInt);
 			}
 	        Event event = EventFactory.Linux.newRMWFetchOp(address, reg, value, op, mo);
 	        visitor.programBuilder.addChild(visitor.threadCount, event);
@@ -112,8 +112,8 @@ public class LkmmProcedures {
 			IExpr address = (IExpr) params.get(0).accept(visitor);
 			IExpr value = (IExpr) params.get(1).accept(visitor);
 			IOpBin op;
-			String opText = params.get(3).getText();
-			switch(Integer.parseInt(opText)) {
+			int opAsInt = ((IConst)params.get(3).accept(visitor)).getValueAsInt();
+			switch(opAsInt) {
 				case 0:
 					op = PLUS;
 					break;
@@ -127,7 +127,7 @@ public class LkmmProcedures {
 					op = OR;
 					break;
 				default:
-					throw new ParsingException("Unrecognized operation " + opText);
+					throw new ParsingException("Unrecognized operation " + opAsInt);
 			}
 	        Event event = EventFactory.Linux.newRMWOp(address, reg, value, op);
 	        visitor.programBuilder.addChild(visitor.threadCount, event);
@@ -147,9 +147,9 @@ public class LkmmProcedures {
 			return;			
 		}
 		if(name.startsWith("__LKMM_FENCE")) {
-			String text = ctx.call_params().exprs().expr(0).getText();
+			int fenceAsInt = ((IConst)ctx.call_params().exprs().expr(0).accept(visitor)).getValueAsInt();
 			String fence;
-			switch(Integer.parseInt(text)) {
+			switch(fenceAsInt) {
 				case 6:
 					fence = "Mb";
 					break;
@@ -160,7 +160,7 @@ public class LkmmProcedures {
 					fence = "Rmb";
 					break;
 				default:
-					throw new ParsingException("Unrecognized fence " + text);
+					throw new ParsingException("Unrecognized fence " + fenceAsInt);
 			}
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newFence(fence));
 			return;			
