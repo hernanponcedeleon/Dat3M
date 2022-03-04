@@ -20,7 +20,7 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
     @Override
     public String toString() {
     	String tag = mo != null ? "_explicit" : "";
-        return resultRegister + " = atomic_exchange" + tag + "(*" + address + ", " + value + (mo != null ? ", " + mo : "") + ")";
+        return resultRegister + " = atomic_exchange" + tag + "(*" + address + ", " + value + (mo != null ? ", " + mo : "") + ")\t### C11";
     }
 
     @Override
