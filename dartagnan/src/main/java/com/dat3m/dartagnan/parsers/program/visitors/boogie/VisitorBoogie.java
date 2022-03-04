@@ -31,6 +31,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.parsers.program.boogie.LlvmFunctions.LLVMFUNCTIONS;
@@ -118,7 +119,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		throw new ParsingException("Program shall have a main procedure");
     	}
 
-    	Register next = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + "ptrMain", -1);
+    	Register next = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + "ptrMain", ARCH_PRECISION);
     	pool.add(next, "main", -1);
     	while(pool.canCreate()) {
     		next = pool.next();
@@ -327,7 +328,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	       	return null;
 		}
 		if(name.equals("reach_error")) {
-	    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, -1);
+	    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, ARCH_PRECISION);
 	    	assertionIndex++;
 	    	Local event = EventFactory.newLocal(ass, new BConst(false), currentLine);
 			event.addFilters(Tag.ASSERTION);
@@ -427,11 +428,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        	if(ctx.getText().contains("$load.") || value instanceof MemoryObject) {
 	        		try {
 		    			// This names are global so we don't use currentScope.getID(), but per thread.
-		    			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText(), -1);
+		    			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText(), ARCH_PRECISION);
 		    			String tmp = ctx.def_body().exprs().expr(0).getText();
 		    			tmp = tmp.substring(tmp.indexOf(",") + 1, tmp.indexOf(")"));
 		    			// This names are global so we don't use currentScope.getID(), but per thread.
-		    			Register ptr = programBuilder.getOrCreateRegister(threadCount, tmp, -1);
+		    			Register ptr = programBuilder.getOrCreateRegister(threadCount, tmp, ARCH_PRECISION);
 	        			pool.addRegPtr(reg, ptr);	        				        			
 	        		} catch (Exception e) {
 	        			// Nothing to be done
@@ -631,7 +632,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(constantsTypeMap.containsKey(name)) {
 			// Dummy register needed to parse axioms
-			return new Register(name, -1, constantsTypeMap.get(name));
+			return new Register(name, ARCH_PRECISION, constantsTypeMap.get(name));
 		}
         Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
         if(register != null){

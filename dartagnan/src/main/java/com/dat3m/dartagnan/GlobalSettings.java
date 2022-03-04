@@ -9,6 +9,9 @@ public class GlobalSettings {
 
 	private static final Logger logger = LogManager.getLogger(GlobalSettings.class);
 
+    // === Encoding ===
+    public static final int ARCH_PRECISION = -1;
+
     // === Parsing ===
     public static final boolean ATOMIC_AS_LOCK = false;
 

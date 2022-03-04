@@ -11,6 +11,8 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
@@ -118,7 +120,7 @@ public class StdProcedures {
 	}
 	
 	private static void __assert(VisitorBoogie visitor, Call_cmdContext ctx) {
-    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
+    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, ARCH_PRECISION);
     	visitor.assertionIndex++;
     	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
     	if(expr instanceof IConst && ((IConst)expr).getValue().compareTo(BigInteger.ONE) == 0) {
