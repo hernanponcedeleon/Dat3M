@@ -20,7 +20,7 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
     @Override
     public String toString() {
-        return resultRegister + " := atomic_xchg" + Tag.Linux.toText(mo) + "(" + address + ", " + value + ")";
+        return resultRegister + " := atomic_xchg" + Tag.Linux.toText(mo) + "(" + address + ", " + value + ")\t### LKMM";
     }
 
     @Override

@@ -24,7 +24,7 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
 
     @Override
     public String toString() {
-        return resultRegister + " := atomic_" + op.toLinuxName() + "_and_test(" + value + ", " + address + ")";
+        return resultRegister + " := atomic_" + op.toLinuxName() + "_and_test(" + value + ", " + address + ")\t### LKMM";
     }
 
     public IOpBin getOp() {
