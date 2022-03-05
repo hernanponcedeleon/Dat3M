@@ -31,13 +31,6 @@ public class SvCompControlFlowTest extends AbstractSvCompTest {
     @Parameterized.Parameters(name = "{index}: {0}, bound={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][] {
-                {"s3_clnt_2.cil-1", 6},
-                {"s3_clnt_3.cil-1", 1},
-                {"s3_srvr_1.cil-1", 4},
-                {"s3_srvr_2.cil-2", 4},
-                {"s3_srvr_6.cil-1", 1},
-                {"s3_srvr_10.cil", 1},
-                {"s3_srvr_13.cil", 4},
                 {"test_locks_5", 1},
                 {"test_locks_6", 1},
                 {"test_locks_7", 1},

@@ -14,8 +14,8 @@ import static com.dat3m.dartagnan.program.event.Tag.C11.*;
 
 public class AtomicStore extends MemEvent implements RegReaderData {
 
-    private final ExprInterface value;
-    private final ImmutableSet<Register> dataRegs;
+    private ExprInterface value;
+    private ImmutableSet<Register> dataRegs;
 
     public AtomicStore(IExpr address, ExprInterface value, String mo){
         super(address, mo);
@@ -48,6 +48,12 @@ public class AtomicStore extends MemEvent implements RegReaderData {
     	return value;
     }
     
+    @Override
+    public void setMemValue(ExprInterface value){
+        this.value = value;
+        this.dataRegs = value.getRegs();
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

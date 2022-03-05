@@ -9,7 +9,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 public abstract class MemEvent extends Event {
 
-    protected final IExpr address;
+    protected IExpr address;
     protected final String mo;
 
     protected Formula memAddressExpr;
@@ -51,7 +51,15 @@ public abstract class MemEvent extends Event {
         return address;
     }
 
+    public void setAddress(IExpr address){
+        this.address = address;
+    }
+
     public ExprInterface getMemValue(){
+        throw new RuntimeException("MemValue is not available for event " + this.getClass().getName());
+    }
+    
+    public void setMemValue(ExprInterface value){
         throw new RuntimeException("MemValue is not available for event " + this.getClass().getName());
     }
     

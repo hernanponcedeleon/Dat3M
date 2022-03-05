@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -21,11 +20,6 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
     @Override
     public String toString() {
         return resultRegister + " := atomic_xchg" + Tag.Linux.toText(mo) + "(" + address + ", " + value + ")";
-    }
-
-    @Override
-    public ExprInterface getMemValue(){
-        return value;
     }
 
     // Unrolling
