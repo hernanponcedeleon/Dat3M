@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -47,7 +48,7 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
     }
 
     private void eliminateDeadCondJumps(Thread thread) {
-        Map<Event, List<Event>> predecessorsMap = new HashMap<>();
+        Map<Event, List<Event>> immediateLabelPredecessors = new HashMap<>();
         List<Event> removed = new ArrayList<>();
 
         Event pred = thread.getEntry();
@@ -62,29 +63,25 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
         		if(jump.isDead() && !jump.is(Tag.BOUND)) {
         			removed.add(jump);
         		} else {
-            		List<Event> predecessors = predecessorsMap.getOrDefault(jump.getLabel(), new ArrayList<>());
-            		predecessors.add(jump);
-                	predecessorsMap.put(jump.getLabel(), predecessors);
+                    immediateLabelPredecessors.computeIfAbsent(jump.getLabel(), key -> new ArrayList<>()).add(jump);
         		}
+        	} else if(current instanceof Label && !(pred instanceof CondJump && ((CondJump)pred).isGoto())) {
+                immediateLabelPredecessors.computeIfAbsent(current, key -> new ArrayList<>()).add(pred);
         	}
-        	if(current.getSuccessor() instanceof Label) {
-            	if(current instanceof CondJump && ((CondJump)current).isGoto()) {
-            		// current is not a predecessor
-            	} else {
-            		List<Event> predecessors = predecessorsMap.getOrDefault(current.getSuccessor(), new ArrayList<>());
-            		predecessors.add(current);
-                	predecessorsMap.put(current.getSuccessor(), predecessors);
-            	}
-        	}
+            pred = current;
         	current = current.getSuccessor();
         }
         // We check which ifs can be removed
-        for(Event label : predecessorsMap.keySet()) {
+        for(Event label : immediateLabelPredecessors.keySet()) {
         	Event next = label.getSuccessor();
+            List<Event> preds = immediateLabelPredecessors.get(label);
         	// We never remove BOUND events
-			if(next instanceof CondJump && !next.is(Tag.BOUND) && predecessorsMap.get(label).stream().allMatch(e -> mutuallyExclusiveIfs((CondJump)next, e))) {
+			if(next instanceof CondJump && !next.is(Tag.BOUND) && preds.stream().allMatch(e -> mutuallyExclusiveIfs((CondJump)next, e))) {
 				removed.add(next);
 			}
+            if (next != null && preds.size() == 1 && preds.get(0).getSuccessor().equals(label)) {
+                removed.add(label);
+            }
         }
         // Here is the actual removal
         pred = null;
@@ -100,6 +97,19 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
    }
     
     private boolean mutuallyExclusiveIfs(CondJump jump, Event e) {
-    	return jump.getGuard() instanceof BExprUn && e instanceof CondJump && ((BExprUn)jump.getGuard()).getInner().equals(((CondJump)e).getGuard());
+        if (!(e instanceof CondJump)) {
+            return false;
+        }
+        CondJump jump2 = (CondJump) e;
+        if (jump.getGuard() instanceof BExprUn && ((BExprUn)jump.getGuard()).getInner().equals(jump2.getGuard())
+                || jump2.getGuard() instanceof BExprUn && ((BExprUn)jump2.getGuard()).getInner().equals(jump.getGuard())) {
+            return true;
+        }
+        if (jump.getGuard() instanceof Atom && jump2.getGuard() instanceof Atom) {
+            Atom a1 = (Atom) jump.getGuard();
+            Atom a2 = (Atom) jump2.getGuard();
+            return a1.getOp().inverted() == a2.getOp() && a1.getLHS().equals(a2.getLHS()) && a1.getRHS().equals(a2.getRHS());
+        }
+        return false;
     }
 }

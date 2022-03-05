@@ -31,6 +31,33 @@ public enum COpBin {
         return super.toString();
     }
 
+    public COpBin inverted() {
+        switch(this){
+            case EQ:
+                return NEQ;
+            case NEQ:
+                return EQ;
+            case GTE:
+                return LT;
+            case UGTE:
+                return ULT;
+            case LTE:
+                return GT;
+            case ULTE:
+                return UGT;
+            case GT:
+                return LTE;
+            case UGT:
+                return ULTE;
+            case LT:
+                return GTE;
+            case ULT:
+                return UGTE;
+            default:
+                throw new UnsupportedOperationException(this + " cannot be inverted");
+        }
+    }
+
     public BooleanFormula encode(Formula e1, Formula e2, SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         if(e1 instanceof BooleanFormula && e2 instanceof BooleanFormula) {

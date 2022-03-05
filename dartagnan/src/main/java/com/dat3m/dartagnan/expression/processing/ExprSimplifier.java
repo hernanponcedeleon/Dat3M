@@ -2,13 +2,14 @@ package com.dat3m.dartagnan.expression.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-import static com.dat3m.dartagnan.expression.op.IOpBin.R_SHIFT;
-
 import java.math.BigInteger;
+
+import static com.dat3m.dartagnan.expression.op.IOpBin.R_SHIFT;
 
 //TODO: This is buggy for now, because Addresses are treated as IConst
 public class ExprSimplifier extends ExprTransformer {
@@ -33,6 +34,13 @@ public class ExprSimplifier extends ExprTransformer {
             IConst lc = (IConst) lhs;
             BConst rc = (BConst) rhs;
             return new BConst(atom.getOp().combine(lc.getValue(), rc.getValue()));
+        }
+        if (lhs instanceof BExpr && rhs instanceof IConst) {
+            // Simplify "cond == 1" to just "cond"
+            // TODO: If necessary, add versions for "cond == 0" and for "cond != 0/1"
+            if (atom.getOp() == COpBin.EQ && ((IConst) rhs).getValue().intValue() == 1) {
+                return lhs;
+            }
         }
         return new Atom(lhs, atom.getOp(), rhs);
     }
@@ -76,15 +84,22 @@ public class ExprSimplifier extends ExprTransformer {
     @Override
     public BExpr visit(BExprUn bUn) {
     	// Due to constant propagation we are not guaranteed to get BExprs
-    	if(!(bUn.getInner().visit(this) instanceof BConst)) {
+        ExprInterface innerExpr = bUn.getInner().visit(this);
+    	if(!(innerExpr instanceof BExpr)) {
     		return bUn;
     	}
-        BExpr inner = (BExpr) bUn.getInner().visit(this);
+        BExpr inner = (BExpr) innerExpr;
         if (inner instanceof BConst) {
             return inner.isTrue() ? BConst.FALSE : BConst.TRUE;
         }
         if (inner instanceof BExprUn && bUn.getOp() == BOpUn.NOT) {
             return (BExpr) ((BExprUn)inner).getInner();
+        }
+
+        if (inner instanceof Atom && bUn.getOp() == BOpUn.NOT) {
+            // Move negations into the atoms COp
+            Atom atom = (Atom)inner;
+            return new Atom(atom.getLHS(), atom.getOp().inverted(), atom.getRHS());
         }
         return new BExprUn(bUn.getOp(), inner);
     }
@@ -174,6 +189,17 @@ public class ExprSimplifier extends ExprTransformer {
         } else if (t.equals(f)) {
             return t;
         }
+
+        // Simplifies "ITE(cond, 1, 0)" to "cond" and "ITE(cond, 0, 1) to "!cond"
+        // TODO: It is not clear if this gives performance improvements or not
+        if (t instanceof IConst && t.isInteger() && t.reduce().getValueAsInt() == 1
+                && f instanceof IConst && f.isInteger() && f.reduce().getValueAsInt() == 0) {
+            return cond;
+        } else if (t instanceof IConst && t.isInteger() && t.reduce().getValueAsInt() == 0
+                && f instanceof IConst && f.isInteger() && f.reduce().getValueAsInt() == 1) {
+            return new BExprUn(BOpUn.NOT, cond);
+        }
+
         return new IfExpr(cond, t, f);
     }
 
