@@ -15,13 +15,11 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
 
     protected final Register resultRegister;
     protected ExprInterface value;
-    protected ImmutableSet<Register> dataRegs;
 
     AtomicAbstract(IExpr address, Register register, IExpr value, String mo) {
         super(address, mo);
         this.resultRegister = register;
         this.value = value;
-        this.dataRegs = value.getRegs();
         addFilters(ANY, VISIBLE, MEMORY, READ, WRITE, RMW, REG_WRITER, REG_READER);
     }
 
@@ -29,7 +27,6 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
         super(other);
         this.resultRegister = other.resultRegister;
         this.value = other.value;
-        this.dataRegs = other.dataRegs;
     }
 
     @Override
@@ -39,7 +36,7 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
 
     @Override
     public ImmutableSet<Register> getDataRegs() {
-        return dataRegs;
+        return value.getRegs();
     }
 
     @Override
@@ -50,7 +47,6 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
     @Override
     public void setMemValue(ExprInterface value){
         this.value = value;
-        this.dataRegs = value.getRegs();
     }
 
 	// Visitor
