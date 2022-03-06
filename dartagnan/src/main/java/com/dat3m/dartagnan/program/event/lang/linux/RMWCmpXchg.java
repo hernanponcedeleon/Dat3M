@@ -33,11 +33,6 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
     	return cmp;
     }
     
-    @Override
-    public ExprInterface getMemValue(){
-        return value;
-    }
-
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

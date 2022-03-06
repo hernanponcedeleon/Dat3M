@@ -33,11 +33,6 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
     	return cmp;
     }
     
-    @Override
-    public ExprInterface getMemValue(){
-        return value;
-    }
-
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

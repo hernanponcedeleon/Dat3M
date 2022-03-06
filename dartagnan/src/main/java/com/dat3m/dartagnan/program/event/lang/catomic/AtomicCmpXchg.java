@@ -10,7 +10,7 @@ import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 
 public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReaderData {
 
-    private final IExpr expectedAddr;
+    private IExpr expectedAddr;
 
     public AtomicCmpXchg(Register register, IExpr address, IExpr expectedAddr, IExpr value, String mo, boolean strong) {
         super(address, register, value, mo);
@@ -31,9 +31,8 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
     	return expectedAddr;
     }
     
-    @Override
-    public ExprInterface getMemValue() {
-    	return value;
+    public void setExpectedAddr(IExpr expectedAddr) {
+    	this.expectedAddr = expectedAddr;
     }
     
     @Override

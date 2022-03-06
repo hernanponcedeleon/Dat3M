@@ -31,11 +31,6 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
     	return op;
     }
     
-    @Override
-    public ExprInterface getMemValue(){
-        return value;
-    }
-
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

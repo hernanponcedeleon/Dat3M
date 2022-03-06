@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.catomic;
 
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -13,7 +14,7 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegReaderData {
 
     protected final Register resultRegister;
-    protected final IExpr value;
+    protected ExprInterface value;
     protected ImmutableSet<Register> dataRegs;
 
     AtomicAbstract(IExpr address, Register register, IExpr value, String mo) {
@@ -39,6 +40,17 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
     @Override
     public ImmutableSet<Register> getDataRegs() {
         return dataRegs;
+    }
+
+    @Override
+    public ExprInterface getMemValue() {
+    	return value;
+    }
+    
+    @Override
+    public void setMemValue(ExprInterface value){
+        this.value = value;
+        this.dataRegs = value.getRegs();
     }
 
 	// Visitor

@@ -117,7 +117,7 @@ public class SvcompProcedures {
 		event.addFilters(Tag.ASSERTION);
 		visitor.programBuilder.addChild(visitor.threadCount, event);
        	Label end = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-       	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newJump(new Atom(ass, NEQ, new IValue(BigInteger.ONE, expr.getPrecision())), end));
+       	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newJump(new Atom(ass, NEQ, expr), end));
 	}
 
 	private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {

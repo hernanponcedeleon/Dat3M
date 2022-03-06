@@ -15,8 +15,8 @@ public class CondJump extends Event implements RegReaderData {
 
     private Label label;
     private Label label4Copy;
-    private final BExpr expr;
-    private final ImmutableSet<Register> dataRegs;
+    private BExpr expr;
+    private ImmutableSet<Register> dataRegs;
 
     public CondJump(BExpr expr, Label label){
     	Preconditions.checkNotNull(label, "CondJump event requires non null label event");
@@ -42,12 +42,21 @@ public class CondJump extends Event implements RegReaderData {
     	return expr.isTrue();
     }
     
+    public boolean isDead() {
+    	return expr.isFalse();
+    }
+    
     public Label getLabel(){
         return label;
     }
 
     public BExpr getGuard(){
         return expr;
+    }
+
+    public void setGuard(BExpr guard){
+        this.expr = guard;
+        this.dataRegs = expr.getRegs();
     }
 
     @Override
