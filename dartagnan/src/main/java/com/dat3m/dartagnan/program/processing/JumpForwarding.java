@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -74,8 +75,10 @@ public class JumpForwarding implements ProgramProcessor {
                 // We forward the jump if possible
                 jump.setLabel(forwardingMap.getOrDefault(jump.getLabel(), jump.getLabel()));
                 numForwardedJumps++;
-                if (jump.isGoto()) {
+                if (jump.isGoto() && !jump.is(Tag.BOUND)) {
                     // If we have a goto, we can possibly forward directly to its target label
+                    // NOTE: We cannot forward past a bound jump, because that can make bound events
+                    // unreachable.
                     forwardTo = jump.getLabel();
                     if (nextIsGoto) {
                         // We have 2 gotos in sequence... the latter cannot be reached
