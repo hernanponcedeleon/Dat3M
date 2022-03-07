@@ -49,6 +49,13 @@ public class CondJump extends Event implements RegReaderData {
     public Label getLabel(){
         return label;
     }
+    public void setLabel(Label newLabel) {
+        Preconditions.checkNotNull(newLabel);
+        newLabel.addListener(this);
+        this.label.getListeners().remove(this.label);
+        this.label = newLabel;
+        this.label4Copy = null;
+    }
 
     public BExpr getGuard(){
         return expr;
