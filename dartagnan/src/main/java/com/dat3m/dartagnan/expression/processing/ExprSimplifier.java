@@ -42,6 +42,9 @@ public class ExprSimplifier extends ExprTransformer {
                 return lhs;
             }
         }
+        if (lhs.equals(rhs) && atom.getOp() == COpBin.NEQ) {
+            return BConst.FALSE;
+        }
         return new Atom(lhs, atom.getOp(), rhs);
     }
 
