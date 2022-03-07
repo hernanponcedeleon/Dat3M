@@ -15,26 +15,23 @@ import static com.dat3m.dartagnan.program.event.Tag.C11.*;
 public class AtomicStore extends MemEvent implements RegReaderData {
 
     private ExprInterface value;
-    private ImmutableSet<Register> dataRegs;
 
     public AtomicStore(IExpr address, ExprInterface value, String mo){
         super(address, mo);
         Preconditions.checkArgument(!mo.equals(MO_ACQUIRE) && !mo.equals(MO_ACQUIRE_RELEASE),
         		getClass().getName() + " can not have memory order: " + mo);
         this.value = value;
-        this.dataRegs = value.getRegs();
         addFilters(Tag.ANY, Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.REG_READER);
     }
 
     private AtomicStore(AtomicStore other){
         super(other);
         this.value = other.value;
-        this.dataRegs = other.dataRegs;
     }
 
     @Override
     public ImmutableSet<Register> getDataRegs(){
-        return dataRegs;
+        return value.getRegs();
     }
 
     @Override
@@ -51,7 +48,6 @@ public class AtomicStore extends MemEvent implements RegReaderData {
     @Override
     public void setMemValue(ExprInterface value){
         this.value = value;
-        this.dataRegs = value.getRegs();
     }
 
     // Unrolling

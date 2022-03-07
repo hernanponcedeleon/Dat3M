@@ -15,7 +15,6 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
 
     public RMWAddUnless(IExpr address, Register register, ExprInterface cmp, IExpr value) {
         super(address, register, value, Tag.Linux.MO_MB);
-        dataRegs = new ImmutableSet.Builder<Register>().addAll(value.getRegs()).addAll(cmp.getRegs()).build();
         this.cmp = cmp;
     }
 
@@ -33,6 +32,11 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
     	return cmp;
     }
     
+    @Override
+    public ImmutableSet<Register> getDataRegs(){
+        return new ImmutableSet.Builder<Register>().addAll(value.getRegs()).addAll(cmp.getRegs()).build();
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
