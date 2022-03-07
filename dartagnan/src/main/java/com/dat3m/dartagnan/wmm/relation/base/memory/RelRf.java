@@ -22,6 +22,7 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
@@ -170,7 +171,8 @@ public class RelRf extends Relation {
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-    	
+        BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+
     	BooleanFormula enc = bmgr.makeTrue();
         Map<MemEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
 
@@ -179,13 +181,17 @@ public class RelRf extends Relation {
             MemEvent r = (MemEvent) tuple.getSecond();
             BooleanFormula edge = this.getSMTVar(tuple, ctx);
 
-            IntegerFormula a1 = convertToIntegerFormula(w.getMemAddressExpr(), ctx);
-            IntegerFormula a2 = convertToIntegerFormula(r.getMemAddressExpr(), ctx);
-            BooleanFormula sameAddress = imgr.equal(a1, a2);
+            Formula a1 = w.getMemAddressExpr();
+            Formula a2 = r.getMemAddressExpr();
+            BooleanFormula sameAddress = ARCH_PRECISION > -1 ? 
+            		bvmgr.equal((BitvectorFormula)a1, (BitvectorFormula)a2) : 
+            		imgr.equal((IntegerFormula)a1, (IntegerFormula)a2);
 
-            IntegerFormula v1 = convertToIntegerFormula(w.getMemValueExpr(), ctx);
-            IntegerFormula v2 = convertToIntegerFormula(r.getMemValueExpr(), ctx);
-            BooleanFormula sameValue = imgr.equal(v1, v2);
+            Formula v1 = w.getMemValueExpr();
+            Formula v2 = r.getMemValueExpr();
+            BooleanFormula sameValue = ARCH_PRECISION > -1 ? 
+            		bvmgr.equal((BitvectorFormula)v1, (BitvectorFormula)v2) : 
+                	imgr.equal((IntegerFormula)v1, (IntegerFormula)v2);
 
             edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(edge);
             enc = bmgr.and(enc, bmgr.implication(edge, bmgr.and(getExecPair(w, r, ctx), sameAddress, sameValue)));
