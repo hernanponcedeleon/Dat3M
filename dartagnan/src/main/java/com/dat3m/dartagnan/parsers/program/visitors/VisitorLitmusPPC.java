@@ -20,6 +20,7 @@ import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 public class VisitorLitmusPPC
@@ -65,19 +66,19 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusPPCParser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), -1));
+        programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusPPCParser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IValue(new BigInteger(ctx.constant().getText()), -1));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusPPCParser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), -1);
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), ARCH_PRECISION);
         return null;
     }
 
@@ -115,14 +116,14 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitLi(LitmusPPCParser.LiContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), -1);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
     }
 
     @Override
     public Object visitLwz(LitmusPPCParser.LwzContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), -1);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         return programBuilder.addChild(mainThread, EventFactory.newLoad(r1, ra, "_rx"));
     }
@@ -148,22 +149,22 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitMr(LitmusPPCParser.MrContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), -1);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, r2));
     }
 
     @Override
     public Object visitAddi(LitmusPPCParser.AddiContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), -1);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), -1);
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.PLUS, constant)));
     }
 
     @Override
     public Object visitXor(LitmusPPCParser.XorContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), -1);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.XOR, r3)));

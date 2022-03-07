@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.expression.op;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+
 import java.math.BigInteger;
 
 public enum IOpUn {
@@ -96,9 +98,9 @@ public enum IOpUn {
     		case MINUS:
     				return bvmgr.subtract(bvmgr.makeBitvector(32, BigInteger.ZERO), bv);
     		case BV2UINT:
-    				return bvmgr.toIntegerFormula(bv, false);
+    				return ARCH_PRECISION > -1 ? bv : bvmgr.toIntegerFormula(bv, false);
     		case BV2INT:
-    				return bvmgr.toIntegerFormula(bv, true);
+    				return ARCH_PRECISION > -1 ? bv : bvmgr.toIntegerFormula(bv, true);
     		// ============ INT2BV ============
     		case INT2BV1:
     		case INT2BV8:

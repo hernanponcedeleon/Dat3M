@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.newInit;
 import static com.dat3m.dartagnan.program.event.EventFactory.newLabel;
@@ -56,7 +57,7 @@ public class AtomicAsLock implements ProgramProcessor {
 			thread.getExit().setSuccessor(end);
 			thread.updateExit(end);
 		}
-		Register register = new Register("__VERIFIER_atomic_dummy",thread.getId(),-1);
+		Register register = new Register("__VERIFIER_atomic_dummy",thread.getId(),ARCH_PRECISION);
 		for(Event predecessor = thread.getEntry(); predecessor != null;) {
 			Event event = predecessor.getSuccessor();
 			boolean begin = event instanceof BeginAtomic;

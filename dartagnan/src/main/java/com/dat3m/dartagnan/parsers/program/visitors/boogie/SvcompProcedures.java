@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 
 public class SvcompProcedures {
@@ -126,7 +127,7 @@ public class SvcompProcedures {
 	}
 
 	public static void __VERIFIER_atomic(VisitorBoogie visitor, boolean begin) {
-        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
+        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, ARCH_PRECISION);
         MemoryObject lockAddress = visitor.programBuilder.getOrNewObject("__VERIFIER_atomic");
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		LinkedList<Event> events = new LinkedList<>();
