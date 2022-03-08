@@ -52,7 +52,7 @@ public class RelCo extends Relation {
             name=ENCODE_FINAL_MEMVALUES,
             description="Encode final memory values per address.",
             secure=true)
-    private boolean encodeLastCo = false; //TODO: Automatically set this option only for litmus tests
+    private boolean encodeLastCo = true; //TODO: Automatically set this option only for litmus tests
 
 	// =====================================================================
 
