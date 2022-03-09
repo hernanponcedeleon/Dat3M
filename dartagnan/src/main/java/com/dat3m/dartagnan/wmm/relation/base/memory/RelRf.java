@@ -17,13 +17,12 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
-import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
+import static com.dat3m.dartagnan.expression.utils.Utils.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
@@ -183,15 +182,16 @@ public class RelRf extends Relation {
 
             Formula a1 = w.getMemAddressExpr();
             Formula a2 = r.getMemAddressExpr();
+            // The boogie file might have a different type (Ints vs BVs) that the imposed by ARCH_PRECISION
+            // In such cases we perform the transformation 
             BooleanFormula sameAddress = ARCH_PRECISION > -1 ? 
-            		bvmgr.equal((BitvectorFormula)a1, (BitvectorFormula)a2) : 
-            		imgr.equal((IntegerFormula)a1, (IntegerFormula)a2);
-
+            		bvmgr.equal(convertToBitvectorFormula(a1, ctx), convertToBitvectorFormula(a2, ctx)) : 
+            		imgr.equal(convertToIntegerFormula(a1, ctx), convertToIntegerFormula(a2, ctx));
             Formula v1 = w.getMemValueExpr();
             Formula v2 = r.getMemValueExpr();
             BooleanFormula sameValue = ARCH_PRECISION > -1 ? 
-            		bvmgr.equal((BitvectorFormula)v1, (BitvectorFormula)v2) : 
-                	imgr.equal((IntegerFormula)v1, (IntegerFormula)v2);
+            		bvmgr.equal(convertToBitvectorFormula(v1, ctx), convertToBitvectorFormula(v2, ctx)) : 
+                	imgr.equal(convertToIntegerFormula(v1, ctx), convertToIntegerFormula(v2, ctx));
 
             edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(edge);
             enc = bmgr.and(enc, bmgr.implication(edge, bmgr.and(getExecPair(w, r, ctx), sameAddress, sameValue)));

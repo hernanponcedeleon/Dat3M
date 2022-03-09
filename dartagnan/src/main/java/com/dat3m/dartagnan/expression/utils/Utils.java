@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.expression.utils;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
@@ -27,5 +29,11 @@ public class Utils {
     	return f instanceof BitvectorFormula ? 
     			ctx.getFormulaManager().getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula) f, false) : 
     			(IntegerFormula)f;
+    }
+
+    public static BitvectorFormula convertToBitvectorFormula(Formula f, SolverContext ctx) {
+    	return f instanceof BitvectorFormula ?
+    			(BitvectorFormula)f :
+    			ctx.getFormulaManager().getBitvectorFormulaManager().makeBitvector(ARCH_PRECISION, (IntegerFormula) f);
     }
 }
