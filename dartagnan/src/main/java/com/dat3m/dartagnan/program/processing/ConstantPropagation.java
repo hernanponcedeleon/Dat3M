@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2INT;
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2UINT;
 
@@ -59,6 +60,7 @@ public class ConstantPropagation implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
+    	Preconditions.checkState(ARCH_PRECISION < 0, "Constant propagation cannot be used with bit-vector expressions");
         Preconditions.checkArgument(program.isUnrolled(), "The program needs to be unrolled before constant propagation.");
         Preconditions.checkArgument(!program.isCompiled(), "Constant propagation needs to be run before compilation.");
         for(Thread thread : program.getThreads()) {
