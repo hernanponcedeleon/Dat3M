@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 public class EventFactory {
@@ -57,7 +56,7 @@ public class EventFactory {
     }
 
     public static Load newLoad(Register register, IExpr address, String mo) {
-        return newLoad(register, address, mo, ARCH_PRECISION);
+        return newLoad(register, address, mo, -1);
     }
 
     public static Store newStore(IExpr address, ExprInterface value, String mo, int cLine) {
@@ -67,7 +66,7 @@ public class EventFactory {
     }
 
     public static Store newStore(IExpr address, ExprInterface value, String mo) {
-        return newStore(address, value, mo, ARCH_PRECISION);
+        return newStore(address, value, mo, -1);
     }
 
     public static Fence newFence(String name) {
@@ -113,7 +112,7 @@ public class EventFactory {
     }
 
     public static Local newLocal(Register register, ExprInterface expr) {
-        return newLocal(register, expr, ARCH_PRECISION);
+        return newLocal(register, expr, -1);
     }
 
     public static Label newLabel(String name) {
