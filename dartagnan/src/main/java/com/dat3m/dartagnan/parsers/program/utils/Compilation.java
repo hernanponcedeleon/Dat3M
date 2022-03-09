@@ -25,6 +25,9 @@ public class Compilation {
     	cmd.addAll(asList("-bpl", System.getenv("DAT3M_HOME") + "/output/" + name + ".bpl"));
     	cmd.add(file.getAbsolutePath());
     	
+		logger.info("Compiling with smack");
+    	logger.debug("Running " + String.join(" ", cmd));
+
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
     	Process proc = processBuilder.start();
     	proc.waitFor();
@@ -37,8 +40,6 @@ public class Compilation {
 				}
 			}
     		logger.info("Compiling with smack");
-        	logger.info("CFLAGS=" + System.getenv().getOrDefault("CFLAGS", ""));
-        	logger.debug("Running " + String.join(" ", cmd));
     		tries++;
         	proc = processBuilder.start();
         	proc.waitFor();
