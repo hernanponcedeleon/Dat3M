@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.event.Tag.Linux;
 import com.dat3m.dartagnan.program.event.core.Event;
 
 import static com.dat3m.dartagnan.expression.op.IOpBin.*;
+import static com.dat3m.dartagnan.program.event.Tag.Linux.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -158,6 +159,15 @@ public class LkmmProcedures {
 					break;
 				case 8:
 					fence = "Rmb";
+					break;
+				case 9:
+					fence = RCU_LOCK;
+					break;
+				case 10:
+					fence = RCU_UNLOCK;
+					break;
+				case 11:
+					fence = RCU_SYNC;
 					break;
 				default:
 					throw new ParsingException("Unrecognized fence " + fenceAsInt);

@@ -10,6 +10,9 @@ typedef enum memory_order {
   memory_order_mb,
   memory_order_wmb,
   memory_order_rmb,
+  RCU_LOCK,
+  RCU_UNLOCK,
+  RCU_SYNC
 } memory_order;
 
 /*******************************************************************************
@@ -27,6 +30,10 @@ typedef enum memory_order {
 #define smp_mb()  __LKMM_FENCE(memory_order_mb)
 #define smp_rmb() __LKMM_FENCE(memory_order_rmb)
 #define smp_wmb() __LKMM_FENCE(memory_order_wmb)
+
+#define rcu_read_lock() __LKMM_FENCE(RCU_LOCK)
+#define rcu_read_unlock() __LKMM_FENCE(RCU_UNLOCK)
+#define synchronize_rcu() __LKMM_FENCE(RCU_SYNC)
 
 /* Acquire/Release and friends */
 #define smp_load_acquire(p)      __LKMM_load(p, memory_order_acquire)
