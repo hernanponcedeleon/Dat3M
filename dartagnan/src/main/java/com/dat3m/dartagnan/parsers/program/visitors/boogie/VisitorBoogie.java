@@ -61,7 +61,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	protected ProgramBuilder programBuilder;
 	protected int threadCount = 0;
 	protected int currentThread = 0;
-    
+	private Set<Integer> threadsWithIds = new HashSet<Integer>();
+
 	protected int currentLine= -1;
 	
     private Label currentLabel = null;
@@ -353,6 +354,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			programBuilder.addChild(threadCount, event);
 	       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 			programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end));
+			return null;
+		}
+		if(name.equals("__VERIFIER_thread_id")) {
+			// This is sound because we parse threads to completion
+			String registerName = ctx.call_params().Ident(0).getText();
+			Register register = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + registerName, ARCH_PRECISION);
+			threadsWithIds.add(threadCount);
+			// Ids start at 0
+	        IValue id = new IValue(BigInteger.valueOf(threadsWithIds.size()-1), ARCH_PRECISION);
+			programBuilder.addChild(threadCount, EventFactory.newLocal(register, id));
 			return null;
 		}
 
