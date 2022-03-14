@@ -96,7 +96,7 @@ typedef atomic64_t  atomic_long_t;
 #define atomic_inc(v) atomic_add(1, v)
 #define atomic_dec(v) atomic_sub(1, v)
 #define atomic_and(i, v) __atomic_and(i, v, memory_order_relaxed)
-#define atomic_andnot(i, v) __atomic_and(-(i), v, memory_order_relaxed)
+#define atomic_andnot(i, v) __atomic_and(~(i), v, memory_order_relaxed)
 #define atomic_or(i, v) __atomic_or(i, v, memory_order_relaxed)
 
 /* Value-returning atomics */
