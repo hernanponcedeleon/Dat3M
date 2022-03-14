@@ -96,7 +96,7 @@ public class RefinementSolver {
 
         logger.info("Refinement procedure started.");
         while (!prover.isUnsat()) {
-        	if(iterationCount == 0) {
+        	if(iterationCount == 0 && logger.isDebugEnabled()) {
         		String smtStatistics = "\n ===== SMT Statistics (after first iteration) ===== \n";
         		for(String key : prover.getStatistics().keySet()) {
         			smtStatistics += String.format("\t%s -> %s\n", key, prover.getStatistics().get(key));
@@ -155,12 +155,14 @@ public class RefinementSolver {
         logger.debug("Final solver iteration:\n" +
                         " ===== Final Iteration: {} =====\n" +
                         "Native Solving/Proof time(ms): {}", iterationCount, curTime - lastTime);
-		String smtStatistics = "\n ===== SMT Statistics (after final iteration) ===== \n";
-		for(String key : prover.getStatistics().keySet()) {
-			smtStatistics += String.format("\t%s -> %s\n", key, prover.getStatistics().get(key));
-		}
-		logger.debug(smtStatistics);
-
+		
+        if(logger.isDebugEnabled()) {        	
+            String smtStatistics = "\n ===== SMT Statistics (after final iteration) ===== \n";
+    		for(String key : prover.getStatistics().keySet()) {
+    			smtStatistics += String.format("\t%s -> %s\n", key, prover.getStatistics().get(key));
+    		}
+    		logger.debug(smtStatistics);
+        }
 
         if (logger.isInfoEnabled()) {
             String message;

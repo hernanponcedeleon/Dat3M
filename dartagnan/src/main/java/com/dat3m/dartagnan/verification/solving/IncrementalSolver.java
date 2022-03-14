@@ -60,11 +60,13 @@ public class IncrementalSolver {
         	res = FAIL;
         }
 
-		String smtStatistics = "\n ===== SMT Statistics ===== \n";
-		for(String key : prover.getStatistics().keySet()) {
-			smtStatistics += String.format("\t%s -> %s\n", key, prover.getStatistics().get(key));
-		}
-		logger.debug(smtStatistics);
+        if(logger.isDebugEnabled()) {        	
+    		String smtStatistics = "\n ===== SMT Statistics ===== \n";
+    		for(String key : prover.getStatistics().keySet()) {
+    			smtStatistics += String.format("\t%s -> %s\n", key, prover.getStatistics().get(key));
+    		}
+    		logger.debug(smtStatistics);
+        }
 
         res = task.getProgram().getAss().getInvert() ? res.invert() : res;
         logger.info("Verification finished with result " + res);
