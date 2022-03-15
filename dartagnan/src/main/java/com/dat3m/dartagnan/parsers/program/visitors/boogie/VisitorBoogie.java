@@ -61,7 +61,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	protected ProgramBuilder programBuilder;
 	protected int threadCount = 0;
 	protected int currentThread = 0;
-	private Set<Integer> threadsWithIds = new HashSet<Integer>();
+	private Set<String> threadLocalVariables = new HashSet<String>();
 
 	protected int currentLine= -1;
 	
@@ -178,6 +178,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			String name = ident.getText();
 			String type = ctx.typed_idents().type().getText();
 			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : ARCH_PRECISION;
+			if(ctx.getText().contains(":treadLocal")) {
+				threadLocalVariables.add(name);
+			}
 			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name) && ATOMICPROCEDURES.stream().noneMatch(name::startsWith)) {
 				int size = ctx.getText().contains(":allocSize")
 					? Integer.parseInt(ctx.getText().split(":allocSize")[1].split("}")[0])
@@ -354,16 +357,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			programBuilder.addChild(threadCount, event);
 	       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 			programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end));
-			return null;
-		}
-		if(name.equals("__VERIFIER_thread_id")) {
-			// This is sound because we parse threads to completion
-			String registerName = ctx.call_params().Ident(0).getText();
-			Register register = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + registerName, ARCH_PRECISION);
-			threadsWithIds.add(threadCount);
-			// Ids start at 0
-	        IValue id = new IValue(BigInteger.valueOf(threadsWithIds.size()-1), ARCH_PRECISION);
-			programBuilder.addChild(threadCount, EventFactory.newLocal(register, id));
 			return null;
 		}
 
@@ -667,6 +660,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
         if(register != null){
             return register;
+        }
+        if(threadLocalVariables.contains(name)) {
+            return programBuilder.getOrNewObject(String.format("%s(%s)", name, threadCount));
         }
         MemoryObject object = programBuilder.getObject(name);
         if(object != null) {
