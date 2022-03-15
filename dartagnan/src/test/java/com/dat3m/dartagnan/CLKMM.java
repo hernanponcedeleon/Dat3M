@@ -46,6 +46,7 @@ public class CLKMM extends AbstractCTest {
 	            {"LB+poacquireonce+pooncerelease", NONE, PASS},
 	            {"LB+poonceonces", NONE, FAIL},
                 {"MP+fencewbonceonce+fencermbonceonce", NONE, PASS},
+                {"NVR-RMW+Release", NONE, FAIL},
                 {"rcu-gp20", NONE, PASS},
                 {"rcu", NONE, PASS},
                 {"rcu+ar-link-short0", NONE, PASS},
