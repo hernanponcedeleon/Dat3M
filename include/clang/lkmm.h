@@ -125,8 +125,8 @@ typedef atomic64_t  atomic_long_t;
 #define atomic_fetch_or_acquire(i, v) __atomic_fetch_or(i, v, memory_order_acquire)
 #define atomic_fetch_or_release(i, v) __atomic_fetch_or(i, v, memory_order_release)
 
-#define __atomic_add_return(i, v, m) __LKMM_atomic_add_return(&(v)->counter, i, m)
-#define __atomic_sub_return(i, v, m) __LKMM_atomic_sub_return(&(v)->counter, i, m)
+#define __atomic_add_return(i, v, m) __LKMM_atomic_op_return(&(v)->counter, i, m, 0)
+#define __atomic_sub_return(i, v, m) __LKMM_atomic_op_return(&(v)->counter, i, m, 1)
 
 #define atomic_add_return(i, v) __atomic_add_return(i, v, memory_order_mb)
 #define atomic_add_return_relaxed(i, v) __atomic_add_return(i, v, memory_order_relaxed)

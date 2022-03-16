@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.Linux;
 import com.dat3m.dartagnan.program.event.core.Event;
 
-import static com.dat3m.dartagnan.expression.op.IOpBin.*;
 import static com.dat3m.dartagnan.program.event.Tag.Linux.*;
 
 import java.util.Arrays;
@@ -28,6 +27,7 @@ public class LkmmProcedures {
 			"__LKMM_cmpxchg",
 			"__LKMM_atomic_fetch_op",
 			"__LKMM_atomic_op",
+			"__LKMM_atomic_op_return",
 			"__LKMM_WRITE_ONCE",
 			"__LKMM_READ_ONCE",
 			"__LKMM_FENCE");
@@ -85,25 +85,19 @@ public class LkmmProcedures {
 			IExpr address = (IExpr) params.get(0).accept(visitor);
 			IExpr value = (IExpr) params.get(1).accept(visitor);
 			String mo = Linux.intToMo(((IConst) params.get(2).accept(visitor)).getValueAsInt());
-			IOpBin op;
-			int opAsInt = ((IConst)params.get(3).accept(visitor)).getValueAsInt();
-			switch(opAsInt) {
-				case 0:
-					op = PLUS;
-					break;
-				case 1:
-					op = MINUS;
-					break;
-				case 2:
-					op = AND;
-					break;
-				case 3:
-					op = OR;
-					break;
-				default:
-					throw new ParsingException("Unrecognized operation " + opAsInt);
-			}
+			IOpBin op = IOpBin.intToOp(((IConst)params.get(3).accept(visitor)).getValueAsInt());
 	        Event event = EventFactory.Linux.newRMWFetchOp(address, reg, value, op, mo);
+	        visitor.programBuilder.addChild(visitor.threadCount, event);
+			return;
+		}
+		if(name.startsWith("__LKMM_atomic_op_return")) {
+			Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
+			List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
+			IExpr address = (IExpr) params.get(0).accept(visitor);
+			IExpr value = (IExpr) params.get(1).accept(visitor);
+			String mo = Linux.intToMo(((IConst) params.get(2).accept(visitor)).getValueAsInt());
+			IOpBin op = IOpBin.intToOp(((IConst)params.get(3).accept(visitor)).getValueAsInt());
+	        Event event = EventFactory.Linux.newRMWOpReturn(address, reg, value, op, mo);
 	        visitor.programBuilder.addChild(visitor.threadCount, event);
 			return;
 		}
@@ -112,24 +106,7 @@ public class LkmmProcedures {
 			List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 			IExpr address = (IExpr) params.get(0).accept(visitor);
 			IExpr value = (IExpr) params.get(1).accept(visitor);
-			IOpBin op;
-			int opAsInt = ((IConst)params.get(3).accept(visitor)).getValueAsInt();
-			switch(opAsInt) {
-				case 0:
-					op = PLUS;
-					break;
-				case 1:
-					op = MINUS;
-					break;
-				case 2:
-					op = AND;
-					break;
-				case 3:
-					op = OR;
-					break;
-				default:
-					throw new ParsingException("Unrecognized operation " + opAsInt);
-			}
+			IOpBin op = IOpBin.intToOp(((IConst)params.get(3).accept(visitor)).getValueAsInt());
 	        Event event = EventFactory.Linux.newRMWOp(address, reg, value, op);
 	        visitor.programBuilder.addChild(visitor.threadCount, event);
 			return;

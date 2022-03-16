@@ -61,6 +61,17 @@ public enum IOpBin {
         }
     }
 
+    public static IOpBin intToOp(int i) {
+        switch(i) {
+            case 0: return PLUS;
+            case 1: return MINUS;
+            case 2: return AND;
+            case 3: return OR;
+            default:
+                throw new UnsupportedOperationException("The binary operator is not recognized");
+        }
+    }
+    
     public Formula encode(Formula e1, Formula e2, SolverContext ctx){
     	// Some SMT solvers do not support certain theories.
     	// Calling the constructor of the manager in such solvers results in an Exception.
