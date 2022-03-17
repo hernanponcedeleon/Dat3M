@@ -10,28 +10,28 @@ import com.google.common.base.Preconditions;
 public class Utils {
 
 	public static BooleanFormula generalEqual(Formula f1, Formula f2, SolverContext ctx) {
-		Preconditions.checkArgument(f1.getClass().equals(f2.getClass()),
-				String.format("Formulas %s and %s have different types or are of unsupported type for generalEqual", f1, f2));
 		Preconditions.checkArgument(f1 instanceof IntegerFormula || f1 instanceof BitvectorFormula, 
 				"generalEqual inputs must be IntegerFormula or BitvectorFormula");  
-		
+
 		FormulaManager fmgr = ctx.getFormulaManager();
-		if(f1 instanceof IntegerFormula) {
-			// By the preconditions, f1 and f2 are guaranteed to be IntegerFormula
-			return fmgr.getIntegerFormulaManager().equal((IntegerFormula)f1, (IntegerFormula)f2);
-		} else {
-			// By the preconditions, f1 and f2 are guaranteed to be BitvectorFormula
-			return fmgr.getBitvectorFormulaManager().equal((BitvectorFormula)f1, (BitvectorFormula)f2);
-		}
+        // The boogie file might have a different type (Ints vs BVs) that the imposed by ARCH_PRECISION
+        // In such cases we perform the transformation 
+		return ARCH_PRECISION > -1 ? 
+				fmgr.getBitvectorFormulaManager().equal(
+						convertToBitvectorFormula(f1, ctx), 
+						convertToBitvectorFormula(f2, ctx)) : 
+        		fmgr.getIntegerFormulaManager().equal(
+        				convertToIntegerFormula(f1, ctx), 
+        				convertToIntegerFormula(f2, ctx));
 	}
 	
-    public static IntegerFormula convertToIntegerFormula(Formula f, SolverContext ctx) {
+    private static IntegerFormula convertToIntegerFormula(Formula f, SolverContext ctx) {
     	return f instanceof BitvectorFormula ? 
     			ctx.getFormulaManager().getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula) f, false) : 
     			(IntegerFormula)f;
     }
 
-    public static BitvectorFormula convertToBitvectorFormula(Formula f, SolverContext ctx) {
+    private static BitvectorFormula convertToBitvectorFormula(Formula f, SolverContext ctx) {
     	return f instanceof BitvectorFormula ?
     			(BitvectorFormula)f :
     			ctx.getFormulaManager().getBitvectorFormulaManager().makeBitvector(ARCH_PRECISION, (IntegerFormula) f);

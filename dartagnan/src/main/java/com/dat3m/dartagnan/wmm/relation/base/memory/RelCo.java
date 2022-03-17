@@ -220,16 +220,10 @@ public class RelCo extends Relation {
                     IExpr address = init.getAddress();
                     Formula a1 = w1.getMemAddressExpr();
                     Formula a2 = address.toIntFormula(init,ctx);
+                    BooleanFormula sameAddress = generalEqual(a1, a2, ctx); 
                     Formula v1 = w1.getMemValueExpr();
                     Formula v2 = init.getBase().getLastMemValueExpr(ctx,init.getOffset());
-                    // The boogie file might have a different type (Ints vs BVs) that the imposed by ARCH_PRECISION
-                    // In such cases we perform the transformation 
-                    BooleanFormula sameAddress = ARCH_PRECISION > -1 ? 
-                    		bvmgr.equal(convertToBitvectorFormula(a1, ctx), convertToBitvectorFormula(a2, ctx)) : 
-                        	imgr.equal(convertToIntegerFormula(a1, ctx), convertToIntegerFormula(a2, ctx));
-                    BooleanFormula sameValue = ARCH_PRECISION > -1 ? 
-                    		bvmgr.equal(convertToBitvectorFormula(v1, ctx), convertToBitvectorFormula(v2, ctx)) : 
-                        	imgr.equal(convertToIntegerFormula(v1, ctx), convertToIntegerFormula(v2, ctx));
+                    BooleanFormula sameValue = generalEqual(v1, v2, ctx);
                     enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
             }
