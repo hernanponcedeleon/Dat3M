@@ -17,13 +17,7 @@ public enum IOpUn {
 	
     @Override
     public String toString() {
-    	//TODO (HP): This is a strange switch-statement
-        switch(this){
-			case MINUS:
-				return "-";
-			default:
-				return "";
-        }
+    	return this.equals(MINUS) ? "-" : "";
     }
 
     public Formula encode(Formula e, SolverContext ctx) {
@@ -96,12 +90,11 @@ public enum IOpUn {
 			BitvectorFormula bv = (BitvectorFormula)e;
 	    	switch(this) {
     		case MINUS:
-    			return bvmgr.subtract(bvmgr.makeBitvector(32, BigInteger.ZERO), bv);
+    			return bvmgr.negate(bv);
     		case BV2UINT:
-    			// We don't have access to the precision of e, thus this is the best we can do for extending to the full precision
-    			return ARCH_PRECISION > -1 ? bvmgr.makeBitvector(ARCH_PRECISION, bvmgr.toIntegerFormula(bv, false)) : bvmgr.toIntegerFormula(bv, false);
+    			return ARCH_PRECISION > -1 ? bvmgr.extend(bv, ARCH_PRECISION - bvmgr.getLength(bv), false) : bvmgr.toIntegerFormula(bv, false);
     		case BV2INT:
-    			return ARCH_PRECISION > -1 ? bvmgr.makeBitvector(ARCH_PRECISION, bvmgr.toIntegerFormula(bv, true)) : bvmgr.toIntegerFormula(bv, true);
+    			return ARCH_PRECISION > -1 ? bvmgr.extend(bv, ARCH_PRECISION - bvmgr.getLength(bv), true) : bvmgr.toIntegerFormula(bv, true);
     		// ============ INT2BV ============
     		case INT2BV1:
     		case INT2BV8:
