@@ -96,7 +96,7 @@ public enum IOpUn {
 			BitvectorFormula bv = (BitvectorFormula)e;
 	    	switch(this) {
     		case MINUS:
-    			return bvmgr.subtract(bvmgr.makeBitvector(32, BigInteger.ZERO), bv);
+    			return bvmgr.negate(bv);
     		case BV2UINT:
     			return ARCH_PRECISION > -1 ? bvmgr.extend(bv, ARCH_PRECISION - bvmgr.getLength(bv), false) : bvmgr.toIntegerFormula(bv, false);
     		case BV2INT:
