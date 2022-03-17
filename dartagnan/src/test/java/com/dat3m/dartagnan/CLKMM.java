@@ -39,6 +39,7 @@ public class CLKMM extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
+				{"C-atomic-op-return-simple-02-2", NONE, FAIL},
 	            {"CoRR+poonce+Once", NONE, PASS},
 	            {"CoRW+poonce+Once", NONE, PASS},
 	            {"CoWR+poonceonce+Once", NONE, PASS},
