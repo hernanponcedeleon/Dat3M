@@ -40,6 +40,7 @@ public class CLKMM extends AbstractCTest {
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
 				{"C-atomic-op-return-simple-02-2", NONE, FAIL},
+				{"C-WWC+o-branch-o+o-branch-o", NONE, FAIL},
 	            {"CoRR+poonce+Once", NONE, PASS},
 	            {"CoRW+poonce+Once", NONE, PASS},
 	            {"CoWR+poonceonce+Once", NONE, PASS},
