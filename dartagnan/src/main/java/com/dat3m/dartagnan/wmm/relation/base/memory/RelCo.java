@@ -24,7 +24,6 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.configuration.OptionNames.CO_ANTISYMMETRY;
 import static com.dat3m.dartagnan.configuration.OptionNames.ENCODE_FINAL_MEMVALUES;
 import static com.dat3m.dartagnan.expression.utils.Utils.*;
@@ -147,7 +146,6 @@ public class RelCo extends Relation {
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-        BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
         
     	BooleanFormula enc = bmgr.makeTrue();
 
@@ -186,9 +184,8 @@ public class RelCo extends Relation {
 
                 Formula a1 = w1.getMemAddressExpr();
                 Formula a2 = w2.getMemAddressExpr();
-                BooleanFormula sameAddress = ARCH_PRECISION > -1 ? 
-                		bvmgr.equal((BitvectorFormula)a1, (BitvectorFormula)a2) : 
-                		imgr.equal((IntegerFormula)a1, (IntegerFormula)a2);
+                BooleanFormula sameAddress = generalEqual(a1, a2, ctx); 
+
                 enc = bmgr.and(enc, bmgr.equivalence(relation,
                         bmgr.and(execPair, sameAddress, imgr.lessThan(getIntVar(w1, ctx), getIntVar(w2, ctx))
                 )));

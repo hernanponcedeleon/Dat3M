@@ -21,7 +21,6 @@ import org.sosy_lab.java_smt.api.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.expression.utils.Utils.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
@@ -169,8 +168,6 @@ public class RelRf extends Relation {
     protected BooleanFormula encodeApprox(SolverContext ctx) {
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-        BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
 
     	BooleanFormula enc = bmgr.makeTrue();
         Map<MemEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
