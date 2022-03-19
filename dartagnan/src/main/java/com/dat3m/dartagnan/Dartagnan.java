@@ -122,7 +122,6 @@ public class Dartagnan extends BaseOptions {
                 	case RACES:
                     	result = DataRaceSolver.run(ctx, prover, task);
                         break;
-					case LIVENESS:
                     case REACHABILITY:
                     	switch (o.getMethod()) {
                         	case TWO:

@@ -38,8 +38,6 @@ import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractLitmusTest {
 
-    static final int TIMEOUT = 10000;
-	
     private String path;
     private final Result expected;
 
