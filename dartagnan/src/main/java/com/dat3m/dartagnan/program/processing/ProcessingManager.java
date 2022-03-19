@@ -36,7 +36,7 @@ public class ProcessingManager implements ProgramProcessor {
 	@Option(name= CONSTANT_PROPAGATION,
 			description="Performs constant propagation.",
 			secure=true)
-		private boolean constantPropagation = false;
+		private boolean constantPropagation = true;
 
     // ======================================================================
 
@@ -52,6 +52,8 @@ public class ProcessingManager implements ProgramProcessor {
         		FindSpinLoops.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
+                DeadAssignmentElimination.fromConfig(config),
+                RemoveDeadCondJumps.fromConfig(config),
                 Compilation.fromConfig(config),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null
         ));

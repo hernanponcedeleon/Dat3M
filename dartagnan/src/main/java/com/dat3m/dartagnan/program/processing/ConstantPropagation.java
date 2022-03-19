@@ -1,49 +1,51 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpUn;
+import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.EventFactory.AArch64;
-import com.dat3m.dartagnan.program.event.EventFactory.Atomic;
-import com.dat3m.dartagnan.program.event.EventFactory.Linux;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
+import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
+import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.linux.*;
+import com.dat3m.dartagnan.program.event.lang.catomic.AtomicCmpXchg;
+import com.dat3m.dartagnan.program.event.lang.catomic.AtomicLoad;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2INT;
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2UINT;
 
-
-// FIXME this is buggy> It currently fails CLocks and also casues problems with weaver/chl-match-subst.wvr.c, weaver/chl-match-symm.wvr.c and weaver/chl-match-trans.wvr.c
 public class ConstantPropagation implements ProgramProcessor {
 	
-    private final static Logger logger = LogManager.getLogger(ConstantPropagation.class);
-
-    private int propagations = 0;
-    
-	// TODO we need a proper class for lattices. The inner map is nothing more than a map lattice.
-    private final Map<Integer, Map<Register, IExpr>> propagationMap = new HashMap<>();
-
     // =========================== Configurables ===========================
 
     // =====================================================================
+
+	// Represents the top element of our lattice
+	private static final IConst TOP = new IConst() {
+		@Override
+		public BigInteger getValue() { return BigInteger.ZERO; }
+		@Override
+		public String toString() { return "T"; }
+		@Override
+		public int getPrecision() { return -1;}
+		@Override
+		public <T> T visit(ExpressionVisitor<T> visitor) { throw new UnsupportedOperationException(); }
+	};
 
     private ConstantPropagation() { }
 
@@ -59,139 +61,61 @@ public class ConstantPropagation implements ProgramProcessor {
     public void run(Program program) {
         Preconditions.checkArgument(program.isUnrolled(), "The program needs to be unrolled before constant propagation.");
         Preconditions.checkArgument(!program.isCompiled(), "Constant propagation needs to be run before compilation.");
-        for(Thread thread : program.getThreads()){
+        for(Thread thread : program.getThreads()) {
             run(thread);
         }
-        logger.info(String.format("Propagations done: %s (out of %s events)", propagations, program.getEvents().size()));
     }
 
 	private void run(Thread thread) {
 		
-		int currentThreadId = thread.getId();
-		propagationMap.put(currentThreadId, new HashMap<>());
-		
+	    Map<Register, ExprInterface> propagationMap = new HashMap<>();
+	    Map<Label, Map<Register, ExprInterface>> label2PropagationMap = new HashMap<>();
+	    
         Event pred = thread.getEntry();
         Event current = pred.getSuccessor();
 
         while (current != null) {
-        	Event e = current;
-
+			boolean resetPropMap = false;
         	// Compute information to propagate. It cannot be computed before-hand
         	// because registers can be overwritten, thus the event creation has 
         	// to be done immediately after computing the information.
         	// For RegWriters interacting with memory, we assign TOP
+			// (we actually use the result register that is unconstrained
+			// but like this the solver keeps relations between variables)
         	if(current instanceof RegWriter) {
-        		RegWriter rw = (RegWriter)e;
-        		propagationMap.get(currentThreadId).put(rw.getResultRegister(), new ITop());
+        		RegWriter rw = (RegWriter)current;
+        		propagationMap.put(rw.getResultRegister(), rw.getResultRegister());
         	}
         	// For Locals, we update
         	if(current instanceof Local) {
-        		Local l = (Local)e;
-        		if(l.getExpr() instanceof IExpr) {
-            		propagationMap.get(currentThreadId).put(l.getResultRegister(), evaluate((IExpr)l.getExpr(), currentThreadId));
+        		Local l = (Local)current;
+        		// We cannot update the map with the evaluation if the resultRegister is also in the RHS
+        		if(!l.getExpr().getRegs().contains(l.getResultRegister())) {
+                	ExprInterface value = evaluate(l.getExpr(), propagationMap);
+                	if(value == TOP && l.getExpr() instanceof Register) {
+                		// Even if we do not know the concrete value, Registers have a constant value
+                		// thus we add them to the map to achieve more propagations
+                		propagationMap.put(l.getResultRegister(), l.getExpr());
+                	} else {
+                		propagationMap.put(l.getResultRegister(), value);	
+                	}
         		}
         	}
-        	
-        	// Event creation
-        	if(current instanceof MemEvent) {
-        		MemEvent m = (MemEvent)current;
-        		String mo = m.getMo();
-
-        		// All events for which we use reg are RegWriters
-        		Register reg = current instanceof RegWriter ? ((RegWriter)current).getResultRegister() : null;
-
-        		IExpr oldAddress = m.getAddress();
-        		IExpr newAddress = evaluate(oldAddress, currentThreadId);
-        		newAddress = newAddress instanceof ITop ? oldAddress : newAddress;
-				Verify.verifyNotNull(newAddress,
-						"Expression %s got no value after constant propagation analysis", oldAddress);
-
-        		IExpr oldValue = (IExpr) ((MemEvent)current).getMemValue();
-        		IExpr newValue = evaluate(oldValue, currentThreadId);
-        		newValue = newValue instanceof ITop ? oldValue : newValue;
-				Verify.verifyNotNull(newValue,
-						"Expression %s got no value after constant propagation analysis", oldValue);
-        		
-        		// Atomic Events
-        		if(current instanceof AtomicLoad) {
-    				e = Atomic.newLoad(reg, newAddress, mo);
-            	} else if(current instanceof AtomicStore) {
-    				e = Atomic.newStore(newAddress, newValue, mo);
-            	} else if(current instanceof AtomicCmpXchg) {
-            		IExpr oldExpectedAddr = ((AtomicCmpXchg)current).getExpectedAddr();
-            		IExpr newExpectedAddr = evaluate(oldExpectedAddr, currentThreadId);
-					Verify.verifyNotNull(newExpectedAddr,
-                			"Register %s got no value after constant propagation analysis", oldExpectedAddr);
-    				e = Atomic.newCompareExchange(reg, newAddress, newExpectedAddr, newValue, mo, current.is(Tag.STRONG));
-            	} else if(current instanceof AtomicXchg) {
-    				e = Atomic.newExchange(reg, newAddress, newValue, mo);
-            	} else if(current instanceof AtomicFetchOp) {
-            		e = Atomic.newFetchOp(reg, newAddress, newValue, ((AtomicFetchOp)current).getOp(), mo);
-            	}
-        		// Linux Events
-            	else if(current instanceof RMWAddUnless) {
-            		e = Linux.newRMWAddUnless(newAddress, reg, ((RMWAddUnless)current).getCmp(), newValue);
-            	} else if(current instanceof RMWCmpXchg) {
-            		e = Linux.newRMWCompareExchange(newAddress, reg, ((RMWCmpXchg)current).getCmp(), newValue, mo);
-            	} else if(current instanceof RMWFetchOp) {
-            		e = Linux.newRMWFetchOp(newAddress, reg, newValue, ((RMWFetchOp)current).getOp(), mo);
-            	} else if(current instanceof RMWOp) {
-            		e = Linux.newRMWOp(newAddress, reg, newValue, ((RMWOp)current).getOp());
-            	} else if(current instanceof RMWOpAndTest) {
-            		e = Linux.newRMWOpAndTest(newAddress, reg, newValue, ((RMWOpAndTest)current).getOp());
-            	} else if(current instanceof RMWOpReturn) {
-            		e = Linux.newRMWOpReturn(newAddress, reg, newValue, ((RMWOpReturn)current).getOp(), mo);
-            	} else if(current instanceof RMWXchg) {
-            		e = Linux.newRMWExchange(newAddress, reg, newValue, mo);
-            	}
-        		// Exclusive events
-            	else if(current.is(Tag.EXCL)) {
-            		if(current instanceof Load) {
-            			e = EventFactory.newRMWLoadExclusive(reg, newAddress, mo);
-            		} else if (current instanceof StoreExclusive) {
-            			e = AArch64.newExclusiveStore(reg, newAddress, newValue, mo);
-            		} else {
-            			// Other EXCL events are generated during compilation (which have not yet occurred)
-            			throw new UnsupportedOperationException(String.format("Exclusive event %s not supported by %s", 
-            					current.getClass().getSimpleName(), getClass().getSimpleName()));
-            		}
-            	}
-        		// Basic Events
-            	else if(current instanceof Load) {
-    				e = EventFactory.newLoad(reg, newAddress, mo);
-            	} else if(current instanceof Store) {
-    				e = EventFactory.newStore(newAddress, newValue, mo);
-            	}
-        	}
-// Locals are still causing problems
-        	
-        	// Local events coming from assertions cause problems because the encoding of 
-        	// AssertInline uses getResultRegisterExpr() which gets a value when calling
-        	// Local.initialise() which is never the case for the new Event e below.
-        	else if(current instanceof Local && ((Local)current).getExpr() instanceof IExpr && !current.is(Tag.ASSERTION)) {
-//        		Register reg = ((Local)current).getResultRegister();
-//        		
-//        		IExpr oldValue = (IExpr) ((Local)current).getExpr();
-//        		IExpr newValue = evaluate(oldValue, currentThreadId);
-//        		newValue = newValue instanceof ITop ? oldValue : newValue; 
-//        		Preconditions.checkState(newValue != null, 
-//        				String.format("Expression %s got no value after constant propagation analysis", oldValue));
-//        		
-//        		e = EventFactory.newLocal(reg, newValue);
+        	if(current instanceof CondJump) {
+				CondJump jump = (CondJump)current;
+        		label2PropagationMap.put(jump.getLabel(), merge(propagationMap, label2PropagationMap.getOrDefault(jump.getLabel(), Collections.emptyMap())));
+				resetPropMap = jump.isGoto(); // A goto will cause the current map to not propagate to the successor
+        	} else if(current instanceof Label) {
+				// Merge current map with all possible jumps that target this label
+        		propagationMap = merge(propagationMap, label2PropagationMap.getOrDefault(current, Collections.emptyMap()));
         	}
 
-        	// Update propagation counter
-        	if(!current.equals(e)) { propagations++; }
-        	
-            e.setOId(current.getOId());
-            e.setUId(current.getUId());
-            e.setCId(current.getCId());
-            e.setCLine(current.getCLine());
-            e.setThread(thread);
-            pred.setSuccessor(e);
-            pred = e;
-
+        	current.accept(new ConstantPropagationVisitor(propagationMap));
             current = current.getSuccessor();
+
+			if (resetPropMap) {
+				propagationMap.clear();
+			}
         }
 
         thread.updateExit(thread.getEntry());
@@ -199,17 +123,20 @@ public class ConstantPropagation implements ProgramProcessor {
 	}
 
 	// TODO Once we have a lattice class this should be moved there.
-    private IExpr evaluate(IExpr input, Integer threadId) {
-    	// TODO If we extend this to BExpr too, we might reduce IfExprs further by also evaluating the guard.
-    	
-    	if(input instanceof IConst || input instanceof INonDet) {
+	private ExprInterface evaluate(ExprInterface input, Map<Register, ExprInterface> map) {
+		ExprSimplifier simplifier = new ExprSimplifier();
+
+    	if(input instanceof INonDet || input instanceof BNonDet) {
+    		return TOP;
+    	}
+    	if(input instanceof IConst || input instanceof BConst) {
     		return input;
     	}
     	if(input instanceof Register) {
     		// When pthread create passes arguments, the new thread starts with a Local
     		// where the RHS is a Register from the parent thread and thus we might not 
     		// have the key in the map.
-			return propagationMap.get(threadId).getOrDefault(input, input);
+			return map.getOrDefault(input, input);
     	}
     	if(input instanceof IExprUn) {
     		IExprUn un = (IExprUn)input;
@@ -218,39 +145,161 @@ public class ConstantPropagation implements ProgramProcessor {
     		if(op.equals(BV2INT) || op.equals(BV2UINT)) {
     			return input;
     		}
-			IExpr inner = evaluate(un.getInner(), threadId);
-			return inner instanceof ITop ? inner : new IExprUn(op, inner);
+			IExpr inner = (IExpr) evaluate(un.getInner(), map);
+			return inner == TOP ? inner : new IExprUn(op, inner).visit(simplifier);
     	}
     	if(input instanceof IExprBin) {
     		IExprBin bin = (IExprBin)input;
-    		IExpr lhs = evaluate(bin.getLHS(), threadId);
-			IExpr rhs = evaluate(bin.getRHS(), threadId);
-			return lhs instanceof ITop ? lhs : rhs instanceof ITop ? rhs : new IExprBin(lhs, bin.getOp(), rhs);
+    		IExpr lhs = (IExpr) evaluate(bin.getLHS(), map);
+			IExpr rhs = (IExpr) evaluate(bin.getRHS(), map);
+			return lhs == TOP || rhs == TOP ?
+					TOP :
+					new IExprBin(lhs, bin.getOp(), rhs).visit(simplifier);
     	}
     	if(input instanceof IfExpr) {
     		IfExpr ife = (IfExpr)input;
-    		IExpr tbranch = evaluate(ife.getTrueBranch(), threadId);
-			IExpr fbranch = evaluate(ife.getFalseBranch(), threadId);
-			return tbranch instanceof ITop ? tbranch : fbranch instanceof ITop ? fbranch : new IfExpr(ife.getGuard(), tbranch, fbranch);
+    		ExprInterface guard = evaluate(ife.getGuard(), map);
+    		IExpr tbranch = (IExpr) evaluate(ife.getTrueBranch(), map);
+			IExpr fbranch = (IExpr) evaluate(ife.getFalseBranch(), map);
+			return tbranch == TOP || fbranch == TOP || guard == TOP ?
+					TOP :
+					new IfExpr((BExpr) guard, tbranch, fbranch).visit(simplifier);
     	}
-		throw new UnsupportedOperationException(String.format("IExpr %s not supported", input));
+    	if(input instanceof Atom) {
+    		Atom atom = (Atom)input;
+    		ExprInterface lhs = evaluate(atom.getLHS(), map);
+    		ExprInterface rhs = evaluate(atom.getRHS(), map);
+			return (lhs == TOP | rhs == TOP) ? TOP : new Atom(lhs, atom.getOp(), rhs).visit(simplifier);
+    	}
+    	if(input instanceof BExprUn) {
+    		BExprUn un = (BExprUn)input;
+    		BOpUn op = un.getOp();
+    		ExprInterface inner = evaluate(un.getInner(), map);
+			return inner == TOP ? TOP : new BExprUn(op, inner).visit(simplifier);
+    	}
+    	if(input instanceof BExprBin) {
+    		BExprBin bin = (BExprBin)input;
+    		ExprInterface lhs = evaluate(bin.getLHS(), map);
+    		ExprInterface rhs = evaluate(bin.getRHS(), map);
+    		return (lhs == TOP | rhs == TOP) ? TOP : new BExprBin(lhs, bin.getOp(), rhs).visit(simplifier);
+    	}
+		throw new UnsupportedOperationException(String.format("Expression %s not supported", input));
     }
     
-    private static class ITop extends IConst {
+    private Map<Register, ExprInterface> merge (Map<Register, ExprInterface> x, Map<Register, ExprInterface> y) {
+    	Preconditions.checkNotNull(x);
+    	Preconditions.checkNotNull(y);
 
-        @Override
-        public BigInteger getValue() {
-            return BigInteger.ZERO;
-        }
+    	Map<Register, ExprInterface> merged = new HashMap<>(x);
+    	for(Map.Entry<Register, ExprInterface> entry : y.entrySet()) {
+			merged.merge(entry.getKey(), entry.getValue(), (v1, v2) -> v1.equals(v2) ? v1 : TOP);
+    	}
 
-        @Override
-        public int getPrecision() {
-            return -1;
-        }
-
-        @Override
-        public <T> T visit(ExpressionVisitor<T> visitor) {
-            throw new UnsupportedOperationException();
-        }
+    	return merged;
+		
     }
+    
+    private class ConstantPropagationVisitor implements EventVisitor<Event> {
+
+    	private final Map<Register, ExprInterface> map;
+    	
+    	protected ConstantPropagationVisitor(Map<Register, ExprInterface> map) {
+    		this.map = map;
+    	}
+    	
+    	@Override
+    	public Event visitEvent(Event e) {
+    		return e;
+    	};
+    	
+    	@Override
+    	public Event visitLoad(Load e) {
+    		setAddress(e);
+    		return e;
+    	};
+    	
+    	@Override
+    	public Event visitMemEvent(MemEvent e) {
+    		setAddress(e);
+    		setMemValue(e);
+    		return e;
+    	};
+
+    	@Override
+    	public Event visitLocal(Local e) {
+    		ExprInterface oldExpr = e.getExpr();
+    		ExprInterface newExpr = evaluate(oldExpr, map);
+    		Verify.verifyNotNull(newExpr,
+    				"Expression %s got no value after constant propagation analysis", oldExpr);
+    		if(!(newExpr == TOP) && !e.is(Tag.ASSERTION)) {
+    			e.setExpr(newExpr);
+    		}
+    		return e;
+    	};
+    	
+    	@Override
+    	public Event visitCondJump(CondJump e) {
+    		ExprInterface oldGuard = e.getGuard();
+    		ExprInterface newGuard = evaluate(oldGuard, map);
+    		Verify.verifyNotNull(newGuard,
+    				"Expression %s got no value after constant propagation analysis", oldGuard);
+    		if(!(newGuard == TOP)) {
+    			e.setGuard((BExpr) newGuard);
+    		}
+    		return e;
+    	};
+    	
+    	@Override
+    	public Event visitXchg(Xchg e) {
+    		setAddress(e);
+    		return e;
+    	};
+    	
+    	@Override
+    	public Event visitRMW(RMW e) {
+    		setAddress(e);
+    		return e;
+    	};
+    	
+    	@Override
+    	public Event visitAtomicLoad(AtomicLoad e) {
+    		setAddress(e);
+    		return e;
+    	};
+    	
+    	@Override
+    	public Event visitAtomicCmpXchg(AtomicCmpXchg e) {
+    		setAddress(e);
+    		setMemValue(e);
+    		IExpr oldExpectedAddr = e.getExpectedAddr();
+    		IExpr newExpectedAddr = (IExpr) evaluate(oldExpectedAddr, map);
+    		Verify.verifyNotNull(newExpectedAddr,
+    				"Expression %s got no value after constant propagation analysis", oldExpectedAddr);
+    		if(!(newExpectedAddr == TOP)) {
+    			e.setExpectedAddr(newExpectedAddr);
+    		}
+    		return e;
+    	}
+    	
+    	private void setAddress(MemEvent e) {
+    		IExpr oldAddress = e.getAddress();
+    		IExpr newAddress = (IExpr) evaluate(oldAddress, map);
+    		Verify.verifyNotNull(newAddress,
+    				"Expression %s got no value after constant propagation analysis", oldAddress);
+    		if(!(newAddress == TOP)) {
+    			e.setAddress(newAddress);
+    		}
+    	}
+
+    	private void setMemValue(MemEvent e) {
+    		ExprInterface oldValue = e.getMemValue();
+    		ExprInterface newValue = evaluate(oldValue, map);
+    		Verify.verifyNotNull(newValue,
+    				"Expression %s got no value after constant propagation analysis", oldValue);
+    		if(!(newValue == TOP)) {
+    			e.setMemValue(newValue);;
+    		}
+    	}
+    }
+
 }

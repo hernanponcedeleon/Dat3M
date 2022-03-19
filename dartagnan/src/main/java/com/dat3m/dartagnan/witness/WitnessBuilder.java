@@ -31,7 +31,6 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
 import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_ORIGINAL_PROGRAM_PATH;
 import static com.dat3m.dartagnan.program.event.Tag.C11.PTHREAD;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
@@ -59,12 +58,6 @@ public class WitnessBuilder {
 
     public boolean canBeBuilt() { return originalProgramFilePath != null; }
 
-	@Option(
-			name=BOUND,
-			description = "Unrolling bound used in the verification.",
-			secure=true)
-	private String bound;
-
     // =====================================================================
 
 	private final Map<Event, Integer> eventThreadMap = new HashMap<>();
@@ -87,7 +80,7 @@ public class WitnessBuilder {
 		}
 
 		WitnessGraph graph = new WitnessGraph();
-		graph.addAttribute(UNROLLBOUND.toString(), valueOf(bound));
+		graph.addAttribute(UNROLLBOUND.toString(), valueOf(task.getProgram().getUnrollingBound()));
 		graph.addAttribute(WITNESSTYPE.toString(), type + "_witness");
 		graph.addAttribute(SOURCECODELANG.toString(), "C");
 		graph.addAttribute(PRODUCER.toString(), "Dartagnan");
@@ -137,7 +130,9 @@ public class WitnessBuilder {
 				edge = new Edge(new Node("N" + nextNode), new Node("N" + (nextNode + 1)));
 				edge.addAttribute(THREADID.toString(), valueOf(eventThreadMap.get(e)));
 				edge.addAttribute(STARTLINE.toString(), valueOf(e.getCLine()));
-
+				
+				// End is also WRITE and PTHREAD, but it does not have
+				// CLines and thus won't create an edge (as expected)
 				if (e.hasFilter(WRITE) && e.hasFilter(PTHREAD)) {
 					edge.addAttribute(CREATETHREAD.toString(), valueOf(threads));
 					threads++;

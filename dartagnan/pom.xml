@@ -114,7 +114,7 @@
 	    <dependency>
 	      <groupId>org.sosy-lab</groupId>
 	      <artifactId>javasmt-yices2</artifactId>
-	      <version>3.10.0</version> <!-- version of Yices2 bindings in JavaSMT -->
+	      <version>3.12.0</version> <!-- version of Yices2 bindings in JavaSMT -->
 	      <type>jar</type>
 	    </dependency>
 	    <dependency>
@@ -424,7 +424,7 @@
     <dependency>
       <groupId>org.sosy-lab</groupId>
       <artifactId>java-smt</artifactId>
-      <version>3.11.0</version>
+      <version>3.12.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>

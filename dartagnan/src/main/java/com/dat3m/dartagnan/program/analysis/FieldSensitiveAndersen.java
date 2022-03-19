@@ -20,6 +20,7 @@ import java.util.*;
 
 import static com.dat3m.dartagnan.expression.op.IOpBin.MULT;
 import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
+import static com.dat3m.dartagnan.expression.op.IOpBin.R_SHIFT;
 import static com.dat3m.dartagnan.expression.op.IOpUn.MINUS;
 import static com.google.common.base.Verify.verify;
 import static java.util.stream.Collectors.toList;
@@ -287,7 +288,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         public Result visit(IExprBin x) {
             Result l = x.getLHS().visit(this);
             Result r = x.getRHS().visit(this);
-            if(l == null || r == null) {
+            if(l == null || r == null || x.getOp() == R_SHIFT) {
                 return null;
             }
             if(l.address==null && l.register==null && l.alignment==0 && r.address==null && r.register==null && r.alignment==0) {

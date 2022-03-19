@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.asserts;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -35,4 +38,16 @@ public class AssertBasic extends AbstractAssert {
         }
         return value.toString();
     }
+
+	@Override
+	public List<Register> getRegs() {
+		List<Register> regs = new ArrayList<>();
+		if(e1 instanceof Register) {
+			regs.add((Register) e1);
+		}
+		if(e2 instanceof Register) {
+			regs.add((Register) e2);
+		}
+		return regs;
+	}
 }

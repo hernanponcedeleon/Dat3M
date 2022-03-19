@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -17,6 +18,7 @@ public class Start extends Load {
 		super(reg, address, MO_SC);
         this.label = label;
         this.label.addListener(this);
+        addFilters(Tag.C11.PTHREAD);
     }
 
 	private Start(Start other){

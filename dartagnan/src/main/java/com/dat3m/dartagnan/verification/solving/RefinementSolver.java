@@ -96,6 +96,13 @@ public class RefinementSolver {
 
         logger.info("Refinement procedure started.");
         while (!prover.isUnsat()) {
+        	if(iterationCount == 0 && logger.isDebugEnabled()) {
+        		String smtStatistics = "\n ===== SMT Statistics (after first iteration) ===== \n";
+        		for(String key : prover.getStatistics().keySet()) {
+        			smtStatistics += String.format("\t%s -> %s\n", key, prover.getStatistics().get(key));
+        		}
+        		logger.debug(smtStatistics);
+        	}
             iterationCount++;
             curTime = System.currentTimeMillis();
             totalNativeSolvingTime += (curTime - lastTime);
@@ -148,7 +155,7 @@ public class RefinementSolver {
         logger.debug("Final solver iteration:\n" +
                         " ===== Final Iteration: {} =====\n" +
                         "Native Solving/Proof time(ms): {}", iterationCount, curTime - lastTime);
-
+		
         if (logger.isInfoEnabled()) {
             String message;
             switch (status) {
@@ -193,6 +200,14 @@ public class RefinementSolver {
 
         if (logger.isInfoEnabled()) {
             logger.info(generateSummary(statList, iterationCount, totalNativeSolvingTime, totalCaatTime, boundCheckTime));
+        }
+
+        if(logger.isDebugEnabled()) {        	
+            String smtStatistics = "\n ===== SMT Statistics (after final iteration) ===== \n";
+    		for(String key : prover.getStatistics().keySet()) {
+    			smtStatistics += String.format("\t%s -> %s\n", key, prover.getStatistics().get(key));
+    		}
+    		logger.debug(smtStatistics);
         }
 
         veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;

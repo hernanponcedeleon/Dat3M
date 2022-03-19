@@ -70,7 +70,15 @@ public class TwoSolvers {
         } else {
         	res = FAIL;
         }
-        
+
+        if(logger.isDebugEnabled()) {        	
+    		String smtStatistics = "\n ===== SMT Statistics ===== \n";
+    		for(String key : prover1.getStatistics().keySet()) {
+    			smtStatistics += String.format("\t%s -> %s\n", key, prover1.getStatistics().get(key));
+    		}
+    		logger.debug(smtStatistics);
+        }
+
         res = task.getProgram().getAss().getInvert() ? res.invert() : res;
         logger.info("Verification finished with result " + res);
         return res;

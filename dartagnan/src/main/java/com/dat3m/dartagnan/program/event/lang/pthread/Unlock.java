@@ -1,14 +1,16 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
-public class Unlock extends MemEvent {
+public class Unlock extends Store {
 	
 	private final String name;
 	private final Register reg;
@@ -16,11 +18,12 @@ public class Unlock extends MemEvent {
     private Label label4Copy;
 
 	public Unlock(String name, IExpr address, Register reg, Label label){
-		super(address, MO_SC);
+		super(address, IValue.ZERO, MO_SC);
 		this.name = name;
         this.reg = reg;
         this.label = label;
         this.label.addListener(this);
+        addFilters(C11.LOCK);
     }
 
 	private Unlock(Unlock other){
