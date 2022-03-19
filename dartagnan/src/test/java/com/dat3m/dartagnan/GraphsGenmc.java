@@ -49,7 +49,7 @@ public class GraphsGenmc extends AbstractExternalTool {
             {"locks/spinlock-5", UNKNOWN},
             {"locks/linuxrwlock-3", UNKNOWN},
             {"locks/mutex_musl-4", UNKNOWN},
-            {"lfds/SafeStack-3-3-1", FAIL},
+            {"lfds/safestack-3", FAIL},
             {"lfds/dglm-3", UNKNOWN},
             {"lfds/ms-3", UNKNOWN},
             {"lfds/treiber-3", UNKNOWN}

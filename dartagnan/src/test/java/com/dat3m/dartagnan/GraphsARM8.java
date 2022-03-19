@@ -50,7 +50,7 @@ public class GraphsARM8 extends AbstractCTest {
                 {"locks/spinlock-5", ARM8, UNKNOWN},
                 {"locks/linuxrwlock-3", ARM8, UNKNOWN},
                 {"locks/mutex_musl-4", ARM8, UNKNOWN},
-                {"lfds/SafeStack-3-3-1", ARM8, FAIL},
+                {"lfds/safestack-3", FAIL},
                 {"lfds/dglm-3", ARM8, UNKNOWN},
                 {"lfds/ms-3", ARM8, UNKNOWN},
                 {"lfds/treiber-3", ARM8, UNKNOWN}
