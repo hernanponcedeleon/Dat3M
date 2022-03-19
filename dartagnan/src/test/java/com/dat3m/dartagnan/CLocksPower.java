@@ -45,27 +45,11 @@ public class CLocksPower extends AbstractCTest {
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
 	            {"ttas-5", POWER, UNKNOWN},
-	            {"ttas-5-acq2rx", POWER, FAIL},
-	            {"ttas-5-rel2rx", POWER, FAIL},
 	            {"ticketlock-6", POWER, PASS},
-	            {"ticketlock-6-acq2rx", POWER, FAIL},
-	            {"ticketlock-6-rel2rx", POWER, FAIL},
                 {"mutex-4", POWER, UNKNOWN},
-                {"mutex-4-acq2rx_futex", POWER, UNKNOWN},
-                {"mutex-4-acq2rx_lock", POWER, FAIL},
-                {"mutex-4-rel2rx_futex", POWER, UNKNOWN},
-                {"mutex-4-rel2rx_unlock", POWER, FAIL},
                 {"spinlock-5", POWER, UNKNOWN},
-                {"spinlock-5-acq2rx", POWER, FAIL},
-                {"spinlock-5-rel2rx", POWER, FAIL},
                 {"linuxrwlock-3", POWER, UNKNOWN},
-                {"linuxrwlock-3-acq2rx", POWER, FAIL},
-                {"linuxrwlock-3-rel2rx", POWER, FAIL},
-                {"mutex_musl-4", POWER, UNKNOWN},
-                {"mutex_musl-4-acq2rx_futex", POWER, UNKNOWN},
-                {"mutex_musl-4-acq2rx_lock", POWER, FAIL},
-                {"mutex_musl-4-rel2rx_futex", POWER, UNKNOWN},
-                {"mutex_musl-4-rel2rx_unlock", POWER, FAIL},
+                {"mutex_musl-4", POWER, UNKNOWN}
 		});
     }
 

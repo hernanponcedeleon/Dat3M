@@ -45,27 +45,11 @@ public class CLocksTSO extends AbstractCTest {
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
 	            {"ttas-5", TSO, UNKNOWN},
-	            {"ttas-5-acq2rx", TSO, UNKNOWN},
-	            {"ttas-5-rel2rx", TSO, UNKNOWN},
 	            {"ticketlock-6", TSO, PASS},
-	            {"ticketlock-6-acq2rx", TSO, PASS},
-	            {"ticketlock-6-rel2rx", TSO, PASS},
                 {"mutex-4", TSO, UNKNOWN},
-                {"mutex-4-acq2rx_futex", TSO, UNKNOWN},
-                {"mutex-4-acq2rx_lock", TSO, UNKNOWN},
-                {"mutex-4-rel2rx_futex", TSO, UNKNOWN},
-                {"mutex-4-rel2rx_unlock", TSO, UNKNOWN},
                 {"spinlock-5", TSO, UNKNOWN},
-                {"spinlock-5-acq2rx", TSO, UNKNOWN},
-                {"spinlock-5-rel2rx", TSO, UNKNOWN},
                 {"linuxrwlock-3", TSO, UNKNOWN},
-                {"linuxrwlock-3-acq2rx", TSO, UNKNOWN},
-                {"linuxrwlock-3-rel2rx", TSO, UNKNOWN},
-                {"mutex_musl-4", TSO, UNKNOWN},
-                {"mutex_musl-4-acq2rx_futex", TSO, UNKNOWN},
-                {"mutex_musl-4-acq2rx_lock", TSO, UNKNOWN},
-                {"mutex_musl-4-rel2rx_futex", TSO, UNKNOWN},
-                {"mutex_musl-4-rel2rx_unlock", TSO, UNKNOWN},
+                {"mutex_musl-4", TSO, UNKNOWN}
 		});
     }
 
