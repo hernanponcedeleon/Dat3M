@@ -20,20 +20,20 @@ import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class CLocksTSO extends AbstractCTest {
+public class GraphTSO extends AbstractCTest {
 
-    public CLocksTSO(String name, Arch target, Result expected) {
+    public GraphTSO(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "locks/" + name + ".bpl");
+        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + name + ".bpl");
     }
 
     @Override
     protected long getTimeout() {
-        return 300000;
+        return 900000;
     }
 
     @Override
@@ -44,12 +44,16 @@ public class CLocksTSO extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-	            {"ttas-5", TSO, UNKNOWN},
-	            {"ticketlock-6", TSO, PASS},
-                {"mutex-4", TSO, UNKNOWN},
-                {"spinlock-5", TSO, UNKNOWN},
-                {"linuxrwlock-3", TSO, UNKNOWN},
-                {"mutex_musl-4", TSO, UNKNOWN}
+            {"locks/ttas-5", ARM8, UNKNOWN},
+            {"locks/ticketlock-6", ARM8, PASS},
+            {"locks/mutex-4", ARM8, UNKNOWN},
+            {"locks/spinlock-5", ARM8, UNKNOWN},
+            {"locks/linuxrwlock-3", ARM8, UNKNOWN},
+            {"locks/mutex_musl-4", ARM8, UNKNOWN},
+            {"lfds/SafeStack-3-3-1", ARM8, FAIL},
+            {"lfds/dglm-3", ARM8, UNKNOWN},
+            {"lfds/ms-3", ARM8, UNKNOWN},
+            {"lfds/treiber-3", ARM8, UNKNOWN}
 		});
     }
 
