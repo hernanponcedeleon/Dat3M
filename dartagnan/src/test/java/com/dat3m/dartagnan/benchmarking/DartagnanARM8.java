@@ -21,9 +21,9 @@ import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class GraphsARM8 extends AbstractCTest {
+public class DartagnanARM8 extends AbstractCTest {
 
-    public GraphsARM8(String name, Arch target, Result expected) {
+    public DartagnanARM8(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
 

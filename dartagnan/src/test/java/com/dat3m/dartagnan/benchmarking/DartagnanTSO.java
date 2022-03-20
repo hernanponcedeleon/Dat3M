@@ -21,9 +21,9 @@ import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class GraphPower extends AbstractCTest {
+public class DartagnanTSO extends AbstractCTest {
 
-    public GraphPower(String name, Arch target, Result expected) {
+    public DartagnanTSO(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
 

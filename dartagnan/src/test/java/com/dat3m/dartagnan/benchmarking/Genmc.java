@@ -1,9 +1,7 @@
 package com.dat3m.dartagnan.benchmarking;
 
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -14,9 +12,9 @@ import java.util.List;
 import static com.dat3m.dartagnan.utils.Result.*;
 
 @RunWith(Parameterized.class)
-public class GraphsGenmc extends AbstractExternalTool {
+public class Genmc extends AbstractExternalTool {
 
-    public GraphsGenmc(String name, Result expected) {
+    public Genmc(String name, Result expected) {
         super(name, expected);
     }
 
@@ -55,11 +53,4 @@ public class GraphsGenmc extends AbstractExternalTool {
             {"lfds/treiber-3", UNKNOWN}
 		});
     }
-
-	@Test
-	@CSVLogger.FileName("csv/genmc")
-	public void test() throws Exception {
-		// We need this to keep all csv files with a different name
-		runTool();
-	}
 }

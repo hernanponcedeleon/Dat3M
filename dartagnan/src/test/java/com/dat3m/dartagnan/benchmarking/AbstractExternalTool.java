@@ -5,13 +5,12 @@ import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
@@ -65,19 +64,17 @@ public abstract class AbstractExternalTool {
             .around(csvLogger)
             .around(timeout);
 
-    public void runTool() throws Exception {
+	@Test
+	@CSVLogger.FileName("csv/")
+	public void test() throws Exception {
 		ArrayList<String> cmd = new ArrayList<String>();
     	cmd.add(toolCmdProvider.get());
     	cmd.addAll(toolOptionsProvider.get());
     	cmd.add(filePathProvider.get());
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+    	processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+    	processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
     	Process proc = processBuilder.start();
 		proc.waitFor();
-		if(proc.exitValue() == 1) {
-			BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
-			while(error.ready()) {
-				System.out.println(error.readLine());
-			}
-		}
-    }
+	}
 }
