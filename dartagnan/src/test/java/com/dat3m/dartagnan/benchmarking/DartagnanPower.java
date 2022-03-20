@@ -45,16 +45,16 @@ public class DartagnanPower extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-            {"locks/ttas-5", ARM8, UNKNOWN},
-            {"locks/ticketlock-6", ARM8, PASS},
-            {"locks/mutex-4", ARM8, UNKNOWN},
-            {"locks/spinlock-5", ARM8, UNKNOWN},
-            {"locks/linuxrwlock-3", ARM8, UNKNOWN},
-            {"locks/mutex_musl-4", ARM8, UNKNOWN},
+            {"locks/ttas-5", POWER, UNKNOWN},
+            {"locks/ticketlock-6", POWER, PASS},
+            {"locks/mutex-4", POWER, UNKNOWN},
+            {"locks/spinlock-5", POWER, UNKNOWN},
+            {"locks/linuxrwlock-3", POWER, UNKNOWN},
+            {"locks/mutex_musl-4", POWER, UNKNOWN},
             {"lfds/safestack-3", FAIL},
-            {"lfds/dglm-3", ARM8, UNKNOWN},
-            {"lfds/ms-3", ARM8, UNKNOWN},
-            {"lfds/treiber-3", ARM8, UNKNOWN}
+            {"lfds/dglm-3", POWER, UNKNOWN},
+            {"lfds/ms-3", POWER, UNKNOWN},
+            {"lfds/treiber-3", POWER, UNKNOWN}
 		});
     }
 
