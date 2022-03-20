@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan;
+package com.dat3m.dartagnan.c;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;

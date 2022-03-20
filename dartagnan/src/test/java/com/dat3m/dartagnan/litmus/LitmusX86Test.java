@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan;
+package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
@@ -9,20 +9,19 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
-public class LitmusAARCH64Test extends AbstractLitmusTest {
+public class LitmusX86Test extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("litmus/AARCH64/");
+		return buildLitmusTests("litmus/X86/");
     }
 
     @Override
     protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.ARM8;
+        return () -> Arch.TSO;
     }
 
-    public LitmusAARCH64Test(String path, Result expected) {
+    public LitmusX86Test(String path, Result expected) {
         super(path, expected);
     }
-
 }

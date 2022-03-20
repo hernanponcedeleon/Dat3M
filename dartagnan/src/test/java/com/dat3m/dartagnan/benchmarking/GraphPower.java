@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan;
+package com.dat3m.dartagnan.benchmarking;
 
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
+import com.dat3m.dartagnan.c.AbstractCTest;
 import com.dat3m.dartagnan.configuration.Arch;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,9 +21,9 @@ import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class GraphTSO extends AbstractCTest {
+public class GraphPower extends AbstractCTest {
 
-    public GraphTSO(String name, Arch target, Result expected) {
+    public GraphPower(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
 

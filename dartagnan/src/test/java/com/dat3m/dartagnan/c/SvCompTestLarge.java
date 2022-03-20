@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan;
+package com.dat3m.dartagnan.c;
 
 import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;

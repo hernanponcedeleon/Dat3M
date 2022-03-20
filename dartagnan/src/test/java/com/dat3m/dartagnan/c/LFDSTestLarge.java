@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan;
+package com.dat3m.dartagnan.c;
 
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
@@ -20,44 +20,45 @@ import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class CnaTSO extends AbstractCTest {
+public class LFDSTestLarge extends AbstractCTest {
 
-    public CnaTSO(String name, Arch target, Result expected) {
+    public LFDSTestLarge(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "locks/" + name + ".bpl");
+        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "lfds/" + name + ".bpl");
     }
 
     @Override
     protected long getTimeout() {
-        return 300000;
+        return 600000;
     }
 
-    @Override
     protected Provider<Integer> getBoundProvider() {
-        return Provider.fromSupplier(() -> 4);
+        return Provider.fromSupplier(() -> 2);
     }
 
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-                {"cna-4", TSO, PASS},
-                {"cna-4-rel2rx_unlock1", TSO, PASS},
-                {"cna-4-rel2rx_unlock2", TSO, PASS},
-                {"cna-4-rel2rx_unlock3", TSO, PASS},
-                {"cna-4-rel2rx_unlock4", TSO, PASS},
-                {"cna-4-rel2rx_lock", TSO, PASS},
-                {"cna-4-acq2rx_lock", TSO, PASS},
-                {"cna-4-acq2rx_unlock", TSO, PASS},
-                {"cna-4-acq2rx_succ1", TSO, PASS},
-                {"cna-4-acq2rx_succ2", TSO, PASS},
-		});
+            {"SafeStack-3-3-1", TSO, FAIL},
+            {"SafeStack-3-3-1", ARM8, FAIL},
+            {"SafeStack-3-3-1", POWER, FAIL},
+            {"dglm-3", TSO, UNKNOWN},
+            {"dglm-3", ARM8, UNKNOWN},
+            {"dglm-3", POWER, UNKNOWN},
+            {"ms-3", TSO, UNKNOWN},
+            {"ms-3", ARM8, UNKNOWN},
+            {"ms-3", POWER, UNKNOWN},
+            {"treiber-3", TSO, UNKNOWN},
+            {"treiber-3", ARM8, UNKNOWN},
+            {"treiber-3", POWER, UNKNOWN},
+        });
     }
 
-	@Test
+	//@Test
 	@CSVLogger.FileName("csv/assume")
 	public void testAssume() throws Exception {
 		assertEquals(expected, AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
