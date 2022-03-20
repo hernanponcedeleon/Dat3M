@@ -1,7 +1,6 @@
 #include <stdatomic.h>
 #include <pthread.h>
 #include <assert.h>
-#include <stdbool.h>
 #include <stdlib.h>
 
 extern void abort(void);
@@ -37,7 +36,7 @@ void enqueue(int value) {
 	node->val = value;
 	atomic_init(&node->next, NULL);
 
-	while (true) {
+	while (1) {
 		tail = load(&Tail);
         assert(tail != NULL);
 		next = load(&tail->next);
@@ -60,7 +59,7 @@ int dequeue() {
 	Node *head, *next, *tail;
 	int result;
 
-	while (true) {
+	while (1) {
 		head = load(&Head);
         assert(head != NULL);
 		next = load(&head->next);

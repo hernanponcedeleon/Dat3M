@@ -1,8 +1,7 @@
 #include <stdatomic.h>
 #include <pthread.h>
 #include <assert.h>
-#include <stdbool.h>
-#include <stdlib.h>
+\#include <stdlib.h>
 
 #define CAS(ptr, expected, desired) (atomic_compare_exchange_strong_explicit(ptr, expected, desired, __ATOMIC_RELAXED, __ATOMIC_RELAXED))
 #define load(loc) (atomic_load_explicit(loc, __ATOMIC_ACQUIRE))
@@ -30,7 +29,7 @@ void push(int e) {
     y = malloc(sizeof (Node));
     y->val = e;
 
-    while(true) {
+    while(1) {
         n = load(&TOP.node);
         rx_store(&y->next, n);
 
@@ -43,7 +42,7 @@ void push(int e) {
 int pop() {
     Node *y, *z;
 
-    while (true) {
+    while (1) {
         y = load(&TOP.node);
         if (y == NULL) {
             return EMPTY;
