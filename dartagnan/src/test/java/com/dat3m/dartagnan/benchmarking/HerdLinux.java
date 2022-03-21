@@ -28,7 +28,7 @@ public class HerdLinux extends AbstractHerd {
 			String dat3m = System.getenv("DAT3M_HOME");
 			return Arrays.asList("-model", dat3m + "/cat/linux-kernel.cat", 
 								"-macros", dat3m + "/cat/linux-kernel.def", 
-								"-bell", dat3m + "/cat/linux-kernel.bell", "-I");
+								"-bell", dat3m + "/cat/linux-kernel.bell");
 		});
 	}
 }
