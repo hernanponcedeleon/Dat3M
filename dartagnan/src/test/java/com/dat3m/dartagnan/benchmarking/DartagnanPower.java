@@ -51,7 +51,7 @@ public class DartagnanPower extends AbstractCTest {
             {"locks/spinlock-5", POWER, UNKNOWN},
             {"locks/linuxrwlock-3", POWER, UNKNOWN},
             {"locks/mutex_musl-4", POWER, UNKNOWN},
-            {"lfds/safestack-3", FAIL},
+            {"lfds/safestack-3", POWER, FAIL},
             {"lfds/dglm-3", POWER, UNKNOWN},
             {"lfds/ms-3", POWER, UNKNOWN},
             {"lfds/treiber-3", POWER, UNKNOWN}
