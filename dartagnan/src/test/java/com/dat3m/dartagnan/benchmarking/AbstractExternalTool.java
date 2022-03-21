@@ -36,6 +36,8 @@ public abstract class AbstractExternalTool {
         return Provider.fromSupplier(() -> 0);
     }
 
+    protected void preExecutionCmds() throws Exception { return; }
+    
     // =============================================================
 
 
@@ -67,7 +69,9 @@ public abstract class AbstractExternalTool {
 	@Test
 	@CSVLogger.FileName("csv/")
 	public void test() throws Exception {
-		ArrayList<String> cmd = new ArrayList<String>();
+		// This is a NOP for most external tools
+		preExecutionCmds();
+    	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.add(toolCmdProvider.get());
     	cmd.addAll(toolOptionsProvider.get());
     	cmd.add(filePathProvider.get());
