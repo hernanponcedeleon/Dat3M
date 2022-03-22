@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.expression.op;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+
 import java.math.BigInteger;
 
 public enum IOpUn {
@@ -15,13 +17,7 @@ public enum IOpUn {
 	
     @Override
     public String toString() {
-    	//TODO (HP): This is a strange switch-statement
-        switch(this){
-			case MINUS:
-				return "-";
-			default:
-				return "";
-        }
+    	return this.equals(MINUS) ? "-" : "";
     }
 
     public Formula encode(Formula e, SolverContext ctx) {
@@ -94,36 +90,36 @@ public enum IOpUn {
 			BitvectorFormula bv = (BitvectorFormula)e;
 	    	switch(this) {
     		case MINUS:
-    				return bvmgr.subtract(bvmgr.makeBitvector(32, BigInteger.ZERO), bv);
+    			return bvmgr.negate(bv);
     		case BV2UINT:
-    				return bvmgr.toIntegerFormula(bv, false);
+    			return ARCH_PRECISION > -1 ? bvmgr.extend(bv, ARCH_PRECISION - bvmgr.getLength(bv), false) : bvmgr.toIntegerFormula(bv, false);
     		case BV2INT:
-    				return bvmgr.toIntegerFormula(bv, true);
+    			return ARCH_PRECISION > -1 ? bvmgr.extend(bv, ARCH_PRECISION - bvmgr.getLength(bv), true) : bvmgr.toIntegerFormula(bv, true);
     		// ============ INT2BV ============
     		case INT2BV1:
     		case INT2BV8:
     		case INT2BV16:
     		case INT2BV32:
     		case INT2BV64:
-    				return e;
+    			return e;
         	// ============ TRUNC ============    		
     		case TRUNC6432:
-    				return bvmgr.extract(bv, 31, 0, false);
+    			return bvmgr.extract(bv, 31, 0, false);
     		case TRUNC6416:
     		case TRUNC3216:
-    				return bvmgr.extract(bv, 15, 0, false);
+    			return bvmgr.extract(bv, 15, 0, false);
     		case TRUNC648:
     		case TRUNC328:
     		case TRUNC168:
-    				return bvmgr.extract(bv, 7, 0, false);
+    			return bvmgr.extract(bv, 7, 0, false);
     		case TRUNC641:
     		case TRUNC321:
     		case TRUNC161:
     		case TRUNC81:
-    				return bvmgr.extract(bv, 1, 0, false);
+    			return bvmgr.extract(bv, 1, 0, false);
         	// ============ ZEXT ============    		
     		case ZEXT18:
-    				return bvmgr.extend(bv, 7, false);
+    			return bvmgr.extend(bv, 7, false);
     		case ZEXT116:
     			return bvmgr.extend(bv, 15, false);
     		case ZEXT132:
