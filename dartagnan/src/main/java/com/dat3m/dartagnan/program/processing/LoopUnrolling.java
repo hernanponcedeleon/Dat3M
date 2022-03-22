@@ -124,10 +124,9 @@ public class LoopUnrolling implements ProgramProcessor {
                 if (bound == 1 || jump.hasFilter(Tag.SPINLOOP)) {
                     Label target = (Label) jump.getThread().getExit();
                     newPred = EventFactory.newGoto(target);
+                    newPred.addFilters(Tag.BOUND);
                     if(jump.hasFilter(Tag.SPINLOOP)) {
-                    	newPred.addFilters(Tag.SPINLOOP, Tag.BOUND); 
-                    } else {
-                    	newPred.addFilters(Tag.BOUND);	
+                    	newPred.addFilters(Tag.SPINLOOP);
                     }
                     predecessor.setSuccessor(newPred);
                 } else {

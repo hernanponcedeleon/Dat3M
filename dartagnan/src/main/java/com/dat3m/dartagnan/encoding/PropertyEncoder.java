@@ -78,8 +78,6 @@ public class PropertyEncoder implements Encoder {
         switch (property) {
             case REACHABILITY:
                 return encodeAssertions(ctx);
-            case LIVENESS:
-                return encodeLiveness(ctx);
             case RACES:
                 return encodeDataRaces(ctx);
             default:
@@ -104,79 +102,6 @@ public class PropertyEncoder implements Encoder {
             assertionEncoding = bmgr.and(assertionEncoding, program.getAssFilter().encode(ctx));
         }
         return assertionEncoding;
-    }
-
-    public BooleanFormula encodeLiveness(SolverContext ctx) {
-
-        // We assume a spinloop to consist of a tagged label and bound jump.
-        // Further, we assume that the spinloops are indeed correct, i.e., side-effect free
-        class SpinLoop {
-            public List<Load> loads = new ArrayList<>();
-            public Event bound;
-        }
-
-        logger.info("Encoding liveness");
-
-        Map<Thread, List<SpinLoop>> spinloopsMap = new HashMap<>();
-        // Find spinloops of all threads
-        for (Thread t : program.getThreads()) {
-            List<Event> spinStarts = t.getEvents().stream().filter(e -> e instanceof Label && e.is(Tag.SPINLOOP)).collect(Collectors.toList());
-            List<SpinLoop> spinLoops = new ArrayList<>();
-            spinloopsMap.put(t, spinLoops);
-
-            for (Event start : spinStarts) {
-                SpinLoop loop = new SpinLoop();
-                Event cur = start.getSuccessor();
-                while (!cur.is(Tag.SPINLOOP)) {
-                    if (cur.is(Tag.READ)) {
-                        loop.loads.add((Load)cur);
-                    }
-                    cur = cur.getSuccessor();
-                }
-                loop.bound = cur;
-                spinLoops.add(loop);
-            }
-        }
-
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        RelRf rf = (RelRf) memoryModel.getRelationRepository().getRelation(RelationNameRepository.RF);
-        RelCo co = (RelCo) memoryModel.getRelationRepository().getRelation(RelationNameRepository.CO);
-        // Compute "stuckness": A thread is stuck if it reaches a spinloop bound event
-        // while reading from a co-maximal write.
-        Map<Thread, BooleanFormula> isStuckMap = new HashMap<>();
-        for (Thread t : program.getThreads()) {
-            List<SpinLoop> loops = spinloopsMap.get(t);
-            if (loops.isEmpty()) {
-                continue;
-            }
-
-            BooleanFormula isStuck = bmgr.makeFalse();
-            for (SpinLoop pair : loops) {
-                BooleanFormula allCoMaximalLoad = bmgr.makeTrue();
-                for (Load load : pair.loads) {
-                    BooleanFormula coMaximalLoad = bmgr.makeFalse();
-                    for (Tuple rfEdge : rf.getMaxTupleSet().getBySecond(load)) {
-                        coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(rf.getSMTVar(rfEdge, ctx), co.getLastCoVar(rfEdge.getFirst(), ctx)));
-                    }
-                    allCoMaximalLoad = bmgr.and(allCoMaximalLoad, coMaximalLoad);
-                }
-                isStuck  = bmgr.or(isStuck, bmgr.and(pair.bound.exec(), allCoMaximalLoad));
-            }
-            isStuckMap.put(t, isStuck);
-        }
-
-        // LivenessViolation <=> allStuckOrDone /\ atLeastOneStuck
-        BooleanFormula allStuckOrDone = bmgr.makeTrue();
-        BooleanFormula atLeastOneStuck = bmgr.makeFalse();
-        for (Thread t : program.getThreads()) {
-            BooleanFormula isStuck = isStuckMap.getOrDefault(t, bmgr.makeFalse());
-            BooleanFormula isDone = t.getCache().getEvents(FilterBasic.get(Tag.BOUND)).stream()
-                    .map(e -> bmgr.not(e.exec())).reduce(bmgr.makeTrue(), bmgr::and);
-
-            atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
-            allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, isDone));
-        }
-        return bmgr.and(allStuckOrDone, atLeastOneStuck);
     }
 
     public BooleanFormula encodeDataRaces(SolverContext ctx) {
