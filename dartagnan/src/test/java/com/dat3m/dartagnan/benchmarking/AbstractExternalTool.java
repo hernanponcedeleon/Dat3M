@@ -4,16 +4,15 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class AbstractExternalTool {
 
@@ -36,7 +35,7 @@ public abstract class AbstractExternalTool {
         return Provider.fromSupplier(() -> 0);
     }
 
-    protected void preExecutionCmds() throws Exception { return; }
+    protected void preExecutionCmds() throws Exception { }
     
     // =============================================================
 

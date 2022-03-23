@@ -35,7 +35,7 @@ public class Nidhugg extends AbstractExternalTool {
 
 	@Override
 	protected Provider<List<String>> getToolOptionsProvider() {
-		return Provider.fromSupplier(() -> Arrays.asList("-tso"));
+		return Provider.fromSupplier(() -> List.of("-tso"));
 	}
 
 	@Override
@@ -54,7 +54,6 @@ public class Nidhugg extends AbstractExternalTool {
 		pb = new ProcessBuilder(cmd);
 		proc = pb.start();
 		proc.waitFor();
-		return;
 	}
     
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
