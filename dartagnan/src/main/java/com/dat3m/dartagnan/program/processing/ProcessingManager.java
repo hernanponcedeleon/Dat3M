@@ -49,6 +49,7 @@ public class ProcessingManager implements ProgramProcessor {
                 DeadCodeElimination.fromConfig(config),
                 BranchReordering.fromConfig(config),
                 Simplifier.fromConfig(config),
+        		FindSpinLoops.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
                 DeadAssignmentElimination.fromConfig(config),

@@ -2,6 +2,9 @@ package com.dat3m.dartagnan.verification;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Baseline;
+import com.dat3m.dartagnan.encoding.ProgramEncoder;
+import com.dat3m.dartagnan.encoding.PropertyEncoder;
+import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.witness.WitnessGraph;
@@ -23,11 +26,11 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.configuration.Baseline.*;
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
-
 import java.util.EnumSet;
+
+import static com.dat3m.dartagnan.configuration.Baseline.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.BASELINE;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 /*
  A RefinementTask is a VerificationTask with an additional baseline memory model.
@@ -80,8 +83,16 @@ public class RefinementTask extends VerificationTask {
 
     @Override
     public void initializeEncoders(SolverContext ctx) throws InvalidConfigurationException {
-        super.initializeEncoders(ctx);
-        this.baselineWmmEncoder = WmmEncoder.fromConfig(baselineModel, baselineContext, getConfig());
+        progEncoder = ProgramEncoder.fromConfig(getProgram(), getAnalysisContext(), getConfig());
+        propertyEncoder = PropertyEncoder.fromConfig(getProgram(), getMemoryModel(), getAnalysisContext(), getConfig());
+        //wmmEncoder = WmmEncoder.fromConfig(getMemoryModel(), getAnalysisContext(), getConfig());
+        symmetryEncoder = SymmetryEncoder.fromConfig(getMemoryModel(), getAnalysisContext(), getConfig());
+        baselineWmmEncoder = WmmEncoder.fromConfig(baselineModel, baselineContext, getConfig());
+
+        progEncoder.initializeEncoding(ctx);
+        propertyEncoder.initializeEncoding(ctx);
+        //wmmEncoder.initializeEncoding(ctx);
+        symmetryEncoder.initializeEncoding(ctx);
         baselineWmmEncoder.initializeEncoding(ctx);
 		logger.info("{}: {}", BASELINE, baselines);
     }

@@ -7,13 +7,14 @@ public enum Property implements OptionInterface {
 	
 	// Used for options in the console
 	public String asStringOption() {
-        switch(this){
-        	case REACHABILITY:
-        		return "reachability";
-        	case RACES:
-        		return "races";
-        }
-        throw new UnsupportedOperationException("Unrecognized property: " + this);
+        switch(this) {
+			case REACHABILITY:
+				return "reachability";
+			case RACES:
+				return "races";
+			default:
+				throw new UnsupportedOperationException("Unrecognized property: " + this);
+		}
 	}
 
 	// Used to display in UI
@@ -24,8 +25,9 @@ public enum Property implements OptionInterface {
         		return "Reachability";
         	case RACES:
         		return "Races";
+			default:
+				throw new UnsupportedOperationException("Unrecognized property: " + this);
         }
-        throw new UnsupportedOperationException("Unrecognized property: " + this);
     }
 
 	public static Property getDefault() {

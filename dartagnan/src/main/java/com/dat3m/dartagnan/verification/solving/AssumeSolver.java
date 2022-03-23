@@ -47,9 +47,9 @@ public class AssumeSolver {
         prover.addConstraint(symmEncoder.encodeFullSymmetry(ctx));
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_assertion_assumption");
-        BooleanFormula assumedAssertion = bmgr.implication(assumptionLiteral, propertyEncoder.encodeAssertions(ctx));
-        prover.addConstraint(assumedAssertion);
+        BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
+        BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoder.encodeSpecification(ctx));
+        prover.addConstraint(assumedSpec);
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {

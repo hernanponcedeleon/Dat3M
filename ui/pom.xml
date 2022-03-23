@@ -39,6 +39,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
 		  <failIfNoTests>false</failIfNoTests>
+		  <reuseForks>false</reuseForks>
         </configuration>
       </plugin>
     </plugins>

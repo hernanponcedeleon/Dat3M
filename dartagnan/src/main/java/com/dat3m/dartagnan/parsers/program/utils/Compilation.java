@@ -20,7 +20,8 @@ public class Compilation {
 		
     	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("smack", "-q", "-t", "--no-memory-splitting"));
-        cmd.add("--clang-options=-I" + System.getenv("DAT3M_HOME") + "/include/ " + System.getenv().getOrDefault("CFLAGS", ""));
+    	// Here there is not need to iterate over CFLAG values
+        cmd.add("--clang-options=-I" + System.getenv("DAT3M_HOME") + "/include/smack " + System.getenv().getOrDefault("CFLAGS", ""));
     	cmd.addAll(asList("-bpl", System.getenv("DAT3M_HOME") + "/output/" + name + ".bpl"));
     	cmd.add(file.getAbsolutePath());
     	
@@ -36,6 +37,7 @@ public class Compilation {
 				}
 			}
     		logger.info("Compiling with smack");
+        	logger.debug("Running " + String.join(" ", cmd));
     		tries++;
         	proc = processBuilder.start();
         	proc.waitFor();
@@ -44,11 +46,16 @@ public class Compilation {
 
 	public static void compileWithClang(File file) throws Exception {
     	ArrayList<String> cmd = new ArrayList<String>();
-    	cmd.addAll(asList("clang", "-S", System.getenv().getOrDefault("CFLAGS", ""), "-o"));
+    	cmd.addAll(asList("clang", "-S", "-o"));
     	cmd.add(System.getenv("DAT3M_HOME") + "/output/test.s");
+    	// Needed to handle more than one flag in CFLAGS
+    	for(String option : System.getenv().getOrDefault("CFLAGS", "").split(" ")) {
+    		cmd.add(option);
+    	}
     	cmd.add(file.getAbsolutePath());
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
     	logger.info("Compiling with clang");
+    	logger.debug("Running " + String.join(" ", cmd));
     	Process proc = processBuilder.start();
     	proc.waitFor();
     	if(proc.exitValue() == 1) {
