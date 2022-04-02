@@ -11,20 +11,17 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 public class Store extends MemEvent implements RegReaderData {
 
-    protected final ExprInterface value;
-    private final ImmutableSet<Register> dataRegs;
+    protected ExprInterface value;
 
     public Store(IExpr address, ExprInterface value, String mo){
     	super(address, mo);
         this.value = value;
-        dataRegs = value.getRegs();
         addFilters(Tag.ANY, Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.REG_READER);
     }
     
     protected Store(Store other){
         super(other);
         this.value = other.value;
-        dataRegs = other.dataRegs;
     }
 
     @Override
@@ -35,7 +32,7 @@ public class Store extends MemEvent implements RegReaderData {
 
     @Override
     public ImmutableSet<Register> getDataRegs(){
-        return dataRegs;
+        return value.getRegs();
     }
 
     @Override
@@ -46,6 +43,11 @@ public class Store extends MemEvent implements RegReaderData {
     @Override
     public ExprInterface getMemValue(){
         return value;
+    }
+
+    @Override
+    public void setMemValue(ExprInterface value){
+        this.value = value;
     }
 
     // Unrolling

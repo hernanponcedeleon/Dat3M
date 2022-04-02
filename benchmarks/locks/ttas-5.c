@@ -5,6 +5,17 @@
 #include <stdatomic.h>
 #include <assert.h>
 
+#ifdef ACQ2RX
+#define mo_lock memory_order_relaxed
+#else
+#define mo_lock memory_order_acquire
+#endif
+#ifdef REL2RX
+#define mo_unlock memory_order_relaxed
+#else
+#define mo_unlock memory_order_release
+#endif
+
 // ttaslock.h
 //
 struct ttaslock_s {
@@ -32,7 +43,7 @@ static inline void await_for_lock(struct ttaslock_s *l)
 
 static inline int try_acquire(struct ttaslock_s *l)
 {
-    return atomic_exchange_explicit(&l->state, 1, memory_order_acquire);
+    return atomic_exchange_explicit(&l->state, 1, mo_lock);
 }
 
 static inline void ttaslock_acquire(struct ttaslock_s *l)
@@ -46,13 +57,14 @@ static inline void ttaslock_acquire(struct ttaslock_s *l)
 
 static inline void ttaslock_release(struct ttaslock_s *l)
 {
-    atomic_store_explicit(&l->state, 0, memory_order_release);
+    atomic_store_explicit(&l->state, 0, mo_unlock);
 }
 
 // main.c
 //
 int shared;
 ttaslock_t lock;
+int sum = 0;
 
 void *thread_n(void *arg)
 {
@@ -62,6 +74,7 @@ void *thread_n(void *arg)
     shared = index;
     int r = shared;
     assert(r == index);
+    sum++;
     ttaslock_release(&lock);
     return NULL;
 }
@@ -79,6 +92,14 @@ int main()
     pthread_create(&t3, NULL, thread_n, (void *) 2);
     pthread_create(&t4, NULL, thread_n, (void *) 3);
     pthread_create(&t5, NULL, thread_n, (void *) 4);
+
+    pthread_join(t1, 0);
+    pthread_join(t2, 0);
+    pthread_join(t3, 0);
+    pthread_join(t4, 0);
+    pthread_join(t5, 0);
+
+    assert(sum == 5);
 
     return 0;
 }

@@ -17,12 +17,11 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
+import static com.dat3m.dartagnan.expression.utils.Utils.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
@@ -169,8 +168,7 @@ public class RelRf extends Relation {
     protected BooleanFormula encodeApprox(SolverContext ctx) {
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-    	
+
     	BooleanFormula enc = bmgr.makeTrue();
         Map<MemEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
 
@@ -179,13 +177,14 @@ public class RelRf extends Relation {
             MemEvent r = (MemEvent) tuple.getSecond();
             BooleanFormula edge = this.getSMTVar(tuple, ctx);
 
-            IntegerFormula a1 = convertToIntegerFormula(w.getMemAddressExpr(), ctx);
-            IntegerFormula a2 = convertToIntegerFormula(r.getMemAddressExpr(), ctx);
-            BooleanFormula sameAddress = imgr.equal(a1, a2);
-
-            IntegerFormula v1 = convertToIntegerFormula(w.getMemValueExpr(), ctx);
-            IntegerFormula v2 = convertToIntegerFormula(r.getMemValueExpr(), ctx);
-            BooleanFormula sameValue = imgr.equal(v1, v2);
+            // The boogie file might have a different type (Ints vs BVs) that the imposed by ARCH_PRECISION
+            // In such cases we perform the transformation 
+            Formula a1 = w.getMemAddressExpr();
+            Formula a2 = r.getMemAddressExpr();
+            BooleanFormula sameAddress = generalEqual(a1, a2, ctx);
+            Formula v1 = w.getMemValueExpr();
+            Formula v2 = r.getMemValueExpr();
+            BooleanFormula sameValue = generalEqual(v1, v2, ctx);
 
             edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(edge);
             enc = bmgr.and(enc, bmgr.implication(edge, bmgr.and(getExecPair(w, r, ctx), sameAddress, sameValue)));

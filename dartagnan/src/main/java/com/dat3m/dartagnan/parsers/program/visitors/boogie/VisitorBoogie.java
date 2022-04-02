@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
+import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.*;
@@ -31,6 +32,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.parsers.program.boogie.LlvmFunctions.LLVMFUNCTIONS;
@@ -90,6 +92,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	protected BeginAtomic currentBeginAtomic = null;
 	protected Call_cmdContext atomicMode = null;
 	 
+	private ExprSimplifier exprSimplifier = new ExprSimplifier();
+	
 	private final List<String> smackDummyVariables = Arrays.asList("$M.0", "$exn", "$exnv", "$CurrAddr", "$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", "$0.ref", "$1.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global", "$CurrAddr");
 
 	public VisitorBoogie(ProgramBuilder pb) {
@@ -118,7 +122,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		throw new ParsingException("Program shall have a main procedure");
     	}
 
-    	Register next = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + "ptrMain", -1);
+    	Register next = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + "ptrMain", ARCH_PRECISION);
     	pool.add(next, "main", -1);
     	while(pool.canCreate()) {
     		next = pool.next();
@@ -139,7 +143,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         	for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
         		for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
         			String type = atiwC.typed_idents_where().typed_idents().type().getText();
-        			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
+        			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : ARCH_PRECISION;
             		threadCallingValues.get(threadCount).add(programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText(), precision));
         		}
         	}
@@ -163,7 +167,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		for(ParseTree ident : ctx.typed_idents().idents().Ident()) {
 			String name = ident.getText();
 			String type = ctx.typed_idents().type().getText();
-			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
+			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : ARCH_PRECISION;
 			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name) && ATOMICPROCEDURES.stream().noneMatch(name::startsWith)) {
 				int size = ctx.getText().contains(":allocSize")
 					? Integer.parseInt(ctx.getText().split(":allocSize")[1].split("}")[0])
@@ -201,7 +205,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
 				String name = ident.getText();
 				String type = atiwC.typed_idents_where().typed_idents().type().getText();
-				int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
+				int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : ARCH_PRECISION;
 				if(constantsTypeMap.containsKey(name)) {
 	                throw new ParsingException("Variable " + name + " is already defined as a constant");
 				}
@@ -231,7 +235,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
             if(threadCount != 1) {
                 // Used to allow execution of threads after they have been created (pthread_create)
                 MemoryObject object = programBuilder.getOrNewObject(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
-                Register reg = programBuilder.getOrCreateRegister(threadCount, null, -1);
+                Register reg = programBuilder.getOrCreateRegister(threadCount, null, ARCH_PRECISION);
                 Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
                 programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, object, label));
             }
@@ -252,7 +256,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     				// To deal with references passed to created threads
     				if(index < callingValues.size()) {
     					String type = atiwC.typed_idents_where().typed_idents().type().getText();
-    					int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
+    					int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : ARCH_PRECISION;
         				Register register = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText(), precision);
         				ExprInterface value = callingValues.get(index);
         				Local child = EventFactory.newLocal(register, value, currentLine);
@@ -327,7 +331,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	       	return null;
 		}
 		if(name.equals("reach_error")) {
-	    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, -1);
+	    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, ARCH_PRECISION);
 	    	assertionIndex++;
 	    	Local event = EventFactory.newLocal(ass, new BConst(false), currentLine);
 			event.addFilters(Tag.ASSERTION);
@@ -427,11 +431,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        	if(ctx.getText().contains("$load.") || value instanceof MemoryObject) {
 	        		try {
 		    			// This names are global so we don't use currentScope.getID(), but per thread.
-		    			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText(), -1);
+		    			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText(), ARCH_PRECISION);
 		    			String tmp = ctx.def_body().exprs().expr(0).getText();
 		    			tmp = tmp.substring(tmp.indexOf(",") + 1, tmp.indexOf(")"));
 		    			// This names are global so we don't use currentScope.getID(), but per thread.
-		    			Register ptr = programBuilder.getOrCreateRegister(threadCount, tmp, -1);
+		    			Register ptr = programBuilder.getOrCreateRegister(threadCount, tmp, ARCH_PRECISION);
 	        			pool.addRegPtr(reg, ptr);	        				        			
 	        		} catch (Exception e) {
 	        			// Nothing to be done
@@ -443,10 +447,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        		}						        			
 		            continue;
 	        	}
-	        	// In general IExpr generated by smack can have 3 levels
-	        	if(value instanceof IExpr) {
-	        		try {value = ((IExpr)value).simplify();} catch (Exception ignore) {}
-	        	}
+	        	value = value.visit(exprSimplifier);
 	            Local child = EventFactory.newLocal(register, value, currentLine);
 				programBuilder.addChild(threadCount, child);	        		
 	            continue;
@@ -631,7 +632,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(constantsTypeMap.containsKey(name)) {
 			// Dummy register needed to parse axioms
-			return new Register(name, -1, constantsTypeMap.get(name));
+			return new Register(name, ARCH_PRECISION, constantsTypeMap.get(name));
 		}
         Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
         if(register != null){
@@ -732,7 +733,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitInt_expr(Int_exprContext ctx) {
-		return new IValue(new BigInteger(ctx.getText()),-1);
+		return new IValue(new BigInteger(ctx.getText()), ARCH_PRECISION);
 	}
 	
 	@Override

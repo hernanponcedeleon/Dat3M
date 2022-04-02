@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+
 import java.math.BigInteger;
 
 /**
@@ -14,8 +16,8 @@ public final class IValue extends IConst {
     // However, it is impossible to define general constants, we need a function that produces
     // a constant for each precision degree
     // HP: agree. I assume you wanted this to improve code readability, but having one constant per precision won't help.
-    public static IConst ZERO = new IValue(BigInteger.ZERO, -1);
-    public static IConst ONE = new IValue(BigInteger.ONE, -1);
+    public static IConst ZERO = new IValue(BigInteger.ZERO, ARCH_PRECISION);
+    public static IConst ONE = new IValue(BigInteger.ONE, ARCH_PRECISION);
 
     private final BigInteger value;
     private final int precision;

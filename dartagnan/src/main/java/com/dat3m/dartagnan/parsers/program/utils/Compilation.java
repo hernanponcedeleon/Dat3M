@@ -27,7 +27,7 @@ public class Compilation {
     		cmd.add(option);
     	}
     	// Here there is not need to iterate over CFLAG values
-        cmd.add("--clang-options=-I" + System.getenv("DAT3M_HOME") + "/include/ " + System.getenv().getOrDefault("CFLAGS", ""));
+        cmd.add("--clang-options=-I" + System.getenv("DAT3M_HOME") + "/include/smack " + System.getenv().getOrDefault("CFLAGS", ""));
     	cmd.addAll(asList("-bpl", System.getenv("DAT3M_HOME") + "/output/" + name + ".bpl"));
     	cmd.add(file.getAbsolutePath());
     	

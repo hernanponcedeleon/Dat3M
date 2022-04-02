@@ -23,13 +23,11 @@ import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 public abstract class RMWReadCond extends Load implements RegWriter, RegReaderData {
 
     protected ExprInterface cmp;
-    private final ImmutableSet<Register> dataRegs;
     protected BooleanFormula formulaCond;
 
     RMWReadCond(Register reg, ExprInterface cmp, IExpr address, String atomic) {
         super(reg, address, atomic);
         this.cmp = cmp;
-        this.dataRegs = cmp.getRegs();
         addFilters(Tag.RMW, Tag.REG_READER);
     }
 
@@ -46,7 +44,7 @@ public abstract class RMWReadCond extends Load implements RegWriter, RegReaderDa
 
     @Override
     public ImmutableSet<Register> getDataRegs(){
-        return dataRegs;
+        return cmp.getRegs();
     }
 
     public abstract String condToString();

@@ -21,14 +21,15 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.*;
 import java.util.function.BiFunction;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.configuration.OptionNames.ALLOW_PARTIAL_EXECUTIONS;
 import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
-import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.expression.utils.Utils.*;
 
 @Options
 public class ProgramEncoder implements Encoder {
@@ -154,12 +155,22 @@ public class ProgramEncoder implements Encoder {
 
         Memory memory = program.getMemory();;
         FormulaManager fmgr = ctx.getFormulaManager();
-        IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+        
+        BooleanFormula[] addrExprs;
 
-        BooleanFormula[] addrExprs = memory.getObjects().stream()
-                .map(addr -> imgr.equal(convertToIntegerFormula(addr.toIntFormula(ctx), ctx),
-                        imgr.makeNumber(addr.getValue().intValue())))
-                .toArray(BooleanFormula[]::new);
+        if(ARCH_PRECISION > -1) {
+        	BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();	
+            addrExprs = memory.getObjects().stream()
+                    .map(addr -> bvmgr.equal((BitvectorFormula)addr.toIntFormula(ctx), 
+                    		bvmgr.makeBitvector(ARCH_PRECISION, addr.getValue().intValue())))
+                    .toArray(BooleanFormula[]::new);        	
+        } else {
+            IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+            addrExprs = memory.getObjects().stream()
+                    .map(addr -> imgr.equal((IntegerFormula)addr.toIntFormula(ctx),
+                    		imgr.makeNumber(addr.getValue().intValue())))
+                    .toArray(BooleanFormula[]::new);        	
+        }
         return fmgr.getBooleanFormulaManager().and(addrExprs);
     }
 

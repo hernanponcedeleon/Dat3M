@@ -13,19 +13,16 @@ import org.sosy_lab.java_smt.api.SolverContext;
 public class Assume extends Event implements RegReaderData {
 
 	protected final ExprInterface expr;
-	private final ImmutableSet<Register> dataRegs;
 
 	public Assume(ExprInterface expr) {
 		super();
 		this.expr = expr;
-		this.dataRegs = expr.getRegs();
 		addFilters(Tag.ANY, Tag.LOCAL, Tag.REG_READER);
 	}
 
 	protected Assume(Assume other){
 		super(other);
 		this.expr = other.expr;
-		this.dataRegs = other.dataRegs;
 	}
 
 
@@ -36,7 +33,7 @@ public class Assume extends Event implements RegReaderData {
 
 	@Override
 	public ImmutableSet<Register> getDataRegs(){
-		return dataRegs;
+		return expr.getRegs();
 	}
 
     @Override
