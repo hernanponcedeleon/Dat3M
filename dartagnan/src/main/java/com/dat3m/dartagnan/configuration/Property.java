@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.configuration;
 import java.util.Arrays;
 
 public enum Property implements OptionInterface {
-	REACHABILITY, RACES;
+	REACHABILITY, RACES, LIVENESS;
 	
 	// Used for options in the console
 	public String asStringOption() {
@@ -12,6 +12,8 @@ public enum Property implements OptionInterface {
 				return "reachability";
 			case RACES:
 				return "races";
+			case LIVENESS:
+				return "liveness";
 			default:
 				throw new UnsupportedOperationException("Unrecognized property: " + this);
 		}
@@ -25,6 +27,8 @@ public enum Property implements OptionInterface {
         		return "Reachability";
         	case RACES:
         		return "Races";
+			case LIVENESS:
+				return "Liveness";
 			default:
 				throw new UnsupportedOperationException("Unrecognized property: " + this);
         }
@@ -36,7 +40,7 @@ public enum Property implements OptionInterface {
 
 	// Used to decide the order shown by the selector in the UI
 	public static Property[] orderedValues() {
-		Property[] order = { REACHABILITY, RACES };
+		Property[] order = { REACHABILITY, RACES, LIVENESS };
 		// Be sure no element is missing
 		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;
