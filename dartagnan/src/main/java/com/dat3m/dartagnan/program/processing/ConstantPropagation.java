@@ -114,7 +114,9 @@ public class ConstantPropagation implements ProgramProcessor {
             current = current.getSuccessor();
 
 			if (resetPropMap) {
-				propagationMap.clear();
+				// If we clear, is like if we would have not seen a regWriter for the cleared registers.
+				// We instead want to say that for those registers we don't know what the value if.
+				propagationMap.replaceAll((k,v) -> v = TOP);
 			}
         }
 
