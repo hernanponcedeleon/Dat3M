@@ -79,7 +79,7 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
 			if(next instanceof CondJump && !next.is(Tag.BOUND) && preds.stream().allMatch(e -> mutuallyExclusiveIfs((CondJump)next, e))) {
 				removed.add(next);
 			}
-            if (next != null && preds.size() == 1 && preds.get(0).getSuccessor().equals(label)) {
+            if (next != null && preds.size() == 1 && preds.get(0).getSuccessor().equals(label) && !label.is(Tag.SPINLOOP)) {
                 removed.add(label);
             }
         }
