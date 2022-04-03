@@ -36,6 +36,11 @@ public class CLocksTest extends AbstractCTest {
     }
 
     @Override
+    protected Provider<Integer> getBoundProvider() {
+        return Provider.fromSupplier(() -> 2);
+    }
+
+    @Override
     protected long getTimeout() {
         return 60000;
     }
