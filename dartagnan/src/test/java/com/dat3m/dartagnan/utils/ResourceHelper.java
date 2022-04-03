@@ -5,8 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import java.io.*;
 import java.util.HashMap;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.*;
 
 public class ResourceHelper {
 
@@ -38,7 +37,9 @@ public class ResourceHelper {
             while (!(br.readLine()).contains(property)) {
                 continue;
             }
-            return br.readLine().contains("false") ? FAIL : PASS;
+            String result = br.readLine();
+            return result.contains("false") ? FAIL : 
+            		result.contains("true") ? PASS : UNKNOWN;
 
         } catch (Exception e) {
             System.out.println(e.getMessage());
