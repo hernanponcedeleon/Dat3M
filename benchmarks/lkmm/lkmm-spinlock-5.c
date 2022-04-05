@@ -35,7 +35,7 @@ static inline void await_for_lock(struct spinlock_s *l)
 static inline int try_get_lock(struct spinlock_s *l)
 {
     int val = 0;
-    return atomic_cmpxchg_acquire(&l->lock, &val, 1);
+    return atomic_cmpxchg_acquire(&l->lock, val, 1);
 }
 
 static inline void spinlock_acquire(struct spinlock_s *l)
