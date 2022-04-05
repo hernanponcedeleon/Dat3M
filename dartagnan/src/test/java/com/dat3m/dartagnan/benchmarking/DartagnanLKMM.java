@@ -47,14 +47,14 @@ public class DartagnanLKMM extends AbstractCTest {
 		return Arrays.asList(new Object[][]{
             {"lkmm/lkmm-ttas-5", NONE, UNKNOWN},
             {"lkmm/lkmm-ticketlock-6", NONE, PASS},
-            {"lkmm/lkmm-mutex-4", NONE, UNKNOWN},
-            {"lkmm/lkmm-spinlock-5", NONE, UNKNOWN},
-            {"lkmm/lkmm-linuxrwlock-3", FAIL, UNKNOWN},
-            {"lkmm/lkmm-mutex_musl-4", NONE, UNKNOWN},
-//            {"lfds/safestack-3", TSO, FAIL},
-//            {"lfds/dglm-3", TSO, UNKNOWN},
-//            {"lfds/ms-3", TSO, UNKNOWN},
-//            {"lfds/treiber-3", TSO, UNKNOWN}
+            {"lkmm/lkmm-mutex-4", NONE, FAIL},
+            {"lkmm/lkmm-spinlock-5", NONE, FAIL},
+            {"lkmm/lkmm-linuxrwlock-3", NONE, FAIL},
+            {"lkmm/lkmm-mutex_musl-4", NONE, FAIL},
+//            {"lfds/safestack-3", NONE, FAIL},
+//            {"lfds/dglm-3", NONE, UNKNOWN},
+//            {"lfds/ms-3", NONE, UNKNOWN},
+//            {"lfds/treiber-3", NONE, UNKNOWN}
 		});
     }
 

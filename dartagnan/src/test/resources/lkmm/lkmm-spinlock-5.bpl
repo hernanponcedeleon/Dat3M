@@ -1700,33 +1700,26 @@ procedure  try_get_lock($p0: ref)
 {
   var $p1: ref;
   var $p2: ref;
-  var $p3: ref;
-  var $i4: i32;
+  var $i3: i32;
 $bb0:
-  assume {:sourceloc "benchmarks/lkmm/lkmm-spinlock-5.c", 37, 9} true;
-  assume {:verifier.code 0} true;
-  assume {:verifier.code 0} true;
-  call $p1 := $alloc($mul.ref(4, $zext.i32.i64(1)));
-  assume true;
-  assume {:sourceloc "benchmarks/lkmm/lkmm-spinlock-5.c", 37, 9} true;
-  assume {:verifier.code 0} true;
-  $M.0 := $store.i32($M.0, $p1, 0);
   assume {:sourceloc "benchmarks/lkmm/lkmm-spinlock-5.c", 38, 12} true;
   assume {:verifier.code 0} true;
-  $p2 := $add.ref($add.ref($p0, $mul.ref(0, 4)), $mul.ref(0, 1));
-  $p3 := $add.ref($add.ref($add.ref($p0, $mul.ref(0, 4)), $mul.ref(0, 1)), $mul.ref(0, 1));
   assume {:sourceloc "benchmarks/lkmm/lkmm-spinlock-5.c", 38, 12} true;
   assume {:verifier.code 0} true;
-  call $i4 := __LKMM_cmpxchg.ref.ref.i32.i32.i32($p3, $p1, 1, 2, 2);
+  $p1 := $add.ref($add.ref($p0, $mul.ref(0, 4)), $mul.ref(0, 1));
+  $p2 := $add.ref($add.ref($add.ref($p0, $mul.ref(0, 4)), $mul.ref(0, 1)), $mul.ref(0, 1));
+  assume {:sourceloc "benchmarks/lkmm/lkmm-spinlock-5.c", 38, 12} true;
+  assume {:verifier.code 0} true;
+  call $i3 := __LKMM_cmpxchg.ref.i32.i32.i32.i32($p2, 0, 1, 2, 2);
   assume {:sourceloc "benchmarks/lkmm/lkmm-spinlock-5.c", 38, 5} true;
   assume {:verifier.code 0} true;
-  $r := $i4;
+  $r := $i3;
   $exn := false;
   return;
 }
 const __LKMM_cmpxchg: ref;
 axiom (__LKMM_cmpxchg == $sub.ref(0, 11340));
-procedure  __LKMM_cmpxchg.ref.ref.i32.i32.i32(p.0: ref, p.1: ref, p.2: i32, p.3: i32, p.4: i32)
+procedure  __LKMM_cmpxchg.ref.i32.i32.i32.i32(p.0: ref, p.1: i32, p.2: i32, p.3: i32, p.4: i32)
   returns ($r: i32);
 const __LKMM_READ_ONCE: ref;
 axiom (__LKMM_READ_ONCE == $sub.ref(0, 12372));
