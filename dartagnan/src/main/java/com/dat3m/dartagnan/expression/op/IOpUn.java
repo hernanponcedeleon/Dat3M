@@ -17,13 +17,7 @@ public enum IOpUn {
 	
     @Override
     public String toString() {
-    	//TODO (HP): This is a strange switch-statement
-        switch(this){
-			case MINUS:
-				return "-";
-			default:
-				return "";
-        }
+    	return this.equals(MINUS) ? "-" : "";
     }
 
     public Formula encode(Formula e, SolverContext ctx) {
