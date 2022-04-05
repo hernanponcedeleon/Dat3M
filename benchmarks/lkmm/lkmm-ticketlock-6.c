@@ -47,7 +47,7 @@ static inline void ticketlock_acquire(struct ticketlock_s *l)
 static inline int ticketlock_tryacquire(struct ticketlock_s *l)
 {
     int o = atomic_read_acquire(&l->owner);
-    int n = atomic_cmpxchg_relaxed(&l->next, &o, o + 1);
+    int n = atomic_cmpxchg_relaxed(&l->next, o, o + 1);
     return n == o;
 }
 
