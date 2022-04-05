@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=3.0.0
+version=3.0.0
 
 if [ $# -eq 0 ]; then
     echo "No input file supplied"
@@ -8,29 +8,34 @@ if [ $# -eq 0 ]; then
 fi
 
 if [ $1 == "-v" ] || [ $1 == "--version" ]; then
-    echo $VERSION
+    echo $version
 else
     if [ $1 == "-witness" ]; then
-        WITNESS="--validate="$2
-        PROPERTYPATH=$3
-        PROGRAMPATH=$4
+        witness="--validate="$2
+        propertypath=$3
+        programpath=$4
     else
-        WITNESS=""
-        PROPERTYPATH=$1
-        PROGRAMPATH=$2
+        witness=""
+        propertypath=$1
+        programpath=$2
+    fi
+
+    cflags="-DSVCOMP -DCUSTOM_VERIFIER_ASSERT -fno-vectorize -fno-slp-vectorize"
+    smackflags="-q -t --no-memory-splitting"
+    
+    svcompflags="--method=assume"
+    if ! grep -q "pthread" $programpath; then
+        cflags+=" -O3"
+        smackflags+=" --integer-encoding bit-vector"
+        svcompflags+=" cat/sc.cat"
+    else
+        svcompflags+=" --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat"
     fi
 
     export DAT3M_HOME=$(pwd)
-    export PATH=$PATH:$DAT3M_HOME/smack/bin
+    export CFLAGS=$cflags
+    export SMACK_FLAGS=$smackflags
 
-    FLAGS="--method=assume"
-    if ! grep -q "pthread" $PROGRAMPATH; then
-        FLAGS+=" --svcomp.optimization=O3 --svcomp.integerEncoding=bit-vector cat/sc.cat"
-    else
-        FLAGS+=" --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat"
-    fi
-
-    cmd="java -jar svcomp/target/svcomp-"$VERSION".jar "$FLAGS" --svcomp.property="$PROPERTYPATH" "$PROGRAMPATH" "$WITNESS
-    echo $cmd
+    cmd="java -jar svcomp/target/svcomp-"$version".jar "$svcompflags" --svcomp.property="$propertypath" "$programpath" "$witness
     $cmd
 fi
