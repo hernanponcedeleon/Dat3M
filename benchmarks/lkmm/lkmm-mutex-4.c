@@ -45,13 +45,13 @@ static inline void mutex_init(mutex_t *m)
 static inline int mutex_lock_fastpath(mutex_t *m)
 {
     int r = 0;
-    return atomic_cmpxchg_acquire(m, &r, 1);
+    return atomic_cmpxchg_acquire(m, r, 1);
 }
 
 static inline int mutex_lock_try_acquire(mutex_t *m)
 {
     int r = 0;
-    return atomic_cmpxchg_acquire(m, &r, 2);
+    return atomic_cmpxchg_acquire(m, r, 2);
 }
 
 static inline void mutex_lock(mutex_t *m)
@@ -61,7 +61,7 @@ static inline void mutex_lock(mutex_t *m)
 
     while (1) {
         int r = 1;
-        atomic_cmpxchg_relaxed(m, &r, 2);
+        atomic_cmpxchg_relaxed(m, r, 2);
         __futex_wait(m, 2);
         if (mutex_lock_try_acquire(m))
             return;
@@ -71,7 +71,7 @@ static inline void mutex_lock(mutex_t *m)
 static inline int mutex_unlock_fastpath(mutex_t *m)
 {
     int r = 1;
-    return atomic_cmpxchg_release(m, &r, 0);
+    return atomic_cmpxchg_release(m, r, 0);
 }
 
 static inline void mutex_unlock(mutex_t *m)

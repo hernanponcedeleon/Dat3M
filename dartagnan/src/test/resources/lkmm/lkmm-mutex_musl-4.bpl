@@ -1586,44 +1586,41 @@ const mutex_lock: ref;
 axiom (mutex_lock == $sub.ref(0, 7212));
 procedure  mutex_lock($p0: ref)
 {
-  var $p1: ref;
-  var $i2: i32;
-  var $i3: i1;
-  var $i4: i32;
-  var $i5: i1;
+  var $i1: i32;
+  var $i2: i1;
+  var $i3: i32;
+  var $i4: i1;
+  var $p5: ref;
   var $p6: ref;
-  var $p7: ref;
-  var $i8: i32;
+  var $i7: i32;
+  var $p8: ref;
   var $p9: ref;
-  var $p10: ref;
-  var $i11: i32;
-  var $i12: i1;
+  var $i10: i32;
+  var $i11: i1;
+  var $p12: ref;
   var $p13: ref;
   var $p14: ref;
-  var $p15: ref;
-  var $i16: i32;
+  var $i15: i32;
 $bb0:
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 63, 9} true;
   assume {:verifier.code 0} true;
-  assume {:verifier.code 0} true;
-  call $p1 := $alloc($mul.ref(4, $zext.i32.i64(1)));
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 63, 9} true;
   assume {:verifier.code 0} true;
-  call $i2 := mutex_lock_fastpath($p0);
+  call $i1 := mutex_lock_fastpath($p0);
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 63, 9} true;
   assume {:verifier.code 0} true;
-  $i3 := $ne.i32($i2, 0);
+  $i2 := $ne.i32($i1, 0);
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 63, 9} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i3} true;
+  assume {:branchcond $i2} true;
   goto $bb1, $bb2;
 $bb1:
-  assume ($i3 == 1);
+  assume ($i2 == 1);
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 64, 9} true;
   assume {:verifier.code 0} true;
   goto $bb3;
 $bb2:
-  assume !(($i3 == 1));
+  assume !(($i2 == 1));
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 66, 5} true;
   assume {:verifier.code 0} true;
   goto $bb4;
@@ -1635,70 +1632,66 @@ $bb3:
 $bb4:
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 66, 12} true;
   assume {:verifier.code 0} true;
-  call $i4 := mutex_lock_slowpath_check($p0);
+  call $i3 := mutex_lock_slowpath_check($p0);
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 66, 41} true;
   assume {:verifier.code 0} true;
-  $i5 := $eq.i32($i4, 0);
+  $i4 := $eq.i32($i3, 0);
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 66, 5} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i5} true;
+  assume {:branchcond $i4} true;
   goto $bb5, $bb6;
 $bb5:
-  assume ($i5 == 1);
+  assume ($i4 == 1);
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 67, 9} true;
   assume {:verifier.code 0} true;
-  $p6 := $add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(4, 1));
-  $p7 := $add.ref($add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(4, 1)), $mul.ref(0, 1));
+  $p5 := $add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(4, 1));
+  $p6 := $add.ref($add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(4, 1)), $mul.ref(0, 1));
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 67, 9} true;
   assume {:verifier.code 0} true;
-  call $i8 := __LKMM_atomic_fetch_op.ref.i32.i32.i32($p7, 1, 0, 0);
-  assume true;
-  assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 68, 13} true;
-  assume {:verifier.code 0} true;
-  $M.0 := $store.i32($M.0, $p1, 1);
+  call $i7 := __LKMM_atomic_fetch_op.ref.i32.i32.i32($p6, 1, 0, 0);
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 69, 14} true;
   assume {:verifier.code 0} true;
-  $p9 := $add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(0, 1));
-  $p10 := $add.ref($add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(0, 1)), $mul.ref(0, 1));
+  $p8 := $add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(0, 1));
+  $p9 := $add.ref($add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(0, 1)), $mul.ref(0, 1));
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 69, 14} true;
   assume {:verifier.code 0} true;
-  call $i11 := __LKMM_cmpxchg.ref.ref.i32.i32.i32($p10, $p1, 2, 0, 0);
+  call $i10 := __LKMM_cmpxchg.ref.i32.i32.i32.i32($p9, 1, 2, 0, 0);
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 69, 14} true;
   assume {:verifier.code 0} true;
-  $i12 := $ne.i32($i11, 0);
+  $i11 := $ne.i32($i10, 0);
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 69, 13} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i12} true;
+  assume {:branchcond $i11} true;
   goto $bb7, $bb9;
 $bb6:
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 66, 5} true;
   assume {:verifier.code 0} true;
-  assume !(($i5 == 1));
+  assume !(($i4 == 1));
   goto $bb3;
 $bb7:
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 69, 13} true;
   assume {:verifier.code 0} true;
-  assume ($i12 == 1);
+  assume ($i11 == 1);
   goto $bb8;
 $bb8:
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 71, 9} true;
   assume {:verifier.code 0} true;
-  $p14 := $add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(4, 1));
-  $p15 := $add.ref($add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(4, 1)), $mul.ref(0, 1));
+  $p13 := $add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(4, 1));
+  $p14 := $add.ref($add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(4, 1)), $mul.ref(0, 1));
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 71, 9} true;
   assume {:verifier.code 0} true;
-  call $i16 := __LKMM_atomic_fetch_op.ref.i32.i32.i32($p15, 1, 0, 1);
+  call $i15 := __LKMM_atomic_fetch_op.ref.i32.i32.i32($p14, 1, 0, 1);
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 66, 5} true;
   assume {:verifier.code 0} true;
   goto $bb4;
 $bb9:
-  assume !(($i12 == 1));
+  assume !(($i11 == 1));
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 70, 26} true;
   assume {:verifier.code 0} true;
-  $p13 := $add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(0, 1));
+  $p12 := $add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(0, 1));
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 70, 9} true;
   assume {:verifier.code 0} true;
-  call __futex_wait($p13, 2);
+  call __futex_wait($p12, 2);
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 70, 9} true;
   assume {:verifier.code 0} true;
   goto $bb8;
@@ -1817,27 +1810,20 @@ procedure  mutex_lock_fastpath($p0: ref)
 {
   var $p1: ref;
   var $p2: ref;
-  var $p3: ref;
-  var $i4: i32;
+  var $i3: i32;
 $bb0:
-  assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 50, 9} true;
-  assume {:verifier.code 0} true;
-  assume {:verifier.code 0} true;
-  call $p1 := $alloc($mul.ref(4, $zext.i32.i64(1)));
-  assume true;
-  assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 50, 9} true;
-  assume {:verifier.code 0} true;
-  $M.0 := $store.i32($M.0, $p1, 0);
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 51, 12} true;
   assume {:verifier.code 0} true;
-  $p2 := $add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(0, 1));
-  $p3 := $add.ref($add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(0, 1)), $mul.ref(0, 1));
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 51, 12} true;
   assume {:verifier.code 0} true;
-  call $i4 := __LKMM_cmpxchg.ref.ref.i32.i32.i32($p3, $p1, 1, 2, 2);
+  $p1 := $add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(0, 1));
+  $p2 := $add.ref($add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(0, 1)), $mul.ref(0, 1));
+  assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 51, 12} true;
+  assume {:verifier.code 0} true;
+  call $i3 := __LKMM_cmpxchg.ref.i32.i32.i32.i32($p2, 0, 1, 2, 2);
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 51, 5} true;
   assume {:verifier.code 0} true;
-  $r := $i4;
+  $r := $i3;
   $exn := false;
   return;
 }
@@ -1848,33 +1834,26 @@ procedure  mutex_lock_slowpath_check($p0: ref)
 {
   var $p1: ref;
   var $p2: ref;
-  var $p3: ref;
-  var $i4: i32;
+  var $i3: i32;
 $bb0:
-  assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 56, 9} true;
-  assume {:verifier.code 0} true;
-  assume {:verifier.code 0} true;
-  call $p1 := $alloc($mul.ref(4, $zext.i32.i64(1)));
-  assume true;
-  assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 56, 9} true;
-  assume {:verifier.code 0} true;
-  $M.0 := $store.i32($M.0, $p1, 0);
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 57, 12} true;
   assume {:verifier.code 0} true;
-  $p2 := $add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(0, 1));
-  $p3 := $add.ref($add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(0, 1)), $mul.ref(0, 1));
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 57, 12} true;
   assume {:verifier.code 0} true;
-  call $i4 := __LKMM_cmpxchg.ref.ref.i32.i32.i32($p3, $p1, 1, 2, 2);
+  $p1 := $add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(0, 1));
+  $p2 := $add.ref($add.ref($add.ref($p0, $mul.ref(0, 8)), $mul.ref(0, 1)), $mul.ref(0, 1));
+  assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 57, 12} true;
+  assume {:verifier.code 0} true;
+  call $i3 := __LKMM_cmpxchg.ref.i32.i32.i32.i32($p2, 0, 1, 2, 2);
   assume {:sourceloc "benchmarks/lkmm/lkmm-mutex_musl-4.c", 57, 5} true;
   assume {:verifier.code 0} true;
-  $r := $i4;
+  $r := $i3;
   $exn := false;
   return;
 }
 const __LKMM_cmpxchg: ref;
 axiom (__LKMM_cmpxchg == $sub.ref(0, 15468));
-procedure  __LKMM_cmpxchg.ref.ref.i32.i32.i32(p.0: ref, p.1: ref, p.2: i32, p.3: i32, p.4: i32)
+procedure  __LKMM_cmpxchg.ref.i32.i32.i32.i32(p.0: ref, p.1: i32, p.2: i32, p.3: i32, p.4: i32)
   returns ($r: i32);
 const __futex_wait: ref;
 axiom (__futex_wait == $sub.ref(0, 16500));
