@@ -53,7 +53,8 @@ public class CLKMM extends AbstractCTest {
                 {"rcu", NONE, PASS},
                 {"rcu+ar-link-short0", NONE, PASS},
                 {"rcu+ar-link0", NONE, FAIL},
-                {"rcu+ar-link20", NONE, PASS}
+                {"rcu+ar-link20", NONE, PASS},
+                {"C-PaulEMcKenney-MP+o-r+ai-mb-o", NONE, PASS}
 		});
     }
 
