@@ -51,8 +51,9 @@ public class DartagnanTSO extends AbstractCTest {
             {"locks/spinlock-5", TSO, UNKNOWN},
             {"locks/linuxrwlock-3", TSO, UNKNOWN},
             {"locks/mutex_musl-4", TSO, UNKNOWN},
-            {"lfds/safestack-3", TSO, FAIL},
+            {"lfds/safe_stack-3", TSO, FAIL},
             {"lfds/dglm-3", TSO, UNKNOWN},
+            {"lfds/harris_linked_list-3", TSO, UNKNOWN},
             {"lfds/ms-3", TSO, UNKNOWN},
             {"lfds/treiber-3", TSO, UNKNOWN}
 		});
