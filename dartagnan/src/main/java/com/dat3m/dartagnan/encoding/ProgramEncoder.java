@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
@@ -54,6 +55,7 @@ public class ProgramEncoder implements Encoder {
     private final Program program;
     private final BranchEquivalence eq;
     private final ExecutionAnalysis exec;
+    private final Dependency dep;
     private boolean isInitialized = false;
 
     private ProgramEncoder(Program program, Context context, Configuration config) throws InvalidConfigurationException {
@@ -61,6 +63,7 @@ public class ProgramEncoder implements Encoder {
         this.program = Preconditions.checkNotNull(program);
         this.eq = context.requires(BranchEquivalence.class);
         this.exec = context.requires(ExecutionAnalysis.class);
+        dep = context.requires(Dependency.class);
         config.inject(this);
 
         logger.info("{}: {}", ALLOW_PARTIAL_EXECUTIONS, shouldAllowPartialExecutions);
@@ -97,7 +100,10 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeFullProgram(SolverContext ctx) {
         return ctx.getFormulaManager().getBooleanFormulaManager().and(
-                        encodeMemory(ctx), encodeControlFlow(ctx), encodeFinalRegisterValues(ctx));
+                encodeMemory(ctx),
+                encodeControlFlow(ctx),
+                encodeFinalRegisterValues(ctx),
+                dep.encode(ctx));
     }
 
     public BooleanFormula encodeControlFlow(SolverContext ctx) {

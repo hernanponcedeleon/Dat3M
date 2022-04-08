@@ -7,10 +7,7 @@ import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
-import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
-import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
-import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
+import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -107,7 +104,9 @@ public class VerificationTask {
 
     public void performStaticProgramAnalyses() throws InvalidConfigurationException {
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
-        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, analysisContext, config));
+        ExecutionAnalysis exec = ExecutionAnalysis.fromConfig(program, analysisContext, config);
+        analysisContext.register(ExecutionAnalysis.class, exec);
+        analysisContext.register(Dependency.class, new Dependency(program, exec));
         analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, config));
         analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
 
