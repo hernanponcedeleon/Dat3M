@@ -56,8 +56,8 @@ int try_pop(struct Deque *deq, int N, int *data)
 
     // (b - t) = 1.
     bool is_successful = atomic_compare_exchange_strong_explicit(&deq->top, &t, t + 1,
-                                memory_order_acq_rel,
-                                memory_order_acq_rel);
+                                                                 memory_order_relaxed,
+                                                                 memory_order_relaxed);
     atomic_store_explicit(&deq->bottom, b, memory_order_relaxed);
     return (is_successful ? 0 : -2); // success or lost
 }
@@ -66,7 +66,7 @@ int try_steal(struct Deque *deq, int N, int* data)
 {
     int t = atomic_load_explicit(&deq->top, memory_order_relaxed);
     atomic_thread_fence(memory_order_seq_cst);
-    int b = atomic_load_explicit(&deq->bottom, memory_order_acquire);
+    int b = atomic_load_explicit(&deq->bottom, memory_order_relaxed);
 
     if ((b - t) <= 0) {
         return -1; // empty
@@ -75,8 +75,8 @@ int try_steal(struct Deque *deq, int N, int* data)
     *data = deq->buffer[t % N];
 
     bool is_successful = atomic_compare_exchange_strong_explicit(&deq->top, &t, t + 1,
-                                memory_order_release,
-                                memory_order_release);
+                                                                 memory_order_relaxed,
+                                                                 memory_order_relaxed);
     return (is_successful ? 0 : -2); // success or lost
 }
 
@@ -89,23 +89,6 @@ int try_steal(struct Deque *deq, int N, int* data)
 
 struct Deque deq;
 
-void *owner(void *unused)
-{
-    int count = 0;
-    try_push(&deq, NUM, count++);
-    try_push(&deq, NUM, count++);
-    try_push(&deq, NUM, count++);
-    try_push(&deq, NUM, count++);
-    try_push(&deq, NUM, count++);
-    try_push(&deq, NUM, count++);
-
-    int data;
-    assert(try_pop(&deq, NUM, &data) >= 0);
-    assert(try_pop(&deq, NUM, &data) >= 0);
-
-    return NULL;
-}
-
 void *thief(void *unused)
 {
     int data;
@@ -113,18 +96,45 @@ void *thief(void *unused)
     return NULL;
 }
 
-int main()
+void *owner(void *unused)
 {
-	pthread_t t0, t1, t2, t3, t4;
+    pthread_t t0, t1, t2, t3, t4;
+    
+    int count = 0;
+    int data;
 
-	pthread_create(&t0, NULL, owner, NULL);
-    pthread_create(&t1, NULL, thief, NULL);
-    pthread_create(&t2, NULL, thief, NULL);
-    pthread_create(&t3, NULL, thief, NULL);
-    pthread_create(&t4, NULL, thief, NULL);
+    count++;
+    try_push(&deq, NUM, count);
+
 #ifdef FAIL
     pthread_t t5;
     pthread_create(&t5, NULL, thief, NULL);
 #endif
+    // Unless the thief thread was created above, I should pop the value that I just pushed
+    try_pop(&deq, NUM, &data);
+    assert(data == count);
+
+    try_push(&deq, NUM, count);
+    try_push(&deq, NUM, count);
+    try_push(&deq, NUM, count);
+    try_push(&deq, NUM, count);
+    try_push(&deq, NUM, count);
+
+    pthread_create(&t1, NULL, thief, NULL);
+    pthread_create(&t2, NULL, thief, NULL);
+    pthread_create(&t3, NULL, thief, NULL);
+    pthread_create(&t4, NULL, thief, NULL);
+
+    // The  number of pop + steal == push to this holds
+    assert(try_pop(&deq, NUM, &data) >= 0);
+
+    return NULL;
+}
+
+int main()
+{
+	pthread_t t0;
+
+	pthread_create(&t0, NULL, owner, NULL);
     return 0;
 }
