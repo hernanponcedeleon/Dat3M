@@ -48,6 +48,7 @@ public class Genmc extends AbstractExternalTool {
             {"locks/linuxrwlock-3", UNKNOWN},
             {"locks/mutex_musl-4", UNKNOWN},
             {"lfds/safe_stack-3", FAIL},
+            {"lfds/chase-lev-5", PASS},
             {"lfds/dglm-3", UNKNOWN},
             {"lfds/harris_linked_list-3", UNKNOWN},
             {"lfds/ms-3", UNKNOWN},
