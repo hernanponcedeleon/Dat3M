@@ -52,10 +52,11 @@ public class DartagnanTSO extends AbstractCTest {
             {"locks/linuxrwlock-3", TSO, UNKNOWN},
             {"locks/mutex_musl-4", TSO, UNKNOWN},
             {"lfds/safe_stack-3", TSO, FAIL},
+            {"lfds/chase-lev-5", TSO, PASS},
             {"lfds/dglm-3", TSO, UNKNOWN},
             {"lfds/harris_linked_list-3", TSO, UNKNOWN},
             {"lfds/ms-3", TSO, UNKNOWN},
-            {"lfds/treiber-3", TSO, UNKNOWN}
+            {"lfds/treiber-3", TSO, UNKNOWN},
 		});
     }
 

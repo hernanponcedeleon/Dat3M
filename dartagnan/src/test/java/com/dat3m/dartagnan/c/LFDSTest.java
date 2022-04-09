@@ -61,6 +61,9 @@ public class LFDSTest extends AbstractCTest {
             {"treiber-3-CAS-relaxed", TSO, UNKNOWN},
             {"treiber-3-CAS-relaxed", ARM8, FAIL},
             {"treiber-3-CAS-relaxed", POWER, FAIL},
+            {"chase-lev-5", TSO, UNKNOWN},
+            {"chase-lev-5", ARM8, UNKNOWN},
+            {"chase-lev-5", POWER, UNKNOWN},
         });
     }
 
