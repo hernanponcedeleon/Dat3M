@@ -54,7 +54,7 @@ public class DartagnanTSO extends AbstractCTest {
             {"lfds/safe_stack-3", TSO, FAIL},
             {"lfds/chase-lev-5", TSO, PASS},
             {"lfds/dglm-3", TSO, UNKNOWN},
-            {"lfds/harris_linked_list-3", TSO, UNKNOWN},
+            {"lfds/harris-3", TSO, UNKNOWN},
             {"lfds/ms-3", TSO, UNKNOWN},
             {"lfds/treiber-3", TSO, UNKNOWN},
 		});

@@ -54,7 +54,7 @@ public class DartagnanARM8 extends AbstractCTest {
                 {"lfds/safe_stack-3", ARM8, FAIL},
                 {"lfds/chase-lev-5", ARM8, PASS},
                 {"lfds/dglm-3", ARM8, UNKNOWN},
-                {"lfds/harris_linked_list-3", ARM8, UNKNOWN},
+                {"lfds/harris-3", ARM8, UNKNOWN},
                 {"lfds/ms-3", ARM8, UNKNOWN},
                 {"lfds/treiber-3", ARM8, UNKNOWN},
 		});

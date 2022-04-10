@@ -54,7 +54,7 @@ public class DartagnanPower extends AbstractCTest {
             {"lfds/safe_stack-3", POWER, FAIL},
             {"lfds/chase-lev-5", POWER, PASS},
             {"lfds/dglm-3", POWER, UNKNOWN},
-            {"lfds/harris_linked_list-3", POWER, UNKNOWN},
+            {"lfds/harris-3", POWER, UNKNOWN},
             {"lfds/ms-3", POWER, UNKNOWN},
             {"lfds/treiber-3", POWER, UNKNOWN},
 		});
