@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.google.common.base.Preconditions;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +63,15 @@ public class Thread {
 
     public void clearCache(){
         cache = null;
+    }
+
+    /**
+     * Lists all registers of this thread.
+     * @return
+     * Read-only container of all currently defined registers of this thread.
+     */
+    public Collection<Register> getRegisters() {
+        return registers.values();
     }
 
     public Register getRegister(String name){
