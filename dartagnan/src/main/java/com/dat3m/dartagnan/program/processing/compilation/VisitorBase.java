@@ -141,7 +141,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
         Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
-        Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision()); 
+        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
 		Load load = newRMWLoad(dummyReg, address, mo);
         RMWStore store = newRMWStore(load, address, e.getMemValue(), mo);
 		return eventSequence(

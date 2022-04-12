@@ -20,6 +20,7 @@ public class Thread {
 
     private final Map<String, Register> registers;
     private EventCache cache;
+    private int dummyCount = 0;
 
     public Thread(String name, int id, Event entry){
     	Preconditions.checkArgument(id >= 0, "Invalid thread ID");
@@ -65,6 +66,13 @@ public class Thread {
 
     public Register getRegister(String name){
         return registers.get(name);
+    }
+
+    public Register newRegister(int precision) {
+        cache = null;
+        Register register = new Register("DUMMY_REG_" + dummyCount++, id, precision);
+        registers.put(register.getName(), register);
+        return register;
     }
 
     public Register addRegister(String name, int precision){

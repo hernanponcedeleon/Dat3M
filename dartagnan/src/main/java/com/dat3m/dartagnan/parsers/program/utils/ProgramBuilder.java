@@ -141,6 +141,9 @@ public class ProgramBuilder {
     public Register getOrCreateRegister(int threadId, String name, int precision){
         initThread(threadId);
         Thread thread = threads.get(threadId);
+        if(name == null) {
+            return thread.newRegister(precision);
+        }
         Register register = thread.getRegister(name);
         if(register == null){
             return thread.addRegister(name, precision);
