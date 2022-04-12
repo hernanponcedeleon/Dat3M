@@ -6,12 +6,10 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
@@ -180,7 +178,6 @@ public class ProgramEncoder implements Encoder {
         return fmgr.getBooleanFormulaManager().and(addrExprs);
     }
 
-
     public BooleanFormula encodeFinalRegisterValues(SolverContext ctx) {
         checkInitialized();
         logger.info("Encoding final register values");
@@ -188,47 +185,33 @@ public class ProgramEncoder implements Encoder {
         FormulaManager fmgr = ctx.getFormulaManager();
         BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 
-        Map<Register, List<Event>> eMap = new HashMap<>();
-        for(Event e : program.getCache().getEvents(FilterBasic.get(Tag.REG_WRITER))){
-            Register reg = ((RegWriter)e).getResultRegister();
-            eMap.computeIfAbsent(reg, key -> new ArrayList<>()).add(e);
-        }
-
         BooleanFormula enc = bmgr.makeTrue();
-        for (Register reg : eMap.keySet()) {
-            Thread thread = program.getThreads().get(reg.getThreadId());
-
-            List<Event> events = eMap.get(reg);
-            events.sort(Collections.reverseOrder());
-
-            // =======================================================
-            // Optimizations that remove registers which are guaranteed to get overwritten
-            //TODO: Make sure that this is correct even for EXCL events
-            for (int i = 0; i < events.size(); i++) {
-                if (exec.isImplied(thread.getExit(), events.get(i))) {
-                    events = events.subList(0, i + 1);
-                    break;
+        for(Map.Entry<Register,List<Event>> e : dep.finalWriters().entrySet()) {
+            Formula value = e.getKey().getLastValueExpr(ctx);
+            List<Event> writers = e.getValue();
+            int i = 0;
+            if(writers.get(0) == null) {
+                BooleanFormula clause = generalZero(value, ctx);
+                for(Event w : writers.subList(1, writers.size())) {
+                    clause = bmgr.or(clause, w.exec());
                 }
+                enc = bmgr.and(enc, clause);
+                i = 1;
             }
-            final List<Event> events2 = events;
-            events.removeIf(x -> events2.stream().anyMatch(y -> y.getCId() > x.getCId() && exec.isImplied(x, y)));
-            // ========================================================
-
-            for(int i = 0; i <  events.size(); i++){
-                Event w1 = events.get(i);
-                BooleanFormula lastModReg = w1.exec();
-                for(int j = 0; j < i; j++){
-                    Event w2 = events.get(j);
-                    if (!exec.areMutuallyExclusive(w1, w2)) {
-                        lastModReg = bmgr.and(lastModReg, bmgr.not(w2.exec()));
+            while(i < writers.size()) {
+                Event writer = writers.get(i);
+                BooleanFormula clause = bmgr.or(
+                        generalEqual(value, ((RegWriter) writer).getResultRegisterExpr(), ctx),
+                        bmgr.not(writer.exec()));
+                for(Event w : writers.subList(i + 1, writers.size())) {
+                    if(!exec.areMutuallyExclusive(writer, w)) {
+                        clause = bmgr.or(clause, w.exec());
                     }
                 }
-
-                BooleanFormula same =  generalEqual(reg.getLastValueExpr(ctx), ((RegWriter)w1).getResultRegisterExpr(), ctx);
-                enc = bmgr.and(enc, bmgr.implication(lastModReg, same));
+                enc = bmgr.and(enc, clause);
+                i++;
             }
         }
         return enc;
     }
-
 }
