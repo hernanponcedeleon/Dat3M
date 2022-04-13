@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.verification;
 
+import com.dat3m.dartagnan.asserts.*;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.encoding.PropertyEncoder;
@@ -9,6 +10,8 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.witness.WitnessGraph;
@@ -27,6 +30,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -100,6 +104,7 @@ public class VerificationTask {
 
     public void preprocessProgram() throws InvalidConfigurationException {
         ProcessingManager.fromConfig(config).run(program);
+        updateAssertions(program);
     }
 
     public void performStaticProgramAnalyses() throws InvalidConfigurationException {
@@ -175,5 +180,23 @@ public class VerificationTask {
         public VerificationTask build(Program program, Wmm memoryModel) throws InvalidConfigurationException {
             return new VerificationTask(program, memoryModel, witness, config.build());
         }
+    }
+
+    private void updateAssertions(Program program) {
+        if(program.getAss() != null) {
+            //TODO: Check why exactly this is needed. Litmus tests seem to have the assertion already defined
+            // but I was under the impression that assFilter was used for Litmus tests.
+            return;
+        }
+
+        List<Event> assertions = program.getCache().getEvents(FilterBasic.get(ASSERTION));
+        AbstractAssert ass = new AssertTrue();
+        if(!assertions.isEmpty()) {
+            ass = new AssertInline((Local)assertions.get(0));
+            for(int i = 1; i < assertions.size(); i++) {
+                ass = new AssertCompositeOr(ass, new AssertInline((Local)assertions.get(i)));
+            }
+        }
+        program.setAss(ass);
     }
 }
