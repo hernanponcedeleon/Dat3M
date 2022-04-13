@@ -26,8 +26,7 @@ import java.util.*;
 import java.util.function.BiFunction;
 
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
-import static com.dat3m.dartagnan.configuration.OptionNames.ALLOW_PARTIAL_EXECUTIONS;
-import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.expression.utils.Utils.*;
 import static com.google.common.collect.Lists.reverse;
 
@@ -48,6 +47,11 @@ public class ProgramEncoder implements Encoder {
             description = "Merges control flow variables of events with identical control-flow behaviour.",
             secure = true)
     private boolean shouldMergeCFVars = true;
+
+    @Option(name = INITIALIZE_REGISTERS,
+            description = "Assume thread-local variables start off containing zero.",
+            secure = true)
+    private boolean initializeRegisters = false;
 
     // =====================================================================
 
@@ -229,7 +233,7 @@ public class ProgramEncoder implements Encoder {
                             bmgr.implication(edge, generalEqual(value, ((RegWriter) writer).getResultRegisterExpr(), ctx)));
                     overwrite = bmgr.or(overwrite, writer.exec());
                 }
-                if(uninitialized) {
+                if(initializeRegisters && uninitialized) {
                     enc = bmgr.and(enc, bmgr.or(overwrite, bmgr.not(reader.cf()), generalZero(value, ctx)));
                 }
             }
@@ -248,16 +252,15 @@ public class ProgramEncoder implements Encoder {
         for(Map.Entry<Register,List<Event>> e : dep.finalWriters().entrySet()) {
             Formula value = e.getKey().getLastValueExpr(ctx);
             List<Event> writers = e.getValue();
-            int i = 0;
-            if(writers.get(0) == null) {
+            boolean uninitialized = writers.get(0) == null;
+            if(initializeRegisters && uninitialized) {
                 BooleanFormula clause = generalZero(value, ctx);
                 for(Event w : writers.subList(1, writers.size())) {
                     clause = bmgr.or(clause, w.exec());
                 }
                 enc = bmgr.and(enc, clause);
-                i = 1;
             }
-            while(i < writers.size()) {
+            for(int i = uninitialized ? 1 : 0; i < writers.size(); i++) {
                 Event writer = writers.get(i);
                 BooleanFormula clause = bmgr.or(
                         generalEqual(value, ((RegWriter) writer).getResultRegisterExpr(), ctx),
@@ -268,7 +271,6 @@ public class ProgramEncoder implements Encoder {
                     }
                 }
                 enc = bmgr.and(enc, clause);
-                i++;
             }
         }
         return enc;
