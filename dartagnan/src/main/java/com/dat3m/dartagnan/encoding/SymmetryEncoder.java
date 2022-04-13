@@ -189,6 +189,11 @@ public class SymmetryEncoder implements Encoder {
     public static BooleanFormula encodeLexLeader(String uniqueIdent, List<BooleanFormula> r1, List<BooleanFormula> r2, SolverContext ctx) {
         Preconditions.checkArgument(r1.size() == r2.size());
 
+        // Return TRUE if there is nothing to encode
+        if(r1.isEmpty()) {
+        	return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
+        }
+        
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final int size = r1.size();
         final String suffix = "_" + uniqueIdent;
