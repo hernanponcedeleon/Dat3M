@@ -84,16 +84,6 @@ public class ExceptionsTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void unrollBeforeDCEException() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder();
-    	pb.initThread(0);
-    	Program p = pb.build();
-    	LoopUnrolling.newInstance().run(p);
-    	// DCE cannot be called after unrolling
-    	DeadCodeElimination.newInstance().run(p);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
     public void diffPrecisionInt() throws Exception {
     	// Both arguments should have same precision
     	new IExprBin(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
