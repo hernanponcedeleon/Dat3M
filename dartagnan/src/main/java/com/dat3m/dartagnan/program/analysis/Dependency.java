@@ -8,19 +8,11 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
-import static com.dat3m.dartagnan.expression.utils.Utils.generalZero;
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
-import static com.google.common.collect.Lists.reverse;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
 
@@ -71,28 +63,6 @@ public final class Dependency {
     }
 
     /**
-     * @param writer
-     * Overwrites some register.
-     * @param reader
-     * Happens on the same thread as {@code writer} and could use its value,
-     * meaning that {@code writer} appears in {@code may(reader,R)} for some register {@code R}.
-     * @param ctx
-     * Builder of expressions and formulas.
-     * @return
-     * Proposition that {@code reader} directly uses the value from {@code writer}, if both are executed.
-     * Contextualized with the result of {@link #encode(SolverContext) encode}.
-     */
-    public BooleanFormula getSMTVar(Event writer, Event reader, SolverContext ctx) {
-        checkArgument(writer instanceof RegWriter);
-        Register register = ((RegWriter) writer).getResultRegister();
-        checkArgument(mayMap.getOrDefault(reader, Map.of()).getOrDefault(register, List.of()).contains(writer));
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return mustMap.getOrDefault(reader, Map.of()).getOrDefault(register, List.of()).contains(writer)
-        ? bmgr.and(writer.exec(), reader.cf())
-        : bmgr.makeVariable("__dep " + writer.getCId() + " " + reader.getCId());
-    }
-
-    /**
      * @return
      * Complete set of registers of the analyzed program,
      * mapped to a complete program-ordered list of writers.
@@ -104,39 +74,16 @@ public final class Dependency {
     }
 
     /**
-     * @param ctx
-     * Builder of expressions and formulas.
+     * Complete set of possible relationships between register writers and register readers,
+     * where a reader may receive the value that the writer produced.
      * @return
-     * Describes that for each pair of events, if the reader uses the result of the writer,
-     * then the value the reader gets from the register is exactly the value that the writer computed.
-     * Also, the reader may only use the value of the latest writer that is executed.
-     * Also, if no fitting writer is executed, the reader uses 0.
+     * Grouped by reader, then result register.
+     * Writers are program-ordered.
+     * If the initial register value may be readable,
+     * the first element of a list is {@code null}.
      */
-    public BooleanFormula encode(SolverContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula enc = bmgr.makeTrue();
-        for(Map.Entry<Event,Map<Register,List<Event>>> e : mayMap.entrySet()) {
-            Event reader = e.getKey();
-            for(Map.Entry<Register,List<Event>> r : e.getValue().entrySet()) {
-                Register register = r.getKey();
-                Formula value = register.toIntFormula(reader, ctx);
-                List<Event> list = r.getValue();
-                boolean uninitialized = list.get(0) == null;
-                BooleanFormula overwrite = bmgr.makeFalse();
-                for(Event writer : reverse(list.subList(uninitialized ? 1 : 0, list.size()))) {
-                    assert writer instanceof RegWriter;
-                    BooleanFormula edge = getSMTVar(writer, reader, ctx);
-                    enc = bmgr.and(enc,
-                            bmgr.equivalence(edge, bmgr.and(writer.exec(), reader.cf(), bmgr.not(overwrite))),
-                            bmgr.implication(edge, generalEqual(value, ((RegWriter) writer).getResultRegisterExpr(), ctx)));
-                    overwrite = bmgr.or(overwrite, writer.exec());
-                }
-                if(uninitialized) {
-                    enc = bmgr.and(enc, bmgr.or(overwrite, bmgr.not(reader.cf()), generalZero(value, ctx)));
-                }
-            }
-        }
-        return enc;
+    public Collection<Map.Entry<Event,Map<Register,List<Event>>>> getAll() {
+        return mayMap.entrySet();
     }
 
     private void process(Thread thread, ExecutionAnalysis exec) {

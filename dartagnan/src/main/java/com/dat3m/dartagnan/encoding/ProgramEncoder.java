@@ -29,6 +29,7 @@ import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.configuration.OptionNames.ALLOW_PARTIAL_EXECUTIONS;
 import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
 import static com.dat3m.dartagnan.expression.utils.Utils.*;
+import static com.google.common.collect.Lists.reverse;
 
 @Options
 public class ProgramEncoder implements Encoder {
@@ -101,7 +102,7 @@ public class ProgramEncoder implements Encoder {
                 encodeMemory(ctx),
                 encodeControlFlow(ctx),
                 encodeFinalRegisterValues(ctx),
-                dep.encode(ctx));
+                encodeDependencies(ctx));
     }
 
     public BooleanFormula encodeControlFlow(SolverContext ctx) {
@@ -176,6 +177,64 @@ public class ProgramEncoder implements Encoder {
                     .toArray(BooleanFormula[]::new);        	
         }
         return fmgr.getBooleanFormulaManager().and(addrExprs);
+    }
+
+    /**
+     * @param writer
+     * Overwrites some register.
+     * @param reader
+     * Happens on the same thread as {@code writer} and could use its value,
+     * meaning that {@code writer} appears in {@code may(reader,R)} for some register {@code R}.
+     * @param ctx
+     * Builder of expressions and formulas.
+     * @return
+     * Proposition that {@code reader} directly uses the value from {@code writer}, if both are executed.
+     * Contextualized with the result of {@link #encodeDependencies(SolverContext) encode}.
+     */
+    public BooleanFormula dependencyEdge(Event writer, Event reader, SolverContext ctx) {
+        Preconditions.checkArgument(writer instanceof RegWriter);
+        Register register = ((RegWriter) writer).getResultRegister();
+        Preconditions.checkArgument(dep.may(reader, register).contains(writer));
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        return dep.must(reader, register).contains(writer)
+        ? bmgr.and(writer.exec(), reader.cf())
+        : bmgr.makeVariable("__dep " + writer.getCId() + " " + reader.getCId());
+    }
+
+    /**
+     * @param ctx
+     * Builder of expressions and formulas.
+     * @return
+     * Describes that for each pair of events, if the reader uses the result of the writer,
+     * then the value the reader gets from the register is exactly the value that the writer computed.
+     * Also, the reader may only use the value of the latest writer that is executed.
+     * Also, if no fitting writer is executed, the reader uses 0.
+     */
+    public BooleanFormula encodeDependencies(SolverContext ctx) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormula enc = bmgr.makeTrue();
+        for(Map.Entry<Event,Map<Register,List<Event>>> e : dep.getAll()) {
+            Event reader = e.getKey();
+            for(Map.Entry<Register,List<Event>> r : e.getValue().entrySet()) {
+                Register register = r.getKey();
+                Formula value = register.toIntFormula(reader, ctx);
+                List<Event> list = r.getValue();
+                boolean uninitialized = list.get(0) == null;
+                BooleanFormula overwrite = bmgr.makeFalse();
+                for(Event writer : reverse(list.subList(uninitialized ? 1 : 0, list.size()))) {
+                    assert writer instanceof RegWriter;
+                    BooleanFormula edge = dependencyEdge(writer, reader, ctx);
+                    enc = bmgr.and(enc,
+                            bmgr.equivalence(edge, bmgr.and(writer.exec(), reader.cf(), bmgr.not(overwrite))),
+                            bmgr.implication(edge, generalEqual(value, ((RegWriter) writer).getResultRegisterExpr(), ctx)));
+                    overwrite = bmgr.or(overwrite, writer.exec());
+                }
+                if(uninitialized) {
+                    enc = bmgr.and(enc, bmgr.or(overwrite, bmgr.not(reader.cf()), generalZero(value, ctx)));
+                }
+            }
+        }
+        return enc;
     }
 
     public BooleanFormula encodeFinalRegisterValues(SolverContext ctx) {
