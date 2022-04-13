@@ -108,7 +108,10 @@ public class CLocksTest extends AbstractCTest {
                 {"mutex_musl-3-rel2rx_futex", POWER, UNKNOWN},
                 {"mutex_musl-3-rel2rx_unlock", TSO, UNKNOWN},
                 {"mutex_musl-3-rel2rx_unlock", ARM8, FAIL},
-                {"mutex_musl-3-rel2rx_unlock", POWER, FAIL}
+                {"mutex_musl-3-rel2rx_unlock", POWER, FAIL},
+                {"seqlock-12", TSO, UNKNOWN},
+                {"seqlock-12", ARM8, UNKNOWN},
+                {"seqlock-12", POWER, UNKNOWN},
 		});
     }
 
