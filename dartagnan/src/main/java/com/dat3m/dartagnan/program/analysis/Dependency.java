@@ -110,7 +110,17 @@ public final class Dependency {
                 Map<Register,List<Event>> may = new HashMap<>();
                 Map<Register,List<Event>> must = new HashMap<>();
                 for(Register register : registers) {
-                    List<Event> writers = may(state, register);
+                    List<Event> writers;
+                    if(register.getThreadId() != event.getThread().getId()) {
+                        //TODO verify that this is a helper thread
+                        //FIXME fetch state of the associated Create
+                        writers = finalWriters.get(register);
+                        //assert that the creating thread was already processed
+                        verify(writers != null);
+                    }
+                    else {
+                        writers = may(state, register);
+                    }
                     may.put(register, writers);
                     must.put(register, must(writers, exec));
                 }
