@@ -202,7 +202,7 @@ public class ProgramEncoder implements Encoder {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         return dep.must(reader, register).contains(writer)
         ? bmgr.and(writer.exec(), reader.cf())
-        : bmgr.makeVariable("__dep " + writer.getCId() + " " + reader.getCId());
+        : bmgr.makeVariable(dependencyEdgeName(writer, reader));
     }
 
     /**
@@ -222,15 +222,21 @@ public class ProgramEncoder implements Encoder {
             for(Map.Entry<Register,List<Event>> r : e.getValue().entrySet()) {
                 Register register = r.getKey();
                 Formula value = register.toIntFormula(reader, ctx);
-                List<Event> list = r.getValue();
-                boolean uninitialized = list.get(0) == null;
+                List<Event> may = r.getValue();
+                List<Event> must = dep.must(reader,register);
+                boolean uninitialized = may.get(0) == null;
                 BooleanFormula overwrite = bmgr.makeFalse();
-                for(Event writer : reverse(list.subList(uninitialized ? 1 : 0, list.size()))) {
+                for(Event writer : reverse(may.subList(uninitialized ? 1 : 0, may.size()))) {
                     assert writer instanceof RegWriter;
-                    BooleanFormula edge = dependencyEdge(writer, reader, ctx);
-                    enc = bmgr.and(enc,
-                            bmgr.equivalence(edge, bmgr.and(writer.exec(), reader.cf(), bmgr.not(overwrite))),
-                            bmgr.implication(edge, generalEqual(value, ((RegWriter) writer).getResultRegisterExpr(), ctx)));
+                    BooleanFormula edge;
+                    if(must.contains(writer)) {
+                        edge = writer.exec();
+                    }
+                    else {
+                        edge = bmgr.makeVariable(dependencyEdgeName(writer, reader));
+                        enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.and(writer.exec(), reader.cf(), bmgr.not(overwrite))));
+                    }
+                    enc = bmgr.and(enc, bmgr.implication(edge, generalEqual(value, ((RegWriter) writer).getResultRegisterExpr(), ctx)));
                     overwrite = bmgr.or(overwrite, writer.exec());
                 }
                 if(initializeRegisters && uninitialized) {
@@ -274,5 +280,9 @@ public class ProgramEncoder implements Encoder {
             }
         }
         return enc;
+    }
+
+    private static String dependencyEdgeName(Event writer, Event reader) {
+        return "__dep " + writer.getCId() + " " + reader.getCId();
     }
 }
