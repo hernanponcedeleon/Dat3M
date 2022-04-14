@@ -1,3 +1,6 @@
+#include <stddef.h>
+#include <stdint.h>
+
 typedef enum memory_order {
   memory_order_relaxed = __ATOMIC_RELAXED,
   memory_order_consume = __ATOMIC_CONSUME,
@@ -19,6 +22,8 @@ typedef _Atomic(long)               atomic_long;
 typedef _Atomic(unsigned long)      atomic_ulong;
 typedef _Atomic(long long)          atomic_llong;
 typedef _Atomic(unsigned long long) atomic_ullong;
+typedef _Atomic(uintptr_t)          atomic_uintptr_t;
+typedef _Atomic(size_t)             atomic_size_t;
 
 #define ATOMIC_VAR_INIT(VALUE)    (VALUE)
 
