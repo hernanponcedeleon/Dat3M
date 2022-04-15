@@ -15,6 +15,8 @@ import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
 public class Register extends IExpr implements ExprInterface, LastValueInterface {
 
+	public static final int NO_THREAD = -1;
+
 	private final String name;
 	private String cVar;
     private final int threadId;

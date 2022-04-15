@@ -110,13 +110,30 @@ public final class Dependency {
                 Map<Register,List<Event>> may = new HashMap<>();
                 Map<Register,List<Event>> must = new HashMap<>();
                 for(Register register : registers) {
+                    if(register.getThreadId() == Register.NO_THREAD) {
+                        verify(state.stream().noneMatch(w -> w.register.equals(register)),
+                                "Thread %s cannot update the global constant %s.",
+                                thread.getId(),
+                                register.getName());
+                        verify(!finalWriters.containsKey(register),
+                                "No thread is allowed to update the global constant %s.",
+                                register.getName());
+                        continue;
+                    }
                     List<Event> writers;
                     if(register.getThreadId() != event.getThread().getId()) {
+                        verify(state.stream().noneMatch(w -> w.register.equals(register)),
+                                "Helper thread %s cannot update register %s of thread %s.",
+                                thread.getId(),
+                                register.getName(),
+                                register.getThreadId());
                         //TODO verify that this is a helper thread
                         //FIXME fetch state of the associated Create
                         writers = finalWriters.get(register);
-                        //assert that the creating thread was already processed
-                        verify(writers != null);
+                        verify(writers != null,
+                                "Helper thread %s should be listed after their creator thread %s.",
+                                thread.getId(),
+                                register.getThreadId());
                     }
                     else {
                         writers = may(state, register);
