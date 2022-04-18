@@ -59,7 +59,7 @@ public class RelLoc extends Relation {
     }
 
     @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    public BooleanFormula encode(SolverContext ctx) {
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 

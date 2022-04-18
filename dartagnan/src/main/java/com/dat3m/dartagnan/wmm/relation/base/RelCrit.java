@@ -52,7 +52,7 @@ public class RelCrit extends StaticRelation {
     // TODO: Not the most efficient implementation
     // Let's see if we need to keep a reference to a thread in events for anything else, and then optimize this method
     @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    public BooleanFormula encode(SolverContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
         ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);

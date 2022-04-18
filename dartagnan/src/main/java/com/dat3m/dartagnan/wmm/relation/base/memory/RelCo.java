@@ -136,7 +136,7 @@ public class RelCo extends Relation {
     }
 
     @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    public BooleanFormula encode(SolverContext ctx) {
         AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
         WmmAnalysis wmmAnalysis = analysisContext.get(WmmAnalysis.class);
     	FormulaManager fmgr = ctx.getFormulaManager();
@@ -181,7 +181,7 @@ public class RelCo extends Relation {
 
                 Formula a1 = w1.getMemAddressExpr();
                 Formula a2 = w2.getMemAddressExpr();
-                BooleanFormula sameAddress = generalEqual(a1, a2, ctx); 
+                BooleanFormula sameAddress = generalEqual(a1, a2, ctx);
 
                 enc = bmgr.and(enc, bmgr.equivalence(relation,
                         bmgr.and(execPair, sameAddress, imgr.lessThan(getIntVar(w1, ctx), getIntVar(w2, ctx))
@@ -213,7 +213,7 @@ public class RelCo extends Relation {
                     IExpr address = init.getAddress();
                     Formula a1 = w1.getMemAddressExpr();
                     Formula a2 = address.toIntFormula(init,ctx);
-                    BooleanFormula sameAddress = generalEqual(a1, a2, ctx); 
+                    BooleanFormula sameAddress = generalEqual(a1, a2, ctx);
                     Formula v1 = w1.getMemValueExpr();
                     Formula v2 = init.getBase().getLastMemValueExpr(ctx,init.getOffset());
                     BooleanFormula sameValue = generalEqual(v1, v2, ctx);

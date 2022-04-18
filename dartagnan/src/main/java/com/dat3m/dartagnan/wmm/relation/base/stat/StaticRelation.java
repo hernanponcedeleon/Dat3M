@@ -40,7 +40,7 @@ public abstract class StaticRelation extends Relation {
     }
 
     @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    public BooleanFormula encode(SolverContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
 

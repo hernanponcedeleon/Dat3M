@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.base;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -16,7 +17,6 @@ import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -27,6 +27,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.program.event.Tag.SVCOMP.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RMW;
@@ -133,15 +134,16 @@ public class RelRMW extends StaticRelation {
     }
 
     @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    public BooleanFormula encode(SolverContext ctx) {
         FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         
         // Encode base (not exclusive pairs) RMW
-        TupleSet origEncodeTupleSet = encodeTupleSet;
-        encodeTupleSet = new TupleSet(Sets.intersection(encodeTupleSet, baseMaxTupleSet));
-        BooleanFormula enc = super.encodeApprox(ctx);
-        encodeTupleSet = origEncodeTupleSet;
+        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
+        BooleanFormula enc = bmgr.and(encodeTupleSet.stream()
+            .filter(baseMaxTupleSet::contains)
+            .map(t -> bmgr.equivalence(getSMTVar(t, ctx), execution(t.getFirst(), t.getSecond(), exec, ctx)))
+            .toArray(BooleanFormula[]::new));
 
         // Encode RMW for exclusive pairs
 		BooleanFormula unpredictable = bmgr.makeFalse();

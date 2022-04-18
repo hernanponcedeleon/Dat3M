@@ -15,7 +15,6 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 /**
  *
@@ -94,16 +93,12 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
-    	return invokeEncode(super::encodeApprox, ctx);
-    }
-
-    private BooleanFormula invokeEncode(Function<SolverContext, BooleanFormula> originalMethod, SolverContext ctx) {
+    public BooleanFormula encode(SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 
         TupleSet temp = encodeTupleSet;
         encodeTupleSet = transEncodeTupleSet;
-        BooleanFormula enc = originalMethod.apply(ctx);
+        BooleanFormula enc = super.encode(ctx);
         encodeTupleSet = temp;
 
         for(Tuple tuple : identityEncodeTupleSet){

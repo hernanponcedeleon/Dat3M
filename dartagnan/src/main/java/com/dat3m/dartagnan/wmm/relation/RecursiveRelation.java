@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.wmm.relation;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Collections;
@@ -124,19 +123,4 @@ public class RecursiveRelation extends Relation {
         }
         return recursiveGroupId;
     }
-
-    @Override
-    public BooleanFormula encode(SolverContext ctx) {
-        if(isEncoded){
-            return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
-        }
-        isEncoded = true;
-        return r1.encode(ctx);
-    }
-
-    @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
-        return r1.encodeApprox(ctx);
-    }
-
 }

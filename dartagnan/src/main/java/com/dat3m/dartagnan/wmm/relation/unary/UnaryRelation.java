@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Collections;
@@ -50,15 +48,5 @@ public abstract class UnaryRelation extends Relation {
         if(recursiveGroupId > 0){
             throw new UnsupportedOperationException("Recursion is not implemented for " + this.getClass().getName());
         }
-    }
-
-    @Override
-    public BooleanFormula encode(SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        if(isEncoded){
-            return bmgr.makeTrue();
-        }
-        isEncoded = true;
-        return bmgr.and(r1.encode(ctx), doEncode(ctx));
     }
 }

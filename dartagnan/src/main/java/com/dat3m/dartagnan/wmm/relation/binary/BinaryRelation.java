@@ -3,9 +3,6 @@ package com.dat3m.dartagnan.wmm.relation.binary;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.Sets;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Arrays;
 import java.util.List;
@@ -64,15 +61,5 @@ public abstract class BinaryRelation extends Relation {
             r1.addEncodeTupleSet(activeSet);
             r2.addEncodeTupleSet(activeSet);
         }
-    }
-
-    @Override
-    public BooleanFormula encode(SolverContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        if(isEncoded){
-			return bmgr.makeTrue();
-        }
-        isEncoded = true;
-        return bmgr.and(r1.encode(ctx), r2.encode(ctx), doEncode(ctx));
     }
 }

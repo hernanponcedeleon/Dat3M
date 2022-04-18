@@ -36,8 +36,6 @@ public abstract class Relation implements Dependent<Relation> {
     protected VerificationTask task;
     protected Context analysisContext;
 
-    protected boolean isEncoded;
-
     protected TupleSet minTupleSet = null;
     protected TupleSet maxTupleSet = null;
     protected TupleSet encodeTupleSet = null;
@@ -79,7 +77,6 @@ public abstract class Relation implements Dependent<Relation> {
     public void initializeEncoding(SolverContext ctx) {
     	Preconditions.checkState(this.maxTupleSet != null && this.minTupleSet != null,
     			String.format("No available relation data to encode %s. Perform RelationAnalysis before encoding.", this));
-        this.isEncoded = false;
         this.encodeTupleSet = new TupleSet();
     }
 
@@ -154,19 +151,6 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     public BooleanFormula encode(SolverContext ctx) {
-        if(isEncoded){
-            return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
-        }
-        isEncoded = true;
-        return doEncode(ctx);
-    }
-
-    protected abstract BooleanFormula encodeApprox(SolverContext ctx);
-
-    protected BooleanFormula doEncode(SolverContext ctx){
-        if(!encodeTupleSet.isEmpty() || forceDoEncode){
-        	return encodeApprox(ctx);
-        }
         return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
     }
 
