@@ -61,6 +61,13 @@ public class LFDSTest extends AbstractCTest {
             {"treiber-3-CAS-relaxed", TSO, UNKNOWN},
             {"treiber-3-CAS-relaxed", ARM8, FAIL},
             {"treiber-3-CAS-relaxed", POWER, FAIL},
+            {"chase-lev-5", TSO, PASS},
+            {"chase-lev-5", ARM8, PASS},
+            {"chase-lev-5", POWER, PASS},
+            // These ones have an extra thief that violate the assertion
+            {"chase-lev-6", TSO, FAIL},
+            {"chase-lev-6", ARM8, FAIL},
+            {"chase-lev-6", POWER, FAIL},
         });
     }
 
