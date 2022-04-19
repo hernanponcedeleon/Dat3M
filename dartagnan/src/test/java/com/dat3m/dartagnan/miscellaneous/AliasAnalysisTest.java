@@ -75,14 +75,18 @@ public class AliasAnalysisTest {
         context.register(BranchEquivalence.class,BranchEquivalence.fromConfig(program,config));
         ExecutionAnalysis exec = ExecutionAnalysis.fromConfig(program,context,config);
         Dependency dep = new Dependency(program,exec);
-        assertList(dep.may(e1,r0),e0);
-        assertList(dep.must(e1,r0),e0);
-        assertList(dep.may(e3,r0),null,e0);
-        assertList(dep.must(e3,r0),e0);
-        assertList(dep.may(e4,r1),e1,e2);
-        assertList(dep.must(e4,r1),e1,e2);
-        assertList(dep.may(e5,r2),e4);
-        assertList(dep.must(e5,r2),e4);
+        assertTrue(dep.of(e1,r0).initialized);
+        assertList(dep.of(e1,r0).may,e0);
+        assertList(dep.of(e1,r0).must,e0);
+        assertFalse(dep.of(e3,r0).initialized);
+        assertList(dep.of(e3,r0).may,e0);
+        assertList(dep.of(e3,r0).must,e0);
+        assertTrue(dep.of(e4,r1).initialized);
+        assertList(dep.of(e4,r1).may,e1,e2);
+        assertList(dep.of(e4,r1).must,e1,e2);
+        assertTrue(dep.of(e5,r2).initialized);
+        assertList(dep.of(e5,r2).may,e4);
+        assertList(dep.of(e5,r2).must,e4);
     }
 
     @Test

@@ -82,7 +82,6 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		ExprInterface value = e.getMemValue();
 		String mo = e.getMo();
 		IExpr expectedAddr = e.getExpectedAddr();
-        int threadId = resultRegister.getThreadId();
 		int precision = resultRegister.getPrecision();
 
 		Register regExpected = e.getThread().newRegister(precision);

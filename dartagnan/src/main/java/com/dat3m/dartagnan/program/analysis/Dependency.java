@@ -21,9 +21,8 @@ import static java.util.stream.IntStream.range;
  */
 public final class Dependency {
 
-    private final HashMap<Event,Map<Register,List<Event>>> mayMap = new HashMap<>();
-    private final HashMap<Event,Map<Register,List<Event>>> mustMap = new HashMap<>();
-    private final Map<Register,List<Event>> finalWriters = new HashMap<>();
+    private final HashMap<Event,Map<Register,State>> map = new HashMap<>();
+    private final Map<Register,State> finalWriters = new HashMap<>();
 
     /**
      * @param program
@@ -38,38 +37,24 @@ public final class Dependency {
     }
 
     /**
-     * Over-approximates the collection of providers for a variable, given a certain state of the program.
+     * Queries the collection of providers for a variable, given a certain state of the program.
      * @param reader
      * Event containing some computation over values of the register space.
+     * @param register
+     * Thread-local program variable used by {@code reader}.
      * @return
-     * Complete, but unsound, list of direct providers for some register used by {@code dependent}.
-     * If the initial register value may be readable, the first element is {@code null}.
+     * Local result of this analysis.
      */
-    public List<Event> may(Event reader, Register register) {
-        return mayMap.getOrDefault(reader, Map.of()).getOrDefault(register, List.of());
-    }
-
-    /**
-     * Filters the list of dependencies for those that automatically imply the dependency relationship,
-     * as soon as the dependency and the dependent are executed.
-     * @param reader
-     * Event containing some computation over values of the register space.
-     * @return
-     * Sound, but incomplete, list of direct providers with no overwriting event in between.
-     * If the initial register value must be read, returns {@code Arrays.asList(new Event[1])}.
-     */
-    public List<Event> must(Event reader, Register register) {
-        return mustMap.getOrDefault(reader, Map.of()).getOrDefault(register, List.of());
+    public State of(Event reader, Register register) {
+        return map.getOrDefault(reader, Map.of()).getOrDefault(register, new State(false, List.of(), List.of()));
     }
 
     /**
      * @return
      * Complete set of registers of the analyzed program,
-     * mapped to a complete program-ordered list of writers.
-     * If the initial register value may be readable,
-     * the first element of the list is {@code null}.
+     * mapped to program-ordered list of writers.
      */
-    public Map<Register,List<Event>> finalWriters() {
+    public Map<Register,State> finalWriters() {
         return finalWriters;
     }
 
@@ -79,11 +64,9 @@ public final class Dependency {
      * @return
      * Grouped by reader, then result register.
      * Writers are program-ordered.
-     * If the initial register value may be readable,
-     * the first element of a list is {@code null}.
      */
-    public Collection<Map.Entry<Event,Map<Register,List<Event>>>> getAll() {
-        return mayMap.entrySet();
+    public Collection<Map.Entry<Event,Map<Register,State>>> getAll() {
+        return map.entrySet();
     }
 
     private void process(Thread thread, ExecutionAnalysis exec) {
@@ -107,8 +90,7 @@ public final class Dependency {
                 registers.addAll(((MemEvent) event).getAddress().getRegs());
             }
             if(!registers.isEmpty()) {
-                Map<Register,List<Event>> may = new HashMap<>();
-                Map<Register,List<Event>> must = new HashMap<>();
+                Map<Register,State> result = new HashMap<>();
                 for(Register register : registers) {
                     if(register.getThreadId() == Register.NO_THREAD) {
                         verify(state.stream().noneMatch(w -> w.register.equals(register)),
@@ -120,7 +102,7 @@ public final class Dependency {
                                 register.getName());
                         continue;
                     }
-                    List<Event> writers;
+                    State writers;
                     if(register.getThreadId() != event.getThread().getId()) {
                         verify(state.stream().noneMatch(w -> w.register.equals(register)),
                                 "Helper thread %s cannot update register %s of thread %s.",
@@ -136,13 +118,11 @@ public final class Dependency {
                                 register.getThreadId());
                     }
                     else {
-                        writers = may(state, register);
+                        writers = process(state, register, exec);
                     }
-                    may.put(register, writers);
-                    must.put(register, must(writers, exec));
+                    result.put(register, writers);
                 }
-                mayMap.put(event, may);
-                mustMap.put(event, must);
+                map.put(event, result);
             }
             //update state, if changed by event
             if(event instanceof RegWriter) {
@@ -172,29 +152,26 @@ public final class Dependency {
             state.addAll(j);
         }
         for(Register register : thread.getRegisters()) {
-            finalWriters.put(register, may(state, register));
+            finalWriters.put(register, process(state, register, exec));
         }
     }
 
-    private static List<Event> may(Set<Writer> state, Register register) {
-        return state.stream()
+    private static State process(Set<Writer> state, Register register, ExecutionAnalysis exec) {
+        List<Event> candidates = state.stream()
         .filter(e -> e.register.equals(register))
         .map(e -> e.event)
-        .sorted((x, y) -> x == null ? y == null ? 0 : -1 : y == null ? 1 : x.getCId() - y.getCId())
+        .collect(toList());
+        verify(!candidates.isEmpty(), "Events must at least be able to read the uninitialized value of a register.");
+        List<Event> mays = candidates.stream()
+        .filter(Objects::nonNull)
+        .sorted(Comparator.comparingInt(Event::getCId))
         .collect(Collectors.toCollection(ArrayList::new));
-    }
-
-    private static List<Event> must(List<Event> mays, ExecutionAnalysis exec) {
-        verify(!mays.isEmpty(), "events should at least read the initial value of a register.");
-        if(mays.size() == 1) {
-            return mays;
-        }
-        int begin = mays.get(0) == null ? 1 : 0;
         int end = mays.size();
-        return range(begin, end)
+        List<Event> musts = range(0, end)
         .filter(i -> mays.subList(i + 1, end).stream().allMatch(j -> exec.areMutuallyExclusive(mays.get(i), j)))
         .mapToObj(mays::get)
         .collect(toList());
+        return new State(!candidates.contains(null), mays, musts);
     }
 
     private static final class Writer {
@@ -214,6 +191,39 @@ public final class Dependency {
         @Override
         public int hashCode() {
             return (event == null ? register : event).hashCode();
+        }
+    }
+
+    /**
+     * Indirectly associated with an instance of {@link Register}, as well as an optional event of the respective thread.
+     * When no such event exists, the instance describes the final register values.
+     */
+    public static final class State {
+
+        /**
+         * The analysis was able to determine that in all executions, there is a provider for the register.
+         */
+        public final boolean initialized;
+
+        /**
+         * Complete, but unsound, program-ordered list of direct providers for the register:
+         * If there is a program execution where an event of the program was the latest writer, that event is contained in this list.
+         */
+        public final List<Event> may;
+
+        /**
+         * Sound, but incomplete, program-ordered list of direct providers with no overwriting event in between:
+         * Each event in this list will be the latest writer in any execution that contains that event.
+         */
+        public final List<Event> must;
+
+        private State(boolean initialized, List<Event> may, List<Event> must) {
+            verify(new HashSet<>(may).containsAll(must), "Each must-writer must also be a may-writer.");
+            verify(may.isEmpty() || must.contains(may.get(may.size()-1)), "The last may-writer must also be a must-writer.");
+            verify(!initialized || !may.isEmpty(), "Initialized states must have at least one may-writer.");
+            this.initialized = initialized;
+            this.may = may;
+            this.must = must;
         }
     }
 }

@@ -66,7 +66,7 @@ public class ProgramEncoder implements Encoder {
         this.program = Preconditions.checkNotNull(program);
         this.eq = context.requires(BranchEquivalence.class);
         this.exec = context.requires(ExecutionAnalysis.class);
-        dep = context.requires(Dependency.class);
+        this.dep = context.requires(Dependency.class);
         config.inject(this);
 
         logger.info("{}: {}", ALLOW_PARTIAL_EXECUTIONS, shouldAllowPartialExecutions);
@@ -162,7 +162,7 @@ public class ProgramEncoder implements Encoder {
         checkInitialized();
         logger.info("Encoding fixed memory");
 
-        Memory memory = program.getMemory();;
+        Memory memory = program.getMemory();
         FormulaManager fmgr = ctx.getFormulaManager();
         
         BooleanFormula[] addrExprs;
@@ -219,11 +219,12 @@ public class ProgramEncoder implements Encoder {
     public BooleanFormula dependencyEdge(Event writer, Event reader, SolverContext ctx) {
         Preconditions.checkArgument(writer instanceof RegWriter);
         Register register = ((RegWriter) writer).getResultRegister();
-        Preconditions.checkArgument(dep.may(reader, register).contains(writer));
+        Dependency.State r = dep.of(reader, register);
+        Preconditions.checkArgument(r.may.contains(writer));
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return dep.must(reader, register).contains(writer)
+        return r.must.contains(writer)
         ? execution(writer, reader, exec, ctx)
-        : bmgr.makeVariable(dependencyEdgeName(writer, reader));
+        : dependencyEdgeVariable(writer, reader, bmgr);
     }
 
     /**
@@ -238,29 +239,26 @@ public class ProgramEncoder implements Encoder {
     public BooleanFormula encodeDependencies(SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
-        for(Map.Entry<Event,Map<Register,List<Event>>> e : dep.getAll()) {
+        for(Map.Entry<Event,Map<Register,Dependency.State>> e : dep.getAll()) {
             Event reader = e.getKey();
-            for(Map.Entry<Register,List<Event>> r : e.getValue().entrySet()) {
-                Register register = r.getKey();
-                Formula value = register.toIntFormula(reader, ctx);
-                List<Event> may = r.getValue();
-                List<Event> must = dep.must(reader,register);
-                boolean uninitialized = may.get(0) == null;
+            for(Map.Entry<Register,Dependency.State> r : e.getValue().entrySet()) {
+                Formula value = r.getKey().toIntFormula(reader, ctx);
+                Dependency.State state = r.getValue();
                 BooleanFormula overwrite = bmgr.makeFalse();
-                for(Event writer : reverse(may.subList(uninitialized ? 1 : 0, may.size()))) {
+                for(Event writer : reverse(state.may)) {
                     assert writer instanceof RegWriter;
                     BooleanFormula edge;
-                    if(must.contains(writer)) {
+                    if(state.must.contains(writer)) {
                         edge = writer.exec();
                     }
                     else {
-                        edge = bmgr.makeVariable(dependencyEdgeName(writer, reader));
+                        edge = dependencyEdgeVariable(writer, reader, bmgr);
                         enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.and(writer.exec(), reader.cf(), bmgr.not(overwrite))));
                     }
                     enc = bmgr.and(enc, bmgr.implication(edge, generalEqual(value, ((RegWriter) writer).getResultRegisterExpr(), ctx)));
                     overwrite = bmgr.or(overwrite, writer.exec());
                 }
-                if(initializeRegisters && uninitialized) {
+                if(initializeRegisters && !state.initialized) {
                     enc = bmgr.and(enc, bmgr.or(overwrite, bmgr.not(reader.cf()), generalZero(value, ctx)));
                 }
             }
@@ -276,18 +274,18 @@ public class ProgramEncoder implements Encoder {
         BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 
         BooleanFormula enc = bmgr.makeTrue();
-        for(Map.Entry<Register,List<Event>> e : dep.finalWriters().entrySet()) {
+        for(Map.Entry<Register,Dependency.State> e : dep.finalWriters().entrySet()) {
             Formula value = e.getKey().getLastValueExpr(ctx);
-            List<Event> writers = e.getValue();
-            boolean uninitialized = writers.get(0) == null;
-            if(initializeRegisters && uninitialized) {
+            Dependency.State state = e.getValue();
+            List<Event> writers = state.may;
+            if(initializeRegisters && !state.initialized) {
                 BooleanFormula clause = generalZero(value, ctx);
-                for(Event w : writers.subList(1, writers.size())) {
+                for(Event w : writers) {
                     clause = bmgr.or(clause, w.exec());
                 }
                 enc = bmgr.and(enc, clause);
             }
-            for(int i = uninitialized ? 1 : 0; i < writers.size(); i++) {
+            for(int i = 0; i < writers.size(); i++) {
                 Event writer = writers.get(i);
                 BooleanFormula clause = bmgr.or(
                         generalEqual(value, ((RegWriter) writer).getResultRegisterExpr(), ctx),
@@ -303,7 +301,7 @@ public class ProgramEncoder implements Encoder {
         return enc;
     }
 
-    private static String dependencyEdgeName(Event writer, Event reader) {
-        return "__dep " + writer.getCId() + " " + reader.getCId();
+    private static BooleanFormula dependencyEdgeVariable(Event writer, Event reader, BooleanFormulaManager bmgr) {
+        return bmgr.makeVariable("__dep " + writer.getCId() + " " + reader.getCId());
     }
 }
