@@ -184,6 +184,27 @@ public class ProgramEncoder implements Encoder {
     }
 
     /**
+     * @param x
+     * Some event of a program to be encoded.
+     * @param y
+     * Another event of the same program.
+     * @param exec
+     * Analysis performed on the associated program.
+     * @param ctx
+     * Builder of expressions and formulas.
+     */
+    public static BooleanFormula execution(Event x, Event y, ExecutionAnalysis exec, SolverContext ctx) {
+        if(x.exec()==y.exec() || exec.isImplied(x,y)) {
+            return x.exec();
+        }
+        if(exec.isImplied(y,x)) {
+            return y.exec();
+        }
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        return x.getCId() < y.getCId() ? bmgr.and(x.exec(), y.exec()) : bmgr.and(y.exec(), x.exec());
+    }
+
+    /**
      * @param writer
      * Overwrites some register.
      * @param reader
@@ -201,7 +222,7 @@ public class ProgramEncoder implements Encoder {
         Preconditions.checkArgument(dep.may(reader, register).contains(writer));
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         return dep.must(reader, register).contains(writer)
-        ? bmgr.and(writer.exec(), reader.cf())
+        ? execution(writer, reader, exec, ctx)
         : bmgr.makeVariable(dependencyEdgeName(writer, reader));
     }
 
