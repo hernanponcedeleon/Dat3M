@@ -5,18 +5,15 @@ import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.svcomp.utils.BoogieSan;
-import com.dat3m.svcomp.utils.Compilation;
 import com.dat3m.svcomp.utils.SVCOMPSanitizer;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -27,6 +24,7 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
 import static java.lang.Integer.parseInt;
 
@@ -78,7 +76,7 @@ public class SVCOMPRunner extends BaseOptions {
 	private static final Set<String> supportedFormats = 
     		ImmutableSet.copyOf(Arrays.asList(".c", ".i"));
 
-    public static void main(String[] args) throws IOException, InvalidConfigurationException {
+    public static void main(String[] args) throws Exception {
 
         if(Arrays.asList(args).contains("--help")) {
             collectOptions();
@@ -114,23 +112,19 @@ public class SVCOMPRunner extends BaseOptions {
         int bound = witness.hasAttributed(UNROLLBOUND.toString()) ? parseInt(witness.getAttributed(UNROLLBOUND.toString())) : r.umin;
         File tmp = new SVCOMPSanitizer(fileProgram).run(bound);
 
-		Compilation c = new Compilation();
-		config.inject(c);
-
         // First time we compiler with standard atomic header to catch compilation problems
-        c.compile(tmp,false);
+		compileWithClang(tmp);
 
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN")) {
-			c.compile(tmp,true);
+			compileWithSmack(tmp);
 	        // If not removed here, file is not removed when we reach the timeout
 	        // File can be safely deleted since it was created by the SVCOMPSanitizer
 	        // (it not the original C file) and we already created the Boogie file
 	        tmp.delete();
 	        
 	        String boogieName = System.getenv().get("DAT3M_HOME") + "/output/" +
-	        		Files.getNameWithoutExtension(programPath) +
-					"-" + c.getOptimization() + ".bpl";
+	        		Files.getNameWithoutExtension(programPath) + ".bpl";
 	        
 	        if(r.sanitize) {
 	        	BoogieSan.write(boogieName);

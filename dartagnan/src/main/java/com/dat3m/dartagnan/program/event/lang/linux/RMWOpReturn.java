@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
@@ -32,11 +31,6 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
     	return op;
     }
     
-    @Override
-    public ExprInterface getMemValue(){
-        return value;
-    }
-
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

@@ -78,7 +78,7 @@ public class LoopUnrolling implements ProgramProcessor {
             nextId = unrollThread(thread, bound, nextId);
         }
         program.clearCache(false);
-        program.markAsUnrolled();
+        program.markAsUnrolled(bound);
 
         updateAssertions(program);
 
@@ -121,10 +121,13 @@ public class LoopUnrolling implements ProgramProcessor {
                     predecessor = copyPath(label, successor, predecessor);
                 }
 
-                if (bound == 1) {
+                if (bound == 1 || jump.hasFilter(Tag.SPINLOOP)) {
                     Label target = (Label) jump.getThread().getExit();
                     newPred = EventFactory.newGoto(target);
                     newPred.addFilters(Tag.BOUND);
+                    if(jump.hasFilter(Tag.SPINLOOP)) {
+                    	newPred.addFilters(Tag.SPINLOOP);
+                    }
                     predecessor.setSuccessor(newPred);
                 } else {
                     newPred = predecessor;

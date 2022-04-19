@@ -21,7 +21,7 @@ public class Program {
 	private final Memory memory;
 	private Arch arch;
     private EventCache cache;
-    private boolean isUnrolled;
+    private int unrollingBound = 0;
     private boolean isCompiled;
 
     public Program(Memory memory){
@@ -39,7 +39,11 @@ public class Program {
     }
 
     public boolean isUnrolled(){
-        return isUnrolled;
+        return unrollingBound > 0;
+    }
+
+    public int getUnrollingBound(){
+        return unrollingBound;
     }
 
 	public String getName(){
@@ -114,11 +118,11 @@ public class Program {
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-    public boolean markAsUnrolled() {
-        if (isUnrolled) {
+    public boolean markAsUnrolled(int bound) {
+        if (unrollingBound > 0) {
             return false;
         }
-        isUnrolled = true;
+        unrollingBound = bound;
         return true;
     }
 

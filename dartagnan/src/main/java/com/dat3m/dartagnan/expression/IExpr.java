@@ -34,7 +34,6 @@ public abstract class IExpr implements ExprInterface, Reducible {
 		throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
 
-	public IExpr simplify() {
-		return this;
-	}
+	public boolean isBV() { return getPrecision() > 0; }
+	public boolean isInteger() { return getPrecision() <= 0; }
 }

@@ -45,7 +45,8 @@
           <version>2.22.1</version>
           <configuration>
             <argLine>-Djava.library.path=${project.dependency.path}</argLine>
-          </configuration>
+    		<reuseForks>false</reuseForks>
+		  </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>

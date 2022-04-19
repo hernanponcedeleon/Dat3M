@@ -16,14 +16,12 @@ public class RMW extends MemEvent implements RegWriter, RegReaderData {
 
     private final Register resultRegister;
     private final IExpr value;
-    private ImmutableSet<Register> dataRegs;
     
 
     public RMW(IExpr address, Register register, IExpr value, String mo) {
         super(address, mo);
 		this.resultRegister = register;
         this.value = value;
-        this.dataRegs = value.getRegs();
         addFilters(ANY, VISIBLE, MEMORY, READ, WRITE, RMW, REG_WRITER, REG_READER);
     }
 
@@ -31,7 +29,6 @@ public class RMW extends MemEvent implements RegWriter, RegReaderData {
         super(other);
 		this.resultRegister = other.resultRegister;
         this.value = other.value;
-        this.dataRegs = other.dataRegs;
     }
 
     @Override
@@ -45,7 +42,7 @@ public class RMW extends MemEvent implements RegWriter, RegReaderData {
 
 	@Override
 	public ImmutableSet<Register> getDataRegs() {
-		return dataRegs;
+		return value.getRegs();
 	}
 
 	@Override
