@@ -79,17 +79,13 @@ public class Thread {
     }
 
     public Register newRegister(int precision) {
-        cache = null;
-        Register register = new Register("DUMMY_REG_" + dummyCount++, id, precision);
-        registers.put(register.getName(), register);
-        return register;
+        return newRegister("DUMMY_REG_" + dummyCount++, precision);
     }
 
-    public Register addRegister(String name, int precision){
+    public Register newRegister(String name, int precision){
         if(registers.containsKey(name)){
             throw new MalformedProgramException("Register " + id + ":" + name + " already exists");
         }
-        cache = null;
         Register register = new Register(name, id, precision);
         registers.put(register.getName(), register);
         return register;
@@ -107,7 +103,7 @@ public class Thread {
         exit.setSuccessor(event);
         event.setThread(this);
         updateExit(event);
-        cache = null;
+        clearCache();
     }
 
     public void updateExit(Event event){

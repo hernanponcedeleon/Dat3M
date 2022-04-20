@@ -135,13 +135,7 @@ public final class Dependency {
             //copy state, if branching
             if(event instanceof CondJump) {
                 verify(!((CondJump) event).isDead(), "dead jumps after preprocessing");
-                jumps.compute(((CondJump) event).getLabel(), (k, v) -> {
-                    if(v == null) {
-                        return new HashSet<>(state);
-                    }
-                    v.addAll(state);
-                    return v;
-                });
+                jumps.computeIfAbsent(((CondJump) event).getLabel(), k -> new HashSet<>()).addAll(state);
                 if(((CondJump) event).isGoto()) {
                     state.clear();
                 }

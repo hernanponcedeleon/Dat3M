@@ -27,7 +27,8 @@ import java.util.function.BiFunction;
 
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.expression.utils.Utils.*;
+import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.expression.utils.Utils.generalZero;
 import static com.google.common.collect.Lists.reverse;
 
 @Options
@@ -250,8 +251,7 @@ public class ProgramEncoder implements Encoder {
                     BooleanFormula edge;
                     if(state.must.contains(writer)) {
                         edge = writer.exec();
-                    }
-                    else {
+                    } else {
                         edge = dependencyEdgeVariable(writer, reader, bmgr);
                         enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.and(writer.exec(), reader.cf(), bmgr.not(overwrite))));
                     }

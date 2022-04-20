@@ -41,14 +41,10 @@ abstract class BasicRegRelation extends StaticRelation {
             for(Register register : getRegisters(regReader)){
                 Dependency.State r = dep.of(regReader, register);
                 for(Event regWriter : r.may) {
-                    if(regWriter != null) {
-                        maxTupleSet.add(new Tuple(regWriter, regReader));
-                    }
+                    maxTupleSet.add(new Tuple(regWriter, regReader));
                 }
                 for(Event regWriter : r.must) {
-                    if(regWriter != null) {
-                        minTupleSet.add(new Tuple(regWriter, regReader));
-                    }
+                    minTupleSet.add(new Tuple(regWriter, regReader));
                 }
             }
         }

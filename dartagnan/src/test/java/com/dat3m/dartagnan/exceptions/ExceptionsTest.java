@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.processing.BranchReordering;
-import com.dat3m.dartagnan.program.processing.DeadCodeElimination;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.utils.ResourceHelper;
@@ -45,9 +44,9 @@ public class ExceptionsTest {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
     	Thread t = pb.build().getThreads().get(0);
-    	t.addRegister("r1", -1);
+    	t.newRegister("r1", -1);
     	// Adding same register a second time
-    	t.addRegister("r1", -1);
+    	t.newRegister("r1", -1);
     }
 
 
