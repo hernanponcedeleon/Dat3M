@@ -28,7 +28,7 @@ import java.util.function.BiFunction;
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
-import static com.dat3m.dartagnan.expression.utils.Utils.generalZero;
+import static com.dat3m.dartagnan.expression.utils.Utils.generalEqualZero;
 import static com.google.common.collect.Lists.reverse;
 
 @Options
@@ -259,7 +259,7 @@ public class ProgramEncoder implements Encoder {
                     overwrite = bmgr.or(overwrite, writer.exec());
                 }
                 if(initializeRegisters && !state.initialized) {
-                    enc = bmgr.and(enc, bmgr.or(overwrite, bmgr.not(reader.cf()), generalZero(value, ctx)));
+                    enc = bmgr.and(enc, bmgr.or(overwrite, bmgr.not(reader.cf()), generalEqualZero(value, ctx)));
                 }
             }
         }
@@ -279,7 +279,7 @@ public class ProgramEncoder implements Encoder {
             Dependency.State state = e.getValue();
             List<Event> writers = state.may;
             if(initializeRegisters && !state.initialized) {
-                BooleanFormula clause = generalZero(value, ctx);
+                BooleanFormula clause = generalEqualZero(value, ctx);
                 for(Event w : writers) {
                     clause = bmgr.or(clause, w.exec());
                 }

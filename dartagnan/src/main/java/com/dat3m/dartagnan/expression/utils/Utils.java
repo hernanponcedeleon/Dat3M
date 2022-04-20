@@ -22,7 +22,7 @@ public class Utils {
 		return fmgr.getIntegerFormulaManager().equal(convertToIntegerFormula(f1, ctx), convertToIntegerFormula(f2, ctx));
 	}
 
-	public static BooleanFormula generalZero(Formula f, SolverContext ctx) {
+	public static BooleanFormula generalEqualZero(Formula f, SolverContext ctx) {
 		Preconditions.checkArgument(f instanceof IntegerFormula || f instanceof BitvectorFormula,
 				"generalZero input must be IntegerFormula or BitvectorFormula");
 		FormulaManager fmgr = ctx.getFormulaManager();
