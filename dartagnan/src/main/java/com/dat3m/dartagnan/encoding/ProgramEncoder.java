@@ -185,24 +185,30 @@ public class ProgramEncoder implements Encoder {
     }
 
     /**
-     * @param x
+     * Simple formula proposing the execution of two events.
+     * Does not test for mutual exclusion.
+     * @param first
      * Some event of a program to be encoded.
-     * @param y
+     * @param second
      * Another event of the same program.
      * @param exec
      * Analysis performed on the associated program.
      * @param ctx
      * Builder of expressions and formulas.
+     * @return
+     * Proposition that both {@code first} and {@code second} are included in the modelled execution.
      */
-    public static BooleanFormula execution(Event x, Event y, ExecutionAnalysis exec, SolverContext ctx) {
+    public static BooleanFormula execution(Event first, Event second, ExecutionAnalysis exec, SolverContext ctx) {
+        boolean b = first.getCId() < second.getCId();
+        Event x = b ? first : second;
+        Event y = b ? second : first;
         if(x.exec()==y.exec() || exec.isImplied(x,y)) {
             return x.exec();
         }
         if(exec.isImplied(y,x)) {
             return y.exec();
         }
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return x.getCId() < y.getCId() ? bmgr.and(x.exec(), y.exec()) : bmgr.and(y.exec(), x.exec());
+        return ctx.getFormulaManager().getBooleanFormulaManager().and(x.exec(),y.exec());
     }
 
     /**
