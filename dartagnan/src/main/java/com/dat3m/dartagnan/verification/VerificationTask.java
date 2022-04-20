@@ -1,6 +1,9 @@
 package com.dat3m.dartagnan.verification;
 
-import com.dat3m.dartagnan.asserts.*;
+import com.dat3m.dartagnan.asserts.AbstractAssert;
+import com.dat3m.dartagnan.asserts.AssertCompositeOr;
+import com.dat3m.dartagnan.asserts.AssertInline;
+import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.encoding.PropertyEncoder;
@@ -184,8 +187,11 @@ public class VerificationTask {
 
     private void updateAssertions(Program program) {
         if(program.getAss() != null) {
-            //TODO: Check why exactly this is needed. Litmus tests seem to have the assertion already defined
-            // but I was under the impression that assFilter was used for Litmus tests.
+            // This is used to distinguish between Litmus tests (whose assertions are defined differently)
+            // and C/Boogie tests.
+            //TODO: But this check is not a good solution, because it is impossible to
+            // distinguish Litmus and C/Boogie after the first call to <updateAssertions>.
+            // This causes problem when applying optimizations that may delete assertions.
             return;
         }
 
