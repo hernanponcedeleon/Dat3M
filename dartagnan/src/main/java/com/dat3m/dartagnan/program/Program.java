@@ -23,20 +23,20 @@ public class Program {
     private EventCache cache;
     private int unrollingBound = 0;
     private boolean isCompiled;
-    private Format format;
+    private SourceLanguage format;
 
-    public Program(Memory memory, Format format){
+    public Program(Memory memory, SourceLanguage format){
         this("", memory, format);
     }
 
-	public Program (String name, Memory memory, Format format) {
+	public Program (String name, Memory memory, SourceLanguage format) {
 		this.name = name;
 		this.memory = memory;
 		this.threads = new ArrayList<>();
 		this.format = format;
 	}
 
-	public Format getFormat(){
+	public SourceLanguage getFormat(){
         return format;
     }
 
@@ -143,5 +143,5 @@ public class Program {
         return true;
     }
     
-    public enum Format {LITMUS, BOOGIE;}
+    public enum SourceLanguage {LITMUS, BOOGIE;}
 }

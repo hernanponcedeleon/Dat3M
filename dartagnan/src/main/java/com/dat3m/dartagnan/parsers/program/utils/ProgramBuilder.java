@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Program.Format;
+import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -34,7 +34,7 @@ public class ProgramBuilder {
 
     private int lastOrigId = 0;
 
-    public Program build(Format format){
+    public Program build(SourceLanguage format){
         Program program = new Program(memory, format);
         buildInitThreads();
         for(Thread thread : threads.values()){

@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.Program.Format;
+import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
@@ -83,7 +83,7 @@ public class LoopUnrolling implements ProgramProcessor {
 
     	// For litmus tests, assertions are not part of the program and thus this pass
     	// must be avoid otherwise the real assertion is replaced by "true"
-        if(!program.getFormat().equals(Format.LITMUS)) {
+        if(!program.getFormat().equals(SourceLanguage.LITMUS)) {
             updateAssertions(program);        	
         }
 

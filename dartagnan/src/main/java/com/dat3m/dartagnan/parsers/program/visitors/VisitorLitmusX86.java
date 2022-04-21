@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.parsers.LitmusX86Visitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Program.Format;
+import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableSet;
@@ -53,7 +53,7 @@ public class VisitorLitmusX86
             String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
             programBuilder.setAssertFilter(AssertionHelper.parseAssertionFilter(programBuilder, raw));
         }
-        return programBuilder.build(Format.LITMUS);
+        return programBuilder.build(SourceLanguage.LITMUS);
     }
 
 
