@@ -107,7 +107,11 @@ public class VerificationTask {
 
     public void preprocessProgram() throws InvalidConfigurationException {
         ProcessingManager.fromConfig(config).run(program);
-        updateAssertions(program);
+        // This is used to distinguish between Litmus tests (whose assertions are defined differently)
+        // and C/Boogie tests.
+        if(program.getFormat()==Program.SourceLanguage.LITMUS) {
+            updateAssertions(program);
+        }
     }
 
     public void performStaticProgramAnalyses() throws InvalidConfigurationException {
@@ -186,15 +190,6 @@ public class VerificationTask {
     }
 
     private void updateAssertions(Program program) {
-        if(program.getAss() != null) {
-            // This is used to distinguish between Litmus tests (whose assertions are defined differently)
-            // and C/Boogie tests.
-            //TODO: But this check is not a good solution, because it is impossible to
-            // distinguish Litmus and C/Boogie after the first call to <updateAssertions>.
-            // This causes problem when applying optimizations that may delete assertions.
-            return;
-        }
-
         List<Event> assertions = program.getCache().getEvents(FilterBasic.get(ASSERTION));
         AbstractAssert ass = new AssertTrue();
         if(!assertions.isEmpty()) {

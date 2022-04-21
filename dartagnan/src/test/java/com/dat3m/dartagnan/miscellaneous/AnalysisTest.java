@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
@@ -67,7 +68,7 @@ public class AnalysisTest {
         Local e5 = newLocal(r0,r2);
         b.addChild(0,e5);
 
-        Program program = b.build();
+        Program program = b.build(Program.SourceLanguage.LITMUS);
         LoopUnrolling.newInstance().run(program);
         Compilation.newInstance().run(program);
         Configuration config = Configuration.defaultConfiguration();
@@ -339,7 +340,7 @@ public class AnalysisTest {
     }
 
     private AliasAnalysis analyze(ProgramBuilder builder, Alias method) throws InvalidConfigurationException {
-        Program program = builder.build();
+        Program program = builder.build(SourceLanguage.LITMUS);
         LoopUnrolling.newInstance().run(program);
         Compilation.newInstance().run(program);
         return AliasAnalysis.fromConfig(program,Configuration.builder().setOption(ALIAS_METHOD,method.asStringOption()).build());
