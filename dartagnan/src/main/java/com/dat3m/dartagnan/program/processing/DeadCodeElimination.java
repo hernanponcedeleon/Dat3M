@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -29,6 +30,7 @@ public class DeadCodeElimination implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
+        Preconditions.checkArgument(!program.isUnrolled(), "Dead code elimination should be performed before unrolling.");
 
         logger.info("#Events before DCE: " + program.getEvents().size());
 

@@ -54,7 +54,6 @@ public class ProcessingManager implements ProgramProcessor {
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
                 DeadAssignmentElimination.fromConfig(config),
                 RemoveDeadCondJumps.fromConfig(config),
-                DeadCodeElimination.fromConfig(config),
                 Compilation.fromConfig(config),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null
         ));

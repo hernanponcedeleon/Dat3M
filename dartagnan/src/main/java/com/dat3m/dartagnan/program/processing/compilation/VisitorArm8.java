@@ -105,7 +105,7 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
         if (!e.is(STRONG)) {
-            Register statusReg = e.getThread().newRegister(precision);
+            Register statusReg = e.getThread().newRegister("status("+e.getOId()+")",precision);
             optionalExecStatus = newExecutionStatus(statusReg, storeValue);
             optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
         }

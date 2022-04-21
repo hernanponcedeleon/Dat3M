@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.processing.BranchReordering;
+import com.dat3m.dartagnan.program.processing.DeadCodeElimination;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.utils.ResourceHelper;
@@ -80,6 +81,16 @@ public class ExceptionsTest {
                 .build(p, cat);
 		// The program must be compiled before being able to construct an Encoder for it
     	ProgramEncoder.fromConfig(task.getProgram(), Context.create(), config);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void unrollBeforeDCEException() throws Exception {
+        ProgramBuilder pb = new ProgramBuilder();
+        pb.initThread(0);
+        Program p = pb.build();
+        LoopUnrolling.newInstance().run(p);
+        // DCE cannot be called after unrolling
+        DeadCodeElimination.newInstance().run(p);
     }
 
     @Test(expected = IllegalArgumentException.class)
