@@ -229,9 +229,9 @@ public class ProgramEncoder implements Encoder {
         Dependency.State r = dep.of(reader, register);
         Preconditions.checkArgument(r.may.contains(writer));
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return r.must.contains(writer)
-        ? execution(writer, reader, exec, ctx)
-        : dependencyEdgeVariable(writer, reader, bmgr);
+        return r.must.contains(writer) ? 
+        		execution(writer, reader, exec, ctx) :
+        		dependencyEdgeVariable(writer, reader, bmgr);
     }
 
     /**

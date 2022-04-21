@@ -52,9 +52,11 @@ abstract class BasicRegRelation extends StaticRelation {
 
     @Override
     public BooleanFormula getSMTVar(Tuple t, SolverContext ctx) {
-        return minTupleSet.contains(t) ? getExecPair(t, ctx)
-        : maxTupleSet.contains(t) ? task.getProgramEncoder().dependencyEdge(t.getFirst(), t.getSecond(), ctx)
-        : ctx.getFormulaManager().getBooleanFormulaManager().makeFalse();
+        return minTupleSet.contains(t) ? 
+        		getExecPair(t, ctx) :
+        		maxTupleSet.contains(t) ?
+        				task.getProgramEncoder().dependencyEdge(t.getFirst(), t.getSecond(), ctx) :
+        				ctx.getFormulaManager().getBooleanFormulaManager().makeFalse();
     }
 
     @Override
