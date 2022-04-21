@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.Program.Format;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.EventFactory.Linux;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -28,7 +29,7 @@ public class UnrollExceptionsTest {
         pb.addChild(0, EventFactory.newRMWStore(load, object, IValue.ONE, null));
     	LoopUnrolling processor = LoopUnrolling.newInstance();
     	processor.setUnrollingBound(2);
-		processor.run(pb.build());
+		processor.run(pb.build(Format.LITMUS));
     }
 
     @Test(expected = ProgramProcessingException.class)
@@ -40,7 +41,7 @@ public class UnrollExceptionsTest {
         pb.addChild(0, Linux.newRMWStoreCond(load, object, IValue.ONE, null));
     	LoopUnrolling processor = LoopUnrolling.newInstance();
     	processor.setUnrollingBound(2);
-		processor.run(pb.build());
+		processor.run(pb.build(Format.LITMUS));
     }
 
     @Test(expected = ProgramProcessingException.class)
@@ -50,7 +51,7 @@ public class UnrollExceptionsTest {
     	pb.addChild(0, EventFactory.newRMWStoreExclusive(pb.getOrNewObject("X"), IValue.ONE, null, true));
     	LoopUnrolling processor = LoopUnrolling.newInstance();
     	processor.setUnrollingBound(2);
-		processor.run(pb.build());
+		processor.run(pb.build(Format.LITMUS));
     }
 
     @Test(expected = ProgramProcessingException.class)
@@ -62,7 +63,7 @@ public class UnrollExceptionsTest {
 		pb.addChild(0, Linux.newConditionalBarrier(load, null));
     	LoopUnrolling processor = LoopUnrolling.newInstance();
     	processor.setUnrollingBound(2);
-		processor.run(pb.build());
+		processor.run(pb.build(Format.LITMUS));
     }
 
     @Test(expected = ProgramProcessingException.class)
@@ -74,6 +75,6 @@ public class UnrollExceptionsTest {
 		pb.addChild(0, EventFactory.newExecutionStatus(pb.getOrCreateRegister(0, "r1", 32), store));
     	LoopUnrolling processor = LoopUnrolling.newInstance();
     	processor.setUnrollingBound(2);
-		processor.run(pb.build());
+		processor.run(pb.build(Format.LITMUS));
     }
 }
