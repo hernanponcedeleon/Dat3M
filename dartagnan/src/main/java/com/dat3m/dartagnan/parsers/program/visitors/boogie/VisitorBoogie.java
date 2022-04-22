@@ -21,7 +21,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.FunCall;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -276,7 +275,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     					int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : ARCH_PRECISION;
         				Register register = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText(), precision);
         				ExprInterface value = callingValues.get(index);
-						programBuilder.addChild(threadCount, EventFactory.newLocal(register, value));
+						programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))
+    							.setCLine(currentLine)
+    							.setSourceCodeFile(sourceCodeFile);
         				index++;    					
     				}
     			}
@@ -316,9 +317,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	IExpr expr = (IExpr)ctx.proposition().expr().accept(this);
     	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, expr.getPrecision());
     	assertionIndex++;
-    	Local event = EventFactory.newLocal(ass, expr);
-		event.addFilters(Tag.ASSERTION);
-		programBuilder.addChild(threadCount, event);
+		programBuilder.addChild(threadCount, EventFactory.newLocal(ass, expr))
+				.setCLine(currentLine)
+				.setSourceCodeFile(sourceCodeFile)
+				.addFilters(Tag.ASSERTION);
        	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 		programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end));
     	return null;
@@ -352,9 +354,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.equals("reach_error")) {
 	    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, ARCH_PRECISION);
 	    	assertionIndex++;
-	    	Local event = EventFactory.newLocal(ass, new BConst(false));
-			event.addFilters(Tag.ASSERTION);
-			programBuilder.addChild(threadCount, event);
+			programBuilder.addChild(threadCount, EventFactory.newLocal(ass, new BConst(false)))
+					.setCLine(currentLine)
+					.setSourceCodeFile(sourceCodeFile)
+					.addFilters(Tag.ASSERTION);
 	       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 			programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end));
 			return null;
@@ -410,7 +413,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		FunCall call = EventFactory.newFunctionCall(name);
 		programBuilder.addChild(threadCount, call)
 				.setCLine(currentLine)
-				.setSourceCodeFile(currentReturnName);	
+				.setSourceCodeFile(sourceCodeFile);	
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
 			atomicMode = null;
@@ -423,7 +426,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		programBuilder.addChild(threadCount, EventFactory.newFunctionReturn(name))
 				.setCLine(call.getCLine())
-				.setSourceCodeFile(currentReturnName);
+				.setSourceCodeFile(sourceCodeFile);
 		if(name.equals("$initialize")) {
 			initMode = false;
 		}
@@ -476,7 +479,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		            continue;
 	        	}
 	        	value = value.visit(exprSimplifier);
-				programBuilder.addChild(threadCount, EventFactory.newLocal(register, value));	        		
+				programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))
+						.setCLine(currentLine)
+						.setSourceCodeFile(sourceCodeFile);
 	            continue;
 	        }
             MemoryObject object = programBuilder.getObject(name);
@@ -489,7 +494,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        if(currentReturnName.equals(name)) {
 	        	if(!returnRegister.isEmpty()) {
 	        		Register ret = returnRegister.remove(returnRegister.size() - 1);
-					programBuilder.addChild(threadCount, EventFactory.newLocal(ret, value));
+					programBuilder.addChild(threadCount, EventFactory.newLocal(ret, value))
+							.setCLine(currentLine)
+							.setSourceCodeFile(sourceCodeFile);
 	        	}
 	        	continue;
 	        }

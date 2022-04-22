@@ -51,7 +51,9 @@ public class LkmmProcedures {
 				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newStore(address, value, Tag.Linux.MO_RELAXED))
 	            		.setCLine(visitor.currentLine)
 	            		.setSourceCodeFile(visitor.sourceCodeFile);
-	            visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newMemoryBarrier());
+	            visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newMemoryBarrier())
+        				.setCLine(visitor.currentLine)
+        				.setSourceCodeFile(visitor.sourceCodeFile);
 	            return;
 	        }
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newStore(address, value, mo))

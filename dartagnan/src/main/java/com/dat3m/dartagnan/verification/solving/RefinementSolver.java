@@ -202,7 +202,7 @@ public class RefinementSolver {
             	ExecutionModel m = new ExecutionModel(task);
             	m.initialize(prover.getModel(), ctx);
 				String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
-				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_HOME") + "/output/", name, true);        		
+				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_HOME") + "/output/", name, false);        		
         	}
         }
 
