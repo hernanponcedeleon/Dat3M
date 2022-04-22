@@ -28,6 +28,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	protected final Set<String> filter;
 
 	protected transient Event successor;
+	protected transient Event predecessor;
 
 	protected transient BooleanFormula cfVar;
 
@@ -73,11 +74,21 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public Event getSuccessor(){
 		return successor;
 	}
+	public Event getPredecessor() { return predecessor; }
 
-	public void setSuccessor(Event event){
+	public void setSuccessor(Event event) {
 		successor = event;
 		if (successor != null) {
+			successor.predecessor = this;
 			successor.setThread(this.thread);
+		}
+	}
+
+	public void setPredecessor(Event event) {
+		if (event != null) {
+			event.setSuccessor(this);
+		} else {
+			predecessor = null;
 		}
 	}
 
@@ -96,6 +107,17 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		while (cur != null) {
 			events.add( cur);
 			cur = cur.getSuccessor();
+		}
+
+		return events;
+	}
+
+	public final List<Event> getPredecessors(){
+		List<Event> events = new ArrayList<>();
+		Event cur = this;
+		while (cur != null) {
+			events.add( cur);
+			cur = cur.getPredecessor();
 		}
 
 		return events;
@@ -138,8 +160,10 @@ public abstract class Event implements Encoder, Comparable<Event> {
     }
 
 	public void delete(Event pred) {
-		if (pred != null) {
-			pred.successor = this.successor;
+		if (getPredecessor() != null) {
+			getPredecessor().setSuccessor(this.getSuccessor());
+		} else {
+			this.getSuccessor().setPredecessor(null);
 		}
 	}
 

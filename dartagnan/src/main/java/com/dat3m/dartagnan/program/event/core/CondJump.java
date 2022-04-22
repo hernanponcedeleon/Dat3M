@@ -58,8 +58,9 @@ public class CondJump extends Event implements RegReaderData {
     @Override
     public void setThread(Thread thread) {
         super.setThread(thread);
-        if (label != null)
+        if (label != null) {
             label.setThread(thread);
+        }
     }
 
     @Override
