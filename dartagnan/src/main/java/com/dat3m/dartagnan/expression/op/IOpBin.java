@@ -141,9 +141,13 @@ public enum IOpBin {
             		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
             		BitvectorFormula rem = bvmgr.modulo(bv1, bv2, true);
             		// Check if rem and bv2 have the same sign
-            		BooleanFormula cond = bvmgr.greaterThan(bvmgr.multiply(rem, bv2), bvmgr.makeBitvector(32, 1), true);
+            		int rem_length = bvmgr.getLength(rem);
+            		int bv2_length = bvmgr.getLength(bv2);
+            		BitvectorFormula srem = bvmgr.extract(rem, rem_length-1, rem_length-1, true);
+            		BitvectorFormula sbv2 = bvmgr.extract(bv2, bv2_length-1, bv2_length-1, true);
+            		BooleanFormula cond = bvmgr.equal(srem, sbv2);
             		// If they have the same sign, return the reminder, otherwise invert it
-            		bmgr.ifThenElse(cond, rem, bvmgr.negate(rem));
+            		return bmgr.ifThenElse(cond, rem, bvmgr.negate(rem));
             	case SREM:
             		return bvmgr.modulo(bv1, bv2, true);
             	case UREM:

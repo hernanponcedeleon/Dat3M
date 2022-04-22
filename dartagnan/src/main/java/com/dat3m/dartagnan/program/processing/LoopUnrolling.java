@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
@@ -80,7 +81,11 @@ public class LoopUnrolling implements ProgramProcessor {
         program.clearCache(false);
         program.markAsUnrolled(bound);
 
-        updateAssertions(program);
+    	// For litmus tests, assertions are not part of the program and thus this pass
+    	// must be avoid otherwise the real assertion is replaced by "true"
+        if(!program.getFormat().equals(SourceLanguage.LITMUS)) {
+            updateAssertions(program);        	
+        }
 
         logger.info("Program unrolled {} times", bound);
         if(print) {
@@ -162,12 +167,6 @@ public class LoopUnrolling implements ProgramProcessor {
     }
     
     private void updateAssertions(Program program) {
-        if (program.getAss() != null) {
-            //TODO: Check why exactly this is needed. Litmus tests seem to have the assertion already defined
-            // but I was under the impression that assFilter was used for Litmus tests.
-            return;
-        }
-
         List<Event> assertions = new ArrayList<>();
         for(Thread t : program.getThreads()){
             assertions.addAll(t.getCache().getEvents(FilterBasic.get(Tag.ASSERTION)));

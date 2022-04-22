@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
@@ -44,7 +45,7 @@ public class ExceptionsTest {
     public void RegisterAlreadyExist() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
-    	Thread t = pb.build().getThreads().get(0);
+    	Thread t = pb.build(SourceLanguage.LITMUS).getThreads().get(0);
     	t.addRegister("r1", -1);
     	// Adding same register a second time
     	t.addRegister("r1", -1);
@@ -56,14 +57,14 @@ public class ExceptionsTest {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
     	// Program must be unrolled first
-    	Compilation.newInstance().run(pb.build());
+    	Compilation.newInstance().run(pb.build(SourceLanguage.LITMUS));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void unrollBeforeReorderException() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
-    	Program p = pb.build();
+    	Program p = pb.build(SourceLanguage.LITMUS);
     	LoopUnrolling.newInstance().run(p);
     	// Reordering cannot be called after unrolling
     	BranchReordering.newInstance().run(p);
@@ -73,7 +74,7 @@ public class ExceptionsTest {
     public void initializedBeforeCompileException() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
-    	Program p = pb.build();
+    	Program p = pb.build(SourceLanguage.LITMUS);
 		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/tso.cat"));
 		Configuration config = Configuration.defaultConfiguration();
 		VerificationTask task = VerificationTask.builder()
@@ -87,7 +88,7 @@ public class ExceptionsTest {
     public void unrollBeforeDCEException() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
-    	Program p = pb.build();
+    	Program p = pb.build(SourceLanguage.LITMUS);
     	LoopUnrolling.newInstance().run(p);
     	// DCE cannot be called after unrolling
     	DeadCodeElimination.newInstance().run(p);
