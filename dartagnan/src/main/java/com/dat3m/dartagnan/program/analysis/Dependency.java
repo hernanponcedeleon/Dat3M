@@ -131,10 +131,10 @@ public final class Dependency {
                 }
             }
         }
-        //FIXME there might still be jumps to "END_OF_T"... with cid == -1
-        for(Set<Writer> j : jumps.values()) {
-            state.addAll(j);
-        }
+        checkArgument(jumps.isEmpty(),
+                "Thread %s contains jumps to removed labels %s",
+                thread.getId(),
+                jumps.keySet());
         for(Register register : thread.getRegisters()) {
             finalWriters.put(register, process(state, register, exec));
         }
