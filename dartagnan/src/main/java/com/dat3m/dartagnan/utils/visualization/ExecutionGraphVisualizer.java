@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.utils.visualization;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
@@ -133,7 +134,7 @@ public class ExecutionGraphVisualizer {
 
     private String eventToNode(EventData e, ExecutionModel model) {
         if (e.isInit()) {
-            return "init";
+            return String.format("\"init(%s)\"", ((Init)e.getEvent()).getAddress());
         } else if (e.getEvent().getCLine() == -1) {
             // Special write of each thread
             int threadSize = model.getThreadEventsMap().get(e.getThread()).size();
