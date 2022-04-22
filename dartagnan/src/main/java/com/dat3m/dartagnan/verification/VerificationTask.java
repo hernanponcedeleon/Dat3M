@@ -109,7 +109,7 @@ public class VerificationTask {
         ProcessingManager.fromConfig(config).run(program);
         // This is used to distinguish between Litmus tests (whose assertions are defined differently)
         // and C/Boogie tests.
-        if(program.getFormat()==Program.SourceLanguage.LITMUS) {
+        if(program.getFormat()!=Program.SourceLanguage.LITMUS) {
             updateAssertions(program);
         }
     }
