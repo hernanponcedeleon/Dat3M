@@ -8,6 +8,8 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -22,6 +24,8 @@ import static java.util.stream.IntStream.range;
  */
 public final class Dependency {
 
+    private static final Logger logger = LogManager.getLogger(Dependency.class);
+
     private final HashMap<Event,Map<Register,State>> map = new HashMap<>();
     private final Map<Register,State> finalWriters = new HashMap<>();
 
@@ -32,6 +36,7 @@ public final class Dependency {
      * Summarizes branching behavior.
      */
     public Dependency(Program program, ExecutionAnalysis exec) {
+        logger.info("Analyze dependencies");
         for(Thread t: program.getThreads()) {
             process(t, exec);
         }
@@ -94,10 +99,6 @@ public final class Dependency {
                 Map<Register,State> result = new HashMap<>();
                 for(Register register : registers) {
                     if(register.getThreadId() == Register.NO_THREAD) {
-                        checkArgument(state.stream().noneMatch(w -> w.register.equals(register)),
-                                "Thread %s cannot update the global constant %s.",
-                                thread.getId(),
-                                register.getName());
                         continue;
                     }
                     State writers;
@@ -107,9 +108,21 @@ public final class Dependency {
                                 "Helper thread %s should be listed after their creator thread %s.",
                                 thread.getId(),
                                 register.getThreadId());
-                    }
-                    else {
+                        if(writers.may.size() != 1) {
+                            logger.warn("Writers {} for inter-thread register {} read by event {} of thread {}",
+                                    writers.may,
+                                    register,
+                                    event,
+                                    thread.getId());
+                        }
+                    } else {
                         writers = process(state, register, exec);
+                        if(!writers.initialized) {
+                            logger.warn("Uninitialized register {} read by event {} of thread {}",
+                                    register,
+                                    event,
+                                    thread.getId());
+                        }
                     }
                     result.put(register, writers);
                 }
@@ -131,10 +144,14 @@ public final class Dependency {
                 }
             }
         }
-        checkArgument(jumps.isEmpty(),
-                "Thread %s contains jumps to removed labels %s",
-                thread.getId(),
-                jumps.keySet());
+        if(!jumps.isEmpty()) {
+            logger.warn("Thread {} contains jumps to removed labels {}",
+                    thread.getId(),
+                    jumps.keySet());
+            for(Set<Writer> j : jumps.values()) {
+                state.addAll(j);
+            }
+        }
         for(Register register : thread.getRegisters()) {
             finalWriters.put(register, process(state, register, exec));
         }

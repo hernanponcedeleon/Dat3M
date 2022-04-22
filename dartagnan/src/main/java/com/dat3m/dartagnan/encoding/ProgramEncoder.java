@@ -244,6 +244,7 @@ public class ProgramEncoder implements Encoder {
      * Also, if no fitting writer is executed, the reader uses 0.
      */
     public BooleanFormula encodeDependencies(SolverContext ctx) {
+        logger.info("Encoding dependencies");
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         for(Map.Entry<Event,Map<Register,Dependency.State>> e : dep.getAll()) {
