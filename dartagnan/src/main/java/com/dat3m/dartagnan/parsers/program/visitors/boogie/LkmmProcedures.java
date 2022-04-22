@@ -11,8 +11,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.Linux;
-import com.dat3m.dartagnan.program.event.core.Event;
-
 import static com.dat3m.dartagnan.program.event.Tag.Linux.*;
 
 import java.util.Arrays;
@@ -39,8 +37,9 @@ public class LkmmProcedures {
 			List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 			IExpr address = (IExpr) params.get(0).accept(visitor);
 			String mo = Linux.intToMo(((IConst) params.get(1).accept(visitor)).getValueAsInt());
-	        Event event = EventFactory.newLoad(reg, address, mo);
-	        visitor.programBuilder.addChild(visitor.threadCount, event);
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLoad(reg, address, mo))
+	        		.setCLine(visitor.currentLine)
+	        		.setSourceCodeFile(visitor.sourceCodeFile);
 	        return;
 		}
 		if(name.startsWith("__LKMM_store")) {
@@ -49,13 +48,15 @@ public class LkmmProcedures {
 			IExpr value = (IExpr) params.get(1).accept(visitor);
 			String mo = Linux.intToMo(((IConst) params.get(2).accept(visitor)).getValueAsInt());
 	        if(mo.equals(Tag.Linux.MO_MB)){
-	            Event event = EventFactory.newStore(address, value, Tag.Linux.MO_RELAXED);
-	            visitor.programBuilder.addChild(visitor.threadCount, event);
+				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newStore(address, value, Tag.Linux.MO_RELAXED))
+	            		.setCLine(visitor.currentLine)
+	            		.setSourceCodeFile(visitor.sourceCodeFile);
 	            visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newMemoryBarrier());
 	            return;
 	        }
-	        Event event = EventFactory.newStore(address, value, mo);
-	        visitor.programBuilder.addChild(visitor.threadCount, event);
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newStore(address, value, mo))
+	        		.setCLine(visitor.currentLine)
+	        		.setSourceCodeFile(visitor.sourceCodeFile);
 	        return;
 		}
 		if(name.startsWith("__LKMM_xchg")) {
@@ -64,8 +65,9 @@ public class LkmmProcedures {
 			IExpr address = (IExpr) params.get(0).accept(visitor);
 			IExpr value = (IExpr) params.get(1).accept(visitor);
 			String mo = Linux.intToMo(((IConst) params.get(2).accept(visitor)).getValueAsInt());
-	        Event event = EventFactory.Linux.newRMWExchange(address, reg, value, mo);
-	        visitor.programBuilder.addChild(visitor.threadCount, event);
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWExchange(address, reg, value, mo))
+	        		.setCLine(visitor.currentLine)
+	        		.setSourceCodeFile(visitor.sourceCodeFile);
 			return;
 		}
 		if(name.startsWith("__LKMM_cmpxchg")) {
@@ -75,8 +77,9 @@ public class LkmmProcedures {
 			IExpr expectedVal = (IExpr) params.get(1).accept(visitor);
 			IExpr desiredVal = (IExpr) params.get(2).accept(visitor);
 			String mo = Linux.intToMo(((IConst) params.get(3).accept(visitor)).getValueAsInt());
-	        Event event = EventFactory.Linux.newRMWCompareExchange(address, reg, expectedVal, desiredVal, mo);
-	        visitor.programBuilder.addChild(visitor.threadCount, event);
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWCompareExchange(address, reg, expectedVal, desiredVal, mo))
+	        		.setCLine(visitor.currentLine)
+	        		.setSourceCodeFile(visitor.sourceCodeFile);
 			return;
 		}
 		if(name.startsWith("__LKMM_atomic_fetch_op")) {
@@ -86,8 +89,9 @@ public class LkmmProcedures {
 			IExpr value = (IExpr) params.get(1).accept(visitor);
 			String mo = Linux.intToMo(((IConst) params.get(2).accept(visitor)).getValueAsInt());
 			IOpBin op = IOpBin.intToOp(((IConst)params.get(3).accept(visitor)).getValueAsInt());
-	        Event event = EventFactory.Linux.newRMWFetchOp(address, reg, value, op, mo);
-	        visitor.programBuilder.addChild(visitor.threadCount, event);
+	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWFetchOp(address, reg, value, op, mo))
+	        		.setCLine(visitor.currentLine)
+	        		.setSourceCodeFile(visitor.sourceCodeFile);
 			return;
 		}
 		if(name.startsWith("__LKMM_atomic_op_return")) {
@@ -97,8 +101,9 @@ public class LkmmProcedures {
 			IExpr value = (IExpr) params.get(1).accept(visitor);
 			String mo = Linux.intToMo(((IConst) params.get(2).accept(visitor)).getValueAsInt());
 			IOpBin op = IOpBin.intToOp(((IConst)params.get(3).accept(visitor)).getValueAsInt());
-	        Event event = EventFactory.Linux.newRMWOpReturn(address, reg, value, op, mo);
-	        visitor.programBuilder.addChild(visitor.threadCount, event);
+	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWOpReturn(address, reg, value, op, mo))
+	        		.setCLine(visitor.currentLine)
+	        		.setSourceCodeFile(visitor.sourceCodeFile);
 			return;
 		}
 		if(name.startsWith("__LKMM_atomic_op")) {
@@ -107,21 +112,26 @@ public class LkmmProcedures {
 			IExpr address = (IExpr) params.get(0).accept(visitor);
 			IExpr value = (IExpr) params.get(1).accept(visitor);
 			IOpBin op = IOpBin.intToOp(((IConst)params.get(3).accept(visitor)).getValueAsInt());
-	        Event event = EventFactory.Linux.newRMWOp(address, reg, value, op);
-	        visitor.programBuilder.addChild(visitor.threadCount, event);
+	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWOp(address, reg, value, op))
+	        		.setCLine(visitor.currentLine)
+	        		.setSourceCodeFile(visitor.sourceCodeFile);
 			return;
 		}
 		if(name.startsWith("__LKMM_WRITE_ONCE")) {
 			List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 			IExpr address = (IExpr) params.get(0).accept(visitor);
 			ExprInterface value = (ExprInterface)params.get(1).accept(visitor);
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newStore(address, value, "Once"));
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newStore(address, value, "Once"))
+					.setCLine(visitor.currentLine)
+					.setSourceCodeFile(visitor.sourceCodeFile);
 			return;			
 		}
 		if(name.startsWith("__LKMM_READ_ONCE")) {
 			Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
 			IExpr address = (IExpr)ctx.call_params().exprs().expr(0).accept(visitor);
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLoad(reg, address, "Once"));
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLoad(reg, address, "Once"))
+					.setCLine(visitor.currentLine)
+					.setSourceCodeFile(visitor.sourceCodeFile);
 			return;			
 		}
 		if(name.startsWith("__LKMM_FENCE")) {
@@ -149,7 +159,9 @@ public class LkmmProcedures {
 				default:
 					throw new ParsingException("Unrecognized fence " + fenceAsInt);
 			}
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newFence(fence));
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newFence(fence))
+					.setCLine(visitor.currentLine)
+					.setSourceCodeFile(visitor.sourceCodeFile);
 			return;			
 		}
 		throw new UnsupportedOperationException(name + " procedure is not part of LKMMPROCEDURES");

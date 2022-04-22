@@ -28,6 +28,9 @@ public class GlobalSettings {
     */
     public static final boolean REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES = false;
 
+    // This option causes Refinement to generate a .dot and a .png file with the final iteration.
+    public static final boolean REFINEMENT_GENERATE_GRAPHVIZ_FINAL = true;
+
     public static final Refiner.SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = Refiner.SymmetryLearning.FULL;
 
     // --------------------

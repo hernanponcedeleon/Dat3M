@@ -49,24 +49,14 @@ public class EventFactory {
 
     // ------------------------------------------ Memory events ------------------------------------------
 
-    public static Load newLoad(Register register, IExpr address, String mo, int cLine) {
+    public static Load newLoad(Register register, IExpr address, String mo) {
         Load load = new Load(register, address, mo);
-        load.setCLine(cLine);
         return load;
     }
 
-    public static Load newLoad(Register register, IExpr address, String mo) {
-        return newLoad(register, address, mo, -1);
-    }
-
-    public static Store newStore(IExpr address, ExprInterface value, String mo, int cLine) {
-        Store store = new Store(address, value, mo);
-        store.setCLine(cLine);
-        return store;
-    }
-
     public static Store newStore(IExpr address, ExprInterface value, String mo) {
-        return newStore(address, value, mo, -1);
+        Store store = new Store(address, value, mo);
+        return store;
     }
 
     public static Fence newFence(String name) {
@@ -93,26 +83,19 @@ public class EventFactory {
         return new Skip();
     }
 
-    public static FunCall newFunctionCall(String funName, int cLine) {
+    public static FunCall newFunctionCall(String funName) {
         FunCall funCall = new FunCall(funName);
-        funCall.setCLine(cLine);
         return funCall;
     }
 
-    public static FunRet newFunctionReturn(String funName, int cLine) {
+    public static FunRet newFunctionReturn(String funName) {
         FunRet funRet = new FunRet(funName);
-        funRet.setCLine(cLine);
         return funRet;
     }
 
-    public static Local newLocal(Register register, ExprInterface expr, int cLine) {
-        Local local = new Local(register, expr);
-        local.setCLine(cLine);
-        return local;
-    }
-
     public static Local newLocal(Register register, ExprInterface expr) {
-        return newLocal(register, expr, -1);
+        Local local = new Local(register, expr);
+        return local;
     }
 
     public static Label newLabel(String name) {

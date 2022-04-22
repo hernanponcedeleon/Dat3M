@@ -19,9 +19,11 @@ public class ExecutionGraphVisualizer {
     private final Graphviz graphviz;
     private BiPredicate<EventData, EventData> rfFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
+    private boolean mergeByCline;
 
-    public ExecutionGraphVisualizer() {
+    public ExecutionGraphVisualizer(boolean mergeByCline) {
         graphviz = new Graphviz();
+        this.mergeByCline = mergeByCline;
     }
 
     public ExecutionGraphVisualizer setReadFromFilter(BiPredicate<EventData, EventData> filter) {
@@ -116,7 +118,7 @@ public class ExecutionGraphVisualizer {
                 continue;
             }
 
-            if (e1.getEvent().getCLine() != e2.getEvent().getCLine()) {
+            if (!mergeByCline || e1.getEvent().getCLine() != e2.getEvent().getCLine()) {
                 appendEdge(e1, e2, model, (String[]) null);
             }
         }
@@ -141,7 +143,12 @@ public class ExecutionGraphVisualizer {
                 return String.format("\"T%d:end\"", e.getThread().getId());
             }
         }
-        return String.format("\"T%d:%d\"", e.getThread().getId(), e.getEvent().getCLine());
+        return String.format("\"T%d:E%s (%s:L%d)\\n%s\"", 
+        				e.getThread().getId(), 
+        				e.getEvent().getCId(), 
+        				e.getEvent().getSourceCodeFile(), 
+        				e.getEvent().getCLine(), 
+        				e.getEvent().toString());
     }
 
     private void appendEdge(EventData a, EventData b, ExecutionModel model, String... options) {
