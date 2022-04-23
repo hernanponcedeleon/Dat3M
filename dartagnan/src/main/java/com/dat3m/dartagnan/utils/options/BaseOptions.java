@@ -58,4 +58,12 @@ public abstract class BaseOptions {
 	private boolean phantomReferences = true;
 	
 	public boolean usePhantomReferences() { return phantomReferences; }
+
+	@Option(
+		name=com.dat3m.dartagnan.configuration.OptionNames.WITNESS_GRAPHVIZ,
+		description="Generates a violation graph in /output.")
+	private boolean generateGraphviz = false;
+		
+	public boolean generateGraphviz() { return generateGraphviz; }
+
 }

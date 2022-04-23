@@ -2,11 +2,15 @@ package com.dat3m.dartagnan.utils.visualization;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Init;
+import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
+import static java.util.Optional.ofNullable;
+
 import java.io.IOException;
 import java.io.Writer;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
@@ -134,7 +138,7 @@ public class ExecutionGraphVisualizer {
 
     private String eventToNode(EventData e, ExecutionModel model) {
         if (e.isInit()) {
-            return String.format("\"init(%s)\"", ((Init)e.getEvent()).getAddress());
+            return String.format("\"init(%s)\nI(%d, %d)\"", ((Init)e.getEvent()).getAddress(), e.getAccessedAddress(), e.getValue());
         } else if (e.getEvent().getCLine() == -1) {
             // Special write of each thread
             int threadSize = model.getThreadEventsMap().get(e.getThread()).size();
@@ -144,12 +148,22 @@ public class ExecutionGraphVisualizer {
                 return String.format("\"T%d:end\"", e.getThread().getId());
             }
         }
+        // We have MemEvent + Fence
+        String tag = e.getEvent().toString();
+        if(e.isMemoryEvent()) {
+            BigInteger address = e.getAccessedAddress();
+            BigInteger value = e.getValue();
+        	String mo = ofNullable(((MemEvent)e.getEvent()).getMo()).orElse("NA");
+            tag = e.isWrite() ?
+            		String.format("W(%d, %d, %s)", address, value, mo) :
+            		String.format("%d = R(%d, %s)", value, address, mo);
+        }
         return String.format("\"T%d:E%s (%s:L%d)\\n%s\"", 
         				e.getThread().getId(), 
         				e.getEvent().getCId(), 
         				e.getEvent().getSourceCodeFile(), 
         				e.getEvent().getCLine(), 
-        				e.getEvent().toString());
+        				tag);
     }
 
     private void appendEdge(EventData a, EventData b, ExecutionModel model, String... options) {

@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
-import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_FINAL;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONCLUSIVE;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
@@ -198,12 +197,6 @@ public class RefinementSolver {
             boundCheckTime = System.currentTimeMillis() - lastTime;
         } else {
             veriResult = FAIL;
-        	if(REFINEMENT_GENERATE_GRAPHVIZ_FINAL) {
-            	ExecutionModel m = new ExecutionModel(task);
-            	m.initialize(prover.getModel(), ctx);
-				String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
-				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_HOME") + "/output/", name, false);        		
-        	}
         }
 
         if (logger.isInfoEnabled()) {
