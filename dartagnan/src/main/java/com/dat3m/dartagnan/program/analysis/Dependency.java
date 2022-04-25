@@ -10,6 +10,10 @@ import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import com.dat3m.dartagnan.verification.Context;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -21,7 +25,10 @@ import static java.util.stream.IntStream.range;
 
 /**
  * Computes direct providers for register values, based on when a register is used.
+ * Instances of this class store the results of the analysis,
+ * which was performed on the instance's creation.
  */
+@Options
 public final class Dependency {
 
     private static final Logger logger = LogManager.getLogger(Dependency.class);
@@ -29,17 +36,31 @@ public final class Dependency {
     private final HashMap<Event,Map<Register,State>> map = new HashMap<>();
     private final Map<Register,State> finalWriters = new HashMap<>();
 
+    private Dependency() {}
+
     /**
+     * Performs a dependency analysis on a program.
      * @param program
      * Instruction lists to be analyzed.
-     * @param exec
-     * Summarizes branching behavior.
+     * @param analysisContext
+     * Collection of other analyses previously performed on {@code program}.
+     * Should include {@link ExecutionAnalysis}.
+     * @param config
+     * Mapping from keywords to values,
+     * further specifying the behavior of this analysis.
+     * See this class's list of options for details.
+     * @throws InvalidConfigurationException
+     * Some option was provided with an unsupported type.
      */
-    public Dependency(Program program, ExecutionAnalysis exec) {
+    public static Dependency fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         logger.info("Analyze dependencies");
+        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+        Dependency result = new Dependency();
+        config.inject(result);
         for(Thread t: program.getThreads()) {
-            process(t, exec);
+            result.process(t, exec);
         }
+        return result;
     }
 
     /**

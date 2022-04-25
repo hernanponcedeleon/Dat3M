@@ -75,7 +75,7 @@ public class AnalysisTest {
         Context context = Context.create();
         context.register(BranchEquivalence.class,BranchEquivalence.fromConfig(program,config));
         ExecutionAnalysis exec = ExecutionAnalysis.fromConfig(program,context,config);
-        Dependency dep = new Dependency(program,exec);
+        Dependency dep = Dependency.fromConfig(program,context,config);
         assertTrue(dep.of(e1,r0).initialized);
         assertList(dep.of(e1,r0).may,e0);
         assertList(dep.of(e1,r0).must,e0);
