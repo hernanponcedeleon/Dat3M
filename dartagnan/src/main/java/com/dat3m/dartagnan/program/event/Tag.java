@@ -23,6 +23,7 @@ public final class Tag {
     public static final String ASSERTION    = "ASS";
     public static final String BOUND   		= "BOUND";
     public static final String SPINLOOP   	= "SPINLOOP";
+    public static final String ANNOTATION   = "ANNOTATION";
 
     // =============================================================================================
     // =========================================== ARMv8 ===========================================

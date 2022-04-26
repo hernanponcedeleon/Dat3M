@@ -1,26 +1,23 @@
-package com.dat3m.dartagnan.program.event.core;
+package com.dat3m.dartagnan.program.event.core.annotations;
 
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-
-public class FunCall extends Event {
+public class FunRet extends CodeAnnotation {
 
 	private final String funName;
 	
-	public FunCall(String funName) {
+	public FunRet(String funName) {
 		this.funName = funName;
-        addFilters(Tag.ANY);
 	}
 	
-	protected FunCall(FunCall other){
+	protected FunRet(FunRet other){
 		super(other);
 		this.funName = other.funName;
 	}
 
     @Override
     public String toString(){
-        return "=== Calling " + funName + " ===";
+        return "=== Returning from " + funName + " ===";
     }
 
     public String getFunctionName() {
@@ -31,8 +28,8 @@ public class FunCall extends Event {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public FunCall getCopy(){
-		return new FunCall(this);
+	public FunRet getCopy(){
+		return new FunRet(this);
 	}
 
 	// Visitor
@@ -40,6 +37,6 @@ public class FunCall extends Event {
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitFunCall(this);
+		return visitor.visitFunRet(this);
 	}
 }

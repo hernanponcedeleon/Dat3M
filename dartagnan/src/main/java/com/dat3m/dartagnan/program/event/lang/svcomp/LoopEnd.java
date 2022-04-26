@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.svcomp;
 
-import com.dat3m.dartagnan.program.event.core.FunCall;
+import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 
 public class LoopEnd extends FunCall {
 
