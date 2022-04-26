@@ -57,7 +57,7 @@ public class AtomicAsLock implements ProgramProcessor {
 			thread.getExit().setSuccessor(end);
 			thread.updateExit(end);
 		}
-		Register register = new Register("__VERIFIER_atomic_dummy",thread.getId(),ARCH_PRECISION);
+		Register register = thread.newRegister(ARCH_PRECISION);
 		for(Event predecessor = thread.getEntry(); predecessor != null;) {
 			Event event = predecessor.getSuccessor();
 			boolean begin = event instanceof BeginAtomic;

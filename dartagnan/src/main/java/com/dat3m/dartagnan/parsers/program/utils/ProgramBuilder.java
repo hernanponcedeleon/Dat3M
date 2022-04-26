@@ -12,10 +12,13 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.Memory;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -142,9 +145,12 @@ public class ProgramBuilder {
     public Register getOrCreateRegister(int threadId, String name, int precision){
         initThread(threadId);
         Thread thread = threads.get(threadId);
+        if(name == null) {
+            return thread.newRegister(precision);
+        }
         Register register = thread.getRegister(name);
         if(register == null){
-            return thread.addRegister(name, precision);
+            return thread.newRegister(name, precision);
         }
         return register;
     }

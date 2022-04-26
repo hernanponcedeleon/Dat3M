@@ -15,7 +15,7 @@ import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
 public class Register extends IExpr implements ExprInterface, LastValueInterface {
 
-	private static int dummyCount = 0;
+	public static final int NO_THREAD = -1;
 
 	private final String name;
 	private String cVar;
@@ -24,9 +24,6 @@ public class Register extends IExpr implements ExprInterface, LastValueInterface
     private final int precision;
 
 	public Register(String name, int threadId, int precision) {
-		if(name == null){
-			name = "DUMMY_REG_" + dummyCount++;
-		}
 		this.name = name;
 		this.threadId = threadId;
 		this.precision = precision;
