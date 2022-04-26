@@ -25,8 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.CO_ANTISYMMETRY;
-import static com.dat3m.dartagnan.configuration.OptionNames.ENCODE_FINAL_MEMVALUES;
 import static com.dat3m.dartagnan.expression.utils.Utils.*;
+import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
@@ -47,12 +47,6 @@ public class RelCo extends Relation {
 		secure=true)
 	private boolean antisymmetry = false;
 
-    @Option(
-            name=ENCODE_FINAL_MEMVALUES,
-            description="Encode final memory values per address.",
-            secure=true)
-    private boolean encodeLastCo = true; //TODO: Automatically set this option only for litmus tests
-
 	// =====================================================================
 
     public RelCo(){
@@ -66,7 +60,6 @@ public class RelCo extends Relation {
         try {
             task.getConfig().inject(this);
             logger.info("{}: {}", CO_ANTISYMMETRY, antisymmetry);
-            logger.info("{}: {}", ENCODE_FINAL_MEMVALUES, encodeLastCo);
         } catch(InvalidConfigurationException e) {
             logger.warn(e.getMessage());
         }
@@ -203,8 +196,7 @@ public class RelCo extends Relation {
                 }
             }
 
-            if (encodeLastCo) {
-                // TODO: This encoding should be extracted as it is orthogonal to how co itself gets encoded.
+            if (task.getProgram().getFormat().equals(LITMUS)) {
                 BooleanFormula lastCoExpr = getLastCoVar(w1, ctx);
                 enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
 
