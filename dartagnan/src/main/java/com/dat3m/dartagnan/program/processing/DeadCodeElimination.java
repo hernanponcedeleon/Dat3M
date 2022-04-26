@@ -61,7 +61,7 @@ public class DeadCodeElimination implements ProgramProcessor {
         int id = startId;
         while (cur != null) {
             if (!reachableEvents.contains(cur) && cur != exit) {
-                cur.delete(pred);
+                cur.delete();
                 cur = pred;
             } else {
                 cur.setOId(id++);

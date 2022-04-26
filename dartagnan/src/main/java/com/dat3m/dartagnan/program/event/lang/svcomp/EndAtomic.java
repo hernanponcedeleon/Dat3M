@@ -13,6 +13,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.event.Tag.RMW;
@@ -105,6 +106,11 @@ public class EndAtomic extends Event {
     @Override
 	public EndAtomic getCopy(){
 		return new EndAtomic(this);
+	}
+
+	@Override
+	public void updateReferences(Map<Event, Event> updateMapping) {
+		this.begin = (BeginAtomic) updateMapping.getOrDefault(this.begin, this.begin);
 	}
 
 	// Visitor

@@ -15,11 +15,7 @@ import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
-import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
-import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBegin;
-import com.dat3m.dartagnan.program.event.lang.svcomp.LoopEnd;
-import com.dat3m.dartagnan.program.event.lang.svcomp.LoopStart;
+import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.Arrays;
@@ -199,20 +195,20 @@ public class EventFactory {
             return new InitLock(name, address, value);
         }
 
-        public static Join newJoin(Register pthread_t, Register reg, MemoryObject address, Label label) {
-            return new Join(pthread_t, reg, address, label);
+        public static Join newJoin(Register pthread_t, Register reg, MemoryObject address) {
+            return new Join(pthread_t, reg, address);
         }
 
-        public static Lock newLock(String name, IExpr address, Register reg, Label label) {
-            return new Lock(name, address, reg, label);
+        public static Lock newLock(String name, IExpr address, Register reg) {
+            return new Lock(name, address, reg);
         }
 
-        public static Start newStart(Register reg, MemoryObject address, Label label) {
-            return new Start(reg, address, label);
+        public static Start newStart(Register reg, MemoryObject address) {
+            return new Start(reg, address);
         }
 
-        public static Unlock newUnlock(String name, IExpr address, Register reg, Label label) {
-            return new Unlock(name, address, reg, label);
+        public static Unlock newUnlock(String name, IExpr address, Register reg) {
+            return new Unlock(name, address, reg);
         }
     }
 

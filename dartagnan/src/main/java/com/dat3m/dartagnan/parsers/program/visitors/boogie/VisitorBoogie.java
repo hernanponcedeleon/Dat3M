@@ -15,8 +15,8 @@ import com.dat3m.dartagnan.parsers.program.boogie.FunctionCall;
 import com.dat3m.dartagnan.parsers.program.boogie.PthreadPool;
 import com.dat3m.dartagnan.parsers.program.boogie.Scope;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -237,8 +237,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
                 // Used to allow execution of threads after they have been created (pthread_create)
                 MemoryObject object = programBuilder.getOrNewObject(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
                 Register reg = programBuilder.getOrCreateRegister(threadCount, null, ARCH_PRECISION);
-                Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-                programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, object, label));
+                //Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+                programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, object));
             }
     	}
 

@@ -77,6 +77,9 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public Event getPredecessor() { return predecessor; }
 
 	public void setSuccessor(Event event) {
+		if (successor != null) {
+			successor.predecessor = null;
+		}
 		successor = event;
 		if (successor != null) {
 			successor.predecessor = this;
@@ -85,6 +88,9 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	}
 
 	public void setPredecessor(Event event) {
+		if (predecessor != null) {
+			predecessor.successor = null;
+		}
 		if (event != null) {
 			event.setSuccessor(this);
 		} else {
@@ -127,8 +133,14 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		return param != null && (filter.contains(param));
 	}
 
+	public void addFilters(Collection<? extends String> filters) { filter.addAll(filters); }
 	public void addFilters(String... params){
-		filter.addAll(Arrays.asList(params));
+		addFilters(Arrays.asList(params));
+	}
+
+	// The return value should not get modified directly.
+	public Set<String> getFilters() {
+		return filter;
 	}
 
 	public boolean hasFilter(String f) {
@@ -159,7 +171,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
     	throw new UnsupportedOperationException("notify is not allowed for " + getClass().getSimpleName());
     }
 
-	public void delete(Event pred) {
+	public void delete() {
 		if (getPredecessor() != null) {
 			getPredecessor().setSuccessor(this.getSuccessor());
 		} else {
@@ -173,6 +185,8 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public Event getCopy(){
 		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
 	}
+
+	public void updateReferences(Map<Event, Event> updateMapping) { }
 
 	// Visitor
 	// -----------------------------------------------------------------------------------------------------------------

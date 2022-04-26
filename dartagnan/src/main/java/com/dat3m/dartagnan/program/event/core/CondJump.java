@@ -11,6 +11,8 @@ import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import java.util.Map;
+
 public class CondJump extends Event implements RegReaderData {
 
     private Label label;
@@ -90,8 +92,13 @@ public class CondJump extends Event implements RegReaderData {
     }
 
     @Override
-    public void delete(Event pred) {
-        super.delete(pred);
+    public void updateReferences(Map<Event, Event> updateMapping) {
+        this.label = (Label)updateMapping.getOrDefault(this.label, this.label);
+    }
+
+    @Override
+    public void delete() {
+        super.delete();
         label.listeners.remove(this);
     }
 
