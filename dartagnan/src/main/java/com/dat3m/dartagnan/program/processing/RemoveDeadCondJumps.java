@@ -86,10 +86,23 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
         // Here is the actual removal
         pred = null;
         Event cur = thread.getEntry();
+        boolean dead = false;
         while (cur != null) {
-            if (removed.contains(cur)) {
+            if(dead && cur instanceof Label && !immediateLabelPredecessors.getOrDefault(cur,List.of()).isEmpty()) {
+                dead = false;
+            }
+            if(dead && cur instanceof CondJump && immediateLabelPredecessors.containsKey(((CondJump) cur).getLabel())) {
+                immediateLabelPredecessors.get(((CondJump) cur).getLabel()).remove(cur);
+            }
+            if(dead && immediateLabelPredecessors.containsKey(cur.getSuccessor())) {
+                immediateLabelPredecessors.get(cur.getSuccessor()).remove(cur);
+            }
+            if(dead || removed.contains(cur)) {
                 cur.delete(pred);
                 cur = pred;
+            }
+            if(cur instanceof CondJump && ((CondJump) cur).isGoto()) {
+                dead = true;
             }
             pred = cur;
             cur = cur.getSuccessor();

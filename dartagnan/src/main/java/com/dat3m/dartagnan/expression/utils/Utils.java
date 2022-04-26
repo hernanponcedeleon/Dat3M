@@ -21,7 +21,20 @@ public class Utils {
 		// Fallback
 		return fmgr.getIntegerFormulaManager().equal(convertToIntegerFormula(f1, ctx), convertToIntegerFormula(f2, ctx));
 	}
-	
+
+	public static BooleanFormula generalEqualZero(Formula f, SolverContext ctx) {
+		Preconditions.checkArgument(f instanceof IntegerFormula || f instanceof BitvectorFormula,
+				"generalEqualZero input must be IntegerFormula or BitvectorFormula");
+		FormulaManager fmgr = ctx.getFormulaManager();
+		if(f instanceof IntegerFormula) {
+			IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+			return imgr.equal((IntegerFormula)f, imgr.makeNumber(0));
+		} else {
+			BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+			return bvmgr.equal((BitvectorFormula)f, bvmgr.makeBitvector(bvmgr.getLength((BitvectorFormula)f), 0));
+		}
+	}
+
     private static IntegerFormula convertToIntegerFormula(Formula f, SolverContext ctx) {
     	return f instanceof BitvectorFormula ? 
     			ctx.getFormulaManager().getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula) f, false) : 

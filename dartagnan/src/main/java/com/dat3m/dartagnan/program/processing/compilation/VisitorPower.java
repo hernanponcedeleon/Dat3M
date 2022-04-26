@@ -83,11 +83,10 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		ExprInterface value = e.getMemValue();
 		String mo = e.getMo();
 		IExpr expectedAddr = e.getExpectedAddr();
-        int threadId = resultRegister.getThreadId();
 		int precision = resultRegister.getPrecision();
 
-		Register regExpected = new Register(null, threadId, precision);
-        Register regValue = new Register(null, threadId, precision);
+		Register regExpected = e.getThread().newRegister(precision);
+        Register regValue = e.getThread().newRegister(precision);
         Load loadExpected = newLoad(regExpected, expectedAddr, null);
         Store storeExpected = newStore(expectedAddr, regValue, null);
         Label casFail = newLabel("CAS_fail");
@@ -102,7 +101,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
         if (!e.is(STRONG)) {
-            Register statusReg = new Register("status(" + e.getOId() + ")", threadId, precision);
+            Register statusReg = e.getThread().newRegister(precision);
             optionalExecStatus = newExecutionStatus(statusReg, storeValue);
             optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
         }
@@ -138,7 +137,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 		
-        Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
         Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
 
         // Power does not have mo tags, thus we use null
@@ -261,7 +260,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		String mo = e.getMo();
 		ExprInterface expectedValue = e.getExpectedValue();
 
-        Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+        Register regValue = e.getThread().newRegister(resultRegister.getPrecision());
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);

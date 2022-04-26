@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -32,11 +33,14 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.dat3m.dartagnan.utils.ResourceHelper.*;
 import static com.google.common.io.Files.getNameWithoutExtension;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractLitmusTest {
+
+    private static final boolean DO_INITIALIZE_REGISTERS = true;
 
     private String path;
     private final Result expected;
@@ -97,7 +101,15 @@ public abstract class AbstractLitmusTest {
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
     	getExpectedResults().get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, targetProvider, boundProvider, timeoutProvider);
+    protected final Provider<VerificationTask> taskProvider = Provider.fromSupplier(() ->
+        VerificationTask.builder()
+        .withConfig(Configuration.builder()
+            .setOption(INITIALIZE_REGISTERS,String.valueOf(DO_INITIALIZE_REGISTERS))
+            .build())
+        .withTarget(targetProvider.get())
+        .withBound(boundProvider.get())
+        .withSolverTimeout(timeoutProvider.get())
+        .build(programProvider.get(), wmmProvider.get()));
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
     protected final Provider<ProverEnvironment> prover2Provider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
