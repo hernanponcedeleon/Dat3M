@@ -46,9 +46,9 @@ public class ExceptionsTest {
     	ProgramBuilder pb = new ProgramBuilder();
     	pb.initThread(0);
     	Thread t = pb.build(SourceLanguage.LITMUS).getThreads().get(0);
-    	t.addRegister("r1", -1);
+    	t.newRegister("r1", -1);
     	// Adding same register a second time
-    	t.addRegister("r1", -1);
+    	t.newRegister("r1", -1);
     }
 
 
@@ -86,12 +86,12 @@ public class ExceptionsTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void unrollBeforeDCEException() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder();
-    	pb.initThread(0);
-    	Program p = pb.build(SourceLanguage.LITMUS);
-    	LoopUnrolling.newInstance().run(p);
-    	// DCE cannot be called after unrolling
-    	DeadCodeElimination.newInstance().run(p);
+        ProgramBuilder pb = new ProgramBuilder();
+        pb.initThread(0);
+        Program p = pb.build(SourceLanguage.LITMUS);
+        LoopUnrolling.newInstance().run(p);
+        // DCE cannot be called after unrolling
+        DeadCodeElimination.newInstance().run(p);
     }
 
     @Test(expected = IllegalArgumentException.class)
