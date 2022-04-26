@@ -22,6 +22,7 @@ public class MemoryObject extends IConst implements ExprInterface, LastValueInte
     private final int index;
     private int size;
     BigInteger address;
+	private String cVar;
 
     private final HashMap<Integer,IConst> initialValues = new HashMap<>();
 
@@ -29,6 +30,14 @@ public class MemoryObject extends IConst implements ExprInterface, LastValueInte
         this.index = index;
         size = s;
     }
+
+	public String getCVar() {
+		return cVar;
+	}
+
+	public void setCVar(String name) {
+		this.cVar = name;
+	}
 
     /**
      * @return
@@ -128,7 +137,7 @@ public class MemoryObject extends IConst implements ExprInterface, LastValueInte
 
     @Override
     public String toString(){
-        return "&mem" + index;
+        return cVar != null ? cVar : "&mem" + index;
     }
 
     @Override

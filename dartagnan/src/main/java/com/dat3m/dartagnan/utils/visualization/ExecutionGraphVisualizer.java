@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.utils.visualization;
 
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -138,7 +138,11 @@ public class ExecutionGraphVisualizer {
 
     private String eventToNode(EventData e, ExecutionModel model) {
         if (e.isInit()) {
-            return String.format("\"init(%s)\nI(%d, %d)\"", ((Init)e.getEvent()).getAddress(), e.getAccessedAddress(), e.getValue());
+        	// For registers we get the actual address given by the model
+            Object address = ((MemEvent)e.getEvent()).getAddress() instanceof Register ?
+            		e.getAccessedAddress() :
+            		((MemEvent)e.getEvent()).getAddress();
+            return String.format("\"I(%s, %d)\"", address, e.getValue());
         } else if (e.getEvent().getCLine() == -1) {
             // Special write of each thread
             int threadSize = model.getThreadEventsMap().get(e.getThread()).size();
@@ -151,12 +155,15 @@ public class ExecutionGraphVisualizer {
         // We have MemEvent + Fence
         String tag = e.getEvent().toString();
         if(e.isMemoryEvent()) {
-            BigInteger address = e.getAccessedAddress();
+        	// For registers we get the actual address given by the model
+            Object address = ((MemEvent)e.getEvent()).getAddress() instanceof Register ?
+            		e.getAccessedAddress() :
+            		((MemEvent)e.getEvent()).getAddress();
             BigInteger value = e.getValue();
         	String mo = ofNullable(((MemEvent)e.getEvent()).getMo()).orElse("NA");
             tag = e.isWrite() ?
-            		String.format("W(%d, %d, %s)", address, value, mo) :
-            		String.format("%d = R(%d, %s)", value, address, mo);
+            		String.format("W(%s, %d, %s)", address, value, mo) :
+            		String.format("%d = R(%s, %s)", value, address, mo);
         }
         return String.format("\"T%d:E%s (%s:L%d)\\n%s\"", 
         				e.getThread().getId(), 
