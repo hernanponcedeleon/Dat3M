@@ -23,7 +23,6 @@ public abstract class AbstractExternalTool {
 
     protected String name;
     protected Result expected;
-    protected String output = "";
 
     public AbstractExternalTool(String name, Result expected) {
         this.name = name;
@@ -36,7 +35,7 @@ public abstract class AbstractExternalTool {
     protected abstract Provider<String> getToolCmdProvider();
     protected abstract Provider<List<String>> getToolOptionsProvider();
     protected abstract long getTimeout();
-    protected abstract Result getResult();
+    protected abstract Result getResult(String output);
 
     protected Provider<Integer> getTimeoutProvider() {
         return Provider.fromSupplier(() -> 0);
@@ -86,9 +85,10 @@ public abstract class AbstractExternalTool {
     	Process proc = processBuilder.start();
 		BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 		proc.waitFor();
+		String output = "";
 		while(read.ready()) {
 			output += read.readLine();
 		}
-		assertEquals(expected, getResult());
+		assertEquals(expected, getResult(output));
 	}
 }
