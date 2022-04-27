@@ -53,4 +53,9 @@ public class GenmcLKMM extends AbstractExternalTool {
 //            {"lfds/treiber-3", UNKNOWN}
 		});
     }
+
+	@Override
+	protected Result getResult(String output) {
+		return output.contains("No errors were detected") ? PASS : FAIL;
+	}
 }
