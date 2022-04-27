@@ -51,7 +51,7 @@ public class Genmc extends AbstractExternalTool {
             {"lfds/safe_stack-3", FAIL},
             {"lfds/chase-lev-5", PASS},
             {"lfds/dglm-3", PASS},
-            {"lfds/harris_linked_list-3", PASS},
+            {"lfds/harris-3", PASS},
             {"lfds/ms-3", PASS},
             {"lfds/treiber-3", PASS}
 		});
