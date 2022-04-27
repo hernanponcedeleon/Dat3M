@@ -59,19 +59,24 @@ public class Nidhugg extends AbstractExternalTool {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-            {"locks/ttas-5", UNKNOWN},
+            {"locks/ttas-5", PASS},
             {"locks/ticketlock-6", PASS},
-            {"locks/mutex-4", UNKNOWN},
-            {"locks/spinlock-5", UNKNOWN},
-            {"locks/linuxrwlock-3", UNKNOWN},
-            {"locks/mutex_musl-4", UNKNOWN},
-            {"locks/seqlock-12", UNKNOWN},
+            {"locks/mutex-4", PASS},
+            {"locks/spinlock-5", PASS},
+            {"locks/linuxrwlock-3", PASS},
+            {"locks/mutex_musl-4", PASS},
+            {"locks/seqlock-12", PASS},
             {"lfds/safestack-3", FAIL},
             {"lfds/chase-lev-5", PASS},
-            {"lfds/dglm-3", UNKNOWN},
-            {"lfds/harris_linked_list-3", UNKNOWN},
-            {"lfds/ms-3", UNKNOWN},
-            {"lfds/treiber-3", UNKNOWN}
+            {"lfds/dglm-3", PASS},
+            {"lfds/harris_linked_list-3", PASS},
+            {"lfds/ms-3", PASS},
+            {"lfds/treiber-3", PASS}
 		});
     }
+
+    @Override
+	protected Result getResult() {
+		return output.contains("No errors were detected") ? PASS : FAIL;
+	}
 }

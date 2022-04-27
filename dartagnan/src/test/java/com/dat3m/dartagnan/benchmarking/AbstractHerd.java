@@ -4,6 +4,9 @@ import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,5 +53,10 @@ public abstract class AbstractHerd extends AbstractExternalTool {
 	@Override
 	protected Provider<String> getToolCmdProvider() {
 		return Provider.fromSupplier(() -> "herd7");
+	}
+
+	@Override
+	protected Result getResult() {
+		return output.contains("Ok") ? FAIL : PASS;
 	}
 }
