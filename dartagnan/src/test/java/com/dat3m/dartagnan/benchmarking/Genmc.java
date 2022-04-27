@@ -58,7 +58,7 @@ public class Genmc extends AbstractExternalTool {
     }
 
 	@Override
-	protected Result getResult() {
+	protected Result getResult(String output) {
 		return output.contains("No errors were detected") ? PASS : FAIL;
 	}
 }

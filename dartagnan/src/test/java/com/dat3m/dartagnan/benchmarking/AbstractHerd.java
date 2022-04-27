@@ -56,7 +56,7 @@ public abstract class AbstractHerd extends AbstractExternalTool {
 	}
 
 	@Override
-	protected Result getResult() {
+	protected Result getResult(String output) {
 		return output.contains("Ok") ? FAIL : PASS;
 	}
 }
