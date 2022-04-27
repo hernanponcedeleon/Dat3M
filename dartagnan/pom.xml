@@ -311,6 +311,78 @@
       </build>
     </profile>
 
+    <profile>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <id>windows</id>
+      <dependencies>
+        <!-- Z3 dependencies (Windows) -->
+        <dependency>
+          <groupId>org.sosy-lab</groupId>
+          <artifactId>javasmt-solver-z3</artifactId>
+          <version>4.8.10</version>
+          <type>dll</type>
+          <classifier>libz3</classifier>
+        </dependency>
+        <dependency>
+          <groupId>org.sosy-lab</groupId>
+          <artifactId>javasmt-solver-z3</artifactId>
+          <version>4.8.10</version>
+          <type>dll</type>
+          <classifier>libz3java</classifier>
+        </dependency>
+      </dependencies>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>3.1.1</version>
+            <executions>
+              <execution>
+                <id>copy</id>
+                <phase>initialize</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>copy-dependencies</id>
+                <phase>validate</phase>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <outputDirectory>${project.dependency.path}</outputDirectory>
+              <artifactItems>
+                <!-- Z3 native libraries (MacOS) -->
+                <artifactItem>
+                  <groupId>org.sosy-lab</groupId>
+                  <artifactId>javasmt-solver-z3</artifactId>
+                  <type>dll</type>
+                  <classifier>libz3java</classifier>
+                  <destFileName>libz3java.dll</destFileName>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.sosy-lab</groupId>
+                  <artifactId>javasmt-solver-z3</artifactId>
+                  <type>dll</type>
+                  <classifier>libz3</classifier>
+                  <destFileName>libz3.dll</destFileName>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
   </profiles>
 
   <dependencies>
