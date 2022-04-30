@@ -119,6 +119,7 @@ typedef atomic64_t  atomic_long_t;
 #define atomic_fetch_and_relaxed(i, v) __atomic_fetch_and(i, v, memory_order_relaxed)
 #define atomic_fetch_and_acquire(i, v) __atomic_fetch_and(i, v, memory_order_acquire)
 #define atomic_fetch_and_release(i, v) __atomic_fetch_and(i, v, memory_order_release)
+#define atomic_fetch_andnot_release(i, v) __atomic_fetch_and(~(i), v, memory_order_release)
 
 #define atomic_fetch_or(i, v)  __atomic_fetch_or(i, v, memory_order_mb)
 #define atomic_fetch_or_relaxed(i, v) __atomic_fetch_or(i, v, memory_order_relaxed)
