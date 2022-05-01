@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
@@ -183,7 +184,8 @@ public class ConstantPropagation implements ProgramProcessor {
     		Atom atom = (Atom)input;
     		ExprInterface lhs = evaluate(atom.getLHS(), map);
     		ExprInterface rhs = evaluate(atom.getRHS(), map);
-			return (lhs == TOP | rhs == TOP) ? TOP : new Atom(lhs, atom.getOp(), rhs).visit(simplifier);
+			COpBin op = atom.getOp();
+			return (lhs == TOP | rhs == TOP || op.isSigned()) ? TOP : new Atom(lhs, op, rhs).visit(simplifier);
     	}
     	if(input instanceof BExprUn) {
     		BExprUn un = (BExprUn)input;
