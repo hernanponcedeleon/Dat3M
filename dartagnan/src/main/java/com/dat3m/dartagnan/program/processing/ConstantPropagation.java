@@ -157,7 +157,7 @@ public class ConstantPropagation implements ProgramProcessor {
     	if(input instanceof IExprBin) {
     		IExprBin bin = (IExprBin)input;
     		// Due to other propagation the types are not guaranteed
-    		if(!(evaluate(bin.getLHS(), map) instanceof IExpr && evaluate(bin.getRHS(), map) instanceof IExprBin)) {
+    		if(!(evaluate(bin.getLHS(), map) instanceof IExpr && evaluate(bin.getRHS(), map) instanceof IExpr)) {
     			return TOP;
     		}
     		IExpr lhs = (IExpr) evaluate(bin.getLHS(), map);
@@ -170,7 +170,7 @@ public class ConstantPropagation implements ProgramProcessor {
     		IfExpr ife = (IfExpr)input;
     		ExprInterface guard = evaluate(ife.getGuard(), map);
     		// Due to other propagation the types are not guaranteed
-    		if(!(evaluate(ife.getTrueBranch(), map) instanceof IExpr && evaluate(ife.getFalseBranch(), map) instanceof IExprBin)) {
+    		if(!(evaluate(ife.getTrueBranch(), map) instanceof IExpr && evaluate(ife.getFalseBranch(), map) instanceof IExpr)) {
     			return TOP;
     		}
     		IExpr tbranch = (IExpr) evaluate(ife.getTrueBranch(), map);
