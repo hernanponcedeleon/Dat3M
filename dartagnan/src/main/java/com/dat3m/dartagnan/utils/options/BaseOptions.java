@@ -60,7 +60,7 @@ public abstract class BaseOptions {
 	public boolean usePhantomReferences() { return phantomReferences; }
 
 	@Option(
-		name=com.dat3m.dartagnan.configuration.OptionNames.WITNESS_GRAPHVIZ,
+		name=WITNESS_GRAPHVIZ,
 		description="Generates a violation graph in /output.")
 	private boolean generateGraphviz = false;
 		
