@@ -15,7 +15,7 @@ public class Compilation {
 	
 	private static final Logger logger = LogManager.getLogger(Compilation.class);
 	
-	public static void compileWithSmack(File file) throws Exception {
+	public static void compileWithSmack(File file, String cflags) throws Exception {
 		String name = file.getName().contains("_tmp") ?
 				file.getName().substring(0, file.getName().lastIndexOf('_')) :
 				file.getName().substring(0, file.getName().lastIndexOf('.'));
@@ -27,7 +27,7 @@ public class Compilation {
     		cmd.add(option);
     	}
     	// Here there is not need to iterate over CFLAG values
-        cmd.add("--clang-options=-I" + System.getenv("DAT3M_HOME") + "/include/smack " + System.getenv().getOrDefault("CFLAGS", ""));
+        cmd.add("--clang-options=-I" + System.getenv("DAT3M_HOME") + "/include/smack " + System.getenv().getOrDefault("CFLAGS", cflags));
     	cmd.addAll(asList("-bpl", System.getenv("DAT3M_HOME") + "/output/" + name + ".bpl"));
     	cmd.add(file.getAbsolutePath());
     	
@@ -52,11 +52,11 @@ public class Compilation {
     	}
 	}	
 
-	public static void compileWithClang(File file) throws Exception {
+	public static void compileWithClang(File file, String cflags) throws Exception {
 		ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("clang", "-S", "-o", System.getenv("DAT3M_HOME") + "/output/test.s"));
     	// Needed to handle more than one flag in CFLAGS
-    	for(String option : System.getenv().getOrDefault("CFLAGS", "").split(" ")) {
+    	for(String option : System.getenv().getOrDefault("CFLAGS", cflags).split(" ")) {
     		cmd.add(option);
     	}
     	cmd.add(file.getAbsolutePath());
