@@ -78,6 +78,7 @@ public class RefinementSolver {
         Refiner refiner = new Refiner(task);
         CAATSolver.Status status = INCONSISTENT;
 
+        logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(programEncoder.encodeFullProgram(ctx));
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel(ctx));
         prover.addConstraint(symmEncoder.encodeFullSymmetry(ctx));
