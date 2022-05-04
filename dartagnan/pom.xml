@@ -319,7 +319,7 @@
       </activation>
       <id>windows</id>
       <dependencies>
-        <!-- MathSAT5 dependency (Linux) -->
+        <!-- MathSAT5 dependency (Windows) -->
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-mathsat5</artifactId>
