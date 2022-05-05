@@ -80,11 +80,14 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		if (successor != null) {
 			successor.predecessor = null;
 		}
-		successor = event;
-		if (successor != null) {
-			successor.predecessor = this;
-			successor.setThread(this.thread);
+		if (event != null) {
+			if (event.predecessor != null){
+				event.predecessor.successor = null;
+			}
+			event.predecessor = this;
+			event.setThread(this.thread);
 		}
+		successor = event;
 	}
 
 	public void setPredecessor(Event event) {
@@ -92,10 +95,13 @@ public abstract class Event implements Encoder, Comparable<Event> {
 			predecessor.successor = null;
 		}
 		if (event != null) {
-			event.setSuccessor(this);
-		} else {
-			predecessor = null;
+			if (event.successor != null){
+				event.successor.predecessor = null;
+			}
+			event.successor = this;
+			event.setThread(this.thread);
 		}
+		predecessor = event;
 	}
 
 	public Thread getThread() {
@@ -174,7 +180,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public void delete() {
 		if (getPredecessor() != null) {
 			getPredecessor().setSuccessor(this.getSuccessor());
-		} else {
+		} else if (getSuccessor() != null) {
 			this.getSuccessor().setPredecessor(null);
 		}
 	}

@@ -199,7 +199,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             if (succ instanceof CondJump) {
                 CondJump jump = (CondJump) succ;
                 if (!alwaysSplitOnJump && jump.isGoto()) {
-                    // There is only one branch we can proceed on so we don't need to split the current branch
+                    // There is only one branch we can proceed on, so we don't need to split the current branch
                     succ = jump.getLabel();
                 } else {
                     // Split into two branches...

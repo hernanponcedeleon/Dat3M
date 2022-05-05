@@ -7,13 +7,21 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
+import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.utils.printer.Printer;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.*;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
+import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_UNROLLING;
 
 @Options
 public class LoopUnrolling implements ProgramProcessor {
@@ -37,7 +45,7 @@ public class LoopUnrolling implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_AFTER_UNROLLING,
             description = "Prints the program after unrolling.",
             secure = true)
-    private boolean print = false;
+    private boolean print = true;
 
     // =====================================================================
 
@@ -80,9 +88,11 @@ public class LoopUnrolling implements ProgramProcessor {
 }
 
     private int unrollThread(Thread t, int bound, int nextId){
+        bound++;
         while(bound > 0) {
             unrollThreadOnce(t, bound--);
         }
+       // unrollThreadNew(t, bound);
         t.clearCache();
         t.updateExit(t.getEntry());
         for (Event e : t.getEvents()) {
@@ -148,5 +158,73 @@ public class LoopUnrolling implements ProgramProcessor {
             from = from.getSuccessor();
         }
         return appendTo;
+    }
+
+    private void unrollThreadNew(Thread thread, int bound) {
+        Event cur = thread.getEntry();
+
+        while (cur != null) {
+            if (cur instanceof CondJump && ((CondJump) cur).getLabel().getOId() < cur.getOId()) {
+                CondJump jump = (CondJump) cur;
+                if (jump.getLabel().getListeners().stream().allMatch(x -> x.getOId() <= jump.getOId())) {
+                    unrollLoop((CondJump) cur, bound);
+                }
+            }
+            cur = cur.getSuccessor();
+        }
+    }
+
+    private void unrollLoop(CondJump loopBackJump, int bound) {
+        Label loopBegin = loopBackJump.getLabel();
+        Preconditions.checkArgument(bound >= 1, "Positive unrolling bound expected.");
+        Preconditions.checkArgument(loopBegin.getOId() < loopBackJump.getOId(),
+                "The jump does not belong to a loop.");
+        Preconditions.checkArgument(loopBackJump.getUId() < 0, "The loop has already been unrolled");
+
+        while (bound >= 1) {
+            if (bound == 1) {
+                Label exit = (Label) loopBackJump.getThread().getExit();
+                CondJump boundEvent = EventFactory.newGoto(exit);
+                boundEvent.addFilters(loopBackJump.getFilters()); // Keep tags of original jump.
+                boundEvent.addFilters(Tag.BOUND);
+                loopBackJump.getPredecessor().setSuccessor(boundEvent);
+                boundEvent.setSuccessor(loopBackJump.getSuccessor());
+            } else {
+                List<Event> copies = copyPathNew(loopBegin, loopBackJump);
+                CodeAnnotation iterBegin = new FunCall("Iteration begin");
+                iterBegin.setThread(loopBackJump.getThread());
+                iterBegin.setSuccessor(copies.get(0));
+                copies.add(0, iterBegin);
+
+                CodeAnnotation iterEnd = new FunCall("Iteration end");
+                iterEnd.setThread(loopBackJump.getThread());
+                iterEnd.setPredecessor(copies.get(copies.size() - 1));
+                copies.add(iterEnd);
+
+                Event beforeLoopBegin = loopBegin.getPredecessor();
+                beforeLoopBegin.setSuccessor(copies.get(0));
+                copies.get(copies.size() - 1).setSuccessor(loopBegin);
+            }
+            bound--;
+        }
+    }
+
+    private List<Event> copyPathNew(Event from, Event until) {
+        Map<Event, Event> copyContext = new HashMap<>();
+        List<Event> copies = new ArrayList<>();
+        Event cur = from;
+        while(cur != null && !cur.equals(until)){
+            Event copy = cur.getCopy();
+            copies.add(copy);
+            copyContext.put(cur, copy);
+            cur = cur.getSuccessor();
+        }
+        Event pred = null;
+        for (Event e : copies) {
+            e.setPredecessor(pred);
+            e.updateReferences(copyContext);
+            pred = e;
+        }
+        return copies;
     }
 }
