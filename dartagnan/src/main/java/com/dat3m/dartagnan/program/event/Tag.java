@@ -67,7 +67,7 @@ public final class Tag {
         public static final String LOCK    		= "LOCK";
 
         public static final String MO_RELAXED           = "RLX";
-        public static final String MO_CONSUME           = "b";
+        public static final String MO_CONSUME           = "CONS";
         public static final String MO_ACQUIRE           = "ACQ";
         public static final String MO_RELEASE           = "REL";
         public static final String MO_ACQUIRE_RELEASE   = "ACQ_REL";
