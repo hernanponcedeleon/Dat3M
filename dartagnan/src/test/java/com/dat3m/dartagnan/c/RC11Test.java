@@ -52,7 +52,7 @@ public class RC11Test extends AbstractCTest {
 		});
     }
 
-//    @Test
+    @Test
 	@CSVLogger.FileName("csv/assume")
 	public void testAssume() throws Exception {
 		assertEquals(expected, AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
