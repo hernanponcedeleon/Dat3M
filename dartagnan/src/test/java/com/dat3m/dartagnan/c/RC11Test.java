@@ -41,8 +41,11 @@ public class RC11Test extends AbstractCTest {
     	return Arrays.asList(new Object[][]{
 	            {"2+2W", NONE, PASS},
 	            {"IRIW-acq-sc", NONE, FAIL},
+	            {"LB", NONE, PASS},
+	            {"LB+deps", NONE, PASS},
 	            {"RWC+syncs", NONE, PASS},
 	            {"SB", NONE, PASS},
+	            {"SB+rfis", NONE, FAIL},
 	            {"W+RWC", NONE, PASS},
 	            {"WWmerge", NONE, FAIL},
 	            {"Z6.U", NONE, FAIL},
