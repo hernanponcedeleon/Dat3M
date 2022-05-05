@@ -15,8 +15,8 @@ public class OptionNames {
 	public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";
 	public static final String ALLOW_PARTIAL_EXECUTIONS = "encoding.allowPartialExecutions";
 	public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
+	public static final String INITIALIZE_REGISTERS = "encoding.initializeRegisters";
 	public static final String CO_ANTISYMMETRY = "encoding.co.antiSymm";
-	public static final String ENCODE_FINAL_MEMVALUES = "encoding.encodeFinalMemoryValues";
 	public static final String PRECISION = "encoding.precision";
 	public static final String BREAK_SYMMETRY_ON_RELATION = "encoding.symmetry.breakOnRelation";
 	public static final String BREAK_SYMMETRY_BY_SYNC_DEGREE = "encoding.symmetry.orderBySyncDegree";

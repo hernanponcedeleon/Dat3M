@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,6 +17,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 
 // This is just Dead Store Elimination, but the use of the term "Store" can be confusing in our setting 
@@ -52,7 +54,15 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         Set<Event> removed = new HashSet<>();
 
         // Registers that are used by other threads or assertions cannot be removed
-        Set<Register> usedRegs = new HashSet<>(program.getAss().getRegs());
+        Set<Register> usedRegs = new HashSet<>();
+        if(program.getAss() != null) {
+            usedRegs.addAll(program.getAss().getRegs());
+        }
+        program.getCache().getEvents(FilterBasic.get(ASSERTION)).stream()
+                .filter(RegWriter.class::isInstance)
+                .map(RegWriter.class::cast)
+                .map(RegWriter::getResultRegister)
+                .forEach(usedRegs::add);
         program.getEvents().stream()
                 .filter(o -> !o.getThread().equals(thread))
                 .filter(o -> o instanceof RegReaderData)

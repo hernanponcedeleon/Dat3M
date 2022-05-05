@@ -71,7 +71,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 	@Override
 	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
         Register resultRegister = e.getResultRegister();
-		Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         RMWReadCondUnless load = Linux.newRMWReadCondUnless(dummy, e.getCmp(), e.getAddress(), Tag.Linux.MO_RELAXED);
 
         return eventSequence(
@@ -93,7 +93,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 		
         Register dummy = resultRegister;
         if(resultRegister == value || resultRegister == cmp){
-            dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+            dummy = e.getThread().newRegister(resultRegister.getPrecision());
         }
 
         RMWReadCondCmp load = Linux.newRMWReadCondCmp(dummy, cmp, address, Tag.Linux.loadMO(mo));
@@ -119,7 +119,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 
         Register dummy = resultRegister;
 		if(resultRegister == value){
-            dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+            dummy = e.getThread().newRegister(resultRegister.getPrecision());
         }
 
 		Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
@@ -156,7 +156,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
         IExpr address = e.getAddress();
         int precision = resultRegister.getPrecision();
         
-		Register dummy = new Register(null, resultRegister.getThreadId(), precision);
+		Register dummy = e.getThread().newRegister(precision);
 		Load load = newRMWLoad(dummy, address, Tag.Linux.MO_RELAXED);
 
         //TODO: Are the memory barriers really unconditional?
@@ -176,7 +176,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
         IExpr address = e.getAddress();
         String mo = e.getMo();
         
-		Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
 		Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
 		Load load = newRMWLoad(dummy, address, Tag.Linux.loadMO(mo));
         Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
@@ -198,7 +198,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 
         Register dummy = resultRegister;
         if(resultRegister == e.getMemValue()){
-            dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+            dummy = e.getThread().newRegister(resultRegister.getPrecision());
         }
 
 		Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
@@ -221,11 +221,10 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 		IExpr expectedAddr = e.getExpectedAddr();
-        int threadId = resultRegister.getThreadId();
 		int precision = resultRegister.getPrecision();
 
-		Register regExpected = new Register(null, threadId, precision);
-        Register regValue = new Register(null, threadId, precision);
+		Register regExpected = e.getThread().newRegister(precision);
+        Register regValue = e.getThread().newRegister(precision);
         Load loadExpected = newLoad(regExpected, expectedAddr, null);
         Store storeExpected = newStore(expectedAddr, regValue, null);
         Label casFail = newLabel("CAS_fail");
@@ -257,7 +256,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 		
-        Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
         Load load = newRMWLoad(resultRegister, address, mo);
 
         return eventSequence(
@@ -283,7 +282,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 
 	@Override
 	public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-        return Collections.emptyList();
+		return Collections.singletonList(newFence(e.getMo()));
 	}
 
 	@Override
@@ -307,7 +306,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 		String mo = e.getMo();
 		ExprInterface expectedValue = e.getExpectedValue();
 
-        Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+        Register regValue = e.getThread().newRegister(resultRegister.getPrecision());
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);

@@ -23,16 +23,22 @@ public class Program {
     private EventCache cache;
     private int unrollingBound = 0;
     private boolean isCompiled;
+    private SourceLanguage format;
 
-    public Program(Memory memory){
-        this("", memory);
+    public Program(Memory memory, SourceLanguage format){
+        this("", memory, format);
     }
 
-	public Program (String name, Memory memory) {
+	public Program (String name, Memory memory, SourceLanguage format) {
 		this.name = name;
 		this.memory = memory;
 		this.threads = new ArrayList<>();
+		this.format = format;
 	}
+
+	public SourceLanguage getFormat(){
+        return format;
+    }
 
 	public boolean isCompiled(){
         return isCompiled;
@@ -136,4 +142,6 @@ public class Program {
         isCompiled = true;
         return true;
     }
+    
+    public enum SourceLanguage {LITMUS, BOOGIE;}
 }

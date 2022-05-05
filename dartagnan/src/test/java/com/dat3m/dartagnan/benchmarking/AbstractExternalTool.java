@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
+
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -11,6 +12,10 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
 
+import static org.junit.Assert.assertEquals;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +35,7 @@ public abstract class AbstractExternalTool {
     protected abstract Provider<String> getToolCmdProvider();
     protected abstract Provider<List<String>> getToolOptionsProvider();
     protected abstract long getTimeout();
+    protected abstract Result getResult(String output);
 
     protected Provider<Integer> getTimeoutProvider() {
         return Provider.fromSupplier(() -> 0);
@@ -75,9 +81,14 @@ public abstract class AbstractExternalTool {
     	cmd.addAll(toolOptionsProvider.get());
     	cmd.add(filePathProvider.get());
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
-    	processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
     	processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
     	Process proc = processBuilder.start();
+		BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 		proc.waitFor();
+		String output = "";
+		while(read.ready()) {
+			output += read.readLine();
+		}
+		assertEquals(expected, getResult(output));
 	}
 }

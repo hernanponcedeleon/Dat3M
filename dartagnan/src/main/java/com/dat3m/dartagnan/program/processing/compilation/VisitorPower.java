@@ -82,11 +82,10 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		ExprInterface value = e.getMemValue();
 		String mo = e.getMo();
 		IExpr expectedAddr = e.getExpectedAddr();
-        int threadId = resultRegister.getThreadId();
 		int precision = resultRegister.getPrecision();
 
-		Register regExpected = new Register(null, threadId, precision);
-        Register regValue = new Register(null, threadId, precision);
+		Register regExpected = e.getThread().newRegister(precision);
+        Register regValue = e.getThread().newRegister(precision);
         Load loadExpected = newLoad(regExpected, expectedAddr, null);
         Store storeExpected = newStore(expectedAddr, regValue, null);
         Label casFail = newLabel("CAS_fail");
@@ -101,7 +100,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
         if (!e.is(STRONG)) {
-            Register statusReg = new Register("status(" + e.getOId() + ")", threadId, precision);
+            Register statusReg = e.getThread().newRegister(precision);
             optionalExecStatus = newExecutionStatus(statusReg, storeValue);
             optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
         }
@@ -137,7 +136,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 		
-        Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
         Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
 
         // Power does not have mo tags, thus we use null
@@ -147,10 +146,10 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         Fence optionalMemoryBarrier = null;
-        // Academics papers normally say an isync barrier is enough
-        // However this makes benchmark linuxrwlocks.c fail
-        // Additionally, power compilers in godbolt.org use a lwsync
-        Fence optionalISyncBarrier = mo.equals(C11.MO_SC) || mo.equals(C11.MO_ACQUIRE) || mo.equals(C11.MO_ACQUIRE_RELEASE) ? Power.newLwSyncBarrier() : null;
+        // Academics papers (e.g. https://plv.mpi-sws.org/imm/paper.pdf) say an isync barrier is enough
+        // However, power compilers in godbolt.org use a lwsync.
+        // We stick to the literature to potentially find bugs in what researchers claim.
+        Fence optionalISyncBarrier = mo.equals(C11.MO_SC) || mo.equals(C11.MO_ACQUIRE) || mo.equals(C11.MO_ACQUIRE_RELEASE) ? Power.newISyncBarrier() : null;
         optionalMemoryBarrier = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier()
                 : mo.equals(C11.MO_RELEASE) || mo.equals(C11.MO_ACQUIRE_RELEASE) ? Power.newLwSyncBarrier()
                 : null;
@@ -260,7 +259,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		String mo = e.getMo();
 		ExprInterface expectedValue = e.getExpectedValue();
 
-        Register regValue = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+        Register regValue = e.getThread().newRegister(resultRegister.getPrecision());
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
