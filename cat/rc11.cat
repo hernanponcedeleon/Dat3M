@@ -22,9 +22,6 @@ let pscb = ([SC] | [F & SC]; hb?); scb; ([SC] | hb? ; [F & SC])
 let pscf = [F & SC]; (hb | hb; eco; hb); [F & SC]
 let psc = pscb | pscf
 
-let cnf = ((W * _) | (_ * W)) & loc \ ((IW * _) | (_ * IW))
-let dr = (cnf & ext) \ (hb | hb^-1 | A * A)
-
 irreflexive hb; eco? as coherence1
 irreflexive (myrmw; eco) as coherencermw
 empty (myrmw & (rb; co)) as atomicity
