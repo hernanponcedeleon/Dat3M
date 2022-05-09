@@ -69,16 +69,12 @@ public class LFDSTest extends AbstractCTest {
             {"treiber-3-CAS-relaxed", NONE, FAIL},
             {"chase-lev-5", TSO, PASS},
             {"chase-lev-5", ARM8, PASS},
-            {"chase-lev-5", POWER, PASS},
-            // TODO chase-lev currently has a problem which results in a null pointer.
-            // It seems to be a problem with model extraction. However this does not always happen.
-            // For the moment we don't run these two tests to avoid the CI potentially failing.
-//            {"chase-lev-5", NONE, PASS},
+            {"chase-lev-5", NONE, PASS},
             // These ones have an extra thief that violate the assertion
             {"chase-lev-6", TSO, FAIL},
             {"chase-lev-6", ARM8, FAIL},
             {"chase-lev-6", POWER, FAIL},
-//            {"chase-lev-6", NONE, FAIL},
+            {"chase-lev-6", NONE, FAIL},
         });
     }
 
