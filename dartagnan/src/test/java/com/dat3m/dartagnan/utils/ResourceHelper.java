@@ -54,7 +54,7 @@ public class ResourceHelper {
             file.getParentFile().mkdirs();
         }
     	try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, false))) {
-            writer.append("benchmark, time");
+            writer.append("benchmark, result, time");
             writer.newLine();    		
     	}
     }

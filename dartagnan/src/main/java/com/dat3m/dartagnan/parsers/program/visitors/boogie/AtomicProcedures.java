@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.Register;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.program.event.EventFactory.Atomic;
 import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
 import static com.dat3m.dartagnan.program.event.Tag.C11.intToMo;
@@ -85,7 +86,7 @@ public class AtomicProcedures {
 	}
 
 	private static void atomicLoad(VisitorBoogie visitor, Call_cmdContext ctx) {
-		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
+		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
 		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
 		String mo = null;
 		if(ctx.call_params().exprs().expr().size() > 1) {
@@ -96,7 +97,7 @@ public class AtomicProcedures {
 	}
 
 	private static void atomicFetchOp(VisitorBoogie visitor, Call_cmdContext ctx) {
-		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
+		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
 		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
 		IExpr value = (IExpr)ctx.call_params().exprs().expr().get(1).accept(visitor);
 		String mo = null;
@@ -122,7 +123,7 @@ public class AtomicProcedures {
 	}
 
 	private static void atomicXchg(VisitorBoogie visitor, Call_cmdContext ctx) {
-		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
+		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
 		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
 		IExpr value = (IExpr)ctx.call_params().exprs().expr().get(1).accept(visitor);
 		String mo = null;
@@ -134,7 +135,7 @@ public class AtomicProcedures {
 	}
 
 	private static void DAT3M_CAS(VisitorBoogie visitor, Call_cmdContext ctx) {
-		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
+		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
 		List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 		IExpr addr = (IExpr) params.get(0).accept(visitor);
 		IExpr expectedVal = (IExpr) params.get(1).accept(visitor);
@@ -154,7 +155,7 @@ public class AtomicProcedures {
 	}
 	
 	private static void atomicCmpXchg(VisitorBoogie visitor, Call_cmdContext ctx) {
-		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
+		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
 		List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 		IExpr addr = (IExpr) params.get(0).accept(visitor);
 		IExpr expectedAddr = (IExpr) params.get(1).accept(visitor); // NOTE: We assume a register here

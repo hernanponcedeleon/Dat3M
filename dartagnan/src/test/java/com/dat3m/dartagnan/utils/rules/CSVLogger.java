@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.utils.rules;
 
 import com.dat3m.dartagnan.utils.ResourceHelper;
+import com.dat3m.dartagnan.utils.Result;
+
 import org.apache.logging.log4j.LogManager;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -41,14 +43,16 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
 public class CSVLogger extends TestWatcher {
 
     private final Supplier<String> nameSupplier;
+    private final Supplier<Result> resultSupplier;
     private long startTime;
 
-    private CSVLogger(Supplier<String> nameSupplier) {
+    private CSVLogger(Supplier<String> nameSupplier, Supplier<Result> resultSupplier) {
         this.nameSupplier = nameSupplier;
+        this.resultSupplier = resultSupplier;
     }
 
-    public static CSVLogger create(Supplier<String> nameSupplier) {
-        return new CSVLogger(nameSupplier);
+    public static CSVLogger create(Supplier<String> nameSupplier, Supplier<Result> resultSupplier) {
+        return new CSVLogger(nameSupplier, resultSupplier);
     }
 
     @Override
@@ -74,14 +78,16 @@ public class CSVLogger extends TestWatcher {
 
     @Override
     protected void succeeded(Description description) {
-        logCSVLine(description, nameSupplier.get(), Long.toString(System.currentTimeMillis() - startTime));
+    	String result = resultSupplier.get().toString();
+		String time = Long.toString(System.currentTimeMillis() - startTime);
+		logCSVLine(description, nameSupplier.get(), result, time);
     }
 
     @Override
     protected void failed(Throwable e, Description description) {
-        String message = e instanceof TestTimedOutException ? "Timeout" : "Error";
-        message += ": " + (System.currentTimeMillis() - startTime);
-        logCSVLine(description, nameSupplier.get(), message);
+        String result = e instanceof TestTimedOutException ? "TIMEOUT" : "ERROR";
+		String time = Long.toString(System.currentTimeMillis() - startTime);
+        logCSVLine(description, nameSupplier.get(), result, time);
     }
 
     public static class Initialization extends TestWatcher {

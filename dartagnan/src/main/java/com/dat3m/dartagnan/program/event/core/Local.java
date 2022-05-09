@@ -15,14 +15,12 @@ import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 public class Local extends Event implements RegWriter, RegReaderData {
 	
 	protected final Register register;
-	protected final ExprInterface expr;
-	private final ImmutableSet<Register> dataRegs;
+	protected ExprInterface expr;
 	private Formula regResultExpr;
 	
 	public Local(Register register, ExprInterface expr) {
 		this.register = register;
 		this.expr = expr;
-		this.dataRegs = expr.getRegs();
 		addFilters(Tag.ANY, Tag.LOCAL, Tag.REG_WRITER, Tag.REG_READER);
 	}
 	
@@ -30,7 +28,6 @@ public class Local extends Event implements RegWriter, RegReaderData {
 		super(other);
 		this.register = other.register;
 		this.expr = other.expr;
-		this.dataRegs = other.dataRegs;
 		this.regResultExpr = other.regResultExpr;
 	}
 
@@ -42,6 +39,10 @@ public class Local extends Event implements RegWriter, RegReaderData {
 
 	public ExprInterface getExpr(){
 		return expr;
+	}
+
+	public void setExpr(ExprInterface expr){
+		this.expr = expr;
 	}
 
 	@Override
@@ -56,7 +57,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 
 	@Override
 	public ImmutableSet<Register> getDataRegs(){
-		return dataRegs;
+		return expr.getRegs();
 	}
 
     @Override

@@ -47,9 +47,9 @@ public class AssumeSolver {
         prover.addConstraint(symmEncoder.encodeFullSymmetry(ctx));
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_assertion_assumption");
-        BooleanFormula assumedAssertion = bmgr.implication(assumptionLiteral, propertyEncoder.encodeAssertions(ctx));
-        prover.addConstraint(assumedAssertion);
+        BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
+        BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoder.encodeSpecification(ctx));
+        prover.addConstraint(assumedSpec);
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
@@ -60,6 +60,14 @@ public class AssumeSolver {
         	res = FAIL;
         }
     
+        if(logger.isDebugEnabled()) {        	
+    		String smtStatistics = "\n ===== SMT Statistics ===== \n";
+    		for(String key : prover.getStatistics().keySet()) {
+    			smtStatistics += String.format("\t%s -> %s\n", key, prover.getStatistics().get(key));
+    		}
+    		logger.debug(smtStatistics);
+        }
+
         res = task.getProgram().getAss().getInvert() ? res.invert() : res;
         logger.info("Verification finished with result " + res);        
         return res;

@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.RefinementTask;
@@ -122,6 +123,7 @@ public class Dartagnan extends BaseOptions {
                 	case RACES:
                     	result = DataRaceSolver.run(ctx, prover, task);
                         break;
+                	case LIVENESS:
                     case REACHABILITY:
                     	switch (o.getMethod()) {
                         	case TWO:
@@ -146,7 +148,7 @@ public class Dartagnan extends BaseOptions {
                 // Verification ended, we can interrupt the timeout Thread
                 t.interrupt();
 
-                if (fileProgram.getName().endsWith(".litmus")) {
+                if (p.getFormat().equals(SourceLanguage.LITMUS)) {
                     if (p.getAssFilter() != null) {
                         System.out.println("Filter " + (p.getAssFilter()));
                     }

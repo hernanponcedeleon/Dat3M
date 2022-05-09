@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.parsers.LitmusX86Visitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableSet;
@@ -15,6 +16,7 @@ import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.MFENCE;
 
 public class VisitorLitmusX86
@@ -51,7 +53,7 @@ public class VisitorLitmusX86
             String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
             programBuilder.setAssertFilter(AssertionHelper.parseAssertionFilter(programBuilder, raw));
         }
-        return programBuilder.build();
+        return programBuilder.build(SourceLanguage.LITMUS);
     }
 
 
@@ -60,19 +62,19 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusX86Parser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), -1));
+        programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusX86Parser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IValue(new BigInteger(ctx.constant().getText()), -1));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusX86Parser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), -1);
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), ARCH_PRECISION);
         return null;
     }
 
@@ -110,14 +112,14 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitLoadValueToRegister(LitmusX86Parser.LoadValueToRegisterContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), -1);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
     }
 
     @Override
     public Object visitLoadLocationToRegister(LitmusX86Parser.LoadLocationToRegisterContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         return programBuilder.addChild(mainThread, EventFactory.newLoad(register, object, "_rx"));
     }
@@ -125,7 +127,7 @@ public class VisitorLitmusX86
     @Override
     public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), -1);
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
         return programBuilder.addChild(mainThread, EventFactory.newStore(object, constant, "_rx"));
     }
 

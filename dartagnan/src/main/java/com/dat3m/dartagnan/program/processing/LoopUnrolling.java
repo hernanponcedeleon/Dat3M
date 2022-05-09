@@ -1,9 +1,5 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.asserts.AbstractAssert;
-import com.dat3m.dartagnan.asserts.AssertCompositeOr;
-import com.dat3m.dartagnan.asserts.AssertInline;
-import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -11,16 +7,11 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.printer.Printer;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.*;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
@@ -78,9 +69,7 @@ public class LoopUnrolling implements ProgramProcessor {
             nextId = unrollThread(thread, bound, nextId);
         }
         program.clearCache(false);
-        program.markAsUnrolled();
-
-        updateAssertions(program);
+        program.markAsUnrolled(bound);
 
         logger.info("Program unrolled {} times", bound);
         if(print) {
@@ -121,10 +110,13 @@ public class LoopUnrolling implements ProgramProcessor {
                     predecessor = copyPath(label, successor, predecessor);
                 }
 
-                if (bound == 1) {
+                if (bound == 1 || jump.hasFilter(Tag.SPINLOOP)) {
                     Label target = (Label) jump.getThread().getExit();
                     newPred = EventFactory.newGoto(target);
                     newPred.addFilters(Tag.BOUND);
+                    if(jump.hasFilter(Tag.SPINLOOP)) {
+                    	newPred.addFilters(Tag.SPINLOOP);
+                    }
                     predecessor.setSuccessor(newPred);
                 } else {
                     newPred = predecessor;
@@ -156,27 +148,5 @@ public class LoopUnrolling implements ProgramProcessor {
             from = from.getSuccessor();
         }
         return appendTo;
-    }
-    
-    private void updateAssertions(Program program) {
-        if (program.getAss() != null) {
-            //TODO: Check why exactly this is needed. Litmus tests seem to have the assertion already defined
-            // but I was under the impression that assFilter was used for Litmus tests.
-            return;
-        }
-
-        List<Event> assertions = new ArrayList<>();
-        for(Thread t : program.getThreads()){
-            assertions.addAll(t.getCache().getEvents(FilterBasic.get(Tag.ASSERTION)));
-        }
-        AbstractAssert ass = new AssertTrue();
-        if(!assertions.isEmpty()) {
-            ass = new AssertInline((Local)assertions.get(0));
-            for(int i = 1; i < assertions.size(); i++) {
-                ass = new AssertCompositeOr(ass, new AssertInline((Local)assertions.get(i)));
-            }
-        }
-        program.setAss(ass);
-        logger.info("Updated assertions after unrolling.");
     }
 }

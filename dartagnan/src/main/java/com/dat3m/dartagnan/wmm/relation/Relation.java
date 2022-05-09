@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 /**
@@ -183,21 +184,8 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     }
 
     protected BooleanFormula getExecPair(Event e1, Event e2, SolverContext ctx) {
-        if (e1.exec() == e2.exec()) {
-            return e1.exec();
-        }
-        if (e1.getCId() > e2.getCId()) {
-            Event temp = e1;
-            e1 = e2;
-            e2 = temp;
-        }
         ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
-        if (exec.isImplied(e1, e2)) {
-            return e1.exec();
-        } else if (exec.isImplied(e2 ,e1)) {
-            return e2.exec();
-        }
-        return ctx.getFormulaManager().getBooleanFormulaManager().and(e1.exec(), e2.exec());
+        return execution(e1, e2, exec, ctx);
     }
 
     protected final BooleanFormula getExecPair(Tuple t, SolverContext ctx) {

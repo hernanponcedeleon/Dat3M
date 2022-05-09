@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.google.common.base.Preconditions;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ public class Thread {
 
     private final Map<String, Register> registers;
     private EventCache cache;
+    private int dummyCount = 0;
 
     public Thread(String name, int id, Event entry){
     	Preconditions.checkArgument(id >= 0, "Invalid thread ID");
@@ -63,15 +65,27 @@ public class Thread {
         cache = null;
     }
 
+    /**
+     * Lists all registers of this thread.
+     * @return
+     * Read-only container of all currently defined registers of this thread.
+     */
+    public Collection<Register> getRegisters() {
+        return registers.values();
+    }
+
     public Register getRegister(String name){
         return registers.get(name);
     }
 
-    public Register addRegister(String name, int precision){
+    public Register newRegister(int precision) {
+        return newRegister("DUMMY_REG_" + dummyCount++, precision);
+    }
+
+    public Register newRegister(String name, int precision){
         if(registers.containsKey(name)){
             throw new MalformedProgramException("Register " + id + ":" + name + " already exists");
         }
-        cache = null;
         Register register = new Register(name, id, precision);
         registers.put(register.getName(), register);
         return register;
@@ -89,7 +103,7 @@ public class Thread {
         exit.setSuccessor(event);
         event.setThread(this);
         updateExit(event);
-        cache = null;
+        clearCache();
     }
 
     public void updateExit(Event event){

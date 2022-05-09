@@ -18,7 +18,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
+import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMFILE;
@@ -99,7 +99,7 @@ public class WitnessGraph extends ElemWithAttributes {
 				if(program.getCache().getEvents(FilterBasic.get(READ)).stream().anyMatch(e -> e.getUId() == id)) {
 					Load load = (Load)program.getCache().getEvents(FilterBasic.get(READ)).stream().filter(e -> e.getUId() == id).findFirst().get();
 					BigInteger value = new BigInteger(edge.getAttributed(LOADEDVALUE.toString()));
-					enc = bmgr.and(enc, imgr.equal(convertToIntegerFormula(load.getResultRegisterExpr(), ctx), imgr.makeNumber(value)));					
+					enc = bmgr.and(enc, generalEqual(load.getResultRegisterExpr(), imgr.makeNumber(value), ctx));					
 				}
 			}
 			if(edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(STOREDVALUE.toString())) {
@@ -107,7 +107,7 @@ public class WitnessGraph extends ElemWithAttributes {
 				if(program.getCache().getEvents(FilterBasic.get(WRITE)).stream().anyMatch(e -> e.getUId() == id)) {
 					Store store = (Store)program.getCache().getEvents(FilterBasic.get(WRITE)).stream().filter(e -> e.getUId() == id).findFirst().get();
 					BigInteger value = new BigInteger(edge.getAttributed(STOREDVALUE.toString()));
-					enc = bmgr.and(enc, imgr.equal(convertToIntegerFormula(store.getMemValueExpr(), ctx), imgr.makeNumber(value)));
+					enc = bmgr.and(enc, generalEqual(store.getMemValueExpr(), imgr.makeNumber(value), ctx));
 				}
 			}
 		}

@@ -31,6 +31,33 @@ public enum COpBin {
         return super.toString();
     }
 
+    public COpBin inverted() {
+        switch(this){
+            case EQ:
+                return NEQ;
+            case NEQ:
+                return EQ;
+            case GTE:
+                return LT;
+            case UGTE:
+                return ULT;
+            case LTE:
+                return GT;
+            case ULTE:
+                return UGT;
+            case GT:
+                return LTE;
+            case UGT:
+                return ULTE;
+            case LT:
+                return GTE;
+            case ULT:
+                return UGTE;
+            default:
+                throw new UnsupportedOperationException(this + " cannot be inverted");
+        }
+    }
+
     public BooleanFormula encode(Formula e1, Formula e2, SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         if(e1 instanceof BooleanFormula && e2 instanceof BooleanFormula) {
@@ -114,5 +141,29 @@ public enum COpBin {
                 return a.compareTo(b) >= 0;
         }
         throw new UnsupportedOperationException("Illegal operator " + this + " in COpBin");
+    }
+
+    // Due to constant propagation, and the lack of a proper type system
+    // we can end up with comparisons like "False == 1", thus the following two methods
+    public boolean combine(boolean a, BigInteger b){
+        switch(this){
+            case EQ:
+                return ((b.compareTo(BigInteger.ONE) == 0) == a);
+            case NEQ:
+                return ((b.compareTo(BigInteger.ONE) == 0) != a);
+		default:
+	        throw new UnsupportedOperationException("Illegal operator " + this + " in COpBin");
+        }
+    }
+
+    public boolean combine(BigInteger a, boolean b){
+        switch(this){
+            case EQ:
+                return ((a.compareTo(BigInteger.ONE) == 0) == b);
+            case NEQ:
+                return ((a.compareTo(BigInteger.ONE) == 0) != b);
+		default:
+	        throw new UnsupportedOperationException("Illegal operator " + this + " in COpBin");
+        }
     }
 }

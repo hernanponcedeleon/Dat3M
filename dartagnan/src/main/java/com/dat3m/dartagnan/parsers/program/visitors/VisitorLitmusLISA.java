@@ -9,11 +9,14 @@ import com.dat3m.dartagnan.parsers.LitmusLISAVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import org.antlr.v4.runtime.misc.Interval;
+
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 
 import java.math.BigInteger;
 
@@ -49,7 +52,7 @@ public class VisitorLitmusLISA
             String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
             programBuilder.setAssertFilter(AssertionHelper.parseAssertionFilter(programBuilder, raw));
         }
-        return programBuilder.build();
+        return programBuilder.build(SourceLanguage.LITMUS);
     }
 
 
@@ -57,19 +60,19 @@ public class VisitorLitmusLISA
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusLISAParser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), -1));
+        programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusLISAParser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IValue(new BigInteger(ctx.constant().getText()), -1));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusLISAParser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), -1);
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), ARCH_PRECISION);
         return null;
     }
 
@@ -107,7 +110,7 @@ public class VisitorLitmusLISA
 
 	@Override
 	public Object visitLoad(LitmusLISAParser.LoadContext ctx) {
-        Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
+        Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
         IExpr address = (IExpr) ctx.expression().accept(this);
         String mo = ctx.mo() != null ? ctx.mo().getText() : null;
 		programBuilder.addChild(mainThread, EventFactory.newLoad(reg, address, mo));
@@ -116,7 +119,7 @@ public class VisitorLitmusLISA
 
 	@Override
 	public Object visitLocal(LitmusLISAParser.LocalContext ctx) {
-        Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
+        Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
 		ExprInterface e = (ExprInterface) ctx.expression().accept(this);
         programBuilder.addChild(mainThread, EventFactory.newLocal(reg, e));
 		return null;
@@ -134,7 +137,7 @@ public class VisitorLitmusLISA
 	
 	@Override
 	public Object visitRmw(LitmusLISAParser.RmwContext ctx) {
-        Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
+        Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
 		IExpr value = (IExpr) ctx.value().accept(this);
         IExpr address = (IExpr) ctx.expression().accept(this);
         String mo = ctx.mo() != null ? ctx.mo().getText() : null;
@@ -175,7 +178,7 @@ public class VisitorLitmusLISA
 
 	@Override
 	public Object visitRegister(LitmusLISAParser.RegisterContext ctx) {
-		return programBuilder.getOrCreateRegister(mainThread, ctx.getText(), -1);
+		return programBuilder.getOrCreateRegister(mainThread, ctx.getText(), ARCH_PRECISION);
 	}
 
 	@Override

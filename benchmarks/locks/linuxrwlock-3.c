@@ -5,49 +5,21 @@
 #include <stdatomic.h>
 #include <assert.h>
 
+#ifdef ACQ2RX
+#define mo_lock memory_order_relaxed
+#else
+#define mo_lock memory_order_acquire
+#endif
+#ifdef REL2RX
+#define mo_unlock memory_order_relaxed
+#else
+#define mo_unlock memory_order_release
+#endif
+
 // linuxrwlocks.c
 //
 
-#ifdef MAKE_ACCESSES_SC
-# define mo_relaxed memory_order_seq_cst
-# define mo_acquire memory_order_seq_cst
-# define mo_release memory_order_seq_cst
-#else
-# define mo_relaxed memory_order_relaxed
-# define mo_acquire memory_order_acquire
-# define mo_release memory_order_release
-#endif
-
-#define MAXREADERS 3
-#define MAXWRITERS 3
-#define MAXRDWR 3
-
-#ifdef CONFIG_RWLOCK_READERS
-#define DEFAULT_READERS (CONFIG_RWLOCK_READERS)
-#else
-#define DEFAULT_READERS 1
-#endif
-
-#ifdef CONFIG_RWLOCK_WRITERS
-#define DEFAULT_WRITERS (CONFIG_RWLOCK_WRITERS)
-#else
-#define DEFAULT_WRITERS 1
-#endif
-
-#ifdef CONFIG_RWLOCK_RDWR
-#define DEFAULT_RDWR (CONFIG_RWLOCK_RDWR)
-#else
-#define DEFAULT_RDWR 0
-#endif
-
-int readers = DEFAULT_READERS, writers = DEFAULT_WRITERS, rdwr = DEFAULT_RDWR;
-
-#ifdef SPINLOOP_ASSUME
-void __VERIFIER_assume(int);
-#endif
-
 #define RW_LOCK_BIAS            0x00100000
-#define WRITE_LOCK_CMP          RW_LOCK_BIAS
 
 /** Example implementation of linux rw lock along with 2 thread test
  *  driver... */
@@ -57,76 +29,69 @@ typedef union {
 
 static inline int read_can_lock(rwlock_t *lock)
 {
-    return atomic_load_explicit(&lock->lock, mo_relaxed) > 0;
+    return atomic_load_explicit(&lock->lock, memory_order_relaxed) > 0;
 }
 
 static inline int write_can_lock(rwlock_t *lock)
 {
-    return atomic_load_explicit(&lock->lock, mo_relaxed) == RW_LOCK_BIAS;
+    return atomic_load_explicit(&lock->lock, memory_order_relaxed) == RW_LOCK_BIAS;
 }
 
 static inline void read_lock(rwlock_t *rw)
 {
-    int priorvalue = atomic_fetch_sub_explicit(&rw->lock, 1, mo_acquire);
+    int priorvalue = atomic_fetch_sub_explicit(&rw->lock, 1, mo_lock);
     while (priorvalue <= 0) {
-        atomic_fetch_add_explicit(&rw->lock, 1, mo_relaxed);
-#ifdef SPINLOOP_ASSUME
-        __VERIFIER_assume(atomic_load_explicit(&rw->lock, mo_relaxed) > 0);
-#else
-        while (atomic_load_explicit(&rw->lock, mo_relaxed) <= 0)
+        atomic_fetch_add_explicit(&rw->lock, 1, memory_order_relaxed);
+        while (atomic_load_explicit(&rw->lock, memory_order_relaxed) <= 0)
             ; //thrd_yield();
-#endif
-        priorvalue = atomic_fetch_sub_explicit(&rw->lock, 1, mo_acquire);
+        priorvalue = atomic_fetch_sub_explicit(&rw->lock, 1, memory_order_acquire);
     }
 }
 
 static inline void write_lock(rwlock_t *rw)
 {
-    int priorvalue = atomic_fetch_sub_explicit(&rw->lock, RW_LOCK_BIAS, mo_acquire);
+    int priorvalue = atomic_fetch_sub_explicit(&rw->lock, RW_LOCK_BIAS, memory_order_acquire);
     while (priorvalue != RW_LOCK_BIAS) {
-        atomic_fetch_add_explicit(&rw->lock, RW_LOCK_BIAS, mo_relaxed);
-#ifdef SPINLOOP_ASSUME
-        __VERIFIER_assume(atomic_load_explicit(&rw->lock, mo_relaxed) == RW_LOCK_BIAS);
-#else
-        while (atomic_load_explicit(&rw->lock, mo_relaxed) != RW_LOCK_BIAS)
+        atomic_fetch_add_explicit(&rw->lock, RW_LOCK_BIAS, memory_order_relaxed);
+        while (atomic_load_explicit(&rw->lock, memory_order_relaxed) != RW_LOCK_BIAS)
             ; //thrd_yield();
-#endif
-        priorvalue = atomic_fetch_sub_explicit(&rw->lock, RW_LOCK_BIAS, mo_acquire);
+        priorvalue = atomic_fetch_sub_explicit(&rw->lock, RW_LOCK_BIAS, memory_order_acquire);
     }
 }
 
 static inline int read_trylock(rwlock_t *rw)
 {
-    int priorvalue = atomic_fetch_sub_explicit(&rw->lock, 1, mo_acquire);
+    int priorvalue = atomic_fetch_sub_explicit(&rw->lock, 1, memory_order_acquire);
     if (priorvalue > 0)
         return 1;
 
-    atomic_fetch_add_explicit(&rw->lock, 1, mo_relaxed);
+    atomic_fetch_add_explicit(&rw->lock, 1, memory_order_relaxed);
     return 0;
 }
 
 static inline int write_trylock(rwlock_t *rw)
 {
-    int priorvalue = atomic_fetch_sub_explicit(&rw->lock, RW_LOCK_BIAS, mo_acquire);
+    int priorvalue = atomic_fetch_sub_explicit(&rw->lock, RW_LOCK_BIAS, memory_order_acquire);
     if (priorvalue == RW_LOCK_BIAS)
         return 1;
 
-    atomic_fetch_add_explicit(&rw->lock, RW_LOCK_BIAS, mo_relaxed);
+    atomic_fetch_add_explicit(&rw->lock, RW_LOCK_BIAS, memory_order_relaxed);
     return 0;
 }
 
 static inline void read_unlock(rwlock_t *rw)
 {
-    atomic_fetch_add_explicit(&rw->lock, 1, mo_release);
+    atomic_fetch_add_explicit(&rw->lock, 1, memory_order_release);
 }
 
 static inline void write_unlock(rwlock_t *rw)
 {
-    atomic_fetch_add_explicit(&rw->lock, RW_LOCK_BIAS, mo_release);
+    atomic_fetch_add_explicit(&rw->lock, RW_LOCK_BIAS, mo_unlock);
 }
 
 rwlock_t mylock;
 int shareddata;
+int sum = 0;
 
 void *threadR(void *arg)
 {
@@ -142,6 +107,7 @@ void *threadW(void *arg)
     write_lock(&mylock);
     shareddata = 42;
     assert(42 == shareddata);
+    sum++;
     write_unlock(&mylock);
     return NULL;
 }
@@ -158,6 +124,7 @@ void *threadRW(void *arg)
             write_lock(&mylock);
             shareddata = i;
             assert(shareddata == i);
+            sum++;
             write_unlock(&mylock);
         }
     }
@@ -173,10 +140,15 @@ int main()
     atomic_init(&mylock.lock, RW_LOCK_BIAS);
     
     pthread_create(&W0, NULL, threadW, NULL);
-    
     pthread_create(&R0, NULL, threadR, NULL);
-
     pthread_create(&RW0, NULL, threadRW, NULL);
+
+    pthread_join(W0, 0);
+    pthread_join(R0, 0);
+    pthread_join(RW0, 0);
+
+    // Only write threads increment sum
+    assert(sum == 2);
 
     return 0;
 }

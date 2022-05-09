@@ -21,25 +21,35 @@ public class Program {
 	private final Memory memory;
 	private Arch arch;
     private EventCache cache;
-    private boolean isUnrolled;
+    private int unrollingBound = 0;
     private boolean isCompiled;
+    private SourceLanguage format;
 
-    public Program(Memory memory){
-        this("", memory);
+    public Program(Memory memory, SourceLanguage format){
+        this("", memory, format);
     }
 
-	public Program (String name, Memory memory) {
+	public Program (String name, Memory memory, SourceLanguage format) {
 		this.name = name;
 		this.memory = memory;
 		this.threads = new ArrayList<>();
+		this.format = format;
 	}
+
+	public SourceLanguage getFormat(){
+        return format;
+    }
 
 	public boolean isCompiled(){
         return isCompiled;
     }
 
     public boolean isUnrolled(){
-        return isUnrolled;
+        return unrollingBound > 0;
+    }
+
+    public int getUnrollingBound(){
+        return unrollingBound;
     }
 
 	public String getName(){
@@ -114,11 +124,11 @@ public class Program {
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-    public boolean markAsUnrolled() {
-        if (isUnrolled) {
+    public boolean markAsUnrolled(int bound) {
+        if (unrollingBound > 0) {
             return false;
         }
-        isUnrolled = true;
+        unrollingBound = bound;
         return true;
     }
 
@@ -132,4 +142,6 @@ public class Program {
         isCompiled = true;
         return true;
     }
+    
+    public enum SourceLanguage {LITMUS, BOOGIE;}
 }

@@ -48,7 +48,7 @@ public class IncrementalSolver {
         prover.addConstraint(symmEncoder.encodeFullSymmetry(ctx));
         logger.info("Starting push()");
         prover.push();
-        prover.addConstraint(propertyEncoder.encodeAssertions(ctx));
+        prover.addConstraint(propertyEncoder.encodeSpecification(ctx));
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsat()) {
@@ -58,6 +58,14 @@ public class IncrementalSolver {
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
         } else {
         	res = FAIL;
+        }
+
+        if(logger.isDebugEnabled()) {        	
+    		String smtStatistics = "\n ===== SMT Statistics ===== \n";
+    		for(String key : prover.getStatistics().keySet()) {
+    			smtStatistics += String.format("\t%s -> %s\n", key, prover.getStatistics().get(key));
+    		}
+    		logger.debug(smtStatistics);
         }
 
         res = task.getProgram().getAss().getInvert() ? res.invert() : res;

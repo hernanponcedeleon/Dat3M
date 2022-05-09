@@ -16,11 +16,18 @@ public class Compilation {
 	private static final Logger logger = LogManager.getLogger(Compilation.class);
 	
 	public static void compileWithSmack(File file) throws Exception {
-		String name = file.getName().substring(0, file.getName().lastIndexOf('.'));
-		
+		String name = file.getName().contains("_tmp") ?
+				file.getName().substring(0, file.getName().lastIndexOf('_')) :
+				file.getName().substring(0, file.getName().lastIndexOf('.'));
+
     	ArrayList<String> cmd = new ArrayList<String>();
-    	cmd.addAll(asList("smack", "-q", "-t", "--no-memory-splitting"));
-        cmd.add("--clang-options=-I" + System.getenv("DAT3M_HOME") + "/include/ " + System.getenv().getOrDefault("CFLAGS", ""));
+    	cmd.add("smack");
+    	// Needed to handle more than one flag in SMACK_FLAGS
+    	for(String option : System.getenv().getOrDefault("SMACK_FLAGS", "").split(" ")) {
+    		cmd.add(option);
+    	}
+    	// Here there is not need to iterate over CFLAG values
+        cmd.add("--clang-options=-I" + System.getenv("DAT3M_HOME") + "/include/smack " + System.getenv().getOrDefault("CFLAGS", ""));
     	cmd.addAll(asList("-bpl", System.getenv("DAT3M_HOME") + "/output/" + name + ".bpl"));
     	cmd.add(file.getAbsolutePath());
     	
@@ -36,6 +43,7 @@ public class Compilation {
 				}
 			}
     		logger.info("Compiling with smack");
+        	logger.debug("Running " + String.join(" ", cmd));
     		tries++;
         	proc = processBuilder.start();
         	proc.waitFor();
@@ -43,12 +51,16 @@ public class Compilation {
 	}	
 
 	public static void compileWithClang(File file) throws Exception {
-    	ArrayList<String> cmd = new ArrayList<String>();
-    	cmd.addAll(asList("clang", "-S", System.getenv().getOrDefault("CFLAGS", ""), "-o"));
-    	cmd.add(System.getenv("DAT3M_HOME") + "/output/test.s");
+		ArrayList<String> cmd = new ArrayList<String>();
+    	cmd.addAll(asList("clang", "-S", "-o", System.getenv("DAT3M_HOME") + "/output/test.s"));
+    	// Needed to handle more than one flag in CFLAGS
+    	for(String option : System.getenv().getOrDefault("CFLAGS", "").split(" ")) {
+    		cmd.add(option);
+    	}
     	cmd.add(file.getAbsolutePath());
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
     	logger.info("Compiling with clang");
+    	logger.debug("Running " + String.join(" ", cmd));
     	Process proc = processBuilder.start();
     	proc.waitFor();
     	if(proc.exitValue() == 1) {

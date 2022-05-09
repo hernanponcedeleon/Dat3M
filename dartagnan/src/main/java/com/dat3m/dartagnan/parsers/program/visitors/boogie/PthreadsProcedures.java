@@ -12,6 +12,8 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -69,12 +71,12 @@ public class PthreadsProcedures {
 		visitor.threadCallingValues.put(visitor.currentThread, new ArrayList<>());
 		String namePtr = ctx.call_params().exprs().expr().get(0).getText();
 		// This names are global so we don't use currentScope.getID(), but per thread.
-		Register threadPtr = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, namePtr, -1);
+		Register threadPtr = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, namePtr, ARCH_PRECISION);
 		String threadName = ctx.call_params().exprs().expr().get(2).getText();
 		ExprInterface callingValue = (ExprInterface)ctx.call_params().exprs().expr().get(3).accept(visitor);
 		visitor.threadCallingValues.get(visitor.currentThread).add(callingValue);
 		visitor.pool.add(threadPtr, threadName, visitor.threadCount);
-		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
+		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
 		// We assume pthread_create always succeeds
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, IValue.ZERO));
         MemoryObject object = visitor.programBuilder.getOrNewObject(String.format("%s(%s)_active", threadPtr, visitor.pool.getCreatorFromPtr(threadPtr)));
@@ -84,12 +86,12 @@ public class PthreadsProcedures {
 	private static void pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String namePtr = ctx.call_params().exprs().expr().get(0).getText();
 		// This names are global so we don't use currentScope.getID(), but per thread.
-		Register callReg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, namePtr, -1);
+		Register callReg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, namePtr, ARCH_PRECISION);
 		if(visitor.pool.getPtrFromReg(callReg) == null) {
         	throw new UnsupportedOperationException("pthread_join cannot be handled");
 		}
         MemoryObject object = visitor.programBuilder.getOrNewObject(String.format("%s(%s)_active", visitor.pool.getPtrFromReg(callReg), visitor.pool.getCreatorFromPtr(visitor.pool.getPtrFromReg(callReg))));
-        Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
+        Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, ARCH_PRECISION);
         Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
         visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(visitor.pool.getPtrFromReg(callReg), reg, object, label));
 	}
@@ -105,7 +107,7 @@ public class PthreadsProcedures {
 	
 	private static void mutexLock(VisitorBoogie visitor, Call_cmdContext ctx) {
 		ExprsContext lock = ctx.call_params().exprs();
-        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
+        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, ARCH_PRECISION);
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		if(lockAddress != null) {
@@ -115,7 +117,7 @@ public class PthreadsProcedures {
 	
 	private static void mutexUnlock(VisitorBoogie visitor, Call_cmdContext ctx) {
 		ExprsContext lock = ctx.call_params().exprs();
-        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
+        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, ARCH_PRECISION);
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		if(lockAddress != null) {

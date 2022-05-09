@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 
 public class SvcompProcedures {
@@ -26,6 +27,9 @@ public class SvcompProcedures {
 			"__VERIFIER_assert",
 //			"__VERIFIER_assume",
 //			"assume_abort_if_not",
+			"__VERIFIER_loop_begin",
+			"__VERIFIER_spin_start",
+			"__VERIFIER_spin_end",
 			"__VERIFIER_atomic_begin",
 			"__VERIFIER_atomic_end",
 			"__VERIFIER_nondet_bool",
@@ -43,6 +47,15 @@ public class SvcompProcedures {
 	public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
 		switch(name) {
+		case "__VERIFIER_loop_begin":
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBegin());
+			break;
+		case "__VERIFIER_spin_start":
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopStart());
+			break;
+		case "__VERIFIER_spin_end":
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopEnd());
+			break;
 		case "__VERIFIER_assert":
 			__VERIFIER_assert(visitor, ctx);
 			break;
@@ -95,7 +108,7 @@ public class SvcompProcedures {
 		event.addFilters(Tag.ASSERTION);
 		visitor.programBuilder.addChild(visitor.threadCount, event);
        	Label end = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-       	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newJump(new Atom(ass, NEQ, IValue.ONE), end));
+       	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newJump(new Atom(ass, NEQ, expr), end));
 	}
 
 	private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -104,7 +117,7 @@ public class SvcompProcedures {
 	}
 
 	public static void __VERIFIER_atomic(VisitorBoogie visitor, boolean begin) {
-        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
+        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, ARCH_PRECISION);
         MemoryObject lockAddress = visitor.programBuilder.getOrNewObject("__VERIFIER_atomic");
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		LinkedList<Event> events = new LinkedList<>();

@@ -35,12 +35,9 @@ RUN cd home && \
     chmod 755 Dartagnan-SVCOMP.sh && \
     mvn clean install -DskipTests
 
-# Clone SVCOMP benchmarks
-RUN cd home && \
-    git clone https://gitlab.com/sosy-lab/benchmarking/sv-benchmarks.git
-
 # symlink for clang
 RUN ln -s clang-12 /usr/bin/clang
 
 ENV DAT3M_HOME=/home/Dat3M
-ENV PATH=$DAT3M_HOME/:$PATH
+ENV CFLAGS="-I$DAT3M_HOME/include"
+ENV SMACK_FLAGS="-q -t --no-memory-splitting"

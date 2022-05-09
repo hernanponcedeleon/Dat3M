@@ -25,9 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.CO_ANTISYMMETRY;
-import static com.dat3m.dartagnan.configuration.OptionNames.ENCODE_FINAL_MEMVALUES;
-import static com.dat3m.dartagnan.expression.utils.Utils.convertToIntegerFormula;
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.expression.utils.Utils.*;
+import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
@@ -48,12 +47,6 @@ public class RelCo extends Relation {
 		secure=true)
 	private boolean antisymmetry = false;
 
-    @Option(
-            name=ENCODE_FINAL_MEMVALUES,
-            description="Encode final memory values per address.",
-            secure=true)
-    private boolean encodeLastCo = true; //TODO: Automatically set this option only for litmus tests
-
 	// =====================================================================
 
     public RelCo(){
@@ -67,7 +60,6 @@ public class RelCo extends Relation {
         try {
             task.getConfig().inject(this);
             logger.info("{}: {}", CO_ANTISYMMETRY, antisymmetry);
-            logger.info("{}: {}", ENCODE_FINAL_MEMVALUES, encodeLastCo);
         } catch(InvalidConfigurationException e) {
             logger.warn(e.getMessage());
         }
@@ -147,7 +139,7 @@ public class RelCo extends Relation {
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-
+        
     	BooleanFormula enc = bmgr.makeTrue();
 
         List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
@@ -183,9 +175,10 @@ public class RelCo extends Relation {
                 BooleanFormula execPair = getExecPair(t, ctx);
                 lastCo = bmgr.and(lastCo, bmgr.not(relation));
 
-                IntegerFormula a1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
-                IntegerFormula a2 = convertToIntegerFormula(w2.getMemAddressExpr(), ctx);
-                BooleanFormula sameAddress = imgr.equal(a1, a2);
+                Formula a1 = w1.getMemAddressExpr();
+                Formula a2 = w2.getMemAddressExpr();
+                BooleanFormula sameAddress = generalEqual(a1, a2, ctx); 
+
                 enc = bmgr.and(enc, bmgr.equivalence(relation,
                         bmgr.and(execPair, sameAddress, imgr.lessThan(getIntVar(w1, ctx), getIntVar(w2, ctx))
                 )));
@@ -203,9 +196,8 @@ public class RelCo extends Relation {
                 }
             }
 
-            if (encodeLastCo) {
-                // TODO: This encoding should be extracted as it is orthogonal to how co itself gets encoded.
-                BooleanFormula lastCoExpr = fmgr.makeVariable(BooleanType, "co_last(" + w1.repr() + ")");
+            if (task.getProgram().getFormat().equals(LITMUS)) {
+                BooleanFormula lastCoExpr = getLastCoVar(w1, ctx);
                 enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
 
                 for (Event i : eventsInit) {
@@ -215,12 +207,12 @@ public class RelCo extends Relation {
                     }
 
                     IExpr address = init.getAddress();
-                    IntegerFormula a1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
-                    IntegerFormula a2 = convertToIntegerFormula(address.toIntFormula(init,ctx), ctx);
-                    IntegerFormula v1 = convertToIntegerFormula(w1.getMemValueExpr(), ctx);
-                    IntegerFormula v2 = convertToIntegerFormula(init.getBase().getLastMemValueExpr(ctx,init.getOffset()), ctx);
-                    BooleanFormula sameAddress = imgr.equal(a1, a2);
-                    BooleanFormula sameValue = imgr.equal(v1, v2);
+                    Formula a1 = w1.getMemAddressExpr();
+                    Formula a2 = address.toIntFormula(init,ctx);
+                    BooleanFormula sameAddress = generalEqual(a1, a2, ctx); 
+                    Formula v1 = w1.getMemValueExpr();
+                    Formula v2 = init.getBase().getLastMemValueExpr(ctx,init.getOffset());
+                    BooleanFormula sameValue = generalEqual(v1, v2, ctx);
                     enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
             }
@@ -253,5 +245,9 @@ public class RelCo extends Relation {
     public IntegerFormula getIntVar(Event write, SolverContext ctx) {
     	Preconditions.checkArgument(write.is(WRITE), "Cannot get an int-var for non-writes.");
         return intVar(term, write, ctx);
+    }
+
+    public BooleanFormula getLastCoVar(Event write, SolverContext ctx) {
+        return ctx.getFormulaManager().makeVariable(BooleanType, "co_last(" + write.repr() + ")");
     }
 }

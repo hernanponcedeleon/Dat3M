@@ -1,2 +1,0 @@
-# Contains concurrency problems under TSO.
-tso/*.yml
