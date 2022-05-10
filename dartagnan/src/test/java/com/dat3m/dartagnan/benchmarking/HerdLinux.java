@@ -26,7 +26,8 @@ public class HerdLinux extends AbstractHerd {
 	protected Provider<List<String>> getToolOptionsProvider() {
 		return Provider.fromSupplier(() -> {
 			String dat3m = System.getenv("DAT3M_HOME");
-			return Arrays.asList("-model", dat3m + "/cat/linux-kernel.cat", 
+			return Arrays.asList("-model", dat3m + "/cat/linux-kernel.cat",
+								"-I", dat3m + "/cat/",
 								"-macros", dat3m + "/cat/linux-kernel.def", 
 								"-bell", dat3m + "/cat/linux-kernel.bell");
 		});

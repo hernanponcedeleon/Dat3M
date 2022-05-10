@@ -173,9 +173,10 @@ public enum IOpBin {
             case UDIV:
                 return a.divide(b);
             case MOD:
+                return a.mod(b);
             case SREM:
             case UREM:
-                return a.mod(b);
+                return a.remainder(b);
             case AND:
                 return a.and(b);
             case OR:

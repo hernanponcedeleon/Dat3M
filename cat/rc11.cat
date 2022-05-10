@@ -1,0 +1,26 @@
+RC11
+
+(*
+ * Repaired C11 codel, following
+ * "Repairing Sequential Consistency in C/C++11" in PLDI 2017  , by
+ * Ori Lahav, Viktor Vafeiadis, Jeehoon Kang, Chung-Kil Hur, and Derek Dreyer
+ * Cat coding by Sicon Colin.
+ *)
+
+let eco = (rf | co | fr)+
+let rs = [W]; (po & loc)?; [W & (RLX | REL | ACQ_REL | ACQ | SC)]; (rf; rmw)*
+let sw = [(REL | ACQ_REL | SC)]; ([F]; po)?; rs; rf; [R & (RLX | REL | ACQ | ACQ_REL | SC)]; (po; [F])?; [(ACQ | ACQ_REL | SC)]
+let hb = (po | sw)+
+
+let pol = po \ loc
+let hbl = hb & loc
+let scb = po | pol; hb; pol | hbl | co | fr
+let pscb = ([SC] | [F & SC]; hb?); scb; ([SC] | hb? ; [F & SC])
+let pscf = [F & SC]; (hb | hb; eco; hb); [F & SC]
+let psc = pscb | pscf
+
+irreflexive hb; eco? as coherence1
+irreflexive (rmw; eco) as coherencermw
+empty (rmw & (fr; co)) as atomicity
+acyclic psc as SC
+acyclic (po | rf) as no-thin-air
