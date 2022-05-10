@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.equivalence.AbstractEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Verify;
 import com.google.common.collect.Collections2;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -48,6 +49,18 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
         for (Thread thread : program.getThreads()) {
             Map<Integer, Event> mapping = symmMap.computeIfAbsent(thread, key -> new HashMap<>());
             thread.getEvents().forEach(e -> mapping.put(e.getFId(), e));
+        }
+
+        Set<? extends EquivalenceClass<Thread>> classes = getAllEquivalenceClasses();
+        for (EquivalenceClass<Thread> clazz : classes) {
+            int size = symmMap.get(clazz.getRepresentative()).size();
+            for (Thread t : clazz) {
+                if (symmMap.get(t).size() == size) {
+                    Verify.verify(symmMap.get(t).size() == size,
+                            "Symmetric threads T%s and T%s have different number of events: %s vs. %s",
+                            clazz.getRepresentative(), t, size, symmMap.get(t).size());
+                }
+            }
         }
     }
 
