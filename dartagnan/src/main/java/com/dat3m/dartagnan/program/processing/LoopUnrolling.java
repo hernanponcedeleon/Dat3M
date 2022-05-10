@@ -143,9 +143,12 @@ public class LoopUnrolling implements ProgramProcessor {
             }
         }
 
-        while (bound >= 1) {
-            if (bound == 1) {
+        int i = 0;
+        while (--bound >= 0) {
+            i++;
+            if (bound == 0) {
                 Label exit = (Label) loopBackJump.getThread().getExit();
+                loopBegin.setName(loopBegin.getName() + "_" + i);
                 for (CondJump cont : continues) {
                     if (!cont.isGoto()) {
                         logger.warn("Conditional jump {} was replaced by unconditional bound event", cont);
@@ -161,6 +164,7 @@ public class LoopUnrolling implements ProgramProcessor {
             } else {
                 Map<Event, Event> copyCtx = new HashMap<>();
                 List<Event> copies = copyPath(loopBegin, loopBackJump, copyCtx);
+                ((Label)copyCtx.get(loopBegin)).setName(loopBegin.getName() + "_" + i);
                 //TODO: The following was testing code and needs to be updated for real usage.
                 /*CodeAnnotation iterBegin = new FunCall("Iteration begin");
                 iterBegin.setThread(loopBackJump.getThread());
@@ -192,7 +196,6 @@ public class LoopUnrolling implements ProgramProcessor {
                 }
 
             }
-            bound--;
         }
     }
 

@@ -20,8 +20,9 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 
 import java.util.HashSet;
-import java.util.Optional;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Options
 public class FindSpinLoops implements ProgramProcessor {
@@ -88,13 +89,17 @@ public class FindSpinLoops implements ProgramProcessor {
             // Find start of spinloop that is not already marked.
             if (curr instanceof Label && !curr.is(Tag.SPINLOOP)) {
                 Label label = (Label) curr;
-                Optional<Event> listener = label.getListeners().stream().filter(x -> x.getOId() > label.getOId()).findFirst();
-                if (listener.isPresent()) {
+                // Importantly, this looks for the LAST backjump to the label
+                List<Event> backjumps = label.getListeners()
+                        .stream().filter(x -> x.getOId() > label.getOId())
+                        .sorted().collect(Collectors.toList());
+
+                if (!backjumps.isEmpty()) {
                     Label loopStart = label;
-                    CondJump loopEnd = (CondJump) listener.get();
+                    CondJump loopEnd = (CondJump) backjumps.get(backjumps.size() - 1);
                     if (isSideEffectFree(loopStart, loopEnd)) {
                         loopStart.addFilters(Tag.SPINLOOP);
-                        loopEnd.addFilters(Tag.SPINLOOP);
+                        backjumps.forEach(x -> x.addFilters(Tag.SPINLOOP));
                         spinloops++;
                     }
                 }

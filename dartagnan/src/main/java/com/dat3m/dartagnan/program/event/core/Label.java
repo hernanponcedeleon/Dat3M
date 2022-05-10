@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class Label extends Event {
 
-    private final String name;
+    private String name;
     
     public Label(String name){
         this.name = name;
@@ -17,9 +17,8 @@ public class Label extends Event {
         this.name = other.name;
     }
 
-    public String getName(){
-        return name;
-    }
+    public String getName(){ return name; }
+    public void setName(String name) { this.name = name;}
 
     @Override
     public String toString(){
