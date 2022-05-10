@@ -48,7 +48,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
         this.cLine = other.cLine;
         this.filter = other.filter;
         this.thread = other.thread;
-		this.listeners = other.listeners;
+		this.listeners = new HashSet<>();
     }
 
 	public int getOId() { return oId; }

@@ -16,7 +16,6 @@ import java.util.Map;
 public class CondJump extends Event implements RegReaderData {
 
     private Label label;
-    private Label label4Copy;
     private BExpr expr;
 
     public CondJump(BExpr expr, Label label){
@@ -31,10 +30,9 @@ public class CondJump extends Event implements RegReaderData {
 
     protected CondJump(CondJump other) {
 		super(other);
-		this.label = other.label4Copy;
+		this.label = other.label;;
 		this.expr = other.expr;
-		Event notifier = label != null ? label : other.label;
-		notifier.addListener(this);
+		this.label.addListener(this);
     }
     
     public boolean isGoto() {
@@ -82,18 +80,15 @@ public class CondJump extends Event implements RegReaderData {
         return output;
     }
 
-    @Override
-    public void notify(Event label) {
-    	if(this.label == null) {
-        	this.label = (Label)label;
-    	} else if (oId > label.getOId()) {
-    		this.label4Copy = (Label)label;
-    	}
-    }
 
     @Override
     public void updateReferences(Map<Event, Event> updateMapping) {
+        Label old = this.label;
         this.label = (Label)updateMapping.getOrDefault(this.label, this.label);
+        if (old != this.label) {
+            old.getListeners().remove(this);
+            this.label.addListener(this);
+        }
     }
 
     @Override
