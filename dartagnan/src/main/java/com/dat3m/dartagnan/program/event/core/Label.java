@@ -30,14 +30,7 @@ public class Label extends Event {
 
     @Override
     public Label getCopy(){
-    	Label copy = new Label(this);
-    	if (this.equals(getThread().getExit())) {
-    	    getThread().updateExit(copy);
-        }
-    	for(Event jump : listeners) {
-    		jump.notify(copy);
-    	}
-    	return copy;
+    	return new Label(this);
     }
 
 	// Visitor
