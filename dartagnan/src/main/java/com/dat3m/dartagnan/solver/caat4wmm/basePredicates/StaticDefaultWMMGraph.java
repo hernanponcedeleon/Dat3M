@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 // Used for static relations that are not yet implemented explicitly
@@ -25,7 +26,9 @@ public class StaticDefaultWMMGraph extends MaterializedWMMGraph {
 
     @Override
     public void repopulate() {
-        relation.getMaxTupleSet().forEach(t -> simpleGraph.add(getEdgeFromTuple(t)));
+        relation.getMaxTupleSet()
+                .stream().map(this::getEdgeFromTuple).filter(Objects::nonNull)
+                .forEach(simpleGraph::add);
     }
 
     private Edge getEdgeFromTuple(Tuple t) {
