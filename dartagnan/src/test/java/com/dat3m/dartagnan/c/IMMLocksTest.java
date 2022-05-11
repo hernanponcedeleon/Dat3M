@@ -25,15 +25,19 @@ import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class IMMTest extends AbstractCTest {
+public class IMMLocksTest extends AbstractCTest {
 	
-    public IMMTest(String name, Arch target, Result expected) {
+	// We use this for a fast CI.
+	// For benchmarking we use CLocksTest{TSO, ARM, Power}
+	// which use higher bounds and more threads
+	
+    public IMMLocksTest(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "imm/" + name + ".bpl");
+        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "locks/" + name + ".bpl");
     }
 
     @Override
@@ -49,26 +53,33 @@ public class IMMTest extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
     	return Arrays.asList(new Object[][]{
-	            {"paper-E3.1", NONE, PASS},
-	            {"paper-E3.2", NONE, PASS},
-	            {"paper-E3.3", NONE, PASS},
-	            {"paper-E3.4", NONE, PASS},
-	            {"paper-E3.5", NONE, PASS},
-	            {"paper-E3.6", NONE, FAIL},
-	            {"paper-E3.7", NONE, PASS},
-	            {"paper-E3.8", NONE, PASS},
-	            {"paper-E3.8-alt", NONE, FAIL},
-	            {"paper-E3.9", NONE, PASS},
-	            // The actual example 3.10 in the paper marks the write of the FADD as strong 
-	            // which forms a cycle making the result PASS. Since we currently don't have
-	            // a way to mark FADD instructions as weak/strong, the behavior is allowed.
-	            {"paper-E3.10", NONE, FAIL},
-	            {"paper-R2", NONE, PASS},
-	            {"paper-R2-alt", NONE, PASS},
+            {"ttas-5", NONE, UNKNOWN},
+            {"ttas-5-acq2rx", NONE, FAIL},
+            {"ttas-5-rel2rx", NONE, FAIL},
+            {"ticketlock-3", NONE, PASS},
+            {"ticketlock-3-acq2rx", NONE, FAIL},
+            {"ticketlock-3-rel2rx", NONE, FAIL},
+            {"mutex-3", NONE, UNKNOWN},
+            {"mutex-3-acq2rx_futex", NONE, UNKNOWN},
+            {"mutex-3-acq2rx_lock", NONE, FAIL},
+            {"mutex-3-rel2rx_futex", NONE, UNKNOWN},
+            {"mutex-3-rel2rx_unlock", NONE, FAIL},
+            {"spinlock-5", NONE, UNKNOWN},
+            {"spinlock-5-acq2rx", NONE, FAIL},
+            {"spinlock-5-rel2rx", NONE, FAIL},
+            {"linuxrwlock-3", NONE, UNKNOWN},
+            {"linuxrwlock-3-acq2rx", NONE, FAIL},
+            {"linuxrwlock-3-rel2rx", NONE, FAIL},
+            {"mutex_musl-3", NONE, UNKNOWN},
+            {"mutex_musl-3-acq2rx_futex", NONE, UNKNOWN},
+            {"mutex_musl-3-acq2rx_lock", NONE, FAIL},
+            {"mutex_musl-3-rel2rx_futex", NONE, UNKNOWN},
+            {"mutex_musl-3-rel2rx_unlock", NONE, FAIL},
+            {"seqlock-6", NONE, UNKNOWN},
 		});
     }
 
-    @Test
+//    @Test
 	@CSVLogger.FileName("csv/assume")
 	public void testAssume() throws Exception {
 		assertEquals(expected, AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
