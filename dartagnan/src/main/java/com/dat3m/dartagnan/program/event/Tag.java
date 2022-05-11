@@ -73,6 +73,14 @@ public final class Tag {
         public static final String MO_ACQUIRE_RELEASE   = "ACQ_REL";
         public static final String MO_SC                = "SC";
 
+        public static String extractStoreMo(String cMo) {
+            return cMo.equals(C11.MO_ACQUIRE_RELEASE) ? C11.MO_RELEASE : cMo;
+        }
+
+        public static String extractLoadMo(String cMo) {
+            return cMo.equals(C11.MO_ACQUIRE_RELEASE) ? C11.MO_ACQUIRE : cMo ;
+        }
+
         public static String intToMo(int i) {
             switch(i) {
                 case 0: return MO_RELAXED;
