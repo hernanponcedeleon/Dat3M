@@ -138,4 +138,14 @@ public final class Tag {
 
         public static final String SVCOMPATOMIC	= "A-SVCOMP";
     }
+
+    // =============================================================================================
+    // =========================================== IMM =============================================
+    // =============================================================================================
+
+    public static final class IMM {
+        private IMM() {}
+
+        public static final String CASDEPORIGIN = "CASDEPORIGIN";
+    }
 }

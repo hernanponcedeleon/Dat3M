@@ -226,6 +226,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 		Register regExpected = e.getThread().newRegister(precision);
         Register regValue = e.getThread().newRegister(precision);
         Load loadExpected = newLoad(regExpected, expectedAddr, null);
+        loadExpected.addFilters(Tag.IMM.CASDEPORIGIN);
         Store storeExpected = newStore(expectedAddr, regValue, null);
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
