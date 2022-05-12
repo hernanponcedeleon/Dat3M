@@ -13,7 +13,6 @@ public class RelCASDep extends StaticRelation {
 
     public RelCASDep(){
         term = CASDEP;
-        forceDoEncode = true;
     }
 
     @Override
