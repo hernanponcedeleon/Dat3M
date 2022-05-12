@@ -15,7 +15,7 @@ void *thread_1(void *unused)
 	atomic_store_explicit(&z, r1, memory_order_relaxed);
 	atomic_thread_fence(memory_order_seq_cst);
 	a = r0;
-	b = r0;
+	b = r1;
 	return NULL;
 }
 
