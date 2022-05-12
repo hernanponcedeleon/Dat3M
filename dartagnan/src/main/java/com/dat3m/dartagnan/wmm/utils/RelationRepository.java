@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.RelCrit;
 import com.dat3m.dartagnan.wmm.relation.base.RelRMW;
 import com.dat3m.dartagnan.wmm.relation.base.local.RelAddrDirect;
+import com.dat3m.dartagnan.wmm.relation.base.local.RelCASDep;
 import com.dat3m.dartagnan.wmm.relation.base.local.RelIdd;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelLoc;
@@ -131,6 +132,8 @@ public class RelationRepository {
                 return new RelRf();
             case RMW:
                 return new RelRMW();
+            case CASDEP:
+                return new RelCASDep();
             case CRIT:
                 return new RelCrit();
             case IDD:

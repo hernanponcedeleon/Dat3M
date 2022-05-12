@@ -239,6 +239,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
                 Register reg = programBuilder.getOrCreateRegister(threadCount, null, ARCH_PRECISION);
                 Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
                 programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, object, label));
+                // Since we model thread creation/join (plus start/end) as normal Stores/Loads
+                // We needs these barriers to guarantee that information is properly propagated
+                programBuilder.addChild(threadCount, EventFactory.Atomic.newFence(Tag.C11.MO_SC));
             }
     	}
 
@@ -282,6 +285,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	if(create) {
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
+                // Since we model thread creation/join (plus start/end) as normal Stores/Loads
+                // We needs these barriers to guarantee that information is properly propagated
+                programBuilder.addChild(threadCount, EventFactory.Atomic.newFence(Tag.C11.MO_SC));
                 MemoryObject object = programBuilder.getOrNewObject(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
                 programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(object));
          	}
