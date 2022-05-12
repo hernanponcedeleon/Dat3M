@@ -42,6 +42,10 @@ public abstract class AbstractCTest {
         return Provider.fromSupplier(() -> 0);
     }
 
+    protected Provider<Wmm> getWmmProvider() {
+        return Providers.createWmmFromArch(targetProvider);
+    }
+
     // =============================================================
 
 
@@ -55,7 +59,7 @@ public abstract class AbstractCTest {
     protected final Provider<Integer> boundProvider = getBoundProvider();
     protected final Provider<Integer> timeoutProvider = getTimeoutProvider();
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
-    protected final Provider<Wmm> wmmProvider = Providers.createWmmFromArch(targetProvider);
+    protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, targetProvider, boundProvider, timeoutProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
