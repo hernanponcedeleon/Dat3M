@@ -111,16 +111,23 @@ public final class Tag {
     public static final class Linux {
         private Linux() {}
 
-        public static final String NORETURN     = "Noreturn";
-        public static final String RCU_SYNC     = "Sync-rcu";
-        public static final String RCU_LOCK     = "Rcu-lock";
-        public static final String RCU_UNLOCK   = "Rcu-unlock";
-        public static final String MO_MB        = "Mb";
-        public static final String MO_RMB		= "Rmb";
-        public static final String MO_WMB		= "Wmb";
-        public static final String MO_RELAXED   = "Relaxed";
-        public static final String MO_RELEASE   = "Release";
-        public static final String MO_ACQUIRE   = "Acquire";
+        public static final String NORETURN      = "Noreturn";
+        public static final String RCU_SYNC      = "Sync-rcu";
+        public static final String SRCU_SYNC     = "Sync-srcu";
+        public static final String RCU_LOCK      = "Rcu-lock";
+        public static final String RCU_UNLOCK    = "Rcu-unlock";
+        public static final String MO_MB         = "Mb";
+        public static final String MO_RMB		 = "Rmb";
+        public static final String MO_WMB		 = "Wmb";
+        public static final String MO_RELAXED    = "Relaxed";
+        public static final String MO_RELEASE    = "Release";
+        public static final String MO_ACQUIRE    = "Acquire";
+        public static final String LOCK_READ     = "LKR";
+        public static final String LOCK_WRITE    = "LKW";
+        public static final String UNLOCK        = "UL";
+        public static final String LOCK_FAIL     = "UL";
+        public static final String READ_LOCKED   = "LF";
+        public static final String READ_UNLOCKED = "RU";
 
         public static String loadMO(String mo){
             return mo.equals(MO_ACQUIRE) ? MO_ACQUIRE : MO_RELAXED;
