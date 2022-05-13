@@ -122,6 +122,7 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
         		optionalFence,
                 load,
                 newLocal(dummyReg, new IExprBin(resultRegister, op, (IExpr) e.getMemValue())),
+        		optionalFence,
                 newRMWStore(load, address, dummyReg, extractStoreMo(mo))
         );
 	}
