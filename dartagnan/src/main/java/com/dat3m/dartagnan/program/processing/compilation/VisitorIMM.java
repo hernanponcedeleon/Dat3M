@@ -74,7 +74,8 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
-		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+		Fence optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+		Fence optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		IExpr expectedAddr = e.getExpectedAddr();
 		int precision = resultRegister.getPrecision();
 
@@ -88,17 +89,17 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
-        Load loadValue = newRMWLoad(regValue, address, extractLoadMo(mo));
-        Store storeValue = newRMWStore(loadValue, address, e.getMemValue(), extractStoreMo(mo));
+        Load loadValue = newRMWLoad(regValue, address, mo);
+        Store storeValue = newRMWStore(loadValue, address, e.getMemValue(), mo);
 
         return eventSequence(
                 // Indentation shows the branching structure
                 loadExpected,
-                optionalFence,
+                optionalFenceLoad,
                 loadValue,
                 casCmpResult,
                 branchOnCasCmpResult,
-                	optionalFence,
+                	optionalFenceStore,
                     storeValue,
                     gotoCasEnd,
                 casFail,
@@ -156,14 +157,15 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 	public List<Event> visitAtomicXchg(AtomicXchg e) {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
-		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
-
-        Load load = newRMWLoad(e.getResultRegister(), address, extractLoadMo(mo));
+		Fence optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+		Fence optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+		
+        Load load = newRMWLoad(e.getResultRegister(), address, mo);
         
         return eventSequence(
-        		optionalFence,
+        		optionalFenceLoad,
                 load,
-                optionalFence,
+                optionalFenceStore,
                 newRMWStore(load, address, e.getMemValue(), extractStoreMo(mo))
         );
 	}
