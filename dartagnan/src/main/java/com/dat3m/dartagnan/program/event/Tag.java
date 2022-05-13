@@ -74,7 +74,7 @@ public final class Tag {
         public static final String MO_SC                = "SC";
 
         public static String extractStoreMo(String cMo) {
-            return cMo.equals(C11.MO_ACQUIRE_RELEASE) ? 
+            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? 
             		C11.MO_RELEASE : 
             		cMo.equals(C11.MO_ACQUIRE) ?
             				C11.MO_RELAXED :
@@ -82,7 +82,7 @@ public final class Tag {
         }
 
         public static String extractLoadMo(String cMo) {
-            return cMo.equals(C11.MO_ACQUIRE_RELEASE) ? 
+            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? 
             		C11.MO_ACQUIRE : 
             		cMo.equals(C11.MO_RELEASE) ?
             				C11.MO_RELAXED :	
