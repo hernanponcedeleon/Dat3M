@@ -89,8 +89,8 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
-        Load loadValue = newRMWLoad(regValue, address, mo);
-        Store storeValue = newRMWStore(loadValue, address, e.getMemValue(), mo);
+        Load loadValue = newRMWLoad(regValue, address, extractLoadMo(mo));
+        Store storeValue = newRMWStore(loadValue, address, e.getMemValue(), extractStoreMo(mo));
 
         return eventSequence(
                 // Indentation shows the branching structure
