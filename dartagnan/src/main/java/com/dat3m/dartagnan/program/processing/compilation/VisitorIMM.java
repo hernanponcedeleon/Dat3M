@@ -41,14 +41,14 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 	public List<Event> visitEnd(End e) {
         return eventSequence(
         		newFence(Tag.C11.MO_SC),
-        		newStore(e.getAddress(), IValue.ZERO, e.getMo())
+        		newStore(e.getAddress(), IValue.ZERO, extractStoreMo(e.getMo()))
         );
 	}
 
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+		Load load = newLoad(resultRegister, e.getAddress(), extractLoadMo(e.getMo()));
         load.addFilters(C11.PTHREAD);
         
         return eventSequence(
@@ -63,7 +63,7 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
         Register resultRegister = e.getResultRegister();
 
         return eventSequence(
-        		newLoad(resultRegister, e.getAddress(), e.getMo()),
+        		newLoad(resultRegister, e.getAddress(), extractLoadMo(e.getMo())),
         		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), e.getLabel()),
         		newFence(Tag.C11.MO_SC)
         );
@@ -74,7 +74,7 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
-		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ?  Atomic.newFence(Tag.C11.MO_SC) : null;
+		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		IExpr expectedAddr = e.getExpectedAddr();
 		int precision = resultRegister.getPrecision();
 
@@ -113,7 +113,7 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 		IOpBin op = e.getOp();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
-		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? Atomic.newFence(Tag.C11.MO_SC) : null;
+		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		
         Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
         Load load = newRMWLoad(resultRegister, address, extractLoadMo(mo));
@@ -129,7 +129,7 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitAtomicLoad(AtomicLoad e) {
 		String mo = e.getMo();
-		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? Atomic.newFence(Tag.C11.MO_SC) : null;
+		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         return eventSequence(
         		optionalFence,
         		newLoad(e.getResultRegister(), e.getAddress(), extractLoadMo(mo))
@@ -139,7 +139,7 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitAtomicStore(AtomicStore e) {
 		String mo = e.getMo();
-		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? Atomic.newFence(Tag.C11.MO_SC) : null;
+		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         return eventSequence(
         		optionalFence,
         		newStore(e.getAddress(), e.getMemValue(), extractStoreMo(mo))
@@ -155,7 +155,7 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 	public List<Event> visitAtomicXchg(AtomicXchg e) {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
-		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? Atomic.newFence(Tag.C11.MO_SC) : null;
+		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 
         Load load = newRMWLoad(e.getResultRegister(), address, extractLoadMo(mo));
         
@@ -173,7 +173,7 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 		ExprInterface value = e.getMemValue();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
-		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? Atomic.newFence(Tag.C11.MO_SC) : null;
+		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		ExprInterface expectedValue = e.getExpectedValue();
 
         Register regValue = e.getThread().newRegister(resultRegister.getPrecision());
