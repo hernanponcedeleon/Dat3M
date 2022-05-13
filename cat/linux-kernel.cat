@@ -49,10 +49,6 @@ let strong-fence = mb | gp
 
 let nonrw-fence = strong-fence | po-rel | acq-po
 let fence = nonrw-fence | wmb | rmb
-let barrier-names = Barrier | Rmb | Wmb | Mb | Sync-rcu | Sync-srcu |
-        Before-atomic | After-atomic | Acquire | Release |
-        Rcu-lock | Rcu-unlock | Srcu-lock | Srcu-unlock
-let barrier = fencerel(barrier-names) | (po ; [Release]) | ([Acquire] ; po)
 
 (**********************************)
 (* Fundamental coherence ordering *)
