@@ -91,7 +91,7 @@ public class Dartagnan extends BaseOptions {
         VerificationTask task = VerificationTask.builder()
                 .withConfig(config)
                 .withWitness(witness)
-                .build(p, mcm);
+                .build(p, mcm, o.getProperty());
 
         ShutdownManager sdm = ShutdownManager.create();
     	Thread t = new Thread(() -> {

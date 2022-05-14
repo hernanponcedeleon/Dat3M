@@ -14,6 +14,8 @@ import com.dat3m.dartagnan.verification.solving.TwoSolvers;
 import com.dat3m.dartagnan.wmm.Wmm;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Property;
+
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -75,6 +78,10 @@ public abstract class AbstractLitmusTest {
         return Providers.createWmmFromArch(getTargetProvider());
     }
 
+    protected Provider<EnumSet<Property>> getPropertyProvider() {
+        return Provider.fromSupplier(() -> EnumSet.of(Property.getDefault()));
+    }
+
     protected Provider<Integer> getBoundProvider() {
         return Provider.fromSupplier(() -> 1);
     }
@@ -99,6 +106,7 @@ public abstract class AbstractLitmusTest {
     protected final Provider<Integer> timeoutProvider = getTimeoutProvider();
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
+    protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
     	getExpectedResults().get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
     protected final Provider<VerificationTask> taskProvider = Provider.fromSupplier(() ->
@@ -109,7 +117,7 @@ public abstract class AbstractLitmusTest {
         .withTarget(targetProvider.get())
         .withBound(boundProvider.get())
         .withSolverTimeout(timeoutProvider.get())
-        .build(programProvider.get(), wmmProvider.get()));
+        .build(programProvider.get(), wmmProvider.get(), propertyProvider.get()));
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
     protected final Provider<ProverEnvironment> prover2Provider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);

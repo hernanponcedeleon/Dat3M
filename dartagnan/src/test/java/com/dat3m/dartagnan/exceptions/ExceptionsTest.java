@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.exceptions;
 
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.*;
@@ -29,6 +30,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
+import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.utils.TestHelper.createContext;
 
@@ -79,7 +81,7 @@ public class ExceptionsTest {
 		Configuration config = Configuration.defaultConfiguration();
 		VerificationTask task = VerificationTask.builder()
                 .withConfig(config)
-                .build(p, cat);
+                .build(p, cat, EnumSet.of(Property.getDefault()));
 		// The program must be compiled before being able to construct an Encoder for it
     	ProgramEncoder.fromConfig(task.getProgram(), Context.create(), config);
     }

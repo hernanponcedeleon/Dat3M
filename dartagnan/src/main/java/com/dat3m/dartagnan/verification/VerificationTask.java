@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.encoding.PropertyEncoder;
@@ -28,7 +27,6 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -48,22 +46,13 @@ Represents a verification task.
 @Options
 public class VerificationTask {
 
-    @Option(
-            name = OptionNames.PROPERTY,
-            description = "The property to check for: reachability (default), liveness, races.",
-            toUppercase=true)
-    private EnumSet<Property> property = EnumSet.of(Property.getDefault());
-
-	public EnumSet<Property> getProperty() { return property; }
-
-    // =====================================================================
-
     // Data objects
     private final Program program;
     private final Wmm memoryModel;
     private final WitnessGraph witness;
     private final Configuration config;
     private final Context analysisContext;
+    private EnumSet<Property> property = EnumSet.of(Property.getDefault());
 
 
     // Encoders
@@ -72,7 +61,7 @@ public class VerificationTask {
     protected WmmEncoder wmmEncoder;
     protected SymmetryEncoder symmetryEncoder;
 
-    protected VerificationTask(Program program, Wmm memoryModel, WitnessGraph witness, Configuration config)
+    protected VerificationTask(Program program, Wmm memoryModel, EnumSet<Property> property, WitnessGraph witness, Configuration config)
     throws InvalidConfigurationException {
         this.program = checkNotNull(program);
         this.memoryModel = checkNotNull(memoryModel);
@@ -87,18 +76,16 @@ public class VerificationTask {
         return new VerificationTaskBuilder();
     }
 
-    public Program getProgram() {
-    	return program;
-    }
-    public Wmm getMemoryModel() {
-    	return memoryModel;
-    }
-    public Configuration getConfig() {
-        return this.config;
-    }
-    public WitnessGraph getWitness() {
-    	return witness;
-    }
+    public Program getProgram() { return program; }
+    
+    public Wmm getMemoryModel() { return memoryModel; }
+    
+    public Configuration getConfig() { return this.config; }
+    
+    public WitnessGraph getWitness() { return witness; }
+    
+	public EnumSet<Property> getProperty() { return property; }
+
     public Context getAnalysisContext() { return analysisContext; }
 
     public Set<Relation> getRelations() {
@@ -197,8 +184,8 @@ public class VerificationTask {
             return this;
         }
 
-        public VerificationTask build(Program program, Wmm memoryModel) throws InvalidConfigurationException {
-            return new VerificationTask(program, memoryModel, witness, config.build());
+        public VerificationTask build(Program program, Wmm memoryModel, EnumSet<Property> property) throws InvalidConfigurationException {
+            return new VerificationTask(program, memoryModel, property, witness, config.build());
         }
     }
 
