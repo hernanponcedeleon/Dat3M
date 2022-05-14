@@ -74,21 +74,28 @@ public final class Tag {
         public static final String MO_SC                = "SC";
 
         public static String extractStoreMo(String cMo) {
-            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? 
-            		C11.MO_RELEASE : 
-            		cMo.equals(C11.MO_ACQUIRE) ?
-            				C11.MO_RELAXED :
-            				cMo;
+        	switch(cMo) {
+        		case C11.MO_SC:
+        		case C11.MO_ACQUIRE_RELEASE:
+        			return C11.MO_RELEASE;
+        		case C11.MO_ACQUIRE:
+        			return C11.MO_RELAXED;
+        		default:
+        			return cMo;
+        	}
         }
 
         public static String extractLoadMo(String cMo) {
-            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? 
-            		C11.MO_ACQUIRE : 
-            		cMo.equals(C11.MO_RELEASE) ?
-            				C11.MO_RELAXED :	
-            				cMo ;
+        	switch(cMo) {
+    			case C11.MO_SC:
+    			case C11.MO_ACQUIRE_RELEASE:
+    				return C11.MO_ACQUIRE;
+    			case C11.MO_RELEASE:
+    				return C11.MO_RELAXED;
+    			default:
+    				return cMo;
+        	}
         }
-
         public static String intToMo(int i) {
             switch(i) {
                 case 0: return MO_RELAXED;
