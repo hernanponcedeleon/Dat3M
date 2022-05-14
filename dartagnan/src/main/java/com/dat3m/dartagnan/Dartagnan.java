@@ -157,10 +157,10 @@ public class Dartagnan extends BaseOptions {
                     System.out.println(result == FAIL ? "Ok" : "No");
                 } else {
                 	if(result == FAIL) {
-                		if(TRUE.equals(prover.getModel().evaluate(getSMTVariable(REACHABILITY, ctx)))) {
+                		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(ctx)))) {
                 			System.out.println("Safety violation found");
                 		}
-                		if(TRUE.equals(prover.getModel().evaluate(getSMTVariable(LIVENESS, ctx)))) {
+                		if(TRUE.equals(prover.getModel().evaluate(LIVENESS.getSMTVariable(ctx)))) {
                 			System.out.println("Liveness violation found");
                 		}
                 	}
