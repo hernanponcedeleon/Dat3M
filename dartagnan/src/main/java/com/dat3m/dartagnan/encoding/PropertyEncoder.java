@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -22,7 +21,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -53,12 +51,6 @@ public class PropertyEncoder implements Encoder {
     private final Wmm memoryModel;
     private final AliasAnalysis alias;
 
-    @Option(
-            name = OptionNames.PROPERTY,
-            description = "The property to check for: reachability (default), liveness, races.",
-            toUppercase=true)
-    private EnumSet<Property> property = EnumSet.of(Property.getDefault());
-
     // =====================================================================
 
     private PropertyEncoder(Program program, Wmm wmm, Context context, Configuration config) throws InvalidConfigurationException {
@@ -77,7 +69,7 @@ public class PropertyEncoder implements Encoder {
     @Override
     public void initializeEncoding(SolverContext context) { }
 
-    public BooleanFormula encodeSpecification(SolverContext ctx) {
+    public BooleanFormula encodeSpecification(EnumSet<Property> property, SolverContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
     	// We have a default property therefore this false will always be overwritten
     	BooleanFormula enc = bmgr.makeFalse();
@@ -226,6 +218,4 @@ public class PropertyEncoder implements Encoder {
         }
         return enc;
     }
-
-
 }

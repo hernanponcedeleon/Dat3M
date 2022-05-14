@@ -82,7 +82,7 @@ public class RefinementSolver {
         prover.addConstraint(symmEncoder.encodeFullSymmetry(ctx));
 
         prover.push();
-        prover.addConstraint(propertyEncoder.encodeSpecification(ctx));
+        prover.addConstraint(propertyEncoder.encodeSpecification(task.getProperty(), ctx));
 
         //  ------ Just for statistics ------
         List<DNF<CoreLiteral>> foundCoreReasons = new ArrayList<>();

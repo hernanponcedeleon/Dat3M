@@ -60,7 +60,7 @@ public class TwoSolvers {
         prover1.addConstraint(encodeSymm);
         prover2.addConstraint(encodeSymm);
 
-        prover1.addConstraint(propertyEncoder.encodeSpecification(ctx));
+        prover1.addConstraint(propertyEncoder.encodeSpecification(task.getProperty(), ctx));
 
         logger.info("Starting first solver.check()");
         if(prover1.isUnsat()) {

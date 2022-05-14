@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.OptionNames;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.encoding.PropertyEncoder;
 import com.dat3m.dartagnan.encoding.SymmetryEncoder;
@@ -26,9 +28,11 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
@@ -43,6 +47,16 @@ Represents a verification task.
 //TODO: The encoders should go from this class
 @Options
 public class VerificationTask {
+
+    @Option(
+            name = OptionNames.PROPERTY,
+            description = "The property to check for: reachability (default), liveness, races.",
+            toUppercase=true)
+    private EnumSet<Property> property = EnumSet.of(Property.getDefault());
+
+	public EnumSet<Property> getProperty() { return property; }
+
+    // =====================================================================
 
     // Data objects
     private final Program program;
