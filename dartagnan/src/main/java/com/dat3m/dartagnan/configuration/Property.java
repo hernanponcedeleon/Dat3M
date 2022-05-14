@@ -42,8 +42,8 @@ public enum Property implements OptionInterface {
 		return order;
 	}
 	
-	public static BooleanFormula getSMTVariable(Property p, SolverContext ctx) {
+	public BooleanFormula getSMTVariable(SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return bmgr.makeVariable(p.toString());
+        return bmgr.makeVariable(this.toString());
 	}
 }

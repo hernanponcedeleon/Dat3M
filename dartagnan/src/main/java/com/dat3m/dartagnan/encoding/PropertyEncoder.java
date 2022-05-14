@@ -102,8 +102,8 @@ public class PropertyEncoder implements Encoder {
             assertionEncoding = bmgr.and(assertionEncoding, program.getAssFilter().encode(ctx));
         }
         // We use the SMT variable to extract from the model if the property was violated
-		BooleanFormula enc = bmgr.equivalence(getSMTVariable(REACHABILITY, ctx), assertionEncoding);
-        return bmgr.and(getSMTVariable(REACHABILITY, ctx), enc);
+		BooleanFormula enc = bmgr.equivalence(REACHABILITY.getSMTVariable(ctx), assertionEncoding);
+        return bmgr.and(REACHABILITY.getSMTVariable(ctx), enc);
     }
 
     public BooleanFormula encodeLiveness(SolverContext ctx) {
@@ -177,9 +177,9 @@ public class PropertyEncoder implements Encoder {
             allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, isDone));
         }
         // We use the SMT variable to extract from the model if the property was violated
-		BooleanFormula enc = bmgr.equivalence(getSMTVariable(LIVENESS, ctx), 
+		BooleanFormula enc = bmgr.equivalence(LIVENESS.getSMTVariable(ctx), 
 											  bmgr.and(allStuckOrDone, atLeastOneStuck));
-        return bmgr.and(getSMTVariable(LIVENESS, ctx), enc);
+        return bmgr.and(LIVENESS.getSMTVariable(ctx), enc);
     }
 
     public BooleanFormula encodeDataRaces(SolverContext ctx) {
@@ -216,6 +216,8 @@ public class PropertyEncoder implements Encoder {
                 }
             }
         }
-        return enc;
+        // We use the SMT variable to extract from the model if the property was violated
+		enc = bmgr.equivalence(RACES.getSMTVariable(ctx), enc);
+        return bmgr.and(RACES.getSMTVariable(ctx), enc);
     }
 }
