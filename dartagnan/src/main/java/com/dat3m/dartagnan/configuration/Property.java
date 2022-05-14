@@ -2,21 +2,17 @@ package com.dat3m.dartagnan.configuration;
 
 import java.util.Arrays;
 
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 public enum Property implements OptionInterface {
 	REACHABILITY, RACES, LIVENESS;
 	
 	// Used for options in the console
+	@Override
 	public String asStringOption() {
-        switch(this) {
-			case REACHABILITY:
-				return "reachability";
-			case RACES:
-				return "races";
-			case LIVENESS:
-				return "liveness";
-			default:
-				throw new UnsupportedOperationException("Unrecognized property: " + this);
-		}
+		return toString().toLowerCase();
 	}
 
 	// Used to display in UI
@@ -44,5 +40,10 @@ public enum Property implements OptionInterface {
 		// Be sure no element is missing
 		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;
+	}
+	
+	public static BooleanFormula getSMTVariable(Property p, SolverContext ctx) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        return bmgr.makeVariable(p.toString());
 	}
 }

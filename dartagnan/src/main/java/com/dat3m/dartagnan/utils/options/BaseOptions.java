@@ -8,17 +8,18 @@ import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
+import java.util.EnumSet;
+
 @Options
 public abstract class BaseOptions {
 
-	@Option(
-		name= PROPERTY,
-		description="Property to be checked.",
-		secure=true,
-		toUppercase=true)
-	private Property property = Property.getDefault();
+    @Option(
+            name = PROPERTY,
+            description = "The property to check for: reachability (default), liveness, races.",
+    		toUppercase=true)
+    private EnumSet<Property> property = EnumSet.of(Property.getDefault());
 
-	public Property getProperty() { return property; }
+	public EnumSet<Property> getProperty() { return property; }
 
 	@Option(
 		name=VALIDATE,

@@ -8,20 +8,9 @@ public enum Arch implements OptionInterface {
 	NONE, ARM8, POWER, TSO, IMM;
 
 	// Used for options in the console
+	@Override
 	public String asStringOption() {
-        switch(this){
-        	case NONE:
-        		return "none";
-        	case ARM8:
-        		return "arm8";
-        	case POWER:
-        		return "power";
-        	case TSO:
-        		return "tso";
-        	case IMM:
-        		return "imm";
-        }
-        throw new UnsupportedOperationException("Unrecognized architecture " + this);
+		return toString().toLowerCase();
 	}
 
 	// Used to display in UI

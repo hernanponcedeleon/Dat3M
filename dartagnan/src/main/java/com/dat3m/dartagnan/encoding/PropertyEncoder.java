@@ -31,11 +31,13 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
@@ -53,8 +55,9 @@ public class PropertyEncoder implements Encoder {
 
     @Option(
             name = OptionNames.PROPERTY,
-            description = "The property to check for.")
-    private Property property = Property.getDefault();
+            description = "The property to check for: reachability (default), liveness, races.",
+            toUppercase=true)
+    private EnumSet<Property> property = EnumSet.of(Property.getDefault());
 
     // =====================================================================
 
@@ -75,16 +78,19 @@ public class PropertyEncoder implements Encoder {
     public void initializeEncoding(SolverContext context) { }
 
     public BooleanFormula encodeSpecification(SolverContext ctx) {
-        switch (property) {
-            case REACHABILITY:
-                return encodeAssertions(ctx);
-            case LIVENESS:
-                return encodeLiveness(ctx);
-            case RACES:
-                return encodeDataRaces(ctx);
-            default:
-                throw new IllegalStateException("Unrecognized specification: " + property);
-        }
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    	// We have a default property therefore this false will always be overwritten
+    	BooleanFormula enc = bmgr.makeFalse();
+    	if(property.contains(REACHABILITY)) {
+    		enc = bmgr.or(enc, encodeAssertions(ctx));
+    	}
+    	if(property.contains(LIVENESS)) {
+    		enc = bmgr.or(enc, encodeLiveness(ctx));
+    	}
+    	if(property.contains(RACES)) {
+    		enc = bmgr.or(enc, encodeDataRaces(ctx));
+    	}
+    	return enc;
     }
 
     public BooleanFormula encodeBoundEventExec(SolverContext ctx){
@@ -103,7 +109,9 @@ public class PropertyEncoder implements Encoder {
         if (program.getAssFilter() != null) {
             assertionEncoding = bmgr.and(assertionEncoding, program.getAssFilter().encode(ctx));
         }
-        return assertionEncoding;
+        // We use the SMT variable to extract from the model if the property was violated
+		BooleanFormula enc = bmgr.equivalence(getSMTVariable(REACHABILITY, ctx), assertionEncoding);
+        return bmgr.and(getSMTVariable(REACHABILITY, ctx), enc);
     }
 
     public BooleanFormula encodeLiveness(SolverContext ctx) {
@@ -176,7 +184,10 @@ public class PropertyEncoder implements Encoder {
             atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
             allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, isDone));
         }
-        return bmgr.and(allStuckOrDone, atLeastOneStuck);
+        // We use the SMT variable to extract from the model if the property was violated
+		BooleanFormula enc = bmgr.equivalence(getSMTVariable(LIVENESS, ctx), 
+											  bmgr.and(allStuckOrDone, atLeastOneStuck));
+        return bmgr.and(getSMTVariable(LIVENESS, ctx), enc);
     }
 
     public BooleanFormula encodeDataRaces(SolverContext ctx) {
