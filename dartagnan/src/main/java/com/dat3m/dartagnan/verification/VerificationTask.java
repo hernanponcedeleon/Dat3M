@@ -49,10 +49,10 @@ public class VerificationTask {
     // Data objects
     private final Program program;
     private final Wmm memoryModel;
+    private final EnumSet<Property> property;
     private final WitnessGraph witness;
     private final Configuration config;
     private final Context analysisContext;
-    private EnumSet<Property> property = EnumSet.of(Property.getDefault());
 
 
     // Encoders
@@ -65,6 +65,7 @@ public class VerificationTask {
     throws InvalidConfigurationException {
         this.program = checkNotNull(program);
         this.memoryModel = checkNotNull(memoryModel);
+        this.property = checkNotNull(property);
         this.witness = checkNotNull(witness);
         this.config = checkNotNull(config);
         this.analysisContext = Context.create();
