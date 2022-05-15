@@ -135,6 +135,7 @@ public abstract class AbstractLitmusTest {
             .around(timeoutProvider)
             .around(programProvider)
             .around(wmmProvider)
+            .around(propertyProvider)
             .around(taskProvider)
             .around(expectedResultProvider)
             .around(csvLogger)

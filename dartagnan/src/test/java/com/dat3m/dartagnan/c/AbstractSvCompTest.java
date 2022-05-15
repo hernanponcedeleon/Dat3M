@@ -97,6 +97,7 @@ public abstract class AbstractSvCompTest {
             .around(timeoutProvider)
             .around(programProvider)
             .around(wmmProvider)
+            .around(propertyProvider)
             .around(taskProvider)
             .around(expectedResultProvider)
             .around(csvLogger)

@@ -86,6 +86,7 @@ public abstract class AbstractCTest {
             .around(timeoutProvider)
             .around(programProvider)
             .around(wmmProvider)
+            .around(propertyProvider)
             .around(taskProvider)
             .around(csvLogger)
             .around(timeout)
