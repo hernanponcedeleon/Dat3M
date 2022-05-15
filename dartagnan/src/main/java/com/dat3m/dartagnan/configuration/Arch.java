@@ -7,12 +7,6 @@ import com.dat3m.dartagnan.configuration.OptionInterface;
 public enum Arch implements OptionInterface {
 	NONE, ARM8, POWER, TSO, IMM;
 
-	// Used for options in the console
-	@Override
-	public String asStringOption() {
-		return toString().toLowerCase();
-	}
-
 	// Used to display in UI
     @Override
     public String toString() {

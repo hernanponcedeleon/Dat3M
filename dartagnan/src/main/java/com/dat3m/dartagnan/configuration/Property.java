@@ -9,12 +9,6 @@ import org.sosy_lab.java_smt.api.SolverContext;
 public enum Property implements OptionInterface {
 	REACHABILITY, RACES, LIVENESS;
 	
-	// Used for options in the console
-	@Override
-	public String asStringOption() {
-		return toString().toLowerCase();
-	}
-
 	// Used to display in UI
     @Override
     public String toString() {

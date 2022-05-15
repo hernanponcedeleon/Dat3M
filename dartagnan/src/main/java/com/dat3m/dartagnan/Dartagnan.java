@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
@@ -28,6 +29,7 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
@@ -81,6 +83,7 @@ public class Dartagnan extends BaseOptions {
         
 		Wmm mcm = new ParserCat().parse(fileModel);
         Program p = new ProgramParser().parse(fileProgram);
+        EnumSet<Property> properties = o.getProperty();
         
         WitnessGraph witness = new WitnessGraph();
         if(o.runValidator()) {
@@ -88,10 +91,10 @@ public class Dartagnan extends BaseOptions {
         	witness = new ParserWitness().parse(new File(o.getWitnessPath()));
         }
 
-        VerificationTask task = VerificationTask.builder()
+		VerificationTask task = VerificationTask.builder()
                 .withConfig(config)
                 .withWitness(witness)
-                .build(p, mcm, o.getProperty());
+                .build(p, mcm, properties);
 
         ShutdownManager sdm = ShutdownManager.create();
     	Thread t = new Thread(() -> {
@@ -119,8 +122,8 @@ public class Dartagnan extends BaseOptions {
                  ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
             {
                 Result result = UNKNOWN;
-                if(o.getProperty().contains(RACES)) {
-                	if(o.getProperty().size() > 1) {
+                if(properties.contains(RACES)) {
+                	if(properties.size() > 1) {
                     	System.out.println("Data race detection cannot be combined with other properties");
                     	System.exit(1);
                 	}
@@ -171,7 +174,7 @@ public class Dartagnan extends BaseOptions {
 					WitnessBuilder w = new WitnessBuilder(task, ctx, prover, result);
 	                // We only write witnesses for REACHABILITY (if the path to the original C file was given) 
 					// and if we are not doing witness validation
-	                if (o.getProperty().contains(REACHABILITY) && w.canBeBuilt() && !o.runValidator()) {
+	                if (properties.contains(REACHABILITY) && w.canBeBuilt() && !o.runValidator()) {
 						w.build().write();
 	                }
 				} catch(InvalidConfigurationException e) {
