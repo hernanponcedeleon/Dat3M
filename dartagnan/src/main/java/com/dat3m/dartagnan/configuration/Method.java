@@ -5,6 +5,22 @@ import java.util.Arrays;
 public enum Method implements OptionInterface {
 	ASSUME, INCREMENTAL, TWO, CAAT;
 	
+	// Used for options in the console
+	@Override
+	public String asStringOption() {
+        switch(this) {
+        	case TWO:
+        		return "two";
+        	case INCREMENTAL:
+        		return "incremental";
+        	case ASSUME:
+        		return "assume";
+			case CAAT:
+				return "caat";
+        }
+        throw new UnsupportedOperationException("Unrecognized analysis " + this);
+	}
+
 	// Used to display in UI
 	@Override
 	public String toString() {

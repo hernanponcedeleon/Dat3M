@@ -14,9 +14,9 @@ import java.util.EnumSet;
 public abstract class BaseOptions {
 
     @Option(
-            name = PROPERTY,
-            description = "The property to check for: reachability (default), liveness, races.",
-    		toUppercase=true)
+    	name = PROPERTY,
+    	description = "The property to check for: reachability (default), liveness, races.",
+    	toUppercase=true)
     private EnumSet<Property> property = EnumSet.of(Property.getDefault());
 
 	public EnumSet<Property> getProperty() { return property; }
