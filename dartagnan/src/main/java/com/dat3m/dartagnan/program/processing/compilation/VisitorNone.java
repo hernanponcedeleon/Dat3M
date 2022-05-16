@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
@@ -216,6 +217,16 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
         );
 	}
 
+	@Override
+	public List<Event> visitLKMMLock(LKMMLock e) {
+		Register dummy = e.getThread().newRegister(GlobalSettings.ARCH_PRECISION);
+		return eventSequence(
+                Linux.newLockRead(dummy, e.getLock()),
+                newJump(new Atom(dummy, NEQ, IValue.ZERO), (Label)e.getThread().getExit()),
+                Linux.newLockWrite(e.getLock())
+        );
+	}
+	
 	@Override
 	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
