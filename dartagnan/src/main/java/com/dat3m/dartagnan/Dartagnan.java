@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
@@ -29,16 +30,17 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
-import static com.dat3m.dartagnan.configuration.Property.RACES;
+import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static com.dat3m.dartagnan.verification.solving.RefinementSolver.generateGraphvizFile;
+import static com.dat3m.dartagnan.utils.Result.*;
+import static java.lang.Boolean.TRUE;
 import static java.lang.String.valueOf;
 
 @Options
@@ -85,6 +87,7 @@ public class Dartagnan extends BaseOptions {
         
 		Wmm mcm = new ParserCat().parse(fileModel);
         Program p = new ProgramParser().parse(fileProgram);
+        EnumSet<Property> properties = o.getProperty();
         
         WitnessGraph witness = new WitnessGraph();
         if(o.runValidator()) {
@@ -92,10 +95,10 @@ public class Dartagnan extends BaseOptions {
         	witness = new ParserWitness().parse(new File(o.getWitnessPath()));
         }
 
-        VerificationTask task = VerificationTask.builder()
+		VerificationTask task = VerificationTask.builder()
                 .withConfig(config)
                 .withWitness(witness)
-                .build(p, mcm);
+                .build(p, mcm, properties);
 
         ShutdownManager sdm = ShutdownManager.create();
     	Thread t = new Thread(() -> {
@@ -123,30 +126,31 @@ public class Dartagnan extends BaseOptions {
                  ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
             {
                 Result result = UNKNOWN;
-                switch (o.getProperty()) {
-                	case RACES:
-                    	result = DataRaceSolver.run(ctx, prover, task);
-                        break;
-                	case LIVENESS:
-                    case REACHABILITY:
-                    	switch (o.getMethod()) {
-                        	case TWO:
-                            	try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-                                	result = TwoSolvers.run(ctx, prover, prover2, task);
-                                }
-                                break;
-                            case INCREMENTAL:
-                            	result = IncrementalSolver.run(ctx, prover, task);
-                                break;
-                            case ASSUME:
-                            	result = AssumeSolver.run(ctx, prover, task);
-                            	break;
-                            case CAAT:
-                            	result = RefinementSolver.run(ctx, prover,
-                            			RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
-                                break;
-                        }
-                        break;
+                if(properties.contains(RACES)) {
+                	if(properties.size() > 1) {
+                    	System.out.println("Data race detection cannot be combined with other properties");
+                    	System.exit(1);
+                	}
+                	result = DataRaceSolver.run(ctx, prover, task);
+                } else {
+                	// Property is either LIVENESS and/or REACHABILITY
+                	switch (o.getMethod()) {
+                		case TWO:
+                			try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+                				result = TwoSolvers.run(ctx, prover, prover2, task);
+                			}
+                			break;
+                		case INCREMENTAL:
+                			result = IncrementalSolver.run(ctx, prover, task);
+                			break;
+                		case ASSUME:
+                			result = AssumeSolver.run(ctx, prover, task);
+                			break;
+                		case CAAT:
+                			result = RefinementSolver.run(ctx, prover,
+                					RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
+                			break;
+                	}
                 }
 
                 // Verification ended, we can interrupt the timeout Thread
@@ -166,6 +170,14 @@ public class Dartagnan extends BaseOptions {
                     System.out.println("Condition " + p.getAss().toStringWithType());
                     System.out.println(result == FAIL ? "Ok" : "No");
                 } else {
+                	if(result == FAIL) {
+                		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(ctx)))) {
+                			System.out.println("Safety violation found");
+                		}
+                		if(TRUE.equals(prover.getModel().evaluate(LIVENESS.getSMTVariable(ctx)))) {
+                			System.out.println("Liveness violation found");
+                		}
+                	}
                     System.out.println(result);
                 }
 
@@ -173,7 +185,7 @@ public class Dartagnan extends BaseOptions {
 					WitnessBuilder w = new WitnessBuilder(task, ctx, prover, result);
 	                // We only write witnesses for REACHABILITY (if the path to the original C file was given) 
 					// and if we are not doing witness validation
-	                if (!o.getProperty().equals(RACES) && w.canBeBuilt() && !o.runValidator()) {
+	                if (properties.contains(REACHABILITY) && w.canBeBuilt() && !o.runValidator()) {
 						w.build().write();
 	                }
 				} catch(InvalidConfigurationException e) {

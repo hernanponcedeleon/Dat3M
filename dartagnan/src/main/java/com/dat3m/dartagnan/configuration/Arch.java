@@ -5,22 +5,7 @@ import java.util.Arrays;
 import com.dat3m.dartagnan.configuration.OptionInterface;
 
 public enum Arch implements OptionInterface {
-	NONE, ARM8, POWER, TSO;
-
-	// Used for options in the console
-	public String asStringOption() {
-        switch(this){
-        	case NONE:
-        		return "none";
-        	case ARM8:
-        		return "arm8";
-        	case POWER:
-        		return "power";
-        	case TSO:
-        		return "tso";
-        }
-        throw new UnsupportedOperationException("Unrecognized architecture " + this);
-	}
+	NONE, ARM8, POWER, TSO, IMM;
 
 	// Used to display in UI
     @Override
@@ -34,6 +19,8 @@ public enum Arch implements OptionInterface {
                 return "Power";
             case TSO:
                 return "TSO";
+            case IMM:
+                return "IMM";
         }
         throw new UnsupportedOperationException("Unrecognized architecture " + this);
     }
@@ -44,7 +31,7 @@ public enum Arch implements OptionInterface {
 	
 	// Used to decide the order shown by the selector in the UI
 	public static Arch[] orderedValues() {
-		Arch[] order = { NONE, ARM8, POWER, TSO };
+		Arch[] order = { NONE, ARM8, IMM, POWER, TSO };
 		// Be sure no element is missing
 		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;

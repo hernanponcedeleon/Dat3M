@@ -147,10 +147,10 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         Fence optionalMemoryBarrier = null;
-        // Academics papers normally say an isync barrier is enough
-        // However this makes benchmark linuxrwlocks.c fail
-        // Additionally, power compilers in godbolt.org use a lwsync
-        Fence optionalISyncBarrier = mo.equals(C11.MO_SC) || mo.equals(C11.MO_ACQUIRE) || mo.equals(C11.MO_ACQUIRE_RELEASE) ? Power.newLwSyncBarrier() : null;
+        // Academics papers (e.g. https://plv.mpi-sws.org/imm/paper.pdf) say an isync barrier is enough
+        // However, power compilers in godbolt.org use a lwsync.
+        // We stick to the literature to potentially find bugs in what researchers claim.
+        Fence optionalISyncBarrier = mo.equals(C11.MO_SC) || mo.equals(C11.MO_ACQUIRE) || mo.equals(C11.MO_ACQUIRE_RELEASE) ? Power.newISyncBarrier() : null;
         optionalMemoryBarrier = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier()
                 : mo.equals(C11.MO_RELEASE) || mo.equals(C11.MO_ACQUIRE_RELEASE) ? Power.newLwSyncBarrier()
                 : null;

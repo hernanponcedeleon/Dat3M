@@ -48,7 +48,7 @@ public class IncrementalSolver {
         prover.addConstraint(symmEncoder.encodeFullSymmetry(ctx));
         logger.info("Starting push()");
         prover.push();
-        prover.addConstraint(propertyEncoder.encodeSpecification(ctx));
+        prover.addConstraint(propertyEncoder.encodeSpecification(task.getProperty(), ctx));
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsat()) {

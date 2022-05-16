@@ -282,7 +282,7 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 
 	@Override
 	public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-        return Collections.emptyList();
+		return Collections.singletonList(newFence(e.getMo()));
 	}
 
 	@Override

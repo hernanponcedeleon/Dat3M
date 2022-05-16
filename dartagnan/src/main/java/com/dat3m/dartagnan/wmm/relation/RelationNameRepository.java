@@ -40,5 +40,6 @@ public class RelationNameRepository {
 	public static final String LWSYNC = "lwsync";
 	public static final String CTRLISYNC = "ctrlisync";
 	public static final String CTRLISB = "ctrlisb";
+	public static final String CASDEP = "casdep";
 
 }

@@ -77,6 +77,8 @@ public class Compilation implements ProgramProcessor {
                 visitor = new VisitorPower(); break;
             case ARM8:
                 visitor = new VisitorArm8(); break;
+            case IMM:
+                visitor = new VisitorIMM(); break;
             default:
                 throw new UnsupportedOperationException(String.format("Compilation to %s is not supported.", target));
         }
