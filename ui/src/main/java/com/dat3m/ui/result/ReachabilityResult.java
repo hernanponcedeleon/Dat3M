@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.verification.solving.TwoSolvers;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.utils.Utils;
 import org.sosy_lab.common.ShutdownManager;
@@ -21,6 +22,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
+
+import java.util.EnumSet;
 
 public class ReachabilityResult {
 
@@ -63,7 +66,7 @@ public class ReachabilityResult {
                         .withBound(options.getBound())
                         .withSolverTimeout(options.getTimeout())
                         .withTarget(arch)
-                        .build(program, wmm);
+                        .build(program, wmm, EnumSet.of(Property.getDefault()));
 
             	t.start();
                 Configuration config = Configuration.builder()
