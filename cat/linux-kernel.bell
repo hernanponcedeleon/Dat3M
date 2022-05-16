@@ -78,6 +78,9 @@ flag ~empty rcu-rscs & (po ; [Sync-srcu] ; po) as invalid-sleep
 (* Validate SRCU dynamic match *)
 flag ~empty different-values(srcu-rscs) as srcu-bad-nesting
 
+(* Outermost level of nesting only *)
+let crit = srcu-rscs \ (po^-1 ; srcu-rscs ; po^-1)
+
 (* Compute marked and plain memory accesses *)
 let Marked = (~M) | IW | Once | Release | Acquire | domain(rmw) | range(rmw) |
 		LKR | LKW | UL | LF | RL | RU
