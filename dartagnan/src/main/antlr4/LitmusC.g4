@@ -116,7 +116,7 @@ re locals [IOpBin op, String mo]
         | RcuDereference    LPar Ast? address = re RPar {$mo = MO_RELAXED;}
         | SmpLoadAcquire    LPar address = re RPar {$mo = MO_ACQUIRE;})                                                 # reLoad
 
-    |   ReadOnce LPar Ast address = re RPar {$mo = "Once";}                                                             # reReadOnce
+    |   ReadOnce LPar Ast address = re RPar {$mo = MO_ONCE;}                                                             # reReadOnce
     |   Ast address = re {$mo = "NA";}                                                                                  # reReadNa
 
 //    |   SpinTrylock LPar address = re RPar                                                                            # reSpinTryLock
@@ -146,7 +146,7 @@ nre locals [IOpBin op, String mo, String name]
         | SmpStoreMb        LPar address = re Comma value = re RPar {$mo = MO_MB;}
         | RcuAssignPointer  LPar Ast? address = re Comma value = re RPar {$mo = MO_RELEASE;})                           # nreStore
 
-    |   WriteOnce LPar Ast address = re Comma value = re RPar {$mo = "Once";}                                           # nreWriteOnce
+    |   WriteOnce LPar Ast address = re Comma value = re RPar {$mo = MO_ONCE;}                                           # nreWriteOnce
 
     |   Ast? varName Equals re                                                                                          # nreAssignment
     |   typeSpecifier varName (Equals re)?                                                                              # nreRegDeclaration

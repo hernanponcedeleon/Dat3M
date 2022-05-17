@@ -122,6 +122,7 @@ public final class Tag {
         public static final String MO_RELAXED    = "Relaxed";
         public static final String MO_RELEASE    = "Release";
         public static final String MO_ACQUIRE    = "Acquire";
+        public static final String MO_ONCE       = "Once";
         public static final String LOCK_READ     = "LKR";
         public static final String LOCK_WRITE    = "LKW";
         public static final String UNLOCK        = "UL";
