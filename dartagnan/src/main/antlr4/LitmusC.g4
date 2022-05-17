@@ -112,7 +112,7 @@ re locals [IOpBin op, String mo]
     |   AtomicAddUnless LPar address = re Comma value = re Comma cmp = re RPar                                          # reAtomicAddUnless
 
     |   ( AtomicReadAcquire LPar address = re RPar {$mo = MO_ACQUIRE;}
-        | AtomicRead        LPar address = re RPar {$mo = MO_RELAXED;}
+        | AtomicRead        LPar address = re RPar {$mo = MO_ONCE;}
         | RcuDereference    LPar Ast? address = re RPar {$mo = MO_ONCE;}
         | SmpLoadAcquire    LPar address = re RPar {$mo = MO_ACQUIRE;})                                                 # reLoad
 
@@ -140,7 +140,7 @@ nre locals [IOpBin op, String mo, String name]
         | AtomicInc LPar address = re RPar {$op = IOpBin.PLUS;}
         | AtomicDec LPar address = re RPar {$op = IOpBin.MINUS;})                                                       # nreAtomicOp
 
-    |   ( AtomicSet         LPar address = re Comma value = re RPar {$mo = MO_RELAXED;}
+    |   ( AtomicSet         LPar address = re Comma value = re RPar {$mo = MO_ONCE;}
         | AtomicSetRelease  LPar address = re Comma value = re RPar {$mo = MO_RELEASE;}
         | SmpStoreRelease   LPar address = re Comma value = re RPar {$mo = MO_RELEASE;}
         | SmpStoreMb        LPar address = re Comma value = re RPar {$mo = MO_MB;}
