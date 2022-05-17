@@ -1,0 +1,25 @@
+C C-S-rcuderef
+
+(* Result: Never *)
+
+{
+	int *x = &a;
+}
+
+P0(int **x, int *y)
+{
+	int *r0;
+
+	r0 = rcu_dereference(*x);
+	*r0 = 2;
+}
+
+P1(int **x, int *y)
+{
+	int r0;
+
+	WRITE_ONCE(*y, 1);
+	rcu_assign_pointer(*x, y);
+}
+
+exists (0:r0=y /\ (~y=2 \/ a=2))

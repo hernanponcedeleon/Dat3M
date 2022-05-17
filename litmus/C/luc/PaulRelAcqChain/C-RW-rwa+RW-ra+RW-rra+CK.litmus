@@ -1,6 +1,7 @@
 C C-RW-rwa+RW-ra+RW-rra+CK
 (*
- * Result: Sometimes, due to release-acquire being only locally transitive.
+ * Result: Sometimes
+ * This is due to release-acquire being only locally transitive.
  * I believe that this is allowed by PowerPC.
  *)
 {

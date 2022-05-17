@@ -1,0 +1,87 @@
+C C-viro-2020.09.29a
+
+(*
+ * Result: Sometimes
+ *
+ * This is based on an example from Al Viro, but it is also a case
+ * where the memory model does not accurately handle compiler
+ * optimizations.  A memory model that was perfectly in tune with
+ * the compiler would instead say "Never".
+ *
+ * See Alan Stern's analysis and Joel Fernandes's testing in this thread:
+ * https://lore.kernel.org/lkml/20201003020136.GA307978@rowland.harvard.edu/
+ *)
+
+{
+	int a = 1;
+	int b = 1;
+	int v = 1;
+}
+
+
+P0(int *a, int *b, int *v, spinlock_t *l)
+{
+	int r0;
+	int r1;
+	int r2 = 2;
+	int r8;
+	int r9a = 2;
+	int r9b = 2;
+
+	r0 = 0;
+	spin_lock(l);
+	r9a = READ_ONCE(*v); // Use after free?
+	r8 = r9a - r9a; // Restore address dependency
+	r8 = b + r8;
+	r1 = smp_load_acquire(r8);
+	if (r1 == 0)
+		r0 = 1;
+	r9b = READ_ONCE(*v); // Use after free?
+	WRITE_ONCE(*a, r9b - r9b); // Use data dependency
+	spin_unlock(l);
+	if (r0) {
+		r2 = READ_ONCE(*v);
+		WRITE_ONCE(*v, 0); /* kfree(). */
+	}
+}
+
+P1(int *a, int *b, int *v, spinlock_t *l)
+{
+	int r0;
+	int r1;
+	int r1a;
+	int r2 = 2;
+	int r8;
+	int r9a = 2;
+	int r9b = 2;
+	int r9c = 2;
+
+	r0 = 1;
+	r9a = READ_ONCE(*v); // Use after free?
+	r8 = r9a - r9a; // Restore address dependency
+	r8 = a + r8;
+	r1 = READ_ONCE(*r8);
+	if (r1) {
+		spin_lock(l);
+		r9b = READ_ONCE(*v); // Use after free?
+		r8 = r9b - r9b; // Restore address dependency
+		r8 = a + r8;
+		r1a = READ_ONCE(*r8);
+		if (r1a)
+			r0 = 0;
+		r9c = READ_ONCE(*v); // Use after free?
+		smp_store_release(b, r9c - r9c); // Use data dependency
+		spin_unlock(l);
+	}
+	if (r0) {
+		r2 = READ_ONCE(*v);
+		WRITE_ONCE(*v, 0); /* kfree(). */
+	}
+}
+
+locations [a;b;v;0:r1;0:r8;1:r1;1:r8]
+exists (0:r0=1:r0 \/ (* Both or neither did kfree(). *)
+	v=1 \/ (* Neither did kfree, redundant check. *)
+	0:r2=0 \/ 1:r2=0 \/  (* Both did kfree, redundant check. *)
+	0:r9a=0 \/ 0:r9b=0 \/ 1:r9a=0 \/ (* CPU1 use after free. *)
+	1:r9b=0 \/ 1:r9c=0) (* CPU2 use after free. *)

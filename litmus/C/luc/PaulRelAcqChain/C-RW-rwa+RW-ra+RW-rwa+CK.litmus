@@ -1,7 +1,8 @@
 C C-RW-rwa+RW-ra+RW-rwa+CK
 (*
- * Result: Free choice.  "Allow" for simpler ruleset, "Forbid" for
- * tighter ordering.  I -think- that this is forbidden on Power...
+ * Result: Maybe
+ * "Allow" for simpler ruleset, "Forbid" for tighter ordering.
+ * I -think- that this is forbidden on Power...
  *)
 {
 }

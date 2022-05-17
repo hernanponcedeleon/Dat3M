@@ -1,0 +1,36 @@
+C C-SRCU-misnest
+
+(*
+ * Should flag an error.
+ *)
+
+{
+}
+
+P0(int *x0, int *x1, struct srcu_struct *ssp1)
+{
+	int r0;
+	int r1;
+	int r2;
+
+	r0 = srcu_read_lock(ssp1);
+	r1 = READ_ONCE(*x1); // SB, but intentionally reversed.
+	r2 = srcu_read_lock(ssp1);
+	srcu_read_unlock(ssp1, r0);
+	WRITE_ONCE(*x0, 1);
+	srcu_read_unlock(ssp1, r2);
+}
+
+P1(int *x1, int *x2, struct srcu_struct *ssp2)
+{
+	int r0;
+	int r1;
+
+	r0 = srcu_read_lock(ssp2);
+	r1 = READ_ONCE(*x2);
+	WRITE_ONCE(*x1, 1);
+	srcu_read_unlock(ssp2, r0);
+}
+
+exists
+(0:r1=0 /\ 1:r1=0)

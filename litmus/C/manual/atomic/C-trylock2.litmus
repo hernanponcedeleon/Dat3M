@@ -1,0 +1,33 @@
+C C-trylock2
+
+(* Expected result: allowed *)
+
+{
+}
+
+P0(int *x, spinlock_t *s)
+{
+  int r0;
+  int r1;
+
+  r0 = spin_trylock(s);
+  if (r0) {
+    WRITE_ONCE(*x,READ_ONCE(*x)+1);
+    spin_unlock(s);
+ }
+}
+
+P1(int *x, spinlock_t *s)
+{
+  int r0;
+  int r1;
+
+  r0 = spin_trylock(s);
+  if (r0) {
+    WRITE_ONCE(*x,READ_ONCE(*x)+1);
+    spin_unlock(s);
+ }
+}
+
+locations [x;]
+exists (x=1)

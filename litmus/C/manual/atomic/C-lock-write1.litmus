@@ -1,0 +1,28 @@
+C lock-write1
+
+(* Expected result: forbidden *)
+
+{
+}
+
+P0(int *x, spinlock_t *s)
+{
+	WRITE_ONCE(*x, 1);
+	smp_wmb();
+	spin_lock(s);
+	spin_unlock(s);
+}
+
+P1(int *x, spinlock_t *s)
+{
+	int r0;
+	int r1;
+
+	r0 = spin_trylock(s);
+	smp_rmb();
+	r1 = READ_ONCE(*x);
+	if (r0)
+		spin_unlock(s);
+}
+
+exists (1:r0=0 /\ 1:r1=0)

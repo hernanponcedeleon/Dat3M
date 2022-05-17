@@ -1,0 +1,27 @@
+C C-S-rcunoderef-1
+
+(* Result: Never DATARACE *)
+
+{
+}
+
+P0(int *a, int *b)
+{
+	*a = 1;
+	synchronize_rcu();
+	*b = 2;
+}
+
+P1(int *a, int *b)
+{
+	int *r1;
+
+	rcu_read_lock();
+	r1 = *a;
+	if (r1 == 0)
+		*b = 1;
+	rcu_read_unlock();
+}
+
+locations [1:r1]
+exists (~b=2)

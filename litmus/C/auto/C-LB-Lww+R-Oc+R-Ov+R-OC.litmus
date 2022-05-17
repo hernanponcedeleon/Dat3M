@@ -1,6 +1,6 @@
 C auto/C-LB-Lww+R-Oc+R-Ov+R-OC
 (*
- * Result: Never
+ * Result: Never DATARACE
  * 
  *)
 {

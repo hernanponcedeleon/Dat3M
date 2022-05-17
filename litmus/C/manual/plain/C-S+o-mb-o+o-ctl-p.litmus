@@ -1,0 +1,28 @@
+C S+o-mb-o+o-ctl-p
+
+(*
+ * Result: Never DATARACE
+ *
+ * Demonstrate compiler write-to-read transformation for plain write.
+ *)
+
+{
+}
+
+P0(int *x, int *z)
+{
+	WRITE_ONCE(*z, 1);
+	smp_mb();
+	WRITE_ONCE(*x, 1);
+}
+
+P1(int *x, int *z)
+{
+	int r1;
+
+	r1 = READ_ONCE(*x);
+	if (r1 == 1)
+		*z = 0;
+}
+
+exists (1:r1=1 /\ z=1)

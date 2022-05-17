@@ -10,11 +10,15 @@ C atomic_dec_and_test-is-atomic
 
 P0(atomic_t *x)
 {
+        int r1;
+
         r1 = atomic_dec_and_test(x);
 }
 
 P1(atomic_t *x)
 {
+        int r2;
+
         r2 = atomic_dec_and_test(x);
 }
 

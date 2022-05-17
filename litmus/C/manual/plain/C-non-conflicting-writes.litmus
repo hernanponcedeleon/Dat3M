@@ -1,5 +1,14 @@
 C non-conflicting-writes
 
+(*
+ * Result: Sometimes DATARACE
+ *
+ * First, smp_wmb() isn't cumulative, so the result is allowed even when
+ * all plain writes are convered to WRITE_ONCE().  Second, the read-to-write
+ * optimization means that smp_wmb() does not necessarily order
+ * plain writes.
+ *)
+
 {}
 
 P0(int *x, int *y)

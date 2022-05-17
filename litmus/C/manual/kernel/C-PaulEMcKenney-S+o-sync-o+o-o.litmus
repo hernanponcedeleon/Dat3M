@@ -1,6 +1,9 @@
 C C-PaulEMcKenney-S+o-sync-o+o-o.litmus
 
-(* Expected result: Sometimes, based on no ordering in P1(). *)
+(*
+ * Result: Sometimes
+ * Based on no ordering in P1().
+ *)
 
 {
 }

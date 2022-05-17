@@ -1,0 +1,25 @@
+C C-MP-rcuderef
+
+(* Result: Never *)
+
+{
+	int *x = &a;
+}
+
+P0(int **x, int *y)
+{
+	int *r0;
+
+	r0 = rcu_dereference(*x);
+	r1 = *r0;
+}
+
+P1(int **x, int *y)
+{
+	int r0;
+
+	WRITE_ONCE(*y, 1);
+	rcu_assign_pointer(*x, y);
+}
+
+exists (0:r0=y /\ 0:r0=0)

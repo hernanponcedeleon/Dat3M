@@ -1,0 +1,19 @@
+PPC PPC-DCL.litmus
+{
+        0:r2=i; 0:r3=a; 0:r4=b;
+1:r1=1; 1:r2=i; 1:r3=a; 1:r4=b; 1:r5=l;
+}
+ P0             | P1              ;
+ lwz r10,0(r2)  | lwarx r10,r6,r5 ;
+ cmpwi r10,1    | cmpwi r10,1     ;
+ bne SKIP       | beq LOCKHELD    ;
+ lwz r11,0(r3)  | stwcx. r1,r6,r5 ;
+ lwz r12,0(r4)  | bne LOCKHELD    ;
+ SKIP:          | stw r1,0(r3)    ;
+                | stw r1,0(r4)    ;
+                | stw r1,0(r2)    ;
+                | lwsync          ;
+		| stw r6,0(r5)    ;
+                | LOCKHELD:       ;
+exists
+(0:r10=1 /\ (0:r11=0 \/ 0:r12=0))

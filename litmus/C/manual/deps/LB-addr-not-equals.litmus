@@ -1,0 +1,35 @@
+C LB-addr-not-equals
+(*
+ * Result: Never
+ *
+ * If the user code compares two pointers, and if the result of that
+ * comparison is not-equals, the compiler cannot substitute one pointer
+ * for the other.  Address dependencies must therefore be preserved.
+ *)
+{
+	int x = 2;
+	int y = 0;
+	int *z = x;
+}
+
+P0(int *y, int **z)
+{
+	WRITE_ONCE(*y, 1);
+	smp_store_release(z, y);
+}
+
+P1(int *y, int **z)
+{
+	int r1 = y;
+	int r2;
+	int r3;
+
+	r2 = READ_ONCE(*z);
+	if (r1 != r2) {
+		r3 = READ_ONCE(*r2);
+	} else {
+		r3 = 42;
+	}
+}
+
+exists (1:r3=0)

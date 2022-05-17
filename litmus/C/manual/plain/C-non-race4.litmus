@@ -1,0 +1,34 @@
+C C-non-race4
+
+(*
+ * Result: Never DATARACE
+ *
+ * Standard RCU pattern with intervening store to memory, except that
+ * it is to shared memory rather than a local.  Need at least a
+ * WRITE_ONCE() and READ_ONCE() on the two accesses to tmp for this
+ * to be forbidden.
+ *)
+
+{
+	int *x = &a;
+}
+
+P0(int **x, int *b)
+{
+	*b = 1;
+	smp_store_release(x, b);
+}
+
+P1(int **x, int **tmp)
+{
+	int *r1;
+	int *r2;
+	int r3;
+
+	r1 = READ_ONCE(*x);
+	*tmp = r1;
+	r2 = *tmp;
+	r3 = *r2;
+}
+
+exists (1:r1=b /\ 1:r3=0)
