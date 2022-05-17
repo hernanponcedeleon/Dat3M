@@ -113,7 +113,7 @@ re locals [IOpBin op, String mo]
 
     |   ( AtomicReadAcquire LPar address = re RPar {$mo = MO_ACQUIRE;}
         | AtomicRead        LPar address = re RPar {$mo = MO_RELAXED;}
-        | RcuDereference    LPar Ast? address = re RPar {$mo = MO_RELAXED;}
+        | RcuDereference    LPar Ast? address = re RPar {$mo = MO_ONCE;}
         | SmpLoadAcquire    LPar address = re RPar {$mo = MO_ACQUIRE;})                                                 # reLoad
 
     |   ReadOnce LPar Ast address = re RPar {$mo = MO_ONCE;}                                                             # reReadOnce
