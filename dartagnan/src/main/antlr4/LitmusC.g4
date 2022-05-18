@@ -161,6 +161,7 @@ nre locals [IOpBin op, String mo, String name]
         | FenceSmpMbBeforeAtomic LPar RPar {$name = "Before-atomic";}
         | FenceSmpMbAfterAtomic LPar RPar {$name = "After-atomic";}
         | FenceSmpMbAfterSpinLock LPar RPar {$name = "After-spinlock";}
+        | FenceSmpMbAfterUnlockLock LPar RPar {$name = "After-unlock-lock";}
         | RcuReadLock LPar RPar {$name = RCU_LOCK;}
         | RcuReadUnlock LPar RPar {$name = RCU_UNLOCK;}
         | (RcuSync | RcuSyncExpedited) LPar RPar {$name = RCU_SYNC;})                                             # nreFence
