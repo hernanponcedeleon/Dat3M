@@ -141,6 +141,7 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
         Store store = newRMWStoreExclusive(address, dummyReg, Tag.ARMv8.extractStoreMoFromCMo(mo), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        fakeCtrlDep.addFilters(Tag.NOOPT);
 
         return eventSequence(
                 load,
@@ -187,6 +188,7 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
         Store store = newRMWStoreExclusive(address, value, Tag.ARMv8.extractStoreMoFromCMo(mo), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        fakeCtrlDep.addFilters(Tag.NOOPT);
 
         return eventSequence(
                 load,

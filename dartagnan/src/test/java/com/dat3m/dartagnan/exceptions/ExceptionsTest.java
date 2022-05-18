@@ -38,16 +38,16 @@ public class ExceptionsTest {
 
     @Test(expected = MalformedProgramException.class)
     public void noThread() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder();
+    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
     	// Thread 1 does not exists
     	pb.addChild(1, new Skip());
     }
 
     @Test(expected = MalformedProgramException.class)
     public void RegisterAlreadyExist() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder();
+    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
     	pb.initThread(0);
-    	Thread t = pb.build(SourceLanguage.LITMUS).getThreads().get(0);
+    	Thread t = pb.build().getThreads().get(0);
     	t.newRegister("r1", -1);
     	// Adding same register a second time
     	t.newRegister("r1", -1);
@@ -56,17 +56,17 @@ public class ExceptionsTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void compileBeforeUnrollException() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder();
+    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
     	pb.initThread(0);
     	// Program must be unrolled first
-    	Compilation.newInstance().run(pb.build(SourceLanguage.LITMUS));
+    	Compilation.newInstance().run(pb.build());
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void unrollBeforeReorderException() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder();
+    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
     	pb.initThread(0);
-    	Program p = pb.build(SourceLanguage.LITMUS);
+    	Program p = pb.build();
     	LoopUnrolling.newInstance().run(p);
     	// Reordering cannot be called after unrolling
     	BranchReordering.newInstance().run(p);
@@ -74,9 +74,9 @@ public class ExceptionsTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void initializedBeforeCompileException() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder();
+    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
     	pb.initThread(0);
-    	Program p = pb.build(SourceLanguage.LITMUS);
+    	Program p = pb.build();
 		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/tso.cat"));
 		Configuration config = Configuration.defaultConfiguration();
 		VerificationTask task = VerificationTask.builder()
@@ -88,9 +88,9 @@ public class ExceptionsTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void unrollBeforeDCEException() throws Exception {
-        ProgramBuilder pb = new ProgramBuilder();
+        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
         pb.initThread(0);
-        Program p = pb.build(SourceLanguage.LITMUS);
+        Program p = pb.build();
         LoopUnrolling.newInstance().run(p);
         // DCE cannot be called after unrolling
         DeadCodeElimination.newInstance().run(p);
@@ -124,7 +124,7 @@ public class ExceptionsTest {
     
     @Test(expected = NullPointerException.class)
     public void JumpWithNullLabel() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder();
+    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
     	pb.initThread(0);
     	// Label cannot be null
     	pb.addChild(0, new CondJump(BConst.FALSE, null));
@@ -132,7 +132,7 @@ public class ExceptionsTest {
 
     @Test(expected = NullPointerException.class)
     public void JumpWithNullExpr() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder();
+    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
     	pb.initThread(0);
     	Label end = pb.getOrCreateLabel("END");
     	// The expr cannot be null

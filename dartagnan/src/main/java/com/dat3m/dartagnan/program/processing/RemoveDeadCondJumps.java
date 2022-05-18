@@ -97,7 +97,7 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
             if(dead && immediateLabelPredecessors.containsKey(cur.getSuccessor())) {
                 immediateLabelPredecessors.get(cur.getSuccessor()).remove(cur);
             }
-            if(dead || removed.contains(cur) && !cur.is(Tag.NOOPT)) {
+            if((dead || removed.contains(cur)) && !cur.is(Tag.NOOPT)) {
                 cur.delete(pred);
                 cur = pred;
             }

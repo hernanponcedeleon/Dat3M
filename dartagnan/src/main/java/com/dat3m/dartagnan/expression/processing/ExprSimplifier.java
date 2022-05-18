@@ -18,6 +18,22 @@ public class ExprSimplifier extends ExprTransformer {
     public ExprInterface visit(Atom atom) {
         ExprInterface lhs = atom.getLHS().visit(this);
         ExprInterface rhs = atom.getRHS().visit(this);
+        if (lhs instanceof Register && rhs instanceof Register && lhs.equals(rhs)) {
+        	switch(atom.getOp()) {
+        		case EQ:
+        		case LTE:
+        		case ULTE:
+        		case GTE:
+        		case UGTE:
+        			return BConst.TRUE;
+        		case NEQ:
+        		case LT:
+        		case ULT:
+        		case GT:
+        		case UGT:
+        			return BConst.FALSE;
+        	}
+        }
         if (lhs instanceof IConst && rhs instanceof  IConst) {
             IConst lc = (IConst) lhs;
             IConst rc = (IConst) rhs;
@@ -119,6 +135,15 @@ public class ExprSimplifier extends ExprTransformer {
         IExpr lhs = (IExpr)iBin.getLHS().visit(this);
         IExpr rhs = (IExpr)iBin.getRHS().visit(this);
         IOpBin op = iBin.getOp();
+        if (lhs instanceof Register && rhs instanceof Register && lhs.equals(rhs)) {
+        	switch(op) {
+        		case AND:
+        		case OR:
+        			return lhs;
+        		case XOR:
+        			return IValue.ZERO;
+        	}
+        }
         if (! (lhs instanceof IConst || rhs instanceof IConst)) {
             return new IExprBin(lhs, iBin.getOp(), rhs);
         } else if (lhs instanceof IConst && rhs instanceof IConst) {
