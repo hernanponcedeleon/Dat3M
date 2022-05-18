@@ -112,7 +112,7 @@ let rcu-gp = [Sync-rcu]		(* Compare with gp *)
 let srcu-gp = [Sync-srcu]
 // We don't support nested RCUs
 let rcu-rscsi = crit^-1
-// We don't support nested SRCU
+// We don't support SRCU
 let srcu-rscsi = 0
 
 (*
