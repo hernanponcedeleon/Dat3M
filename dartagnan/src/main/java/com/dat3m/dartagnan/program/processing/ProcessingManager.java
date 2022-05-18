@@ -36,7 +36,7 @@ public class ProcessingManager implements ProgramProcessor {
 	@Option(name= CONSTANT_PROPAGATION,
 			description="Performs constant propagation.",
 			secure=true)
-		private boolean constantPropagation = false;
+		private boolean constantPropagation = true;
 
     // ======================================================================
 
