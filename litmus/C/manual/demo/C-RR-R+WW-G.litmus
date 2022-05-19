@@ -3,16 +3,16 @@ C auto/C-RR-R+WW-G
 }
 
 
-P0(int *x0, int *x1)
+P0(int *x, int *y)
 {
-        int r1; int r2;
+    int r1; int r2;
 	rcu_read_lock();
 	r1 = READ_ONCE(*x);
 	r2 = READ_ONCE(*y);
 	rcu_read_unlock();
 }
 
-P1(int *x0, int *x1)
+P1(int *x, int *y)
 {
 	WRITE_ONCE(*y, 1);
 	synchronize_rcu();
