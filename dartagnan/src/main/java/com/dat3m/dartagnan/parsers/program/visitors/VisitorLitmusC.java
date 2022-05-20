@@ -381,7 +381,7 @@ public class VisitorLitmusC
     public Object visitNreStore(LitmusCParser.NreStoreContext ctx){
         ExprInterface value = (ExprInterface)ctx.value.accept(this);
         if(ctx.mo.equals(Tag.Linux.MO_MB)){
-            Event event = EventFactory.newStore(getAddress(ctx.address), value, Tag.Linux.MO_RELAXED);
+            Event event = EventFactory.newStore(getAddress(ctx.address), value, Tag.Linux.MO_ONCE);
             programBuilder.addChild(currentThread, event);
             return programBuilder.addChild(currentThread, EventFactory.Linux.newMemoryBarrier());
         }

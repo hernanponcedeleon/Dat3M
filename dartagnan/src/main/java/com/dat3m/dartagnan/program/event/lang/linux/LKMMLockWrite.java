@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.program.event.core.Store;
 public class LKMMLockWrite extends Store {
 
 	public LKMMLockWrite(IExpr lock) {
-		super(lock, IValue.ONE, Tag.Linux.MO_RELAXED);
+		super(lock, IValue.ONE, Tag.Linux.MO_ONCE);
 		addFilters(RMW, Linux.LOCK_WRITE);
 	}
 
