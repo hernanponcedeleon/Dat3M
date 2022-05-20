@@ -24,7 +24,7 @@ public final class Tag {
     public static final String BOUND   		= "BOUND";
     public static final String SPINLOOP   	= "SPINLOOP";
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
-    public static final String NOOPT   		= "NOOOPT";
+    public static final String NOOPT   		= "NOOPT";
 
     // =============================================================================================
     // =========================================== ARMv8 ===========================================

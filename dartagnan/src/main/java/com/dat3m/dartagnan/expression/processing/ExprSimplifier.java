@@ -18,7 +18,7 @@ public class ExprSimplifier extends ExprTransformer {
     public ExprInterface visit(Atom atom) {
         ExprInterface lhs = atom.getLHS().visit(this);
         ExprInterface rhs = atom.getRHS().visit(this);
-        if (lhs instanceof Register && rhs instanceof Register && lhs.equals(rhs)) {
+        if (lhs.equals(rhs)) {
         	switch(atom.getOp()) {
         		case EQ:
         		case LTE:
@@ -135,7 +135,7 @@ public class ExprSimplifier extends ExprTransformer {
         IExpr lhs = (IExpr)iBin.getLHS().visit(this);
         IExpr rhs = (IExpr)iBin.getRHS().visit(this);
         IOpBin op = iBin.getOp();
-        if (lhs instanceof Register && rhs instanceof Register && lhs.equals(rhs)) {
+        if (lhs.equals(rhs)) {
         	switch(op) {
         		case AND:
         		case OR:

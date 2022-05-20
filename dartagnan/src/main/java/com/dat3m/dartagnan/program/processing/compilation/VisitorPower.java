@@ -51,7 +51,6 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         load.addFilters(C11.PTHREAD);
         Label label = newLabel("Jump_" + e.getOId());
         CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-        fakeCtrlDep.addFilters(Tag.NOOPT);
 
         return eventSequence(
                 load,
@@ -68,7 +67,6 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
         Label label = newLabel("Jump_" + e.getOId());
         CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-        fakeCtrlDep.addFilters(Tag.NOOPT);
         
 		return eventSequence(
                 load,
@@ -148,7 +146,6 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Store store = newRMWStoreExclusive(address, dummyReg, null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-        fakeCtrlDep.addFilters(Tag.NOOPT);
 
         Fence optionalMemoryBarrier = null;
         // Academics papers (e.g. https://plv.mpi-sws.org/imm/paper.pdf) say an isync barrier is enough
@@ -186,7 +183,6 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 (mo.equals(Tag.C11.MO_SC) || mo.equals(Tag.C11.MO_ACQUIRE) || mo.equals(Tag.C11.MO_RELAXED)) ?
                         newFakeCtrlDep(resultRegister, optionalLabel) :
                         null;
-        optionalFakeCtrlDep.addFilters(Tag.NOOPT);
         Fence optionalISyncBarrier =
                 (mo.equals(Tag.C11.MO_SC) || mo.equals(Tag.C11.MO_ACQUIRE)) ?
                         Power.newISyncBarrier() :
@@ -240,7 +236,6 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Store store = newRMWStoreExclusive(address, value, null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-        fakeCtrlDep.addFilters(Tag.NOOPT);
 
         Fence optionalMemoryBarrier = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier()
                 : mo.equals(C11.MO_RELEASE) || mo.equals(C11.MO_ACQUIRE_RELEASE) ? Power.newLwSyncBarrier()
