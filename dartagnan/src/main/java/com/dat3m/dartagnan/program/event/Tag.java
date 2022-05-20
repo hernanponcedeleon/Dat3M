@@ -127,22 +127,20 @@ public final class Tag {
         public static final String MO_MB        = "Mb";
         public static final String MO_RMB		= "Rmb";
         public static final String MO_WMB		= "Wmb";
-        public static final String MO_RELAXED   = "Relaxed";
+        public static final String MO_ONCE   	= "Once";
         public static final String MO_RELEASE   = "Release";
         public static final String MO_ACQUIRE   = "Acquire";
 
         public static String loadMO(String mo){
-            return mo.equals(MO_ACQUIRE) ? MO_ACQUIRE : MO_RELAXED;
+            return mo.equals(MO_ACQUIRE) ? MO_ACQUIRE : MO_ONCE;
         }
 
         public static String storeMO(String mo){
-            return mo.equals(MO_RELEASE) ? MO_RELEASE : MO_RELAXED;
+            return mo.equals(MO_RELEASE) ? MO_RELEASE : MO_ONCE;
         }
 
         public static String toText(String mo){
             switch (mo){
-                case MO_RELAXED:
-                    return "_relaxed";
                 case MO_ACQUIRE:
                     return "_acquire";
                 case MO_RELEASE:
