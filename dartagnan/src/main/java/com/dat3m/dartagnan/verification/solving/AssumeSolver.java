@@ -48,7 +48,8 @@ public class AssumeSolver {
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
-        BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoder.encodeSpecification(ctx));
+        BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, 
+        								propertyEncoder.encodeSpecification(task.getProperty(), ctx));
         prover.addConstraint(assumedSpec);
         
         logger.info("Starting first solver.check()");

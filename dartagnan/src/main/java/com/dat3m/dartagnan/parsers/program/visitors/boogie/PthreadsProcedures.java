@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
@@ -80,9 +79,6 @@ public class PthreadsProcedures {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
 		// We assume pthread_create always succeeds
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, IValue.ZERO));
-        // Since we model thread creation/join (plus start/end) as normal Stores/Loads
-        // We needs these barriers to guarantee that information is properly propagated
-        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Atomic.newFence(Tag.C11.MO_SC));
         MemoryObject object = visitor.programBuilder.getOrNewObject(String.format("%s(%s)_active", threadPtr, visitor.pool.getCreatorFromPtr(threadPtr)));
         visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(threadPtr, threadName, object, visitor.currentLine));
 	}
@@ -98,9 +94,6 @@ public class PthreadsProcedures {
         Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, ARCH_PRECISION);
         Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
         visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(visitor.pool.getPtrFromReg(callReg), reg, object, label));
-        // Since we model thread creation/join (plus start/end) as normal Stores/Loads
-        // We needs these barriers to guarantee that information is properly propagated
-        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Atomic.newFence(Tag.C11.MO_SC));
 	}
 
 	private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {

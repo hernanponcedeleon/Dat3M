@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
 import com.dat3m.dartagnan.parsers.CatParser;
 import com.dat3m.dartagnan.parsers.CatVisitor;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.*;
 
 public class VisitorFilter extends CatBaseVisitor<FilterAbstract> implements CatVisitor<FilterAbstract> {
@@ -36,9 +37,9 @@ public class VisitorFilter extends CatBaseVisitor<FilterAbstract> implements Cat
 
     @Override
     public FilterAbstract visitExprComplement(CatParser.ExprComplementContext ctx) {
-        throw new RuntimeException("Filter complement is not implemented");
+    	return FilterMinus.get(FilterBasic.get(Tag.VISIBLE), ctx.e.accept(this));
     }
-
+    
     @Override
     public FilterAbstract visitExprBasic(CatParser.ExprBasicContext ctx) {
         FilterAbstract filter = base.wmm.getFilter(ctx.getText());

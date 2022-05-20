@@ -8,12 +8,15 @@ import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Property;
+
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.io.File;
+import java.util.EnumSet;
 import java.util.function.Supplier;
 
 
@@ -56,13 +59,13 @@ public class Providers {
 
     // =========================== Task related providers ==============================
 
-    public static Provider<VerificationTask> createTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier,
+    public static Provider<VerificationTask> createTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier, Supplier<EnumSet<Property>> propertySupplier,
                                                         Supplier<Arch> targetSupplier, Supplier<Integer> boundSupplier, Supplier<Integer> timeoutSupplier) {
     	return Provider.fromSupplier(() -> VerificationTask.builder().
     			withTarget(targetSupplier.get()).
     			withBound(boundSupplier.get()).
     			withSolverTimeout(timeoutSupplier.get()).
-    			build(programSupplier.get(), wmmSupplier.get()));
+    			build(programSupplier.get(), wmmSupplier.get(), propertySupplier.get()));
     }
 
     // =========================== Solving related providers ==============================

@@ -49,22 +49,22 @@ public class IMMTest extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
     	return Arrays.asList(new Object[][]{
-	            {"paper-E3.1", NONE, PASS},
-	            {"paper-E3.2", NONE, PASS},
-	            {"paper-E3.3", NONE, PASS},
-	            {"paper-E3.4", NONE, PASS},
-	            {"paper-E3.5", NONE, PASS},
-	            {"paper-E3.6", NONE, FAIL},
-	            {"paper-E3.7", NONE, PASS},
-	            {"paper-E3.8", NONE, PASS},
-	            {"paper-E3.8-alt", NONE, FAIL},
-	            {"paper-E3.9", NONE, PASS},
+	            {"paper-E3.1", IMM, PASS},
+	            {"paper-E3.2", IMM, PASS},
+	            {"paper-E3.3", IMM, PASS},
+	            {"paper-E3.4", IMM, PASS},
+	            {"paper-E3.5", IMM, PASS},
+	            {"paper-E3.6", IMM, FAIL},
+	            {"paper-E3.7", IMM, PASS},
+	            {"paper-E3.8", IMM, PASS},
+	            {"paper-E3.8-alt", IMM, FAIL},
+	            {"paper-E3.9", IMM, PASS},
 	            // The actual example 3.10 in the paper marks the write of the FADD as strong 
 	            // which forms a cycle making the result PASS. Since we currently don't have
 	            // a way to mark FADD instructions as weak/strong, the behavior is allowed.
-	            {"paper-E3.10", NONE, FAIL},
-	            {"paper-R2", NONE, PASS},
-	            {"paper-R2-alt", NONE, PASS},
+	            {"paper-E3.10", IMM, FAIL},
+	            {"paper-R2", IMM, PASS},
+	            {"paper-R2-alt", IMM, PASS},
 		});
     }
 

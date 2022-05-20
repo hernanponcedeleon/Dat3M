@@ -6,6 +6,7 @@ public enum Method implements OptionInterface {
 	ASSUME, INCREMENTAL, TWO, CAAT;
 	
 	// Used for options in the console
+	@Override
 	public String asStringOption() {
         switch(this) {
         	case TWO:

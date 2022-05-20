@@ -26,7 +26,6 @@ import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.Tag.C11.*;
 
 public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>> {
 
@@ -244,15 +243,14 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 		Register regExpected = e.getThread().newRegister(precision);
         Register regValue = e.getThread().newRegister(precision);
         Load loadExpected = newLoad(regExpected, expectedAddr, null);
-        loadExpected.addFilters(Tag.IMM.CASDEPORIGIN);
         Store storeExpected = newStore(expectedAddr, regValue, null);
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
-        Load loadValue = newRMWLoad(regValue, address, extractLoadMo(mo));
-        Store storeValue = newRMWStore(loadValue, address, e.getMemValue(), extractStoreMo(mo));
+        Load loadValue = newRMWLoad(regValue, address, mo);
+        Store storeValue = newRMWStore(loadValue, address, e.getMemValue(), mo);
 
         return eventSequence(
                 // Indentation shows the branching structure
@@ -276,26 +274,26 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 		String mo = e.getMo();
 		
         Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-        Load load = newRMWLoad(resultRegister, address, extractLoadMo(mo));
+        Load load = newRMWLoad(resultRegister, address, mo);
 
         return eventSequence(
                 load,
                 newLocal(dummyReg, new IExprBin(resultRegister, op, (IExpr) e.getMemValue())),
-                newRMWStore(load, address, dummyReg, extractStoreMo(mo))
+                newRMWStore(load, address, dummyReg, mo)
         );
 	}
 
 	@Override
 	public List<Event> visitAtomicLoad(AtomicLoad e) {
         return eventSequence(
-        		newLoad(e.getResultRegister(), e.getAddress(), extractLoadMo(e.getMo()))
+        		newLoad(e.getResultRegister(), e.getAddress(), e.getMo())
         );
 	}
 
 	@Override
 	public List<Event> visitAtomicStore(AtomicStore e) {
         return eventSequence(
-        		newStore(e.getAddress(), e.getMemValue(), extractStoreMo(e.getMo()))
+        		newStore(e.getAddress(), e.getMemValue(), e.getMo())
         );
 	}
 
@@ -309,11 +307,11 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-        Load load = newRMWLoad(e.getResultRegister(), address, extractLoadMo(mo));
+        Load load = newRMWLoad(e.getResultRegister(), address, mo);
         
         return eventSequence(
                 load,
-                newRMWStore(load, address, e.getMemValue(), extractStoreMo(mo))
+                newRMWStore(load, address, e.getMemValue(), mo)
         );
 	}
 
@@ -330,8 +328,8 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
 
-        Load load = newRMWLoad(regValue, address, extractLoadMo(mo));
-        Store store = newRMWStore(load, address, value, extractStoreMo(mo));
+        Load load = newRMWLoad(regValue, address, mo);
+        Store store = newRMWStore(load, address, value, mo);
 
         return eventSequence(
                 // Indentation shows the branching structure

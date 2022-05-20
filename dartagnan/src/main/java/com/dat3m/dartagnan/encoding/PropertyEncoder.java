@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -22,7 +21,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -31,11 +29,13 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
@@ -50,11 +50,6 @@ public class PropertyEncoder implements Encoder {
     private final Program program;
     private final Wmm memoryModel;
     private final AliasAnalysis alias;
-
-    @Option(
-            name = OptionNames.PROPERTY,
-            description = "The property to check for.")
-    private Property property = Property.getDefault();
 
     // =====================================================================
 
@@ -74,17 +69,20 @@ public class PropertyEncoder implements Encoder {
     @Override
     public void initializeEncoding(SolverContext context) { }
 
-    public BooleanFormula encodeSpecification(SolverContext ctx) {
-        switch (property) {
-            case REACHABILITY:
-                return encodeAssertions(ctx);
-            case LIVENESS:
-                return encodeLiveness(ctx);
-            case RACES:
-                return encodeDataRaces(ctx);
-            default:
-                throw new IllegalStateException("Unrecognized specification: " + property);
-        }
+    public BooleanFormula encodeSpecification(EnumSet<Property> property, SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    	// We have a default property therefore this false will always be overwritten
+    	BooleanFormula enc = bmgr.makeFalse();
+    	if(property.contains(REACHABILITY)) {
+    		enc = bmgr.or(enc, encodeAssertions(ctx));
+    	}
+    	if(property.contains(LIVENESS)) {
+    		enc = bmgr.or(enc, encodeLiveness(ctx));
+    	}
+    	if(property.contains(RACES)) {
+    		enc = bmgr.or(enc, encodeDataRaces(ctx));
+    	}
+    	return enc;
     }
 
     public BooleanFormula encodeBoundEventExec(SolverContext ctx){
@@ -103,7 +101,9 @@ public class PropertyEncoder implements Encoder {
         if (program.getAssFilter() != null) {
             assertionEncoding = bmgr.and(assertionEncoding, program.getAssFilter().encode(ctx));
         }
-        return assertionEncoding;
+        // We use the SMT variable to extract from the model if the property was violated
+		BooleanFormula enc = bmgr.equivalence(REACHABILITY.getSMTVariable(ctx), assertionEncoding);
+        return bmgr.and(REACHABILITY.getSMTVariable(ctx), enc);
     }
 
     public BooleanFormula encodeLiveness(SolverContext ctx) {
@@ -176,7 +176,10 @@ public class PropertyEncoder implements Encoder {
             atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
             allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, isDone));
         }
-        return bmgr.and(allStuckOrDone, atLeastOneStuck);
+        // We use the SMT variable to extract from the model if the property was violated
+		BooleanFormula enc = bmgr.equivalence(LIVENESS.getSMTVariable(ctx), 
+											  bmgr.and(allStuckOrDone, atLeastOneStuck));
+        return bmgr.and(LIVENESS.getSMTVariable(ctx), enc);
     }
 
     public BooleanFormula encodeDataRaces(SolverContext ctx) {
@@ -213,8 +216,8 @@ public class PropertyEncoder implements Encoder {
                 }
             }
         }
-        return enc;
+        // We use the SMT variable to extract from the model if the property was violated
+		enc = bmgr.equivalence(RACES.getSMTVariable(ctx), enc);
+        return bmgr.and(RACES.getSMTVariable(ctx), enc);
     }
-
-
 }
