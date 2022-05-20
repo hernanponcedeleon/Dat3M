@@ -52,56 +52,56 @@ elseExpression
 
 re locals [IOpBin op, String mo]
     :   ( AtomicAddReturn        LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = MO_MB;}
-        | AtomicAddReturnRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = MO_ONCE;}
+        | AtomicAddReturnRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = MO_RELAXED;}
         | AtomicAddReturnAcquire LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = MO_ACQUIRE;}
         | AtomicAddReturnRelease LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = MO_RELEASE;}
         | AtomicSubReturn        LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = MO_MB;}
-        | AtomicSubReturnRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = MO_ONCE;}
+        | AtomicSubReturnRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = MO_RELAXED;}
         | AtomicSubReturnAcquire LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = MO_ACQUIRE;}
         | AtomicSubReturnRelease LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = MO_RELEASE;}
         | AtomicIncReturn        LPar address = re RPar {$op = IOpBin.PLUS; $mo = MO_MB;}
-        | AtomicIncReturnRelaxed LPar address = re RPar {$op = IOpBin.PLUS; $mo = MO_ONCE;}
+        | AtomicIncReturnRelaxed LPar address = re RPar {$op = IOpBin.PLUS; $mo = MO_RELAXED;}
         | AtomicIncReturnAcquire LPar address = re RPar {$op = IOpBin.PLUS; $mo = MO_ACQUIRE;}
         | AtomicIncReturnRelease LPar address = re RPar {$op = IOpBin.PLUS; $mo = MO_RELEASE;}
         | AtomicDecReturn        LPar address = re RPar {$op = IOpBin.MINUS; $mo = MO_MB;}
-        | AtomicDecReturnRelaxed LPar address = re RPar {$op = IOpBin.MINUS; $mo = MO_ONCE;}
+        | AtomicDecReturnRelaxed LPar address = re RPar {$op = IOpBin.MINUS; $mo = MO_RELAXED;}
         | AtomicDecReturnAcquire LPar address = re RPar {$op = IOpBin.MINUS; $mo = MO_ACQUIRE;}
         | AtomicDecReturnRelease LPar address = re RPar {$op = IOpBin.MINUS; $mo = MO_RELEASE;})                        # reAtomicOpReturn
 
     |   ( AtomicFetchAdd        LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = MO_MB;}
-        | AtomicFetchAddRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = MO_ONCE;}
+        | AtomicFetchAddRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = MO_RELAXED;}
         | AtomicFetchAddAcquire LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = MO_ACQUIRE;}
         | AtomicFetchAddRelease LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = MO_RELEASE;}
         | AtomicFetchSub        LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = MO_MB;}
-        | AtomicFetchSubRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = MO_ONCE;}
+        | AtomicFetchSubRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = MO_RELAXED;}
         | AtomicFetchSubAcquire LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = MO_ACQUIRE;}
         | AtomicFetchSubRelease LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = MO_RELEASE;}
         | AtomicFetchInc        LPar address = re RPar {$op = IOpBin.PLUS; $mo = MO_MB;}
-        | AtomicFetchIncRelaxed LPar address = re RPar {$op = IOpBin.PLUS; $mo = MO_ONCE;}
+        | AtomicFetchIncRelaxed LPar address = re RPar {$op = IOpBin.PLUS; $mo = MO_RELAXED;}
         | AtomicFetchIncAcquire LPar address = re RPar {$op = IOpBin.PLUS; $mo = MO_ACQUIRE;}
         | AtomicFetchIncRelease LPar address = re RPar {$op = IOpBin.PLUS; $mo = MO_RELEASE;}
         | AtomicFetchDec        LPar address = re RPar {$op = IOpBin.MINUS; $mo = MO_MB;}
-        | AtomicFetchDecRelaxed LPar address = re RPar {$op = IOpBin.MINUS; $mo = MO_ONCE;}
+        | AtomicFetchDecRelaxed LPar address = re RPar {$op = IOpBin.MINUS; $mo = MO_RELAXED;}
         | AtomicFetchDecAcquire LPar address = re RPar {$op = IOpBin.MINUS; $mo = MO_ACQUIRE;}
         | AtomicFetchDecRelease LPar address = re RPar {$op = IOpBin.MINUS; $mo = MO_RELEASE;})                         # reAtomicFetchOp
 
     |   ( AtomicXchg        LPar address = re Comma value = re RPar {$mo = MO_MB;}
-        | AtomicXchgRelaxed LPar address = re Comma value = re RPar {$mo = MO_ONCE;}
+        | AtomicXchgRelaxed LPar address = re Comma value = re RPar {$mo = MO_RELAXED;}
         | AtomicXchgAcquire LPar address = re Comma value = re RPar {$mo = MO_ACQUIRE;}
         | AtomicXchgRelease LPar address = re Comma value = re RPar {$mo = MO_RELEASE;})                                # reXchg
 
     |   ( Xchg        LPar address = re Comma value = re RPar {$mo = MO_MB;}
-        | XchgRelaxed LPar address = re Comma value = re RPar {$mo = MO_ONCE;}
+        | XchgRelaxed LPar address = re Comma value = re RPar {$mo = MO_RELAXED;}
         | XchgAcquire LPar address = re Comma value = re RPar {$mo = MO_ACQUIRE;}
         | XchgRelease LPar address = re Comma value = re RPar {$mo = MO_RELEASE;})                                      # reXchg
 
     |   ( AtomicCmpXchg        LPar address = re Comma cmp = re Comma value = re RPar {$mo = MO_MB;}
-        | AtomicCmpXchgRelaxed LPar address = re Comma cmp = re Comma value = re RPar {$mo = MO_ONCE;}
+        | AtomicCmpXchgRelaxed LPar address = re Comma cmp = re Comma value = re RPar {$mo = MO_RELAXED;}
         | AtomicCmpXchgAcquire LPar address = re Comma cmp = re Comma value = re RPar {$mo = MO_ACQUIRE;}
         | AtomicCmpXchgRelease LPar address = re Comma cmp = re Comma value = re RPar {$mo = MO_RELEASE;})              # reCmpXchg
 
     |   ( CmpXchg        LPar address = re Comma cmp = re Comma value = re RPar {$mo = MO_MB;}
-        | CmpXchgRelaxed LPar address = re Comma cmp = re Comma value = re RPar {$mo = MO_ONCE;}
+        | CmpXchgRelaxed LPar address = re Comma cmp = re Comma value = re RPar {$mo = MO_RELAXED;}
         | CmpXchgAcquire LPar address = re Comma cmp = re Comma value = re RPar {$mo = MO_ACQUIRE;}
         | CmpXchgRelease LPar address = re Comma cmp = re Comma value = re RPar {$mo = MO_RELEASE;})                    # reCmpXchg
 
