@@ -140,7 +140,9 @@ public class EventFactory {
     }
 
     public static CondJump newFakeCtrlDep(Register reg, Label target) {
-        return newJump(new Atom(reg, COpBin.EQ, reg), target);
+        CondJump jump = newJump(new Atom(reg, COpBin.EQ, reg), target);
+        jump.addFilters(Tag.NOOPT);
+		return jump;
     }
 
     public static Assume newAssume(ExprInterface expr) {

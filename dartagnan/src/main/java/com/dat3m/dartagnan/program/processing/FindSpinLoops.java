@@ -72,8 +72,8 @@ public class FindSpinLoops implements ProgramProcessor {
         	    // for (int tmp = (__VERIFIER_loop_begin(), 0); __VERIFIER_spin_start(),  \
         	    //     tmp = cond, __VERIFIER_spin_end(!tmp), tmp;)
         		Event spinloop = curr.getSuccessors().stream().filter(e -> e instanceof CondJump && ((CondJump)e).isGoto()).findFirst().get();
-        		spinloop.addFilters(Tag.SPINLOOP);
-                ((CondJump)spinloop).getLabel().addFilters(Tag.SPINLOOP);
+        		spinloop.addFilters(Tag.SPINLOOP, Tag.NOOPT);
+                ((CondJump)spinloop).getLabel().addFilters(Tag.SPINLOOP, Tag.NOOPT);
         		spinloops++;
         	}
             curr = curr.getSuccessor();
@@ -93,8 +93,8 @@ public class FindSpinLoops implements ProgramProcessor {
                     Label loopStart = label;
                     CondJump loopEnd = (CondJump) listener.get();
                     if (isSideEffectFree(loopStart, loopEnd)) {
-                        loopStart.addFilters(Tag.SPINLOOP);
-                        loopEnd.addFilters(Tag.SPINLOOP);
+                        loopStart.addFilters(Tag.SPINLOOP, Tag.NOOPT);
+                        loopEnd.addFilters(Tag.SPINLOOP, Tag.NOOPT);
                         spinloops++;
                     }
                 }
