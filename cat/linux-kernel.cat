@@ -21,7 +21,7 @@
 include "lock.cat"
 
 (* Compute marked and plain memory accesses *)
-let Marked = (_ \ M) | IW | Once | Release | Acquire | (RMW & R) | (RMW & W) |
+let Marked = (~M) | IW | Once | Release | Acquire | (RMW & R) | (RMW & W) |
         LKR | LKW | UL | LF | RL | RU
 let Plain = M \ Marked
 
@@ -180,9 +180,9 @@ let vis = cumul-fence* ; rfe? ; [Marked] ;
 (* Boundaries for lifetimes of plain accesses *)
 let w-pre-bounded = [Marked] ; (addr | fence)?
 let r-pre-bounded = [Marked] ; (addr | nonrw-fence |
-	([R4rmb] ; fencerel(Rmb) ; [_ \ Noreturn]))?
+	([R4rmb] ; fencerel(Rmb) ; [~Noreturn]))?
 let w-post-bounded = fence? ; [Marked]
-let r-post-bounded = (nonrw-fence | ([_ \ Noreturn] ; fencerel(Rmb) ; [R4rmb]))? ;
+let r-post-bounded = (nonrw-fence | ([~Noreturn] ; fencerel(Rmb) ; [R4rmb]))? ;
 	[Marked]
 
 (* Visibility and executes-before for plain accesses *)
