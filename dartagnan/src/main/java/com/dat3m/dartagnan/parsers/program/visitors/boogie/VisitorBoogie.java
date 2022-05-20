@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.parsers.program.boogie.PthreadPool;
 import com.dat3m.dartagnan.parsers.program.boogie.Scope;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -131,7 +130,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		pool.addIntPtr(threadCount + 1, next);
     		visitProc_decl(procedures.get(nextName), true, threadCallingValues.get(threadCount));	
     	}
-    	return programBuilder.build(SourceLanguage.BOOGIE);
+    	return programBuilder.build();
     }
 
 	private void preProc_decl(Proc_declContext ctx) {
