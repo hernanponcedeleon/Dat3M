@@ -80,8 +80,4 @@ P1(int *a, int *b, int *v, spinlock_t *l)
 }
 
 locations [a;b;v;0:r1;0:r8;1:r1;1:r8]
-exists (0:r0=1:r0 \/ (* Both or neither did kfree(). *)
-	v=1 \/ (* Neither did kfree, redundant check. *)
-	0:r2=0 \/ 1:r2=0 \/  (* Both did kfree, redundant check. *)
-	0:r9a=0 \/ 0:r9b=0 \/ 1:r9a=0 \/ (* CPU1 use after free. *)
-	1:r9b=0 \/ 1:r9c=0) (* CPU2 use after free. *)
+exists (0:r0=1:r0 \/ v=1 \/ 0:r2=0 \/ 1:r2=0 \/ 0:r9a=0 \/ 0:r9b=0 \/ 1:r9a=0 \/ 1:r9b=0 \/ 1:r9c=0) 
