@@ -88,7 +88,6 @@ public class LoopUnrolling implements ProgramProcessor {
     private int unrollThreadAndUpdate(Thread t, int bound, int nextId){
         unrollThread(t, bound);
         t.clearCache();
-        t.updateExit(t.getEntry());
         for (Event e : t.getEvents()) {
             e.setUId(nextId++);
         }
@@ -104,7 +103,7 @@ public class LoopUnrolling implements ProgramProcessor {
             if (cur instanceof CondJump && ((CondJump) cur).getLabel().getOId() < cur.getOId()) {
                 CondJump jump = (CondJump) cur;
                 if (jump.getLabel().getListeners().stream().allMatch(x -> x.getOId() <= jump.getOId())) {
-                    //TODO: Get bounds
+                    //TODO: Get different bounds for different loops (e.g. via annotations)
                     int bound = jump.is(Tag.SPINLOOP) ? 1 : defaultBound;
                     unrollLoop((CondJump) cur, bound);
                 }
@@ -143,19 +142,19 @@ public class LoopUnrolling implements ProgramProcessor {
             }
         }
 
-        int i = 0;
+        int iterCounter = 0;
         while (--bound >= 0) {
-            i++;
+            iterCounter++;
             if (bound == 0) {
                 Label exit = (Label) loopBackJump.getThread().getExit();
-                loopBegin.setName(loopBegin.getName() + "_" + i);
+                loopBegin.setName(loopBegin.getName() + "_" + iterCounter);
                 for (CondJump cont : continues) {
                     if (!cont.isGoto()) {
                         logger.warn("Conditional jump {} was replaced by unconditional bound event", cont);
                     }
                     CondJump boundEvent = EventFactory.newGoto(exit);
                     boundEvent.addFilters(cont.getFilters()); // Keep tags of original jump.
-                    boundEvent.addFilters(Tag.BOUND);
+                    boundEvent.addFilters(Tag.BOUND, Tag.NOOPT);
 
                     cont.getPredecessor().setSuccessor(boundEvent);
                     boundEvent.setSuccessor(cont.getSuccessor());
@@ -164,7 +163,7 @@ public class LoopUnrolling implements ProgramProcessor {
             } else {
                 Map<Event, Event> copyCtx = new HashMap<>();
                 List<Event> copies = copyPath(loopBegin, loopBackJump, copyCtx);
-                ((Label)copyCtx.get(loopBegin)).setName(loopBegin.getName() + "_" + i);
+                ((Label)copyCtx.get(loopBegin)).setName(loopBegin.getName() + "_" + iterCounter);
                 //TODO: The following was testing code and needs to be updated for real usage.
                 /*CodeAnnotation iterBegin = new FunCall("Iteration begin");
                 iterBegin.setThread(loopBackJump.getThread());

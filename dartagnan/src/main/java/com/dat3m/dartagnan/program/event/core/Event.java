@@ -6,12 +6,9 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Verify;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
-
-import static com.dat3m.dartagnan.program.event.Tag.NOOPT;
 
 import java.util.*;
 
@@ -176,12 +173,8 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		return listeners;
 	}
 
-    public void notify(Event e) {
-    	throw new UnsupportedOperationException("notify is not allowed for " + getClass().getSimpleName());
-    }
-
 	public void delete() {
-		Verify.verify(!hasFilter(NOOPT));
+		//Verify.verify(!hasFilter(NOOPT));
 		if (getPredecessor() != null) {
 			getPredecessor().setSuccessor(this.getSuccessor());
 		} else if (getSuccessor() != null) {
