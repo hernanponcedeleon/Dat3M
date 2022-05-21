@@ -77,6 +77,3 @@ flag ~empty rcu-rscs & (po ; [Sync-srcu] ; po) as invalid-sleep
 
 (* Validate SRCU dynamic match *)
 flag ~empty different-values(srcu-rscs) as srcu-bad-nesting
-
-(* TODO: find the real relation between these two *)
-let crit = rcu-rscs

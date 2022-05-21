@@ -110,9 +110,8 @@ acyclic pb as propagation
  *)
 let rcu-gp = [Sync-rcu]		(* Compare with gp *)
 let srcu-gp = [Sync-srcu]
-// We don't support nested RCUs
-let rcu-rscsi = crit^-1
-// We don't support SRCU
+let rcu-rscsi = rcu-rscs^-1
+// NOTE: We don't support SRCU
 let srcu-rscsi = 0
 
 (*
@@ -141,8 +140,8 @@ let rec rcu-order = rcu-gp | srcu-gp |
 	((srcu-rscsi ; rcu-link ; rcu-order ; rcu-link ; srcu-gp) & loc) |
 	(rcu-order ; rcu-link ; rcu-order)
 let rcu-fence = po ; rcu-order ; po?
-//let fence = fence | rcu-fence
-//let strong-fence = strong-fence | rcu-fence
+let update-fence = fence | rcu-fence
+let update-strong-fence = strong-fence | rcu-fence
 
 (* rb orders instructions just as pb does *)
 let rb = prop ; rcu-fence ; hb* ; pb* ; [Marked]
@@ -158,15 +157,17 @@ irreflexive rb as rcu
  * acyclic xb as executes-before
  *)
 
-//(*********************************)
-//(* Plain accesses and data races *)
-//(*********************************)
-//
+(*********************************)
+(* Plain accesses and data races *)
+(*********************************)
+
+// NOTE: we don't support race detection
+
 //let barrier = fencerel(Barrier | Rmb | Wmb | Mb | Sync-rcu | Sync-srcu |
-//		Before-atomic | After-atomic | Acquire | Release |
-//		Rcu-lock | Rcu-unlock | Srcu-lock | Srcu-unlock) |
-//	(po ; [Release]) | ([Acquire] ; po)
-//
+//        Before-atomic | After-atomic | Acquire | Release |
+//        Rcu-lock | Rcu-unlock | Srcu-lock | Srcu-unlock) |
+//    (po ; [Release]) | ([Acquire] ; po)
+
 //(* Warn about plain writes and marked accesses in the same region *)
 //let mixed-accesses = ([Plain & W] ; (po-loc \ barrier) ; [Marked]) |
 //	([Marked] ; (po-loc \ barrier) ; [Plain & W])
@@ -175,22 +176,22 @@ irreflexive rb as rcu
 (* Executes-before and visibility *)
 let xbstar = (hb | pb | rb)*
 let vis = cumul-fence* ; rfe? ; [Marked] ;
-	((strong-fence ; [Marked] ; xbstar) | (xbstar & int))
+	((update-strong-fence ; [Marked] ; xbstar) | (xbstar & int))
 
 (* Boundaries for lifetimes of plain accesses *)
-let w-pre-bounded = [Marked] ; (addr | fence)?
+let w-pre-bounded = [Marked] ; (addr |update-fence)?
 let r-pre-bounded = [Marked] ; (addr | nonrw-fence |
 	([R4rmb] ; fencerel(Rmb) ; [~Noreturn]))?
-let w-post-bounded = fence? ; [Marked]
+let w-post-bounded =update-fence? ; [Marked]
 let r-post-bounded = (nonrw-fence | ([~Noreturn] ; fencerel(Rmb) ; [R4rmb]))? ;
 	[Marked]
 
 (* Visibility and executes-before for plain accesses *)
-let ww-vis = fence | (strong-fence ; xbstar ; w-pre-bounded) |
+let ww-vis =update-fence | (update-strong-fence ; xbstar ; w-pre-bounded) |
 	(w-post-bounded ; vis ; w-pre-bounded)
-let wr-vis = fence | (strong-fence ; xbstar ; r-pre-bounded) |
+let wr-vis =update-fence | (update-strong-fence ; xbstar ; r-pre-bounded) |
 	(w-post-bounded ; vis ; r-pre-bounded)
-let rw-xbstar = fence | (r-post-bounded ; xbstar ; w-pre-bounded)
+let rw-xbstar =update-fence | (r-post-bounded ; xbstar ; w-pre-bounded)
 
 (* Potential races *)
 let pre-race = ext & ((Plain * M) | ((M \ IW) * Plain))
@@ -206,5 +207,5 @@ empty (wr-incoh | rw-incoh | ww-incoh) as plain-coherence
 //let ww-race = (pre-race & co) \ ww-nonrace
 //let wr-race = (pre-race & (co? ; rf)) \ wr-vis \ rw-xbstar^-1
 //let rw-race = (pre-race & fr) \ rw-xbstar
-//
+
 //flag ~empty (ww-race | wr-race | rw-race) as data-race

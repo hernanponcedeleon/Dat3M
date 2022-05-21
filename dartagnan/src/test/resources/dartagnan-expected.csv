@@ -11013,7 +11013,7 @@ litmus/C/manual/locked/WW+WR+WW+WR+po+po+rfi-po+rfi-po+onces+locked.litmus,0
 litmus/C/manual/locked/W+RWC+rfi-po+po+rfi-po+onces+locked.litmus,0
 litmus/C/manual/locked/WW+RW+WR+WR+rfi-po+po+rfi-po+po+onces+locked.litmus,0
 litmus/C/manual/plain/strong-vis.litmus,0
-litmus/C/manual/plain/C-S-rcunoderef-2.litmus,1
+litmus/C/manual/plain/C-S-rcunoderef-2.litmus,0
 litmus/C/manual/plain/C-repload.litmus,0
 litmus/C/manual/plain/C-AlanStern.2018.01.11a.litmus,0
 litmus/C/manual/plain/C-S-rcunoderef-4.litmus,0
@@ -11023,7 +11023,7 @@ litmus/C/manual/plain/C-no-race.litmus,0
 litmus/C/manual/plain/C-tearload.litmus,0
 litmus/C/manual/plain/C-MP1.litmus,0
 litmus/C/manual/plain/C-tmpstore.litmus,0
-litmus/C/manual/plain/C-S-rcunoderef-3.litmus,1
+litmus/C/manual/plain/C-S-rcunoderef-3.litmus,0
 litmus/C/manual/plain/C-non-race1-rwdep.litmus,1
 litmus/C/manual/plain/MP+wmbplainplain+rmbplainplain.litmus,1
 litmus/C/manual/plain/C-S+o-mb-o+o-ctl-p.litmus,1
