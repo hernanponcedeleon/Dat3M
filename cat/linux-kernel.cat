@@ -74,10 +74,8 @@ let to-r = addr | (dep ; [Marked] ; rfi)
 let ppo = to-r | to-w | fence | (po-unlock-lock-po & int)
 
 (* Propagation: Ordering from release operations and strong fences. *)
-let cumul-fence = [Marked] ; ((rfe ; [Marked])? ; strong-fence | po-rel | wmb |
-	po-unlock-lock-po) ; [Marked]
-let prop = [Marked] ; (overwrite & ext)? ; cumul-fence* ;
-	[Marked] ; rfe? ; [Marked]
+let cumul-fence = [Marked] ; ((rfe ; [Marked])? ; (strong-fence | po-rel) | wmb | po-unlock-lock-po) ; [Marked]
+let prop = [Marked] ; (overwrite & ext)? ; cumul-fence* ; [Marked] ; rfe? ; [Marked]
 
 (*
  * Happens Before: Ordering from the passage of time.
