@@ -72,12 +72,12 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
         Register resultRegister = e.getResultRegister();
 		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        RMWReadCondUnless load = Linux.newRMWReadCondUnless(dummy, e.getCmp(), e.getAddress(), Tag.Linux.MO_RELAXED);
+        RMWReadCondUnless load = Linux.newRMWReadCondUnless(dummy, e.getCmp(), e.getAddress(), Tag.Linux.MO_ONCE);
 
         return eventSequence(
                 Linux.newConditionalMemoryBarrier(load),
                 load,
-                Linux.newRMWStoreCond(load, e.getAddress(), new IExprBin(dummy, IOpBin.PLUS, (IExpr) e.getMemValue()), Tag.Linux.MO_RELAXED),
+                Linux.newRMWStoreCond(load, e.getAddress(), new IExprBin(dummy, IOpBin.PLUS, (IExpr) e.getMemValue()), Tag.Linux.MO_ONCE),
                 newLocal(resultRegister, new Atom(dummy, NEQ, e.getCmp())),
                 Linux.newConditionalMemoryBarrier(load)
         );
@@ -141,12 +141,12 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
         IExpr address = e.getAddress();
         Register resultRegister = e.getResultRegister();
 		
-        Load load = newRMWLoad(resultRegister, address, Tag.Linux.MO_RELAXED);
+        Load load = newRMWLoad(resultRegister, address, Tag.Linux.MO_ONCE);
         load.addFilters(Tag.Linux.NORETURN);
         
         return eventSequence(
                 load,
-                newRMWStore(load, address, new IExprBin(resultRegister, e.getOp(), (IExpr) e.getMemValue()), Tag.Linux.MO_RELAXED)
+                newRMWStore(load, address, new IExprBin(resultRegister, e.getOp(), (IExpr) e.getMemValue()), Tag.Linux.MO_ONCE)
         );
 	}
 
@@ -157,14 +157,14 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
         int precision = resultRegister.getPrecision();
         
 		Register dummy = e.getThread().newRegister(precision);
-		Load load = newRMWLoad(dummy, address, Tag.Linux.MO_RELAXED);
+		Load load = newRMWLoad(dummy, address, Tag.Linux.MO_ONCE);
 
         //TODO: Are the memory barriers really unconditional?
         return eventSequence(
                 Linux.newMemoryBarrier(),
                 load,
                 newLocal(dummy, new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue())),
-                newRMWStore(load, address, dummy, Tag.Linux.MO_RELAXED),
+                newRMWStore(load, address, dummy, Tag.Linux.MO_ONCE),
                 newLocal(resultRegister, new Atom(dummy, EQ, new IValue(BigInteger.ZERO, precision))),
                 Linux.newMemoryBarrier()
         );

@@ -23,6 +23,8 @@ public final class Tag {
     public static final String ASSERTION    = "ASS";
     public static final String BOUND   		= "BOUND";
     public static final String SPINLOOP   	= "SPINLOOP";
+    // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
+    public static final String NOOPT   		= "NOOPT";
     public static final String ANNOTATION   = "ANNOTATION";
 
     // =============================================================================================
@@ -74,6 +76,29 @@ public final class Tag {
         public static final String MO_ACQUIRE_RELEASE   = "ACQ_REL";
         public static final String MO_SC                = "SC";
 
+        public static String extractStoreMo(String cMo) {
+        	switch(cMo) {
+        		case C11.MO_SC:
+        		case C11.MO_ACQUIRE_RELEASE:
+        			return C11.MO_RELEASE;
+        		case C11.MO_ACQUIRE:
+        			return C11.MO_RELAXED;
+        		default:
+        			return cMo;
+        	}
+        }
+
+        public static String extractLoadMo(String cMo) {
+        	switch(cMo) {
+    			case C11.MO_SC:
+    			case C11.MO_ACQUIRE_RELEASE:
+    				return C11.MO_ACQUIRE;
+    			case C11.MO_RELEASE:
+    				return C11.MO_RELAXED;
+    			default:
+    				return cMo;
+        	}
+        }
         public static String intToMo(int i) {
             switch(i) {
                 case 0: return MO_RELAXED;
@@ -103,22 +128,21 @@ public final class Tag {
         public static final String MO_MB        = "Mb";
         public static final String MO_RMB		= "Rmb";
         public static final String MO_WMB		= "Wmb";
+        public static final String MO_ONCE   	= "Once";
         public static final String MO_RELAXED   = "Relaxed";
         public static final String MO_RELEASE   = "Release";
         public static final String MO_ACQUIRE   = "Acquire";
 
         public static String loadMO(String mo){
-            return mo.equals(MO_ACQUIRE) ? MO_ACQUIRE : MO_RELAXED;
+            return mo.equals(MO_ACQUIRE) ? MO_ACQUIRE : MO_ONCE;
         }
 
         public static String storeMO(String mo){
-            return mo.equals(MO_RELEASE) ? MO_RELEASE : MO_RELAXED;
+            return mo.equals(MO_RELEASE) ? MO_RELEASE : MO_ONCE;
         }
 
         public static String toText(String mo){
             switch (mo){
-                case MO_RELAXED:
-                    return "_relaxed";
                 case MO_ACQUIRE:
                     return "_acquire";
                 case MO_RELEASE:
@@ -138,5 +162,15 @@ public final class Tag {
         private SVCOMP() {}
 
         public static final String SVCOMPATOMIC	= "A-SVCOMP";
+    }
+
+    // =============================================================================================
+    // =========================================== IMM =============================================
+    // =============================================================================================
+
+    public static final class IMM {
+        private IMM() {}
+
+        public static final String CASDEPORIGIN = "CASDEPORIGIN";
     }
 }

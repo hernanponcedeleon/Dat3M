@@ -9,6 +9,10 @@ import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Property;
+
+import java.util.EnumSet;
+
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -42,6 +46,14 @@ public abstract class AbstractCTest {
         return Provider.fromSupplier(() -> 0);
     }
 
+    protected Provider<Wmm> getWmmProvider() {
+        return Providers.createWmmFromArch(targetProvider);
+    }
+
+    protected Provider<EnumSet<Property>> getPropertyProvider() {
+        return Provider.fromSupplier(() -> EnumSet.of(Property.getDefault()));
+    }
+
     // =============================================================
 
 
@@ -55,8 +67,9 @@ public abstract class AbstractCTest {
     protected final Provider<Integer> boundProvider = getBoundProvider();
     protected final Provider<Integer> timeoutProvider = getTimeoutProvider();
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
-    protected final Provider<Wmm> wmmProvider = Providers.createWmmFromArch(targetProvider);
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, targetProvider, boundProvider, timeoutProvider);
+    protected final Provider<Wmm> wmmProvider = getWmmProvider();
+    protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, timeoutProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
 
@@ -73,6 +86,7 @@ public abstract class AbstractCTest {
             .around(timeoutProvider)
             .around(programProvider)
             .around(wmmProvider)
+            .around(propertyProvider)
             .around(taskProvider)
             .around(csvLogger)
             .around(timeout)

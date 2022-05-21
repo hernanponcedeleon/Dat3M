@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
@@ -90,8 +91,8 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         Event pred = null;
         Event cur = thread.getEntry();
         while (cur != null) {
-            if (removed.contains(cur)) {
-                cur.delete();
+            if (removed.contains(cur) && !cur.is(Tag.NOOPT)) {
+                cur.delete(pred);
                 cur = pred;
             }
             pred = cur;

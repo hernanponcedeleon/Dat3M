@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
@@ -59,7 +58,7 @@ public class VisitorLitmusC
             String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
             programBuilder.setAssertFilter(AssertionHelper.parseAssertionFilter(programBuilder, raw));
         }
-        return programBuilder.build(SourceLanguage.LITMUS);
+        return programBuilder.build();
     }
 
 
@@ -383,7 +382,7 @@ public class VisitorLitmusC
     public Object visitNreStore(LitmusCParser.NreStoreContext ctx){
         ExprInterface value = (ExprInterface)ctx.value.accept(this);
         if(ctx.mo.equals(Tag.Linux.MO_MB)){
-            Event event = EventFactory.newStore(getAddress(ctx.address), value, Tag.Linux.MO_RELAXED);
+            Event event = EventFactory.newStore(getAddress(ctx.address), value, Tag.Linux.MO_ONCE);
             programBuilder.addChild(currentThread, event);
             return programBuilder.addChild(currentThread, EventFactory.Linux.newMemoryBarrier());
         }

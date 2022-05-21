@@ -60,7 +60,7 @@ public class DeadCodeElimination implements ProgramProcessor {
         Event cur = entry;
         int id = startId;
         while (cur != null) {
-            if (!reachableEvents.contains(cur) && cur != exit) {
+            if (!reachableEvents.contains(cur) && cur != exit && !cur.is(Tag.NOOPT)) {
                 cur.delete();
                 cur = pred;
             } else {

@@ -6,14 +6,19 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.parsers.cat.ParserCat;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
+import static com.dat3m.dartagnan.utils.ResourceHelper.CAT_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.configuration.Arch.*;
@@ -34,6 +39,11 @@ public class RC11Test extends AbstractCTest {
     @Override
     protected long getTimeout() {
         return 60000;
+    }
+
+    @Override
+    protected Provider<Wmm> getWmmProvider() {
+        return Provider.fromSupplier(() -> new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/rc11.cat")));
     }
 
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")

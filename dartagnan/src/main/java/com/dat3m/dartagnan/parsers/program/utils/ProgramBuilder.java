@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -20,6 +21,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class ProgramBuilder {
@@ -36,8 +38,14 @@ public class ProgramBuilder {
     private AbstractAssert assFilter;
 
     private int lastOrigId = 0;
+    
+    private SourceLanguage format;
 
-    public Program build(SourceLanguage format){
+    public ProgramBuilder(SourceLanguage format) {
+    	this.format = format;
+    }
+    
+    public Program build(){
         Program program = new Program(memory, format);
         buildInitThreads();
         for(Thread thread : threads.values()){
@@ -68,6 +76,10 @@ public class ProgramBuilder {
         }
         child.setOId(lastOrigId++);
         threads.get(thread).append(child);
+        // Every event in litmus tests is no-optimisable
+        if(format.equals(LITMUS)) {
+            child.addFilters(Tag.NOOPT);
+        }
         return child;
     }
 

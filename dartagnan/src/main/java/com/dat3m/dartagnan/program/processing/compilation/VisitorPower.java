@@ -50,10 +50,11 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
         load.addFilters(C11.PTHREAD);
         Label label = newLabel("Jump_" + e.getOId());
+        CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         return eventSequence(
                 load,
-                newFakeCtrlDep(resultRegister, label),
+                fakeCtrlDep,
                 label,
                 Power.newISyncBarrier(),
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
@@ -65,10 +66,11 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
         Label label = newLabel("Jump_" + e.getOId());
-
-        return eventSequence(
+        CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        
+		return eventSequence(
                 load,
-                newFakeCtrlDep(resultRegister, label),
+                fakeCtrlDep,
                 label,
                 Power.newISyncBarrier(),
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())

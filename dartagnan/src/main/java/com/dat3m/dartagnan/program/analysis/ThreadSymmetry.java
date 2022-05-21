@@ -39,9 +39,11 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
     // ================= Private methods ===================
 
     private void createClasses() {
-        Map<String, EqClass> nameMap = new HashMap<>();
+
+        Map<String, Map<Integer, EqClass>> nameMap = new HashMap<>();
         for (Thread thread : program.getThreads()) {
-            nameMap.computeIfAbsent(thread.getName(), key -> new EqClass()).addInternal(thread);
+            nameMap.computeIfAbsent(thread.getName(), key -> new HashMap<>())
+                    .computeIfAbsent(thread.getEvents().size(), key -> new EqClass()).addInternal(thread);
         }
     }
 

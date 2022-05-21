@@ -59,8 +59,7 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
         	if(current instanceof CondJump) {
         		CondJump jump = (CondJump)current;
         		// After constant propagation some jumps have False as condition and are dead
-        		// But we still need to keep BOUND events
-        		if(jump.isDead() && !jump.is(Tag.BOUND)) {
+        		if(jump.isDead()) {
         			removed.add(jump);
         		} else {
                     immediateLabelPredecessors.computeIfAbsent(jump.getLabel(), key -> new ArrayList<>()).add(jump);
@@ -75,11 +74,12 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
         for(Event label : immediateLabelPredecessors.keySet()) {
         	Event next = label.getSuccessor();
             List<Event> preds = immediateLabelPredecessors.get(label);
-        	// We never remove BOUND events
-			if(next instanceof CondJump && !next.is(Tag.BOUND) && preds.stream().allMatch(e -> mutuallyExclusiveIfs((CondJump)next, e))) {
+        	// BOUND events
+			if(next instanceof CondJump && preds.stream().allMatch(e -> mutuallyExclusiveIfs((CondJump)next, e))) {
 				removed.add(next);
 			}
-            if (next != null && preds.size() == 1 && preds.get(0).getSuccessor().equals(label) && !label.is(Tag.SPINLOOP)) {
+        	// SPINLOOP events
+            if (next != null && preds.size() == 1 && preds.get(0).getSuccessor().equals(label)) {
                 removed.add(label);
             }
         }
@@ -97,7 +97,7 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
             if(dead && immediateLabelPredecessors.containsKey(cur.getSuccessor())) {
                 immediateLabelPredecessors.get(cur.getSuccessor()).remove(cur);
             }
-            if(dead || removed.contains(cur)) {
+            if((dead || removed.contains(cur)) && !cur.is(Tag.NOOPT)) {
                 cur.delete();
                 cur = pred;
             }
