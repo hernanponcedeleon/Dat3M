@@ -221,9 +221,9 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
 	@Override
 	public List<Event> visitLKMMLock(LKMMLock e) {
 		Register dummy = e.getThread().newRegister(GlobalSettings.ARCH_PRECISION);
-        // In litmus tests, spinlocks are guaranteed to success, i.e. its read part gets value 1
+        // In litmus tests, spinlocks are guaranteed to success, i.e. its read part gets value 0
 		Event middle = e.getThread().getProgram().getFormat().equals(LITMUS) ? 
-				newAssume(new Atom(dummy, COpBin.EQ, IValue.ONE)) : 
+				newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)) : 
 				newJump(new Atom(dummy, NEQ, IValue.ZERO), (Label)e.getThread().getExit()); 
 		return eventSequence(
                 Linux.newLockRead(dummy, e.getLock()),
