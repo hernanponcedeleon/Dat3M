@@ -168,7 +168,8 @@ public class RelCo extends Relation {
 
         enc = bmgr.and(enc, distinct);
 
-        for(Event w :  task.getProgram().getCache().getEvents(FilterBasic.get(WRITE))) {
+        for(Event w :  task.getProgram().getCache().getEvents(
+        		FilterMinus.get(FilterBasic.get(WRITE), FilterBasic.get(Linux.UNLOCK)))) {
             MemEvent w1 = (MemEvent)w;
             BooleanFormula lastCo = w1.exec();
 
