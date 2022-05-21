@@ -16,6 +16,6 @@ public class LKMMLockWrite extends Store {
 
 	@Override
 	public String toString() {
-		return String.format("spin_lock_W(%s)", address);
+		return String.format("spin_lock_W(*%s)", address);
 	}
 }

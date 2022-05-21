@@ -2,13 +2,11 @@ package com.dat3m.dartagnan.wmm.relation.base.memory;
 
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.Tag.Linux;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
-import com.dat3m.dartagnan.program.filter.FilterUnion;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -101,7 +99,7 @@ public class RelCo extends Relation {
             List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
             List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
                     FilterBasic.get(WRITE),
-                    FilterUnion.get(FilterBasic.get(INIT), FilterBasic.get(Linux.UNLOCK))
+                    FilterBasic.get(INIT)
             ));
 
             for(Event e1 : eventsInit){
@@ -148,7 +146,7 @@ public class RelCo extends Relation {
         List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
         List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
                 FilterBasic.get(WRITE),
-                FilterUnion.get(FilterBasic.get(INIT), FilterBasic.get(Linux.UNLOCK))
+                FilterBasic.get(INIT)
         ));
 
 		for(Event e : eventsInit) {
@@ -168,8 +166,7 @@ public class RelCo extends Relation {
 
         enc = bmgr.and(enc, distinct);
 
-        for(Event w :  task.getProgram().getCache().getEvents(
-        		FilterMinus.get(FilterBasic.get(WRITE), FilterBasic.get(Linux.UNLOCK)))) {
+        for(Event w :  task.getProgram().getCache().getEvents(FilterBasic.get(WRITE))) {
             MemEvent w1 = (MemEvent)w;
             BooleanFormula lastCo = w1.exec();
 
