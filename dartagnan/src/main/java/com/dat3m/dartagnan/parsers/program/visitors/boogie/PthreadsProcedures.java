@@ -91,7 +91,6 @@ public class PthreadsProcedures {
 		}
         MemoryObject object = visitor.programBuilder.getOrNewObject(String.format("%s(%s)_active", visitor.pool.getPtrFromReg(callReg), visitor.pool.getCreatorFromPtr(visitor.pool.getPtrFromReg(callReg))));
         Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, ARCH_PRECISION);
-        //Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
         visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(visitor.pool.getPtrFromReg(callReg), reg, object));
 	}
 
@@ -108,7 +107,6 @@ public class PthreadsProcedures {
 		ExprsContext lock = ctx.call_params().exprs();
         Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, ARCH_PRECISION);
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
-       	//Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		if(lockAddress != null) {
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newLock(lock.getText(), lockAddress, register));
 		}
@@ -118,7 +116,6 @@ public class PthreadsProcedures {
 		ExprsContext lock = ctx.call_params().exprs();
         Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, ARCH_PRECISION);
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
-       	//Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		if(lockAddress != null) {
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newUnlock(lock.getText(), lockAddress, register));
 		}

@@ -174,7 +174,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	}
 
 	public void delete() {
-		//Verify.verify(!hasFilter(NOOPT));
 		if (getPredecessor() != null) {
 			getPredecessor().setSuccessor(this.getSuccessor());
 		} else if (getSuccessor() != null) {
