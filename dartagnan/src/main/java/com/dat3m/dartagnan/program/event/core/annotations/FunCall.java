@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event.core.annotations;
 
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 
@@ -10,7 +9,6 @@ public class FunCall extends CodeAnnotation {
 	
 	public FunCall(String funName) {
 		this.funName = funName;
-        addFilters(Tag.ANY);
 	}
 	
 	protected FunCall(FunCall other){

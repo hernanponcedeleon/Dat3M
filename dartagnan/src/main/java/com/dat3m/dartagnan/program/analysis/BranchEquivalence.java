@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -219,7 +220,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             if (succ == null) {
                 finalBranchMap.put(b.events.get(b.events.size() - 1), b);
                 return b;
-            } else if (!succ.getListeners().isEmpty() || branchMap.containsKey(succ)) {
+            } else if ((succ instanceof Label && !((Label)succ).getJumpSet().isEmpty()) || branchMap.containsKey(succ)) {
                 // We ran into a merge point
                 Branch b1 = computeBranches(succ, branchMap, finalBranchMap);
                 b1.parents.add(b);

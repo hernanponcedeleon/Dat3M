@@ -102,7 +102,7 @@ public class LoopUnrolling implements ProgramProcessor {
             Event next = cur.getSuccessor();
             if (cur instanceof CondJump && ((CondJump) cur).getLabel().getOId() < cur.getOId()) {
                 CondJump jump = (CondJump) cur;
-                if (jump.getLabel().getListeners().stream().allMatch(x -> x.getOId() <= jump.getOId())) {
+                if (jump.getLabel().getJumpSet().stream().allMatch(x -> x.getOId() <= jump.getOId())) {
                     //TODO: Get different bounds for different loops (e.g. via annotations)
                     int bound = jump.is(Tag.SPINLOOP) ? 1 : defaultBound;
                     unrollLoop((CondJump) cur, bound);
@@ -111,8 +111,6 @@ public class LoopUnrolling implements ProgramProcessor {
             cur = next;
         }
     }
-
-    // =================== new test code ========================
 
     private void unrollLoop(CondJump loopBackJump, int bound) {
         Label loopBegin = loopBackJump.getLabel();
@@ -135,9 +133,8 @@ public class LoopUnrolling implements ProgramProcessor {
         for (Event e = loopBegin; e != null && e != loopBackJump; e = e.getSuccessor()) {
             if (e instanceof Label) {
                 Label label = (Label) e;
-                label.getListeners().stream()
-                        .filter(j -> j instanceof CondJump && j.getOId() < loopBegin.getOId())
-                        .map(CondJump.class::cast)
+                label.getJumpSet().stream()
+                        .filter(j -> j.getOId() < loopBegin.getOId())
                         .forEach(enterJumps::add);
             }
         }
@@ -164,15 +161,6 @@ public class LoopUnrolling implements ProgramProcessor {
                 Map<Event, Event> copyCtx = new HashMap<>();
                 List<Event> copies = copyPath(loopBegin, loopBackJump, copyCtx);
                 ((Label)copyCtx.get(loopBegin)).setName(loopBegin.getName() + "_" + iterCounter);
-                //TODO: The following was testing code and needs to be updated for real usage.
-                /*CodeAnnotation iterBegin = new FunCall("Iteration begin");
-                iterBegin.setThread(loopBackJump.getThread());
-                iterBegin.setSuccessor(copies.get(0));
-                copies.add(0, iterBegin);
-                CodeAnnotation iterEnd = new FunCall("Iteration end");
-                iterEnd.setThread(loopBackJump.getThread());
-                iterEnd.setPredecessor(copies.get(copies.size() - 1));
-                copies.add(iterEnd);*/
 
                 // Insert copies at right place
                 loopBegin.getPredecessor().setSuccessor(copies.get(0));

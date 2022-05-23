@@ -22,7 +22,7 @@ public class CondJump extends Event implements RegReaderData {
     	Preconditions.checkNotNull(label, "CondJump event requires non null label event");
     	Preconditions.checkNotNull(expr, "CondJump event requires non null expression");
         this.label = label;
-        this.label.addListener(this);
+        this.label.getJumpSet().add(this);
         this.thread = label.getThread();
         this.expr = expr;
         addFilters(Tag.ANY, Tag.JUMP, Tag.REG_READER);
@@ -32,7 +32,7 @@ public class CondJump extends Event implements RegReaderData {
 		super(other);
 		this.label = other.label;;
 		this.expr = other.expr;
-		this.label.addListener(this);
+        this.label.getJumpSet().add(this);
     }
     
     public boolean isGoto() {
@@ -86,15 +86,15 @@ public class CondJump extends Event implements RegReaderData {
         Label old = this.label;
         this.label = (Label)updateMapping.getOrDefault(this.label, this.label);
         if (old != this.label) {
-            old.getListeners().remove(this);
-            this.label.addListener(this);
+            old.getJumpSet().remove(this);
+            this.label.getJumpSet().add(this);
         }
     }
 
     @Override
     public void delete() {
         super.delete();
-        label.listeners.remove(this);
+        label.getJumpSet().remove(this);
     }
 
     public boolean didJump(Model model, SolverContext ctx) {

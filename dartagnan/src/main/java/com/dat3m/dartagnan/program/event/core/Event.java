@@ -32,8 +32,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	protected transient BooleanFormula cfVar;
 
-	protected Set<Event> listeners = new HashSet<>();
-
 	private transient String repr;
 
 	protected Event(){
@@ -46,9 +44,8 @@ public abstract class Event implements Encoder, Comparable<Event> {
         this.cId = other.cId;
         this.fId = other.fId;
         this.cLine = other.cLine;
-        this.filter = other.filter;
+        this.filter = other.filter; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
         this.thread = other.thread;
-		this.listeners = new HashSet<>();
     }
 
 	public int getOId() { return oId; }
@@ -163,14 +160,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 			}
 		}
 		return result;
-	}
-
-    public void addListener(Event e) {
-    	listeners.add(e);
-    }
-
-    public Set<Event> getListeners() {
-		return listeners;
 	}
 
 	public void delete() {

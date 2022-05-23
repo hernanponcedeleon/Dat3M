@@ -90,13 +90,13 @@ public class FindSpinLoops implements ProgramProcessor {
             if (curr instanceof Label && !curr.is(Tag.SPINLOOP)) {
                 Label label = (Label) curr;
                 // Importantly, this looks for the LAST backjump to the label
-                List<Event> backjumps = label.getListeners()
+                List<CondJump> backjumps = label.getJumpSet()
                         .stream().filter(x -> x.getOId() > label.getOId())
                         .sorted().collect(Collectors.toList());
 
                 if (!backjumps.isEmpty()) {
                     Label loopStart = label;
-                    CondJump loopEnd = (CondJump) backjumps.get(backjumps.size() - 1);
+                    CondJump loopEnd = backjumps.get(backjumps.size() - 1);
                     if (isSideEffectFree(loopStart, loopEnd)) {
                         loopStart.addFilters(Tag.SPINLOOP, Tag.NOOPT);
                         backjumps.forEach(x -> x.addFilters(Tag.SPINLOOP, Tag.NOOPT));

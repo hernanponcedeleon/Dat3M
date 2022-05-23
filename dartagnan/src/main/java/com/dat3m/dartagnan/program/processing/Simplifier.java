@@ -108,7 +108,6 @@ public class Simplifier implements ProgramProcessor {
         Event successor = jump.getSuccessor();
         BExpr expr = jump.getGuard();
         if(label.equals(successor) && expr instanceof BConst) {
-            label.getListeners().remove(jump);
             jump.delete();
             return true;
         }
@@ -116,7 +115,7 @@ public class Simplifier implements ProgramProcessor {
     }
 
     private boolean simplifyLabel(Label label) {
-        if (label.getListeners().isEmpty() && !label.getName().startsWith("END_OF_T")) {
+        if (label.getJumpSet().isEmpty() && !label.getName().startsWith("END_OF_T")) {
             label.delete();
             return true;
         }
