@@ -10461,7 +10461,6 @@ litmus/C/auto/C-LB-LRW+R-A+OB-O+OB-O+R-Oc.litmus,0
 litmus/C/dart/C-atomic-op-return-simple-04.litmus,0
 litmus/C/dart/C-atomic-cmpxchg-failure-01.litmus,1
 litmus/C/dart/C-atomic-xchg-simple-02.litmus,1
-litmus/C/dart/no-herd/C-bool-const-01.litmus,0
 litmus/C/dart/no-herd/C-bool-const-02.litmus,1
 litmus/C/dart/C-idd-03.litmus,1
 litmus/C/dart/C-atomic-cmpxchg-success-03.litmus,0
@@ -10502,7 +10501,6 @@ litmus/C/dart/C-atomic-xchg-simple-03.litmus,0
 litmus/C/dart/C-atomic-op-return-simple-03-2.litmus,0
 litmus/C/dart/C-atomic-op-return-simple-02-2.litmus,1
 litmus/C/dart/C-atomic-xchg-simple-01.litmus,0
-litmus/C/dart/C-atomic-cmpxchg-failure-02.litmus,1
 litmus/C/dart/C-atomic-op-and-test-05.litmus,0
 litmus/C/dart/C-ctrl-04.litmus,1
 litmus/C/dart/C-atomic-fetch-simple-03.litmus,1
