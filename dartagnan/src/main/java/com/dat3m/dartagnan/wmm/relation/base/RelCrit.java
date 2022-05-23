@@ -29,7 +29,6 @@ public class RelCrit extends StaticRelation {
         return minTupleSet;
     }
 
-	// This is an over-approximation of the real rcu-rscs since we don't do proper matching. 
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
