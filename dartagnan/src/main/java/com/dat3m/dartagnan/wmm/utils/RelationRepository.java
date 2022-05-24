@@ -199,6 +199,12 @@ public class RelationRepository {
                 return getRelation(RelIntersection.class, getRelation(CTRL), getRelation(ISYNC)).setName(CTRLISYNC);
             case CTRLISB:
                 return getRelation(RelIntersection.class, getRelation(CTRL), getRelation(ISB)).setName(CTRLISB);
+            // Used for cutting the fixed version of LKMM
+            case PLAINWMB:
+                return getRelation(RelComposition.class, 
+                		getRelation(RelComposition.class, getRelation(POLOC), 
+                					getRelation(RelSetIdentity.class, FilterBasic.get(Tag.WRITE))), 
+                		getRelation(PO)).setName(PLAINWMB);
             default:
                 return null;
         }

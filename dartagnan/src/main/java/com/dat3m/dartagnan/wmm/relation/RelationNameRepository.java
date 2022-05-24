@@ -41,5 +41,7 @@ public class RelationNameRepository {
 	public static final String CTRLISYNC = "ctrlisync";
 	public static final String CTRLISB = "ctrlisb";
 	public static final String CASDEP = "casdep";
+	// Used for cutting
+	public static final String PLAINWMB = "plain-wmb";
 
 }
