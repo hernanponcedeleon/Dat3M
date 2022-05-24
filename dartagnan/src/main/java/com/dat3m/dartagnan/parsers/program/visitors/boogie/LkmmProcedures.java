@@ -143,13 +143,13 @@ public class LkmmProcedures {
 			String fence;
 			switch(fenceAsInt) {
 				case 6:
-					fence = "Mb";
+					fence = MO_MB;
 					break;
 				case 7:
-					fence = "Wmb";
+					fence = MO_WMB;
 					break;
 				case 8:
-					fence = "Rmb";
+					fence = MO_RMB;
 					break;
 				case 9:
 					fence = RCU_LOCK;
