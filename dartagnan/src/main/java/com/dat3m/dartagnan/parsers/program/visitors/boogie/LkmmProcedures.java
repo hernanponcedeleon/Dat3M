@@ -28,7 +28,9 @@ public class LkmmProcedures {
 			"__LKMM_atomic_op_return",
 			"__LKMM_WRITE_ONCE",
 			"__LKMM_READ_ONCE",
-			"__LKMM_FENCE");
+			"__LKMM_FENCE",
+			"__LKMM_spin_lock",
+			"__LKMM_spin_unlock");
 
 	public static void handleLkmmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
@@ -165,6 +167,20 @@ public class LkmmProcedures {
 					.setCLine(visitor.currentLine)
 					.setSourceCodeFile(visitor.sourceCodeFile);
 			return;			
+		}
+		if(name.startsWith("__LKMM_spin_lock")) {
+			IExpr lock = (IExpr)ctx.call_params().exprs().expr(0).accept(visitor);
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLock(lock))
+					.setCLine(visitor.currentLine)
+					.setSourceCodeFile(visitor.sourceCodeFile);
+			return;
+		}
+		if(name.startsWith("__LKMM_spin_unlock")) {
+			IExpr lock = (IExpr)ctx.call_params().exprs().expr(0).accept(visitor);
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newUnlock(lock))
+					.setCLine(visitor.currentLine)
+					.setSourceCodeFile(visitor.sourceCodeFile);
+			return;
 		}
 		throw new UnsupportedOperationException(name + " procedure is not part of LKMMPROCEDURES");
 	}

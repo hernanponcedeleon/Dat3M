@@ -170,3 +170,17 @@ typedef atomic64_t  atomic_long_t;
 #define atomic_dec_and_test(v)    (atomic_dec_return(v) == 0)
 #define atomic_inc_and_test(v)    (atomic_inc_return(v) == 0)
 #define atomic_add_negative(i, v) (atomic_add_return(i, v) < 0)
+
+
+/*******************************************************************************
+ **                               SPINLOCKS
+ ******************************************************************************/
+
+/* Spinlocks */
+typedef struct spinlock {
+    int unused;
+} spinlock_t;
+
+#define spin_lock(l)      __LKMM_spin_lock(l)
+#define spin_unlock(l)    __LKMM_spin_unlock(l)
+
