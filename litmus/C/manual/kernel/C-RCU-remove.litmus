@@ -1,0 +1,26 @@
+C C-RCU-remove
+
+{
+	int *z=1; (* List: x->y then x->z. Noncircular, but long enough. *)
+	int *y=2;
+	int *x=y;
+	int 0:r1 = z;
+}
+
+P0(int *x, int *y, int *z)
+{
+	rcu_assign_pointer(*x, r1); /* Remove y from list. */
+	synchronize_rcu();
+	WRITE_ONCE(*y, 0); /* Emulate kfree(y). */
+}
+
+P1(int *x, int *y, int *z)
+{
+	rcu_read_lock();
+	r1 = rcu_dereference(*x); /* Pick up list head. */
+	r2 = rcu_dereference(*r1); /* Pick up value. */
+	rcu_read_unlock();
+}
+
+locations [0:r1; 1:r1; x; y; z]
+exists (1:r2=0) (* Better not be freed!!! *)

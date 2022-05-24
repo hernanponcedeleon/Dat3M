@@ -80,8 +80,8 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
 
     // Due to being an encoder
     public void initializeEncoding(SolverContext ctx) {
-        Preconditions.checkState(this.maxTupleSet != null && this.minTupleSet != null,
-                "No available relation data to encode. Perform RelationAnalysis before encoding.");
+    	Preconditions.checkState(this.maxTupleSet != null && this.minTupleSet != null,
+    			String.format("No available relation data to encode %s. Perform RelationAnalysis before encoding.", this));
         this.isEncoded = false;
         this.encodeTupleSet = new TupleSet();
     }

@@ -1,0 +1,31 @@
+C READ_ONCE-omitted
+
+(*
+ * Result: Sometimes
+ *
+ * This litmus test demonstrates that adding READ_ONCE() can change
+ * the outcome of a litmus test.  See the companion C-READ_ONCE.litmus
+ * file for the added READ_ONCE().
+ *)
+
+{}
+
+P0(int *x, int *y)
+{
+	int r0;
+
+	r0 = READ_ONCE(*y);
+	smp_rmb(); // Wrong barrier!
+	WRITE_ONCE(*x, 1);
+}
+
+P1(int *x, int *y)
+{
+	int r0;
+
+	r0 = READ_ONCE(*x);
+	smp_mb();
+	WRITE_ONCE(*y, 1);
+}
+
+exists (0:r0=1 /\ 1:r0=1)

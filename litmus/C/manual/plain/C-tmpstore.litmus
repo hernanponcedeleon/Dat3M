@@ -1,7 +1,11 @@
 C C-tmpstore
 
-(* Expected result: Sometimes.  Plain stores can be preceded by use of
-   the stored location as temporary storage.  Note: Involves data race. *)
+(*
+ * Result: Sometimes DATARACE
+ *
+ * Plain stores can be preceded by use of the stored location as temporary
+ * storage.
+ *)
 
 {
 int x = 0;

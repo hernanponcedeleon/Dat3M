@@ -4,7 +4,7 @@ C aba-array
     struct mystruct {
         int value;
         int next;
-    };
+    }
 */
 
 {

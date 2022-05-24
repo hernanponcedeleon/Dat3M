@@ -151,8 +151,8 @@ nre locals [IOpBin op, String mo, String name]
     |   Ast? varName Equals re                                                                                          # nreAssignment
     |   typeSpecifier varName (Equals re)?                                                                              # nreRegDeclaration
 
-//    |   SpinLock LPar address = re RPar                                                                               # nreSpinLock
-//    |   SpinUnlock LPar address = re RPar                                                                             # nreSpinUnlock
+    |   SpinLock LPar address = re RPar                                                                               # nreSpinLock
+    |   SpinUnlock LPar address = re RPar                                                                             # nreSpinUnlock
 //    |   SpinUnlockWait LPar address = re RPar                                                                         # nreSpinUnlockWait
 
     |   ( FenceSmpMb LPar RPar {$name = "Mb";}
@@ -161,6 +161,7 @@ nre locals [IOpBin op, String mo, String name]
         | FenceSmpMbBeforeAtomic LPar RPar {$name = "Before-atomic";}
         | FenceSmpMbAfterAtomic LPar RPar {$name = "After-atomic";}
         | FenceSmpMbAfterSpinLock LPar RPar {$name = "After-spinlock";}
+        | FenceSmpMbAfterUnlockLock LPar RPar {$name = "After-unlock-lock";}
         | RcuReadLock LPar RPar {$name = RCU_LOCK;}
         | RcuReadUnlock LPar RPar {$name = RCU_UNLOCK;}
         | (RcuSync | RcuSyncExpedited) LPar RPar {$name = RCU_SYNC;})                                             # nreFence

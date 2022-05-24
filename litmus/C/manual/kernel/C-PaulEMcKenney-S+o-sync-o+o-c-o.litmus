@@ -1,6 +1,9 @@
 C C-PaulEMcKenney-S+o-sync-o+o-c-o.litmus
 
-(* Expected result: Never, based on control dependency. *)
+(*
+ * Result: Never
+ * This is based on control dependency.
+ *)
 
 {
 }

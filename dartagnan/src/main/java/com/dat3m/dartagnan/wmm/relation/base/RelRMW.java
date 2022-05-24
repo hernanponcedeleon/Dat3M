@@ -3,13 +3,13 @@ package com.dat3m.dartagnan.wmm.relation.base;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterIntersection;
+import com.dat3m.dartagnan.program.filter.FilterUnion;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
@@ -89,13 +89,13 @@ public class RelRMW extends StaticRelation {
             	}
             }
 
-            //Locks: Load -> CondJump -> Store
-            filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(Tag.C11.LOCK));
+            // Locks: Load -> Assume/CondJump -> Store
+            FilterAbstract locks = FilterUnion.get(FilterBasic.get(Tag.C11.LOCK), 
+            									   FilterBasic.get(Tag.Linux.LOCK_READ));
+            filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), locks);
             for(Event e : task.getProgram().getCache().getEvents(filter)){
-            	if(e instanceof Load) {
-            	    // Connect Load to Store
-            		baseMaxTupleSet.add(new Tuple(e, e.getSuccessor().getSuccessor()));
-            	}
+            	// Connect Load to Store
+            	baseMaxTupleSet.add(new Tuple(e, e.getSuccessor().getSuccessor()));
             }
 
             // Atomics blocks: BeginAtomic -> EndAtomic

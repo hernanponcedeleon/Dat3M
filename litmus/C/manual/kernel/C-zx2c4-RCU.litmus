@@ -1,0 +1,25 @@
+C zx2c4-RCU
+
+{
+}
+
+P0(int *a, int *b)
+{
+	WRITE_ONCE(*a, 1);
+	synchronize_rcu();
+	r1 = READ_ONCE(*b);
+}
+
+P1(int *a, int *b)
+{
+	rcu_read_lock();
+	r1 = READ_ONCE(*a);
+	if (r1 == 0) {
+		WRITE_ONCE(*b, 1);
+		WRITE_ONCE(*b, 0);
+	}
+	rcu_read_unlock();
+}
+
+locations [0:r1; 1:r1; a; b]
+exists (0:r1=1)

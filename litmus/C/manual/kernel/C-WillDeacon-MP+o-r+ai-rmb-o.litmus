@@ -1,7 +1,10 @@
 C C-WillDeacon-MP+o-r+ai-rmb-o.litmus
 
 (*
- * Expected result: Never.
+ * Result: Sometimes
+ *
+ * This used to be Never, but became Sometimes with the Noreturn
+ * changes to linux-kernel.cat's rmb relation.
  *)
 
 {

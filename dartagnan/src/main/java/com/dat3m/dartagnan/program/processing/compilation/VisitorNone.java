@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -22,6 +24,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
+import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>> {
@@ -215,6 +218,20 @@ public class VisitorNone extends VisitorBase implements EventVisitor<List<Event>
         );
 	}
 
+	@Override
+	public List<Event> visitLKMMLock(LKMMLock e) {
+		Register dummy = e.getThread().newRegister(GlobalSettings.ARCH_PRECISION);
+        // In litmus tests, spinlocks are guaranteed to success, i.e. its read part gets value 0
+		Event middle = e.getThread().getProgram().getFormat().equals(LITMUS) ? 
+				newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)) : 
+				newJump(new Atom(dummy, NEQ, IValue.ZERO), (Label)e.getThread().getExit()); 
+		return eventSequence(
+                Linux.newLockRead(dummy, e.getLock()),
+                middle,
+                Linux.newLockWrite(e.getLock())
+        );
+	}
+	
 	@Override
 	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
 		Register resultRegister = e.getResultRegister();

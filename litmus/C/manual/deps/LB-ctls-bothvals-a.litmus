@@ -1,0 +1,42 @@
+C LB-ctls-bothvals-a
+(*
+ * Result: Never
+ *
+ * The compiler can combine the identical writes, then hoist them out
+ * past the end of the "if" statements, then convert the stores to z to
+ * conditional moves, allowing the CPU to reorder the accesses to x and y.
+ * However, LKMM does not yet know about this corner case, hence "Never"
+ * rather than "Sometimes".
+ *)
+{
+}
+
+P0(int *x, int *y, int *z)
+{
+	int r1;
+
+	r1 = READ_ONCE(*x);
+	if (r1) {
+		WRITE_ONCE(*z, 1);
+		WRITE_ONCE(*y, 1);
+	} else {
+		WRITE_ONCE(*z, 2);
+		WRITE_ONCE(*y, 1);
+	}
+}
+
+P1(int *x, int *y, int *z)
+{
+	int r1;
+
+	r1 = READ_ONCE(*y);
+	if (r1) {
+		WRITE_ONCE(*z, 1);
+		WRITE_ONCE(*x, 1);
+	} else {
+		WRITE_ONCE(*z, 2);
+		WRITE_ONCE(*x, 1);
+	}
+}
+
+exists (0:r1=1 /\ 1:r1=1)
