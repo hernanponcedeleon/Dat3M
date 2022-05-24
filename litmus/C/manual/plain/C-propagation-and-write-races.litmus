@@ -1,6 +1,10 @@
 C propagation-and-write-races
 
-(* Because the cycle is permitted, there is a data race. *)
+(*
+ * Result: Sometimes DATARACE
+ *
+ * Because the cycle is permitted, there is a data race.
+ *)
 
 {}
 

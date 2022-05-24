@@ -1,6 +1,9 @@
 C C-PaulEMcKenney-MP+o-sync-o+o-o.litmus
 
-(* Expected result: Sometimes, as P1 is unordered. *)
+(*
+ * Result: Sometimes
+ * After all, P1 is unordered.
+ *)
 
 {
 }

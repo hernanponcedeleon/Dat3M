@@ -1,5 +1,12 @@
 C MP+wmbplainplain+rmbplainplain
 
+(*
+ * Result: Sometimes DATARACE
+ *
+ * P0()'s writes can be transformed to reads, and besides there are
+ * data races all over the place.
+ *)
+
 {}
 
 P0(int *x, int *y)

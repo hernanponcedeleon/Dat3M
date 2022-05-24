@@ -1,8 +1,11 @@
 C C-tearstore
 
-(* Expected result: Sometimes.  Plain stores tear, so that concurrent
-   stores to the same variable result in a final value different than
-   either value stored.  Note: Involves data race. *)
+(*
+ * Result: Sometimes DATARACE
+ *
+ * Plain stores tear, so that concurrent stores to the same variable
+ * result in a final value different than either value stored.
+ *)
 
 {
 int x = 0;

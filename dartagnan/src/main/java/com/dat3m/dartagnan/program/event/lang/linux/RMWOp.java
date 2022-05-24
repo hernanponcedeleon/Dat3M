@@ -13,7 +13,7 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
     private final IOpBin op;
 
     public RMWOp(IExpr address, Register register, IExpr value, IOpBin op) {
-        super(address, register, value, Tag.Linux.MO_RELAXED);
+        super(address, register, value, Tag.Linux.MO_ONCE);
         this.op = op;
         addFilters(Tag.Linux.NORETURN);
     }

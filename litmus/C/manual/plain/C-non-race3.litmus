@@ -1,0 +1,34 @@
+C C-non-race3
+
+(*
+ * Result: Never DATARACE
+ *)
+
+{ }
+
+P0(int *x, int *y, int *z)
+{
+	int r0;
+
+	r0 = READ_ONCE(*x);
+	if (r0 == 1)
+		*y = 3;
+	WRITE_ONCE(*y, 5);
+	smp_wmb();
+	WRITE_ONCE(*z, 1);
+}
+
+P1(int *x, int *y, int *z)
+{
+	int r1;
+
+	r1 = READ_ONCE(*z);
+	WRITE_ONCE(*x, r1);
+}
+
+P2(int *y)
+{
+	*y = 2;
+}
+
+exists (0:r0=1 /\ 1:r1=1)

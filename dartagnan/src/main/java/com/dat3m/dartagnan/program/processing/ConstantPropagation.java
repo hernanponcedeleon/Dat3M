@@ -113,7 +113,9 @@ public class ConstantPropagation implements ProgramProcessor {
         		propagationMap = merge(propagationMap, label2PropagationMap.getOrDefault(current, Collections.emptyMap()));
         	}
 
-        	current.accept(new ConstantPropagationVisitor(propagationMap));
+        	if(!current.is(Tag.NOOPT)) {
+            	current.accept(new ConstantPropagationVisitor(propagationMap));
+        	}
             current = current.getSuccessor();
 
 			if (resetPropMap) {

@@ -18,6 +18,8 @@ public class Thread {
     private final int id;
     private final Event entry;
     private Event exit;
+    
+	protected Program program; // The program this thread belongs to
 
     private final Map<String, Register> registers;
     private EventCache cache;
@@ -60,6 +62,16 @@ public class Thread {
     public List<Event> getEvents() {
         return getCache().getEvents(FilterBasic.get(Tag.ANY));
     }
+
+	public Program getProgram() {
+		return program;
+	}
+
+	public void setProgram(Program program) {
+		Preconditions.checkNotNull(program);
+		this.program = program;
+	}
+
 
     public void clearCache(){
         cache = null;

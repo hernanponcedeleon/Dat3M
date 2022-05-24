@@ -1,7 +1,10 @@
 C C-repload
 
-(* Expected result: Sometimes.  Plain loads can be replicated.
-   Note: Involves data race. *)
+(*
+ * Result: Sometimes DATARACE
+ *
+ * Plain loads can be replicated.
+ *)
 
 {
 int x = 0;
