@@ -140,7 +140,9 @@ public class EventFactory {
     }
 
     public static CondJump newFakeCtrlDep(Register reg, Label target) {
-        return newJump(new Atom(reg, COpBin.EQ, reg), target);
+        CondJump jump = newJump(new Atom(reg, COpBin.EQ, reg), target);
+        jump.addFilters(Tag.NOOPT);
+		return jump;
     }
 
     public static Assume newAssume(ExprInterface expr) {
@@ -397,6 +399,22 @@ public class EventFactory {
 
         public static Fence newConditionalMemoryBarrier(RMWReadCond loadEvent) {
             return newConditionalBarrier(loadEvent, "Mb");
+        }
+
+        public static LKMMLockRead newLockRead(Register register, IExpr address) {
+            return new LKMMLockRead(register, address);
+        }
+
+        public static LKMMLockWrite newLockWrite(IExpr address) {
+            return new LKMMLockWrite(address);
+        }
+
+        public static LKMMLock newLock(IExpr address) {
+            return new LKMMLock(address);
+        }
+
+        public static LKMMUnlock newUnlock(IExpr address) {
+            return new LKMMUnlock(address);
         }
 
     }

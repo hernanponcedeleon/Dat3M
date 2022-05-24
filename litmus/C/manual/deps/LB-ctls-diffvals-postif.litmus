@@ -1,0 +1,37 @@
+C LB-ctls-diffvals-postif
+(*
+ * Result: Sometimes
+ *
+ * The compiler can compile the writes to y as conditional-move instructions,
+ * then the hardware can reorder the accesses to z and x.
+ *)
+{
+}
+
+P0(int *x, int *y, int *z)
+{
+	int r1;
+
+	r1 = READ_ONCE(*x);
+	if (r1) {
+		WRITE_ONCE(*y, 1);
+	} else {
+		WRITE_ONCE(*y, 2);
+	}
+	WRITE_ONCE(*z, 1);
+}
+
+P1(int *x, int *y, int *z)
+{
+	int r1;
+
+	r1 = READ_ONCE(*z);
+	if (r1) {
+		WRITE_ONCE(*y, 1);
+	} else {
+		WRITE_ONCE(*y, 2);
+	}
+	WRITE_ONCE(*x, 1);
+}
+
+exists (0:r1=1 /\ 1:r1=1)

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.miscellaneous;
 
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -24,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -97,7 +99,7 @@ public class BranchTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
                     .withSolverTimeout(60)
-                    .build(program, wmm);
+                    .build(program, wmm, EnumSet.of(Property.getDefault()));
             assertEquals(expected, TwoSolvers.run(ctx, prover1, prover2, task));
         } catch (Exception e){
             fail("Missing resource file");

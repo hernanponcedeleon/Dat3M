@@ -112,11 +112,11 @@ re locals [IOpBin op, String mo]
     |   AtomicAddUnless LPar address = re Comma value = re Comma cmp = re RPar                                          # reAtomicAddUnless
 
     |   ( AtomicReadAcquire LPar address = re RPar {$mo = MO_ACQUIRE;}
-        | AtomicRead        LPar address = re RPar {$mo = MO_RELAXED;}
-        | RcuDereference    LPar Ast? address = re RPar {$mo = MO_RELAXED;}
+        | AtomicRead        LPar address = re RPar {$mo = MO_ONCE;}
+        | RcuDereference    LPar Ast? address = re RPar {$mo = MO_ONCE;}
         | SmpLoadAcquire    LPar address = re RPar {$mo = MO_ACQUIRE;})                                                 # reLoad
 
-    |   ReadOnce LPar Ast address = re RPar {$mo = "Once";}                                                             # reReadOnce
+    |   ReadOnce LPar Ast address = re RPar {$mo = MO_ONCE;}                                                             # reReadOnce
     |   Ast address = re {$mo = "NA";}                                                                                  # reReadNa
 
 //    |   SpinTrylock LPar address = re RPar                                                                            # reSpinTryLock
@@ -140,19 +140,19 @@ nre locals [IOpBin op, String mo, String name]
         | AtomicInc LPar address = re RPar {$op = IOpBin.PLUS;}
         | AtomicDec LPar address = re RPar {$op = IOpBin.MINUS;})                                                       # nreAtomicOp
 
-    |   ( AtomicSet         LPar address = re Comma value = re RPar {$mo = MO_RELAXED;}
+    |   ( AtomicSet         LPar address = re Comma value = re RPar {$mo = MO_ONCE;}
         | AtomicSetRelease  LPar address = re Comma value = re RPar {$mo = MO_RELEASE;}
         | SmpStoreRelease   LPar address = re Comma value = re RPar {$mo = MO_RELEASE;}
         | SmpStoreMb        LPar address = re Comma value = re RPar {$mo = MO_MB;}
         | RcuAssignPointer  LPar Ast? address = re Comma value = re RPar {$mo = MO_RELEASE;})                           # nreStore
 
-    |   WriteOnce LPar Ast address = re Comma value = re RPar {$mo = "Once";}                                           # nreWriteOnce
+    |   WriteOnce LPar Ast address = re Comma value = re RPar {$mo = MO_ONCE;}                                           # nreWriteOnce
 
     |   Ast? varName Equals re                                                                                          # nreAssignment
     |   typeSpecifier varName (Equals re)?                                                                              # nreRegDeclaration
 
-//    |   SpinLock LPar address = re RPar                                                                               # nreSpinLock
-//    |   SpinUnlock LPar address = re RPar                                                                             # nreSpinUnlock
+    |   SpinLock LPar address = re RPar                                                                               # nreSpinLock
+    |   SpinUnlock LPar address = re RPar                                                                             # nreSpinUnlock
 //    |   SpinUnlockWait LPar address = re RPar                                                                         # nreSpinUnlockWait
 
     |   ( FenceSmpMb LPar RPar {$name = "Mb";}
@@ -161,6 +161,7 @@ nre locals [IOpBin op, String mo, String name]
         | FenceSmpMbBeforeAtomic LPar RPar {$name = "Before-atomic";}
         | FenceSmpMbAfterAtomic LPar RPar {$name = "After-atomic";}
         | FenceSmpMbAfterSpinLock LPar RPar {$name = "After-spinlock";}
+        | FenceSmpMbAfterUnlockLock LPar RPar {$name = "After-unlock-lock";}
         | RcuReadLock LPar RPar {$name = RCU_LOCK;}
         | RcuReadUnlock LPar RPar {$name = RCU_UNLOCK;}
         | (RcuSync | RcuSyncExpedited) LPar RPar {$name = RCU_SYNC;})                                             # nreFence

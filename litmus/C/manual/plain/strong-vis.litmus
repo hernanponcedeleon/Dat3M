@@ -1,0 +1,37 @@
+C strong-vis
+
+(*
+ * Result: Never
+ *
+ * Demonstrates use of (strong-fence ; xbstar ; r-pre-bounded) in
+ * wr-vis for detecting data races.
+ *)
+
+{}
+
+P0(int *x, int *y)
+{
+	*x = 1;
+	smp_mb();
+	WRITE_ONCE(*y, 1);
+}
+
+P1(int *y, int *z)
+{
+	int r1;
+
+	r1 = READ_ONCE(*y);
+	WRITE_ONCE(*z, r1);
+}
+
+P2(int *x, int *z)
+{
+	int r2;
+	int r3;
+
+	r2 = smp_load_acquire(z);
+	if (r2)
+		r3 = *x;
+}
+
+exists (2:r2=1 /\ 2:r3=0)

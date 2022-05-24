@@ -1,0 +1,28 @@
+C zx2c4-atomic
+
+{
+	int a=1;
+}
+
+P0(int *a, int *b)
+{
+	if (atomic_cmpxchg(a, 1, 0) == 1) {
+		r1 = READ_ONCE(*b);
+	}
+}
+
+P1(int *a, int *b)
+{
+	r1 = READ_ONCE(*a);
+	if (r1 > 0) {
+		r2 = r1 + 1;
+		r3 = atomic_cmpxchg(a, r1, r2);
+		if (r3 == r1) {
+			WRITE_ONCE(*b, 1);
+			WRITE_ONCE(*b, 0);
+		}
+	}
+}
+
+locations [0:r1; 1:r1; 1:r2; 1:r3; a; b]
+exists (0:r1=1)

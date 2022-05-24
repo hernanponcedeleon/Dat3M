@@ -1,9 +1,12 @@
 C C-tearload
 
-(* Expected result: Sometimes.  Plain loads tear, so that a load from
-   a variable that is being concurrently stored to can result in a final
-   value different than any of the value stored.  Note: Involves data
-   race. *)
+(*
+ * Result: Never DATARACE
+ * 
+ * Plain loads tear, so that a load from a variable that is being
+ * concurrently stored to can result in a final value different than any
+ * of the values stored.
+ *)
 
 {
 int x = 0;

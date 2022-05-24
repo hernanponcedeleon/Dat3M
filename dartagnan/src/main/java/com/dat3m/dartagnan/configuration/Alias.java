@@ -8,11 +8,6 @@ public enum Alias implements OptionInterface {
 	// For comparison reasons, we might want to add a NONE method with may = true, must = false
 	FIELD_SENSITIVE, FIELD_INSENSITIVE;
 
-	// Used for options in the console
-	public String asStringOption() {
-		return this.toString().toLowerCase();
-	}
-
 	public static Alias getDefault() {
 		return FIELD_SENSITIVE;
 	}

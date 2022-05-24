@@ -1,7 +1,7 @@
 C C-PaulEMcKenney-MP+o-r+ai-mb-o.litmus
 
 (*
- * Expected result: Never.
+ * Result: Never
  *
  * Desired litmus test, with smp_mb__after_atomic() with smp_mb():
  *

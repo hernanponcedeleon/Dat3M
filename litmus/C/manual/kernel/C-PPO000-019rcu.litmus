@@ -1,0 +1,26 @@
+C C-PPO000-019rcu
+
+(*
+ * Result: Never
+ *)
+
+{
+	y=a;
+}
+
+P0(int *x, int *y)
+{
+	WRITE_ONCE(*x, 1);
+	smp_store_release(y, x);
+}
+
+
+P1(int *x, int *y, int *z)
+{
+	r1 = rcu_dereference(*y);
+	WRITE_ONCE(*z, r1);
+	r2 = READ_ONCE(*z);
+	r3 = READ_ONCE(*r2);
+}
+
+exists (1:r1=x /\ 1:r2=x /\ 1:r3=0)

@@ -1,0 +1,30 @@
+C dynticks-from-idle
+
+{
+	DYNTICKS=0; (* Initially idle. *)
+}
+
+
+P0(int *X, int *DYNTICKS)
+{
+	int dynticks;
+	int x;
+
+	// Idle.
+	dynticks = READ_ONCE(*DYNTICKS);
+	smp_store_release(DYNTICKS, dynticks + 1);
+	smp_mb();
+	// Now non-idle
+	x = READ_ONCE(*X);
+}
+
+P1(int *X, int *DYNTICKS)
+{
+	int dynticks;
+	
+	WRITE_ONCE(*X, 1);
+	smp_mb();
+	dynticks = smp_load_acquire(DYNTICKS);
+}
+
+exists (1:dynticks=0 /\ 0:x=0)

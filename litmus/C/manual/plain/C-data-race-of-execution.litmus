@@ -1,5 +1,7 @@
 C data-race-of-execution
 
+(* Result: Never DATARACE *)
+
 {}
 
 P0(int *x)

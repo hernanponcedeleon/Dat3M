@@ -3,7 +3,9 @@ package com.dat3m.dartagnan.parsers.cat.visitors;
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
 import com.dat3m.dartagnan.parsers.CatParser;
 import com.dat3m.dartagnan.parsers.CatVisitor;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
@@ -77,7 +79,13 @@ public class VisitorRelation extends CatBaseVisitor<Relation> implements CatVisi
 
     @Override
     public Relation visitExprComplement(CatParser.ExprComplementContext ctx) {
-        throw new RuntimeException("Relation complement is not implemented");
+        Relation r = ctx.e.accept(this);
+        if(r != null){
+        	Relation allPairs = base.relationRepository.getRelation(RelCartesian.class, 
+					FilterBasic.get(Tag.VISIBLE), FilterBasic.get(Tag.VISIBLE));
+            return base.relationRepository.getRelation(RelMinus.class, allPairs, r);
+        }
+        return null;
     }
 
     @Override

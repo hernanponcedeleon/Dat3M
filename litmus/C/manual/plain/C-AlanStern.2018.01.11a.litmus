@@ -1,5 +1,7 @@
 C AlanStern.2018.01.11a.litmus
 
+(* Result: Never *)
+
 {}
 
 P0(int *x)

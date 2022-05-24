@@ -7,23 +7,6 @@ import com.dat3m.dartagnan.configuration.OptionInterface;
 public enum Arch implements OptionInterface {
 	NONE, ARM8, POWER, TSO, IMM;
 
-	// Used for options in the console
-	public String asStringOption() {
-        switch(this){
-        	case NONE:
-        		return "none";
-        	case ARM8:
-        		return "arm8";
-        	case POWER:
-        		return "power";
-        	case TSO:
-        		return "tso";
-        	case IMM:
-        		return "imm";
-        }
-        throw new UnsupportedOperationException("Unrecognized architecture " + this);
-	}
-
 	// Used to display in UI
     @Override
     public String toString() {

@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.CO_ANTISYMMETRY;
+import static com.dat3m.dartagnan.configuration.Property.LIVENESS;
 import static com.dat3m.dartagnan.expression.utils.Utils.*;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
@@ -196,7 +197,7 @@ public class RelCo extends Relation {
                 }
             }
 
-            if (task.getProgram().getFormat().equals(LITMUS)) {
+            if (task.getProgram().getFormat().equals(LITMUS) || task.getProperty().contains(LIVENESS)) {
                 BooleanFormula lastCoExpr = getLastCoVar(w1, ctx);
                 enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
 

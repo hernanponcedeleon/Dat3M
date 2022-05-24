@@ -1,0 +1,40 @@
+C LB-ctls-bothvals
+(*
+ * Result: Never
+ *
+ * The compiler can combine the identical writes, then hoist them out
+ * of the "if" statements, but that should not affect different writes
+ * within that same "if" statement.
+ *)
+{
+}
+
+P0(int *x, int *y, int *z)
+{
+	int r1;
+
+	r1 = READ_ONCE(*x);
+	if (r1) {
+		WRITE_ONCE(*y, 1);
+		WRITE_ONCE(*z, 1);
+	} else {
+		WRITE_ONCE(*y, 1);
+		WRITE_ONCE(*z, 2);
+	}
+}
+
+P1(int *x, int *y, int *z)
+{
+	int r1;
+
+	r1 = READ_ONCE(*z);
+	if (r1) {
+		WRITE_ONCE(*y, 1);
+		WRITE_ONCE(*x, 1);
+	} else {
+		WRITE_ONCE(*y, 1);
+		WRITE_ONCE(*x, 2);
+	}
+}
+
+exists (0:r1=1 /\ 1:r1=1)
