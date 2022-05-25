@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <lkmm.h>
 #include <assert.h>
+#include <rcu.h>
 
 /*
  * Buggy test case. Demonstrates an legal rcu behavior, but with a long
@@ -84,31 +85,19 @@ int main()
 {
 	pthread_t t0, t1, t2, t3, t4, t5;
 
-	if (pthread_create(&t0, NULL, P0, NULL))
-		abort();
-	if (pthread_create(&t1, NULL, P1, NULL))
-		abort();
-	if (pthread_create(&t2, NULL, P2, NULL))
-		abort();
-	if (pthread_create(&t3, NULL, P3, NULL))
-		abort();
-	if (pthread_create(&t4, NULL, P4, NULL))
-		abort();
-	if (pthread_create(&t5, NULL, P5, NULL))
-		abort();
+	pthread_create(&t0, NULL, P0, NULL);
+	pthread_create(&t1, NULL, P1, NULL);
+	pthread_create(&t2, NULL, P2, NULL);
+	pthread_create(&t3, NULL, P3, NULL);
+	pthread_create(&t4, NULL, P4, NULL);
+	pthread_create(&t5, NULL, P5, NULL);
 
-	if (pthread_join(t0, NULL))
-		abort();
-	if (pthread_join(t1, NULL))
-		abort();
-	if (pthread_join(t2, NULL))
-		abort();
-	if (pthread_join(t3, NULL))
-		abort();
-	if (pthread_join(t4, NULL))
-		abort();
-	if (pthread_join(t5, NULL))
-		abort();
+	pthread_join(t0, NULL);
+	pthread_join(t1, NULL);
+	pthread_join(t2, NULL);
+	pthread_join(t3, NULL);
+	pthread_join(t4, NULL);
+	pthread_join(t5, NULL);
 
 	assert(!(r_y == 1 && r_s == 1 && r_a == 1 && r_b == 1 && r_c == 1));
 

@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <lkmm.h>
 #include <assert.h>
+#include <rcu.h>
 
 int x;
 int y;
@@ -30,15 +31,11 @@ int main()
 {
 	pthread_t t1, t2;
 
-	if (pthread_create(&t1, NULL, P0, NULL))
-		abort();
-	if (pthread_create(&t2, NULL, P1, NULL))
-		abort();
+	pthread_create(&t1, NULL, P0, NULL);
+	pthread_create(&t2, NULL, P1, NULL);
 
-	if (pthread_join(t1, NULL))
-		abort();
-	if (pthread_join(t2, NULL))
-		abort();
+	pthread_join(t1, NULL);
+	pthread_join(t2, NULL);
 
 	assert(!(r_x == 0 && r_y == 1));
 
