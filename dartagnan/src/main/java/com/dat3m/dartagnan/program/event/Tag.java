@@ -164,8 +164,10 @@ public final class Tag {
 
         public static String toText(String mo){
             switch (mo){
-                case MO_ACQUIRE:
-                    return "_acquire";
+            	case MO_RELAXED:
+                	return "_relaxed";
+            	case MO_ACQUIRE:
+            		return "_acquire";
                 case MO_RELEASE:
                     return "_release";
                 case MO_MB:
