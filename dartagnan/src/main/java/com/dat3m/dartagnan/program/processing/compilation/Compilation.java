@@ -69,8 +69,10 @@ public class Compilation implements ProgramProcessor {
 
         EventVisitor<List<Event>> visitor;
         switch(target) {
-            case C11:
-                visitor = new VisitorC11(); break;
+        	case C11:
+            	visitor = new VisitorC11(); break;
+        	case LKMM:
+        		visitor = new VisitorLKMM(); break;
             case TSO:
                 visitor = new VisitorTso(); break;
             case POWER:
