@@ -75,13 +75,15 @@ You can also run Dartagnan from the console:
 ```
 java -jar dartagnan/target/dartagnan-3.0.0.jar <CAT file> [--target=<arch>] <program file> [options]
 ```
-For programs written in `.c` and `.bpl`, value `<arch>` specifies the architectures to which the program will be compiled. It must be one of the following: 
-- none
+For programs written in `.c` and `.bpl`, value `<arch>` specifies the programming language or architectures to which the program will be compiled. It must be one of the following: 
+- c11
+- lkmm
+- imm
 - tso
 - power
 - arm8
 
-Program written in `.litmus` format do not require such option.
+Program written in `.litmus` format do not require such option. The target architecture is supposed to match (this is responsibility of the user) the intended weak memory model specified by the CAT file. 
 
 Further options can be specified using `--<option>=<value>`. Common options include:
 - `unroll`: unrolling bound for the BMC (default is 1).

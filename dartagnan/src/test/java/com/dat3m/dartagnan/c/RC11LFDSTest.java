@@ -53,15 +53,15 @@ public class RC11LFDSTest extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-            {"dglm-3", NONE, UNKNOWN},
-            {"dglm-3-CAS-relaxed", NONE, FAIL},
-            {"ms-3", NONE, UNKNOWN},
-            {"ms-3-CAS-relaxed", NONE, FAIL},
-            {"treiber-3", NONE, UNKNOWN},
-            {"treiber-3-CAS-relaxed", NONE, FAIL},
-            {"chase-lev-5", NONE, PASS},
+            {"dglm-3", C11, UNKNOWN},
+            {"dglm-3-CAS-relaxed", C11, FAIL},
+            {"ms-3", C11, UNKNOWN},
+            {"ms-3-CAS-relaxed", C11, FAIL},
+            {"treiber-3", C11, UNKNOWN},
+            {"treiber-3-CAS-relaxed", C11, FAIL},
+            {"chase-lev-5", C11, PASS},
             // These ones have an extra thief that violate the assertion
-            {"chase-lev-6", NONE, FAIL},
+            {"chase-lev-6", C11, FAIL},
         });
     }
 

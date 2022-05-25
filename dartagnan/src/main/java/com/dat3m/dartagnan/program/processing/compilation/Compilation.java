@@ -31,7 +31,7 @@ public class Compilation implements ProgramProcessor {
             description = "The target architecture to which the program shall be compiled to.",
             secure = true,
             toUppercase = true)
-    private Arch target = Arch.NONE;
+    private Arch target = Arch.C11;
 
     public Arch getTarget() { return target; }
     public void setTarget(Arch target) { this.target = target;}
@@ -69,8 +69,10 @@ public class Compilation implements ProgramProcessor {
 
         EventVisitor<List<Event>> visitor;
         switch(target) {
-            case NONE:
-                visitor = new VisitorNone(); break;
+        	case C11:
+            	visitor = new VisitorC11(); break;
+        	case LKMM:
+        		visitor = new VisitorLKMM(); break;
             case TSO:
                 visitor = new VisitorTso(); break;
             case POWER:
