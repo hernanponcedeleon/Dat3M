@@ -12,7 +12,11 @@ typedef enum memory_order {
   memory_order_rmb,
   RCU_LOCK,
   RCU_UNLOCK,
-  RCU_SYNC
+  RCU_SYNC,
+  before_atomic,
+  after_atomic,
+  after_spinlock,
+  after_unlock_lock
 } memory_order;
 
 /*******************************************************************************
@@ -30,6 +34,10 @@ typedef enum memory_order {
 #define smp_mb()  __LKMM_FENCE(memory_order_mb)
 #define smp_rmb() __LKMM_FENCE(memory_order_rmb)
 #define smp_wmb() __LKMM_FENCE(memory_order_wmb)
+#define smp_mb__before_atomic() __LKMM_FENCE(before_atomic)
+#define smp_mb__after_atomic() __LKMM_FENCE(after_atomic)
+#define smp_mb__after_spinlock() __LKMM_FENCE(after_spinlock)
+#define smp_mb__after_unlock_lock() __LKMM_FENCE(after_unlock_lock)
 
 #define rcu_read_lock() __LKMM_FENCE(RCU_LOCK)
 #define rcu_read_unlock() __LKMM_FENCE(RCU_UNLOCK)

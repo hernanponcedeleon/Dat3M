@@ -160,6 +160,18 @@ public class LkmmProcedures {
 				case 11:
 					fence = RCU_SYNC;
 					break;
+				case 12:
+					fence = BEFORE_ATOMIC;
+					break;
+				case 13:
+					fence = AFTER_ATOMIC;
+					break;
+				case 14:
+					fence = AFTER_SPINLOCK;
+					break;
+				case 15:
+					fence = AFTER_UNLOCK_LOCK;
+					break;
 				default:
 					throw new ParsingException("Unrecognized fence " + fenceAsInt);
 			}
