@@ -20,7 +20,7 @@ public class LISA_LKMM_Test extends AbstractLitmusTest {
 
     @Override
     protected Provider<Arch> getTargetProvider() {
-        return () -> Arch.NONE;
+        return () -> Arch.LKMM;
     }
 
     @Override

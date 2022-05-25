@@ -70,7 +70,7 @@ public abstract class AbstractSvCompTest {
 
     // Provider rules
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
-    protected final Provider<Arch> targetProvider = () -> Arch.NONE;
+    protected final Provider<Arch> targetProvider = () -> Arch.C11;
     protected final Provider<String> filePathProvider = getProgramPathProvider();
     protected final Provider<Integer> boundProvider = getBoundProvider();
     protected final Provider<Integer> timeoutProvider = getTimeoutProvider();
