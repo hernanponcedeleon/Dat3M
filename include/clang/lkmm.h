@@ -39,10 +39,6 @@ typedef enum memory_order {
 #define smp_mb__after_spinlock() __LKMM_FENCE(after_spinlock)
 #define smp_mb__after_unlock_lock() __LKMM_FENCE(after_unlock_lock)
 
-#define rcu_read_lock() __LKMM_FENCE(RCU_LOCK)
-#define rcu_read_unlock() __LKMM_FENCE(RCU_UNLOCK)
-#define synchronize_rcu() __LKMM_FENCE(RCU_SYNC)
-
 /* Acquire/Release and friends */
 #define smp_load_acquire(p)      __LKMM_load(p, memory_order_acquire)
 #define smp_store_release(p, v)  __LKMM_store(p, v, memory_order_release)
@@ -191,4 +187,3 @@ typedef struct spinlock {
 
 #define spin_lock(l)      __LKMM_spin_lock(l)
 #define spin_unlock(l)    __LKMM_spin_unlock(l)
-
