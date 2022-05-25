@@ -45,16 +45,16 @@ public class DartagnanLKMM extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-            {"lkmm/lkmm-ttas-5", NONE, UNKNOWN},
-            {"lkmm/lkmm-ticketlock-6", NONE, PASS},
-            {"lkmm/lkmm-mutex-4", NONE, FAIL},
-            {"lkmm/lkmm-spinlock-5", NONE, FAIL},
-            {"lkmm/lkmm-linuxrwlock-3", NONE, FAIL},
-            {"lkmm/lkmm-mutex_musl-4", NONE, FAIL},
-//            {"lfds/safestack-3", NONE, FAIL},
-//            {"lfds/dglm-3", NONE, UNKNOWN},
-//            {"lfds/ms-3", NONE, UNKNOWN},
-//            {"lfds/treiber-3", NONE, UNKNOWN}
+            {"lkmm/lkmm-ttas-5", LKMM, UNKNOWN},
+            {"lkmm/lkmm-ticketlock-6", LKMM, PASS},
+            {"lkmm/lkmm-mutex-4", LKMM, FAIL},
+            {"lkmm/lkmm-spinlock-5", LKMM, FAIL},
+            {"lkmm/lkmm-linuxrwlock-3", LKMM, FAIL},
+            {"lkmm/lkmm-mutex_musl-4", LKMM, FAIL},
+//            {"lfds/safestack-3", LKMM, FAIL},
+//            {"lfds/dglm-3", LKMM, UNKNOWN},
+//            {"lfds/ms-3", LKMM, UNKNOWN},
+//            {"lfds/treiber-3", LKMM, UNKNOWN}
 		});
     }
 

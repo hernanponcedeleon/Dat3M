@@ -39,24 +39,24 @@ public class CLKMM extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-				{"C-atomic-op-return-simple-02-2", NONE, FAIL},
-				{"C-WWC+o-branch-o+o-branch-o", NONE, FAIL},
-	            {"CoRR+poonce+Once", NONE, PASS},
-	            {"CoRW+poonce+Once", NONE, PASS},
-	            {"CoWR+poonceonce+Once", NONE, PASS},
-	            {"LB+fencembonceonce+ctrlonceonce", NONE, PASS},
-	            {"LB+poacquireonce+pooncerelease", NONE, PASS},
-	            {"LB+poonceonces", NONE, FAIL},
-                {"MP+fencewbonceonce+fencermbonceonce", NONE, PASS},
-                {"NVR-RMW+Release", NONE, FAIL},
-                {"rcu-gp20", NONE, PASS},
-                {"rcu", NONE, PASS},
-                {"rcu+ar-link-short0", NONE, PASS},
-                {"rcu+ar-link0", NONE, FAIL},
-                {"rcu+ar-link20", NONE, PASS},
-                {"qspinlock", NONE, FAIL},
-                {"qspinlock-fixed", NONE, PASS},
-                {"C-PaulEMcKenney-MP+o-r+ai-mb-o", NONE, PASS}
+				{"C-atomic-op-return-simple-02-2", LKMM, FAIL},
+				{"C-WWC+o-branch-o+o-branch-o", LKMM, FAIL},
+	            {"CoRR+poonce+Once", LKMM, PASS},
+	            {"CoRW+poonce+Once", LKMM, PASS},
+	            {"CoWR+poonceonce+Once", LKMM, PASS},
+	            {"LB+fencembonceonce+ctrlonceonce", LKMM, PASS},
+	            {"LB+poacquireonce+pooncerelease", LKMM, PASS},
+	            {"LB+poonceonces", LKMM, FAIL},
+                {"MP+fencewbonceonce+fencermbonceonce", LKMM, PASS},
+                {"NVR-RMW+Release", LKMM, FAIL},
+                {"rcu-gp20", LKMM, PASS},
+                {"rcu", LKMM, PASS},
+                {"rcu+ar-link-short0", LKMM, PASS},
+                {"rcu+ar-link0", LKMM, FAIL},
+                {"rcu+ar-link20", LKMM, PASS},
+                {"qspinlock", LKMM, FAIL},
+                {"qspinlock-fixed", LKMM, PASS},
+                {"C-PaulEMcKenney-MP+o-r+ai-mb-o", LKMM, PASS}
 		});
     }
 
