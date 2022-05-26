@@ -11,17 +11,18 @@ import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import java.util.Map;
+
 public class CondJump extends Event implements RegReaderData {
 
     private Label label;
-    private Label label4Copy;
     private BExpr expr;
 
     public CondJump(BExpr expr, Label label){
     	Preconditions.checkNotNull(label, "CondJump event requires non null label event");
     	Preconditions.checkNotNull(expr, "CondJump event requires non null expression");
         this.label = label;
-        this.label.addListener(this);
+        this.label.getJumpSet().add(this);
         this.thread = label.getThread();
         this.expr = expr;
         addFilters(Tag.ANY, Tag.JUMP, Tag.REG_READER);
@@ -29,10 +30,9 @@ public class CondJump extends Event implements RegReaderData {
 
     protected CondJump(CondJump other) {
 		super(other);
-		this.label = other.label4Copy;
+		this.label = other.label;;
 		this.expr = other.expr;
-		Event notifier = label != null ? label : other.label;
-		notifier.addListener(this);
+        this.label.getJumpSet().add(this);
     }
     
     public boolean isGoto() {
@@ -58,8 +58,9 @@ public class CondJump extends Event implements RegReaderData {
     @Override
     public void setThread(Thread thread) {
         super.setThread(thread);
-        if (label != null)
+        if (label != null) {
             label.setThread(thread);
+        }
     }
 
     @Override
@@ -79,19 +80,21 @@ public class CondJump extends Event implements RegReaderData {
         return output;
     }
 
+
     @Override
-    public void notify(Event label) {
-    	if(this.label == null) {
-        	this.label = (Label)label;
-    	} else if (oId > label.getOId()) {
-    		this.label4Copy = (Label)label;
-    	}
+    public void updateReferences(Map<Event, Event> updateMapping) {
+        Label old = this.label;
+        this.label = (Label)updateMapping.getOrDefault(this.label, this.label);
+        if (old != this.label) {
+            old.getJumpSet().remove(this);
+            this.label.getJumpSet().add(this);
+        }
     }
 
     @Override
-    public void delete(Event pred) {
-        super.delete(pred);
-        label.listeners.remove(this);
+    public void delete() {
+        super.delete();
+        label.getJumpSet().remove(this);
     }
 
     public boolean didJump(Model model, SolverContext ctx) {

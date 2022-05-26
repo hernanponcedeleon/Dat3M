@@ -9,14 +9,13 @@ import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 
 public class PthreadsProcedures {
 	
@@ -92,8 +91,7 @@ public class PthreadsProcedures {
 		}
         MemoryObject object = visitor.programBuilder.getOrNewObject(String.format("%s(%s)_active", visitor.pool.getPtrFromReg(callReg), visitor.pool.getCreatorFromPtr(visitor.pool.getPtrFromReg(callReg))));
         Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, ARCH_PRECISION);
-        Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(visitor.pool.getPtrFromReg(callReg), reg, object, label));
+        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(visitor.pool.getPtrFromReg(callReg), reg, object));
 	}
 
 	private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -109,9 +107,8 @@ public class PthreadsProcedures {
 		ExprsContext lock = ctx.call_params().exprs();
         Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, ARCH_PRECISION);
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
-       	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		if(lockAddress != null) {
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newLock(lock.getText(), lockAddress, register, label));
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newLock(lock.getText(), lockAddress, register));
 		}
 	}
 	
@@ -119,9 +116,8 @@ public class PthreadsProcedures {
 		ExprsContext lock = ctx.call_params().exprs();
         Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, ARCH_PRECISION);
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
-       	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		if(lockAddress != null) {
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newUnlock(lock.getText(), lockAddress, register, label));
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newUnlock(lock.getText(), lockAddress, register));
 		}
 	}
 }

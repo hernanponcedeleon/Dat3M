@@ -24,11 +24,7 @@ public class BeginAtomic extends Event {
 
 	@Override
 	public BeginAtomic getCopy(){
-		BeginAtomic copy = new BeginAtomic(this);
-    	for(Event end : listeners) {
-    		end.notify(copy);
-    	}
-		return copy;
+		return new BeginAtomic(this);
 	}
 
 	// Visitor

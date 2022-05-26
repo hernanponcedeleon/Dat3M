@@ -56,13 +56,11 @@ public class SymmetryReduction implements ProgramProcessor {
             rep.setName(rep.getName() + "__symm_unique");
 
             for (Thread t : c.stream().filter(x -> x != rep).collect(Collectors.toList())) {
-                Event pred = null;
                 for (Event e : t.getEvents()) {
                     if (e.is(Tag.ASSERTION)) {
-                        e.delete(pred);
-                        e.getSuccessor().delete(pred);
+                        e.getSuccessor().delete();
+                        e.delete();
                     }
-                    pred = e;
                 }
                 t.clearCache();
             }

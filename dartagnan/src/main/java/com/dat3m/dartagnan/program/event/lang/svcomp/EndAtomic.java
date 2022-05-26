@@ -13,6 +13,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.event.Tag.RMW;
@@ -23,20 +24,16 @@ public class EndAtomic extends Event {
 	private static final Logger logger = LogManager.getLogger(EndAtomic.class);
 
 	protected BeginAtomic begin;
-	protected transient BeginAtomic begin4Copy;
 	protected transient List<Event> enclosedEvents;
 
 	public EndAtomic(BeginAtomic begin) {
         this.begin = begin;
-    	this.begin.addListener(this);
         addFilters(RMW, SVCOMPATOMIC);
     }
 
     protected EndAtomic(EndAtomic other){
 		super(other);
-		this.begin = other.begin4Copy;
-		Event notifier = begin != null ? begin : other.begin;
-		notifier.addListener(this);
+		this.begin = other.begin;
 	}
 
     public BeginAtomic getBegin(){
@@ -88,16 +85,6 @@ public class EndAtomic extends Event {
     public String toString() {
     	return "end_atomic()";
     }
-    
-    @Override
-    public void notify(Event begin) {
-    	//TODO(HP): create an interface for easy maintenance of the listeners logic
-    	if(this.begin == null) {
-    		this.begin = (BeginAtomic)begin;
-    	} else if (oId > begin.getOId()) {
-    		this.begin4Copy = (BeginAtomic)begin;
-    	}
-    }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
@@ -105,6 +92,11 @@ public class EndAtomic extends Event {
     @Override
 	public EndAtomic getCopy(){
 		return new EndAtomic(this);
+	}
+
+	@Override
+	public void updateReferences(Map<Event, Event> updateMapping) {
+		this.begin = (BeginAtomic) updateMapping.getOrDefault(this.begin, this.begin);
 	}
 
 	// Visitor

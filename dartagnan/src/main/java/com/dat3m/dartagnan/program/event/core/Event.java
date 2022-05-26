@@ -6,12 +6,9 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Verify;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
-
-import static com.dat3m.dartagnan.program.event.Tag.NOOPT;
 
 import java.util.*;
 
@@ -31,10 +28,9 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	protected final Set<String> filter;
 
 	protected transient Event successor;
+	protected transient Event predecessor;
 
 	protected transient BooleanFormula cfVar;
-
-	protected Set<Event> listeners = new HashSet<>();
 
 	private transient String repr;
 
@@ -48,9 +44,8 @@ public abstract class Event implements Encoder, Comparable<Event> {
         this.cId = other.cId;
         this.fId = other.fId;
         this.cLine = other.cLine;
-        this.filter = other.filter;
+        this.filter = other.filter; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
         this.thread = other.thread;
-		this.listeners = other.listeners;
     }
 
 	public int getOId() { return oId; }
@@ -76,12 +71,34 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public Event getSuccessor(){
 		return successor;
 	}
+	public Event getPredecessor() { return predecessor; }
 
-	public void setSuccessor(Event event){
-		successor = event;
+	public void setSuccessor(Event event) {
 		if (successor != null) {
-			successor.setThread(this.thread);
+			successor.predecessor = null;
 		}
+		if (event != null) {
+			if (event.predecessor != null){
+				event.predecessor.successor = null;
+			}
+			event.predecessor = this;
+			event.setThread(this.thread);
+		}
+		successor = event;
+	}
+
+	public void setPredecessor(Event event) {
+		if (predecessor != null) {
+			predecessor.successor = null;
+		}
+		if (event != null) {
+			if (event.successor != null){
+				event.successor.predecessor = null;
+			}
+			event.successor = this;
+			event.setThread(this.thread);
+		}
+		predecessor = event;
 	}
 
 	public Thread getThread() {
@@ -104,12 +121,29 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		return events;
 	}
 
+	public final List<Event> getPredecessors(){
+		List<Event> events = new ArrayList<>();
+		Event cur = this;
+		while (cur != null) {
+			events.add( cur);
+			cur = cur.getPredecessor();
+		}
+
+		return events;
+	}
+
 	public boolean is(String param){
 		return param != null && (filter.contains(param));
 	}
 
+	public void addFilters(Collection<? extends String> filters) { filter.addAll(filters); }
 	public void addFilters(String... params){
-		filter.addAll(Arrays.asList(params));
+		addFilters(Arrays.asList(params));
+	}
+
+	// The return value should not get modified directly.
+	public Set<String> getFilters() {
+		return filter;
 	}
 
 	public boolean hasFilter(String f) {
@@ -128,22 +162,11 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		return result;
 	}
 
-    public void addListener(Event e) {
-    	listeners.add(e);
-    }
-
-    public Set<Event> getListeners() {
-		return listeners;
-	}
-
-    public void notify(Event e) {
-    	throw new UnsupportedOperationException("notify is not allowed for " + getClass().getSimpleName());
-    }
-
-	public void delete(Event pred) {
-		Verify.verify(!hasFilter(NOOPT));
-		if (pred != null) {
-			pred.successor = this.successor;
+	public void delete() {
+		if (getPredecessor() != null) {
+			getPredecessor().setSuccessor(this.getSuccessor());
+		} else if (getSuccessor() != null) {
+			this.getSuccessor().setPredecessor(null);
 		}
 	}
 
@@ -153,6 +176,8 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public Event getCopy(){
 		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
 	}
+
+	public void updateReferences(Map<Event, Event> updateMapping) { }
 
 	// Visitor
 	// -----------------------------------------------------------------------------------------------------------------

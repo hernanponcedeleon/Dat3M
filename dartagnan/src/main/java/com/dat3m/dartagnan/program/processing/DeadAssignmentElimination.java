@@ -92,7 +92,7 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         Event cur = thread.getEntry();
         while (cur != null) {
             if (removed.contains(cur) && !cur.is(Tag.NOOPT)) {
-                cur.delete(pred);
+                cur.delete();
                 cur = pred;
             }
             pred = cur;
