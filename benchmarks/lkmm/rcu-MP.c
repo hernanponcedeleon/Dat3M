@@ -7,19 +7,7 @@
 int x;
 int y;
 
-int r_x;
-int r_y;
-
-void *P0(void *unused)
-{
-	rcu_read_lock();
-	r_x = READ_ONCE(x);
-	r_y = READ_ONCE(y);
-	rcu_read_unlock();
-	return NULL;
-}
-
-void *P1(void *unused)
+void *P0(void *arg)
 {
 	WRITE_ONCE(x, 1);
 	synchronize_rcu();
@@ -27,9 +15,19 @@ void *P1(void *unused)
 	return NULL;
 }
 
+void *P1(void *arg)
+{
+	rcu_read_lock();
+	int r_y = READ_ONCE(y);
+	int r_x = READ_ONCE(x);
+	rcu_read_unlock();
+    assert(!(r_y == 1 && r_x == 0));
+	return NULL;
+}
+
+
 int main()
 {
-
 #ifdef RCUIMP
     gc = 1;
 #endif
@@ -38,11 +36,6 @@ int main()
 
 	pthread_create(&t1, NULL, P0, NULL);
 	pthread_create(&t2, NULL, P1, NULL);
-
-	pthread_join(t1, NULL);
-	pthread_join(t2, NULL);
-
-	assert(!(r_x == 0 && r_y == 1));
 
 	return 0;
 }

@@ -55,6 +55,7 @@ public class CLKMM extends AbstractCTest {
                 {"rcu+ar-link-short0", LKMM, PASS},
                 {"rcu+ar-link0", LKMM, FAIL},
                 {"rcu+ar-link20", LKMM, PASS},
+                {"rcu-MP", LKMM, PASS},
                 {"qspinlock", LKMM, FAIL},
                 {"qspinlock-fixed", LKMM, PASS},
                 {"C-PaulEMcKenney-MP+o-r+ai-mb-o", LKMM, PASS}
