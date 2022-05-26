@@ -52,6 +52,7 @@ public class ProgramBuilder {
         	addChild(thread.getId(), getOrCreateLabel("END_OF_T" + thread.getId()));
             validateLabels(thread);
             program.add(thread);
+            thread.setProgram(program);
         }
         program.setAss(ass);
         program.setAssFilter(assFilter);

@@ -1,0 +1,39 @@
+C C-non-race1-rrdep
+
+(*
+ * Result: Never DATARACE
+ *
+ * P2()'s write to y can race with P0()'s plain read.  Changing P0()'s
+ * plain read to READ_ONCE() results in Never.
+ *)
+
+{ }
+
+P0(int *x, int *y)
+{
+	int r1;
+	int r2;
+	int *r4;
+
+	r1 = READ_ONCE(*x);
+	if (r1 == 1) {
+		r4 = y + (r1 ^ r1);
+		r2 = *r4;
+	}
+	WRITE_ONCE(*y, 1);
+}
+
+P1(int *x, int *y)
+{
+	int r3;
+
+	r3 = READ_ONCE(*y);
+	WRITE_ONCE(*x, r3);
+}
+
+P2(int *y)
+{
+	WRITE_ONCE(*y, 2);
+}
+
+exists (0:r1=1 /\ 1:r3=1)

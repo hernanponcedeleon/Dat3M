@@ -1,0 +1,27 @@
+C LB+mb+data
+(*
+ * Result: Never
+ *
+ * Versions of herd7 prior to commit 0f3f8188a326 ("[herd] Fix dependency
+ * definition") recognize data dependencies only when they flow through
+ * an intermediate local variable.  Since the dependency in P1 doesn't,
+ * those versions get the wrong answer for this test.
+ *)
+
+{}
+
+P0(int *x, int *y)
+{
+	int r1;
+
+	r1 = READ_ONCE(*x);
+	smp_mb();
+	WRITE_ONCE(*y, r1);
+}
+
+P1(int *x, int *y)
+{
+	WRITE_ONCE(*x, READ_ONCE(*y));
+}
+
+exists (0:r1=1)

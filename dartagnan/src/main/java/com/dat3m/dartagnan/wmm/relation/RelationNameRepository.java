@@ -11,7 +11,7 @@ public class RelationNameRepository {
 	public static final String CO = "co";
 	public static final String RF = "rf";
 	public static final String RMW = "rmw";
-	public static final String CRIT = "crit";
+	public static final String CRIT = "rcu-rscs";
 	public static final String IDD = "idd";
 	public static final String ADDRDIRECT = "addrDirect";
 	public static final String CTRLDIRECT = "ctrlDirect";

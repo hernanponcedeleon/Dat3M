@@ -1,0 +1,37 @@
+C C-non-race1
+
+(*
+ * Result: Sometimes DATARACE
+ *
+ * P2()'s write can race with P0()'s plain read from y.  Plus P0()
+ * doesn't order its write to y.
+ *)
+
+{ }
+
+P0(int *x, int *y)
+{
+	int r1;
+	int r2;
+
+	r1 = READ_ONCE(*x);
+	smp_rmb();
+	if (r1 == 1)
+		r2 = *y;
+	WRITE_ONCE(*y, 1);
+}
+
+P1(int *x, int *y)
+{
+	int r3;
+
+	r3 = READ_ONCE(*y);
+	WRITE_ONCE(*x, r3);
+}
+
+P2(int *y)
+{
+	WRITE_ONCE(*y, 2);
+}
+
+exists (0:r1=1 /\ 1:r3=1)

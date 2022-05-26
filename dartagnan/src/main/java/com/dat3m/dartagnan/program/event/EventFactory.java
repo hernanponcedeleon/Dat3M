@@ -399,6 +399,22 @@ public class EventFactory {
             return newConditionalBarrier(loadEvent, "Mb");
         }
 
+        public static LKMMLockRead newLockRead(Register register, IExpr address) {
+            return new LKMMLockRead(register, address);
+        }
+
+        public static LKMMLockWrite newLockWrite(IExpr address) {
+            return new LKMMLockWrite(address);
+        }
+
+        public static LKMMLock newLock(IExpr address) {
+            return new LKMMLock(address);
+        }
+
+        public static LKMMUnlock newUnlock(IExpr address) {
+            return new LKMMUnlock(address);
+        }
+
     }
 
 

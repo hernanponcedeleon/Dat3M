@@ -1,0 +1,60 @@
+C seqlock
+
+(*
+ * Result: Never
+ *
+ * This litmus test demonstrates sequence locking.
+ *)
+
+{
+}
+
+P0(int *ctr, int *x, int *y)
+{
+	int r1;
+	int r2;
+	int r3;
+	int r4;
+
+	r1 = READ_ONCE(*ctr);
+	smp_mb();
+	r2 = READ_ONCE(*x);
+	r3 = READ_ONCE(*y);
+	smp_mb();
+	r4 = READ_ONCE(*ctr);
+}
+
+P1(int *ctr, int *x, int *y, spinlock_t *l)
+{
+	int r1;
+
+	spin_lock(l);
+	r1 = READ_ONCE(*ctr);
+	WRITE_ONCE(*ctr, r1 + 1);
+	smp_mb();
+	WRITE_ONCE(*x, 1);
+	WRITE_ONCE(*y, 1);
+	smp_mb();
+	r1 = READ_ONCE(*ctr);
+	WRITE_ONCE(*ctr, r1 + 1);
+	spin_unlock(l);
+}
+
+P2(int *ctr, int *x, int *y, spinlock_t *l)
+{
+	int r1;
+
+	spin_lock(l);
+	r1 = READ_ONCE(*ctr);
+	WRITE_ONCE(*ctr, r1 + 1);
+	smp_mb();
+	WRITE_ONCE(*x, 2);
+	WRITE_ONCE(*y, 2);
+	smp_mb();
+	r1 = READ_ONCE(*ctr);
+	WRITE_ONCE(*ctr, r1 + 1);
+	spin_unlock(l);
+}
+
+filter (~0:r1=1 /\ ~0:r1=3 /\ 0:r1=0:r4)
+exists (~0:r2=0:r3)

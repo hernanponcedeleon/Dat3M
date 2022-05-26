@@ -1,8 +1,12 @@
 C C-OOTA
 
-(* Expected result: Sometimes.  Plain stores can be preceded by use
-   of the stored location as temporary storage, which can result in
-   classic out-of-thin-air values.  Note: Involves data race. *)
+(*
+ * Result: Sometimes DATARACE
+ *
+ * Plain stores can be preceded by use of the stored location as temporary
+ * storage, which can result in classic out-of-thin-air values.
+ * Note:  Involves data race.
+ *)
 
 {
 int x = 0;

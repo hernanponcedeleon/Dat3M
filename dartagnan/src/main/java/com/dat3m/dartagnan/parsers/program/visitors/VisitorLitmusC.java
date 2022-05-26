@@ -20,7 +20,6 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -436,6 +435,15 @@ public class VisitorLitmusC
         return programBuilder.addChild(currentThread, EventFactory.newFence(ctx.name));
     }
 
+    @Override
+    public Object visitNreSpinLock(LitmusCParser.NreSpinLockContext ctx) {
+    	return programBuilder.addChild(currentThread, EventFactory.Linux.newLock(getAddress(ctx.address)));
+    }
+
+    @Override
+    public Object visitNreSpinUnlock(LitmusCParser.NreSpinUnlockContext ctx) {
+    	return programBuilder.addChild(currentThread, EventFactory.Linux.newUnlock(getAddress(ctx.address)));
+    }
 
     // ----------------------------------------------------------------------------------------------------------------
     // Utils

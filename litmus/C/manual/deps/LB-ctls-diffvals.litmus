@@ -1,0 +1,35 @@
+C LB-ctls-diffvals
+(*
+ * Result: Never
+ *
+ * The compiler cannot combine the writes because they are writing different
+ * values.
+ *)
+{
+}
+
+P0(int *x, int *y)
+{
+	int r1;
+
+	r1 = READ_ONCE(*x);
+	if (r1) {
+		WRITE_ONCE(*y, 1);
+	} else {
+		WRITE_ONCE(*y, 2);
+	}
+}
+
+P1(int *x, int *y)
+{
+	int r1;
+
+	r1 = READ_ONCE(*y);
+	if (r1) {
+		WRITE_ONCE(*x, 1);
+	} else {
+		WRITE_ONCE(*x, 2);
+	}
+}
+
+exists (0:r1=1 /\ 1:r1=1)

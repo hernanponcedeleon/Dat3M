@@ -73,6 +73,12 @@ public interface EventVisitor<T> {
 	default T visitRMWReadCondUnless(RMWReadCondUnless e) { return visitRMWReadCond(e); }
 	default T visitRMWStoreCond(RMWStoreCond e) { return visitRMWStore(e); }
 
+	// Linux Lock Events
+	default T visitLKMMLock(LKMMLock e) { return visitEvent(e); };
+	default T visitLKMMUnlock(LKMMUnlock e) { return visitStore(e); };
+	default T visitLKMMLockRead(LKMMLockRead e) { return visitLoad(e); };
+	default T visitLKMMLockWrite(LKMMLockWrite e) { return visitStore(e); };
+
 	// TSO Events
 	default T visitXchg(Xchg e) { return visitMemEvent(e); }
 
