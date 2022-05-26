@@ -9,11 +9,10 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.Program.SourceLanguage;
-import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.processing.BranchReordering;
 import com.dat3m.dartagnan.program.processing.DeadCodeElimination;
@@ -107,6 +106,7 @@ public class ExceptionsTest {
 	    try (SolverContext ctx = createContext();
 	    		ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
 	    {
+            prover.isUnsat();
 	    	BNonDet nonDet = new BNonDet(32);
 	    	nonDet.getBoolValue(null, prover.getModel(), ctx);
 	    }
@@ -117,6 +117,7 @@ public class ExceptionsTest {
 	    try (SolverContext ctx = createContext();
 	    		ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
 	    {
+            prover.isUnsat();
 	    	INonDet nonDet = new INonDet(INonDetTypes.INT, 32);
 	    	nonDet.getIntValue(null, prover.getModel(), ctx);
 	    }
@@ -124,29 +125,17 @@ public class ExceptionsTest {
     
     @Test(expected = NullPointerException.class)
     public void JumpWithNullLabel() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-    	pb.initThread(0);
-    	// Label cannot be null
-    	pb.addChild(0, new CondJump(BConst.FALSE, null));
+        EventFactory.newJump(BConst.FALSE, null);
     }
 
     @Test(expected = NullPointerException.class)
     public void JumpWithNullExpr() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-    	pb.initThread(0);
-    	Label end = pb.getOrCreateLabel("END");
-    	// The expr cannot be null
-    	pb.addChild(0, new CondJump(null, end));
+        EventFactory.newJump(null, EventFactory.newLabel("DUMMY"));
     }
     
     @Test(expected = MalformedProgramException.class)
     public void AtomicEndWithoutBegin() throws Exception {
     	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/AtomicEndWithoutBegin.bpl"));
-    }
-    
-    @Test(expected = MalformedProgramException.class)
-    public void DuplicatedLabel() throws Exception {
-    	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/DuplicatedLabel.litmus"));
     }
 
     @Test(expected = MalformedProgramException.class)
