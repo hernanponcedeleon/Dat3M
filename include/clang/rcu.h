@@ -23,7 +23,8 @@ void rcu_read_lock(void) {
     }
 }
 
-void rcu_read_unlock(void) { unsigned int i = get_my_tid();
+void rcu_read_unlock(void) {
+    unsigned int i = get_my_tid();
     smp_mb();
     WRITE_ONCE(rc[i], READ_ONCE(rc[i]) - 1);
 }
