@@ -1,13 +1,12 @@
-__thread int tid;
+extern int get_my_tid();
 
 #ifdef RCUIMP
 #define GP_PHASE 0x10000
 #define CS_MASK 0x0ffff
 static unsigned long rc[MAX_THREADS] = {0};
-static unsigned long gc = 1;
+// NOTE: variable gc must be initialise to 1 by the client code
+static unsigned long gc;
 static spinlock_t gp_lock;
-
-#define get_my_tid() tid;
 
 void rcu_read_lock(void) {
     unsigned int i = get_my_tid();
