@@ -18,7 +18,7 @@ public class WrongTargetTest {
     	Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/X86/2+2W+mfence-rmws.litmus"));
     	LoopUnrolling.newInstance().run(p);
     	Compilation comp = Compilation.newInstance();
-		comp.setTarget(Arch.NONE);
+		comp.setTarget(Arch.C11);
 		comp.run(p);
     }
 
@@ -45,7 +45,7 @@ public class WrongTargetTest {
     	Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/AARCH64/ATOM/2+2W+poxxs.litmus"));
     	LoopUnrolling.newInstance().run(p);
     	Compilation comp = Compilation.newInstance();
-		comp.setTarget(Arch.NONE);
+		comp.setTarget(Arch.C11);
 		comp.run(p);
     }
 

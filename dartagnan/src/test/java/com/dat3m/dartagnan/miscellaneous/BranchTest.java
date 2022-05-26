@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.miscellaneous;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -99,6 +100,7 @@ public class BranchTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
                     .withSolverTimeout(60)
+                    .withTarget(Arch.LKMM)
                     .build(program, wmm, EnumSet.of(Property.getDefault()));
             assertEquals(expected, TwoSolvers.run(ctx, prover1, prover2, task));
         } catch (Exception e){

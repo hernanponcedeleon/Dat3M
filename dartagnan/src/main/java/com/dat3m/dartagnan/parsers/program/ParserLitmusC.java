@@ -24,7 +24,7 @@ class ParserLitmusC implements ParserInterface {
         VisitorLitmusC visitor = new VisitorLitmusC(pb);
 
         Program program = (Program) parserEntryPoint.accept(visitor);
-        program.setArch(Arch.NONE);
+        program.setArch(Arch.LKMM);
         return program;
     }
 }

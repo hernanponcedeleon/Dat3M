@@ -49,16 +49,16 @@ public class RC11Test extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
     	return Arrays.asList(new Object[][]{
-	            {"2+2W", NONE, PASS},
-	            {"IRIW-acq-sc", NONE, FAIL},
-	            {"LB", NONE, PASS},
-	            {"LB+deps", NONE, PASS},
-	            {"RWC+syncs", NONE, PASS},
-	            {"SB", NONE, PASS},
-	            {"SB+rfis", NONE, FAIL},
-	            {"W+RWC", NONE, PASS},
-	            {"WWmerge", NONE, FAIL},
-	            {"Z6.U", NONE, FAIL},
+	            {"2+2W", C11, PASS},
+	            {"IRIW-acq-sc", C11, FAIL},
+	            {"LB", C11, PASS},
+	            {"LB+deps", C11, PASS},
+	            {"RWC+syncs", C11, PASS},
+	            {"SB", C11, PASS},
+	            {"SB+rfis", C11, FAIL},
+	            {"W+RWC", C11, PASS},
+	            {"WWmerge", C11, FAIL},
+	            {"Z6.U", C11, FAIL},
 		});
     }
 
