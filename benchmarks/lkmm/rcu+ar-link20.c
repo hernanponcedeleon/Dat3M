@@ -2,6 +2,7 @@
 #include <lkmm.h>
 #include <pthread.h>
 #include <assert.h>
+#include <rcu.h>
 
 int x;
 int y;
