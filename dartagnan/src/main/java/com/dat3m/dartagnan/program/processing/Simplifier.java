@@ -4,18 +4,21 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
+import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
 import com.dat3m.dartagnan.utils.printer.Printer;
 import com.google.common.base.Preconditions;
-
-import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_SIMPLIFICATION;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_SIMPLIFICATION;
 
 @Options
 public class Simplifier implements ProgramProcessor {
@@ -76,7 +79,7 @@ public class Simplifier implements ProgramProcessor {
             }
             // Some simplification are only applicable after others.
             // Thus we apply them iteratively until we reach a fixpoint.
-            if (simplifyEvent(pred, next)) {
+            if (simplifyEvent(next)) {
                 hasAnyChanges = true;
             } else {
                 // If nothing has changed, we proceed to the next event
@@ -88,47 +91,46 @@ public class Simplifier implements ProgramProcessor {
     }
 
 
-    private boolean simplifyEvent(Event pred, Event next) {
+    private boolean simplifyEvent(Event next) {
         boolean changed = false;
         if (next instanceof CondJump) {
-            changed = simplifyJump(pred, (CondJump) next);
+            changed = simplifyJump((CondJump) next);
         } else if (next instanceof Label) {
-            changed = simplifyLabel(pred, (Label) next);
+            changed = simplifyLabel((Label) next);
         } else if (next instanceof FunCall) {
-            changed = simplifyFunCall(pred, (FunCall) next);
+            changed = simplifyFunCall((FunCall) next);
         }
         return changed;
     }
 
-    private boolean simplifyJump(Event pred, CondJump jump) {
+    private boolean simplifyJump(CondJump jump) {
         Label label = jump.getLabel();
         Event successor = jump.getSuccessor();
         BExpr expr = jump.getGuard();
         if(label.equals(successor) && expr instanceof BConst) {
-            label.getListeners().remove(jump);
-            pred.setSuccessor(successor);
+            jump.delete();
             return true;
         }
         return false;
     }
 
-    private boolean simplifyLabel(Event pred, Label label) {
-        if (label.getListeners().isEmpty() && !label.getName().startsWith("END_OF_T")) {
-            pred.setSuccessor(label.getSuccessor());
+    private boolean simplifyLabel(Label label) {
+        if (label.getJumpSet().isEmpty() && !label.getName().startsWith("END_OF_T")) {
+            label.delete();
             return true;
         }
         return false;
     }
 
-    private boolean simplifyFunCall(Event pred, FunCall call) {
+    private boolean simplifyFunCall(FunCall call) {
         // If simplifyEvent returns false, the function is either non-empty or we reached the return statement
-        while (simplifyEvent(call, call.getSuccessor())) { }
+        while (simplifyEvent(call.getSuccessor())) { }
 
         // Check if we reached the return statement
         Event successor = call.getSuccessor();
         if(successor instanceof FunRet && ((FunRet)successor).getFunctionName().equals(call.getFunctionName())) {
             // We skip the function call + the function return
-            pred.setSuccessor(successor.getSuccessor());
+            call.getPredecessor().setSuccessor(successor.getSuccessor());
             return true;
         }
         return false;

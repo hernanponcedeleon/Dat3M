@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.catomic.AtomicAbstract;
@@ -56,7 +57,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		
 		List<Event> events = eventSequence(
                 newLoad(resultRegister, e.getAddress(), mo),
-                newJump(new Atom(resultRegister, NEQ, IValue.ZERO), e.getLabel()),
+                newJump(new Atom(resultRegister, NEQ, IValue.ZERO), (Label) e.getThread().getExit()),
                 newStore(e.getAddress(), IValue.ONE, mo)
         );
         
@@ -75,7 +76,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		
 		List<Event> events = eventSequence(
                 newLoad(resultRegister, address, mo),
-                newJump(new Atom(resultRegister, NEQ, IValue.ONE), e.getLabel()),
+                newJump(new Atom(resultRegister, NEQ, IValue.ONE), (Label) e.getThread().getExit()),
                 newStore(address, IValue.ZERO, mo)
         );
         

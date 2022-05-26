@@ -50,7 +50,7 @@ public class VisitorC11 extends VisitorBase implements EventVisitor<List<Event>>
         
         return eventSequence(
         		load,
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), e.getLabel())
+        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
         );
 	}
 
@@ -60,7 +60,7 @@ public class VisitorC11 extends VisitorBase implements EventVisitor<List<Event>>
 
         return eventSequence(
         		newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE),
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), e.getLabel())
+        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}
 

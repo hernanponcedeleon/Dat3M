@@ -13,7 +13,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.*;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
+import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_UNROLLING;
 
 @Options
 public class LoopUnrolling implements ProgramProcessor {
@@ -66,7 +72,7 @@ public class LoopUnrolling implements ProgramProcessor {
 
         int nextId = 0;
         for(Thread thread : program.getThreads()){
-            nextId = unrollThread(thread, bound, nextId);
+            nextId = unrollThreadAndUpdate(thread, bound, nextId);
         }
         program.clearCache(false);
         program.markAsUnrolled(bound);
@@ -79,74 +85,122 @@ public class LoopUnrolling implements ProgramProcessor {
         }
 }
 
-    private int unrollThread(Thread t, int bound, int nextId){
-        while(bound > 0) {
-            unrollThreadOnce(t, bound--);
-        }
+    private int unrollThreadAndUpdate(Thread t, int bound, int nextId){
+        unrollThread(t, bound);
         t.clearCache();
-        t.updateExit(t.getEntry());
         for (Event e : t.getEvents()) {
             e.setUId(nextId++);
         }
+
         return nextId;
     }
 
-    private void unrollThreadOnce(Thread t, int bound) {
-        // NOTE: The implemented unroll semantics are identical to the previous one we had.
-        //TODO: We might want to allow usage of different bounds per loop by e.g.
-        // annotating the looping jump with a custom bound counter
-        //TODO (2): The code can surely be cleaned up somehow
-        Event cur = t.getEntry();
-        Event successor;
-        Event predecessor = null;
-        Event newPred;
-        do {
-            successor = cur.getSuccessor();
+    private void unrollThread(Thread thread, int defaultBound) {
+        Event cur = thread.getEntry();
 
+        while (cur != null) {
+            Event next = cur.getSuccessor();
             if (cur instanceof CondJump && ((CondJump) cur).getLabel().getOId() < cur.getOId()) {
                 CondJump jump = (CondJump) cur;
-                Label label = jump.getLabel();
-                if (bound > 1) {
-                    predecessor = copyPath(label, successor, predecessor);
-                }
-
-                if (bound == 1 || jump.hasFilter(Tag.SPINLOOP)) {
-                    Label target = (Label) jump.getThread().getExit();
-                    newPred = EventFactory.newGoto(target);
-                    newPred.addFilters(Tag.BOUND, Tag.NOOPT);
-                    if(jump.hasFilter(Tag.SPINLOOP)) {
-                    	newPred.addFilters(Tag.SPINLOOP, Tag.NOOPT);
-                    }
-                    predecessor.setSuccessor(newPred);
-                } else {
-                    newPred = predecessor;
-                }
-            } else {
-                newPred = cur;
-                if (predecessor != null) {
-                    // This check must be done inside this if
-                    // Needed for the current implementation of copy in If events
-                    //TODO: Is this needed anymore since we got rid of If events?
-                    if (bound != 1) {
-                        newPred = cur.getCopy();
-                    }
-                    predecessor.setSuccessor(newPred);
+                if (jump.getLabel().getJumpSet().stream().allMatch(x -> x.getOId() <= jump.getOId())) {
+                    //TODO: Get different bounds for different loops (e.g. via annotations)
+                    int bound = jump.is(Tag.SPINLOOP) ? 1 : defaultBound;
+                    unrollLoop((CondJump) cur, bound);
                 }
             }
-
-            cur = successor;
-            predecessor = newPred;
-        } while(successor != null);
-
+            cur = next;
+        }
     }
 
-    private Event copyPath(Event from, Event until, Event appendTo){
-        while(from != null && !from.equals(until)){
-            Event copy = from.getCopy();
-            appendTo.setSuccessor(copy);
-            appendTo = copy;
-            from = from.getSuccessor();
+    private void unrollLoop(CondJump loopBackJump, int bound) {
+        Label loopBegin = loopBackJump.getLabel();
+        Preconditions.checkArgument(bound >= 1, "Positive unrolling bound expected.");
+        Preconditions.checkArgument(loopBegin.getOId() < loopBackJump.getOId(),
+                "The jump does not belong to a loop.");
+        Preconditions.checkArgument(loopBackJump.getUId() < 0, "The loop has already been unrolled");
+
+        // (1) Collect continue points of the loop
+        List<CondJump> continues = new ArrayList<>();
+        for (Event e = loopBegin; e != null && e != loopBackJump; e = e.getSuccessor()) {
+            if (e instanceof CondJump && ((CondJump)e).getLabel() == loopBegin) {
+                continues.add((CondJump) e);
+            }
         }
-        return appendTo;
+        continues.add(loopBackJump);
+
+        // (2) Collect forward jumps from the outside into the loop
+        List<CondJump> enterJumps = new ArrayList<>();
+        for (Event e = loopBegin; e != null && e != loopBackJump; e = e.getSuccessor()) {
+            if (e instanceof Label) {
+                Label label = (Label) e;
+                label.getJumpSet().stream()
+                        .filter(j -> j.getOId() < loopBegin.getOId())
+                        .forEach(enterJumps::add);
+            }
+        }
+
+        int iterCounter = 0;
+        while (--bound >= 0) {
+            iterCounter++;
+            if (bound == 0) {
+                Label exit = (Label) loopBackJump.getThread().getExit();
+                loopBegin.setName(loopBegin.getName() + "_" + iterCounter);
+                for (CondJump cont : continues) {
+                    if (!cont.isGoto()) {
+                        logger.warn("Conditional jump {} was replaced by unconditional bound event", cont);
+                    }
+                    CondJump boundEvent = EventFactory.newGoto(exit);
+                    boundEvent.addFilters(cont.getFilters()); // Keep tags of original jump.
+                    boundEvent.addFilters(Tag.BOUND, Tag.NOOPT);
+
+                    cont.getPredecessor().setSuccessor(boundEvent);
+                    boundEvent.setSuccessor(cont.getSuccessor());
+                    cont.delete();
+                }
+            } else {
+                Map<Event, Event> copyCtx = new HashMap<>();
+                List<Event> copies = copyPath(loopBegin, loopBackJump, copyCtx);
+                ((Label)copyCtx.get(loopBegin)).setName(loopBegin.getName() + "_" + iterCounter);
+
+                // Insert copies at right place
+                loopBegin.getPredecessor().setSuccessor(copies.get(0));
+                copies.get(copies.size() - 1).setSuccessor(loopBegin);
+
+                // Update entering jumps to go to the copies.
+                for (CondJump enterJump : enterJumps) {
+                    enterJump.updateReferences(copyCtx);
+                }
+                enterJumps.clear();
+
+                // All "continues" that were copied need to get updated to jump forward to the next iteration.
+                for (CondJump cont : continues) {
+                    if (cont == loopBackJump) {
+                        continue;
+                    }
+                    CondJump copy = (CondJump) copyCtx.get(cont);
+                    copy.updateReferences(Map.of(copy.getLabel(), loopBegin));
+                    enterJumps.add(cont);
+                }
+
+            }
+        }
+    }
+
+    private List<Event> copyPath(Event from, Event until, Map<Event, Event> copyContext) {
+        List<Event> copies = new ArrayList<>();
+        Event cur = from;
+        while(cur != null && !cur.equals(until)){
+            Event copy = cur.getCopy();
+            copies.add(copy);
+            copyContext.put(cur, copy);
+            cur = cur.getSuccessor();
+        }
+        Event pred = null;
+        for (Event e : copies) {
+            e.setPredecessor(pred);
+            e.updateReferences(copyContext);
+            pred = e;
+        }
+        return copies;
     }
 }

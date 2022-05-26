@@ -55,7 +55,7 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
         
         return eventSequence(
         		load,
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), e.getLabel())
+        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
         );
 	}
 
@@ -65,7 +65,7 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
 
         return eventSequence(
         		newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE),
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), e.getLabel())
+        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}
 
@@ -220,9 +220,9 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
 	public List<Event> visitLKMMLock(LKMMLock e) {
 		Register dummy = e.getThread().newRegister(GlobalSettings.ARCH_PRECISION);
         // In litmus tests, spinlocks are guaranteed to success, i.e. its read part gets value 0
-		Event middle = e.getThread().getProgram().getFormat().equals(LITMUS) ? 
-				newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)) : 
-				newJump(new Atom(dummy, NEQ, IValue.ZERO), (Label)e.getThread().getExit()); 
+		Event middle = e.getThread().getProgram().getFormat().equals(LITMUS) ?
+				newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)) :
+				newJump(new Atom(dummy, NEQ, IValue.ZERO), (Label)e.getThread().getExit());
 		return eventSequence(
                 Linux.newLockRead(dummy, e.getLock()),
                 middle,

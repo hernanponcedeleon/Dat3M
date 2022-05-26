@@ -1,15 +1,13 @@
-package com.dat3m.dartagnan.program.event.core;
+package com.dat3m.dartagnan.program.event.core.annotations;
 
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class FunRet extends Event {
+public class FunRet extends CodeAnnotation {
 
 	private final String funName;
 	
 	public FunRet(String funName) {
 		this.funName = funName;
-        addFilters(Tag.ANY);
 	}
 	
 	protected FunRet(FunRet other){
