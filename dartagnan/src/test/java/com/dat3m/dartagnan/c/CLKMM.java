@@ -41,6 +41,8 @@ public class CLKMM extends AbstractCTest {
 		return Arrays.asList(new Object[][]{
 				{"2+2W+onces+locked", LKMM, PASS},
 				{"C-atomic-op-return-simple-02-2", LKMM, FAIL},
+                {"C-PaulEMcKenney-MP+o-r+ai-mb-o", LKMM, PASS},
+                {"C-RR-G+RR-G+RR-G+RR-G+RR-R+RR-R+RR-R", LKMM, PASS},
 				{"C-WWC+o-branch-o+o-branch-o", LKMM, FAIL},
 	            {"CoRR+poonce+Once", LKMM, PASS},
 	            {"CoRW+poonce+Once", LKMM, PASS},
@@ -57,8 +59,7 @@ public class CLKMM extends AbstractCTest {
                 {"rcu+ar-link20", LKMM, PASS},
                 {"rcu-MP", LKMM, PASS},
                 {"qspinlock", LKMM, FAIL},
-                {"qspinlock-fixed", LKMM, PASS},
-                {"C-PaulEMcKenney-MP+o-r+ai-mb-o", LKMM, PASS}
+                {"qspinlock-fixed", LKMM, PASS}
 		});
     }
 
