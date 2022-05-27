@@ -1,6 +1,6 @@
 extern int get_my_tid();
 
-#ifdef RCUIMP
+#ifdef RCU_IMP
 #define GP_PHASE 0x10000
 #define CS_MASK 0x0ffff
 static unsigned long rc[MAX_THREADS] = {0};

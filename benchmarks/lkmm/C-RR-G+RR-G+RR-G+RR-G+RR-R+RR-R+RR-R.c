@@ -73,7 +73,7 @@ void *thread_8(void *arg) {
 int main()
 {
 
-#ifdef RCUIMP
+#ifdef RCU_IMP
     gc = 1;
 #endif
 

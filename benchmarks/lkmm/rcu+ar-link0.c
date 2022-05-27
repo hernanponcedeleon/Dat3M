@@ -84,7 +84,7 @@ void *P5(void *unused)
 int main()
 {
 
-#ifdef RCUIMP
+#ifdef RCU_IMP
     gc = 1;
 #endif
 

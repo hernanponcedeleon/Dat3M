@@ -28,7 +28,7 @@ void *P1(void *arg)
 
 int main()
 {
-#ifdef RCUIMP
+#ifdef RCU_IMP
     gc = 1;
 #endif
 
