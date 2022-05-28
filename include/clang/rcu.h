@@ -4,9 +4,13 @@ extern int get_my_tid();
 #define GP_PHASE 0x10000
 #define CS_MASK 0x0ffff
 static unsigned long rc[MAX_THREADS] = {0};
-// NOTE: variable gc must be initialise to 1 by the client code
+// NOTE: variable gc must be initialise to 1 by the client code by calling init_rcu()
 static unsigned long gc;
 static spinlock_t gp_lock;
+
+void init_rcu() {
+    gc = 1;
+}
 
 void rcu_read_lock(void) {
     unsigned int i = get_my_tid();
@@ -52,4 +56,5 @@ void synchronize_rcu(void) {
 #define rcu_read_lock() __LKMM_FENCE(RCU_LOCK)
 #define rcu_read_unlock() __LKMM_FENCE(RCU_UNLOCK)
 #define synchronize_rcu() __LKMM_FENCE(RCU_SYNC)
+#define init_rcu()
 #endif

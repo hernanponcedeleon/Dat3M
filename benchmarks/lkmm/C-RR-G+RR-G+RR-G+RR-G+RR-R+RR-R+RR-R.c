@@ -73,10 +73,8 @@ void *thread_8(void *arg) {
 int main()
 {
 
-#ifdef RCU_IMP
-    gc = 1;
-#endif
-
+    init_rcu();
+    
     pthread_t t1, t2, t3, t4, t5, t6, t7, t8;
 
 	pthread_create(&t1, NULL, thread_1, NULL);

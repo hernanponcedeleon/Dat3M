@@ -30,10 +30,8 @@ void *P1(void *unused)
 int main()
 {
 
-#ifdef RCU_IMP
-    gc = 1;
-#endif
-
+    init_rcu();
+    
 	pthread_t t1, t2;
 
 	pthread_create(&t1, NULL, P0, NULL);

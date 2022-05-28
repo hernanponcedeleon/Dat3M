@@ -84,10 +84,8 @@ void *P5(void *unused)
 int main()
 {
 
-#ifdef RCU_IMP
-    gc = 1;
-#endif
-
+    init_rcu();
+    
 	pthread_t t0, t1, t2, t3, t4, t5;
 
 	pthread_create(&t0, NULL, P0, NULL);
