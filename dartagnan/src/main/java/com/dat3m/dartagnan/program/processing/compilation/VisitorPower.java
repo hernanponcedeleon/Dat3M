@@ -436,6 +436,38 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         );
 	}
 	
+	//	https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/barrier.h
+	@Override
+	public List<Event> visitLoad(Load e) {
+		Register resultRegister = e.getResultRegister();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		
+        Load load = newLoad(resultRegister, address, "_rx");
+        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newSyncBarrier() : null;
+        
+        return eventSequence(
+                load,
+                optionalMemoryBarrier
+        );
+	}
+
+	//	https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/barrier.h
+	@Override
+	public List<Event> visitStore(Store e) {
+		ExprInterface value = e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+        Store store = newStore(address, value, "_rx");
+        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? Power.newSyncBarrier() : null;
+        
+        return eventSequence(
+                optionalMemoryBarrier,
+                store
+        );
+	}
+	
 	//		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/barrier.h
 	@Override
 	public List<Event> visitFence(Fence e) {
