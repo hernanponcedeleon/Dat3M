@@ -26,12 +26,10 @@ public class ExecutionGraphVisualizer {
     private final Graphviz graphviz;
     private BiPredicate<EventData, EventData> rfFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
-    private boolean mergeByCline;
     private Map<BigInteger, IExpr> addresses = new HashMap<BigInteger, IExpr>();
 
-    public ExecutionGraphVisualizer(boolean mergeByCline) {
+    public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
-        this.mergeByCline = mergeByCline;
     }
 
     public ExecutionGraphVisualizer setReadFromFilter(BiPredicate<EventData, EventData> filter) {
@@ -136,7 +134,7 @@ public class ExecutionGraphVisualizer {
                 continue;
             }
 
-            if (!mergeByCline || e1.getEvent().getCLine() != e2.getEvent().getCLine()) {
+            if (e1.getEvent().getCLine() != e2.getEvent().getCLine()) {
                 appendEdge(e1, e2, model, (String[]) null);
             }
         }

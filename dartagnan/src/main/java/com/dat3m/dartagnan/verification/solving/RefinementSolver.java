@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
-import com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -27,17 +26,15 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONCLUSIVE;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.utils.visualization.Graphviz.generateGraphvizFile;
 
 /*
     Refinement is a custom solving procedure that starts from a weak memory model (possibly the empty model)
@@ -292,30 +289,8 @@ public class RefinementSolver {
         String directoryName = String.format("%s/output/refinement/%s-%s-debug/", System.getenv("DAT3M_HOME"), programName, task.getProgram().getArch());
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
         // File with reason edges only
-        generateGraphvizFile(model, iterationCount, edgeFilter, directoryName, fileNameBase, true);
+        generateGraphvizFile(model, iterationCount, edgeFilter, directoryName, fileNameBase);
         // File with all edges
-        generateGraphvizFile(model, iterationCount, (x,y) -> true, directoryName, fileNameBase + "-full", true);
-    }
-
-    public static void generateGraphvizFile(ExecutionModel model, int iterationCount, BiPredicate<EventData, EventData> edgeFilter, String directoryName, String fileNameBase, boolean mergeByCline) {
-        File fileVio = new File(directoryName + fileNameBase + ".dot");
-        fileVio.getParentFile().mkdirs();
-        try (FileWriter writer = new FileWriter(fileVio)) {
-            // Create .dot file
-            new ExecutionGraphVisualizer(mergeByCline)
-                    .setReadFromFilter(edgeFilter)
-                    .setCoherenceFilter(edgeFilter)
-                    .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
-
-            writer.flush();
-            // Convert .dot file to pdf
-            Process p = new ProcessBuilder()
-                    .directory(new File(directoryName))
-                    .command("dot", "-Tpng", fileNameBase + ".dot", "-o", fileNameBase + ".png")
-                    .start();
-            p.waitFor(1000, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            logger.error(e);
-        }
+        generateGraphvizFile(model, iterationCount, (x,y) -> true, directoryName, fileNameBase + "-full");
     }
 }
