@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.ArrayList;
@@ -79,7 +80,9 @@ public class PthreadsProcedures {
 		// We assume pthread_create always succeeds
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, IValue.ZERO));
         MemoryObject object = visitor.programBuilder.getOrNewObject(String.format("%s(%s)_active", threadPtr, visitor.pool.getCreatorFromPtr(threadPtr)));
-        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(threadPtr, threadName, object, visitor.currentLine));
+        Event child = EventFactory.Pthread.newCreate(threadPtr, threadName, object);
+        child.setCLine(visitor.currentLine);
+		visitor.programBuilder.addChild(visitor.threadCount, child);
 	}
 	
 	private static void pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {

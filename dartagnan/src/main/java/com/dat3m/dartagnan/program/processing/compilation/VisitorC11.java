@@ -27,7 +27,7 @@ public class VisitorC11 extends VisitorBase implements EventVisitor<List<Event>>
 	@Override
 	public List<Event> visitCreate(Create e) {
 
-        Store store = newStore(e.getAddress(), e.getMemValue(), Tag.C11.MO_RELEASE, e.getCLine());
+        Store store = newStore(e.getAddress(), e.getMemValue(), Tag.C11.MO_RELEASE);
         store.addFilters(C11.PTHREAD);
 
         return eventSequence(

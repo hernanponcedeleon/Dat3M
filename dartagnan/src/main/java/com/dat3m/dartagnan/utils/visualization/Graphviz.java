@@ -9,6 +9,7 @@ import java.io.Writer;
     that can be visualized via Graphviz (e.g. "dot -Tpdf input.dot -o output.pdf")
  */
 public class Graphviz {
+	
     private StringBuilder text;
 
     public Graphviz() { }
@@ -16,7 +17,6 @@ public class Graphviz {
     public Graphviz begin(String graphName) {
         text = new StringBuilder();
         text.append(String.format("digraph \"%s\" { \n", graphName));
-        text.append("init\n");
         return this;
     }
 
@@ -62,5 +62,4 @@ public class Graphviz {
     public void generateOutput(Writer writer) throws IOException {
         writer.write(text.toString());
     }
-
 }

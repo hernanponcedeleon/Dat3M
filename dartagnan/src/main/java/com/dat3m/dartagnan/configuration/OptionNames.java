@@ -40,7 +40,8 @@ public class OptionNames {
 
 	// Witness Options
 	public static final String WITNESS_ORIGINAL_PROGRAM_PATH = "witness.originalProgramFilePath";
-	
+	public static final String WITNESS_GRAPHVIZ = "witness.graphviz";
+
 	// SVCOMP Options
 	public static final String PROPERTYPATH = "svcomp.property";
 	public static final String UMIN = "svcomp.umin";

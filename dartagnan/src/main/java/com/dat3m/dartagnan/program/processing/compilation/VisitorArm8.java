@@ -29,7 +29,7 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 	
 	@Override
 	public List<Event> visitCreate(Create e) {
-        Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo(), e.getCLine());
+        Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo());
         store.addFilters(C11.PTHREAD);
 
         return eventSequence(
