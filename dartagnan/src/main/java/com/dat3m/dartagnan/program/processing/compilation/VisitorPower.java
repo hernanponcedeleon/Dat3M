@@ -297,9 +297,34 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
     // =========================================== LKMM ============================================
     // =============================================================================================
 
-
-    // TODO: check this one
-	@Override
+	// =============================================================================================
+	// 										GENERAL COMMENTS
+	// =============================================================================================
+	// Methods with no suffix (e.g. atomic_xchg), which are those having MO_MB in our case,
+	// are surrounded by a __atomic_pre_full_fence() or __atomic_post_full_fence()
+	// 		https://github.com/torvalds/linux/blob/master/scripts/atomic/fallbacks/fence
+	// which in turn are smp_mb__before_atomic and smp_mb__after_atomic
+	// 		https://github.com/torvalds/linux/blob/master/include/linux/atomic.h
+	// which in turn are __smp_mb()
+	// 		https://github.com/torvalds/linux/blob/master/include/asm-generic/barrier.h
+	// which in turn is just a sync
+	// 		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/barrier.h
+	//
+	// Methods with acquire or release as a suffix
+	// 		https://github.com/torvalds/linux/blob/master/scripts/atomic/fallbacks/acquire
+	// 		https://github.com/torvalds/linux/blob/master/scripts/atomic/fallbacks/release
+	// which result in a isync (acquire) or lwsync (release)
+	// 		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/atomic.h
+	// 		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/synch.h
+	//
+	// Most compilations have this snippet
+	// 1:	ldarx	%0,0,%2
+	//  	stdcx	%3,0,%2
+	// bne	1b
+	// Since we compile after unrolling, and our encoding enforces that the RMW pair is successful,
+	// we just need the final iteration of the control dependency, thus we use a newFakeCtrlDep.
+	
+		@Override
 	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
@@ -324,16 +349,17 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
             optionalExecStatus = newExecutionStatus(statusReg, storeValue);
             optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
         }
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
-        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier()
-                : null;
-        Fence optionalISyncBarrier = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
         		: mo.equals(Tag.Linux.MO_ACQUIRE)? Power.newISyncBarrier() : null;
 
         return eventSequence(
                 // Indentation shows the branching structure
-                optionalMemoryBarrier,
+                optionalMemoryBarrierBefore,
                 loadValue,
                 casCmpResult,
                 branchOnCasCmpResult,
@@ -341,12 +367,13 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                     optionalExecStatus,
                     optionalUpdateCasCmpResult,
                     gotoCasEnd,
+                    fakeCtrlDep,
+                    label,
                 casEnd,
-                optionalISyncBarrier
+                optionalMemoryBarrierAfter
         );
 	}
 	
-    // TODO: check this one
 	@Override
 	public List<Event> visitRMWXchg(RMWXchg e) {
 		Register resultRegister = e.getResultRegister();
@@ -360,25 +387,21 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
-        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier()
-                : null;
+        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        		: mo.equals(Tag.Linux.MO_ACQUIRE)? Power.newISyncBarrier() : null;
 
-        Fence optionalISyncBarrier = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? 
-        		Power.newISyncBarrier() : null;
-
-        // TODO: check this one
         return eventSequence(
-                optionalMemoryBarrier,
+                optionalMemoryBarrierBefore,
                 load,
+                store,
                 fakeCtrlDep,
                 label,
-                store,
-                optionalISyncBarrier
+                optionalMemoryBarrierAfter
         );
 	}
 	
-    // TODO: check this one
 	@Override
 	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
 		Register resultRegister = e.getResultRegister();
@@ -393,63 +416,27 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(resultRegister, address, null);
         Store store = newRMWStoreExclusive(address, dummyReg, null, true);
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
-        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        		: mo.equals(Tag.Linux.MO_ACQUIRE)? Power.newISyncBarrier() : null;
+
         
         return eventSequence(
                 load,
                 localOp,
-                optionalMemoryBarrier,
-                store
+                optionalMemoryBarrierBefore,
+                store,
+                fakeCtrlDep,
+                label,
+                optionalMemoryBarrierAfter
         );
 	}
 	
-	@Override
-	public List<Event> visitLoad(Load e) {
-		Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		
-        Load load = newLoad(resultRegister, address, "_rx");
-        Fence optionalMemoryBarrier = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier() : null;
-        Label optionalLabel =
-                (mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) || mo.equals(Tag.Linux.MO_ONCE)) ?
-                        newLabel("FakeDep") :
-                        null;
-        CondJump optionalFakeCtrlDep =
-                (mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) || mo.equals(Tag.Linux.MO_ONCE)) ?
-                        newFakeCtrlDep(resultRegister, optionalLabel) :
-                        null;
-        Fence optionalISyncBarrier =
-                (mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE)) ?
-                        Power.newISyncBarrier() :
-                        null;
-        
-        return eventSequence(
-                optionalMemoryBarrier,
-                load,
-                optionalFakeCtrlDep,
-                optionalLabel,
-                optionalISyncBarrier
-        );
-	}
-
-	@Override
-	public List<Event> visitStore(Store e) {
-		ExprInterface value = e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-
-        Store store = newStore(address, value, "_rx");
-        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        
-        return eventSequence(
-                optionalMemoryBarrier,
-                store
-        );
-	}
-	
+	//		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/barrier.h
 	@Override
 	public List<Event> visitFence(Fence e) {
 		String mo = e.getName();
