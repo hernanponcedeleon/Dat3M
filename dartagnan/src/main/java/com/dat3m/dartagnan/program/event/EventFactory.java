@@ -48,13 +48,11 @@ public class EventFactory {
     // ------------------------------------------ Memory events ------------------------------------------
 
     public static Load newLoad(Register register, IExpr address, String mo) {
-        Load load = new Load(register, address, mo);
-        return load;
+        return new Load(register, address, mo);
     }
 
     public static Store newStore(IExpr address, ExprInterface value, String mo) {
-        Store store = new Store(address, value, mo);
-        return store;
+        return new Store(address, value, mo);
     }
 
     public static Fence newFence(String name) {
@@ -82,18 +80,15 @@ public class EventFactory {
     }
 
     public static FunCall newFunctionCall(String funName) {
-        FunCall funCall = new FunCall(funName);
-        return funCall;
+        return new FunCall(funName);
     }
 
     public static FunRet newFunctionReturn(String funName) {
-        FunRet funRet = new FunRet(funName);
-        return funRet;
+        return new FunRet(funName);
     }
 
     public static Local newLocal(Register register, ExprInterface expr) {
-        Local local = new Local(register, expr);
-        return local;
+        return new Local(register, expr);
     }
 
     public static Label newLabel(String name) {
@@ -168,10 +163,8 @@ public class EventFactory {
     public static class Pthread {
         private Pthread() {}
 
-        public static Create newCreate(Register pthread_t, String routine, MemoryObject address, int cLine) {
-            Create create = new Create(pthread_t, routine, address);
-            create.setCLine(cLine);
-            return create;
+        public static Create newCreate(Register pthread_t, String routine, MemoryObject address) {
+            return new Create(pthread_t, routine, address);
         }
 
         public static End newEnd(MemoryObject address){

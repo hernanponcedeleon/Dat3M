@@ -38,8 +38,8 @@ import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
-import static com.dat3m.dartagnan.verification.solving.RefinementSolver.generateGraphvizFile;
 import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.valueOf;
 
@@ -160,7 +160,7 @@ public class Dartagnan extends BaseOptions {
                 	ExecutionModel m = new ExecutionModel(task);
                 	m.initialize(prover.getModel(), ctx);
     				String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
-    				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_HOME") + "/output/", name, false);        		
+    				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_HOME") + "/output/", name);        		
             	}
                 
                 if (p.getFormat().equals(SourceLanguage.LITMUS)) {
