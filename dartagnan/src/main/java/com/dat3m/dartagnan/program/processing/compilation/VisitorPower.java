@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWOpReturn;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWXchg;
 import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
@@ -402,6 +404,80 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         );
 	}
 	
+	// For the following three events (i.e. RMWOpReturn, RMWOp, RMWFetchOp), the only difference here
+	// 		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/atomic.h
+	// is the use of #asm_op "%I2" and #asm_op "%I3". This seems to be related to using
+	// immediate assembly operations, but I could not find any difference between I2 and I3, thus
+	// all three methods have the same implementation.
+	
+	@Override
+	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
+		Register resultRegister = e.getResultRegister();
+		IOpBin op = e.getOp();
+		IExpr value = (IExpr) e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		
+        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+        Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+
+        // Power does not have mo tags, thus we use null
+        Load load = newRMWLoadExclusive(resultRegister, address, null);
+        Store store = newRMWStoreExclusive(address, dummyReg, null, true);
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        		: mo.equals(Tag.Linux.MO_ACQUIRE)? Power.newISyncBarrier() : null;
+
+        
+        return eventSequence(
+                load,
+                localOp,
+                optionalMemoryBarrierBefore,
+                store,
+                fakeCtrlDep,
+                label,
+                optionalMemoryBarrierAfter
+        );
+	};
+
+	@Override
+	public List<Event> visitRMWOp(RMWOp e) {
+		Register resultRegister = e.getResultRegister();
+		IOpBin op = e.getOp();
+		IExpr value = (IExpr) e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		
+        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+        Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+
+        // Power does not have mo tags, thus we use null
+        Load load = newRMWLoadExclusive(resultRegister, address, null);
+        Store store = newRMWStoreExclusive(address, dummyReg, null, true);
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        		: mo.equals(Tag.Linux.MO_ACQUIRE)? Power.newISyncBarrier() : null;
+
+        
+        return eventSequence(
+                load,
+                localOp,
+                optionalMemoryBarrierBefore,
+                store,
+                fakeCtrlDep,
+                label,
+                optionalMemoryBarrierAfter
+        );
+	};
+
 	@Override
 	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
 		Register resultRegister = e.getResultRegister();
@@ -480,5 +556,5 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         return eventSequence(
                 optionalMemoryBarrier
         );
-	}
+	}	
 }
