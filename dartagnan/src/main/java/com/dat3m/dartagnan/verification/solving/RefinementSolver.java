@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -77,6 +78,7 @@ public class RefinementSolver {
         Refiner refiner = new Refiner(task);
         CAATSolver.Status status = INCONSISTENT;
 
+        logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(programEncoder.encodeFullProgram(ctx));
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel(ctx));
         prover.addConstraint(symmEncoder.encodeFullSymmetry(ctx));
@@ -290,17 +292,17 @@ public class RefinementSolver {
         String directoryName = String.format("%s/output/refinement/%s-%s-debug/", System.getenv("DAT3M_HOME"), programName, task.getProgram().getArch());
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
         // File with reason edges only
-        generateGraphvizFile(model, iterationCount, edgeFilter, directoryName, fileNameBase);
+        generateGraphvizFile(model, iterationCount, edgeFilter, directoryName, fileNameBase, true);
         // File with all edges
-        generateGraphvizFile(model, iterationCount, (x,y) -> true, directoryName, fileNameBase + "-full");
+        generateGraphvizFile(model, iterationCount, (x,y) -> true, directoryName, fileNameBase + "-full", true);
     }
 
-    private static void generateGraphvizFile(ExecutionModel model, int iterationCount, BiPredicate<EventData, EventData> edgeFilter, String directoryName, String fileNameBase) {
+    public static void generateGraphvizFile(ExecutionModel model, int iterationCount, BiPredicate<EventData, EventData> edgeFilter, String directoryName, String fileNameBase, boolean mergeByCline) {
         File fileVio = new File(directoryName + fileNameBase + ".dot");
         fileVio.getParentFile().mkdirs();
         try (FileWriter writer = new FileWriter(fileVio)) {
             // Create .dot file
-            new ExecutionGraphVisualizer()
+            new ExecutionGraphVisualizer(mergeByCline)
                     .setReadFromFilter(edgeFilter)
                     .setCoherenceFilter(edgeFilter)
                     .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);

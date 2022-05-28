@@ -59,4 +59,12 @@ public abstract class BaseOptions {
 	private boolean phantomReferences = true;
 	
 	public boolean usePhantomReferences() { return phantomReferences; }
+
+	@Option(
+		name=WITNESS_GRAPHVIZ,
+		description="Generates a violation graph in /output.")
+	private boolean generateGraphviz = false;
+		
+	public boolean generateGraphviz() { return generateGraphviz; }
+
 }

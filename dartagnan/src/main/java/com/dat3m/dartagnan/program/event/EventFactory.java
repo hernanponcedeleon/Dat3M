@@ -91,16 +91,12 @@ public class EventFactory {
         return new Skip();
     }
 
-    public static FunCall newFunctionCall(String funName, int cLine) {
-        FunCall funCall = new FunCall(funName);
-        funCall.setCLine(cLine);
-        return funCall;
+    public static FunCall newFunctionCall(String funName) {
+        return new FunCall(funName);
     }
 
-    public static FunRet newFunctionReturn(String funName, int cLine) {
-        FunRet funRet = new FunRet(funName);
-        funRet.setCLine(cLine);
-        return funRet;
+    public static FunRet newFunctionReturn(String funName) {
+        return new FunRet(funName);
     }
 
     public static Local newLocal(Register register, ExprInterface expr, int cLine) {

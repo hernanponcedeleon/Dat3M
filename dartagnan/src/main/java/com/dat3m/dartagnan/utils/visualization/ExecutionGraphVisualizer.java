@@ -1,11 +1,18 @@
 package com.dat3m.dartagnan.utils.visualization;
 
+import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
+import static java.util.Optional.ofNullable;
+
 import java.io.IOException;
 import java.io.Writer;
+import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
@@ -19,9 +26,12 @@ public class ExecutionGraphVisualizer {
     private final Graphviz graphviz;
     private BiPredicate<EventData, EventData> rfFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
+    private boolean mergeByCline;
+    private Map<BigInteger, IExpr> addresses = new HashMap<BigInteger, IExpr>();
 
-    public ExecutionGraphVisualizer() {
-        graphviz = new Graphviz();
+    public ExecutionGraphVisualizer(boolean mergeByCline) {
+        this.graphviz = new Graphviz();
+        this.mergeByCline = mergeByCline;
     }
 
     public ExecutionGraphVisualizer setReadFromFilter(BiPredicate<EventData, EventData> filter) {
@@ -35,6 +45,16 @@ public class ExecutionGraphVisualizer {
     }
 
     public void generateGraphOfExecutionModel(Writer writer, String graphName, ExecutionModel model) throws IOException {
+    	for(Thread t : model.getThreads()) {
+            for(EventData data : model.getThreadEventsMap().get(t)) {
+            	if(data.isMemoryEvent()) {
+            		MemEvent m = (MemEvent)data.getEvent();
+            		if(!(m.getAddress() instanceof Register)) {
+                    	addresses.putIfAbsent(data.getAccessedAddress(), m.getAddress());            			
+            		}
+            	}
+            }
+    	}
         graphviz.begin(graphName);
         graphviz.append(String.format("label=\"%s\" \n", graphName));
         addAllThreadPos(model);
@@ -116,7 +136,7 @@ public class ExecutionGraphVisualizer {
                 continue;
             }
 
-            if (e1.getEvent().getCLine() != e2.getEvent().getCLine()) {
+            if (!mergeByCline || e1.getEvent().getCLine() != e2.getEvent().getCLine()) {
                 appendEdge(e1, e2, model, (String[]) null);
             }
         }
@@ -131,7 +151,7 @@ public class ExecutionGraphVisualizer {
 
     private String eventToNode(EventData e, ExecutionModel model) {
         if (e.isInit()) {
-            return "init";
+            return String.format("\"I(%s, %d)\"", addresses.get(e.getAccessedAddress()), e.getValue());
         } else if (e.getEvent().getCLine() == -1) {
             // Special write of each thread
             int threadSize = model.getThreadEventsMap().get(e.getThread()).size();
@@ -141,7 +161,22 @@ public class ExecutionGraphVisualizer {
                 return String.format("\"T%d:end\"", e.getThread().getId());
             }
         }
-        return String.format("\"T%d:%d\"", e.getThread().getId(), e.getEvent().getCLine());
+        // We have MemEvent + Fence
+        String tag = e.getEvent().toString();
+        if(e.isMemoryEvent()) {
+            Object address = addresses.get(e.getAccessedAddress());
+            BigInteger value = e.getValue();
+        	String mo = ofNullable(((MemEvent)e.getEvent()).getMo()).orElse("NA");
+            tag = e.isWrite() ?
+            		String.format("W(%s, %d, %s)", address, value, mo) :
+            		String.format("%d = R(%s, %s)", value, address, mo);
+        }
+        return String.format("\"T%d:E%s (%s:L%d)\\n%s\"", 
+        				e.getThread().getId(), 
+        				e.getEvent().getCId(), 
+        				e.getEvent().getSourceCodeFile(), 
+        				e.getEvent().getCLine(), 
+        				tag);
     }
 
     private void appendEdge(EventData a, EventData b, ExecutionModel model, String... options) {

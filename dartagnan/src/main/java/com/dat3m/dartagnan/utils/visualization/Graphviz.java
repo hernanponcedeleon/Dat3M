@@ -16,7 +16,6 @@ public class Graphviz {
     public Graphviz begin(String graphName) {
         text = new StringBuilder();
         text.append(String.format("digraph \"%s\" { \n", graphName));
-        text.append("init\n");
         return this;
     }
 
