@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.verification.solving.*;
 import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.dartagnan.witness.WitnessGraph;
@@ -37,6 +38,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.valueOf;
 
@@ -152,6 +154,13 @@ public class Dartagnan extends BaseOptions {
                 // Verification ended, we can interrupt the timeout Thread
                 t.interrupt();
 
+            	if(result.equals(FAIL) && o.generateGraphviz()) {
+                	ExecutionModel m = new ExecutionModel(task);
+                	m.initialize(prover.getModel(), ctx);
+    				String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
+    				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_HOME") + "/output/", name);        		
+            	}
+                
                 if (p.getFormat().equals(SourceLanguage.LITMUS)) {
                     if (p.getAssFilter() != null) {
                         System.out.println("Filter " + (p.getAssFilter()));

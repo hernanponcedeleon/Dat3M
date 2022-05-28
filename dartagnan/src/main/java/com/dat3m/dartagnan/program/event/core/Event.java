@@ -21,7 +21,8 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	protected int cId = -1;		// ID after compilation
 	protected int fId = -1;		// ID within a function
 
-	protected int cLine = -1;	// line in the original C program
+	protected int cLine = -1;				// line in the original C program
+	protected String sourceCodeFile = "";	// filename of the original C program
 
 	protected Thread thread; // The thread this event belongs to
 
@@ -44,6 +45,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
         this.cId = other.cId;
         this.fId = other.fId;
         this.cLine = other.cLine;
+        this.sourceCodeFile = other.sourceCodeFile;
         this.filter = other.filter; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
         this.thread = other.thread;
     }
@@ -64,8 +66,18 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public int getCLine() {
 		return cLine;
 	}
-	public void setCLine(int line) {
+	public Event setCLine(int line) {
 		this.cLine = line;
+		return this;
+	}
+
+	public String getSourceCodeFile() {
+		return sourceCodeFile;
+	}
+
+	public Event setSourceCodeFile(String name) {
+		this.sourceCodeFile = name;
+		return this;
 	}
 
 	public Event getSuccessor(){
