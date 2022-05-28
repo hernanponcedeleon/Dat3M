@@ -33,7 +33,6 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
 	public List<Event> visitCreate(Create e) {
 
         Store store = newStore(e.getAddress(), e.getMemValue(), Tag.Linux.MO_RELEASE);
-        store.setCLine(e.getCLine());
         store.addFilters(C11.PTHREAD);
 
         return eventSequence(
