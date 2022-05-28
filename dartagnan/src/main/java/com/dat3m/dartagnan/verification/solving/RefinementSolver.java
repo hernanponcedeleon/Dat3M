@@ -34,7 +34,7 @@ import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DE
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONCLUSIVE;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
-import static com.dat3m.dartagnan.utils.visualization.Graphviz.generateGraphvizFile;
+import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
 
 /*
     Refinement is a custom solving procedure that starts from a weak memory model (possibly the empty model)
