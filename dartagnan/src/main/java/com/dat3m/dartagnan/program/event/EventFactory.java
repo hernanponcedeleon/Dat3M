@@ -47,24 +47,12 @@ public class EventFactory {
 
     // ------------------------------------------ Memory events ------------------------------------------
 
-    public static Load newLoad(Register register, IExpr address, String mo, int cLine) {
-        Load load = new Load(register, address, mo);
-        load.setCLine(cLine);
-        return load;
-    }
-
     public static Load newLoad(Register register, IExpr address, String mo) {
-        return newLoad(register, address, mo, -1);
-    }
-
-    public static Store newStore(IExpr address, ExprInterface value, String mo, int cLine) {
-        Store store = new Store(address, value, mo);
-        store.setCLine(cLine);
-        return store;
+        return new Load(register, address, mo);
     }
 
     public static Store newStore(IExpr address, ExprInterface value, String mo) {
-        return newStore(address, value, mo, -1);
+        return new Store(address, value, mo);
     }
 
     public static Fence newFence(String name) {
@@ -99,14 +87,8 @@ public class EventFactory {
         return new FunRet(funName);
     }
 
-    public static Local newLocal(Register register, ExprInterface expr, int cLine) {
-        Local local = new Local(register, expr);
-        local.setCLine(cLine);
-        return local;
-    }
-
     public static Local newLocal(Register register, ExprInterface expr) {
-        return newLocal(register, expr, -1);
+        return new Local(register, expr);
     }
 
     public static Label newLabel(String name) {
@@ -181,10 +163,8 @@ public class EventFactory {
     public static class Pthread {
         private Pthread() {}
 
-        public static Create newCreate(Register pthread_t, String routine, MemoryObject address, int cLine) {
-            Create create = new Create(pthread_t, routine, address);
-            create.setCLine(cLine);
-            return create;
+        public static Create newCreate(Register pthread_t, String routine, MemoryObject address) {
+            return new Create(pthread_t, routine, address);
         }
 
         public static End newEnd(MemoryObject address){
