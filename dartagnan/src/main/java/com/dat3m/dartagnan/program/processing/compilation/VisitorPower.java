@@ -8,6 +8,9 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWCmpXchg;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWXchg;
 import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
@@ -76,6 +79,10 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}
+
+    // =============================================================================================
+    // ============================================ C11 ============================================
+    // =============================================================================================
 
 	@Override
 	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
@@ -283,6 +290,176 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                     store,
                 optionalISyncBarrier,
                 casEnd
+        );
+	}
+	
+    // =============================================================================================
+    // =========================================== LKMM ============================================
+    // =============================================================================================
+
+
+    // TODO: check this one
+	@Override
+	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
+		Register resultRegister = e.getResultRegister();
+		IExpr address = e.getAddress();
+		ExprInterface value = e.getMemValue();
+		String mo = e.getMo();
+		int precision = resultRegister.getPrecision();
+
+		Register regExpected = e.getThread().newRegister(precision);
+        Register regValue = e.getThread().newRegister(precision);
+        Label casEnd = newLabel("CAS_end");
+        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
+        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
+        CondJump gotoCasEnd = newGoto(casEnd);
+
+        // Power does not have mo tags, thus we use null
+        Load loadValue = newRMWLoadExclusive(regValue, address, null);
+        Store storeValue = newRMWStoreExclusive(address, value, null, e.is(STRONG));
+        ExecutionStatus optionalExecStatus = null;
+        Local optionalUpdateCasCmpResult = null;
+        if (!e.is(STRONG)) {
+            Register statusReg = e.getThread().newRegister(precision);
+            optionalExecStatus = newExecutionStatus(statusReg, storeValue);
+            optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
+        }
+
+        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier()
+                : null;
+        Fence optionalISyncBarrier = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        		: mo.equals(Tag.Linux.MO_ACQUIRE)? Power.newISyncBarrier() : null;
+
+        return eventSequence(
+                // Indentation shows the branching structure
+                optionalMemoryBarrier,
+                loadValue,
+                casCmpResult,
+                branchOnCasCmpResult,
+                    storeValue,
+                    optionalExecStatus,
+                    optionalUpdateCasCmpResult,
+                    gotoCasEnd,
+                casEnd,
+                optionalISyncBarrier
+        );
+	}
+	
+    // TODO: check this one
+	@Override
+	public List<Event> visitRMWXchg(RMWXchg e) {
+		Register resultRegister = e.getResultRegister();
+		ExprInterface value = e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+        // Power does not have mo tags, thus we use null
+        Load load = newRMWLoadExclusive(resultRegister, address, null);
+        Store store = newRMWStoreExclusive(address, value, null, true);
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier()
+                : null;
+
+        Fence optionalISyncBarrier = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? 
+        		Power.newISyncBarrier() : null;
+
+        // TODO: check this one
+        return eventSequence(
+                optionalMemoryBarrier,
+                load,
+                fakeCtrlDep,
+                label,
+                store,
+                optionalISyncBarrier
+        );
+	}
+	
+    // TODO: check this one
+	@Override
+	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+		Register resultRegister = e.getResultRegister();
+		IOpBin op = e.getOp();
+		IExpr value = (IExpr) e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		
+        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+        Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+
+        // Power does not have mo tags, thus we use null
+        Load load = newRMWLoadExclusive(resultRegister, address, null);
+        Store store = newRMWStoreExclusive(address, dummyReg, null, true);
+
+        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        
+        return eventSequence(
+                load,
+                localOp,
+                optionalMemoryBarrier,
+                store
+        );
+	}
+	
+	@Override
+	public List<Event> visitLoad(Load e) {
+		Register resultRegister = e.getResultRegister();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		
+        Load load = newLoad(resultRegister, address, "_rx");
+        Fence optionalMemoryBarrier = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier() : null;
+        Label optionalLabel =
+                (mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) || mo.equals(Tag.Linux.MO_ONCE)) ?
+                        newLabel("FakeDep") :
+                        null;
+        CondJump optionalFakeCtrlDep =
+                (mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) || mo.equals(Tag.Linux.MO_ONCE)) ?
+                        newFakeCtrlDep(resultRegister, optionalLabel) :
+                        null;
+        Fence optionalISyncBarrier =
+                (mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE)) ?
+                        Power.newISyncBarrier() :
+                        null;
+        
+        return eventSequence(
+                optionalMemoryBarrier,
+                load,
+                optionalFakeCtrlDep,
+                optionalLabel,
+                optionalISyncBarrier
+        );
+	}
+
+	@Override
+	public List<Event> visitStore(Store e) {
+		ExprInterface value = e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+        Store store = newStore(address, value, "_rx");
+        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        
+        return eventSequence(
+                optionalMemoryBarrier,
+                store
+        );
+	}
+	
+	@Override
+	public List<Event> visitFence(Fence e) {
+		String mo = e.getName();
+        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_MB) 
+        		|| mo.equals(Tag.Linux.MO_WMB) 
+        		|| mo.equals(Tag.Linux.MO_RMB) ? 
+        		Power.newSyncBarrier() : null;
+        
+        return eventSequence(
+                optionalMemoryBarrier
         );
 	}
 }
