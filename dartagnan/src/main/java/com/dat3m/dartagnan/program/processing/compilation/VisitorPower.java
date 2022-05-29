@@ -344,15 +344,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 
         // Power does not have mo tags, thus we use null
         Load loadValue = newRMWLoadExclusive(regValue, address, null);
-        // TODO: we don't use STRONG for LKMM, should we?
-        Store storeValue = newRMWStoreExclusive(address, value, null, e.is(STRONG));
-        ExecutionStatus optionalExecStatus = null;
-        Local optionalUpdateCasCmpResult = null;
-        if (!e.is(STRONG)) {
-            Register statusReg = e.getThread().newRegister(precision);
-            optionalExecStatus = newExecutionStatus(statusReg, storeValue);
-            optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
-        }
+        Store storeValue = newRMWStoreExclusive(address, value, null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -368,8 +360,6 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 casCmpResult,
                 branchOnCasCmpResult,
                     storeValue,
-                    optionalExecStatus,
-                    optionalUpdateCasCmpResult,
                     fakeCtrlDep,
                     label,
                     gotoCasEnd,
