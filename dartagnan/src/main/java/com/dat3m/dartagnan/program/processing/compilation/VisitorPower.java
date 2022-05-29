@@ -413,40 +413,6 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	// all three methods have the same implementation.
 	
 	@Override
-	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
-		Register resultRegister = e.getResultRegister();
-		IOpBin op = e.getOp();
-		IExpr value = (IExpr) e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		
-        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-        Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
-
-        // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(resultRegister, address, null);
-        Store store = newRMWStoreExclusive(address, dummyReg, null, true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-
-        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-        		: mo.equals(Tag.Linux.MO_ACQUIRE)? Power.newISyncBarrier() : null;
-
-        
-        return eventSequence(
-                load,
-                localOp,
-                optionalMemoryBarrierBefore,
-                store,
-                fakeCtrlDep,
-                label,
-                optionalMemoryBarrierAfter
-        );
-	};
-
-	@Override
 	public List<Event> visitRMWOp(RMWOp e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
@@ -470,9 +436,43 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 
         
         return eventSequence(
+                optionalMemoryBarrierBefore,
                 load,
                 localOp,
+                store,
+                fakeCtrlDep,
+                label,
+                optionalMemoryBarrierAfter
+        );
+	};
+
+	@Override
+	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
+		Register resultRegister = e.getResultRegister();
+		IOpBin op = e.getOp();
+		IExpr value = (IExpr) e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		
+        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+        Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+
+        // Power does not have mo tags, thus we use null
+        Load load = newRMWLoadExclusive(resultRegister, address, null);
+        Store store = newRMWStoreExclusive(address, dummyReg, null, true);
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        		: mo.equals(Tag.Linux.MO_ACQUIRE)? Power.newISyncBarrier() : null;
+
+        
+        return eventSequence(
                 optionalMemoryBarrierBefore,
+                load,
+                localOp,
                 store,
                 fakeCtrlDep,
                 label,
@@ -504,9 +504,9 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 
         
         return eventSequence(
+                optionalMemoryBarrierBefore,
                 load,
                 localOp,
-                optionalMemoryBarrierBefore,
                 store,
                 fakeCtrlDep,
                 label,
