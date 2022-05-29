@@ -514,7 +514,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		
         // Power does not have mo tags, thus we use null
         Load load = newLoad(resultRegister, address, null);
-        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newSyncBarrier() : null;
+        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newLwSyncBarrier() : null;
         
         return eventSequence(
                 load,
@@ -532,7 +532,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 
         // Power does not have mo tags, thus we use null
         Store store = newStore(address, value, null);
-        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? Power.newSyncBarrier() : null;
+        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
         
         return eventSequence(
                 optionalMemoryBarrier,
