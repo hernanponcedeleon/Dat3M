@@ -546,8 +546,8 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	public List<Event> visitFence(Fence e) {
 		String mo = e.getName();
         Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_MB) 
-        		|| mo.equals(Tag.Linux.MO_WMB) 
-        		|| mo.equals(Tag.Linux.MO_RMB) ? 
+        		|| mo.equals(Tag.Linux.MO_WMB) || mo.equals(Tag.Linux.MO_RMB)
+        		|| mo.equals(Tag.Linux.BEFORE_ATOMIC) || mo.equals(Tag.Linux.AFTER_ATOMIC) ?
         		Power.newSyncBarrier() : null;
         
         return eventSequence(
