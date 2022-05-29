@@ -325,8 +325,9 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	// bne	1b
 	// Since we compile after unrolling, and our encoding enforces that the RMW pair is successful,
 	// we just need the final iteration of the control dependency, thus we use a newFakeCtrlDep.
-	
-		@Override
+	// =============================================================================================
+
+	@Override
 	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
@@ -334,15 +335,16 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		String mo = e.getMo();
 		int precision = resultRegister.getPrecision();
 
-		Register regExpected = e.getThread().newRegister(precision);
+		ExprInterface expected = e.getCmp();
         Register regValue = e.getThread().newRegister(precision);
         Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
+        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expected));
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
         CondJump gotoCasEnd = newGoto(casEnd);
 
         // Power does not have mo tags, thus we use null
         Load loadValue = newRMWLoadExclusive(regValue, address, null);
+        // TODO: we don't use STRONG for LKMM, should we?
         Store storeValue = newRMWStoreExclusive(address, value, null, e.is(STRONG));
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
@@ -368,9 +370,9 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                     storeValue,
                     optionalExecStatus,
                     optionalUpdateCasCmpResult,
-                    gotoCasEnd,
                     fakeCtrlDep,
                     label,
+                    gotoCasEnd,
                 casEnd,
                 optionalMemoryBarrierAfter
         );
@@ -512,14 +514,16 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         );
 	}
 	
-	//	https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/barrier.h
+	// Following
+	//		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/barrier.h
 	@Override
 	public List<Event> visitLoad(Load e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 		
-        Load load = newLoad(resultRegister, address, "_rx");
+        // Power does not have mo tags, thus we use null
+        Load load = newLoad(resultRegister, address, null);
         Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newSyncBarrier() : null;
         
         return eventSequence(
@@ -528,14 +532,16 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         );
 	}
 
-	//	https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/barrier.h
+	// Following
+	//		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/barrier.h
 	@Override
 	public List<Event> visitStore(Store e) {
 		ExprInterface value = e.getMemValue();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-        Store store = newStore(address, value, "_rx");
+        // Power does not have mo tags, thus we use null
+        Store store = newStore(address, value, null);
         Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? Power.newSyncBarrier() : null;
         
         return eventSequence(
@@ -543,7 +549,8 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 store
         );
 	}
-	
+
+	// Following
 	//		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/barrier.h
 	@Override
 	public List<Event> visitFence(Fence e) {
@@ -556,5 +563,5 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         return eventSequence(
                 optionalMemoryBarrier
         );
-	}	
+	}
 }
