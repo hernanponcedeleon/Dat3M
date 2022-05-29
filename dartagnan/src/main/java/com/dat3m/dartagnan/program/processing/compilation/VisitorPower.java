@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.lang.linux.RMWAddUnless;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWOpAndTest;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWOpReturn;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWXchg;
 import com.dat3m.dartagnan.program.event.lang.pthread.Create;
@@ -597,4 +598,44 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 cauEnd
         );
 	};
+	
+	// The implementation is arch_${atomic}_op_return(i, v) == 0;
+	// 		https://github.com/torvalds/linux/blob/master/scripts/atomic/fallbacks/sub_and_test
+	// 		https://github.com/torvalds/linux/blob/master/scripts/atomic/fallbacks/inc_and_test
+	// 		https://github.com/torvalds/linux/blob/master/scripts/atomic/fallbacks/dec_and_test
+	@Override
+	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
+		Register resultRegister = e.getResultRegister();
+		IOpBin op = e.getOp();
+		IExpr value = (IExpr) e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		
+        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+        Register retReg = e.getThread().newRegister(resultRegister.getPrecision());
+        Local localOp = newLocal(retReg, new IExprBin(dummyReg, op, value));
+        Local testOp = newLocal(resultRegister, new Atom(retReg, EQ, IValue.ZERO));
+
+        // Power does not have mo tags, thus we use null
+        Load load = newRMWLoadExclusive(dummyReg, address, null);
+        Store store = newRMWStoreExclusive(address, retReg, null, true);
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        		: mo.equals(Tag.Linux.MO_ACQUIRE)? Power.newISyncBarrier() : null;
+
+        
+        return eventSequence(
+                optionalMemoryBarrierBefore,
+                load,
+                localOp,
+                store,
+                fakeCtrlDep,
+                label,
+                optionalMemoryBarrierAfter,
+                testOp
+        );	};
 }
