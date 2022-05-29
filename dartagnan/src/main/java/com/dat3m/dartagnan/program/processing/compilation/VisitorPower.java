@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWAddUnless;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
@@ -340,7 +341,6 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expected));
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
-        CondJump gotoCasEnd = newGoto(casEnd);
 
         // Power does not have mo tags, thus we use null
         Load loadValue = newRMWLoadExclusive(regValue, address, null);
@@ -362,7 +362,6 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                     storeValue,
                     fakeCtrlDep,
                     label,
-                    gotoCasEnd,
                 casEnd,
                 optionalMemoryBarrierAfter
         );
@@ -554,4 +553,48 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 optionalMemoryBarrier
         );
 	}
+	
+	// The implementation relies on arch_atomic_fetch_add_unless
+	// 		https://github.com/torvalds/linux/blob/master/scripts/atomic/fallbacks/add_unless
+	// which uses a sub at the end to return the value before the operation
+	// 		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/atomic.h
+	// Since RMWAddUnless does not care about any returned value, we don't need the final sub
+	@Override
+	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+		Register resultRegister = e.getResultRegister();
+		IExpr address = e.getAddress();
+		ExprInterface value = e.getMemValue();
+		String mo = e.getMo();
+		int precision = resultRegister.getPrecision();
+
+		ExprInterface expected = e.getCmp();
+        Register regValue = e.getThread().newRegister(precision);
+        Label cauEnd = newLabel("CAddU_end");
+        Local cauCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expected));
+        CondJump branchOnCauCmpResult = newJump(new Atom(resultRegister, EQ, IValue.ONE), cauEnd);
+
+        // Power does not have mo tags, thus we use null
+        Load loadValue = newRMWLoadExclusive(regValue, address, null);
+        Store storeValue = newRMWStoreExclusive(address, value, null, true);
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        		: mo.equals(Tag.Linux.MO_ACQUIRE)? Power.newISyncBarrier() : null;
+
+        return eventSequence(
+                // Indentation shows the branching structure
+                optionalMemoryBarrierBefore,
+                loadValue,
+                cauCmpResult,
+                branchOnCauCmpResult,
+                    storeValue,
+                    fakeCtrlDep,
+                    label,
+                    optionalMemoryBarrierAfter,
+                cauEnd
+        );
+	};
 }
