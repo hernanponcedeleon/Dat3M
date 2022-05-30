@@ -211,6 +211,8 @@ public class ExecutionGraph {
                 default:
                     throw new UnsupportedOperationException(rel.getName() + " is marked as special relation but has associated graph.");
             }
+        } else if (rel.isCut()) {
+            graph = new DynamicDefaultWMMGraph(rel);
         } else if (relClass == RelRf.class) {
             graph = new ReadFromGraph();
         } else if (relClass == RelLoc.class) {

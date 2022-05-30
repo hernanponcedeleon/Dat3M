@@ -72,7 +72,7 @@ public class CoreReasoner {
                         addFenceReason(rel, edge, coreReason);
                     } else if (rel.getName().equals(LOC)) {
                         coreReason.add(new AddressLiteral(tuple, lit.isNegative()));
-                    } else if (rel.getName().equals(RF) || rel.getName().equals(CO)) {
+                    } else if (rel.getName().equals(RF) || rel.getName().equals(CO) || rel.isCut()) {
                         coreReason.add(new RelLiteral(rel.getName(), tuple, lit.isNegative()));
                     } else {
                         //TODO: Right now, we assume many relations like Data, Ctrl and Addr to be

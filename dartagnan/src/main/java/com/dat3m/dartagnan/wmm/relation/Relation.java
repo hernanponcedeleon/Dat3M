@@ -39,6 +39,7 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     protected Context analysisContext;
 
     protected boolean isEncoded;
+    protected boolean isCut = false;
 
     protected TupleSet minTupleSet = null;
     protected TupleSet maxTupleSet = null;
@@ -55,6 +56,9 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
         this();
         this.name = name;
     }
+
+    public boolean isCut() { return this.isCut; }
+    public void setIsCut(boolean value) { this.isCut = value; }
 
     @Override
     public List<Relation> getDependencies() {
