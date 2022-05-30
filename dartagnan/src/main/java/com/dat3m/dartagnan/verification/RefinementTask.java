@@ -16,6 +16,8 @@ import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.axiom.Empty;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
+import com.dat3m.dartagnan.wmm.relation.base.stat.RelSetIdentity;
 import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
 import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
 import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
@@ -169,20 +171,31 @@ public class RefinementTask extends VerificationTask {
     }
 
     private Relation getCopyOfRelation(Relation rel, RelationRepository repo) {
-        if (repo.containsRelation(rel.getName()) || rel.getDependencies().size() == 0) {
+        if (repo.containsRelation(rel.getName())) {
             return repo.getRelation(rel.getName());
         }
 
-        List<Relation> deps = new ArrayList<>(rel.getDependencies().size());
-        for (Relation dep : rel.getDependencies()) {
-            deps.add(getCopyOfRelation(dep, repo));
+        Relation copy = repo.getRelation(rel.getName());
+        if (copy == null) {
+            List<Object> deps = new ArrayList<>(rel.getDependencies().size());
+            if (rel instanceof RelSetIdentity) {
+                deps.add(((RelSetIdentity)rel).getFilter());
+            } else if (rel instanceof RelCartesian) {
+                deps.add(((RelCartesian)rel).getFirstFilter());
+                deps.add(((RelCartesian)rel).getSecondFilter());
+            } else {
+                for (Relation dep : rel.getDependencies()) {
+                    deps.add(getCopyOfRelation(dep, repo));
+                }
+            }
+
+            copy = repo.getRelation(rel.getClass(), deps.toArray());
+            if (rel.getIsNamed()) {
+                copy.setName(rel.getName());
+                repo.updateRelation(copy);
+            }
         }
 
-        Relation copy = repo.getRelation(rel.getClass(), deps.toArray());
-        if (rel.getIsNamed()) {
-            copy.setName(rel.getName());
-            repo.updateRelation(copy);
-        }
 
         return copy;
     }
