@@ -445,11 +445,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        			// Nothing to be done
 	        		}
 	        		if(!allocationRegs.contains(value)) {
-	        			programBuilder.addChild(threadCount, EventFactory.newLoad(register, (IExpr)value, null))
+	        			programBuilder.addChild(threadCount, EventFactory.newLoad(register, (IExpr)value, ""))
 	        					.setCLine(currentLine)
 	        					.setSourceCodeFile(sourceCodeFile);
 	        		} else {
-	        			programBuilder.addChild(threadCount, EventFactory.newLoad(register, (IExpr)value, null));
+	        			programBuilder.addChild(threadCount, EventFactory.newLoad(register, (IExpr)value, ""));
 	        		}						        			
 		            continue;
 	        	}
@@ -461,7 +461,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        }
             MemoryObject object = programBuilder.getObject(name);
             if(object != null){
-				programBuilder.addChild(threadCount, EventFactory.newStore(object, value, null))
+				programBuilder.addChild(threadCount, EventFactory.newStore(object, value, ""))
 						.setCLine(currentLine)
 						.setSourceCodeFile(sourceCodeFile);
 	            continue;
@@ -688,7 +688,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				programBuilder.getOrNewObject(text).appendInitialValue(rhs,value.reduce());
 				return null;
 			}
-			programBuilder.addChild(threadCount, EventFactory.newStore(address, value, null))
+			programBuilder.addChild(threadCount, EventFactory.newStore(address, value, ""))
 					.setCLine(currentLine)
 					.setSourceCodeFile(sourceCodeFile);	
 			return null;
