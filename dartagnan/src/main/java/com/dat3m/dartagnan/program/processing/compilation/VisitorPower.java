@@ -363,8 +363,8 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                     storeValue,
                     fakeCtrlDep,
                     label,
-                casEnd,
-                optionalMemoryBarrierAfter
+                    optionalMemoryBarrierAfter,
+                casEnd
         );
 	}
 	
@@ -568,15 +568,15 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		String mo = e.getMo();
 		int precision = resultRegister.getPrecision();
 
-		ExprInterface expected = e.getCmp();
+		ExprInterface unless = e.getCmp();
         Register regValue = e.getThread().newRegister(precision);
         Label cauEnd = newLabel("CAddU_end");
-        Local cauCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expected));
-        CondJump branchOnCauCmpResult = newJump(new Atom(resultRegister, EQ, IValue.ONE), cauEnd);
+        Local cauCmpResult = newLocal(resultRegister, new Atom(regValue, NEQ, unless));
+        CondJump branchOnCauCmpResult = newJump(new Atom(resultRegister, EQ, IValue.ZERO), cauEnd);
 
         // Power does not have mo tags, thus we use null
         Load loadValue = newRMWLoadExclusive(regValue, address, null);
-        Store storeValue = newRMWStoreExclusive(address, value, null, true);
+        Store storeValue = newRMWStoreExclusive(address, new IExprBin(regValue, IOpBin.PLUS, (IExpr) value), null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
