@@ -63,17 +63,18 @@ public class CoreReasoner {
                 } else if (lit.isNegative() && !rel.getMaxTupleSet().contains(tuple)) {
                     // Statically absent edges
                 } else {
-                    if (rel instanceof RelFencerel) {
+                    if (rel.getName().equals(RF) || rel.getName().equals(CO)
+                            || rel.isCut()) {
+                        coreReason.add(new RelLiteral(rel.getName(), tuple, lit.isNegative()));
+                    } else if (rel.getName().equals(LOC)) {
+                        coreReason.add(new AddressLiteral(tuple, lit.isNegative()));
+                    } else if (rel instanceof RelFencerel) {
                         // This is a special case since "fencerel(F) = po;[F];po".
                         // We should do this transformation directly on the Wmm to avoid this special reasoning
                         if (lit.isNegative()) {
                             throw new UnsupportedOperationException(String.format("FenceRel %s is not allowed on the rhs of differences.", rel));
                         }
                         addFenceReason(rel, edge, coreReason);
-                    } else if (rel.getName().equals(LOC)) {
-                        coreReason.add(new AddressLiteral(tuple, lit.isNegative()));
-                    } else if (rel.getName().equals(RF) || rel.getName().equals(CO) || rel.isCut()) {
-                        coreReason.add(new RelLiteral(rel.getName(), tuple, lit.isNegative()));
                     } else {
                         //TODO: Right now, we assume many relations like Data, Ctrl and Addr to be
                         // static.

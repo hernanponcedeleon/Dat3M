@@ -14,9 +14,11 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.axiom.Empty;
+import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
 import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
+import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import org.apache.logging.log4j.LogManager;
@@ -27,7 +29,9 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.Baseline.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.BASELINE;
@@ -149,8 +153,38 @@ public class RefinementTask extends VerificationTask {
             repo.addRelation(rmwANDfrecoe);
             baseline.addAxiom(new Empty(rmwANDfrecoe));
         }
+
+        // Cut negated relations
+        for (Relation rel : getMemoryModel().getRelationRepository().getRelations()) {
+            if (rel instanceof RelMinus && rel.getSecond().getDependencies().size() != 0) {
+                Relation copy = getCopyOfRelation(rel.getSecond(), repo);
+                rel.getSecond().setIsCut(true);
+                baseline.addAxiom(new ForceEncodeAxiom(copy));
+
+                logger.info("Found difference {}. Cutting rhs relation {}", rel, rel.getSecond());
+            }
+        }
         
         return baseline;
+    }
+
+    private Relation getCopyOfRelation(Relation rel, RelationRepository repo) {
+        if (repo.containsRelation(rel.getName()) || rel.getDependencies().size() == 0) {
+            return repo.getRelation(rel.getName());
+        }
+
+        List<Relation> deps = new ArrayList<>(rel.getDependencies().size());
+        for (Relation dep : rel.getDependencies()) {
+            deps.add(getCopyOfRelation(dep, repo));
+        }
+
+        Relation copy = repo.getRelation(rel.getClass(), deps.toArray());
+        if (rel.getIsNamed()) {
+            copy.setName(rel.getName());
+            repo.updateRelation(copy);
+        }
+
+        return copy;
     }
 
     // ==================== Builder =====================
