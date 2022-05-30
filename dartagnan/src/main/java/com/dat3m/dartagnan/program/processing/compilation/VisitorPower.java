@@ -306,20 +306,20 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	// =============================================================================================
 	// Methods with no suffix (e.g. atomic_xchg), which are those having MO_MB in our case,
 	// are surrounded by a __atomic_pre_full_fence() or __atomic_post_full_fence()
-	// 		https://github.com/torvalds/linux/blob/master/scripts/atomic/fallbacks/fence
+	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/fence
 	// which in turn are smp_mb__before_atomic and smp_mb__after_atomic
-	// 		https://github.com/torvalds/linux/blob/master/include/linux/atomic.h
+	// 		https://elixir.bootlin.com/linux/v5.18/source/include/linux/atomic.h
 	// which in turn are __smp_mb()
-	// 		https://github.com/torvalds/linux/blob/master/include/asm-generic/barrier.h
+	// 		https://elixir.bootlin.com/linux/v5.18/source/include/asm-generic/barrier.h
 	// which in turn is just a sync
-	// 		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/barrier.h
+	// 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
 	//
 	// Methods with acquire or release as a suffix
-	// 		https://github.com/torvalds/linux/blob/master/scripts/atomic/fallbacks/acquire
-	// 		https://github.com/torvalds/linux/blob/master/scripts/atomic/fallbacks/release
+	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/acquire
+	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/release
 	// which result in a isync (acquire) or lwsync (release)
-	// 		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/atomic.h
-	// 		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/synch.h
+	// 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/atomic.h
+	// 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/synch.h
 	//
 	// Most compilations have this snippet
 	// 1:	ldarx	%0,0,%2
@@ -396,12 +396,8 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         );
 	}
 	
-	// For the following three events (i.e. RMWOpReturn, RMWOp, RMWFetchOp), the only difference here
-	// 		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/atomic.h
-	// is the use of #asm_op "%I2" and #asm_op "%I3". This seems to be related to using
-	// immediate assembly operations, but I could not find any difference between I2 and I3, thus
-	// all three methods have the same implementation.
-	
+	// Following
+	// 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/atomic.h	
 	@Override
 	public List<Event> visitRMWOp(RMWOp e) {
 		Register resultRegister = e.getResultRegister();
@@ -505,7 +501,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	}
 	
 	// Following
-	//		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/barrier.h
+	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
 	@Override
 	public List<Event> visitLoad(Load e) {
 		Register resultRegister = e.getResultRegister();
@@ -523,7 +519,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	}
 
 	// Following
-	//		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/barrier.h
+	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
 	@Override
 	public List<Event> visitStore(Store e) {
 		ExprInterface value = e.getMemValue();
@@ -541,7 +537,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	}
 
 	// Following
-	//		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/barrier.h
+	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
 	@Override
 	public List<Event> visitFence(Fence e) {
 		String mo = e.getName();
@@ -556,9 +552,9 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	}
 	
 	// The implementation relies on arch_atomic_fetch_add_unless
-	// 		https://github.com/torvalds/linux/blob/master/scripts/atomic/fallbacks/add_unless
+	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/add_unless
 	// which uses a sub at the end to return the value before the operation
-	// 		https://github.com/torvalds/linux/blob/master/arch/powerpc/include/asm/atomic.h
+	// 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/atomic.h
 	// Since RMWAddUnless does not care about any returned value, we don't need the final sub
 	@Override
 	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
@@ -600,9 +596,9 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	};
 	
 	// The implementation is arch_${atomic}_op_return(i, v) == 0;
-	// 		https://github.com/torvalds/linux/blob/master/scripts/atomic/fallbacks/sub_and_test
-	// 		https://github.com/torvalds/linux/blob/master/scripts/atomic/fallbacks/inc_and_test
-	// 		https://github.com/torvalds/linux/blob/master/scripts/atomic/fallbacks/dec_and_test
+	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
+	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
+	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
 	@Override
 	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
 		Register resultRegister = e.getResultRegister();
