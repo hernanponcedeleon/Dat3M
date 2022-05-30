@@ -22,6 +22,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
+import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
 
 import java.util.EnumSet;
 
@@ -112,7 +114,7 @@ public class ReachabilityResult {
     private void buildVerdict(Result result){
         StringBuilder sb = new StringBuilder();
         sb.append("Condition ").append(program.getAss().toStringWithType()).append("\n");
-        sb.append(result).append("\n");
+        sb.append(program.getFormat().equals(LITMUS) ? result == FAIL ? "Ok" : "No" : result).append("\n");
         verdict = sb.toString();
     }
 
