@@ -335,16 +335,13 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		IExpr address = e.getAddress();
 		ExprInterface value = e.getMemValue();
 		String mo = e.getMo();
-		int precision = resultRegister.getPrecision();
 
 		ExprInterface expected = e.getCmp();
-        Register regValue = e.getThread().newRegister(precision);
         Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expected));
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
+        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, expected), casEnd);
 
         // Power does not have mo tags, thus we use null
-        Load loadValue = newRMWLoadExclusive(regValue, address, null);
+        Load loadValue = newRMWLoadExclusive(resultRegister, address, null);
         Store storeValue = newRMWStoreExclusive(address, value, null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
@@ -358,7 +355,6 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 // Indentation shows the branching structure
                 optionalMemoryBarrierBefore,
                 loadValue,
-                casCmpResult,
                 branchOnCasCmpResult,
                     storeValue,
                     fakeCtrlDep,
@@ -396,8 +392,12 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         );
 	}
 	
-	// Following
-	// 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/atomic.h	
+	// For the following three events (i.e. RMWOpReturn, RMWOp, RMWFetchOp), the only difference here
+	// 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/atomic.h
+	// is the use of #asm_op "%I2" and #asm_op "%I3". This seems to be related to using
+	// immediate assembly operations, but I could not find any difference between I2 and I3, thus
+	// all three methods have the same implementation.
+	
 	@Override
 	public List<Event> visitRMWOp(RMWOp e) {
 		Register resultRegister = e.getResultRegister();
