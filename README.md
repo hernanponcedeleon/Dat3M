@@ -28,7 +28,7 @@ docker build . -t dartagnan
 
 2. Run the container:
 ```
-docker run -w /home/Dat3M -v /sys/fs/cgroup:/sys/fs/cgroup:rw -it dartagnan /bin/bash
+docker run -w /home/Dat3M -it dartagnan /bin/bash
 ```
 
 **From Sources**
@@ -85,19 +85,11 @@ For programs written in `.c` and `.bpl`, value `<arch>` specifies the programmin
 Program written in `.litmus` format do not require such option. The target architecture is supposed to match (this is responsibility of the user) the intended weak memory model specified by the CAT file. 
 
 Further options can be specified using `--<option>=<value>`. Common options include:
-- `unroll`: unrolling bound for the BMC (default is 1).
+- `bound`: unrolling bound for the BMC (default is 1).
 - `solver`: specifies which SMT solver to use as a backend. Since we use [JavaSMT](https://github.com/sosy-lab/java-smt), several SMT solvers are supported depending on the OS and the used SMT logic (default is Z3).
 - `method`: specifies which solving method to use. Option `caat` (the default one) uses a customized solver for memory consistency. Options `incremental` and `assume` solve a monolithic formula using incremental/assume-based SMT solving. 
 
-Dartagnan supports input non-determinism and assertions using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) commands `__VERIFIER_nondet_X` and `__VERIFIER_assert`.
-
-**SV-COMP Experiments**
-
-The docker container includes the [benchexec](https://github.com/sosy-lab/benchexec) framework to run all [SV-COMP](https://sv-comp.sosy-lab.org/) experiments, just run (this can take a couple of hs)
-```
-benchexec dartagnan.xml --no-container
-```
-The `dartagnan.xml` file instructs benchexec to use 4 CPUs, so either be sure your docker configuration has access to 4 CPUs or change the entry `cpuCores="4"` to match you CPUs limit.
+Dartagnan supports input non-determinism using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) command `__VERIFIER_nondet_X`.
 
 Authors and Contact
 ======
