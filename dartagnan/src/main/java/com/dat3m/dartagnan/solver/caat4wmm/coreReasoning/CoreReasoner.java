@@ -64,7 +64,7 @@ public class CoreReasoner {
                     // Statically absent edges
                 } else {
                     if (rel.getName().equals(RF) || rel.getName().equals(CO)
-                            || rel.isCut()) {
+                            || executionGraph.getCutRelations().contains(rel)) {
                         coreReason.add(new RelLiteral(rel.getName(), tuple, lit.isNegative()));
                     } else if (rel.getName().equals(LOC)) {
                         coreReason.add(new AddressLiteral(tuple, lit.isNegative()));
@@ -93,11 +93,11 @@ public class CoreReasoner {
         // Their execution variable can only be removed if it is contained in some
         // RelLiteral but not if it gets cf-implied!
         reason.removeIf( lit -> {
-            if (!(lit instanceof ExecLiteral)) {
+            if (!(lit instanceof ExecLiteral) || lit.isNegative()) {
                 return false;
             }
             Event ev = ((ExecLiteral) lit).getData();
-            return reason.stream().filter(e -> e instanceof RelLiteral)
+            return reason.stream().filter(e -> e instanceof RelLiteral && e.isPositive())
                     .map(RelLiteral.class::cast)
                     .anyMatch(e -> exec.isImplied(e.getData().getFirst(), ev)
                             || exec.isImplied(e.getData().getSecond(), ev));

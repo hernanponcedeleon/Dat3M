@@ -66,6 +66,7 @@ public class ExecutionGraph {
     private final BiMap<Relation, RelationGraph> relationGraphMap;
     private final BiMap<FilterAbstract, SetPredicate> filterSetMap;
     private final BiMap<Axiom, Constraint> constraintMap;
+    private final Set<Relation> cutRelations;
 
     private CAATModel caatModel;
     private EventDomain domain;
@@ -74,11 +75,12 @@ public class ExecutionGraph {
 
     // ============= Construction & Init ===============
 
-    public ExecutionGraph(VerificationTask verificationTask, boolean createOnlyAxiomRelevantGraphs) {
+    public ExecutionGraph(VerificationTask verificationTask, Set<Relation> cutRelations, boolean createOnlyAxiomRelevantGraphs) {
         this.verificationTask = verificationTask;
         relationGraphMap = HashBiMap.create();
         filterSetMap = HashBiMap.create();
         constraintMap = HashBiMap.create();
+        this.cutRelations = cutRelations;
         constructMappings(createOnlyAxiomRelevantGraphs);
     }
 
@@ -131,6 +133,7 @@ public class ExecutionGraph {
         return Maps.unmodifiableBiMap(constraintMap);
     }
 
+    public Set<Relation> getCutRelations() { return cutRelations; }
 
     public RelationGraph getRelationGraph(Relation rel) {
         return relationGraphMap.get(rel);
@@ -215,7 +218,7 @@ public class ExecutionGraph {
                 default:
                     throw new UnsupportedOperationException(rel.getName() + " is marked as special relation but has associated graph.");
             }
-        } else if (rel.isCut()) {
+        } else if (cutRelations.contains(rel)) {
             graph = new DynamicDefaultWMMGraph(rel);
         } else if (relClass == RelRf.class) {
             graph = new ReadFromGraph();
