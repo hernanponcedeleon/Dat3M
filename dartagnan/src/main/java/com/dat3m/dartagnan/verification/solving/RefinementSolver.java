@@ -232,10 +232,15 @@ public class RefinementSolver {
         RelationRepository repo = baselineWmm.getRelationRepository();
         Set<Relation> cutRelations = new HashSet<>();
         for (Relation rel : targetWmm.getRelationRepository().getRelations()) {
-            if (rel instanceof RelMinus && rel.getSecond().getDependencies().size() != 0) {
-                logger.info("Found difference {}. Cutting rhs relation {}", rel, rel.getSecond());
-                cutRelations.add(rel.getSecond());
-                baselineWmm.addAxiom(new ForceEncodeAxiom(getCopyOfRelation(rel.getSecond(), repo)));
+            if (rel instanceof RelMinus) {
+                Relation sec = rel.getSecond();
+                if (sec.getDependencies().size() != 0 || sec instanceof RelSetIdentity || sec instanceof RelCartesian) {
+                    // NOTE: The check for RelSetIdentity/RelCartesian is needed because they appear non-derived
+                    // in our Wmm but for CAAT they are derived from unary predicates!
+                    logger.info("Found difference {}. Cutting rhs relation {}", rel, sec);
+                    cutRelations.add(sec);
+                    baselineWmm.addAxiom(new ForceEncodeAxiom(getCopyOfRelation(sec, repo)));
+                }
             }
         }
         return cutRelations;
