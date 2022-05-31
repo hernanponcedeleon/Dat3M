@@ -20,12 +20,12 @@ public class LKMM2PPCTest extends AbstractCompilationTest {
     }
 
 	@Override
-	protected Provider<Arch> getTarget1Provider() {
+	protected Provider<Arch> getSourceProvider() {
 		return () -> Arch.LKMM;
 	}
 
 	@Override
-	protected Provider<Arch> getTarget2Provider() {
+	protected Provider<Arch> getTargetProvider() {
 		return () -> Arch.POWER;
 	}
 }

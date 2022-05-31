@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterUnion;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
@@ -19,11 +18,9 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
@@ -40,7 +37,6 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
-import static com.google.common.io.Files.getNameWithoutExtension;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractCompilationTest {
@@ -71,8 +67,8 @@ public abstract class AbstractCompilationTest {
 
     // =================== Modifiable behavior ====================
 
-    protected abstract Provider<Arch> getTarget1Provider();
-    protected abstract Provider<Arch> getTarget2Provider();
+    protected abstract Provider<Arch> getSourceProvider();
+    protected abstract Provider<Arch> getTargetProvider();
 
     protected Provider<Integer> getTimeoutProvider() {
         return Provider.fromSupplier(() -> 0);
@@ -82,27 +78,22 @@ public abstract class AbstractCompilationTest {
 
     // ============================================================
 
-
-    @ClassRule
-    public static CSVLogger.Initialization csvInit = CSVLogger.Initialization.create();
-
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
-    protected final Provider<Arch> target1Provider = getTarget1Provider();
-    protected final Provider<Arch> target2Provider = getTarget2Provider();
+    protected final Provider<Arch> sourceProvider = getSourceProvider();
+    protected final Provider<Arch> targetProvider = getTargetProvider();
     protected final Provider<String> filePathProvider = () -> path;
-    protected final Provider<String> nameProvider = Provider.fromSupplier(() -> getNameWithoutExtension(Path.of(path).getFileName().toString()));
     protected final Provider<Integer> timeoutProvider = getTimeoutProvider();
     protected final Provider<Program> program1Provider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Program> program2Provider = Providers.createProgramFromPath(filePathProvider);
-    protected final Provider<Wmm> wmm1Provider = Providers.createWmmFromArch(getTarget1Provider());
-    protected final Provider<Wmm> wmm2Provider = Providers.createWmmFromArch(getTarget2Provider());
+    protected final Provider<Wmm> wmm1Provider = Providers.createWmmFromArch(getSourceProvider());
+    protected final Provider<Wmm> wmm2Provider = Providers.createWmmFromArch(getTargetProvider());
     protected final Provider<EnumSet<Property>> propertyProvider = Provider.fromSupplier(() -> EnumSet.of(Property.getDefault()));
     protected final Provider<VerificationTask> task1Provider = Provider.fromSupplier(() ->
         VerificationTask.builder()
         .withConfig(Configuration.builder()
             .setOption(INITIALIZE_REGISTERS,String.valueOf(DO_INITIALIZE_REGISTERS))
             .build())
-        .withTarget(target1Provider.get())
+        .withTarget(sourceProvider.get())
         .withSolverTimeout(timeoutProvider.get())
         .build(program1Provider.get(), wmm1Provider.get(), propertyProvider.get()));
     protected final Provider<VerificationTask> task2Provider = Provider.fromSupplier(() ->
@@ -110,7 +101,7 @@ public abstract class AbstractCompilationTest {
     	.withConfig(Configuration.builder()
     		.setOption(INITIALIZE_REGISTERS,String.valueOf(DO_INITIALIZE_REGISTERS))
     		.build())
-    	.withTarget(target2Provider.get())
+    	.withTarget(targetProvider.get())
     	.withSolverTimeout(timeoutProvider.get())
     	.build(program2Provider.get(), wmm2Provider.get(), propertyProvider.get()));
     protected final Provider<SolverContext> context1Provider = Providers.createSolverContextFromManager(shutdownManagerProvider);
@@ -118,14 +109,12 @@ public abstract class AbstractCompilationTest {
     protected final Provider<ProverEnvironment> prover1Provider = Providers.createProverWithFixedOptions(context1Provider, ProverOptions.GENERATE_MODELS);
     protected final Provider<ProverEnvironment> prover2Provider = Providers.createProverWithFixedOptions(context2Provider, ProverOptions.GENERATE_MODELS);
     
-    private final Timeout timeout = Timeout.millis(getTimeout());
     private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
             .around(shutdownOnError)
             .around(filePathProvider)
-            .around(nameProvider)
             .around(timeoutProvider)
             .around(program1Provider)
             .around(program2Provider)
@@ -134,7 +123,6 @@ public abstract class AbstractCompilationTest {
             .around(propertyProvider)
             .around(task1Provider)
             .around(task2Provider)
-            .around(timeout)
             // Context/Prover need to be created inside test-thread spawned by <timeout>
             .around(context1Provider)
             .around(context2Provider)
@@ -143,23 +131,17 @@ public abstract class AbstractCompilationTest {
 
     @Test
     public void testRefinement() throws Exception {
-    	// The following have features (locks and RCU) that PPC does not support
+    	// The following have features (locks and RCU) that hardware models do not support
     	FilterAbstract rcu = FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_LOCK), 
     			FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_UNLOCK), FilterBasic.get(Tag.Linux.RCU_SYNC)));
     	FilterAbstract lock = FilterUnion.get(FilterBasic.get(Tag.Linux.LOCK_READ), 
     			FilterUnion.get(FilterBasic.get(Tag.Linux.LOCK_WRITE), FilterBasic.get(Tag.Linux.UNLOCK)));
-    	if(!task1Provider.get().getProgram().getCache().getEvents(FilterUnion.get(rcu, lock)).isEmpty()) {
-    		return;
-    	}
-    	Result res1 = RefinementSolver.run(context1Provider.get(), prover1Provider.get(),
-                RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task1Provider.get()));
-    	Result res2 = RefinementSolver.run(context2Provider.get(), prover2Provider.get(),
-                RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task2Provider.get()));
-    	if(res1.equals(Result.PASS)) {
-    		if(!res2.equals(Result.PASS)) {
-        		System.out.println(path);
+    	if(task1Provider.get().getProgram().getCache().getEvents(FilterUnion.get(rcu, lock)).isEmpty()) {
+        	if(RefinementSolver.run(context1Provider.get(), prover1Provider.get(),
+                    RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task1Provider.get())).equals(Result.PASS)) {
+        		assertEquals(Result.PASS, RefinementSolver.run(context2Provider.get(), prover2Provider.get(),
+                        RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task2Provider.get())));
         	}
-    		assertEquals(Result.PASS, res2);
     	}
     }
 }

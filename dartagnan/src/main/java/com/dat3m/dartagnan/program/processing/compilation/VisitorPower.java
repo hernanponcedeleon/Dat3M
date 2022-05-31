@@ -392,12 +392,6 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         );
 	}
 	
-	// For the following three events (i.e. RMWOpReturn, RMWOp, RMWFetchOp), the only difference here
-	// 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/atomic.h
-	// is the use of #asm_op "%I2" and #asm_op "%I3". This seems to be related to using
-	// immediate assembly operations, but I could not find any difference between I2 and I3, thus
-	// all three methods have the same implementation.
-	
 	@Override
 	public List<Event> visitRMWOp(RMWOp e) {
 		Register resultRegister = e.getResultRegister();
