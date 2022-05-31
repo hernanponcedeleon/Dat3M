@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.encoding.PropertyEncoder;
 import com.dat3m.dartagnan.encoding.SymmetryEncoder;
@@ -27,6 +28,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.function.BiPredicate;
 
@@ -56,7 +58,7 @@ public class RefinementSolver {
             throws InterruptedException, SolverException, InvalidConfigurationException {
 
 		task.preprocessProgram();
-		if(task.getProgram().getAss() instanceof AssertTrue) {
+       	if(task.getProperty().equals(EnumSet.of(Property.REACHABILITY)) && task.getProgram().getAss() instanceof AssertTrue) {
             logger.info("Verification finished: assertion trivially holds");
             return PASS;
         }
