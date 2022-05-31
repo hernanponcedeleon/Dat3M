@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.verification.solving;
 
-import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.encoding.PropertyEncoder;
 import com.dat3m.dartagnan.encoding.SymmetryEncoder;
@@ -29,6 +28,7 @@ import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -66,14 +66,8 @@ public class RefinementSolver {
             throws InterruptedException, SolverException, InvalidConfigurationException {
 
 		task.preprocessProgram();
-		if(task.getProgram().getAss() instanceof AssertTrue) {
-            logger.info("Verification finished: assertion trivially holds");
-            return PASS;
-        }
-
         // We cut the rhs of differences to get a semi-positive model, if possible.
         Set<Relation> cutRelations = cutRelationDifferences(task.getMemoryModel(), task.getBaselineModel());
-
         task.performStaticProgramAnalyses();
         task.performStaticWmmAnalyses();
 		task.initializeEncoders(ctx);
@@ -88,13 +82,19 @@ public class RefinementSolver {
         Refiner refiner = new Refiner(task);
         CAATSolver.Status status = INCONSISTENT;
 
+        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
+        if(ctx.getFormulaManager().getBooleanFormulaManager().isFalse(propertyEncoding)) {
+            logger.info("Verification finished: property trivially holds");
+       		return PASS;        	
+        }
+
         logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(programEncoder.encodeFullProgram(ctx));
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel(ctx));
         prover.addConstraint(symmEncoder.encodeFullSymmetry(ctx));
 
         prover.push();
-        prover.addConstraint(propertyEncoder.encodeSpecification(task.getProperty(), ctx));
+        prover.addConstraint(propertyEncoding);
 
         //  ------ Just for statistics ------
         List<DNF<CoreLiteral>> foundCoreReasons = new ArrayList<>();
