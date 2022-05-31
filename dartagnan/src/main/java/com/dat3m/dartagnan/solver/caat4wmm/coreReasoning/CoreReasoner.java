@@ -78,6 +78,10 @@ public class CoreReasoner {
                     } else {
                         //TODO: Right now, we assume many relations like Data, Ctrl and Addr to be
                         // static.
+                        if (lit.isNegative()) {
+                            // TODO: Support negated literals
+                            throw new UnsupportedOperationException(String.format("Negated literals of type %s are not supported.", rel));
+                        }
                         addExecReason(tuple, coreReason);
                     }
                 }
