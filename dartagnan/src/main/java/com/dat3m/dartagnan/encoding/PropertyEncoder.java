@@ -103,7 +103,8 @@ public class PropertyEncoder implements Encoder {
         }
         // We use the SMT variable to extract from the model if the property was violated
 		BooleanFormula enc = bmgr.equivalence(REACHABILITY.getSMTVariable(ctx), assertionEncoding);
-        return bmgr.and(REACHABILITY.getSMTVariable(ctx), enc);
+		// No need to use the SMT variable if the formula is trivially false 
+        return bmgr.isFalse(assertionEncoding) ? assertionEncoding : bmgr.and(REACHABILITY.getSMTVariable(ctx), enc);
     }
 
     public BooleanFormula encodeLiveness(SolverContext ctx) {
@@ -179,7 +180,8 @@ public class PropertyEncoder implements Encoder {
         // We use the SMT variable to extract from the model if the property was violated
 		BooleanFormula enc = bmgr.equivalence(LIVENESS.getSMTVariable(ctx), 
 											  bmgr.and(allStuckOrDone, atLeastOneStuck));
-        return bmgr.and(LIVENESS.getSMTVariable(ctx), enc);
+		// No need to use the SMT variable if the formula is trivially false 
+        return bmgr.isFalse(enc) ? enc : bmgr.and(LIVENESS.getSMTVariable(ctx), enc);
     }
 
     public BooleanFormula encodeDataRaces(SolverContext ctx) {
@@ -218,6 +220,7 @@ public class PropertyEncoder implements Encoder {
         }
         // We use the SMT variable to extract from the model if the property was violated
 		enc = bmgr.equivalence(RACES.getSMTVariable(ctx), enc);
-        return bmgr.and(RACES.getSMTVariable(ctx), enc);
+		// No need to use the SMT variable if the formula is trivially false 
+        return bmgr.isFalse(enc) ? enc : bmgr.and(RACES.getSMTVariable(ctx), enc);
     }
 }
