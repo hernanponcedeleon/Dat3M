@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.verification.solving;
 
-import com.dat3m.dartagnan.asserts.AssertTrue;
-import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.encoding.PropertyEncoder;
 import com.dat3m.dartagnan.encoding.SymmetryEncoder;
@@ -17,8 +15,6 @@ import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static java.util.Collections.singletonList;
 
-import java.util.EnumSet;
-
 public class AssumeSolver {
 
     private static final Logger logger = LogManager.getLogger(AssumeSolver.class);
@@ -28,10 +24,6 @@ public class AssumeSolver {
         Result res = Result.UNKNOWN;
         
         task.preprocessProgram();
-       	if(task.getProperty().equals(EnumSet.of(Property.REACHABILITY)) && task.getProgram().getAss() instanceof AssertTrue) {
-            logger.info("Verification finished: assertion trivially holds");
-       		return PASS;
-       	}
        	task.performStaticProgramAnalyses();
        	task.performStaticWmmAnalyses();
 
@@ -40,6 +32,12 @@ public class AssumeSolver {
         PropertyEncoder propertyEncoder = task.getPropertyEncoder();
         WmmEncoder wmmEncoder = task.getWmmEncoder();
         SymmetryEncoder symmEncoder = task.getSymmetryEncoder();
+
+        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
+        if(ctx.getFormulaManager().getBooleanFormulaManager().isFalse(propertyEncoding)) {
+            logger.info("Verification finished: property trivially holds");
+       		return PASS;        	
+        }
 
         logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(programEncoder.encodeFullProgram(ctx));
@@ -51,8 +49,7 @@ public class AssumeSolver {
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
-        BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, 
-        								propertyEncoder.encodeSpecification(task.getProperty(), ctx));
+        BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
         prover.addConstraint(assumedSpec);
         
         logger.info("Starting first solver.check()");

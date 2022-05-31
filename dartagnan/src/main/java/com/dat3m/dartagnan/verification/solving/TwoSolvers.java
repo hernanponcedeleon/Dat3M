@@ -44,6 +44,12 @@ public class TwoSolvers {
         WmmEncoder wmmEncoder = task.getWmmEncoder();
         SymmetryEncoder symmEncoder = task.getSymmetryEncoder();
 
+        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
+        if(ctx.getFormulaManager().getBooleanFormulaManager().isFalse(propertyEncoding)) {
+            logger.info("Verification finished: property trivially holds");
+       		return PASS;        	
+        }
+
         logger.info("Starting encoding using " + ctx.getVersion());
         BooleanFormula encodeProg = programEncoder.encodeFullProgram(ctx);
         prover1.addConstraint(encodeProg);
@@ -63,7 +69,7 @@ public class TwoSolvers {
         prover1.addConstraint(encodeSymm);
         prover2.addConstraint(encodeSymm);
 
-        prover1.addConstraint(propertyEncoder.encodeSpecification(task.getProperty(), ctx));
+        prover1.addConstraint(propertyEncoding);
 
         logger.info("Starting first solver.check()");
         if(prover1.isUnsat()) {
