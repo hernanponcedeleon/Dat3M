@@ -21,6 +21,7 @@ import com.dat3m.dartagnan.configuration.Property;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -86,6 +87,7 @@ public abstract class AbstractCompilationTest {
     protected final Provider<ProverEnvironment> prover1Provider = Providers.createProverWithFixedOptions(context1Provider, ProverOptions.GENERATE_MODELS);
     protected final Provider<ProverEnvironment> prover2Provider = Providers.createProverWithFixedOptions(context2Provider, ProverOptions.GENERATE_MODELS);
     
+    private final Timeout timeout = Timeout.millis(getTimeout());
     private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
 
     @Rule
@@ -99,6 +101,7 @@ public abstract class AbstractCompilationTest {
             .around(propertyProvider)
             .around(task1Provider)
             .around(task2Provider)
+            .around(timeout)
             // Context/Prover need to be created inside test-thread spawned by <timeout>
             .around(context1Provider)
             .around(context2Provider)
