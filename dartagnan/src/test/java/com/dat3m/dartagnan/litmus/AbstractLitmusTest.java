@@ -86,10 +86,6 @@ public abstract class AbstractLitmusTest {
         return Provider.fromSupplier(() -> 1);
     }
 
-    protected Provider<Integer> getTimeoutProvider() {
-        return Provider.fromSupplier(() -> 0);
-    }
-
     protected long getTimeout() { return 10000; }
 
     // ============================================================
@@ -103,7 +99,6 @@ public abstract class AbstractLitmusTest {
     protected final Provider<String> filePathProvider = () -> path;
     protected final Provider<String> nameProvider = Provider.fromSupplier(() -> getNameWithoutExtension(Path.of(path).getFileName().toString()));
     protected final Provider<Integer> boundProvider = getBoundProvider();
-    protected final Provider<Integer> timeoutProvider = getTimeoutProvider();
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
@@ -116,7 +111,6 @@ public abstract class AbstractLitmusTest {
             .build())
         .withTarget(targetProvider.get())
         .withBound(boundProvider.get())
-        .withSolverTimeout(timeoutProvider.get())
         .build(programProvider.get(), wmmProvider.get(), propertyProvider.get()));
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
@@ -132,7 +126,6 @@ public abstract class AbstractLitmusTest {
             .around(filePathProvider)
             .around(nameProvider)
             .around(boundProvider)
-            .around(timeoutProvider)
             .around(programProvider)
             .around(wmmProvider)
             .around(propertyProvider)

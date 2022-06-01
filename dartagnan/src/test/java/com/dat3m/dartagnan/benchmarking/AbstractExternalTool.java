@@ -37,10 +37,6 @@ public abstract class AbstractExternalTool {
     protected abstract long getTimeout();
     protected abstract Result getResult(String output);
 
-    protected Provider<Integer> getTimeoutProvider() {
-        return Provider.fromSupplier(() -> 0);
-    }
-
     protected void preExecutionCmds() throws Exception { }
     
     // =============================================================
@@ -52,7 +48,6 @@ public abstract class AbstractExternalTool {
     // Provider rules
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
     protected final Provider<String> filePathProvider = getProgramPathProvider();
-    protected final Provider<Integer> timeoutProvider = getTimeoutProvider();
     protected final Provider<String> toolCmdProvider = getToolCmdProvider();
     protected final Provider<List<String>> toolOptionsProvider = getToolOptionsProvider();
 
@@ -65,7 +60,6 @@ public abstract class AbstractExternalTool {
     public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
             .around(shutdownOnError)
             .around(filePathProvider)
-            .around(timeoutProvider)
             .around(toolCmdProvider)
             .around(toolOptionsProvider)
             .around(csvLogger)

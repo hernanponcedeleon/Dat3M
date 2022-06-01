@@ -51,10 +51,6 @@ public abstract class AbstractSvCompTest {
         return Provider.fromSupplier(() -> bound);
     }
 
-    protected Provider<Integer> getTimeoutProvider() {
-        return Provider.fromSupplier(() -> 0);
-    }
-
     protected Provider<Wmm> getWmmProvider() {
         return GlobalSettings.ATOMIC_AS_LOCK ?
                 Providers.createWmmFromName(() -> "svcomp-locks") :
@@ -73,13 +69,12 @@ public abstract class AbstractSvCompTest {
     protected final Provider<Arch> targetProvider = () -> Arch.C11;
     protected final Provider<String> filePathProvider = getProgramPathProvider();
     protected final Provider<Integer> boundProvider = getBoundProvider();
-    protected final Provider<Integer> timeoutProvider = getTimeoutProvider();
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
     	readExpected(filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf("-")) + ".yml", "unreach-call.prp"));
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, timeoutProvider);
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
     protected final Provider<ProverEnvironment> prover2Provider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
@@ -94,7 +89,6 @@ public abstract class AbstractSvCompTest {
             .around(shutdownOnError)
             .around(filePathProvider)
             .around(boundProvider)
-            .around(timeoutProvider)
             .around(programProvider)
             .around(wmmProvider)
             .around(propertyProvider)

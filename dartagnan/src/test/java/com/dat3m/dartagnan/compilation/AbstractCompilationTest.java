@@ -22,7 +22,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.sosy_lab.common.ShutdownManager;
-import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -36,12 +35,10 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
+import static com.dat3m.dartagnan.utils.rules.Providers.createTask;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractCompilationTest {
-
-    private static final boolean DO_INITIALIZE_REGISTERS = true;
 
     private String path;
 
@@ -69,11 +66,6 @@ public abstract class AbstractCompilationTest {
 
     protected abstract Provider<Arch> getSourceProvider();
     protected abstract Provider<Arch> getTargetProvider();
-
-    protected Provider<Integer> getTimeoutProvider() {
-        return Provider.fromSupplier(() -> 0);
-    }
-
     protected long getTimeout() { return 10000; }
 
     // ============================================================
@@ -82,14 +74,13 @@ public abstract class AbstractCompilationTest {
     protected final Provider<Arch> sourceProvider = getSourceProvider();
     protected final Provider<Arch> targetProvider = getTargetProvider();
     protected final Provider<String> filePathProvider = () -> path;
-    protected final Provider<Integer> timeoutProvider = getTimeoutProvider();
     protected final Provider<Program> program1Provider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Program> program2Provider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmm1Provider = Providers.createWmmFromArch(getSourceProvider());
     protected final Provider<Wmm> wmm2Provider = Providers.createWmmFromArch(getTargetProvider());
     protected final Provider<EnumSet<Property>> propertyProvider = Provider.fromSupplier(() -> EnumSet.of(Property.getDefault()));
-    protected final Provider<VerificationTask> task1Provider = createTaskProvider(program1Provider, wmm1Provider, sourceProvider);    
-    protected final Provider<VerificationTask> task2Provider = createTaskProvider(program2Provider, wmm2Provider, targetProvider); 
+    protected final Provider<VerificationTask> task1Provider = createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, Provider.fromSupplier(() -> 1));    
+    protected final Provider<VerificationTask> task2Provider = createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider, Provider.fromSupplier(() -> 1)); 
     protected final Provider<SolverContext> context1Provider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<SolverContext> context2Provider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> prover1Provider = Providers.createProverWithFixedOptions(context1Provider, ProverOptions.GENERATE_MODELS);
@@ -97,22 +88,10 @@ public abstract class AbstractCompilationTest {
     
     private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
 
-    private Provider<VerificationTask> createTaskProvider(Provider<Program> progProvider, Provider<Wmm> wmmProvider, Provider<Arch> targetProvider) {
-    	return Provider.fromSupplier(() ->
-    		VerificationTask.builder()
-    		.withConfig(Configuration.builder()
-    			.setOption(INITIALIZE_REGISTERS,String.valueOf(DO_INITIALIZE_REGISTERS))
-    			.build())
-    		.withTarget(targetProvider.get())
-    		.withSolverTimeout(timeoutProvider.get())
-    		.build(progProvider.get(), wmmProvider.get(), propertyProvider.get()));
-    }
-    
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
             .around(shutdownOnError)
             .around(filePathProvider)
-            .around(timeoutProvider)
             .around(program1Provider)
             .around(program2Provider)
             .around(wmm1Provider)
