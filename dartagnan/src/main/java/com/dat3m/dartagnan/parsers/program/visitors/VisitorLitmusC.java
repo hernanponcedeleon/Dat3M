@@ -432,7 +432,7 @@ public class VisitorLitmusC
 
     @Override
     public Object visitNreFence(LitmusCParser.NreFenceContext ctx){
-        return programBuilder.addChild(currentThread, EventFactory.newFence(ctx.name));
+        return programBuilder.addChild(currentThread, EventFactory.Linux.newLKMMFence(ctx.name));
     }
 
     @Override

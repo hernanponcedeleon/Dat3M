@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
+import com.dat3m.dartagnan.program.event.lang.linux.LKMMFence;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWAddUnless;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
@@ -533,7 +534,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	// Following
 	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
 	@Override
-	public List<Event> visitFence(Fence e) {
+	public List<Event> visitLKMMFence(LKMMFence e) {
 		String mo = e.getName();
         Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_MB) 
         		|| mo.equals(Tag.Linux.MO_WMB) || mo.equals(Tag.Linux.MO_RMB)

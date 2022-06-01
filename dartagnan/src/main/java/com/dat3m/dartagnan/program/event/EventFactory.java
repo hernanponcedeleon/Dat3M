@@ -368,7 +368,11 @@ public class EventFactory {
         }
 
         public static Fence newMemoryBarrier() {
-            return newFence("Mb");
+            return new LKMMFence(Tag.Linux.MO_MB);
+        }
+
+        public static Fence newLKMMFence(String name) {
+            return new LKMMFence(name);
         }
 
         public static Fence newConditionalMemoryBarrier(RMWReadCond loadEvent) {
