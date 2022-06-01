@@ -444,7 +444,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Load load = newRMWLoadExclusive(dummyReg, address, null);
         Store store = newRMWStoreExclusive(address, resultRegister, null, true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        Event fakeCtrlDep = newFakeCtrlDep(dummyReg, label);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
@@ -479,7 +479,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
         Store store = newRMWStoreExclusive(address, new IExprBin(dummy, e.getOp(), value), null, true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
@@ -571,7 +571,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Load loadValue = newRMWLoadExclusive(regValue, address, null);
         Store storeValue = newRMWStoreExclusive(address, new IExprBin(regValue, IOpBin.PLUS, (IExpr) value), null, true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
@@ -613,7 +613,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Load load = newRMWLoadExclusive(dummyReg, address, null);
         Store store = newRMWStoreExclusive(address, retReg, null, true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        Event fakeCtrlDep = newFakeCtrlDep(dummyReg, label);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
