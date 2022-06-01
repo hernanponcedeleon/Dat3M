@@ -149,7 +149,6 @@ public class RefinementTask extends VerificationTask {
             repo.addRelation(rmwANDfrecoe);
             baseline.addAxiom(new Empty(rmwANDfrecoe));
         }
-        
         return baseline;
     }
 

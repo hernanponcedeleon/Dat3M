@@ -10,11 +10,13 @@ import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.relation.Relation;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /*
     This is our domain-specific bridging component that specializes the CAATSolver to the WMM setting.
@@ -26,9 +28,9 @@ public class WMMSolver {
     private final CAATSolver solver;
     private final CoreReasoner reasoner;
 
-    public WMMSolver(VerificationTask task) {
+    public WMMSolver(VerificationTask task, Set<Relation> cutRelations) {
         task.getAnalysisContext().requires(RelationAnalysis.class);
-        this.executionGraph = new ExecutionGraph(task, true);
+        this.executionGraph = new ExecutionGraph(task, cutRelations, true);
         this.executionModel = new ExecutionModel(task);
         this.reasoner = new CoreReasoner(task, executionGraph);
         this.solver = CAATSolver.create();
