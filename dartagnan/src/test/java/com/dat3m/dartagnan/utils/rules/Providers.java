@@ -16,8 +16,6 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
-
 import java.io.File;
 import java.util.EnumSet;
 import java.util.function.Supplier;
@@ -63,11 +61,9 @@ public class Providers {
     // =========================== Task related providers ==============================
 
     public static Provider<VerificationTask> createTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier, Supplier<EnumSet<Property>> propertySupplier,
-                                                        Supplier<Arch> targetSupplier, Supplier<Integer> boundSupplier, boolean initiRegs) {
+                                                        Supplier<Arch> targetSupplier, Supplier<Integer> boundSupplier, Supplier<Configuration> config) {
     	return Provider.fromSupplier(() -> VerificationTask.builder().
-    	        withConfig(Configuration.builder()
-    	                .setOption(INITIALIZE_REGISTERS, String.valueOf(initiRegs))
-    	                .build()).
+    	        withConfig(config.get()).
     			withTarget(targetSupplier.get()).
     			withBound(boundSupplier.get()).
     			build(programSupplier.get(), wmmSupplier.get(), propertySupplier.get()));

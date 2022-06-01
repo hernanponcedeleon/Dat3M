@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -37,6 +38,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
+import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 
 public abstract class AbstractCompilationTest {
 
@@ -81,8 +83,9 @@ public abstract class AbstractCompilationTest {
     protected final Provider<Wmm> wmm1Provider = Providers.createWmmFromArch(getSourceProvider());
     protected final Provider<Wmm> wmm2Provider = Providers.createWmmFromArch(getTargetProvider());
     protected final Provider<EnumSet<Property>> propertyProvider = Provider.fromSupplier(() -> EnumSet.of(Property.getDefault()));
-    protected final Provider<VerificationTask> task1Provider = Providers.createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, () -> 1, DO_INITIALIZE_REGISTERS);    
-    protected final Provider<VerificationTask> task2Provider = Providers.createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider, () -> 1, DO_INITIALIZE_REGISTERS); 
+    protected final Provider<Configuration> configProvider = Provider.fromSupplier(() -> Configuration.builder().setOption(INITIALIZE_REGISTERS, String.valueOf(DO_INITIALIZE_REGISTERS)).build());
+    protected final Provider<VerificationTask> task1Provider = Providers.createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, () -> 1, configProvider);
+    protected final Provider<VerificationTask> task2Provider = Providers.createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider,  () -> 1, configProvider);
     protected final Provider<SolverContext> context1Provider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<SolverContext> context2Provider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> prover1Provider = Providers.createProverWithFixedOptions(context1Provider, ProverOptions.GENERATE_MODELS);
@@ -100,6 +103,7 @@ public abstract class AbstractCompilationTest {
             .around(wmm1Provider)
             .around(wmm2Provider)
             .around(propertyProvider)
+            .around(configProvider)
             .around(task1Provider)
             .around(task2Provider)
             .around(timeout)
