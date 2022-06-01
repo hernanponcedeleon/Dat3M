@@ -142,6 +142,7 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
         IExpr address = e.getAddress();
         Register resultRegister = e.getResultRegister();
 		
+        // RMWOp does not return anything; resultRegister is just used as a dummy.
         Load load = newRMWLoad(resultRegister, address, Tag.Linux.MO_ONCE);
         load.addFilters(Tag.Linux.NORETURN);
         
