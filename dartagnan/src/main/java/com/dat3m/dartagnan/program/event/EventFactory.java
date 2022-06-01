@@ -323,6 +323,14 @@ public class EventFactory {
     public static class Linux {
         private Linux() {}
 
+        public static LKMMLoad newLKMMLoad(Register reg, IExpr address, String mo) {
+        	return new LKMMLoad(reg, address, mo);
+        }
+        
+        public static LKMMStore newLKMMStore(IExpr address, ExprInterface value, String mo) {
+        	return new LKMMStore(address, value, mo);
+        }
+        
         public static RMWReadCondCmp newRMWReadCondCmp(Register reg, ExprInterface cmp, IExpr address, String atomic) {
             return new RMWReadCondCmp(reg, cmp, address, atomic);
         }

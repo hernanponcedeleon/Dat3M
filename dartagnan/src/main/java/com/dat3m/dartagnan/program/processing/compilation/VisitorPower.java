@@ -9,6 +9,8 @@ import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.LKMMFence;
+import com.dat3m.dartagnan.program.event.lang.linux.LKMMLoad;
+import com.dat3m.dartagnan.program.event.lang.linux.LKMMStore;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWAddUnless;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
@@ -498,7 +500,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	// Following
 	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
 	@Override
-	public List<Event> visitLoad(Load e) {
+	public List<Event> visitLKMMLoad(LKMMLoad e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
@@ -516,7 +518,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	// Following
 	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
 	@Override
-	public List<Event> visitStore(Store e) {
+	public List<Event> visitLKMMStore(LKMMStore e) {
 		ExprInterface value = e.getMemValue();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();

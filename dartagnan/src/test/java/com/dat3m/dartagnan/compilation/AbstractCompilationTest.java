@@ -80,8 +80,8 @@ public abstract class AbstractCompilationTest {
     protected final Provider<Wmm> wmm1Provider = Providers.createWmmFromArch(getSourceProvider());
     protected final Provider<Wmm> wmm2Provider = Providers.createWmmFromArch(getTargetProvider());
     protected final Provider<EnumSet<Property>> propertyProvider = Provider.fromSupplier(() -> EnumSet.of(Property.getDefault()));
-    protected final Provider<VerificationTask> task1Provider = createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, Provider.fromSupplier(() -> 1));    
-    protected final Provider<VerificationTask> task2Provider = createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider, Provider.fromSupplier(() -> 1)); 
+    protected final Provider<VerificationTask> task1Provider = createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, () -> 1);    
+    protected final Provider<VerificationTask> task2Provider = createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider, () -> 1); 
     protected final Provider<SolverContext> context1Provider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<SolverContext> context2Provider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> prover1Provider = Providers.createProverWithFixedOptions(context1Provider, ProverOptions.GENERATE_MODELS);
