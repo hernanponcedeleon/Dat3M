@@ -88,22 +88,8 @@ public abstract class AbstractCompilationTest {
     protected final Provider<Wmm> wmm1Provider = Providers.createWmmFromArch(getSourceProvider());
     protected final Provider<Wmm> wmm2Provider = Providers.createWmmFromArch(getTargetProvider());
     protected final Provider<EnumSet<Property>> propertyProvider = Provider.fromSupplier(() -> EnumSet.of(Property.getDefault()));
-    protected final Provider<VerificationTask> task1Provider = Provider.fromSupplier(() ->
-        VerificationTask.builder()
-        .withConfig(Configuration.builder()
-            .setOption(INITIALIZE_REGISTERS,String.valueOf(DO_INITIALIZE_REGISTERS))
-            .build())
-        .withTarget(sourceProvider.get())
-        .withSolverTimeout(timeoutProvider.get())
-        .build(program1Provider.get(), wmm1Provider.get(), propertyProvider.get()));
-    protected final Provider<VerificationTask> task2Provider = Provider.fromSupplier(() ->
-    	VerificationTask.builder()
-    	.withConfig(Configuration.builder()
-    		.setOption(INITIALIZE_REGISTERS,String.valueOf(DO_INITIALIZE_REGISTERS))
-    		.build())
-    	.withTarget(targetProvider.get())
-    	.withSolverTimeout(timeoutProvider.get())
-    	.build(program2Provider.get(), wmm2Provider.get(), propertyProvider.get()));
+    protected final Provider<VerificationTask> task1Provider = createTaskProvider(program1Provider, wmm1Provider, sourceProvider);    
+    protected final Provider<VerificationTask> task2Provider = createTaskProvider(program2Provider, wmm2Provider, targetProvider); 
     protected final Provider<SolverContext> context1Provider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<SolverContext> context2Provider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> prover1Provider = Providers.createProverWithFixedOptions(context1Provider, ProverOptions.GENERATE_MODELS);
@@ -111,6 +97,17 @@ public abstract class AbstractCompilationTest {
     
     private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
 
+    private Provider<VerificationTask> createTaskProvider(Provider<Program> progProvider, Provider<Wmm> wmmProvider, Provider<Arch> targetProvider) {
+    	return Provider.fromSupplier(() ->
+    		VerificationTask.builder()
+    		.withConfig(Configuration.builder()
+    			.setOption(INITIALIZE_REGISTERS,String.valueOf(DO_INITIALIZE_REGISTERS))
+    			.build())
+    		.withTarget(targetProvider.get())
+    		.withSolverTimeout(timeoutProvider.get())
+    		.build(progProvider.get(), wmmProvider.get(), propertyProvider.get()));
+    }
+    
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
             .around(shutdownOnError)
