@@ -92,13 +92,8 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 		
-        Register dummy = resultRegister;
-        if(resultRegister == value || resultRegister == cmp){
-            dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        }
-
+        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         RMWReadCondCmp load = Linux.newRMWReadCondCmp(dummy, cmp, address, Tag.Linux.loadMO(mo));
-        Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
         Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newConditionalMemoryBarrier(load) : null;
         Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? Linux.newConditionalMemoryBarrier(load) : null;
 
@@ -106,7 +101,7 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
                 optionalMbBefore,
                 load,
                 Linux.newRMWStoreCond(load, address, value, Tag.Linux.storeMO(mo)),
-                optionalUpdateReg,
+                newLocal(resultRegister, dummy),
                 optionalMbAfter
         );
 	}
@@ -118,21 +113,16 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
         IExpr address = e.getAddress();
         ExprInterface value = e.getMemValue();
 
-        Register dummy = resultRegister;
-		if(resultRegister == value){
-            dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        }
-
+        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
 		Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
 		Load load = newRMWLoad(dummy, address, Tag.Linux.loadMO(mo));
-        Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
         Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
 
         return eventSequence(
                 optionalMbBefore,
                 load,
                 newRMWStore(load, address, new IExprBin(dummy, e.getOp(), (IExpr) value), Tag.Linux.storeMO(mo)),
-                optionalUpdateReg,
+                newLocal(resultRegister, dummy),
                 optionalMbAfter
         );
 	}
@@ -142,12 +132,13 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
         IExpr address = e.getAddress();
         Register resultRegister = e.getResultRegister();
 		
-        Load load = newRMWLoad(resultRegister, address, Tag.Linux.MO_ONCE);
+        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+        Load load = newRMWLoad(dummy, address, Tag.Linux.MO_ONCE);
         load.addFilters(Tag.Linux.NORETURN);
         
         return eventSequence(
                 load,
-                newRMWStore(load, address, new IExprBin(resultRegister, e.getOp(), (IExpr) e.getMemValue()), Tag.Linux.MO_ONCE)
+                newRMWStore(load, address, new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue()), Tag.Linux.MO_ONCE)
         );
 	}
 
@@ -178,15 +169,16 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
         String mo = e.getMo();
         
 		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
 		Load load = newRMWLoad(dummy, address, Tag.Linux.loadMO(mo));
+		Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
         Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
 
         return eventSequence(
                 optionalMbBefore,
                 load,
-                newLocal(resultRegister, new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue())),
-                newRMWStore(load, address, resultRegister, Tag.Linux.storeMO(mo)),
+                newLocal(dummy, new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue())),
+                newRMWStore(load, address, dummy, Tag.Linux.storeMO(mo)),
+                newLocal(resultRegister, dummy),
                 optionalMbAfter
         );
 	}
@@ -197,21 +189,16 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
         String mo = e.getMo();
         IExpr address = e.getAddress();
 
-        Register dummy = resultRegister;
-        if(resultRegister == e.getMemValue()){
-            dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        }
-
-		Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
+        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
 		Load load = newRMWLoad(dummy, address, Tag.Linux.loadMO(mo));
-        Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
+		Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
         Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
 
         return eventSequence(
                 optionalMbBefore,
                 load,
                 newRMWStore(load, address, e.getMemValue(), Tag.Linux.storeMO(mo)),
-                optionalUpdateReg,
+                newLocal(resultRegister, dummy),
                 optionalMbAfter
         );
 	}

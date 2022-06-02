@@ -142,9 +142,7 @@ public class ExecutionGraphVisualizer {
                 continue;
             }
 
-            if (e1.getEvent().getCLine() != e2.getEvent().getCLine()) {
-                appendEdge(e1, e2, model, (String[]) null);
-            }
+            appendEdge(e1, e2, model, (String[]) null);
         }
 
         // --- Subgraph end ---

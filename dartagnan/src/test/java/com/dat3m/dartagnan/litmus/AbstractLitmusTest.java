@@ -86,10 +86,6 @@ public abstract class AbstractLitmusTest {
         return Provider.fromSupplier(() -> 1);
     }
 
-    protected Provider<Integer> getTimeoutProvider() {
-        return Provider.fromSupplier(() -> 0);
-    }
-
     protected long getTimeout() { return 10000; }
 
     // ============================================================
@@ -103,21 +99,13 @@ public abstract class AbstractLitmusTest {
     protected final Provider<String> filePathProvider = () -> path;
     protected final Provider<String> nameProvider = Provider.fromSupplier(() -> getNameWithoutExtension(Path.of(path).getFileName().toString()));
     protected final Provider<Integer> boundProvider = getBoundProvider();
-    protected final Provider<Integer> timeoutProvider = getTimeoutProvider();
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
     	getExpectedResults().get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
-    protected final Provider<VerificationTask> taskProvider = Provider.fromSupplier(() ->
-        VerificationTask.builder()
-        .withConfig(Configuration.builder()
-            .setOption(INITIALIZE_REGISTERS,String.valueOf(DO_INITIALIZE_REGISTERS))
-            .build())
-        .withTarget(targetProvider.get())
-        .withBound(boundProvider.get())
-        .withSolverTimeout(timeoutProvider.get())
-        .build(programProvider.get(), wmmProvider.get(), propertyProvider.get()));
+    protected final Provider<Configuration> configProvider = Provider.fromSupplier(() -> Configuration.builder().setOption(INITIALIZE_REGISTERS, String.valueOf(DO_INITIALIZE_REGISTERS)).build());
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, configProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
     protected final Provider<ProverEnvironment> prover2Provider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
@@ -132,10 +120,10 @@ public abstract class AbstractLitmusTest {
             .around(filePathProvider)
             .around(nameProvider)
             .around(boundProvider)
-            .around(timeoutProvider)
             .around(programProvider)
             .around(wmmProvider)
             .around(propertyProvider)
+            .around(configProvider)
             .around(taskProvider)
             .around(expectedResultProvider)
             .around(csvLogger)
