@@ -421,11 +421,12 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	
 	@Override
 	public List<Event> visitRMWXchg(RMWXchg e) {
+		Register resultRegister = e.getResultRegister();
 		ExprInterface value = e.getMemValue();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummy = e.getThread().newRegister(e.getResultRegister().getPrecision());
+		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(dummy, address, null);
         Store store = newRMWStoreExclusive(address, value, null, true);
@@ -441,6 +442,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 optionalMemoryBarrierBefore,
                 load,
                 store,
+                newLocal(resultRegister, dummy),
                 fakeCtrlDep,
                 label,
                 optionalMemoryBarrierAfter
