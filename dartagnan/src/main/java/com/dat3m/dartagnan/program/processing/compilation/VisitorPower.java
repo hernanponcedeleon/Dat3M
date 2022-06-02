@@ -411,11 +411,11 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 load,
                 branchOnCasCmpResult,
                     store,
-                    newLocal(resultRegister, dummy),
                     fakeCtrlDep,
                     label,
                     optionalMemoryBarrierAfter,
-                casEnd
+                casEnd,
+                newLocal(resultRegister, dummy)
         );
 	}
 	
