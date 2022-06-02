@@ -103,11 +103,15 @@ public class LoopUnrolling implements ProgramProcessor {
 
         while (cur != null) {
             Event next = cur.getSuccessor();
-            if (cur instanceof LoopBound) {
+            if (cur instanceof LoopBound && ((LoopBound) cur).getBound() > 0) {
                 curBound = (LoopBound) cur;
-            } else if (cur instanceof Label && curBound != null && curBound.getBound() > 0) {
-                boundAnnotationMap.put((Label)cur, curBound.getBound());
-                curBound = null;
+            } else if (cur instanceof Label && curBound != null) {
+                Label label = (Label)cur;
+                if (label.getJumpSet().stream().anyMatch(jump -> jump.getOId() > label.getOId())) {
+                    // The label denotes the beginning of a loop.
+                    boundAnnotationMap.put((Label) cur, curBound.getBound());
+                    curBound = null;
+                }
             } else if (cur instanceof CondJump && ((CondJump) cur).getLabel().getOId() < cur.getOId()) {
                 CondJump jump = (CondJump) cur;
                 if (jump.getLabel().getJumpSet().stream().allMatch(x -> x.getOId() <= jump.getOId())) {
