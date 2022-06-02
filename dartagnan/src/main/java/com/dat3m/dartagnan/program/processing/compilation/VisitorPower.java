@@ -334,20 +334,19 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 
 	@Override
 	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
-		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		ExprInterface value = e.getMemValue();
 		String mo = e.getMo();
 
-		ExprInterface expected = e.getCmp();
+		Register dummy = e.getThread().newRegister(e.getResultRegister().getPrecision());
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, expected), casEnd);
+        CondJump branchOnCasCmpResult = newJump(new Atom(dummy, NEQ, e.getCmp()), casEnd);
 
         // Power does not have mo tags, thus we use null
-        Load loadValue = newRMWLoadExclusive(resultRegister, address, null);
+        Load loadValue = newRMWLoadExclusive(dummy, address, null);
         Store storeValue = newRMWStoreExclusive(address, value, null, true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
@@ -369,16 +368,16 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	
 	@Override
 	public List<Event> visitRMWXchg(RMWXchg e) {
-		Register resultRegister = e.getResultRegister();
 		ExprInterface value = e.getMemValue();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
+		Register dummy = e.getThread().newRegister(e.getResultRegister().getPrecision());
         // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(resultRegister, address, null);
+        Load load = newRMWLoadExclusive(dummy, address, null);
         Store store = newRMWStoreExclusive(address, value, null, true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
@@ -403,12 +402,12 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 		
-        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(dummyReg, address, null);
-        Store store = newRMWStoreExclusive(address, new IExprBin(dummyReg, op, value), null, true);
+        Load load = newRMWLoadExclusive(dummy, address, null);
+        Store store = newRMWStoreExclusive(address, new IExprBin(dummy, op, value), null, true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummyReg, label);
+        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
@@ -434,13 +433,14 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 		
-        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(dummyReg, address, null);
-        Local localOp = newLocal(resultRegister, new IExprBin(dummyReg, op, value));
-        Store store = newRMWStoreExclusive(address, resultRegister, null, true);
+        Load load = newRMWLoadExclusive(dummy, address, null);
+        Local localOp = newLocal(dummy, new IExprBin(dummy, op, value));
+        Store store = newRMWStoreExclusive(address, dummy, null, true);
+        Local localRet = newLocal(resultRegister, dummy);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummyReg, label);
+        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
@@ -453,6 +453,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 load,
                 localOp,
                 store,
+                localRet,
                 fakeCtrlDep,
                 label,
                 optionalMemoryBarrierAfter
