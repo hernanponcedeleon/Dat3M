@@ -403,12 +403,10 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 		
-        // RMWOp does not return anything; resultRegister is just used as a dummy.
         Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-        Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
-
         // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(resultRegister, address, null);
+        Load load = newRMWLoadExclusive(dummyReg, address, null);
+        Local localOp = newLocal(dummyReg, new IExprBin(dummyReg, op, value));
         Store store = newRMWStoreExclusive(address, dummyReg, null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
@@ -439,10 +437,9 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		String mo = e.getMo();
 		
         Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-        Local localOp = newLocal(resultRegister, new IExprBin(dummyReg, op, value));
-
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(dummyReg, address, null);
+        Local localOp = newLocal(resultRegister, new IExprBin(dummyReg, op, value));
         Store store = newRMWStoreExclusive(address, resultRegister, null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummyReg, label);
@@ -471,13 +468,10 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 		
-        Register dummy = resultRegister;
-		if(resultRegister == value){
-            dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        }
+        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
 
 		Load load = newRMWLoadExclusive(dummy, address, null);
-        Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
+        Local updateReg = newLocal(resultRegister, dummy);
         Store store = newRMWStoreExclusive(address, new IExprBin(dummy, e.getOp(), value), null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
@@ -491,7 +485,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         		optionalMemoryBarrierBefore,
                 load,
                 store,
-                optionalUpdateReg,
+                updateReg,
                 fakeCtrlDep,
                 label,
                 optionalMemoryBarrierAfter
