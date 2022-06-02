@@ -109,7 +109,7 @@ public class LoopUnrolling implements ProgramProcessor {
                 Label label = (Label)cur;
                 if (label.getJumpSet().stream().anyMatch(jump -> jump.getOId() > label.getOId())) {
                     // The label denotes the beginning of a loop.
-                    boundAnnotationMap.put((Label) cur, curBound.getBound());
+                    boundAnnotationMap.put(label, curBound.getBound());
                     curBound = null;
                 }
             } else if (cur instanceof CondJump && ((CondJump) cur).getLabel().getOId() < cur.getOId()) {
