@@ -10486,6 +10486,7 @@ litmus/C/dart/C-atomic-cmpxchg-failure-05.litmus,0
 litmus/C/dart/C-atomic-op-and-test-02.litmus,1
 litmus/C/dart/C-atomic-cmpxchg-success-01-2.litmus,1
 litmus/C/dart/C-atomic-fetch-simple-04.litmus,0
+litmus/C/dart/C-atomic-fetch-simple-06.litmus,0
 litmus/C/dart/C-ctrl-03.litmus,0
 litmus/C/dart/C-atomic-op-return-simple-01-4.litmus,1
 litmus/C/dart/C-atomic-add-unless-03.litmus,1

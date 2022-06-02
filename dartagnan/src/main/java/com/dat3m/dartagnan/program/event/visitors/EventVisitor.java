@@ -65,7 +65,10 @@ public interface EventVisitor<T> {
 	default T visitRMWOpAndTest(RMWOpAndTest e) { return visitRMWAbstract(e); }
 	default T visitRMWOpReturn(RMWOpReturn e) { return visitRMWAbstract(e); }
 	default T visitRMWXchg(RMWXchg e) { return visitRMWAbstract(e); }
-
+	default T visitLKMMFence(LKMMFence e) { return visitFence(e); }
+	default T visitLKMMLoad(LKMMLoad e) { return visitLoad(e); }
+	default T visitLKMMStore(LKMMStore e) { return visitStore(e); }
+	
 	// Linux Cond Events
 	default T visitFenceCond(FenceCond e) { return visitFence(e); }
 	default T visitRMWReadCond(RMWReadCond e) { return visitLoad(e); }

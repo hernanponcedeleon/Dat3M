@@ -139,6 +139,8 @@ public final class Tag {
         public static final String LOCK_FAIL     = "UL";
         public static final String READ_LOCKED   = "LF";
         public static final String READ_UNLOCKED = "RU";
+        public static final String BEFORE_ATOMIC = "Before-atomic";
+        public static final String AFTER_ATOMIC  = "After-atomic";
 
         public static String loadMO(String mo){
             return mo.equals(MO_ACQUIRE) ? MO_ACQUIRE : MO_ONCE;
