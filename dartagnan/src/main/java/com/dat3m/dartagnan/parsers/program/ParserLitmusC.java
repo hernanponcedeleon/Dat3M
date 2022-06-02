@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.VisitorLitmusC;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
-import com.dat3m.dartagnan.configuration.Arch;
 
 import org.antlr.v4.runtime.*;
 
@@ -24,7 +23,8 @@ class ParserLitmusC implements ParserInterface {
         VisitorLitmusC visitor = new VisitorLitmusC(pb);
 
         Program program = (Program) parserEntryPoint.accept(visitor);
-        program.setArch(Arch.LKMM);
+        // C programs can be compiled to different targets,
+        // thus we don't set the architectures.
         return program;
     }
 }
