@@ -16,7 +16,15 @@ import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-
+import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
+import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
+import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
+import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
+import com.dat3m.dartagnan.wmm.relation.base.stat.RelSetIdentity;
+import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
+import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -27,7 +35,9 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
@@ -56,6 +66,8 @@ public class RefinementSolver {
             throws InterruptedException, SolverException, InvalidConfigurationException {
 
 		task.preprocessProgram();
+        // We cut the rhs of differences to get a semi-positive model, if possible.
+        Set<Relation> cutRelations = cutRelationDifferences(task.getMemoryModel(), task.getBaselineModel());
         task.performStaticProgramAnalyses();
         task.performStaticWmmAnalyses();
 		task.initializeEncoders(ctx);
@@ -66,7 +78,7 @@ public class RefinementSolver {
         SymmetryEncoder symmEncoder = task.getSymmetryEncoder();
 
         Program program = task.getProgram();
-        WMMSolver solver = new WMMSolver(task);
+        WMMSolver solver = new WMMSolver(task, cutRelations);
         Refiner refiner = new Refiner(task);
         CAATSolver.Status status = INCONSISTENT;
 
@@ -215,6 +227,60 @@ public class RefinementSolver {
         return veriResult;
     }
     // ======================= Helper Methods ======================
+
+    private static Set<Relation> cutRelationDifferences(Wmm targetWmm, Wmm baselineWmm) {
+        RelationRepository repo = baselineWmm.getRelationRepository();
+        Set<Relation> cutRelations = new HashSet<>();
+        for (Relation rel : targetWmm.getRelationRepository().getRelations()) {
+            if (rel instanceof RelMinus) {
+                Relation sec = rel.getSecond();
+                if (sec.getDependencies().size() != 0 || sec instanceof RelSetIdentity || sec instanceof RelCartesian) {
+                    // NOTE: The check for RelSetIdentity/RelCartesian is needed because they appear non-derived
+                    // in our Wmm but for CAAT they are derived from unary predicates!
+                    logger.info("Found difference {}. Cutting rhs relation {}", rel, sec);
+                    cutRelations.add(sec);
+                    baselineWmm.addAxiom(new ForceEncodeAxiom(getCopyOfRelation(sec, repo)));
+                }
+            }
+        }
+        return cutRelations;
+    }
+
+    private static Relation getCopyOfRelation(Relation rel, RelationRepository repo) {
+        if (repo.containsRelation(rel.getName())) {
+            return repo.getRelation(rel.getName());
+        }
+
+        if (rel instanceof RecursiveRelation) {
+            throw new IllegalArgumentException(
+                    String.format("Cannot cut recursively defined relation %s from memory model. ", rel));
+        }
+
+        Relation copy = repo.getRelation(rel.getName());
+        if (copy == null) {
+            List<Object> deps = new ArrayList<>(rel.getDependencies().size());
+            if (rel instanceof RelSetIdentity) {
+                deps.add(((RelSetIdentity)rel).getFilter());
+            } else if (rel instanceof RelCartesian) {
+                deps.add(((RelCartesian) rel).getFirstFilter());
+                deps.add(((RelCartesian) rel).getSecondFilter());
+            } else if (rel instanceof RelFencerel) {
+                deps.add(((RelFencerel)rel).getFenceName());
+            } else {
+                for (Relation dep : rel.getDependencies()) {
+                    deps.add(getCopyOfRelation(dep, repo));
+                }
+            }
+
+            copy = repo.getRelation(rel.getClass(), deps.toArray());
+            if (rel.getIsNamed()) {
+                copy.setName(rel.getName());
+                repo.updateRelation(copy);
+            }
+        }
+
+        return copy;
+    }
 
     // -------------------- Printing -----------------------------
 
