@@ -190,8 +190,8 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
         IExpr address = e.getAddress();
 
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
 		Load load = newRMWLoad(dummy, address, Tag.Linux.loadMO(mo));
+		Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
         Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
 
         return eventSequence(
