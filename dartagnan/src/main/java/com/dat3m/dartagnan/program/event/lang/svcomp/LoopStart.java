@@ -8,8 +8,13 @@ public class LoopStart extends FunCall {
 		super("__VERIFIER_loop_start");
 	}
 	
-	protected LoopStart(FunCall other) {
+	protected LoopStart(LoopStart other) {
 		super(other);
+	}
+
+	@Override
+	public LoopStart getCopy() {
+		return new LoopStart(this);
 	}
 
 }

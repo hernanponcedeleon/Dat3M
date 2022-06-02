@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBound;
 import com.dat3m.dartagnan.utils.printer.Printer;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
@@ -97,14 +98,21 @@ public class LoopUnrolling implements ProgramProcessor {
 
     private void unrollThread(Thread thread, int defaultBound) {
         Event cur = thread.getEntry();
+        Map<Label, Integer> boundAnnotationMap = new HashMap<>();
+        LoopBound curBound = null;
 
         while (cur != null) {
             Event next = cur.getSuccessor();
-            if (cur instanceof CondJump && ((CondJump) cur).getLabel().getOId() < cur.getOId()) {
+            if (cur instanceof LoopBound) {
+                curBound = (LoopBound) cur;
+            } else if (cur instanceof Label && curBound != null && curBound.getBound() > 0) {
+                boundAnnotationMap.put((Label)cur, curBound.getBound());
+                curBound = null;
+            } else if (cur instanceof CondJump && ((CondJump) cur).getLabel().getOId() < cur.getOId()) {
                 CondJump jump = (CondJump) cur;
                 if (jump.getLabel().getJumpSet().stream().allMatch(x -> x.getOId() <= jump.getOId())) {
                     //TODO: Get different bounds for different loops (e.g. via annotations)
-                    int bound = jump.is(Tag.SPINLOOP) ? 1 : defaultBound;
+                    int bound = jump.is(Tag.SPINLOOP) ? 1 : boundAnnotationMap.getOrDefault(jump.getLabel(), defaultBound);
                     unrollLoop((CondJump) cur, bound);
                 }
             }

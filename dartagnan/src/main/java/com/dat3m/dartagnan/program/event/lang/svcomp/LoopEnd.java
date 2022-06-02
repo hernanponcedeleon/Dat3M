@@ -8,8 +8,13 @@ public class LoopEnd extends FunCall {
 		super("__VERIFIER_loop_end");
 	}
 	
-	protected LoopEnd(FunCall other) {
+	protected LoopEnd(LoopEnd other) {
 		super(other);
+	}
+
+	@Override
+	public LoopEnd getCopy() {
+		return new LoopEnd(this);
 	}
 
 }
