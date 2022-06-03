@@ -9,6 +9,7 @@ RUN apt-get update && \
     apt-get install -y software-properties-common && \
     add-apt-repository ppa:sosy-lab/benchmarking && \
     apt-get install -y git && \
+    apt-get install -y graphviz && \
     apt-get install -y lsb-release && \
     apt-get install -y sudo && \
     apt-get install -y wget && \

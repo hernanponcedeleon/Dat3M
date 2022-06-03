@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.configuration.Property.*;
@@ -62,6 +63,7 @@ public class Dartagnan extends BaseOptions {
         }
 
     	CreateGitInfo();
+    	LogGlobalSettings();
 
     	String[] argKeyword = Arrays.stream(args)
 				.filter(s->s.startsWith("-"))

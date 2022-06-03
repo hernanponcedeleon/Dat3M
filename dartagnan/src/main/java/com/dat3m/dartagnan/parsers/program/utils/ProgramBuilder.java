@@ -138,7 +138,9 @@ public class ProgramBuilder {
     }
 
     public MemoryObject getOrNewObject(String name) {
-        return locations.computeIfAbsent(name,k->memory.allocate(1));
+        MemoryObject object = locations.computeIfAbsent(name,k->memory.allocate(1));
+        object.setCVar(name);
+		return object;
     }
 
     public MemoryObject newObject(String name, int size) {

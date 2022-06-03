@@ -12,7 +12,7 @@ public class GlobalSettings {
     // === Encoding ===
 	// This has to be in sync with whatever smack generated for references, 
 	// i.e. if type ref = X, then ARCH_PRECISION = X (or -1 if type = intX). 
-    public static final int ARCH_PRECISION = -1;
+    public static final int ARCH_PRECISION = 64;
 
     // === Parsing ===
     public static final boolean ATOMIC_AS_LOCK = false;
@@ -37,6 +37,7 @@ public class GlobalSettings {
 
     public static void LogGlobalSettings() {
         // General settings
+    	logger.info("ARCH_PRECISION: " + ARCH_PRECISION);
     	logger.info("ATOMIC_AS_LOCK: " + ATOMIC_AS_LOCK);
     	logger.info("MAX_RECURSION_DEPTH: " + MAX_RECURSION_DEPTH);
 
