@@ -43,7 +43,7 @@ public class SvcompProcedures {
 			"__VERIFIER_nondet_long",
 			"__VERIFIER_nondet_ulong",
 			"__VERIFIER_nondet_char",
-			"__VERIFIER_nondet_uchar"
+			"__VERIFIER_nondet_uchar",
 			"__VERIFIER_lkmm_fence",
 			"__VERIFIER_atomicrmw_noret");
 
@@ -209,8 +209,6 @@ public class SvcompProcedures {
 
 	private static void __VERIFIER_loop_bound(VisitorBoogie visitor, Call_cmdContext ctx) {
 		int bound = ((IExpr)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValueAsInt();
-		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBound(bound)
-				.setCLine(visitor.currentLine)
-				.setSourceCodeFile(visitor.sourceCodeFile));
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBound(bound));
 	}
 }

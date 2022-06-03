@@ -1,15 +1,14 @@
 package com.dat3m.dartagnan.program.event.lang.svcomp;
 
-import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
+import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 
-public class LoopBound extends FunCall {
+public class LoopBound extends CodeAnnotation {
 
-	protected int bound = 0;
+	private final int bound;
 
 	public int getBound() { return bound; }
 
 	public LoopBound(int bound) {
-		super("__VERIFIER_loop_bound");
 		this.bound = bound;
 	}
 
@@ -20,7 +19,7 @@ public class LoopBound extends FunCall {
 
 	@Override
 	public String toString() {
-		return String.format("=== Calling %s(%s) ===", getFunctionName(), getBound());
+		return String.format("#__VERIFIER_loop_bound(%s)", bound);
 	}
 
 	@Override
