@@ -313,6 +313,11 @@ public class EventFactory {
             public static Fence newISHLDBarrier() {
                 return new Fence ("DSB.ISHLD");
             }
+
+            public static Fence newISHSTBarrier() {
+                return new Fence("DMB.ISHST");
+            }
+
         }
 
     }

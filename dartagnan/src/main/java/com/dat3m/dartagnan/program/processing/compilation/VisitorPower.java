@@ -625,5 +625,6 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 label,
                 optionalMemoryBarrierAfter,
                 testOp
-        );	};
+        );
+	};
 }
