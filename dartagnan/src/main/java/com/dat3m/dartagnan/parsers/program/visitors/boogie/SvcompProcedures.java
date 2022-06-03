@@ -43,8 +43,7 @@ public class SvcompProcedures {
 			"__VERIFIER_nondet_long",
 			"__VERIFIER_nondet_ulong",
 			"__VERIFIER_nondet_char",
-			"__VERIFIER_nondet_uchar"
-			"__VERIFIER_lkmm_fence",
+			"__VERIFIER_nondet_uchar",
 			"__VERIFIER_atomicrmw_noret");
 
 	public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
