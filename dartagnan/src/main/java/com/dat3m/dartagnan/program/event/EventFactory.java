@@ -19,7 +19,6 @@ import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.google.common.base.Preconditions;
 
 import java.util.Arrays;
 import java.util.List;
@@ -268,10 +267,7 @@ public class EventFactory {
             return new LoopEnd();
         }
 
-        public static LoopBound newLoopBound(int bound) {
-            Preconditions.checkArgument(bound >= 0, "Cannot create LoopBound event with negative bound %s", bound);
-            return new LoopBound(bound);
-        }
+        public static LoopBound newLoopBound(int bound) { return new LoopBound(bound); }
     }
 
     // =============================================================================================
