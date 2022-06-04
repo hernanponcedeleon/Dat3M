@@ -39,7 +39,7 @@ public class LkmmProcedures {
 			List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 			IExpr address = (IExpr) params.get(0).accept(visitor);
 			String mo = Linux.intToMo(((IConst) params.get(1).accept(visitor)).getValueAsInt());
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLoad(reg, address, mo))
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLKMMLoad(reg, address, mo))
 	        		.setCLine(visitor.currentLine)
 	        		.setSourceCodeFile(visitor.sourceCodeFile);
 	        return;
@@ -50,7 +50,7 @@ public class LkmmProcedures {
 			IExpr value = (IExpr) params.get(1).accept(visitor);
 			String mo = Linux.intToMo(((IConst) params.get(2).accept(visitor)).getValueAsInt());
 	        if(mo.equals(Tag.Linux.MO_MB)){
-				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newStore(address, value, Tag.Linux.MO_RELAXED))
+				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLKMMStore(address, value, Tag.Linux.MO_RELAXED))
 	            		.setCLine(visitor.currentLine)
 	            		.setSourceCodeFile(visitor.sourceCodeFile);
 	            visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newMemoryBarrier())
@@ -58,7 +58,7 @@ public class LkmmProcedures {
         				.setSourceCodeFile(visitor.sourceCodeFile);
 	            return;
 	        }
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newStore(address, value, mo))
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLKMMStore(address, value, mo))
 	        		.setCLine(visitor.currentLine)
 	        		.setSourceCodeFile(visitor.sourceCodeFile);
 	        return;
@@ -125,7 +125,7 @@ public class LkmmProcedures {
 			List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 			IExpr address = (IExpr) params.get(0).accept(visitor);
 			ExprInterface value = (ExprInterface)params.get(1).accept(visitor);
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newStore(address, value, "Once"))
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLKMMStore(address, value, Tag.Linux.MO_ONCE))
 					.setCLine(visitor.currentLine)
 					.setSourceCodeFile(visitor.sourceCodeFile);
 			return;			
@@ -133,7 +133,7 @@ public class LkmmProcedures {
 		if(name.startsWith("__LKMM_READ_ONCE")) {
 			Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
 			IExpr address = (IExpr)ctx.call_params().exprs().expr(0).accept(visitor);
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLoad(reg, address, "Once"))
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLKMMLoad(reg, address, Tag.Linux.MO_ONCE))
 					.setCLine(visitor.currentLine)
 					.setSourceCodeFile(visitor.sourceCodeFile);
 			return;			
@@ -175,7 +175,7 @@ public class LkmmProcedures {
 				default:
 					throw new ParsingException("Unrecognized fence " + fenceAsInt);
 			}
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newFence(fence))
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLKMMFence(fence))
 					.setCLine(visitor.currentLine)
 					.setSourceCodeFile(visitor.sourceCodeFile);
 			return;			

@@ -39,7 +39,7 @@ let wmb = [W] ; po ; [Wmb] ; po ; [W]
 
 // Others
 let rmb-plain = [R \ Noreturn] ; po ; [Rmb] ; po \ ( po ; [W] ; po-loc) ; [R \ Noreturn]
-//let plain-wmb = [W] ; po \ (po-loc ; [W] ; po) ; [Wmb] ; po ; [W]
+let plain-wmb = [W] ; po \ (po-loc ; [W] ; po) ; [Wmb] ; po ; [W]
 let strong-fence =
        [M] ; po ; [Mb] ; po ; [M]
      | [M] ; po ; [Before-atomic] ; po ; [RMW] ; po? ; [M]
@@ -52,7 +52,7 @@ let strong-fence =
 let strong-sync = strong-fence
      | ([M] ; po-unlock-lock-po ; [After-unlock-lock] ; po ; [M])
 let fence = strong-fence | po-rel | acq-po | wmb | rmb
-let dop = rmb-plain? ; (addr | data | ctrl | rfi)*; plain-wmb?
+let dop = rmb-plain? ; (addr | data | ctrl | rfi)+; plain-wmb?
 let to-w = (dop | po-loc) ; [W]
 let lrs = ([W] ; po-loc ; [R]) \ (po-loc ; [W] ; po-loc)
 let to-r = addr | ((addr | data) ; lrs)
