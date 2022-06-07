@@ -103,7 +103,7 @@ public class LoopUnrolling implements ProgramProcessor {
 
         while (cur != null) {
             Event next = cur.getSuccessor();
-            if (cur instanceof LoopBound && ((LoopBound) cur).getBound() > 0) {
+            if (cur instanceof LoopBound) {
                 if (curBoundAnn != null) {
                     logger.warn("Found loop bound annotation that overwrites a previous, unused annotation.");
                 }

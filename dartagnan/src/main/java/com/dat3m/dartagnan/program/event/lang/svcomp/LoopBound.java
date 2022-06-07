@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.svcomp;
 
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
+import com.google.common.base.Preconditions;
 
 public class LoopBound extends CodeAnnotation {
 
@@ -9,6 +10,7 @@ public class LoopBound extends CodeAnnotation {
 	public int getBound() { return bound; }
 
 	public LoopBound(int bound) {
+		Preconditions.checkArgument(bound > 0, "The provided loop bound '%s' must be positive.", bound);
 		this.bound = bound;
 	}
 
