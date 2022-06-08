@@ -38,16 +38,16 @@ public class RelCrit extends StaticRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             for(Thread thread : task.getProgram().getThreads()){
                 for(Event lock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_LOCK))){
                     for(Event unlock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_UNLOCK))){
-                        if(lock.getCId() < unlock.getCId()){
+                        if(lock.getCId() < unlock.getCId() && !exec.areMutuallyExclusive(lock, unlock)) {
                             maxTupleSet.add(new Tuple(lock, unlock));
                         }
                     }
                 }
             }
-            removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
     }

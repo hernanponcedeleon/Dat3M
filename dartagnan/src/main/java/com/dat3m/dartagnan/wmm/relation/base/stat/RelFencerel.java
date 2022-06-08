@@ -56,14 +56,13 @@ public class RelFencerel extends StaticRelation {
                     for (Event e1 : eventsBefore) {
                         boolean isImpliedByE1 = exec.isImplied(e1, fence);
                         for (Event e2 : eventsAfter) {
-                            if (isImpliedByE1 || exec.isImplied(e2, fence)) {
+                            if((isImpliedByE1 || exec.isImplied(e2, fence)) && !exec.areMutuallyExclusive(e1, e2)) {
                                 minTupleSet.add(new Tuple(e1, e2));
                             }
                         }
                     }
                 }
             }
-            removeMutuallyExclusiveTuples(minTupleSet);
         }
         return minTupleSet;
     }
@@ -72,6 +71,7 @@ public class RelFencerel extends StaticRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             for(Thread t : task.getProgram().getThreads()){
                 List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));
                 List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(Tag.MEMORY));
@@ -84,12 +84,13 @@ public class RelFencerel extends StaticRelation {
 
                     for (Event e1 : eventsBefore) {
                         for (Event e2 : eventsAfter) {
-                            maxTupleSet.add(new Tuple(e1, e2));
+                            if(!exec.areMutuallyExclusive(e1, e2)) {
+                                maxTupleSet.add(new Tuple(e1, e2));
+                            }
                         }
                     }
                 }
             }
-            removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
     }

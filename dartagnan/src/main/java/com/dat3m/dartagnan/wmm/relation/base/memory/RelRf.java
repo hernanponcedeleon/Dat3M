@@ -48,6 +48,7 @@ public class RelRf extends Relation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
             WmmAnalysis wmmAnalysis = analysisContext.get(WmmAnalysis.class);
         	logger.info("Computing maxTupleSet for " + getName());
@@ -58,12 +59,12 @@ public class RelRf extends Relation {
 
             for(Event e1 : storeEvents){
                 for(Event e2 : loadEvents){
-                    if(alias.mayAlias((MemEvent) e1, (MemEvent) e2)){
+                    if(alias.mayAlias((MemEvent) e1, (MemEvent) e2)
+                            && !exec.areMutuallyExclusive(e1, e2)){
                     	maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
             }
-            removeMutuallyExclusiveTuples(maxTupleSet);
             if (wmmAnalysis.isLocallyConsistent()) {
                 applyLocalConsistency();
             }

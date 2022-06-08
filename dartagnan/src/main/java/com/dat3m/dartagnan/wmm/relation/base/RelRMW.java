@@ -69,6 +69,7 @@ public class RelRMW extends StaticRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
         	logger.info("Computing maxTupleSet for " + getName());
             minTupleSet = new TupleSet();
 
@@ -94,13 +95,15 @@ public class RelRMW extends StaticRelation {
             for(Event end : task.getProgram().getCache().getEvents(filter)){
                 List<Event> block = ((EndAtomic)end).getBlock().stream().filter(x -> x.is(Tag.VISIBLE)).collect(Collectors.toList());
                 for (int i = 0; i < block.size(); i++) {
-                    for (int j = i + 1; j < block.size(); j++) {
-                        minTupleSet.add(new Tuple(block.get(i), block.get(j)));
+                    Event e1 = block.get(i);
+                    for(Event e2 : block.subList(i + 1, block.size())) {
+                        if(!exec.areMutuallyExclusive(e1, e2)) {
+                            minTupleSet.add(new Tuple(e1, e2));
+                        }
                     }
 
                 }
             }
-            removeMutuallyExclusiveTuples(minTupleSet);
 
             maxTupleSet = new TupleSet();
             maxTupleSet.addAll(minTupleSet);
@@ -111,13 +114,12 @@ public class RelRMW extends StaticRelation {
             for(Thread thread : task.getProgram().getThreads()){
                 for(Event load : thread.getCache().getEvents(loadExclFilter)){
                     for(Event store : thread.getCache().getEvents(storeExclFilter)){
-                        if(load.getCId() < store.getCId()){
+                        if(load.getCId() < store.getCId() && !exec.areMutuallyExclusive(load, store)){
                             maxTupleSet.add(new Tuple(load, store));
                         }
                     }
                 }
             }
-            removeMutuallyExclusiveTuples(maxTupleSet);
             logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
         return maxTupleSet;

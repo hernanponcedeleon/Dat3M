@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.encoding.WmmEncoder;
-import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -148,11 +147,6 @@ public abstract class Relation implements Dependent<Relation> {
 
     public BooleanFormula encode(Set<Tuple> encodeTupleSet, WmmEncoder encoder) {
         return encoder.solverContext().getFormulaManager().getBooleanFormulaManager().makeTrue();
-    }
-
-    protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {
-        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
-        tupleSet.removeIf(t -> exec.areMutuallyExclusive(t.getFirst(), t.getSecond()));
     }
 
     // ========================== Utility methods =========================

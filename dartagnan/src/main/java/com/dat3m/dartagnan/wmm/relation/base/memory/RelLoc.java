@@ -45,17 +45,17 @@ public class RelLoc extends Relation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
             maxTupleSet = new TupleSet();
             Collection<Event> events = task.getProgram().getCache().getEvents(FilterBasic.get(MEMORY));
             for(Event e1 : events){
                 for(Event e2 : events){
-                    if(alias.mayAlias((MemEvent) e1, (MemEvent)e2)){
+                    if(alias.mayAlias((MemEvent) e1, (MemEvent)e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
             }
-            removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
     }

@@ -72,6 +72,7 @@ public class RelCo extends Relation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
         	logger.info("Computing maxTupleSet for " + getName());
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
         	AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
             WmmAnalysis wmmAnalysis = analysisContext.get(WmmAnalysis.class);
             maxTupleSet = new TupleSet();
@@ -91,13 +92,14 @@ public class RelCo extends Relation {
 
             for(Event e1 : eventsStore){
                 for(Event e2 : eventsStore){
-                    if(e1.getCId() != e2.getCId() && alias.mayAlias((MemEvent) e1, (MemEvent)e2)){
+                    if(e1.getCId() != e2.getCId()
+                            && alias.mayAlias((MemEvent) e1, (MemEvent)e2)
+                            && !exec.areMutuallyExclusive(e1, e2)){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
             }
 
-            removeMutuallyExclusiveTuples(maxTupleSet);
             if (wmmAnalysis.isLocallyConsistent()) {
                 applyLocalConsistencyMaxSet();
             }

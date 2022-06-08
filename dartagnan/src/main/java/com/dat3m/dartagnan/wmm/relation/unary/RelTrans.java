@@ -57,12 +57,12 @@ public class RelTrans extends UnaryRelation {
             int size = minTupleSet.size();
             do {
                 minTupleSet.addAll(minTupleSet.postComposition(r1.getMinTupleSet(),
-                        (t1, t2) -> exec.isImplied(t1.getFirst(), t1.getSecond())
-                                || exec.isImplied(t2.getSecond(), t1.getSecond())));
+                        (t1, t2) -> (exec.isImplied(t1.getFirst(), t1.getSecond())
+                                || exec.isImplied(t2.getSecond(), t1.getSecond()))
+                            && !exec.areMutuallyExclusive(t1.getFirst(), t2.getSecond())));
                 changed = minTupleSet.size() != size;
                 size = minTupleSet.size();
             } while (changed);
-            removeMutuallyExclusiveTuples(minTupleSet);
         }
         return minTupleSet;
     }
@@ -73,12 +73,14 @@ public class RelTrans extends UnaryRelation {
         if(maxTupleSet == null){
             transitiveReachabilityMap = r1.getMaxTupleSet().transMap();
             maxTupleSet = new TupleSet();
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             for(Event e1 : transitiveReachabilityMap.keySet()){
                 for(Event e2 : transitiveReachabilityMap.get(e1)){
-                    maxTupleSet.add(new Tuple(e1, e2));
+                    if(!exec.areMutuallyExclusive(e1, e2)) {
+                        maxTupleSet.add(new Tuple(e1, e2));
+                    }
                 }
             }
-            removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
     }

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.IfAsJump;
@@ -28,6 +29,7 @@ public class RelCtrlDirect extends StaticRelation {
             maxTupleSet = new TupleSet();
 
             // NOTE: If's (under Linux) have different notion of ctrl dependency than conditional jumps!
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             for(Thread thread : task.getProgram().getThreads()){
                 for(Event e1 : thread.getCache().getEvents(FilterBasic.get(Tag.CMP))){
                     for(Event e2 : ((IfAsJump) e1).getBranchesEvents()){
@@ -42,14 +44,13 @@ public class RelCtrlDirect extends StaticRelation {
                 if(!condJumps.isEmpty()){
                     for(Event e2 : thread.getCache().getEvents(FilterBasic.get(Tag.ANY))){
                         for(Event e1 : condJumps){
-                            if(e1.getCId() < e2.getCId()){
+                            if(e1.getCId() < e2.getCId() && !exec.areMutuallyExclusive(e1, e2)) {
                                 maxTupleSet.add(new Tuple(e1, e2));
                             }
                         }
                     }
                 }
             }
-            removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
     }
