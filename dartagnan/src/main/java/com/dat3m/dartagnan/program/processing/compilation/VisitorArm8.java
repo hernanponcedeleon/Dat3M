@@ -329,7 +329,7 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
         CondJump branchOnCasCmpResult = newJump(new Atom(new IExprBin(dummy, IOpBin.XOR, (IExpr) e.getCmp()), NEQ, IValue.ZERO), casEnd);
 
         Load load = newRMWLoadExclusive(dummy, address, mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : null);
-        Store store = newRMWStoreExclusive(address, value, mo.equals(Tag.Linux.MO_RELEASE) ? Tag.ARMv8.MO_REL : null, true);
+        Store store = newRMWStoreExclusive(address, value, mo.equals(Tag.Linux.MO_RELEASE) || mo.equals(Tag.Linux.MO_MB) ? Tag.ARMv8.MO_REL : null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
@@ -358,7 +358,7 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 
 		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         Load load = newRMWLoadExclusive(dummy, address, mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : null);
-        Store store = newRMWStoreExclusive(address, value, mo.equals(Tag.Linux.MO_RELEASE) ? Tag.ARMv8.MO_REL : null, true);
+        Store store = newRMWStoreExclusive(address, value, mo.equals(Tag.Linux.MO_RELEASE) || mo.equals(Tag.Linux.MO_MB) ? Tag.ARMv8.MO_REL : null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
@@ -408,7 +408,7 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 		
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         Load load = newRMWLoadExclusive(dummy, address, mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : null);
-        Store store = newRMWStoreExclusive(address, dummy, mo.equals(Tag.Linux.MO_RELEASE) ? Tag.ARMv8.MO_REL : null, true);
+        Store store = newRMWStoreExclusive(address, dummy, mo.equals(Tag.Linux.MO_RELEASE) || mo.equals(Tag.Linux.MO_MB) ? Tag.ARMv8.MO_REL : null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
@@ -435,7 +435,7 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 		
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
 		Load load = newRMWLoadExclusive(dummy, address, mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : null);
-        Store store = newRMWStoreExclusive(address, new IExprBin(dummy, e.getOp(), value), mo.equals(Tag.Linux.MO_RELEASE) ? Tag.ARMv8.MO_REL : null, true);
+        Store store = newRMWStoreExclusive(address, new IExprBin(dummy, e.getOp(), value), mo.equals(Tag.Linux.MO_RELEASE) || mo.equals(Tag.Linux.MO_MB) ? Tag.ARMv8.MO_REL : null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
@@ -512,7 +512,7 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
         Local testOp = newLocal(resultRegister, new Atom(retReg, EQ, IValue.ZERO));
 
         Load load = newRMWLoadExclusive(dummy, address, mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : null);
-        Store store = newRMWStoreExclusive(address, retReg, mo.equals(Tag.Linux.MO_RELEASE) ? Tag.ARMv8.MO_REL : null, true);
+        Store store = newRMWStoreExclusive(address, retReg, mo.equals(Tag.Linux.MO_RELEASE) || mo.equals(Tag.Linux.MO_MB) ? Tag.ARMv8.MO_REL : null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
