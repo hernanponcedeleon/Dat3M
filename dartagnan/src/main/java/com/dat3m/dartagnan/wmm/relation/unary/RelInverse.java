@@ -1,15 +1,18 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import java.util.Set;
+
 import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
+import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -50,14 +53,8 @@ public class RelInverse extends UnaryRelation {
     }
 
     @Override
-    public void addEncodeTupleSet(TupleSet tuples){
-        TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
-        encodeTupleSet.addAll(activeSet);
-        activeSet.removeAll(getMinTupleSet());
-
-        if(!activeSet.isEmpty()){
-            r1.addEncodeTupleSet(activeSet.inverse());
-        }
+    public void activate(Set<Tuple> activeSet, WmmEncoder.Buffer buf) {
+        buf.send(r1, activeSet.stream().map(Tuple::getInverse).collect(toSet()));
     }
 
     @Override

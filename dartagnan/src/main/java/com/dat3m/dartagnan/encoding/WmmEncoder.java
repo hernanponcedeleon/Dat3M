@@ -1,42 +1,86 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import static com.google.common.collect.Sets.difference;
+import static com.google.common.collect.Sets.intersection;
 
 public class WmmEncoder {
 
     private static final Logger logger = LogManager.getLogger(WmmEncoder.class);
 
+    private final VerificationTask task;
     private final Wmm memoryModel;
+    private final Context analysisContext;
     private final SolverContext ctx;
 
     // =====================================================================
 
-    private WmmEncoder(Wmm memoryModel, Context context, SolverContext solverContext) {
-        this.memoryModel = Preconditions.checkNotNull(memoryModel);
+    private WmmEncoder(VerificationTask t, Context context, SolverContext solverContext) {
+        task = Preconditions.checkNotNull(t);
+        memoryModel = task.getMemoryModel();
+        analysisContext = context;
         context.requires(RelationAnalysis.class);
         ctx = solverContext;
     }
 
-    public static WmmEncoder fromConfig(Wmm memoryModel, Context context, Configuration config, SolverContext ctx) throws InvalidConfigurationException {
-        WmmEncoder encoder = new WmmEncoder(memoryModel, context, ctx);
+    public static WmmEncoder fromConfig(VerificationTask task, Context context, SolverContext ctx) throws InvalidConfigurationException {
+        WmmEncoder encoder = new WmmEncoder(task, context, ctx);
         encoder.initializeEncoding();
         return encoder;
+    }
+
+    /**
+     * Instances live during {@link WmmEncoder}'s initialization phase.
+     * Pass requests for tuples to be added to the encoding, between relations.
+     * To be used in {@link Relation#activate(Set,Buffer) Relation}.
+     */
+    public static final class Buffer {
+        private final VerificationTask task;
+        private final Context analysisContext;
+        private final Map<Relation, Set<Tuple>> queue = new HashMap<>();
+        private Buffer(VerificationTask t, Context a) {
+            task = t;
+            analysisContext = a;
+        }
+        public VerificationTask task() {
+            return task;
+        }
+        public <T> T get(Class<T> c) {
+            return analysisContext.get(c);
+        }
+        /**
+         * Called whenever a batch of new relationships has been marked.
+         * Performs duplicate elimination (i.e. if multiple relations send overlapping tuples)
+         * and delays their insertion into the encoder's set to decrease the number of propagations.
+         * @param rel    Target relation, will be notified of this batch, eventually.
+         * @param tuples Collection of event pairs in {@code rel}, that are requested to be encoded.
+         *               Subset of {@code rel}'s may set, and disjoint from its must set.
+         */
+        public void send(Relation rel, Set<Tuple> tuples) {
+            queue.merge(rel, tuples, Sets::union);
+        }
     }
 
     private void initializeEncoding() {
@@ -57,12 +101,23 @@ public class WmmEncoder {
         }
 
         // ====================== Compute encoding information =================
+        Buffer buffer = new Buffer(task, analysisContext);
+        Map<Relation, Set<Tuple>> queue = buffer.queue;
         for (Axiom ax : memoryModel.getAxioms()) {
-            ax.getRelation().addEncodeTupleSet(ax.getEncodeTupleSet());
+            Set<Tuple> set = ax.getEncodeTupleSet();
+            if(!set.isEmpty()) {
+                queue.merge(ax.getRelation(), set, Sets::union);
+            }
         }
 
-        for (RecursiveGroup recursiveGroup : Lists.reverse(memoryModel.getRecursiveGroups())) {
-            recursiveGroup.updateEncodeTupleSets();
+        while(!queue.isEmpty()) {
+            Relation relation = queue.keySet().iterator().next();
+            TupleSet delta = new TupleSet(difference(intersection(queue.remove(relation), relation.getMaxTupleSet()), relation.getEncodeTupleSet()));
+            if(delta.isEmpty()) {
+                continue;
+            }
+            relation.addEncodeTupleSet(delta);
+            relation.activate(delta, buffer);
         }
     }
 

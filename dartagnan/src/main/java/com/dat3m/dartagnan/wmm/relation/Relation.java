@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation;
 
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
@@ -11,7 +12,6 @@ import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -101,12 +101,21 @@ public abstract class Relation implements Dependent<Relation> {
         return getMaxTupleSet();
     }
 
+    /**
+     * Marks more relationships as relevant to the consistency property.
+     * Non-maximal tuples and minimal tuples should not be marked.
+     * @param news     Pairs in this relation recently marked as relevant.
+     * @param buf      Receives relationships required to be represented by a variable to properly constrain all of {@code news}.
+     */
+    public void activate(Set<Tuple> news, WmmEncoder.Buffer buf) {
+    }
+
     public TupleSet getEncodeTupleSet(){
         return encodeTupleSet;
     }
 
     public void addEncodeTupleSet(TupleSet tuples){
-        encodeTupleSet.addAll(Sets.intersection(tuples, maxTupleSet));
+        encodeTupleSet.addAll(maxTupleSet);
     }
 
     public String getName() {

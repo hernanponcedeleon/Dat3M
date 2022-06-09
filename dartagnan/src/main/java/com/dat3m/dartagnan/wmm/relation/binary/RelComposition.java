@@ -1,16 +1,15 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
@@ -81,33 +80,26 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    public void addEncodeTupleSet(TupleSet tuples){
-        Set<Tuple> activeSet = new HashSet<>(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
-        encodeTupleSet.addAll(activeSet);
-        activeSet.removeAll(getMinTupleSet());
+    public void activate(Set<Tuple> activeSet, WmmEncoder.Buffer buf) {
+        TupleSet r1Set = new TupleSet();
+        TupleSet r2Set = new TupleSet();
 
-        if(!activeSet.isEmpty()){
-            TupleSet r1Set = new TupleSet();
-            TupleSet r2Set = new TupleSet();
-
-            TupleSet r1Max = r1.getMaxTupleSet();
-            TupleSet r2Max = r2.getMaxTupleSet();
-            for (Tuple t : activeSet) {
-                Event e1 = t.getFirst();
-                Event e3 = t.getSecond();
-                for (Tuple t1 : r1Max.getByFirst(e1)) {
-                    Event e2 = t1.getSecond();
-                    Tuple t2 = new Tuple(e2, e3);
-                    if (r2Max.contains(t2)) {
-                        r1Set.add(t1);
-                        r2Set.add(t2);
-                    }
+        TupleSet r1Max = r1.getMaxTupleSet();
+        TupleSet r2Max = r2.getMaxTupleSet();
+        for (Tuple t : activeSet) {
+            Event e1 = t.getFirst();
+            Event e3 = t.getSecond();
+            for (Tuple t1 : r1Max.getByFirst(e1)) {
+                Event e2 = t1.getSecond();
+                Tuple t2 = new Tuple(e2, e3);
+                if (r2Max.contains(t2)) {
+                    r1Set.add(t1);
+                    r2Set.add(t2);
                 }
             }
-
-            r1.addEncodeTupleSet(r1Set);
-            r2.addEncodeTupleSet(r2Set);
         }
+        buf.send(r1, r1Set);
+        buf.send(r2, r2Set);
     }
 
     @Override

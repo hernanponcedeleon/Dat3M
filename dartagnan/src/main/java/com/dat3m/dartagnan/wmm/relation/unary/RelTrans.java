@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.verification.Context;
@@ -12,6 +13,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -24,7 +26,6 @@ import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 public class RelTrans extends UnaryRelation {
 
     Map<Event, Set<Event>> transitiveReachabilityMap;
-    private TupleSet fullEncodeTupleSet;
 
     public static String makeTerm(Relation r1){
         return r1.getName() + "^+";
@@ -43,7 +44,6 @@ public class RelTrans extends UnaryRelation {
     @Override
     public void initializeRelationAnalysis(VerificationTask task, Context context) {
         super.initializeRelationAnalysis(task, context);
-        fullEncodeTupleSet = new TupleSet();
         transitiveReachabilityMap = null;
     }
 
@@ -84,15 +84,19 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public void addEncodeTupleSet(TupleSet tuples){
-        TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
-        encodeTupleSet.addAll(activeSet);
-
-        TupleSet fullActiveSet = getFullEncodeTupleSet(activeSet);
-        if(fullEncodeTupleSet.addAll(fullActiveSet)){
-            fullActiveSet.removeAll(getMinTupleSet());
-            r1.addEncodeTupleSet(fullActiveSet);
+    public void activate(Set<Tuple> news, WmmEncoder.Buffer buf) {
+        HashSet<Tuple> factors = new HashSet<>();
+        for(Tuple t : news) {
+            for(Tuple t1 : maxTupleSet.getByFirst(t.getFirst())) {
+                Tuple t2 = new Tuple(t1.getSecond(), t.getSecond());
+                if(maxTupleSet.contains(t2)) {
+                    factors.add(t1);
+                    factors.add(t2);
+                }
+            }
         }
+        buf.send(this, factors);
+        buf.send(r1, Sets.intersection(news, r1.getMaxTupleSet()));
     }
 
     @Override
@@ -103,7 +107,7 @@ public class RelTrans extends UnaryRelation {
         ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
         TupleSet minSet = getMinTupleSet();
         TupleSet r1Max = r1.getMaxTupleSet();
-        for(Tuple tuple : fullEncodeTupleSet){
+        for(Tuple tuple : encodeTupleSet){
             if (minSet.contains(tuple)) {
                 if(Relation.PostFixApprox) {
                     enc = bmgr.and(enc, bmgr.implication(execution(tuple.getFirst(), tuple.getSecond(), exec, ctx), this.getSMTVar(tuple, ctx)));
@@ -138,33 +142,5 @@ public class RelTrans extends UnaryRelation {
         }
 
         return enc;
-    }
-
-    private TupleSet getFullEncodeTupleSet(TupleSet tuples){
-        TupleSet processNow = new TupleSet(Sets.intersection(tuples, getMaxTupleSet()));
-        TupleSet result = new TupleSet();
-
-        while(!processNow.isEmpty()) {
-            TupleSet processNext = new TupleSet();
-            result.addAll(processNow);
-
-            for (Tuple tuple : processNow) {
-                Event e1 = tuple.getFirst();
-                Event e2 = tuple.getSecond();
-                for (Tuple t : r1.getMaxTupleSet().getByFirst(e1)) {
-                    Event e3 = t.getSecond();
-                    if (e3.getCId() != e1.getCId() && e3.getCId() != e2.getCId() &&
-                            transitiveReachabilityMap.get(e3).contains(e2)) {
-                        result.add(new Tuple(e1, e3));
-                        processNext.add(new Tuple(e3, e2));
-                    }
-                }
-
-            }
-            processNext.removeAll(result);
-            processNow = processNext;
-        }
-
-        return result;
     }
 }

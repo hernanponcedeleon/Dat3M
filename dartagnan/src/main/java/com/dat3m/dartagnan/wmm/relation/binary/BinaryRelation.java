@@ -1,11 +1,12 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Sets;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -52,14 +53,8 @@ public abstract class BinaryRelation extends Relation {
     }
 
     @Override
-    public void addEncodeTupleSet(TupleSet tuples){ // Not valid for composition
-        TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
-        encodeTupleSet.addAll(activeSet);
-        activeSet.removeAll(getMinTupleSet());
-
-        if(!activeSet.isEmpty()){
-            r1.addEncodeTupleSet(activeSet);
-            r2.addEncodeTupleSet(activeSet);
-        }
+    public void activate(Set<Tuple> tuples, WmmEncoder.Buffer buf) { // Not valid for composition
+        buf.send(r1, tuples);
+        buf.send(r2, tuples);
     }
 }

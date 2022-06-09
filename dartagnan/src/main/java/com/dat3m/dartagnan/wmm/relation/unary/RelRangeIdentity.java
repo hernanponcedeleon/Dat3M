@@ -1,14 +1,16 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.util.Set;
 
 public class RelRangeIdentity extends UnaryRelation {
 
@@ -48,26 +50,20 @@ public class RelRangeIdentity extends UnaryRelation {
     }
 
     @Override
-    public void addEncodeTupleSet(TupleSet tuples){
-        TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
-        encodeTupleSet.addAll(activeSet);
-        activeSet.removeAll(getMinTupleSet());
-
+    public void activate(Set<Tuple> activeSet, WmmEncoder.Buffer buf) {
         //TODO: Optimize using minSets (but no CAT uses this anyway)
-        if(!activeSet.isEmpty()){
-            TupleSet r1Set = new TupleSet();
-            for(Tuple tuple : activeSet){
-                r1Set.addAll(r1.getMaxTupleSet().getBySecond(tuple.getFirst()));
-            }
-            r1.addEncodeTupleSet(r1Set);
+        TupleSet r1Set = new TupleSet();
+        for(Tuple tuple : activeSet) {
+            r1Set.addAll(r1.getMaxTupleSet().getBySecond(tuple.getFirst()));
         }
+        buf.send(r1, r1Set);
     }
 
     @Override
     public BooleanFormula encode(SolverContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
-		
+
         //TODO: Optimize using minSets (but no CAT uses this anyway)
         for(Tuple tuple1 : encodeTupleSet){
             Event e = tuple1.getFirst();
