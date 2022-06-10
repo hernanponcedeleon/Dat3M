@@ -7,6 +7,9 @@ RC11
  * Cat coding by Sicon Colin.
  *)
 
+(* Define co (and fr) *)
+include "cos.cat"
+
 let eco = (rf | co | fr)+
 let rs = [W]; (po & loc)?; [W & (RLX | REL | ACQ_REL | ACQ | SC)]; (rf; rmw)*
 let sw = [(REL | ACQ_REL | SC)]; ([F]; po)?; rs; rf; [R & (RLX | REL | ACQ | ACQ_REL | SC)]; (po; [F])?; [(ACQ | ACQ_REL | SC)]
