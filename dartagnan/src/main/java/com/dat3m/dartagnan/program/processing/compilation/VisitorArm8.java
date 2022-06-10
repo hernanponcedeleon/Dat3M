@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.EventFactory.AArch64;
+import com.dat3m.dartagnan.program.event.Tag.ARMv8;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -14,6 +15,7 @@ import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.LKMMFence;
 import com.dat3m.dartagnan.program.event.lang.linux.LKMMLoad;
 import com.dat3m.dartagnan.program.event.lang.linux.LKMMStore;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWAddUnless;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
@@ -250,7 +252,7 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 		
-        Load load = newLoad(resultRegister, address, mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : null);
+        Load load = newLoad(resultRegister, address, ARMv8.extractLoadMoFromLKMo(mo));
         
         return eventSequence(
                 load
@@ -328,8 +330,8 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(new Atom(new IExprBin(dummy, IOpBin.XOR, (IExpr) e.getCmp()), NEQ, IValue.ZERO), casEnd);
 
-        Load load = newRMWLoadExclusive(dummy, address, mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : null);
-        Store store = newRMWStoreExclusive(address, value, mo.equals(Tag.Linux.MO_RELEASE) || mo.equals(Tag.Linux.MO_MB) ? Tag.ARMv8.MO_REL : null, true);
+        Load load = newRMWLoadExclusive(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
+        Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromLKMo(mo), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
@@ -357,8 +359,8 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        Load load = newRMWLoadExclusive(dummy, address, mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : null);
-        Store store = newRMWStoreExclusive(address, value, mo.equals(Tag.Linux.MO_RELEASE) || mo.equals(Tag.Linux.MO_MB) ? Tag.ARMv8.MO_REL : null, true);
+        Load load = newRMWLoadExclusive(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
+        Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromLKMo(mo), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
@@ -407,8 +409,8 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 		String mo = e.getMo();
 		
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        Load load = newRMWLoadExclusive(dummy, address, mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : null);
-        Store store = newRMWStoreExclusive(address, dummy, mo.equals(Tag.Linux.MO_RELEASE) || mo.equals(Tag.Linux.MO_MB) ? Tag.ARMv8.MO_REL : null, true);
+        Load load = newRMWLoadExclusive(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
+        Store store = newRMWStoreExclusive(address, dummy, ARMv8.extractStoreMoFromLKMo(mo), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
@@ -434,8 +436,8 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 		String mo = e.getMo();
 		
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		Load load = newRMWLoadExclusive(dummy, address, mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : null);
-        Store store = newRMWStoreExclusive(address, new IExprBin(dummy, e.getOp(), value), mo.equals(Tag.Linux.MO_RELEASE) || mo.equals(Tag.Linux.MO_MB) ? Tag.ARMv8.MO_REL : null, true);
+		Load load = newRMWLoadExclusive(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
+        Store store = newRMWStoreExclusive(address, new IExprBin(dummy, e.getOp(), value), ARMv8.extractStoreMoFromLKMo(mo), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
@@ -450,49 +452,45 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
         );
 	}
 	
-//	// The implementation relies on arch_atomic_fetch_add_unless
-//	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/add_unless
-//	// which falls back to the following
-//	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/fetch_add_unless
-//	@Override
-//	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
-//		Register resultRegister = e.getResultRegister();
-//		IExpr address = e.getAddress();
-//		ExprInterface value = e.getMemValue();
-//		String mo = e.getMo();
-//		int precision = resultRegister.getPrecision();
-//
-//        Register regValue = e.getThread().newRegister(precision);
-//        // Power does not have mo tags, thus we use null
-//        Load load = newRMWLoadExclusive(regValue, address, null);
-//        Store store = newRMWStoreExclusive(address, new IExprBin(regValue, IOpBin.PLUS, (IExpr) value), null, true);
-//        Label label = newLabel("FakeDep");
-//        Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
-//
-//        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-//		ExprInterface unless = e.getCmp();
-//        Label cauEnd = newLabel("CAddU_end");
-//        CondJump branchOnCauCmpResult = newJump(new Atom(dummy, EQ, IValue.ZERO), cauEnd);
-//
-//        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-//                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-//        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-//        		: mo.equals(Tag.Linux.MO_ACQUIRE)? Power.newISyncBarrier() : null;
-//
-//        return eventSequence(
-//                // Indentation shows the branching structure
-//                optionalMemoryBarrierBefore,
-//                load,
-//                newLocal(dummy, new Atom(regValue, NEQ, unless)),
-//                branchOnCauCmpResult,
-//                    store,
-//                    fakeCtrlDep,
-//                    label,
-//                    optionalMemoryBarrierAfter,
-//                cauEnd,
-//                newLocal(resultRegister, dummy)
-//        );
-//	};
+	// This is a simplified version that should be correct according to the instruction's semantics.
+	// The implementation from the kernel is overly complicated, but since it relies on several macros
+	// (atomic_add_unless -> atomic_fetch_add_unless -> atomic_try_cmpxchg -> atomic_cmpxchg)
+	// and not on inlined assembly, we don't really need to test that the compilation is correct
+	// (the other methods implementing the macros are been tested already).
+	@Override
+	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+		Register resultRegister = e.getResultRegister();
+		IExpr address = e.getAddress();
+		ExprInterface value = e.getMemValue();
+		String mo = e.getMo();
+		int precision = resultRegister.getPrecision();
+
+        Register regValue = e.getThread().newRegister(precision);
+		Load load = newRMWLoadExclusive(regValue, address, ARMv8.extractLoadMoFromLKMo(mo));
+        Store store = newRMWStoreExclusive(address, new IExprBin(regValue, IOpBin.PLUS, (IExpr) value), ARMv8.extractStoreMoFromLKMo(mo), true);
+        
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
+
+        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+		ExprInterface unless = e.getCmp();
+        Label cauEnd = newLabel("CAddU_end");
+        CondJump branchOnCauCmpResult = newJump(new Atom(dummy, EQ, IValue.ZERO), cauEnd);
+        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
+
+        return eventSequence(
+                // Indentation shows the branching structure
+                load,
+                newLocal(dummy, new Atom(regValue, NEQ, unless)),
+                branchOnCauCmpResult,
+                    store,
+                    fakeCtrlDep,
+                    label,
+                    optionalMemoryBarrierAfter,
+                cauEnd,
+                newLocal(resultRegister, dummy)
+        );
+	};
 	
 	// The implementation is arch_${atomic}_op_return(i, v) == 0;
 	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
@@ -511,8 +509,8 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
         Local localOp = newLocal(retReg, new IExprBin(dummy, op, value));
         Local testOp = newLocal(resultRegister, new Atom(retReg, EQ, IValue.ZERO));
 
-        Load load = newRMWLoadExclusive(dummy, address, mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : null);
-        Store store = newRMWStoreExclusive(address, retReg, mo.equals(Tag.Linux.MO_RELEASE) || mo.equals(Tag.Linux.MO_MB) ? Tag.ARMv8.MO_REL : null, true);
+        Load load = newRMWLoadExclusive(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
+        Store store = newRMWStoreExclusive(address, retReg, ARMv8.extractStoreMoFromLKMo(mo), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
