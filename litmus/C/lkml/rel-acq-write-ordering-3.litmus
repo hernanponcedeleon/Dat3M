@@ -1,0 +1,24 @@
+C rel-acq-write-ordering-3
+
+(*
+ * Taken from https://marc.info/?l=linux-kernel&m=151181741400461&w=2
+ *)
+
+{}
+
+P0(int *x, int *s, int *y)
+{
+    WRITE_ONCE(*x, 1);
+    smp_store_release(s, 1);
+    r1 = smp_load_acquire(s);
+    WRITE_ONCE(*y, 1);
+}
+
+P1(int *x, int *y)
+{
+    r2 = READ_ONCE(*y);
+    smp_rmb();
+    r3 = READ_ONCE(*x);
+}
+
+exists (1:r2=1 /\ 1:r3=0)

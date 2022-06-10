@@ -13031,3 +13031,9 @@ litmus/C/luc/WeakFence/C-wrr+2w+fencermbonceonce+fencewmbonceonce+Once.litmus,1
 litmus/C/luc/WeakFence/C-s+fencewmbonceonce+fencembonceonce.litmus,0
 litmus/C/luc/WeakFence/C-w+rwc+fencewmbonceonce+fencermbonceonce+fencembonceonce.litmus,1
 litmus/C/luc/WeakFence/C-irrwiw+fencermbonceonce+fencembonceonce+OnceOnce.litmus,1
+litmus/C/lkml/rel-acq-write-ordering-2.litmus,1
+litmus/C/lkml/unlock-lock-write-ordering-2.litmus,0
+litmus/C/lkml/rel-acq-write-ordering-3.litmus,1
+litmus/C/lkml/rel-acq-write-ordering-1.litmus,1
+litmus/C/lkml/unlock-lock-write-ordering-3.litmus,0
+litmus/C/lkml/unlock-lock-write-ordering-1.litmus,0
