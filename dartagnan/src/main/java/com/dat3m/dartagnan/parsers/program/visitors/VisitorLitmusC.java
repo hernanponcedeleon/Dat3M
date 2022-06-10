@@ -258,6 +258,24 @@ public class VisitorLitmusC
         return register;
     }
 
+	@Override 
+	public IExpr visitReC11SCmpXchg(LitmusCParser.ReC11SCmpXchgContext ctx) {
+        Register register = getReturnRegister(true);
+        IExpr value = (IExpr)ctx.value.accept(this);
+        Event event = EventFactory.Atomic.newCompareExchange(register, getAddress(ctx.address), getAddress(ctx.expectedAdd), value, ctx.c11Mo(0).mo, true);
+        programBuilder.addChild(currentThread, event);
+        return register;
+	}
+
+	@Override 
+	public IExpr visitReC11WCmpXchg(LitmusCParser.ReC11WCmpXchgContext ctx) {
+        Register register = getReturnRegister(true);
+        IExpr value = (IExpr)ctx.value.accept(this);
+        Event event = EventFactory.Atomic.newCompareExchange(register, getAddress(ctx.address), getAddress(ctx.expectedAdd), value, ctx.c11Mo(0).mo, false);
+        programBuilder.addChild(currentThread, event);
+        return register;
+	}
+
     @Override
     public IExpr visitReCmpXchg(LitmusCParser.ReCmpXchgContext ctx){
         Register register = getReturnRegister(true);
@@ -443,6 +461,11 @@ public class VisitorLitmusC
         }
         throw new ParsingException("Register " + ctx.varName().getText() + " is already initialised");
     }
+
+	@Override
+	public Object visitNreC11Fence(LitmusCParser.NreC11FenceContext ctx) {
+		return programBuilder.addChild(currentThread, EventFactory.Atomic.newFence(ctx.c11Mo().mo));
+	}
 
     @Override
     public Object visitNreFence(LitmusCParser.NreFenceContext ctx){

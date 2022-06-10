@@ -100,6 +100,9 @@ re locals [IOpBin op, String mo]
         | AtomicCmpXchgAcquire LPar address = re Comma cmp = re Comma value = re RPar {$mo = Linux.MO_ACQUIRE;}
         | AtomicCmpXchgRelease LPar address = re Comma cmp = re Comma value = re RPar {$mo = Linux.MO_RELEASE;})              # reCmpXchg
 
+    |   C11AtomicSCAS LPar address = re Comma expectedAdd = re Comma value = re Comma c11Mo Comma c11Mo RPar                       # reC11SCmpXchg
+    |   C11AtomicWCAS LPar address = re Comma expectedAdd = re Comma value = re Comma c11Mo Comma c11Mo RPar                       # reC11WCmpXchg
+
     |   ( CmpXchg        LPar address = re Comma cmp = re Comma value = re RPar {$mo = Linux.MO_MB;}
         | CmpXchgRelaxed LPar address = re Comma cmp = re Comma value = re RPar {$mo = Linux.MO_RELAXED;}
         | CmpXchgAcquire LPar address = re Comma cmp = re Comma value = re RPar {$mo = Linux.MO_ACQUIRE;}
@@ -169,6 +172,8 @@ nre locals [IOpBin op, String mo, String name]
         | RcuReadLock LPar RPar {$name = Linux.RCU_LOCK;}
         | RcuReadUnlock LPar RPar {$name = Linux.RCU_UNLOCK;}
         | (RcuSync | RcuSyncExpedited) LPar RPar {$name = Linux.RCU_SYNC;})                                             # nreFence
+
+    |   C11AtomicFence LPar c11Mo RPar                                                                                  # nreC11Fence
 
     ;
 
@@ -285,7 +290,7 @@ MoAcqRel
     :   'memory_order_acq_rel'
     ;
 
-MoSecCst
+MoSeqCst
     :   'memory_order_seq_cst'
     ;
 
