@@ -268,6 +268,13 @@ public class VisitorLitmusC
         return register;
     }
 
+	@Override public IExpr visitReC11Load(LitmusCParser.ReC11LoadContext ctx) {
+        Register register = getReturnRegister(true);
+        Event event = EventFactory.Atomic.newLoad(register, getAddress(ctx.address), ctx.c11Mo().mo);
+        programBuilder.addChild(currentThread, event);
+        return register;
+	}
+
     @Override
     public IExpr visitReLoad(LitmusCParser.ReLoadContext ctx){
         Register register = getReturnRegister(true);
@@ -395,6 +402,13 @@ public class VisitorLitmusC
         Event event = EventFactory.Linux.newLKMMStore(getAddress(ctx.address), value, ctx.mo);
         return programBuilder.addChild(currentThread, event);
     }
+
+	@Override
+	public Object visitNreC11Store(LitmusCParser.NreC11StoreContext ctx) {
+        ExprInterface value = (ExprInterface)ctx.value.accept(this);
+        Event event = EventFactory.Atomic.newStore(getAddress(ctx.address), value, ctx.c11Mo().mo);
+        return programBuilder.addChild(currentThread, event);
+	}
 
     @Override
     public Object visitNreAssignment(LitmusCParser.NreAssignmentContext ctx){

@@ -1,6 +1,6 @@
 grammar LitmusC;
 
-import LinuxLexer, LitmusAssertions;
+import LinuxLexer, C11Lexer, LitmusAssertions;
 
 @header{
 import com.dat3m.dartagnan.expression.op.*;
@@ -16,7 +16,7 @@ variableDeclaratorList
     ;
 
 globalDeclarator
-    :   typeSpecifier? varName (Equals initConstantValue)?                                                              # globalDeclaratorLocation
+    :   typeSpecifier? LBracket? varName RBracket? (Equals initConstantValue)?                                                              # globalDeclaratorLocation
     |   typeSpecifier? t = threadId Colon n = varName (Equals initConstantValue)?                                       # globalDeclaratorRegister
     |   typeSpecifier? varName (Equals Ast? (Amp? varName | LPar Amp? varName RPar))?                                   # globalDeclaratorLocationLocation
     |   typeSpecifier? t = threadId Colon n = varName (Equals Ast? (Amp? varName | LPar Amp? varName RPar))?            # globalDeclaratorRegisterLocation
@@ -111,6 +111,8 @@ re locals [IOpBin op, String mo]
 
     |   AtomicAddUnless LPar address = re Comma value = re Comma cmp = re RPar                                          # reAtomicAddUnless
 
+    |   C11AtomicLoad    LPar address = re Comma c11Mo RPar                                                            # reC11Load
+
     |   ( AtomicReadAcquire LPar address = re RPar {$mo = Linux.MO_ACQUIRE;}
         | AtomicRead        LPar address = re RPar {$mo = Linux.MO_ONCE;}
         | RcuDereference    LPar Ast? address = re RPar {$mo = Linux.MO_ONCE;}
@@ -147,6 +149,8 @@ nre locals [IOpBin op, String mo, String name]
         | RcuAssignPointer  LPar Ast? address = re Comma value = re RPar {$mo = Linux.MO_RELEASE;})                           # nreStore
 
     |   WriteOnce LPar Ast address = re Comma value = re RPar {$mo = Linux.MO_ONCE;}                                           # nreWriteOnce
+
+    |   C11AtomicStore    LPar address = re  Comma value = re Comma c11Mo RPar                                          # nreC11Store
 
     |   Ast? varName Equals re                                                                                          # nreAssignment
     |   typeSpecifier varName (Equals re)?                                                                              # nreRegDeclaration
@@ -199,6 +203,15 @@ opArith returns [IOpBin op]
     |   Circ    {$op = IOpBin.XOR;}
     ;
 
+c11Mo returns [String mo]
+    :   MoRelaxed   {$mo = C11.MO_RELAXED;}
+    |   MoConsume   {$mo = C11.MO_CONSUME;}
+    |   MoAcquire   {$mo = C11.MO_ACQUIRE;}
+    |   MoRelease   {$mo = C11.MO_RELEASE;}
+    |   MoAcqRel    {$mo = C11.MO_ACQUIRE_RELEASE;}
+    |   MoSeqCst    {$mo = C11.MO_SC;}
+    ;
+
 threadVariable returns [int tid, String name]
     :   t = threadId Colon n = varName  {$tid = $t.id; $name = $n.text;}
     ;
@@ -233,6 +246,7 @@ typeSpecifier
 
 basicTypeSpecifier
     :   Int
+    |   AtomiInt
     |   IntPtr
     |   Char
     ;
@@ -249,6 +263,30 @@ varName
 // Allowed outside of thread body (otherwise might conflict with pointer cast)
 comment
     :   LPar Ast .*? Ast RPar
+    ;
+
+MoRelaxed
+    :   'memory_order_relaxed'
+    ;
+
+MoConsume
+    :   'memory_order_consume'
+    ;
+
+MoAcquire
+    :   'memory_order_acquire'
+    ;
+
+MoRelease
+    :   'memory_order_release'
+    ;
+
+MoAcqRel
+    :   'memory_order_acq_rel'
+    ;
+
+MoSecCst
+    :   'memory_order_seq_cst'
     ;
 
 Locations
@@ -273,6 +311,10 @@ False
 
 Volatile
     :   'volatile'
+    ;
+
+AtomiInt
+    :   'atomic_int'
     ;
 
 Int
