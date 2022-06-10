@@ -1,5 +1,5 @@
 C roachmotel
-{ [a] = 0; [x] = 0; [y] = 0; [z] = 0 }
+{ [a] = 0; [x] = 0; [y] = 0; [z] = 0; }
 
 P0 (volatile int* a, atomic_int* z) {
   atomic_store_explicit(z, 1, memory_order_release);

@@ -1,5 +1,5 @@
 C linearisation2
-{ [x] = 0; [y] = 0; [w] = 0; [z] = 0 }
+{ [x] = 0; [y] = 0; [w] = 0; [z] = 0; }
 
 P0 (atomic_int* w, atomic_int* x, volatile int* y) {
   int t = atomic_load_explicit(x, memory_order_acquire);

@@ -1,5 +1,5 @@
 C strengthen
-{ [a] = 0; [x] = 0; [y] = 0; [z] = 0 }
+{ [a] = 0; [x] = 0; [y] = 0; [z] = 0; }
 
 P0 (volatile int* a, atomic_int* z) {
   *a = 1;

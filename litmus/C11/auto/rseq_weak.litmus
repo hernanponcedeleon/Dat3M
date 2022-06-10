@@ -1,5 +1,5 @@
 C rseq_weak
-{ [x] = 0; [y] = 0 }
+{ [x] = 0; [y] = 0; }
 
 P0 (atomic_int* x) {
   atomic_store_explicit(x, 2, memory_order_relaxed);
