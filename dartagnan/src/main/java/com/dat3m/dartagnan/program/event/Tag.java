@@ -66,6 +66,8 @@ public final class Tag {
     public static final class C11 {
         private C11() {}
 
+        public static final String ATOMIC    	= "A";
+
         public static final String PTHREAD    	= "PTHREAD";
         public static final String LOCK    		= "LOCK";
 

@@ -20,7 +20,7 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
         super(address, mo);
         this.resultRegister = register;
         this.value = value;
-        addFilters(ANY, VISIBLE, MEMORY, READ, WRITE, RMW, REG_WRITER, REG_READER);
+        addFilters(ANY, VISIBLE, MEMORY, READ, WRITE, RMW, REG_WRITER, REG_READER, C11.ATOMIC);
     }
 
     AtomicAbstract(AtomicAbstract other) {
