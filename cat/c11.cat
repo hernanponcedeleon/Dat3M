@@ -1,8 +1,11 @@
 "C++11"
 
-let cacq = ACQ | (SC & (R | F)) | ACQ_REL | (F & con)
+include "cos.cat"
+
+let cacq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CONS)
 let crel = REL | (SC & (W | F)) | ACQ_REL
 let ccon = R & CONS
+let nonatomicloc = M \ (ACQ | CONS | REL | ACQ_REL | SC)
 
 let dd = (data | addr)+
 
@@ -45,8 +48,7 @@ let hbl = hb & loc
 irreflexive ((rf^-1)? ; co ; rf? ; hb) as Coh
 
 (* visible_side_effect_set *)
-let vis = ([W] ; hbl ; [R])
-          & ~(hbl; [W]; hbl)
+let vis = ([W] ; hbl ; [R]) & ~(hbl; [W]; hbl)
 
 (* consistent_atomic_rf *)
 irreflexive (rf ; hb) as Rf
@@ -55,7 +57,6 @@ irreflexive (rf ; hb) as Rf
 empty ((rf ; [nonatomicloc]) \ vis) as NaRf
 
 irreflexive (rf | (co ; co ; rf^-1) | (co ; rf)) as Rmw
-
 
 (* locks_only_consistent_lo *)
 //irreflexive (lo ; hb) as Lo1
@@ -83,7 +84,7 @@ let ur = int & ((W * M) | (M * W)) &
 
 let r1 = hb
 let r2 = fsb? ; co ; sbf?
-let r3 = rf^-1; [sc] ; co
+let r3 = rf^-1; [SC] ; co
 let r4 = rf^-1 ; hbl ; [W]
 let r5 = fsb ; fr
 let r6 = fr ; sbf
@@ -91,10 +92,9 @@ let r7 = fsb ; fr ; sbf
 
 let scp = r1|r2|r3|r4|r5|r6|r7
 
-acyclic (((sc * sc) & scp) \ [_]) as Spartial
+acyclic (((SC * SC) & scp) \ [_]) as Spartial
 
 //undefined_unless empty dr as Dr 
 //undefined_unless empty ur as unsequencedRace 
 //undefined_unless empty bl as badLock
 //undefined_unless empty lu as badUnlock
-
