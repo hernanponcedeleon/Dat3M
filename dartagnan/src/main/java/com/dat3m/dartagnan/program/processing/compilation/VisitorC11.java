@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
@@ -75,14 +76,18 @@ public class VisitorC11 extends VisitorBase implements EventVisitor<List<Event>>
 		Register regExpected = e.getThread().newRegister(precision);
         Register regValue = e.getThread().newRegister(precision);
         Load loadExpected = newLoad(regExpected, expectedAddr, null);
+        loadExpected.addFilters(C11.ATOMIC);
         Store storeExpected = newStore(expectedAddr, regValue, null);
+        storeExpected.addFilters(C11.ATOMIC);
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
         Load loadValue = newRMWLoad(regValue, address, mo);
+        loadValue.addFilters(C11.ATOMIC);
         Store storeValue = newRMWStore(loadValue, address, e.getMemValue(), mo);
+        storeValue.addFilters(C11.ATOMIC);
 
         return eventSequence(
                 // Indentation shows the branching structure
@@ -107,25 +112,34 @@ public class VisitorC11 extends VisitorBase implements EventVisitor<List<Event>>
 		
         Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
         Load load = newRMWLoad(resultRegister, address, mo);
-
-        return eventSequence(
+        load.addFilters(C11.ATOMIC);
+        RMWStore store = newRMWStore(load, address, dummyReg, mo);
+        store.addFilters(C11.ATOMIC);
+        
+		return eventSequence(
                 load,
                 newLocal(dummyReg, new IExprBin(resultRegister, op, (IExpr) e.getMemValue())),
-                newRMWStore(load, address, dummyReg, mo)
+                store
         );
 	}
 
 	@Override
 	public List<Event> visitAtomicLoad(AtomicLoad e) {
-        return eventSequence(
-        		newLoad(e.getResultRegister(), e.getAddress(), e.getMo())
+        Load load = newLoad(e.getResultRegister(), e.getAddress(), e.getMo());
+        load.addFilters(C11.ATOMIC);
+        
+		return eventSequence(
+        		load
         );
 	}
 
 	@Override
 	public List<Event> visitAtomicStore(AtomicStore e) {
-        return eventSequence(
-        		newStore(e.getAddress(), e.getMemValue(), e.getMo())
+        Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo());
+        store.addFilters(C11.ATOMIC);
+        
+		return eventSequence(
+        		store
         );
 	}
 
@@ -140,10 +154,13 @@ public class VisitorC11 extends VisitorBase implements EventVisitor<List<Event>>
 		String mo = e.getMo();
 
         Load load = newRMWLoad(e.getResultRegister(), address, mo);
+        load.addFilters(C11.ATOMIC);
+        RMWStore store = newRMWStore(load, address, e.getMemValue(), mo);
+        store.addFilters(C11.ATOMIC);
         
-        return eventSequence(
+		return eventSequence(
                 load,
-                newRMWStore(load, address, e.getMemValue(), mo)
+                store
         );
 	}
 
@@ -161,8 +178,10 @@ public class VisitorC11 extends VisitorBase implements EventVisitor<List<Event>>
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
 
         Load load = newRMWLoad(regValue, address, mo);
+        load.addFilters(C11.ATOMIC);
         Store store = newRMWStore(load, address, value, mo);
-
+        store.addFilters(C11.ATOMIC);
+        
         return eventSequence(
                 // Indentation shows the branching structure
                 load,
