@@ -13,7 +13,8 @@ public class OptionNames {
 	
 	// Compilation Options
 	public static final String NOOOTA = "compilation.nooota";
-
+	public static final String SYNCSCHEME = "compilation.syncScheme";
+	
 	// Encoding Options
 	public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";
 	public static final String ALLOW_PARTIAL_EXECUTIONS = "encoding.allowPartialExecutions";

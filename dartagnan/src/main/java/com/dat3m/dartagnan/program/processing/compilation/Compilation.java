@@ -42,6 +42,12 @@ public class Compilation implements ProgramProcessor {
             toUppercase = true)
     private boolean noota = true;
 
+    @Option(name = SYNCSCHEME,
+            description = "Synchronization scheme for POWER.",
+            secure = true,
+            toUppercase = true)
+    private SyncScheme scheme = SyncScheme.LEADING;
+
     @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
             description = "Prints the program after compilation.",
             secure = true)
@@ -82,7 +88,7 @@ public class Compilation implements ProgramProcessor {
             case TSO:
                 visitor = new VisitorTso(); break;
             case POWER:
-                visitor = new VisitorPower(); break;
+                visitor = new VisitorPower(scheme); break;
             case ARM8:
                 visitor = new VisitorArm8(noota); break;
             case IMM:
