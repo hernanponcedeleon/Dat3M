@@ -11,6 +11,9 @@ public class OptionNames {
 	public static final String TIMEOUT = "timeout";
 	public static final String VALIDATE = "validate";
 	
+	// Compilation Options
+	public static final String NOOOTA = "compilation.nooota";
+
 	// Encoding Options
 	public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";
 	public static final String ALLOW_PARTIAL_EXECUTIONS = "encoding.allowPartialExecutions";

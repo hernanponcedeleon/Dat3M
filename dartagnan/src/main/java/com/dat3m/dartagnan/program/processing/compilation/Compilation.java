@@ -36,6 +36,12 @@ public class Compilation implements ProgramProcessor {
     public Arch getTarget() { return target; }
     public void setTarget(Arch target) { this.target = target;}
 
+    @Option(name = NOOOTA,
+            description = "Forbid out-of-thin-air behaviours.",
+            secure = true,
+            toUppercase = true)
+    private boolean noota = true;
+
     @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
             description = "Prints the program after compilation.",
             secure = true)
@@ -78,7 +84,7 @@ public class Compilation implements ProgramProcessor {
             case POWER:
                 visitor = new VisitorPower(); break;
             case ARM8:
-                visitor = new VisitorArm8(); break;
+                visitor = new VisitorArm8(noota); break;
             case IMM:
                 visitor = new VisitorIMM(); break;
             default:
