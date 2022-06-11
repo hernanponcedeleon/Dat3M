@@ -34,12 +34,19 @@ import static com.dat3m.dartagnan.program.processing.compilation.SyncScheme.LEAD
 
 class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 
-	// The compilation schemes below follow Figures 9 and 10 from 
-	// "Repairing Sequential Consistency in C/C++11"
-
+	// The compilation schemes below follow the paper
+	// "Clarifying and Compiling C/C++ Concurrency: from C++11 to POWER"
+	// The paper does not defines the mappings for RMW but we derive them
+	// using the same pattern as for Load/Store	
 	private final SyncScheme scheme;
-	
-	protected VisitorPower(SyncScheme scheme) {
+	// If the source WMM does not allow OOTA behaviors (e.g. RC11)
+	// we need to strength the compilation following the papers
+	// "Repairing Sequential Consistency in C/C++11"
+	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
+	private final boolean nooota; 
+
+	protected VisitorPower(boolean nooota, SyncScheme scheme) {
+		this.nooota = nooota;
 		this.scheme = scheme;
 	}
 	
@@ -257,8 +264,10 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 				optionalBarrierAfter = Power.newISyncBarrier();
 				break;
 			case C11.MO_RELAXED:
-				optionalLabel = newLabel("FakeDep");
-				optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
+				if(nooota) {
+					optionalLabel = newLabel("FakeDep");
+					optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);					
+				}
 				break;
 		}
 

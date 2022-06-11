@@ -40,7 +40,7 @@ public class Compilation implements ProgramProcessor {
             description = "Forbid out-of-thin-air behaviours.",
             secure = true,
             toUppercase = true)
-    private boolean noota = true;
+    private boolean nooota = false;
 
     @Option(name = SYNCSCHEME,
             description = "Synchronization scheme for POWER.",
@@ -88,9 +88,9 @@ public class Compilation implements ProgramProcessor {
             case TSO:
                 visitor = new VisitorTso(); break;
             case POWER:
-                visitor = new VisitorPower(scheme); break;
+                visitor = new VisitorPower(nooota, scheme); break;
             case ARM8:
-                visitor = new VisitorArm8(noota); break;
+                visitor = new VisitorArm8(nooota); break;
             case IMM:
                 visitor = new VisitorIMM(); break;
             default:

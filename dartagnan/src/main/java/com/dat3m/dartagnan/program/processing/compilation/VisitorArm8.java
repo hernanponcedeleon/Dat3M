@@ -24,6 +24,9 @@ import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 
 class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 
+	// If the source WMM does not allow OOTA behaviors (e.g. RC11)
+	// we need to strength the compilation following the paper
+	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
 	private final boolean nooota; 
 	
 	protected VisitorArm8(boolean nooota) {
