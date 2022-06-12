@@ -2,10 +2,10 @@
 
 include "cos.cat"
 
-let cacq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CONS)
+let cacq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CON)
 let crel = REL | (SC & (W | F)) | ACQ_REL
-let ccon = R & CONS
-let nonatomicloc = M \ (ACQ | CONS | REL | ACQ_REL | SC)
+let ccon = R & CON
+let nonatomicloc = M \ (ACQ | CON | REL | ACQ_REL | SC)
 
 let dd = (data | addr)+
 
@@ -66,12 +66,12 @@ irreflexive (rf | (co ; co ; rf^-1) | (co ; rf)) as Rmw
 //  ~(lo ; [ul] ; lo)) as Lo2
 
 (* data_races *)
-let cnf = ((W * _) | (_ * W)) & loc
-let dr = ext & (cnf \ hb \ (hb^-1) \ (A * A))
+//let cnf = ((W * _) | (_ * W)) & loc
+//let dr = ext & (cnf \ hb \ (hb^-1) \ (A * A))
 
 (* unsequenced_races *)
-let ur = int & ((W * M) | (M * W)) &
-         loc & ~[_] & ~(po+) & ~((po+)^-1)
+//let ur = int & ((W * M) | (M * W)) &
+//         loc & ~[_] & ~(po+) & ~((po+)^-1)
 
 (* locks_only_good_mutex_use,
    locks_only_bad_mutexes *)
@@ -92,7 +92,7 @@ let r7 = fsb ; fr ; sbf
 
 let scp = r1|r2|r3|r4|r5|r6|r7
 
-acyclic (((SC * SC) & scp) \ [_]) as Spartial
+acyclic (((SC * SC) & scp) \ id) as Spartial
 
 //undefined_unless empty dr as Dr 
 //undefined_unless empty ur as unsequencedRace 
