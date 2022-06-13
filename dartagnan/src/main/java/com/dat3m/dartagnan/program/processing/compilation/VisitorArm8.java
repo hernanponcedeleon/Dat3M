@@ -318,7 +318,6 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 
 	// Following
 	// 		https://elixir.bootlin.com/linux/v5.18/source/arch/arm64/include/asm/atomic_ll_sc.h#L259
-	// Instead of using a comparison, it uses a XOR
 	@Override
 	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
@@ -328,8 +327,10 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 
 		Register dummy = e.getThread().newRegister(e.getResultRegister().getPrecision());
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(new Atom(new IExprBin(dummy, IOpBin.XOR, (IExpr) e.getCmp()), NEQ, IValue.ZERO), casEnd);
-
+    	// The real scheme uses XOR instead of comparison, but both are semantically 
+        // equivalent and XOR harms performance substantially.
+        CondJump branchOnCasCmpResult = newJump(new Atom(dummy, NEQ, e.getCmp()), casEnd);
+        
         Load load = newRMWLoadExclusive(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
         Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromLKMo(mo), true);
         Label label = newLabel("FakeDep");
