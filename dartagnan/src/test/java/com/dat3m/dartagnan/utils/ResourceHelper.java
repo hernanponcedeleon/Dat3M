@@ -16,9 +16,9 @@ public class ResourceHelper {
 
     private static ImmutableMap<String, Result> expectedResults;
 
-    public static ImmutableMap<String, Result> getExpectedResults() throws IOException {
+    public static ImmutableMap<String, Result> getExpectedResults(String arch) throws IOException {
         if(expectedResults == null){
-            try (BufferedReader reader = new BufferedReader(new FileReader(TEST_RESOURCE_PATH + "dartagnan-expected.csv"))) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(TEST_RESOURCE_PATH + arch + "-expected.csv"))) {
                 HashMap<String, Result> data = new HashMap<>();
                 String str;
                 while((str = reader.readLine()) != null){

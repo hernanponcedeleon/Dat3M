@@ -34,7 +34,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
@@ -52,15 +51,11 @@ public abstract class AbstractCompilationTest {
     }
 
     static Iterable<Object[]> buildLitmusTests(String litmusPath) throws IOException {
-        int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
-        Map<String, Result> expectationMap = ResourceHelper.getExpectedResults();
-
         try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))) {
             return fileStream
                     .filter(Files::isRegularFile)
                     .map(Path::toString)
                     .filter(f -> f.endsWith("litmus"))
-                    .filter(f -> expectationMap.containsKey(f.substring(n)))
                     .collect(ArrayList::new,
                             (l, f) -> l.add(new Object[]{f}), ArrayList::addAll);
         }

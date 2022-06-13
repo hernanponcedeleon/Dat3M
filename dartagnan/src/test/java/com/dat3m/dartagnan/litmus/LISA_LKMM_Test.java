@@ -15,7 +15,7 @@ public class LISA_LKMM_Test extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-		return buildLitmusTests("litmus/LISA/LKMM/");
+		return buildLitmusTests("litmus/LISA/LKMM/", "LISA");
     }
 
     @Override
@@ -28,7 +28,7 @@ public class LISA_LKMM_Test extends AbstractLitmusTest {
         return Providers.createWmmFromName(() -> "linux-kernel");
     }
 
-    public LISA_LKMM_Test(String path, Result expected) {
-        super(path, expected);
+    public LISA_LKMM_Test(String path, String arch, Result expected) {
+        super(path, arch, expected);
     }
 }

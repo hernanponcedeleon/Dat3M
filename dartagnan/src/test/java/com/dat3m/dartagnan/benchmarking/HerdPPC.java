@@ -15,7 +15,7 @@ public class HerdPPC extends AbstractHerd {
 
 	@Parameterized.Parameters(name = "{index}: {0} {1}")
     public static Iterable<Object[]> data() throws IOException {
-		return buildParameters("litmus/PPC/");
+		return buildParameters("litmus/PPC/", "PPC");
     }
     
     public HerdPPC(String name, Result expected) {

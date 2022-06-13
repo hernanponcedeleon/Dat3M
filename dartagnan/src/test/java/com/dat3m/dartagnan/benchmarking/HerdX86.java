@@ -15,7 +15,7 @@ public class HerdX86 extends AbstractHerd {
 
 	@Parameterized.Parameters(name = "{index}: {0} {1}")
     public static Iterable<Object[]> data() throws IOException {
-		return buildParameters("litmus/X86/");
+		return buildParameters("litmus/X86/", "TSO");
     }
     
     public HerdX86(String name, Result expected) {

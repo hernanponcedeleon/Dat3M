@@ -11,11 +11,11 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
-public class LitmusC11Test extends AbstractLitmusTest {
+public class LitmusRC11Test extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-		return buildLitmusTests("litmus/C11/", "C11");
+		return buildLitmusTests("litmus/C11/", "RC11");
     }
 
     @Override
@@ -25,10 +25,10 @@ public class LitmusC11Test extends AbstractLitmusTest {
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "c11");
+        return Providers.createWmmFromName(() -> "rc11");
     }
 
-    public LitmusC11Test(String path, String arch, Result expected) {
+    public LitmusRC11Test(String path, String arch, Result expected) {
         super(path, arch, expected);
     }
 }
