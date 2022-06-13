@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser;
+import com.dat3m.dartagnan.parsers.LitmusCParser.BasicTypeSpecifierContext;
+import com.dat3m.dartagnan.parsers.LitmusCParser.PointerTypeSpecifierContext;
 import com.dat3m.dartagnan.parsers.LitmusCVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
@@ -174,6 +176,15 @@ public class VisitorLitmusC
             for(LitmusCParser.VarNameContext varName : ctx.varName()){
                 String name = varName.getText();
                 MemoryObject object = programBuilder.getOrNewObject(name);
+                PointerTypeSpecifierContext pType = ctx.pointerTypeSpecifier(0);
+				if(pType != null) {
+                    BasicTypeSpecifierContext bType = pType.basicTypeSpecifier();
+					if(bType != null) {
+                        if(bType.AtomiInt() != null) {
+                        	object.markAsAtomic();
+                        }
+                    }
+                }
                 Register register = programBuilder.getOrCreateRegister(scope, name, ARCH_PRECISION);
                 programBuilder.addChild(currentThread, EventFactory.newLocal(register, object));
             }

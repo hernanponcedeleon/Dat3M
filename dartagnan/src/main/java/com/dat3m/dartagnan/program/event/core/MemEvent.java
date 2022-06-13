@@ -10,7 +10,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 public abstract class MemEvent extends Event {
 
     protected IExpr address;
-    protected final String mo;
+    protected String mo;
 
     protected Formula memAddressExpr;
     protected Formula memValueExpr;
@@ -65,6 +65,10 @@ public abstract class MemEvent extends Event {
     
     public String getMo(){
         return mo;
+    }
+
+    public void setMo(String mo){
+        this.mo = mo;
     }
 
     public boolean canRace() {
