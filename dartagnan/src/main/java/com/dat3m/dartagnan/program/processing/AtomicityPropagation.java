@@ -71,12 +71,9 @@ public class AtomicityPropagation implements ProgramProcessor {
     	
     	@Override
     	public Event visitMemEvent(MemEvent e) {
-    		if(atomics.contains(e.getAddress())) {
-    			e.addFilters(Tag.C11.ATOMIC);
-    			// Accesses to an atomic object without a concrete mo are considered SC
-    			if(e.canRace()) {
-    				e.setMo(Tag.C11.MO_SC);
-    			}
+			// Accesses to an atomic object without a concrete mo are considered SC
+    		if(atomics.contains(e.getAddress()) && e.canRace()) {
+    			e.addFilters(Tag.C11.ATOMIC, Tag.C11.MO_SC);
     		}
     		return e;
     	};
