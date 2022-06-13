@@ -1,92 +1,116 @@
-"C++11"
+C "C++11"
 
-include "cos.cat"
+(* All c11_*.cat files are C11 models
+Overhauling SC atomics in C11 and OpenCL.
+M. Batty, A. Donaldson, J. Wickerson. In Proc.
+43rd ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages (POPL), 2016.
+
+Rewritten by Luc Maranget for herd7
+
+*)
+
+include "c11_cos.cat"
+include "c11_los.cat"
 
 let asw = I * (M \ I)
+// TODO Fix this
+let sb = po & po
+let mo = co & co
 
 let cacq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CON)
 let crel = REL | (SC & (W | F)) | ACQ_REL
 let ccon = R & CON
-let nonatomicloc = M \ (ACQ | CON | REL | ACQ_REL | SC)
+
+let fr = rf^-1 ; mo
 
 let dd = (data | addr)+
 
-let fsb = [F] ; po
-let sbf = po ; [F]
+let fsb = sb & (F * _)
+let sbf = sb & (_ * F)
 
 (* release_acquire_fenced_synchronizes_with,
    hypothetical_release_sequence_set,
    release_sequence_set *)
 
 (* OLD: let rs = [crel] ; fsb? ; [A & W] ;
-     (((co ; [rmw]) | coi) & ~(coe ; [!rmw] ; co))? *)
+         (((mo ; [rmw]) | coi) & ~(coe ; [!rmw] ; mo))? *)
+
 let rs_prime = int | (_ * (R & W))
-let rs = co & rs_prime \ ((co \ rs_prime) ; co)
-               
+let rs = mo & rs_prime \ ((mo \ rs_prime) ; mo)
+
 (* OLD: let swra = ext (rs ; rf ; [A] ; sbf? ; [cacq]) *)
-let swra = ext & ([crel] ; fsb? ; [A & W] ; rs? ; rf ; [R & A] ; sbf? ; [cacq])
-                                     
-//let swul = ext & ([ul] ; lo ; [lk])
-let pp_asw = asw \ (asw ; po)
+let swra =
+ ext &
+ ([crel] ; fsb? ; [A & W] ; rs? ; rf ;
+ [R & A] ; sbf? ; [cacq])
+
+//let swul = ext & ([UL] ; lo ; [LK])
+let pp_asw = asw \ (asw ; sb)
 //let sw = pp_asw | swul | swra
 let sw = pp_asw | swra
 
 (* with_consume_cad_set,
    dependency_ordered_before *)
-let cad = ((rf & po) | dd)+
-let dob = (ext & ([W & crel] ; fsb? ; [A & W] ; rs?; rf; [ccon])); cad?
+let cad = ((rf & sb) | dd)+
+let dob =
+ (ext &
+  ([W & crel] ; fsb? ; [A & W] ;
+   rs?; rf; [ccon]));
+ cad?
 
 (* happens_before,
    inter_thread_happens_before,
    consistent_hb *)
-let ithbr = sw | dob | (sw ; po)
-let ithb = (ithbr | (po ; ithbr))+
-let hb = po | ithb
+let ithbr = sw | dob | (sw ; sb)
+let ithb = (ithbr | (sb ; ithbr))+
+let hb = sb | ithb
 acyclic hb as Hb
 
 (* coherent_memory_use *)
 let hbl = hb & loc
 
-irreflexive ((rf^-1)? ; co ; rf? ; hb) as Coh
+irreflexive ((rf^-1)? ; mo ; rf? ; hb) as Coh
 
 (* visible_side_effect_set *)
-let vis = ([W] ; hbl ; [R]) & ~(hbl; [W]; hbl)
+let vis = (hbl & (W * R)) \ (hbl; [W] ; hbl)
 
 (* consistent_atomic_rf *)
 irreflexive (rf ; hb) as Rf
-          
-(* consistent_non_atomic_rf  *)
-empty ((rf ; [nonatomicloc]) \ vis) as NaRf
 
-irreflexive (rf | (co ; co ; rf^-1) | (co ; rf)) as Rmw
+(* consistent_non_atomic_rf  *)
+empty ((rf ; [R\A]) \ vis) as NaRf
+// NOTE FW is a dynamic tag which we don't yet support
+//empty [FW\A];hbl;[W] as NaRf (* implicit read of Na final writes.. *)
+
+irreflexive (rf | (mo ; mo ; rf^-1) | (mo ; rf)) as Rmw
+
 
 (* locks_only_consistent_lo *)
 //irreflexive (lo ; hb) as Lo1
 
 (* locks_only_consistent_locks *)
-//irreflexive ([ls] ; lo^-1 ; [ls] ;
-//  ~(lo ; [ul] ; lo)) as Lo2
+//irreflexive ([LS] ; lo^-1 ; [LS] ; ~(lo ; [UL] ; lo)) as Lo2
+
 
 (* data_races *)
-//let cnf = ((W * _) | (_ * W)) & loc
+//let Mutex = UL|LS
+//let cnf = (((W * _) | (_ * W)) & loc) \ ((Mutex * _) | (_ * Mutex))
 //let dr = ext & (cnf \ hb \ (hb^-1) \ (A * A))
 
 (* unsequenced_races *)
-//let ur = int & ((W * M) | (M * W)) &
-//         loc & ~[_] & ~(po+) & ~((po+)^-1)
+//let ur = int & ((W * M) | (M * W)) & loc & ~id & ~(sb+) & ~((sb+)^-1)
 
-(* locks_only_good_mutex_use,
-   locks_only_bad_mutexes *)
-//let bl = ([ls]; (po & lo); [lk])
-//         & ~(lo; [ul]; lo)
+(* locks_only_good_mutex_use,  locks_only_bad_mutexes *)
 
-//let losbwoul = (po & lo & ~(lo; [ul]; lo))
-//let lu = [ul] &
-//  ~([ul] ; losbwoul^-1 ; [ls] ; losbwoul ; [ul])
+//let bl = ([LS]; (sb & lo); [LK]) & ~(lo; [UL]; lo)
+
+//let losbwoul = (sb & lo & ~(lo; [UL]; lo))
+
+//let lu = [UL] & ~([UL] ; losbwoul^-1 ; [LS] ; losbwoul ; [UL])
 
 let r1 = hb
-let r2 = fsb? ; co ; sbf?
-let r3 = rf^-1; [SC] ; co
+let r2 = fsb? ; mo ; sbf?
+let r3 = rf^-1; [SC] ; mo
 let r4 = rf^-1 ; hbl ; [W]
 let r5 = fsb ; fr
 let r6 = fr ; sbf
@@ -96,7 +120,9 @@ let scp = r1|r2|r3|r4|r5|r6|r7
 
 acyclic (((SC * SC) & scp) \ id) as Spartial
 
-//undefined_unless empty dr as Dr 
-//undefined_unless empty ur as unsequencedRace 
+//undefined_unless empty dr as Dr
+//undefined_unless empty ur as unsequencedRace
 //undefined_unless empty bl as badLock
 //undefined_unless empty lu as badUnlock
+
+
