@@ -15,7 +15,7 @@ public class LitmusLinuxTest extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-		return buildLitmusTests("litmus/C/", "LKMM");
+		return buildLitmusTests("litmus/LKMM/", "LKMM");
     }
 
     @Override

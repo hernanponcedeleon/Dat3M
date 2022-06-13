@@ -12,7 +12,7 @@ public class LKMM2PPCTest extends AbstractCompilationTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("litmus/C/");
+        return buildLitmusTests("litmus/LKMM/");
     }
 
     public LKMM2PPCTest(String path) {
