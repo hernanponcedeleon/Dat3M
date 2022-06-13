@@ -11,8 +11,8 @@ import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class AtomicityPropagation implements ProgramProcessor {
 	
@@ -30,17 +30,16 @@ public class AtomicityPropagation implements ProgramProcessor {
     public void run(Program program) {
         Preconditions.checkArgument(program.isUnrolled(), "The program needs to be unrolled before atomicity propagation.");
         Preconditions.checkArgument(!program.isCompiled(), "Atomicity propagation needs to be run before compilation.");
+
+        Set<IExpr> atomics = program.getMemory().getObjects().stream().filter(o -> o.isAtomic()).collect(Collectors.toSet());
         for(Thread thread : program.getThreads()) {
-            run(thread);
+			run(thread, atomics);
         }
     }
 
-	private void run(Thread thread) {
+	private void run(Thread thread, Set<IExpr> atomics) {
 		
-	    Set<IExpr> atomics = new HashSet<>();
-	    atomics.addAll(thread.getProgram().getMemory().getObjects());
-	    
-        Event current = thread.getEntry();
+	    Event current = thread.getEntry();
         while (current != null) {
         	if(current instanceof Local) {
         		Local l = (Local)current;

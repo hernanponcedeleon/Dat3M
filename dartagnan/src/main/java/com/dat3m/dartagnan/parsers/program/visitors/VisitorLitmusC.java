@@ -173,10 +173,11 @@ public class VisitorLitmusC
     @Override
     public Object visitThreadArguments(LitmusCParser.ThreadArgumentsContext ctx){
         if(ctx != null){
+        	int id = 0;
             for(LitmusCParser.VarNameContext varName : ctx.varName()){
                 String name = varName.getText();
                 MemoryObject object = programBuilder.getOrNewObject(name);
-                PointerTypeSpecifierContext pType = ctx.pointerTypeSpecifier(0);
+                PointerTypeSpecifierContext pType = ctx.pointerTypeSpecifier(id);
 				if(pType != null) {
                     BasicTypeSpecifierContext bType = pType.basicTypeSpecifier();
 					if(bType != null) {
@@ -187,6 +188,7 @@ public class VisitorLitmusC
                 }
                 Register register = programBuilder.getOrCreateRegister(scope, name, ARCH_PRECISION);
                 programBuilder.addChild(currentThread, EventFactory.newLocal(register, object));
+                id++;
             }
         }
         return null;
