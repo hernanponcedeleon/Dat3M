@@ -10,9 +10,8 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
-import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
+import com.dat3m.dartagnan.verification.solving.IncrementalSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 
 import com.dat3m.dartagnan.configuration.Arch;
@@ -34,11 +33,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
+import static java.util.Collections.emptyList;
 
 public abstract class AbstractCompilationTest {
 
@@ -77,6 +78,7 @@ public abstract class AbstractCompilationTest {
         return Providers.createWmmFromArch(getTargetProvider());
     }
     protected long getTimeout() { return 10000; }
+    protected List<String> getCompilationBreakers() { return emptyList(); }
 
     // ============================================================
 
@@ -126,11 +128,12 @@ public abstract class AbstractCompilationTest {
     			FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_UNLOCK), FilterBasic.get(Tag.Linux.RCU_SYNC)));
     	FilterAbstract lock = FilterUnion.get(FilterBasic.get(Tag.Linux.LOCK_READ), 
     			FilterUnion.get(FilterBasic.get(Tag.Linux.LOCK_WRITE), FilterBasic.get(Tag.Linux.UNLOCK)));
+    	
+    	Result expected = getCompilationBreakers().contains(path) ? Result.FAIL : Result.PASS;
+    	
     	if(task1Provider.get().getProgram().getCache().getEvents(FilterUnion.get(rcu, lock)).isEmpty()) {
-        	if(RefinementSolver.run(context1Provider.get(), prover1Provider.get(),
-                    RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task1Provider.get())).equals(Result.PASS)) {
-        		assertEquals(Result.PASS, RefinementSolver.run(context2Provider.get(), prover2Provider.get(),
-                        RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task2Provider.get())));
+        	if(IncrementalSolver.run(context1Provider.get(), prover1Provider.get(), task1Provider.get()).equals(Result.PASS)) {
+        		assertEquals(expected, IncrementalSolver.run(context2Provider.get(), prover2Provider.get(), task2Provider.get()));
         	}
     	}
     }

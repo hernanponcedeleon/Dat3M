@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.compilation;
 
+import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -8,6 +9,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RunWith(Parameterized.class)
 public class C112PPCTest extends AbstractCompilationTest {
@@ -34,5 +38,13 @@ public class C112PPCTest extends AbstractCompilationTest {
 	@Override
 	protected Provider<Arch> getTargetProvider() {
 		return () -> Arch.POWER;
+	}
+
+	@Override
+	protected List<String> getCompilationBreakers() {
+		return Arrays.asList(
+				"manual/IRIW-sc-sc-acq-sc-acq-sc",
+				"manual/RWC-sc-acq-sc-sc-sc")
+		.stream().map(p -> ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/C11/" + p + ".litmus").collect(Collectors.toList());
 	}
 }
