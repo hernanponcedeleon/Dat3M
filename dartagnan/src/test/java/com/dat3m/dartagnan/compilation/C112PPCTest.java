@@ -28,7 +28,7 @@ public class C112PPCTest extends AbstractCompilationTest {
 
     @Override
     protected Provider<Wmm> getSourceWmmProvider() {
-        return Providers.createWmmFromName(() -> "rc11");
+        return Providers.createWmmFromName(() -> "c11");
     }
 
 	@Override

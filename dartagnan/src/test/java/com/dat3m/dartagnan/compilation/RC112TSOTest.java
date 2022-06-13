@@ -10,14 +10,14 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
-public class C112Aarch64Test extends AbstractCompilationTest {
+public class RC112TSOTest extends AbstractCompilationTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
         return buildLitmusTests("litmus/C11/");
     }
 
-    public C112Aarch64Test(String path) {
+    public RC112TSOTest(String path) {
         super(path);
     }
 
@@ -28,11 +28,11 @@ public class C112Aarch64Test extends AbstractCompilationTest {
 
     @Override
     protected Provider<Wmm> getSourceWmmProvider() {
-        return Providers.createWmmFromName(() -> "c11");
+        return Providers.createWmmFromName(() -> "rc11");
     }
 
 	@Override
 	protected Provider<Arch> getTargetProvider() {
-		return () -> Arch.ARM8;
+		return () -> Arch.TSO;
 	}
 }
