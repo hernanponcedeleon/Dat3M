@@ -13,9 +13,8 @@ include "c11_cos.cat"
 include "c11_los.cat"
 
 let asw = I * (M \ I)
-// TODO Fix this
-let sb = po & po
-let mo = co & co
+let sb = po
+let mo = co
 
 let cacq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CON)
 let crel = REL | (SC & (W | F)) | ACQ_REL
