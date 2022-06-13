@@ -79,7 +79,9 @@ public abstract class AbstractCompilationTest {
     }
     protected long getTimeout() { return 10000; }
     protected List<String> getCompilationBreakers() { return emptyList(); }
-
+    protected Provider<Configuration> getConfigurationProvider() {
+		return Provider.fromSupplier(() -> Configuration.builder().setOption(INITIALIZE_REGISTERS, String.valueOf(DO_INITIALIZE_REGISTERS)).build());
+    }
     // ============================================================
 
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
@@ -91,7 +93,7 @@ public abstract class AbstractCompilationTest {
     protected final Provider<Wmm> wmm1Provider = getSourceWmmProvider();
     protected final Provider<Wmm> wmm2Provider = getTargetWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = Provider.fromSupplier(() -> EnumSet.of(Property.getDefault()));
-    protected final Provider<Configuration> configProvider = Provider.fromSupplier(() -> Configuration.builder().setOption(INITIALIZE_REGISTERS, String.valueOf(DO_INITIALIZE_REGISTERS)).build());
+    protected final Provider<Configuration> configProvider = getConfigurationProvider();
     protected final Provider<VerificationTask> task1Provider = Providers.createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, () -> 1, configProvider);
     protected final Provider<VerificationTask> task2Provider = Providers.createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider,  () -> 1, configProvider);
     protected final Provider<SolverContext> context1Provider = Providers.createSolverContextFromManager(shutdownManagerProvider);

@@ -5,8 +5,13 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.configuration.Arch;
+
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.configuration.Configuration;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.program.processing.compilation.SyncScheme.TRAILING;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -47,4 +52,11 @@ public class C112PPCTest extends AbstractCompilationTest {
 				"manual/RWC-sc-acq-sc-sc-sc")
 		.stream().map(p -> ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/C11/" + p + ".litmus").collect(Collectors.toList());
 	}
+	
+    protected Provider<Configuration> getConfigurationProvider() {
+		return Provider.fromSupplier(() -> Configuration.builder().
+				setOption(INITIALIZE_REGISTERS, String.valueOf(true)).
+				setOption(SYNCSCHEME, String.valueOf(TRAILING)).
+				build());
+    }
 }
