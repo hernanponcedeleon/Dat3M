@@ -2,6 +2,8 @@
 
 include "cos.cat"
 
+let asw = I * (M \ I)
+
 let cacq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CON)
 let crel = REL | (SC & (W | F)) | ACQ_REL
 let ccon = R & CON
@@ -25,9 +27,9 @@ let rs = co & rs_prime \ ((co \ rs_prime) ; co)
 let swra = ext & ([crel] ; fsb? ; [A & W] ; rs? ; rf ; [R & A] ; sbf? ; [cacq])
                                      
 //let swul = ext & ([ul] ; lo ; [lk])
-//let pp_asw = asw \ (asw ; po)
+let pp_asw = asw \ (asw ; po)
 //let sw = pp_asw | swul | swra
-let sw = swra
+let sw = pp_asw | swra
 
 (* with_consume_cad_set,
    dependency_ordered_before *)
