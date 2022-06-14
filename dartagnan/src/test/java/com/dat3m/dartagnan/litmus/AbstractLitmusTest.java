@@ -34,6 +34,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
@@ -58,12 +59,14 @@ public abstract class AbstractLitmusTest {
     static Iterable<Object[]> buildLitmusTests(String litmusPath, String arch) throws IOException {
         int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
         Map<String, Result> expectationMap = ResourceHelper.getExpectedResults(arch);
+        Set<String> skip = ResourceHelper.getSkipSet();
 
         try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))) {
             return fileStream
                     .filter(Files::isRegularFile)
                     .map(Path::toString)
                     .filter(f -> f.endsWith("litmus"))
+                    .filter(f -> !skip.contains(f))
                     .filter(f -> expectationMap.containsKey(f.substring(n)))
                     .map(f -> new Object[]{f, expectationMap.get(f.substring(n))})
                     .collect(ArrayList::new,
