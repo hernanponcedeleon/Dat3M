@@ -245,6 +245,16 @@ public class VisitorLitmusC
         return register;
     }
 
+	@Override 
+	public IExpr visitC11AtomicOp(LitmusCParser.C11AtomicOpContext ctx) {
+        Register register = getReturnRegister(true);
+        IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
+        Event event = EventFactory.Atomic.newFetchOp(register, getAddress(ctx.address), value, ctx.op, ctx.c11Mo().mo);
+        programBuilder.addChild(currentThread, event);
+        return register;
+	}
+
+    
     @Override
     public IExpr visitReAtomicOpAndTest(LitmusCParser.ReAtomicOpAndTestContext ctx){
         Register register = getReturnRegister(true);

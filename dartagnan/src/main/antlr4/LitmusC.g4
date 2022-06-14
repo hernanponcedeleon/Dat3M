@@ -67,6 +67,12 @@ re locals [IOpBin op, String mo]
         | AtomicDecReturnRelaxed LPar address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_RELAXED;}
         | AtomicDecReturnAcquire LPar address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_ACQUIRE;}
         | AtomicDecReturnRelease LPar address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_RELEASE;})                        # reAtomicOpReturn
+    
+    |   ( C11AtomicAdd LPar address = re Comma value = re Comma c11Mo RPar {$op = IOpBin.PLUS;}
+        | C11AtomicSub LPar address = re Comma value = re Comma c11Mo RPar {$op = IOpBin.MINUS;}
+        | C11AtomicOr LPar address = re Comma value = re Comma c11Mo RPar {$op = IOpBin.OR;}
+        | C11AtomicXor LPar address = re Comma value = re Comma c11Mo RPar {$op = IOpBin.XOR;}
+        | C11AtomicAnd LPar address = re Comma value = re Comma c11Mo RPar {$op = IOpBin.AND;})                               # C11AtomicOp
 
     |   ( AtomicFetchAdd        LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_MB;}
         | AtomicFetchAddRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_RELAXED;}
