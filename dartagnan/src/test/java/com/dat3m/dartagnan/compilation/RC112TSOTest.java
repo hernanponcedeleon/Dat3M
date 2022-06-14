@@ -6,6 +6,10 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.configuration.Arch;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.configuration.Configuration;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
+import static com.dat3m.dartagnan.configuration.OptionNames.NOOOTA;
 
 import java.io.IOException;
 
@@ -35,4 +39,11 @@ public class RC112TSOTest extends AbstractCompilationTest {
 	protected Provider<Arch> getTargetProvider() {
 		return () -> Arch.TSO;
 	}
+	
+    protected Provider<Configuration> getConfigurationProvider() {
+		return Provider.fromSupplier(() -> Configuration.builder().
+				setOption(INITIALIZE_REGISTERS, String.valueOf(true)).
+				setOption(NOOOTA, String.valueOf(true)).
+				build());
+    }
 }
