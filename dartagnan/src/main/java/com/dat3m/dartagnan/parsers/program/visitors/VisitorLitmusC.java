@@ -22,6 +22,8 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+import static com.dat3m.dartagnan.program.event.Tag.*;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -325,7 +327,7 @@ public class VisitorLitmusC
     @Override
     public IExpr visitReReadNa(LitmusCParser.ReReadNaContext ctx){
         Register register = getReturnRegister(true);
-        Event event = EventFactory.newLoad(register, getAddress(ctx.address), "NA");
+        Event event = EventFactory.newLoad(register, getAddress(ctx.address), C11.NONATOMIC);
         programBuilder.addChild(currentThread, event);
         return register;
     }
@@ -455,7 +457,7 @@ public class VisitorLitmusC
 
         ExprInterface value = (ExprInterface)ctx.re().accept(this);
         if(variable instanceof MemoryObject || variable instanceof Register){
-            Event event = EventFactory.newStore((IExpr) variable, value, "NA");
+            Event event = EventFactory.newStore((IExpr) variable, value, C11.NONATOMIC);
             return programBuilder.addChild(currentThread, event);
         }
         throw new ParsingException("Invalid syntax near " + ctx.getText());
@@ -508,14 +510,14 @@ public class VisitorLitmusC
             MemoryObject object = programBuilder.getObject(ctx.getText());
             if(object != null){
                 register = programBuilder.getOrCreateRegister(scope, null, ARCH_PRECISION);
-                programBuilder.addChild(currentThread, EventFactory.newLoad(register, object, "NA"));
+                programBuilder.addChild(currentThread, EventFactory.newLoad(register, object, C11.NONATOMIC));
                 return register;
             }
             return programBuilder.getOrCreateRegister(scope, ctx.getText(), ARCH_PRECISION);
         }
         MemoryObject object = programBuilder.getOrNewObject(ctx.getText());
         Register register = programBuilder.getOrCreateRegister(scope, null, ARCH_PRECISION);
-        programBuilder.addChild(currentThread, EventFactory.newLoad(register, object, "NA"));
+        programBuilder.addChild(currentThread, EventFactory.newLoad(register, object, C11.NONATOMIC));
         return register;
     }
 
