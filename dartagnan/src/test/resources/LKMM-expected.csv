@@ -2433,6 +2433,7 @@ litmus/LKMM/auto/C-LB-GRR+R-A+OB-O+OB-O+R-Oc.litmus,1
 litmus/LKMM/auto/C-LB-LRW+R-A+OB-O+OB-O+R-Oc.litmus,0
 litmus/LKMM/dart/C-atomic-op-return-simple-04.litmus,0
 litmus/LKMM/dart/C-atomic-cmpxchg-failure-01.litmus,1
+litmus/LKMM/dart/C-atomic-cmpxchg-failure-02.litmus,1
 litmus/LKMM/dart/C-atomic-xchg-simple-02.litmus,1
 litmus/LKMM/dart/no-herd/C-bool-const-02.litmus,1
 litmus/LKMM/dart/C-idd-03.litmus,1
