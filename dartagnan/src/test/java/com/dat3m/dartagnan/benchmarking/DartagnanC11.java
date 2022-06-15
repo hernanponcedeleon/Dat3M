@@ -58,7 +58,6 @@ public class DartagnanC11 extends AbstractCTest {
                 {"locks/spinlock-5", C11, UNKNOWN},
                 {"locks/linuxrwlock-3", C11, UNKNOWN},
                 {"locks/mutex_musl-4", C11, UNKNOWN},
-                {"locks/seqlock-12", C11, UNKNOWN},
                 {"lfds/safe_stack-3", C11, FAIL},
                 {"lfds/chase-lev-5", C11, PASS},
                 {"lfds/dglm-3", C11, UNKNOWN},

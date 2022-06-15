@@ -51,7 +51,6 @@ public class DartagnanARM8 extends AbstractCTest {
                 {"locks/spinlock-5", ARM8, UNKNOWN},
                 {"locks/linuxrwlock-3", ARM8, UNKNOWN},
                 {"locks/mutex_musl-4", ARM8, UNKNOWN},
-                {"locks/seqlock-12", ARM8, UNKNOWN},
                 {"lfds/safe_stack-3", ARM8, FAIL},
                 {"lfds/chase-lev-5", ARM8, PASS},
                 {"lfds/dglm-3", ARM8, UNKNOWN},
