@@ -47,6 +47,15 @@ public final class Tag {
             //TODO: What about MO_CONSUME loads?
             return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_ACQUIRE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_ACQ : MO_RX;
         }
+
+        public static String extractStoreMoFromLKMo(String lkMo) {
+            return lkMo.equals(Tag.Linux.MO_RELEASE) || lkMo.equals(Tag.Linux.MO_MB) ? Tag.ARMv8.MO_REL : null;
+        }
+
+        public static String extractLoadMoFromLKMo(String lkMo) {
+            return lkMo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : null;
+        }
+
     }
 
     // =============================================================================================
