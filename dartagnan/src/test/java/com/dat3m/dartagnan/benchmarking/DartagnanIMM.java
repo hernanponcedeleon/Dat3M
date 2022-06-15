@@ -52,18 +52,18 @@ public class DartagnanIMM extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-	            {"locks/ttas-5", C11, UNKNOWN},
-	            {"locks/ticketlock-6", C11, PASS},
-                {"locks/mutex-4", C11, UNKNOWN},
-                {"locks/spinlock-5", C11, UNKNOWN},
-                {"locks/linuxrwlock-3", C11, UNKNOWN},
-                {"locks/mutex_musl-4", C11, UNKNOWN},
-                {"lfds/safe_stack-3", C11, FAIL},
-                {"lfds/chase-lev-5", C11, PASS},
-                {"lfds/dglm-3", C11, UNKNOWN},
-                {"lfds/harris-3", C11, UNKNOWN},
-                {"lfds/ms-3", C11, UNKNOWN},
-                {"lfds/treiber-3", C11, UNKNOWN},
+	            {"locks/ttas-5", IMM, UNKNOWN},
+	            {"locks/ticketlock-6", IMM, PASS},
+                {"locks/mutex-4", IMM, UNKNOWN},
+                {"locks/spinlock-5", IMM, UNKNOWN},
+                {"locks/linuxrwlock-3", IMM, UNKNOWN},
+                {"locks/mutex_musl-4", IMM, UNKNOWN},
+                {"lfds/safe_stack-3", IMM, FAIL},
+                {"lfds/chase-lev-5", IMM, PASS},
+                {"lfds/dglm-3", IMM, UNKNOWN},
+                {"lfds/harris-3", IMM, UNKNOWN},
+                {"lfds/ms-3", IMM, UNKNOWN},
+                {"lfds/treiber-3", IMM, UNKNOWN},
 		});
     }
 

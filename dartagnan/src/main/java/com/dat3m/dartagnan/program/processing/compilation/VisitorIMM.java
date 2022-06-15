@@ -27,6 +27,22 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 	protected VisitorIMM() {}
 
 	@Override
+	public List<Event> visitLoad(Load e) {
+		String mo = e.getMo();
+        return eventSequence(
+        		newLoad(e.getResultRegister(), e.getAddress(), mo == null || mo.equals(C11.NONATOMIC) ? C11.MO_RELAXED : mo)
+        );
+	}
+
+	@Override
+	public List<Event> visitStore(Store e) {
+		String mo = e.getMo();
+        return eventSequence(
+        		newStore(e.getAddress(), e.getMemValue(), mo == null || mo.equals(C11.NONATOMIC) ? C11.MO_RELAXED : mo)
+        );
+	}
+	
+	@Override
 	public List<Event> visitCreate(Create e) {
         Store store = newStore(e.getAddress(), e.getMemValue(), extractStoreMo(e.getMo()));
         store.addFilters(C11.PTHREAD);
@@ -134,7 +150,7 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         return eventSequence(
         		optionalFence,
-        		newLoad(e.getResultRegister(), e.getAddress(), extractLoadMo(mo).equals(Tag.C11.NONATOMIC) ? C11.MO_RELAXED :  extractLoadMo(mo))
+        		newLoad(e.getResultRegister(), e.getAddress(), extractLoadMo(mo))
         );
 	}
 
@@ -144,7 +160,7 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         return eventSequence(
         		optionalFence,
-        		newStore(e.getAddress(), e.getMemValue(), extractStoreMo(mo).equals(Tag.C11.NONATOMIC) ? C11.MO_RELAXED :  extractLoadMo(mo))
+        		newStore(e.getAddress(), e.getMemValue(), extractStoreMo(mo))
         );
 	}
 
