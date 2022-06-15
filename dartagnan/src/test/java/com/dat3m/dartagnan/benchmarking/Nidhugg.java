@@ -65,7 +65,6 @@ public class Nidhugg extends AbstractExternalTool {
             {"locks/spinlock-5", PASS},
             {"locks/linuxrwlock-3", PASS},
             {"locks/mutex_musl-4", PASS},
-            {"locks/seqlock-12", PASS},
             {"lfds/safestack-3", FAIL},
             {"lfds/chase-lev-5", PASS},
             {"lfds/dglm-3", PASS},
