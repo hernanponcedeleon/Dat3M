@@ -1564,8 +1564,8 @@ $bb0:
   call {:cexpr "a"} boogie_si_record_i32($i1);
   assume {:sourceloc "benchmarks/imm/paper-E3.7.c", 24, 4} true;
   assume {:verifier.code 0} true;
-  $M.0 := $store.i32($M.0, b, $i1);
-  call {:cexpr "b"} boogie_si_record_i32($i1);
+  $M.0 := $store.i32($M.0, b, $i4);
+  call {:cexpr "b"} boogie_si_record_i32($i4);
   assume {:sourceloc "benchmarks/imm/paper-E3.7.c", 25, 2} true;
   assume {:verifier.code 0} true;
   $r := $0.ref;
