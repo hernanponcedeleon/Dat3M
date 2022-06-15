@@ -134,7 +134,7 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         return eventSequence(
         		optionalFence,
-        		newLoad(e.getResultRegister(), e.getAddress(), extractLoadMo(mo))
+        		newLoad(e.getResultRegister(), e.getAddress(), extractLoadMo(mo).equals(Tag.C11.NONATOMIC) ? C11.MO_RELAXED :  extractLoadMo(mo))
         );
 	}
 
@@ -144,7 +144,7 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         return eventSequence(
         		optionalFence,
-        		newStore(e.getAddress(), e.getMemValue(), extractStoreMo(mo))
+        		newStore(e.getAddress(), e.getMemValue(), extractStoreMo(mo).equals(Tag.C11.NONATOMIC) ? C11.MO_RELAXED :  extractLoadMo(mo))
         );
 	}
 
