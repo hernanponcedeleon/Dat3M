@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelRf;
@@ -81,6 +82,9 @@ public class PropertyEncoder implements Encoder {
     	}
     	if(property.contains(RACES)) {
     		enc = bmgr.or(enc, encodeDataRaces(ctx));
+    	}
+    	for(Axiom ax : memoryModel.getAxioms()) {
+    		enc = bmgr.or(enc, ax.asProperty(ctx));
     	}
     	return enc;
     }

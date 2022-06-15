@@ -54,6 +54,16 @@ public abstract class Axiom implements Dependent<Relation> {
 
     public abstract BooleanFormula consistent(SolverContext ctx);
 
+    // Axioms like NotEmpty are encoded as a property rather than a filter.
+    // For the remaining ones the property cannot be violated thus the default implementation.
+    public BooleanFormula asProperty(SolverContext ctx) {
+    	return ctx.getFormulaManager().getBooleanFormulaManager().makeFalse();
+    };
+
+    public BooleanFormula extractionVariable(SolverContext ctx) {
+    	return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable(this + " violation");
+    };
+    
     @Override
     public int hashCode() {
         return Objects.hash(rel);
