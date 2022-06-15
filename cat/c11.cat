@@ -124,4 +124,5 @@ acyclic (((SC * SC) & scp) \ id) as Spartial
 //undefined_unless empty bl as badLock
 //undefined_unless empty lu as badUnlock
 
-
+// Atomicity
+empty rmw & (fre; coe) as atomic
