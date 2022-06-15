@@ -44,7 +44,7 @@ public final class IValue extends IConst {
 
     @Override
     public int hashCode() {
-        return value.hashCode() + precision > 0 ? 0 : precision;
+        return value.hashCode() + (precision > 0 ? 0 : precision);
     }
 
     @Override
