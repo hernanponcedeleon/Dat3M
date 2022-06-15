@@ -113,7 +113,7 @@ litmus/C11/auto/b_reorder.litmus,1
 litmus/C11/auto/b+sc+sc.litmus,0
 litmus/C11/auto/a3_reorder+Wrlx+acq.litmus,1
 litmus/C11/auto/a3+sc+Wrel.litmus,1
-litmus/C11/manual/imm-E3.2.litmus,1
+litmus/C11/manual/imm-E3.2.litmus,0
 litmus/C11/manual/mp_fences.litmus,0
 litmus/C11/manual/imm-E3.10.litmus,0
 litmus/C11/manual/imm-E3.4.litmus,0
