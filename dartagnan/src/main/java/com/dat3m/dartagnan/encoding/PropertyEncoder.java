@@ -84,7 +84,11 @@ public class PropertyEncoder implements Encoder {
     		enc = bmgr.or(enc, encodeDataRaces(ctx));
     	}
     	for(Axiom ax : memoryModel.getAxioms()) {
-    		enc = bmgr.or(enc, ax.asProperty(ctx));
+    		BooleanFormula violationEncoding = ax.asProperty(ctx);
+            if (program.getAssFilter() != null) {
+            	violationEncoding = bmgr.and(violationEncoding, program.getAssFilter().encode(ctx));
+            }
+			enc = bmgr.or(enc, violationEncoding);
     	}
     	return enc;
     }
@@ -181,9 +185,13 @@ public class PropertyEncoder implements Encoder {
             atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
             allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, isDone));
         }
+
+        BooleanFormula livenessViolation = bmgr.and(allStuckOrDone, atLeastOneStuck);
+        if (program.getAssFilter() != null) {
+        	livenessViolation = bmgr.and(livenessViolation, program.getAssFilter().encode(ctx));
+        }
         // We use the SMT variable to extract from the model if the property was violated
-		BooleanFormula enc = bmgr.equivalence(LIVENESS.getSMTVariable(ctx), 
-											  bmgr.and(allStuckOrDone, atLeastOneStuck));
+		BooleanFormula enc = bmgr.equivalence(LIVENESS.getSMTVariable(ctx), livenessViolation);
 		// No need to use the SMT variable if the formula is trivially false 
         return bmgr.isFalse(enc) ? enc : bmgr.and(LIVENESS.getSMTVariable(ctx), enc);
     }
