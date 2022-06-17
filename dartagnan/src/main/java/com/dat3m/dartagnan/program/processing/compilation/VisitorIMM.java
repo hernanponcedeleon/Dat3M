@@ -130,16 +130,17 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 		IOpBin op = e.getOp();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
-		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+		Fence optionalFenceBefore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+		Fence optionalFenceAfter = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		
         Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
         Load load = newRMWLoad(resultRegister, address, extractLoadMo(mo));
 
         return eventSequence(
-        		optionalFence,
+        		optionalFenceBefore,
                 load,
                 newLocal(dummyReg, new IExprBin(resultRegister, op, (IExpr) e.getMemValue())),
-        		optionalFence,
+        		optionalFenceAfter,
                 newRMWStore(load, address, dummyReg, extractStoreMo(mo))
         );
 	}
