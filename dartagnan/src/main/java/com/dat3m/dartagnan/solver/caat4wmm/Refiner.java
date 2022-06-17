@@ -17,10 +17,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_SYMMETRY_LEARNING;
@@ -53,15 +50,25 @@ public class Refiner {
         //TODO: A specialized algorithm that computes the orbit under permutation may be better,
         // since most violations involve only few threads and hence the orbit is far smaller than the full
         // set of permutations.
+        HashSet<BooleanFormula> addedFormulas = new HashSet<>(); // To avoid adding duplicates
         BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula refinement = bmgr.makeTrue();
         // For each symmetry permutation, we will create refinement clauses
         for (Function<Event, Event> perm : symmPermutations) {
             for (Conjunction<CoreLiteral> reason : coreReasons.getCubes()) {
-                BooleanFormula permutedClause = reason.getLiterals().stream()
-                        .map(lit -> bmgr.not(permuteAndConvert(lit, perm, context)))
-                        .reduce(bmgr.makeFalse(), bmgr::or);
-                refinement = bmgr.and(refinement, permutedClause);
+                BooleanFormula permutedClause = bmgr.makeFalse();
+                for (CoreLiteral lit : reason.getLiterals()) {
+                    BooleanFormula litFormula = permuteAndConvert(lit, perm, context);
+                    if (bmgr.isFalse(litFormula)) {
+                        permutedClause = bmgr.makeTrue();
+                        break;
+                    } else {
+                       permutedClause = bmgr.or(permutedClause, bmgr.not(litFormula));
+                    }
+                }
+                if (addedFormulas.add(permutedClause)) {
+                    refinement = bmgr.and(refinement, permutedClause);
+                }
             }
         }
         return refinement;
