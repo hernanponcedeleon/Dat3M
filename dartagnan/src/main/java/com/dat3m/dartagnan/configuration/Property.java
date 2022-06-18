@@ -7,7 +7,7 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 public enum Property implements OptionInterface {
-	REACHABILITY, RACES, LIVENESS;
+	REACHABILITY, RACES, LIVENESS, CAT_PROPERTIES;
 	
 	// Used to display in UI
     @Override
@@ -19,6 +19,8 @@ public enum Property implements OptionInterface {
         		return "Races";
 			case LIVENESS:
 				return "Liveness";
+			case CAT_PROPERTIES:
+				return "CAT properties";
 			default:
 				throw new UnsupportedOperationException("Unrecognized property: " + this);
         }
@@ -30,7 +32,7 @@ public enum Property implements OptionInterface {
 
 	// Used to decide the order shown by the selector in the UI
 	public static Property[] orderedValues() {
-		Property[] order = { REACHABILITY, RACES, LIVENESS };
+		Property[] order = { REACHABILITY, RACES, LIVENESS, CAT_PROPERTIES };
 		// Be sure no element is missing
 		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;

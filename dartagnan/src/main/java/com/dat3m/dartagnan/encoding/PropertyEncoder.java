@@ -83,12 +83,14 @@ public class PropertyEncoder implements Encoder {
     	if(property.contains(RACES)) {
     		enc = bmgr.or(enc, encodeDataRaces(ctx));
     	}
-    	for(Axiom ax : memoryModel.getAxioms()) {
-    		// Only flagged axioms are encoded as properties
-    		if(!ax.isFlagged()) {
-    			continue;
-    		}
-			enc = bmgr.or(enc, ax.consistent(ctx));
+    	if(property.contains(CAT_PROPERTIES)) {
+        	for(Axiom ax : memoryModel.getAxioms()) {
+        		// Only flagged axioms are encoded as properties
+        		if(!ax.isFlagged()) {
+        			continue;
+        		}
+    			enc = bmgr.or(enc, ax.consistent(ctx));
+        	}
     	}
     	return enc;
     }
