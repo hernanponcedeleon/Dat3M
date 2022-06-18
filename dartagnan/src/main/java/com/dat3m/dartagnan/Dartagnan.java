@@ -169,7 +169,8 @@ public class Dartagnan extends BaseOptions {
                     System.out.println("Condition " + p.getAss().toStringWithType());
                     System.out.println(result == FAIL ? "Ok" : "No");
                 }
-            	if(result == FAIL && !p.getAss().getInvert()) {
+            	if((result == FAIL && !p.getAss().getInvert()) || 
+            			(result == PASS && p.getAss().getInvert())) {
             		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(ctx)))) {
             			System.out.println("Safety violation found");
             		}
@@ -177,8 +178,8 @@ public class Dartagnan extends BaseOptions {
             			System.out.println("Liveness violation found");
             		}
             		for(Axiom ax : task.getMemoryModel().getAxioms()) {
-                		if(ax.isFlagged() && TRUE.equals(prover.getModel().evaluate(ax.extractionVariable(ctx)))) {
-                			System.out.println(ax + " violation found");
+                		if(ax.isFlagged() && TRUE.equals(prover.getModel().evaluate(CAT.getSMTVariable(ax, ctx)))) {
+                			System.out.println("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getName()));
                 		}                			
             		}
                     System.out.println(result);

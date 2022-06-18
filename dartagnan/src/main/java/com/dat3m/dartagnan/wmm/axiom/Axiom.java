@@ -23,6 +23,7 @@ public abstract class Axiom implements Dependent<Relation> {
     protected final boolean negated;
     // Marks if the axiom should be use to report properties rather than filter consistency
     protected final boolean flag;
+    protected String name;
 
     protected VerificationTask task;
     protected Context analysisContext;
@@ -62,6 +63,14 @@ public abstract class Axiom implements Dependent<Relation> {
         return flag;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
     @Override
     public abstract String toString();
 
@@ -69,10 +78,6 @@ public abstract class Axiom implements Dependent<Relation> {
 
     public abstract BooleanFormula consistent(SolverContext ctx);
 
-    public BooleanFormula extractionVariable(SolverContext ctx) {
-    	return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable(this + " violation");
-    };
-    
     @Override
     public int hashCode() {
         return Objects.hash(rel);
