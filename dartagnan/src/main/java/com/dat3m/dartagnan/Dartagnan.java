@@ -169,7 +169,7 @@ public class Dartagnan extends BaseOptions {
                     System.out.println("Condition " + p.getAss().toStringWithType());
                     System.out.println(result == FAIL ? "Ok" : "No");
                 }
-            	if(result == FAIL) {
+            	if(result == FAIL && !p.getAss().getInvert()) {
             		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(ctx)))) {
             			System.out.println("Safety violation found");
             		}
