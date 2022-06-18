@@ -113,17 +113,17 @@ public class PropertyEncoder implements Encoder {
         logger.info("Encoding CAT properties");
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula cat = bmgr.makeFalse();
+        BooleanFormula cat = bmgr.makeTrue();
         BooleanFormula one = bmgr.makeFalse();
     	for(Axiom ax : memoryModel.getAxioms()) {
     		// Only flagged axioms are encoded as properties
     		if(!ax.isFlagged()) {
     			continue;
     		}
-			cat = bmgr.or(cat, bmgr.equivalence(CAT.getSMTVariable(ax, ctx), ax.consistent(ctx)));
+			cat = bmgr.and(cat, bmgr.equivalence(CAT.getSMTVariable(ax, ctx), ax.consistent(ctx)));
 			one = bmgr.or(one, CAT.getSMTVariable(ax, ctx));
     	}
-		// No need to use the SMT variable if the formula is trivially false 
+		// No need to use the SMT variable if the formula is trivially false
         return bmgr.isFalse(one) ? one : bmgr.and(one, cat);
     }
 
