@@ -13,6 +13,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
 
+import static com.dat3m.dartagnan.wmm.utils.Utils.cycleVar;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -130,12 +132,14 @@ public class Acyclic extends Axiom {
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 
-        BooleanFormula enc = bmgr.makeTrue(); 
+        BooleanFormula enc = bmgr.makeTrue();
+        BooleanFormula eventsInCycle = bmgr.makeFalse();
         if(negated) {
         	// We use Boolean variables which guess the edges and nodes constituting the cycle. 
-        	// We ensure that for every event in the cycle, there should be at least one incoming 
-        	// edge and at least one outgoing edge that are also in the cycle.
-            for(Event e : rel.getEncodeTupleSet().stream().map(t -> t.getFirst()).collect(Collectors.toSet())){
+            for(Event e : rel.getEncodeTupleSet().stream().map(t -> t.getFirst()).collect(Collectors.toSet())){            	
+            	
+            	eventsInCycle = bmgr.or(eventsInCycle, cycleVar(rel.getName(), e, ctx));
+            	
             	BooleanFormula in = bmgr.makeFalse();
             	for(Tuple pre : rel.getEncodeTupleSet().getBySecond(e)) {
             		in = bmgr.or(in, rel.getSMTCycleVar(pre, ctx));
@@ -144,8 +148,21 @@ public class Acyclic extends Axiom {
             	for(Tuple post : rel.getEncodeTupleSet().getByFirst(e)) {
             		out = bmgr.or(out, rel.getSMTCycleVar(post, ctx));
             	}
-            	enc = bmgr.and(enc, bmgr.implication(Utils.cycleVar(rel.getName(), e, ctx), bmgr.and(in , out)));
-            }	
+            	// We ensure that for every event in the cycle, there should be at least one incoming 
+            	// edge and at least one outgoing edge that are also in the cycle.
+            	enc = bmgr.and(enc, bmgr.implication(cycleVar(rel.getName(), e, ctx), bmgr.and(in , out)));
+            	
+                for(Tuple tuple : rel.getEncodeTupleSet()){
+                    Event e1 = tuple.getFirst();
+                    Event e2 = tuple.getSecond();
+                    // If an edge is guessed to be in a cycle, the edge must belong to relation, 
+                    // and both events must also be guessed to be on the cycle.
+                    enc = bmgr.and(enc, bmgr.implication(rel.getSMTCycleVar(tuple, ctx), 
+                    		bmgr.and(rel.getSMTVar(tuple, ctx), cycleVar(rel.getName(), e1, ctx), cycleVar(rel.getName(), e2, ctx))));
+                }
+            }
+            // A cycle exists if there is an event in the cycle.
+            enc = bmgr.and(enc, eventsInCycle);
         } else {
             for(Tuple tuple : rel.getEncodeTupleSet()){
                 Event e1 = tuple.getFirst();
