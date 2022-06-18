@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.configuration;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -28,8 +29,8 @@ public enum Property implements OptionInterface {
         }
     }
 
-	public static Property getDefault() {
-		return REACHABILITY;
+	public static EnumSet<Property> getDefault() {
+		return EnumSet.of(REACHABILITY, CAT);
 	}
 
 	// Used to decide the order shown by the selector in the UI

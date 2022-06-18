@@ -17,7 +17,7 @@ public abstract class BaseOptions {
     	name = PROPERTY,
     	description = "The property to check for: reachability (default), liveness, races.",
     	toUppercase=true)
-    private EnumSet<Property> property = EnumSet.of(Property.getDefault());
+    private EnumSet<Property> property = Property.getDefault();
 
 	public EnumSet<Property> getProperty() { return property; }
 

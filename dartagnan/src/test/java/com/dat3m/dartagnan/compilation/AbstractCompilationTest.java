@@ -81,7 +81,7 @@ public abstract class AbstractCompilationTest {
     protected final Provider<Program> program2Provider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmm1Provider = Providers.createWmmFromArch(getSourceProvider());
     protected final Provider<Wmm> wmm2Provider = Providers.createWmmFromArch(getTargetProvider());
-    protected final Provider<EnumSet<Property>> propertyProvider = Provider.fromSupplier(() -> EnumSet.of(Property.getDefault()));
+    protected final Provider<EnumSet<Property>> propertyProvider = Provider.fromSupplier(() -> Property.getDefault());
     protected final Provider<Configuration> configProvider = Provider.fromSupplier(() -> Configuration.builder().setOption(INITIALIZE_REGISTERS, String.valueOf(DO_INITIALIZE_REGISTERS)).build());
     protected final Provider<VerificationTask> task1Provider = Providers.createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, () -> 1, configProvider);
     protected final Provider<VerificationTask> task2Provider = Providers.createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider,  () -> 1, configProvider);
