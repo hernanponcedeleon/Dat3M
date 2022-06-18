@@ -30,6 +30,11 @@ public enum Property implements OptionInterface {
 		return REACHABILITY;
 	}
 
+	@Override
+	public String asStringOption() {
+		return equals(CAT_PROPERTIES) ? "cat-properties" : toString().toLowerCase(); 
+	}
+
 	// Used to decide the order shown by the selector in the UI
 	public static Property[] orderedValues() {
 		Property[] order = { REACHABILITY, RACES, LIVENESS, CAT_PROPERTIES };
