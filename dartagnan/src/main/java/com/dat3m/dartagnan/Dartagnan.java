@@ -177,7 +177,7 @@ public class Dartagnan extends BaseOptions {
             			System.out.println("Liveness violation found");
             		}
             		for(Axiom ax : task.getMemoryModel().getAxioms()) {
-                		if(TRUE.equals(prover.getModel().evaluate(ax.extractionVariable(ctx)))) {
+                		if(ax.isFlagged() && TRUE.equals(prover.getModel().evaluate(ax.extractionVariable(ctx)))) {
                 			System.out.println(ax + " violation found");
                 		}                			
             		}
