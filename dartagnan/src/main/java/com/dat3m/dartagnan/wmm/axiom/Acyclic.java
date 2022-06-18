@@ -28,6 +28,10 @@ public class Acyclic extends Axiom {
         super(rel, negated, flag);
     }
 
+    public Acyclic(Relation rel) {
+        super(rel, false, false);
+    }
+
     @Override
     public TupleSet getEncodeTupleSet(){
         logger.info("Computing encodeTupleSet for " + this);

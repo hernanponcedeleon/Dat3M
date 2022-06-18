@@ -239,7 +239,7 @@ public class RefinementSolver {
                     // in our Wmm but for CAAT they are derived from unary predicates!
                     logger.info("Found difference {}. Cutting rhs relation {}", rel, sec);
                     cutRelations.add(sec);
-                    baselineWmm.addAxiom(new ForceEncodeAxiom(getCopyOfRelation(sec, repo), false, false));
+                    baselineWmm.addAxiom(new ForceEncodeAxiom(getCopyOfRelation(sec, repo)));
                 }
             }
         }

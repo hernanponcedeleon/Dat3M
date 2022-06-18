@@ -14,6 +14,10 @@ public class ForceEncodeAxiom extends Axiom {
         super(rel, negated, flag);
     }
 
+    public ForceEncodeAxiom(Relation rel) {
+        super(rel, false, false);
+    }
+
     @Override
     public TupleSet getEncodeTupleSet(){
         return rel.getMaxTupleSet();

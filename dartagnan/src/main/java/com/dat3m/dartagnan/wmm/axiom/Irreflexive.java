@@ -17,6 +17,10 @@ public class Irreflexive extends Axiom {
         super(rel, negated, flag);
     }
 
+    public Irreflexive(Relation rel) {
+        super(rel, false, false);
+    }
+
     @Override
     public TupleSet getEncodeTupleSet(){
         TupleSet set = new TupleSet();

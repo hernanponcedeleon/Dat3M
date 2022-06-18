@@ -13,6 +13,10 @@ public class Empty extends Axiom {
         super(rel, negated, flag);
     }
 
+    public Empty(Relation rel) {
+        super(rel, false, false);
+    }
+
     @Override
     public TupleSet getEncodeTupleSet(){
         return rel.getMaxTupleSet();
