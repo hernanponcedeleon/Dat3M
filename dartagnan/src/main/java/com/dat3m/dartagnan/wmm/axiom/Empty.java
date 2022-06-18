@@ -34,6 +34,6 @@ public class Empty extends Axiom {
 
     @Override
     public String toString() {
-        return negated ? "~" : "" + "empty " + rel.getName();
+        return (negated ? "~" : "") + "empty " + rel.getName();
     }
 }

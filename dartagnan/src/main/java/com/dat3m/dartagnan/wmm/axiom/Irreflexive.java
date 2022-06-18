@@ -42,6 +42,6 @@ public class Irreflexive extends Axiom {
 
     @Override
     public String toString() {
-        return negated ? "~" : "" + "irreflexive " + rel.getName();
+        return (negated ? "~" : "") + "irreflexive " + rel.getName();
     }
 }
