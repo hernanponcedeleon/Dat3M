@@ -13,10 +13,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
 
-import static com.dat3m.dartagnan.wmm.utils.Utils.cycleVar;
-
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.wmm.utils.Utils.cycleVar;
+import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 /**
  *
@@ -136,17 +137,17 @@ public class Acyclic extends Axiom {
         BooleanFormula eventsInCycle = bmgr.makeFalse();
         if(negated) {
         	// We use Boolean variables which guess the edges and nodes constituting the cycle. 
-            for(Event e : rel.getEncodeTupleSet().stream().map(t -> t.getFirst()).collect(Collectors.toSet())){            	
+            for(Event e : rel.getEncodeTupleSet().stream().map(Tuple::getFirst).collect(Collectors.toSet())){
             	
             	eventsInCycle = bmgr.or(eventsInCycle, cycleVar(rel.getName(), e, ctx));
             	
             	BooleanFormula in = bmgr.makeFalse();
             	for(Tuple pre : rel.getEncodeTupleSet().getBySecond(e)) {
-            		in = bmgr.or(in, rel.getSMTCycleVar(pre, ctx));
+            		in = bmgr.or(in, getSMTCycleVar(pre, ctx));
             	}
             	BooleanFormula out = bmgr.makeFalse();
             	for(Tuple post : rel.getEncodeTupleSet().getByFirst(e)) {
-            		out = bmgr.or(out, rel.getSMTCycleVar(post, ctx));
+            		out = bmgr.or(out, getSMTCycleVar(post, ctx));
             	}
             	// We ensure that for every event in the cycle, there should be at least one incoming 
             	// edge and at least one outgoing edge that are also in the cycle.
@@ -157,7 +158,7 @@ public class Acyclic extends Axiom {
                     Event e2 = tuple.getSecond();
                     // If an edge is guessed to be in a cycle, the edge must belong to relation, 
                     // and both events must also be guessed to be on the cycle.
-                    enc = bmgr.and(enc, bmgr.implication(rel.getSMTCycleVar(tuple, ctx), 
+                    enc = bmgr.and(enc, bmgr.implication(getSMTCycleVar(tuple, ctx),
                     		bmgr.and(rel.getSMTVar(tuple, ctx), cycleVar(rel.getName(), e1, ctx), cycleVar(rel.getName(), e2, ctx))));
                 }
             }
@@ -179,5 +180,11 @@ public class Acyclic extends Axiom {
     @Override
     public String toString() {
         return (negated ? "~" : "") + "acyclic " + rel.getName();
+    }
+
+    private BooleanFormula getSMTCycleVar(Tuple edge, SolverContext ctx) {
+        return !rel.getMaxTupleSet().contains(edge) ?
+                ctx.getFormulaManager().getBooleanFormulaManager().makeFalse() :
+                edge(getName() + "-cycle", edge.getFirst(), edge.getSecond(), ctx);
     }
 }
