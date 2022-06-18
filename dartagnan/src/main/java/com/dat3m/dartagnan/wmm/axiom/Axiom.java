@@ -51,6 +51,12 @@ public abstract class Axiom implements Dependent<Relation> {
         return rel;
     }
 
+    /**
+     * Users have the option to not enforce consistency checks, but rather 
+     * to use axioms to report properties of the candidate execution. 
+     * To do so, users must prefix the axioms they are interested in with 
+     * the keyword flag.
+     */
     public boolean isFlagged() {
         return flag;
     }
