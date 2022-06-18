@@ -21,6 +21,7 @@ public abstract class Axiom implements Dependent<Relation> {
 
     protected final Relation rel;
     protected final boolean negated;
+    // Marks if the axiom should be use to report properties rather than filter consistency
     protected final boolean flag;
 
     protected VerificationTask task;
