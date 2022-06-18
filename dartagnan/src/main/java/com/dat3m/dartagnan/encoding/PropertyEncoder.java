@@ -88,11 +88,7 @@ public class PropertyEncoder implements Encoder {
     		if(!ax.isFlagged()) {
     			continue;
     		}
-    		BooleanFormula violationEncoding = ax.consistent(ctx);
-            if (program.getAssFilter() != null) {
-            	violationEncoding = bmgr.and(violationEncoding, program.getAssFilter().encode(ctx));
-            }
-			enc = bmgr.or(enc, violationEncoding);
+			enc = bmgr.or(enc, ax.consistent(ctx));
     	}
     	return enc;
     }
@@ -110,9 +106,6 @@ public class PropertyEncoder implements Encoder {
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assertionEncoding = program.getAss().encode(ctx);
-        if (program.getAssFilter() != null) {
-            assertionEncoding = bmgr.and(assertionEncoding, program.getAssFilter().encode(ctx));
-        }
         // We use the SMT variable to extract from the model if the property was violated
 		BooleanFormula enc = bmgr.equivalence(REACHABILITY.getSMTVariable(ctx), assertionEncoding);
 		// No need to use the SMT variable if the formula is trivially false 
@@ -191,9 +184,6 @@ public class PropertyEncoder implements Encoder {
         }
 
         BooleanFormula livenessViolation = bmgr.and(allStuckOrDone, atLeastOneStuck);
-        if (program.getAssFilter() != null) {
-        	livenessViolation = bmgr.and(livenessViolation, program.getAssFilter().encode(ctx));
-        }
         // We use the SMT variable to extract from the model if the property was violated
 		BooleanFormula enc = bmgr.equivalence(LIVENESS.getSMTVariable(ctx), livenessViolation);
 		// No need to use the SMT variable if the formula is trivially false 
