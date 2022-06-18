@@ -123,7 +123,7 @@ public class RefinementTask extends VerificationTask {
 	        repo.addRelation(porfco);
 	        Relation porfcofr = new RelUnion(porfco, fr);
 	        repo.addRelation(porfcofr);
-	        baseline.addAxiom(new Acyclic(porfcofr));
+	        baseline.addAxiom(new Acyclic(porfcofr, false, false));
         }
         if(baselines.contains(NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
@@ -136,7 +136,7 @@ public class RefinementTask extends VerificationTask {
             repo.addRelation(dep);
             Relation hb = new RelUnion(dep, rf);
             repo.addRelation(hb);
-            baseline.addAxiom(new Acyclic(hb));
+            baseline.addAxiom(new Acyclic(hb, false, false));
         }
         if(baselines.contains(ATOMIC_RMW)) {
     		// ---- empty (rmw & fre;coe) ----
@@ -147,7 +147,7 @@ public class RefinementTask extends VerificationTask {
             repo.addRelation(frecoe);
             Relation rmwANDfrecoe = new RelIntersection(rmw, frecoe);
             repo.addRelation(rmwANDfrecoe);
-            baseline.addAxiom(new Empty(rmwANDfrecoe));
+            baseline.addAxiom(new Empty(rmwANDfrecoe, false, false));
         }
         return baseline;
     }

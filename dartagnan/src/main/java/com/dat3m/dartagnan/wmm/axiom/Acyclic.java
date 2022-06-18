@@ -24,8 +24,8 @@ public class Acyclic extends Axiom {
 
 	private static final Logger logger = LogManager.getLogger(Acyclic.class);
 
-    public Acyclic(Relation rel) {
-        super(rel);
+    public Acyclic(Relation rel, boolean negated, boolean flag) {
+        super(rel, negated, flag);
     }
 
     @Override
@@ -126,20 +126,37 @@ public class Acyclic extends Axiom {
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 
-        BooleanFormula enc = bmgr.makeTrue();
-        for(Tuple tuple : rel.getEncodeTupleSet()){
-            Event e1 = tuple.getFirst();
-            Event e2 = tuple.getSecond();
-			enc = bmgr.and(enc, bmgr.implication(rel.getSMTVar(tuple, ctx), 
-									imgr.lessThan(
-											Utils.intVar(rel.getName(), e1, ctx), 
-											Utils.intVar(rel.getName(), e2, ctx))));
-        }
+        BooleanFormula enc = bmgr.makeTrue(); 
+        if(negated) {
+        	// We use Boolean variables which guess the edges and nodes constituting the cycle. 
+        	// We ensure that for every event in the cycle, there should be at least one incoming 
+        	// edge and at least one outgoing edge that are also in the cycle.
+            for(Event e : rel.getEncodeTupleSet().stream().map(t -> t.getFirst()).collect(Collectors.toSet())){
+            	BooleanFormula in = bmgr.makeFalse();
+            	for(Tuple pre : rel.getEncodeTupleSet().getBySecond(e)) {
+            		in = bmgr.or(in, rel.getSMTCycleVar(pre, ctx));
+            	}
+            	BooleanFormula out = bmgr.makeFalse();
+            	for(Tuple post : rel.getEncodeTupleSet().getByFirst(e)) {
+            		out = bmgr.or(out, rel.getSMTCycleVar(post, ctx));
+            	}
+            	enc = bmgr.and(enc, bmgr.implication(Utils.cycleVar(rel.getName(), e, ctx), bmgr.and(in , out)));
+            }	
+        } else {
+            for(Tuple tuple : rel.getEncodeTupleSet()){
+                Event e1 = tuple.getFirst();
+                Event e2 = tuple.getSecond();
+    			enc = bmgr.and(enc, bmgr.implication(rel.getSMTVar(tuple, ctx), 
+    									imgr.lessThan(
+    											Utils.intVar(rel.getName(), e1, ctx), 
+    											Utils.intVar(rel.getName(), e2, ctx))));
+            }        	
+        }        
         return enc;
     }
 
     @Override
     public String toString() {
-        return "acyclic " + rel.getName();
+        return negated ? "~" : "" + "acyclic " + rel.getName();
     }
 }

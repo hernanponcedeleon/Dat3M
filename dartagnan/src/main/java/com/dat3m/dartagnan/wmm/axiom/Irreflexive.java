@@ -13,8 +13,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
  */
 public class Irreflexive extends Axiom {
 
-    public Irreflexive(Relation rel) {
-        super(rel);
+    public Irreflexive(Relation rel, boolean negated, boolean flag) {
+        super(rel, negated, flag);
     }
 
     @Override
@@ -33,11 +33,11 @@ public class Irreflexive extends Axiom {
                 enc = bmgr.and(enc, bmgr.not(rel.getSMTVar(tuple, ctx)));
             }
         }
-        return enc;
+        return negated ? bmgr.not(enc) : enc;
     }
 
     @Override
     public String toString() {
-        return "irreflexive " + rel.getName();
+        return negated ? "~" : "" + "irreflexive " + rel.getName();
     }
 }

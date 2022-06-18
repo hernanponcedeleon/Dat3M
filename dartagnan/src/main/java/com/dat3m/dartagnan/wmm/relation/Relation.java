@@ -183,6 +183,12 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
         return getSMTVar(new Tuple(e1, e2), ctx);
     }
 
+    public BooleanFormula getSMTCycleVar(Tuple edge, SolverContext ctx) {
+        return !getMaxTupleSet().contains(edge) ?
+        		ctx.getFormulaManager().getBooleanFormulaManager().makeFalse() :
+                edge(getName() + "-cycle", edge.getFirst(), edge.getSecond(), ctx);
+    }
+
     protected BooleanFormula getExecPair(Event e1, Event e2, SolverContext ctx) {
         ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
         return execution(e1, e2, exec, ctx);

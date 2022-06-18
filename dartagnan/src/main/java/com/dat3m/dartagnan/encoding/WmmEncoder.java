@@ -111,6 +111,10 @@ public class WmmEncoder implements Encoder {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula expr = bmgr.makeTrue();
         for (Axiom ax : memoryModel.getAxioms()) {
+        	// Flagged axioms do not act as consistency filter
+        	if(ax.isFlagged()) {
+        		continue;
+        	}
             expr = bmgr.and(expr, ax.consistent(ctx));
         }
         return expr;

@@ -19,13 +19,17 @@ import java.util.Objects;
  */
 public abstract class Axiom implements Dependent<Relation> {
 
-    protected Relation rel;
+    protected final Relation rel;
+    protected final boolean negated;
+    protected final boolean flag;
 
     protected VerificationTask task;
     protected Context analysisContext;
 
-    Axiom(Relation rel) {
+    Axiom(Relation rel, boolean negated, boolean flag) {
         this.rel = rel;
+        this.negated = negated;
+        this.flag = flag;
     }
 
     public void initializeEncoding(SolverContext ctx) {
@@ -47,18 +51,16 @@ public abstract class Axiom implements Dependent<Relation> {
         return rel;
     }
 
+    public boolean isFlagged() {
+        return flag;
+    }
+
     @Override
     public abstract String toString();
 
     public abstract TupleSet getEncodeTupleSet();
 
     public abstract BooleanFormula consistent(SolverContext ctx);
-
-    // Axioms like NotEmpty are encoded as a property rather than a filter.
-    // For the remaining ones the property cannot be violated thus the default implementation.
-    public BooleanFormula asProperty(SolverContext ctx) {
-    	return ctx.getFormulaManager().getBooleanFormulaManager().makeFalse();
-    };
 
     public BooleanFormula extractionVariable(SolverContext ctx) {
     	return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable(this + " violation");

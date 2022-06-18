@@ -84,7 +84,11 @@ public class PropertyEncoder implements Encoder {
     		enc = bmgr.or(enc, encodeDataRaces(ctx));
     	}
     	for(Axiom ax : memoryModel.getAxioms()) {
-    		BooleanFormula violationEncoding = ax.asProperty(ctx);
+    		// Only flagged axioms are encoded as properties
+    		if(!ax.isFlagged()) {
+    			continue;
+    		}
+    		BooleanFormula violationEncoding = ax.consistent(ctx);
             if (program.getAssFilter() != null) {
             	violationEncoding = bmgr.and(violationEncoding, program.getAssFilter().encode(ctx));
             }
