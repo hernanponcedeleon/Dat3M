@@ -80,7 +80,7 @@ public class ExceptionsTest {
 		Configuration config = Configuration.defaultConfiguration();
 		VerificationTask task = VerificationTask.builder()
                 .withConfig(config)
-                .build(p, cat, EnumSet.of(Property.getDefault()));
+                .build(p, cat, Property.getDefault());
 		// The program must be compiled before being able to construct an Encoder for it
     	ProgramEncoder.fromConfig(task.getProgram(), Context.create(), config);
     }

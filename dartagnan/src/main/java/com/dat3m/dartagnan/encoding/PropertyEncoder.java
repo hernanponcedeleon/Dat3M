@@ -13,10 +13,12 @@ import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelRf;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -82,6 +84,9 @@ public class PropertyEncoder implements Encoder {
     	if(property.contains(RACES)) {
     		enc = bmgr.or(enc, encodeDataRaces(ctx));
     	}
+    	if(property.contains(CAT)) {
+    		enc = bmgr.or(enc, encodeCATProperties(ctx));
+    	}
     	return enc;
     }
 
@@ -98,13 +103,28 @@ public class PropertyEncoder implements Encoder {
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assertionEncoding = program.getAss().encode(ctx);
-        if (program.getAssFilter() != null) {
-            assertionEncoding = bmgr.and(assertionEncoding, program.getAssFilter().encode(ctx));
-        }
         // We use the SMT variable to extract from the model if the property was violated
 		BooleanFormula enc = bmgr.equivalence(REACHABILITY.getSMTVariable(ctx), assertionEncoding);
 		// No need to use the SMT variable if the formula is trivially false 
         return bmgr.isFalse(assertionEncoding) ? assertionEncoding : bmgr.and(REACHABILITY.getSMTVariable(ctx), enc);
+    }
+
+    public BooleanFormula encodeCATProperties(SolverContext ctx) {
+        logger.info("Encoding CAT properties");
+
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormula cat = bmgr.makeTrue();
+        BooleanFormula one = bmgr.makeFalse();
+    	for(Axiom ax : memoryModel.getAxioms()) {
+    		// Only flagged axioms are encoded as properties
+    		if(!ax.isFlagged()) {
+    			continue;
+    		}
+			cat = bmgr.and(cat, bmgr.equivalence(CAT.getSMTVariable(ax, ctx), ax.consistent(ctx)));
+			one = bmgr.or(one, CAT.getSMTVariable(ax, ctx));
+    	}
+		// No need to use the SMT variable if the formula is trivially false
+        return bmgr.isFalse(one) ? one : bmgr.and(one, cat);
     }
 
     public BooleanFormula encodeLiveness(SolverContext ctx) {
@@ -177,9 +197,10 @@ public class PropertyEncoder implements Encoder {
             atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
             allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, isDone));
         }
+
+        BooleanFormula livenessViolation = bmgr.and(allStuckOrDone, atLeastOneStuck);
         // We use the SMT variable to extract from the model if the property was violated
-		BooleanFormula enc = bmgr.equivalence(LIVENESS.getSMTVariable(ctx), 
-											  bmgr.and(allStuckOrDone, atLeastOneStuck));
+		BooleanFormula enc = bmgr.equivalence(LIVENESS.getSMTVariable(ctx), livenessViolation);
 		// No need to use the SMT variable if the formula is trivially false 
         return bmgr.isFalse(enc) ? enc : bmgr.and(LIVENESS.getSMTVariable(ctx), enc);
     }

@@ -59,7 +59,7 @@ public abstract class AbstractSvCompTest {
     }
 
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.getDefault()));
+        return Provider.fromSupplier(() -> Property.getDefault());
     }
 
     @ClassRule

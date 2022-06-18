@@ -38,7 +38,7 @@ public class BuildWitnessTest {
     	
     	Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bpl"));
     	Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat"));
-    	VerificationTask task = VerificationTask.builder().withConfig(config).build(p, wmm, EnumSet.of(Property.getDefault()));
+    	VerificationTask task = VerificationTask.builder().withConfig(config).build(p, wmm, Property.getDefault());
     	try (SolverContext ctx = TestHelper.createContext();
     			ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
     	{

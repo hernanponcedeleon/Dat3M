@@ -9,8 +9,12 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 public class Empty extends Axiom {
 
+    public Empty(Relation rel, boolean negated, boolean flag) {
+        super(rel, negated, flag);
+    }
+
     public Empty(Relation rel) {
-        super(rel);
+        super(rel, false, false);
     }
 
     @Override
@@ -25,11 +29,11 @@ public class Empty extends Axiom {
         for(Tuple tuple : rel.getEncodeTupleSet()){
             enc = bmgr.and(enc, bmgr.not(rel.getSMTVar(tuple, ctx)));
         }
-        return enc;
+        return negated ? bmgr.not(enc) : enc;
     }
 
     @Override
     public String toString() {
-        return "empty " + rel.getName();
+        return (negated ? "~" : "") + "empty " + rel.getName();
     }
 }

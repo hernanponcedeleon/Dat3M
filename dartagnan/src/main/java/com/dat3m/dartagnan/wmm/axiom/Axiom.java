@@ -19,13 +19,19 @@ import java.util.Objects;
  */
 public abstract class Axiom implements Dependent<Relation> {
 
-    protected Relation rel;
+    protected final Relation rel;
+    protected final boolean negated;
+    // Marks if the axiom should be use to report properties rather than filter consistency
+    protected final boolean flag;
+    protected String name;
 
     protected VerificationTask task;
     protected Context analysisContext;
 
-    Axiom(Relation rel) {
+    Axiom(Relation rel, boolean negated, boolean flag) {
         this.rel = rel;
+        this.negated = negated;
+        this.flag = flag;
     }
 
     public void initializeEncoding(SolverContext ctx) {
@@ -45,6 +51,24 @@ public abstract class Axiom implements Dependent<Relation> {
 
     public Relation getRelation() {
         return rel;
+    }
+
+    /**
+     * Users have the option to not enforce consistency checks, but rather 
+     * to use axioms to report properties of the candidate execution. 
+     * To do so, users must prefix the axioms they are interested in with 
+     * the keyword flag.
+     */
+    public boolean isFlagged() {
+        return flag;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     @Override

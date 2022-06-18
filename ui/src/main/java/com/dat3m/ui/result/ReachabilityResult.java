@@ -68,7 +68,7 @@ public class ReachabilityResult {
                         .withBound(options.getBound())
                         .withSolverTimeout(options.getTimeout())
                         .withTarget(arch)
-                        .build(program, wmm, EnumSet.of(Property.getDefault()));
+                        .build(program, wmm, Property.getDefault());
 
             	t.start();
                 Configuration config = Configuration.builder()
