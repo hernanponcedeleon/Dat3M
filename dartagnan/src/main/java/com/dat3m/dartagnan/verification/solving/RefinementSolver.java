@@ -28,11 +28,7 @@ import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverException;
+import org.sosy_lab.java_smt.api.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -62,6 +58,7 @@ public class RefinementSolver {
 
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
+    //TODO (2): Add possibility for Refinement to handle CAT-properties (it ignores them for now).
     public static Result run(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
 
@@ -228,10 +225,17 @@ public class RefinementSolver {
     }
     // ======================= Helper Methods ======================
 
+    // This method cuts off negated relations that are dependencies of some consistency axiom
+    // It ignores dependencies of flagged axioms, as those get eagarly encoded and can be completely
+    // ignored for Refinement.
     private static Set<Relation> cutRelationDifferences(Wmm targetWmm, Wmm baselineWmm) {
+        // TODO: Add support to move flagged axioms to the baselineWmm
         RelationRepository repo = baselineWmm.getRelationRepository();
         Set<Relation> cutRelations = new HashSet<>();
-        for (Relation rel : targetWmm.getRelationRepository().getRelations()) {
+        Set<Relation> cutCandidates = new HashSet<>();
+        targetWmm.getAxioms().stream().filter(ax -> !ax.isFlagged())
+                .forEach(ax -> collectDependencies(ax.getRelation(), cutCandidates));
+        for (Relation rel : cutCandidates) {
             if (rel instanceof RelMinus) {
                 Relation sec = rel.getSecond();
                 if (sec.getDependencies().size() != 0 || sec instanceof RelSetIdentity || sec instanceof RelCartesian) {
@@ -244,6 +248,12 @@ public class RefinementSolver {
             }
         }
         return cutRelations;
+    }
+
+    private static void collectDependencies(Relation root, Set<Relation> collected) {
+        if (collected.add(root)) {
+            root.getDependencies().forEach(dep -> collectDependencies(dep, collected));
+        }
     }
 
     private static Relation getCopyOfRelation(Relation rel, RelationRepository repo) {
