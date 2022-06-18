@@ -64,6 +64,7 @@ public class RefinementSolver {
 
 		task.preprocessProgram();
         // We cut the rhs of differences to get a semi-positive model, if possible.
+        // This call modifies the baseline model!
         Set<Relation> cutRelations = cutRelationDifferences(task.getMemoryModel(), task.getBaselineModel());
         task.performStaticProgramAnalyses();
         task.performStaticWmmAnalyses();
@@ -73,6 +74,8 @@ public class RefinementSolver {
         PropertyEncoder propertyEncoder = task.getPropertyEncoder();
         WmmEncoder baselineEncoder = task.getBaselineWmmEncoder();
         SymmetryEncoder symmEncoder = task.getSymmetryEncoder();
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormula globalRefinement = bmgr.makeTrue();
 
         Program program = task.getProgram();
         WMMSolver solver = new WMMSolver(task, cutRelations);
@@ -80,7 +83,7 @@ public class RefinementSolver {
         CAATSolver.Status status = INCONSISTENT;
 
         BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
-        if(ctx.getFormulaManager().getBooleanFormulaManager().isFalse(propertyEncoding)) {
+        if(bmgr.isFalse(propertyEncoding)) {
             logger.info("Verification finished: property trivially holds");
        		return PASS;        	
         }
@@ -94,23 +97,23 @@ public class RefinementSolver {
         prover.addConstraint(propertyEncoding);
 
         //  ------ Just for statistics ------
-        List<DNF<CoreLiteral>> foundCoreReasons = new ArrayList<>();
         List<WMMSolver.Statistics> statList = new ArrayList<>();
         int iterationCount = 0;
         long lastTime = System.currentTimeMillis();
         long curTime;
         long totalNativeSolvingTime = 0;
         long totalCaatTime = 0;
+        long totalRefiningTime = 0;
         //  ---------------------------------
 
         logger.info("Refinement procedure started.");
         while (!prover.isUnsat()) {
         	if(iterationCount == 0 && logger.isDebugEnabled()) {
-        		String smtStatistics = "\n ===== SMT Statistics (after first iteration) ===== \n";
+        		StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after first iteration) ===== \n");
         		for(String key : prover.getStatistics().keySet()) {
-        			smtStatistics += String.format("\t%s -> %s\n", key, prover.getStatistics().get(key));
+        			smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
         		}
-        		logger.debug(smtStatistics);
+        		logger.debug(smtStatistics.toString());
         	}
             iterationCount++;
             curTime = System.currentTimeMillis();
@@ -135,9 +138,12 @@ public class RefinementSolver {
 
             status = solverResult.getStatus();
             if (status == INCONSISTENT) {
+                long refineTime = System.currentTimeMillis();
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
-                foundCoreReasons.add(reasons);
-                prover.addConstraint(refiner.refine(reasons, ctx));
+                BooleanFormula refinement = refiner.refine(reasons, ctx);
+                prover.addConstraint(refinement);
+                globalRefinement = bmgr.and(globalRefinement, refinement); // Track overall refinement progress
+                totalRefiningTime += (System.currentTimeMillis() - refineTime);
 
                 if (REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES) {
                     generateGraphvizFiles(task, solver.getExecution(), iterationCount, reasons);
@@ -151,7 +157,7 @@ public class RefinementSolver {
                     logger.trace(message);
                 }
             } else {
-                // No violations found, we can't refine
+                // No inconsistencies found, we can't refine
                 break;
             }
             totalCaatTime += (System.currentTimeMillis() - curTime);
@@ -175,7 +181,7 @@ public class RefinementSolver {
                     message = "Violation verified.";
                     break;
                 case INCONSISTENT:
-                    message = "Bounded safety proven.";
+                    message = "Bounded specification proven.";
                     break;
                 default:
                     throw new IllegalStateException("Unknown result type returned by CAAT Solver.");
@@ -197,10 +203,10 @@ public class RefinementSolver {
             prover.pop();
             // Add bound check
             prover.addConstraint(propertyEncoder.encodeBoundEventExec(ctx));
-            // Add back the constraints found during Refinement (TODO: We might need to perform a second refinement)
-            for (DNF<CoreLiteral> reason : foundCoreReasons) {
-                prover.addConstraint(refiner.refine(reason, ctx));
-            }
+            // Add back the constraints found during Refinement
+            // TODO: We actually need to perform a second refinement to check for bound reachability
+            //  This is needed for the seqlock.c benchmarks!
+            prover.addConstraint(globalRefinement);
             veriResult = !prover.isUnsat() ? UNKNOWN : PASS;
             boundCheckTime = System.currentTimeMillis() - lastTime;
         } else {
@@ -208,15 +214,16 @@ public class RefinementSolver {
         }
 
         if (logger.isInfoEnabled()) {
-            logger.info(generateSummary(statList, iterationCount, totalNativeSolvingTime, totalCaatTime, boundCheckTime));
+            logger.info(generateSummary(statList, iterationCount, totalNativeSolvingTime,
+                    totalCaatTime, totalRefiningTime, boundCheckTime));
         }
 
         if(logger.isDebugEnabled()) {        	
-            String smtStatistics = "\n ===== SMT Statistics (after final iteration) ===== \n";
+            StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after final iteration) ===== \n");
     		for(String key : prover.getStatistics().keySet()) {
-    			smtStatistics += String.format("\t%s -> %s\n", key, prover.getStatistics().get(key));
+    			smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
     		}
-    		logger.debug(smtStatistics);
+    		logger.debug(smtStatistics.toString());
         }
 
         veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;
@@ -295,7 +302,8 @@ public class RefinementSolver {
     // -------------------- Printing -----------------------------
 
     private static CharSequence generateSummary(List<WMMSolver.Statistics> statList, int iterationCount,
-                                                long totalNativeSolvingTime, long totalCaatTime, long boundCheckTime) {
+                                                long totalNativeSolvingTime, long totalCaatTime,
+                                                long totalRefiningTime, long boundCheckTime) {
         long totalModelExtractTime = 0;
         long totalPopulationTime = 0;
         long totalConsistencyCheckTime = 0;
@@ -329,6 +337,7 @@ public class RefinementSolver {
                 .append("   -- Population time(ms): ").append(totalPopulationTime).append("\n")
                 .append("   -- Consistency check time(ms): ").append(totalConsistencyCheckTime).append("\n")
                 .append("   -- Reason computation time(ms): ").append(totalReasonComputationTime).append("\n")
+                .append("   -- Refining time(ms): ").append(totalRefiningTime).append("\n")
                 .append("   -- #Computed core reasons: ").append(totalNumReasons).append("\n")
                 .append("   -- #Computed core reduced reasons: ").append(totalNumReducedReasons).append("\n");
         if (statList.size() > 0) {
