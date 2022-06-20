@@ -8,7 +8,7 @@ ToS = 1;
 P0(int *ToS, int *node2)
 {
   continue = 1;
-  while(continue) {
+  if(continue) {
     top = READ_ONCE(*ToS);
     n2next = top;
     r0 = atomic_cmpxchg(ToS, top, *node2);
@@ -21,7 +21,7 @@ P0(int *ToS, int *node2)
 P1(int *ToS, int *node3)
 {
   continue = 1;
-  while(continue) {
+  if(continue) {
     top = READ_ONCE(*ToS);
     n3next = top;
     r0 = atomic_cmpxchg(ToS, top, *node3);
