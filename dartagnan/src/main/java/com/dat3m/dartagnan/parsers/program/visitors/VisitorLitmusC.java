@@ -183,7 +183,7 @@ public class VisitorLitmusC
 				if(pType != null) {
                     BasicTypeSpecifierContext bType = pType.basicTypeSpecifier();
 					if(bType != null) {
-                        if(bType.AtomiInt() != null) {
+                        if(bType.AtomicInt() != null) {
                         	object.markAsAtomic();
                         }
                     }

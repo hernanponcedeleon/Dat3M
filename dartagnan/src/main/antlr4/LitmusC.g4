@@ -257,7 +257,7 @@ typeSpecifier
 
 basicTypeSpecifier
     :   Int
-    |   AtomiInt
+    |   AtomicInt
     |   IntPtr
     |   Char
     ;
