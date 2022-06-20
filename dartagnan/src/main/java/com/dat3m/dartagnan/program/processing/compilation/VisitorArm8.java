@@ -40,10 +40,10 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 	// If the source WMM does not allow OOTA behaviors (e.g. RC11)
 	// we need to strength the compilation following the paper
 	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
-	private final boolean nooota; 
+	private final boolean useRC11Scheme; 
 	
-	protected VisitorArm8(boolean nooota) {
-		this.nooota = nooota;
+	protected VisitorArm8(boolean useRC11Scheme) {
+		this.useRC11Scheme = useRC11Scheme;
 	}
 	
 	@Override
@@ -184,7 +184,7 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitAtomicStore(AtomicStore e) {
         return eventSequence(
-                newStore(e.getAddress(), e.getMemValue(), nooota ? ARMv8.MO_REL : ARMv8.extractStoreMoFromCMo(e.getMo()))
+                newStore(e.getAddress(), e.getMemValue(), useRC11Scheme ? ARMv8.MO_REL : ARMv8.extractStoreMoFromCMo(e.getMo()))
         );
 	}
 

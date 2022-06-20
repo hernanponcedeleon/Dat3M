@@ -30,24 +30,24 @@ import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
-import static com.dat3m.dartagnan.program.processing.compilation.SyncScheme.LEADING;
+import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.LEADING_SYNC;
 
-class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
+public class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 
 	// The compilation schemes below follows the paper
 	// "Clarifying and Compiling C/C++ Concurrency: from C++11 to POWER"
 	// The paper does not defines the mappings for RMW but we derive them
 	// using the same pattern as for Load/Store	
-	private final SyncScheme scheme;
+	private final PowerScheme cToPowerScheme;
 	// If the source WMM does not allow OOTA behaviors (e.g. RC11)
 	// we need to strength the compilation following the papers
 	// "Repairing Sequential Consistency in C/C++11"
 	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
-	private final boolean nooota; 
+	private final boolean useRC11Scheme; 
 
-	protected VisitorPower(boolean nooota, SyncScheme scheme) {
-		this.nooota = nooota;
-		this.scheme = scheme;
+	protected VisitorPower(boolean useRC11Scheme, PowerScheme cToPowerScheme) {
+		this.useRC11Scheme = useRC11Scheme;
+		this.cToPowerScheme = cToPowerScheme;
 	}
 	
 	@Override
@@ -141,7 +141,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         
         switch(mo) {
 			case C11.MO_SC:
-				if(scheme.equals(LEADING)) {
+				if(cToPowerScheme.equals(LEADING_SYNC)) {
 					optionalBarrierBefore = Power.newSyncBarrier();
 					optionalBarrierAfter = Power.newISyncBarrier();
 				} else {
@@ -204,7 +204,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         
         switch(mo) {
 			case C11.MO_SC:
-				if(scheme.equals(LEADING)) {
+				if(cToPowerScheme.equals(LEADING_SYNC)) {
 					optionalBarrierBefore = Power.newSyncBarrier();
 					optionalBarrierAfter = Power.newISyncBarrier();
 				} else {
@@ -249,7 +249,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         
         switch(mo) {
 			case C11.MO_SC:
-				if(scheme.equals(LEADING)) {
+				if(cToPowerScheme.equals(LEADING_SYNC)) {
 					optionalBarrierBefore = Power.newSyncBarrier();
 					optionalLabel = newLabel("FakeDep");
 					optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
@@ -264,7 +264,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 				optionalBarrierAfter = Power.newISyncBarrier();
 				break;
 			case C11.MO_RELAXED:
-				if(nooota) {
+				if(useRC11Scheme) {
 					optionalLabel = newLabel("FakeDep");
 					optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);					
 				}
@@ -292,7 +292,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         
         switch(mo) {
 			case C11.MO_SC:
-				if(scheme.equals(LEADING)) {
+				if(cToPowerScheme.equals(LEADING_SYNC)) {
 					optionalBarrierBefore = Power.newSyncBarrier();
 				} else {
 					optionalBarrierBefore = Power.newLwSyncBarrier();
@@ -339,7 +339,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         
         switch(mo) {
 			case C11.MO_SC:
-				if(scheme.equals(LEADING)) {
+				if(cToPowerScheme.equals(LEADING_SYNC)) {
 					optionalBarrierBefore = Power.newSyncBarrier();
 					optionalBarrierAfter = Power.newISyncBarrier();
 				} else {
@@ -389,7 +389,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         
         switch(mo) {
 			case C11.MO_SC:
-				if(scheme.equals(LEADING)) {
+				if(cToPowerScheme.equals(LEADING_SYNC)) {
 					optionalBarrierBefore = Power.newSyncBarrier();
 					optionalBarrierAfter = Power.newISyncBarrier();
 				} else {
@@ -749,4 +749,10 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 testOp
         );
 	};
+	
+	public enum PowerScheme {
+
+		LEADING_SYNC, TRAILING_SYNC;
+		
+	}
 }

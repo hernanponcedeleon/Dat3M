@@ -12,8 +12,8 @@ public class OptionNames {
 	public static final String VALIDATE = "validate";
 	
 	// Compilation Options
-	public static final String NOOOTA = "compilation.nooota";
-	public static final String SYNCSCHEME = "compilation.syncScheme";
+	public static final String USE_RC11_TO_ARCH_SCHEME = "compilation.rc11ToArch";
+	public static final String USE_C_TO_POWER_SCHEME = "compilation.cToPower";
 	
 	// Encoding Options
 	public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";

@@ -11,7 +11,7 @@ import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.Configuration;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.program.processing.compilation.SyncScheme.TRAILING;
+import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.TRAILING_SYNC;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -56,7 +56,7 @@ public class C11ToPPCTest extends AbstractCompilationTest {
     protected Provider<Configuration> getConfigurationProvider() {
 		return Provider.fromSupplier(() -> Configuration.builder().
 				setOption(INITIALIZE_REGISTERS, String.valueOf(true)).
-				setOption(SYNCSCHEME, String.valueOf(TRAILING)).
+				setOption(USE_C_TO_POWER_SCHEME, String.valueOf(TRAILING_SYNC)).
 				build());
     }
 }
