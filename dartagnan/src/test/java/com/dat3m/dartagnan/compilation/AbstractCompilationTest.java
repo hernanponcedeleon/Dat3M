@@ -120,7 +120,7 @@ public abstract class AbstractCompilationTest {
     		.around(prover2Provider);
 
     @Test
-    public void testRefinement() throws Exception {
+    public void testIncremental() throws Exception {
     	// The following have features (locks and RCU) that hardware models do not support
     	FilterAbstract rcu = FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_LOCK), 
     			FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_UNLOCK), FilterBasic.get(Tag.Linux.RCU_SYNC)));
