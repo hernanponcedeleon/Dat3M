@@ -38,7 +38,7 @@ public class AtomicityPropagation implements ProgramProcessor {
     }
 
 	private void run(Thread thread, Set<IExpr> atomics) {
-		
+        AtomicityPropagationVisitor visitor = new AtomicityPropagationVisitor(atomics);		
 	    Event current = thread.getEntry();
         while (current != null) {
         	if(current instanceof Local) {
@@ -48,7 +48,7 @@ public class AtomicityPropagation implements ProgramProcessor {
         			atomics.add(l.getResultRegister());
         		}
         	}
-            current.accept(new AtomicityPropagationVisitor(atomics));
+			current.accept(visitor);
             current = current.getSuccessor();
         }
         thread.updateExit(thread.getEntry());
@@ -73,6 +73,7 @@ public class AtomicityPropagation implements ProgramProcessor {
 			// Accesses to an atomic object without a concrete mo are considered SC
     		if(atomics.contains(e.getAddress()) && e.canRace()) {
     			e.addFilters(Tag.C11.ATOMIC, Tag.C11.MO_SC);
+    			e.removeFilters(Tag.C11.NONATOMIC);
     		}
     		return e;
     	};
