@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -43,8 +42,7 @@ public class AtomicityPropagation implements ProgramProcessor {
         while (current != null) {
         	if(current instanceof Local) {
         		Local l = (Local)current;
-        		if(atomics.contains(l.getExpr()) || 
-        				l.getExpr() instanceof MemoryObject && ((MemoryObject)l.getExpr()).isAtomic()) {
+        		if(atomics.contains(l.getExpr())) {
         			atomics.add(l.getResultRegister());
         		}
         	}
