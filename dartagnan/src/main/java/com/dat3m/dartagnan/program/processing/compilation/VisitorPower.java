@@ -314,8 +314,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
 		String mo = e.getMo();
-        Fence fence = mo.equals(Tag.C11.MO_ACQUIRE) || mo.equals(Tag.C11.MO_RELEASE) || mo.equals(Tag.C11.MO_ACQUIRE_RELEASE) || mo.equals(Tag.C11.MO_SC) ?
-                        Power.newLwSyncBarrier() : null;
+        Fence fence = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier() : Power.newLwSyncBarrier();
 
         return eventSequence(
                 fence
