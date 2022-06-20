@@ -23,9 +23,9 @@ import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class DartagnanRC1 extends AbstractCTest {
+public class DartagnanRC11 extends AbstractCTest {
 
-    public DartagnanRC1(String name, Arch target, Result expected) {
+    public DartagnanRC11(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
 

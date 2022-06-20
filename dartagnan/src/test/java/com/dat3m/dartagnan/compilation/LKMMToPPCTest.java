@@ -8,14 +8,14 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
-public class LKMM2PPCTest extends AbstractCompilationTest {
+public class LKMMToPPCTest extends AbstractCompilationTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
         return buildLitmusTests("litmus/LKMM/");
     }
 
-    public LKMM2PPCTest(String path) {
+    public LKMMToPPCTest(String path) {
         super(path);
     }
 

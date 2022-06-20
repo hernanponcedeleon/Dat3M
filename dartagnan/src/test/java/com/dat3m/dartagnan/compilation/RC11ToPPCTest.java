@@ -14,14 +14,14 @@ import static com.dat3m.dartagnan.configuration.OptionNames.NOOOTA;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
-public class RC112PPCTest extends AbstractCompilationTest {
+public class RC11ToPPCTest extends AbstractCompilationTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
         return buildLitmusTests("litmus/C11/");
     }
 
-    public RC112PPCTest(String path) {
+    public RC11ToPPCTest(String path) {
         super(path);
     }
 

@@ -6,18 +6,22 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.configuration.Arch;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.configuration.Configuration;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
+import static com.dat3m.dartagnan.configuration.OptionNames.NOOOTA;
 
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
-public class C112TSOTest extends AbstractCompilationTest {
+public class RC11ToTSOTest extends AbstractCompilationTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
         return buildLitmusTests("litmus/C11/");
     }
 
-    public C112TSOTest(String path) {
+    public RC11ToTSOTest(String path) {
         super(path);
     }
 
@@ -28,11 +32,19 @@ public class C112TSOTest extends AbstractCompilationTest {
 
     @Override
     protected Provider<Wmm> getSourceWmmProvider() {
-        return Providers.createWmmFromName(() -> "c11");
+        return Providers.createWmmFromName(() -> "rc11");
     }
 
 	@Override
 	protected Provider<Arch> getTargetProvider() {
 		return () -> Arch.TSO;
 	}
+	
+	@Override
+    protected Provider<Configuration> getConfigurationProvider() {
+		return Provider.fromSupplier(() -> Configuration.builder().
+				setOption(INITIALIZE_REGISTERS, String.valueOf(true)).
+				setOption(NOOOTA, String.valueOf(true)).
+				build());
+    }
 }

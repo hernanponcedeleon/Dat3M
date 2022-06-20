@@ -19,14 +19,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RunWith(Parameterized.class)
-public class C112PPCTest extends AbstractCompilationTest {
+public class C11ToPPCTest extends AbstractCompilationTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
         return buildLitmusTests("litmus/C11/");
     }
 
-    public C112PPCTest(String path) {
+    public C11ToPPCTest(String path) {
         super(path);
     }
 
