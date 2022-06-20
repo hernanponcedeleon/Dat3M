@@ -96,7 +96,7 @@ public class ExecutionGraph {
         Set<Constraint> constraints = new HashSet<>();
 
         for (Axiom axiom : verificationTask.getAxioms()) {
-            if (axiom instanceof ForceEncodeAxiom) {
+            if (axiom instanceof ForceEncodeAxiom || axiom.isFlagged()) {
                 continue;
             }
             Constraint constraint = getOrCreateConstraintFromAxiom(axiom);

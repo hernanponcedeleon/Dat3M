@@ -101,7 +101,7 @@ public class BranchTest {
             VerificationTask task = VerificationTask.builder()
                     .withSolverTimeout(60)
                     .withTarget(Arch.LKMM)
-                    .build(program, wmm, EnumSet.of(Property.getDefault()));
+                    .build(program, wmm, Property.getDefault());
             assertEquals(expected, TwoSolvers.run(ctx, prover1, prover2, task));
         } catch (Exception e){
             fail("Missing resource file");

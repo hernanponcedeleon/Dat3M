@@ -48,7 +48,7 @@ public abstract class AbstractCTest {
     }
 
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.getDefault()));
+        return Provider.fromSupplier(() -> Property.getDefault());
     }
 
     // =============================================================

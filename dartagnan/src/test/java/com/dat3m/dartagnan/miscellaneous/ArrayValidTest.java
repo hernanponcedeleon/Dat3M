@@ -63,7 +63,7 @@ public class ArrayValidTest {
             VerificationTask task = VerificationTask.builder()
                     .withSolverTimeout(60)
                     .withTarget(Arch.LKMM)
-                    .build(program, wmm, EnumSet.of(Property.getDefault()));
+                    .build(program, wmm, Property.getDefault());
             assertEquals(TwoSolvers.run(ctx, prover1, prover2, task), FAIL);
         } catch (Exception e){
             fail("Missing resource file");

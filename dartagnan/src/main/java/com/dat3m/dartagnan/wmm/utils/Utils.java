@@ -21,4 +21,9 @@ public class Utils {
 		return fmgr.makeVariable(IntegerType, fmgr.escape(relName) + "(" + e.repr() + ")");
 	}
 
+	public static BooleanFormula cycleVar(String relName, Event e, SolverContext ctx) {
+		FormulaManager fmgr = ctx.getFormulaManager();
+		return fmgr.makeVariable(BooleanType, fmgr.escape(relName) + "-cycle(" + e.repr() + ")");
+	}
+
 }
