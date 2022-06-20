@@ -34,7 +34,7 @@ import static com.dat3m.dartagnan.program.processing.compilation.SyncScheme.LEAD
 
 class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 
-	// The compilation schemes below follow the paper
+	// The compilation schemes below follows the paper
 	// "Clarifying and Compiling C/C++ Concurrency: from C++11 to POWER"
 	// The paper does not defines the mappings for RMW but we derive them
 	// using the same pattern as for Load/Store	

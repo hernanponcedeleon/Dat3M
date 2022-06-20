@@ -73,6 +73,7 @@ public abstract class AbstractCompilationTest {
         return Providers.createWmmFromArch(getTargetProvider());
     }
     protected long getTimeout() { return 10000; }
+    // List of tests that are known to show bugs in the compilation scheme and thus the expected result should be FAIL instead of PASS
     protected List<String> getCompilationBreakers() { return emptyList(); }
     protected Provider<Configuration> getConfigurationProvider() {
 		return Provider.fromSupplier(() -> Configuration.builder().setOption(INITIALIZE_REGISTERS, String.valueOf(DO_INITIALIZE_REGISTERS)).build());
