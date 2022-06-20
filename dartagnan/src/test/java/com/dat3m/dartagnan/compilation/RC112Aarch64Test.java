@@ -40,6 +40,7 @@ public class RC112Aarch64Test extends AbstractCompilationTest {
 		return () -> Arch.ARM8;
 	}
 	
+	@Override
     protected Provider<Configuration> getConfigurationProvider() {
 		return Provider.fromSupplier(() -> Configuration.builder().
 				setOption(INITIALIZE_REGISTERS, String.valueOf(true)).

@@ -40,6 +40,7 @@ public class RC112PPCTest extends AbstractCompilationTest {
 		return () -> Arch.POWER;
 	}
 	
+	@Override
     protected Provider<Configuration> getConfigurationProvider() {
 		return Provider.fromSupplier(() -> Configuration.builder().
 				setOption(INITIALIZE_REGISTERS, String.valueOf(true)).

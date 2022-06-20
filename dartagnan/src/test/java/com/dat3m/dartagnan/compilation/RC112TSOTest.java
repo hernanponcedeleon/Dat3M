@@ -40,6 +40,7 @@ public class RC112TSOTest extends AbstractCompilationTest {
 		return () -> Arch.TSO;
 	}
 	
+	@Override
     protected Provider<Configuration> getConfigurationProvider() {
 		return Provider.fromSupplier(() -> Configuration.builder().
 				setOption(INITIALIZE_REGISTERS, String.valueOf(true)).
