@@ -324,7 +324,7 @@ Volatile
     :   'volatile'
     ;
 
-AtomiInt
+AtomicInt
     :   'atomic_int'
     ;
 
