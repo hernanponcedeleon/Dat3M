@@ -70,7 +70,8 @@ public class AtomicityPropagation implements ProgramProcessor {
     	public Event visitMemEvent(MemEvent e) {
 			// Accesses to an atomic object without a concrete mo are considered SC
     		if(atomics.contains(e.getAddress()) && e.canRace()) {
-    			e.addFilters(Tag.C11.ATOMIC, Tag.C11.MO_SC);
+    			e.setMo(Tag.C11.MO_SC);
+    			e.addFilters(Tag.C11.ATOMIC);
     			e.removeFilters(Tag.C11.NONATOMIC);
     		}
     		return e;
