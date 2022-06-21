@@ -53,7 +53,7 @@ public class AtomicityPropagation implements ProgramProcessor {
         thread.clearCache();
 	}
 
-    private class AtomicityPropagationVisitor implements EventVisitor<Event> {
+    private class AtomicityPropagationVisitor implements EventVisitor<Void> {
 
     	private final Set<IExpr> atomics;
     	
@@ -62,18 +62,18 @@ public class AtomicityPropagation implements ProgramProcessor {
     	}
     	
     	@Override
-    	public Event visitEvent(Event e) {
-    		return e;
+    	public Void visitEvent(Event e) {
+    		return null;
     	};
     	
     	@Override
-    	public Event visitMemEvent(MemEvent e) {
+    	public Void visitMemEvent(MemEvent e) {
 			// Accesses to an atomic object without a concrete mo are considered SC
     		if(atomics.contains(e.getAddress()) && e.canRace()) {
     			e.setMo(Tag.C11.MO_SC);
     			e.addFilters(Tag.C11.ATOMIC);
     		}
-    		return e;
+    		return null;
     	};
     }
 
