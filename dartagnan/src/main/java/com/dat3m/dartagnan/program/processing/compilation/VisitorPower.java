@@ -39,8 +39,8 @@ public class VisitorPower extends VisitorBase implements EventVisitor<List<Event
 	// The paper does not defines the mappings for RMW but we derive them
 	// using the same pattern as for Load/Store	
 	private final PowerScheme cToPowerScheme;
-	// If the source WMM does not allow OOTA behaviors (e.g. RC11)
-	// we need to strength the compilation following the papers
+	// Some language memory models (e.g. RC11) are non-dependency tracking and might need a 
+	// strong version of no-OOTA, thus we need to strength the compilation following the papers
 	// "Repairing Sequential Consistency in C/C++11"
 	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
 	private final boolean useRC11Scheme; 

@@ -44,7 +44,7 @@ public class Compilation implements ProgramProcessor {
             toUppercase = true)
     private boolean useRC11Scheme = false;
 
-    @Option(name = USE_C_TO_POWER_SCHEME,
+    @Option(name = C_TO_POWER_SCHEME,
             description = "Use the leading/trailing-sync compilation scheme from C to Power.",
             secure = true,
             toUppercase = true)

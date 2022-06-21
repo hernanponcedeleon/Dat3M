@@ -56,7 +56,7 @@ public class C11ToPPCTest extends AbstractCompilationTest {
     protected Provider<Configuration> getConfigurationProvider() {
 		return Provider.fromSupplier(() -> Configuration.builder().
 				setOption(INITIALIZE_REGISTERS, String.valueOf(true)).
-				setOption(USE_C_TO_POWER_SCHEME, String.valueOf(TRAILING_SYNC)).
+				setOption(C_TO_POWER_SCHEME, String.valueOf(TRAILING_SYNC)).
 				build());
     }
 }

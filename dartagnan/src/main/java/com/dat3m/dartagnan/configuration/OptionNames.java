@@ -13,7 +13,7 @@ public class OptionNames {
 	
 	// Compilation Options
 	public static final String USE_RC11_TO_ARCH_SCHEME = "compilation.rc11ToArch";
-	public static final String USE_C_TO_POWER_SCHEME = "compilation.cToPower";
+	public static final String C_TO_POWER_SCHEME = "compilation.cToPower";
 	
 	// Encoding Options
 	public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";
