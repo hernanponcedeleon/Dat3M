@@ -1,0 +1,15 @@
+RISCV RStar-W-WStar
+{
+0:x5=x;
+}
+ P0               ;
+ ori x7,x0,1      ;
+ lr.w x6,0(x5)    ;
+ ori x9,x0,2      ;
+ sw  x9,0(x5)     ;
+ sc.w x8,x7,0(x5) ;
+
+forall
+  (0:x6=0 /\
+    ((0:x8=0 /\ x=1) \/
+    (not(0:x8=0) /\ x=2)))

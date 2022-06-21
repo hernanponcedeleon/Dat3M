@@ -1,0 +1,21 @@
+RISCV RR+RR+rmw-fence.tso+rmw-fence.tsopx
+"Rmw Fence.tsodWR Hat Rmw Fence.tsodWRPX HatXP"
+Cycle=Hat Rmw Fence.tsodWRPX HatXP Rmw Fence.tsodWR
+Relax=[Rmw,Fence.tsodWR]
+Safe=Hat X
+Generator=diy7 (version 7.49+03(dev))
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=Rmw Fence.tsodWR Hat Rmw Fence.tsodWRPX HatXP
+{
+0:x5=x; 0:x9=y;
+1:x5=y; 1:x8=x;
+}
+ P0                   | P1                   ;
+ ori x7,x0,1          | ori x7,x0,1          ;
+ amoswap.w x6,x7,(x5) | amoswap.w x6,x7,(x5) ;
+ fence.tso            | fence.tso            ;
+ lw x8,0(x9)          | lr.w x9,0(x8)        ;
+                      | sc.w x10,x9,0(x8)    ;
+exists
+(x=1 /\ 0:x6=0 /\ 0:x8=0 /\ 1:x10=0 /\ 1:x6=0 /\ 1:x9=0)

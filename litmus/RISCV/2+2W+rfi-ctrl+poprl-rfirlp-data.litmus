@@ -1,0 +1,24 @@
+RISCV 2+2W+rfi-ctrl+poprl-rfirlp-data
+"Rfi DpCtrldW Wse PodWWPRl RfiRlP DpDatadW Wse"
+Cycle=Rfi DpCtrldW Wse PodWWPRl RfiRlP DpDatadW Wse
+Relax=Rfi
+Safe=Wse DpDatadW DpCtrldW PodWWPRl
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Ws Ws
+Orig=Rfi DpCtrldW Wse PodWWPRl RfiRlP DpDatadW Wse
+{
+0:x6=x; 0:x9=y;
+1:x6=y; 1:x8=z; 1:x11=x;
+}
+ P0             | P1             ;
+ ori x5,x0,2    | ori x5,x0,2    ;
+ sw x5,0(x6)    | sw x5,0(x6)    ;
+ lw x7,0(x6)    | ori x7,x0,1    ;
+ bne x7,x0,LC00 | sw.rl x7,0(x8) ;
+ LC00:          | lw x9,0(x8)    ;
+ ori x8,x0,1    | xor x10,x9,x9  ;
+ sw x8,0(x9)    | ori x10,x10,1  ;
+                | sw x10,0(x11)  ;
+exists
+(x=2 /\ y=2 /\ 0:x7=2 /\ 1:x9=1)

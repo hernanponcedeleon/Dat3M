@@ -1,0 +1,13 @@
+RISCV Andy25
+"based on: DpDatadW RfePX DpDatadWXP Rfe"
+{
+0:x7=A; 0:x8=B;
+1:x7=A; 1:x8=B;
+}
+ P0               | P1           ;
+ lr.w x1,0(x7)    | lw x4,0(x8)  ;
+ sc.w x2,x1,0(x7) | sw x4,0(x7)  ;
+ addi x3,x2,1     |              ;
+ sw x3,0(x8)      |              ;
+exists
+(0:x1=1 /\ 0:x2=0 /\ 1:x4=1)

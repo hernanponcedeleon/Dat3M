@@ -1,0 +1,16 @@
+RISCV C-Will02+HEAD
+(* A la RISCV compilation of C-Will02 (heading sync) *)
+{ ok=1;
+0:x6=x; 0:x7=y; 0:x3=z;
+1:x6=y; 1:x8=x; 1:x3=z;
+}
+ P0                       | P1          ;
+ ori x5,x0,1              | ori x1,x0,1 ;
+ sw x5,0(x6)              | sw x1,0(x3) ;
+ ori x8,x0,1              | fence rw,rw ;
+ fence rw,rw              | lw x7,0(x6) ;
+ amoadd.w.aq x9,x5,(x7)   |             ;
+ lw x2,0(x3)              |             ;
+
+locations [0:x2;]
+exists (0:x9=0 /\ 1:x7=0)

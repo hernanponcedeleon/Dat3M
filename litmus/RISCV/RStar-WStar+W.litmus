@@ -1,0 +1,11 @@
+RISCV RStar-WStar+W
+{
+0:x5=x; 1:x5=x;
+}
+ P0               | P1           ;
+ ori x7,x0,1      | ori x9,x0,2  ;
+ lr.w x6,0(x5)    | sw  x9,0(x5) ;
+ sc.w x8,x7,0(x5) |              ;
+
+locations [0:x8;]
+exists 0:x6=0 /\ x=1

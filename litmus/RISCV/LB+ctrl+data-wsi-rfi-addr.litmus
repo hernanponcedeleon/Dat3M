@@ -1,0 +1,27 @@
+RISCV LB+ctrl+data-wsi-rfi-addr
+"DpCtrldW Rfe DpDatadW Wsi Rfi DpAddrdW Rfe"
+Cycle=Rfi DpAddrdW Rfe DpCtrldW Rfe DpDatadW Wsi
+Relax=[Wsi,Rfi]
+Safe=Rfe DpAddrdW DpDatadW DpCtrldW
+Generator=diy7 (version 7.47+4(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+Orig=DpCtrldW Rfe DpDatadW Wsi Rfi DpAddrdW Rfe
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x8=z; 1:x13=x;
+}
+ P0             | P1              ;
+ lw x5,0(x6)    | lw x5,0(x6)     ;
+ bne x5,x0,LC00 | xor x7,x5,x5    ;
+ LC00:          | ori x7,x7,1     ;
+ ori x7,x0,1    | sw x7,0(x8)     ;
+ sw x7,0(x8)    | ori x9,x0,2     ;
+                | sw x9,0(x8)     ;
+                | lw x10,0(x8)    ;
+                | xor x11,x10,x10 ;
+                | ori x12,x0,1    ;
+                | add x14,x13,x11 ;
+                | sw x12,0(x14)   ;
+exists
+(z=2 /\ 0:x5=1 /\ 1:x5=1 /\ 1:x10=2)

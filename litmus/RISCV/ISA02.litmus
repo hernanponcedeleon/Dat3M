@@ -1,0 +1,16 @@
+RISCV ISA02
+
+(* RISCV V2.3, Fig 1.2 *)
+{
+0:s0=x; 0:s1=y;
+1:s0=x; 1:s1=y;
+}
+
+P0           | P1          ;
+li t1,1      | li t1,1     ;
+sw t1,0(s0)  | sw t1,0(s1) ;
+lw a0,0(s0)  | lw a2,0(s1) ;
+fence r,r    | fence r,r   ;
+lw a1,0(s1)  | lw a3,0(s0) ;
+
+exists 0:a0=1 /\ 0:a1=0 /\ 1:a2=1 /\ 1:a3=0

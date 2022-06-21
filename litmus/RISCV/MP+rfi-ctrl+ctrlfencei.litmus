@@ -1,0 +1,23 @@
+RISCV MP+rfi-ctrl+ctrlfencei
+"Rfi DpCtrldW Rfe DpCtrlFenceIdR Fre"
+Cycle=Rfi DpCtrldW Rfe DpCtrlFenceIdR Fre
+Relax=Rfi
+Safe=Rfe Fre DpCtrldW DpCtrlFenceIdR
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=Rfi DpCtrldW Rfe DpCtrlFenceIdR Fre
+{
+0:x6=x; 0:x9=y;
+1:x6=y; 1:x8=x;
+}
+ P0             | P1             ;
+ ori x5,x0,1    | lw x5,0(x6)    ;
+ sw x5,0(x6)    | bne x5,x0,LC01 ;
+ lw x7,0(x6)    | LC01:          ;
+ bne x7,x0,LC00 | fence.i        ;
+ LC00:          | lw x7,0(x8)    ;
+ ori x8,x0,1    |                ;
+ sw x8,0(x9)    |                ;
+exists
+(0:x7=1 /\ 1:x5=1 /\ 1:x7=0)

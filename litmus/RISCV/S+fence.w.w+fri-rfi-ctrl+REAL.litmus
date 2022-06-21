@@ -1,0 +1,24 @@
+RISCV S+fence.w.w+fri-rfi-ctrl+REAL
+"Fence.w.wdWW Rfe Fri Rfi DpCtrldW Wse"
+Generator=diyone7 (version 7.47+3)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Ws
+Orig=Fence.w.wdWW Rfe Fri Rfi DpCtrldW Wse
+(* S+fenve+fri-rfi-ctrl, real dependency *)
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x10=x;
+}
+ P0          | P1              ;
+ ori x5,x0,2 | lw x5,0(x6)     ;
+ sw x5,0(x6) | ori x7,x0,2     ;
+ fence w,w   | sw x7,0(x6)     ;
+ ori x7,x0,1 | lw x8,0(x6)     ;
+ sw x7,0(x8) | beq x8,x0,LEXIT ;
+             | ori x9,x0,1     ;
+             | sw x9,0(x10)    ;
+             |LEXIT:           ;
+             
+
+exists
+(x=2 /\ y=2 /\ 1:x5=1 /\ 1:x8=2)

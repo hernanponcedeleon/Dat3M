@@ -1,0 +1,21 @@
+RISCV ISA-LB-DEP-ADDR3-SUCCESS
+
+(* Addr+Success dependency on P1, variation on an idea by D. Lustig,
+   In the LR/SC pair on P1, only the write addr depends on initial load,
+   As a result: Forbid (where SC succeeds), following rule3 addr;po \in ppo.
+{
+int z;
+int x; int y; int *p = &z; int *1:a0;
+1:s0=p; 1:s1=y; 1:s2=x;
+0:s0=p; 0:s1=y; 0:s2=x;
+}
+
+ P0          | P1                ;
+ lw a0,0(s1) | ld a0,0(s0)       ;
+ andi t1,a0,8| lr.w a1,0(s2)     ;
+ add s2,s2,t1| li t1,1           ;
+ sd s2,0(s0) | sc.w a2,t1,0(a0)  ;
+             | ori t2,a2,1       ;
+             | sw t2,0(s1)       ;
+
+~exists 0:a0=1 /\ 1:a0=x /\ 1:a2=0

@@ -1,0 +1,13 @@
+RISCV Andy26
+{
+0:x7=A; 0:x8=B; 0:x9=C;
+        1:x8=B; 1:x9=C;
+}
+ P0               | P1           ;
+ lr.w x1,0(x7)    | lw x4,0(x9)  ;
+ lw x2,0(x8)      | sw x4,0(x8)  ;
+ sc.w x3,x2,0(x7) |              ;
+ addi x4,x3,1     |              ;
+ sw x4,0(x9)      |              ;
+exists
+(0:x1=0 /\ 0:x2=1 /\ 0:x3=0 /\ 1:x4=1)

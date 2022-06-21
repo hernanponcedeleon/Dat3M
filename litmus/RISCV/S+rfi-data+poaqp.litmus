@@ -1,0 +1,22 @@
+RISCV S+rfi-data+poaqp
+"Rfi DpDatadW RfePAq PodRWAqP Wse"
+Cycle=Rfi DpDatadW RfePAq PodRWAqP Wse
+Relax=Rfi
+Safe=Rfe Wse DpDatadW PodRWAqP
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Ws
+Orig=Rfi DpDatadW RfePAq PodRWAqP Wse
+{
+0:x6=x; 0:x9=y;
+1:x6=y; 1:x8=x;
+}
+ P0           | P1             ;
+ ori x5,x0,2  | lw.aq x5,0(x6) ;
+ sw x5,0(x6)  | ori x7,x0,1    ;
+ lw x7,0(x6)  | sw x7,0(x8)    ;
+ xor x8,x7,x7 |                ;
+ ori x8,x8,1  |                ;
+ sw x8,0(x9)  |                ;
+exists
+(x=2 /\ 0:x7=2 /\ 1:x5=1)

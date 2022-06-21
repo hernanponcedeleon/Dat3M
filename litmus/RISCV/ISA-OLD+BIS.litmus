@@ -1,0 +1,13 @@
+RISCV ISA-OLD+BIS
+{
+  0:s0=x; 0:s1=y;
+  1:s0=x; 1:s1=y;
+}
+  P0                      | P1                     ;
+ li t1,1                  | li t2,2                ;
+ sw t1,0(s0)              | amoswap.w a0,t2,0(s1)  ;
+ amoswap.w.rl x0,t1,0(s1) | amoor.w.aq a1,x0,0(s1) ;
+                          | lw a2,0(s0)            ;
+
+
+exists 1:a0=1 /\ 1:a1=2 /\ 1:a2=0

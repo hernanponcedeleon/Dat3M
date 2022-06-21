@@ -1,0 +1,22 @@
+RISCV MP+fence.tsopxs
+"Fence.tsodWWPX RfeXP Fence.tsodRRPX FreXP"
+Cycle=Fence.tsodWWPX RfeXP Fence.tsodRRPX FreXP
+Relax=
+Safe=Rfe Fre Fence.tsodWW Fence.tsodRR X
+Generator=diy7 (version 7.49+03(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=Fence.tsodWWPX RfeXP Fence.tsodRRPX FreXP
+{
+0:x6=x; 0:x7=y;
+1:x6=y; 1:x7=x;
+}
+ P0                | P1               ;
+ ori x5,x0,1       | lw x5,0(x6)      ;
+ sw x5,0(x6)       | fence.tso        ;
+ fence.tso         | lr.w x8,0(x7)    ;
+ ori x8,x0,1       | sc.w x9,x8,0(x7) ;
+ lr.w x9,0(x7)     |                  ;
+ sc.w x10,x8,0(x7) |                  ;
+exists
+(x=1 /\ y=1 /\ 0:x10=0 /\ 0:x9=0 /\ 1:x9=0 /\ 1:x5=1 /\ 1:x8=0)

@@ -1,0 +1,19 @@
+RISCV ISA03+SB01
+
+(* ISA V2.3, Fig 1.3, spinlock, adapt, test SC restore *)
+
+{
+0:a0=lock; 0:a1=x; 0:a2=y;
+1:a0=lock; 1:a1=x; 1:a2=y;
+}
+ P0                      | P1                      ;
+ li t0,1                 | li t0,1                 ;
+ amoswap.w.aq t0,t0,(a0) | amoswap.w.aq t0,t0,(a0) ;
+ li t1,1                 | li t1,1                 ;
+ sw t1,0(a1)             | sw t1,0(a2)             ;
+ lw t2,0(a2)             | lw t2,0(a1)             ;
+ amoswap.w.rl x0,x0,(a0) | amoswap.w.rl x0,x0,(a0) ;
+
+
+filter (0:t0=0 /\ 1:t0=0)
+~exists (0:t2=0 /\ 1:t2=0)

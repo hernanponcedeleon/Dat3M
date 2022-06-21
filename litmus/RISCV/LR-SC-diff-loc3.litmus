@@ -1,0 +1,11 @@
+RISCV LR-SC-diff-loc3
+{
+0:x6=x; 0:x9=y;
+1:x6=y; 1:x9=x;
+}
+ P0                           | P1                           ;
+ lr.w x5,0(x6)    (* R x=0 *) | lr.w x5,0(x6)    (* R y=0 *) ;
+ ori x7,x0,1                  | ori x7,x0,1                  ;
+ sc.w x8,x7,0(x9) (* W y=1 *) | sc.w x8,x7,0(x9) (* W x=1 *) ;
+~exists
+(x=1 /\ y=1 /\ 0:x5=0 /\ 0:x8=0 /\ 1:x5=0 /\ 1:x8=0)

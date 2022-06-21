@@ -1,0 +1,14 @@
+RISCV R+fence.w.w+fence.tso
+"based on: Fence.w.wdWW Wse Fence.rw.rwdWR Fre"
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x8=x;
+}
+ P0          | P1          ;
+ ori x5,x0,1 | ori x5,x0,2 ;
+ sw x5,0(x6) | sw x5,0(x6) ;
+ fence w,w   | fence.tso   ;
+ ori x7,x0,1 | lw x7,0(x8) ;
+ sw x7,0(x8) |             ;
+exists
+(y=2 /\ 1:x7=0)

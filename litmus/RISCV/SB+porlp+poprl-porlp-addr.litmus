@@ -1,0 +1,24 @@
+RISCV SB+porlp+poprl-porlp-addr
+"PodWRRlP Fre PodWWPRl PodWRRlP DpAddrdR FrePRl"
+Cycle=Fre PodWWPRl PodWRRlP DpAddrdR FrePRl PodWRRlP
+Relax=PodWRRlP
+Safe=Fre DpAddrdR PodWWPRl
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=PodWRRlP Fre PodWWPRl PodWRRlP DpAddrdR FrePRl
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x8=z; 1:x10=a; 1:x13=x;
+}
+ P0             | P1              ;
+ ori x5,x0,1    | ori x5,x0,1     ;
+ sw.rl x5,0(x6) | sw x5,0(x6)     ;
+ lw x7,0(x8)    | ori x7,x0,1     ;
+                | sw.rl x7,0(x8)  ;
+                | lw x9,0(x10)    ;
+                | xor x11,x9,x9   ;
+                | add x14,x13,x11 ;
+                | lw x12,0(x14)   ;
+exists
+(0:x7=0 /\ 1:x12=0)
