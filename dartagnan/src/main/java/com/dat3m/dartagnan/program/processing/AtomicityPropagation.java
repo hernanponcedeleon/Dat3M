@@ -72,7 +72,6 @@ public class AtomicityPropagation implements ProgramProcessor {
     		if(atomics.contains(e.getAddress()) && e.canRace()) {
     			e.setMo(Tag.C11.MO_SC);
     			e.addFilters(Tag.C11.ATOMIC);
-    			e.removeFilters(Tag.C11.NONATOMIC);
     		}
     		return e;
     	};

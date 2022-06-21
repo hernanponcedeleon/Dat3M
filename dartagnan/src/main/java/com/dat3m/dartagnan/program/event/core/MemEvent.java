@@ -69,6 +69,8 @@ public abstract class MemEvent extends Event {
     }
 
     public void setMo(String mo){
+    	Preconditions.checkNotNull(mo, "Only the parser can set the memory ordering to null");
+        removeFilters(this.mo);
         this.mo = mo;
         addFilters(mo);
     }
