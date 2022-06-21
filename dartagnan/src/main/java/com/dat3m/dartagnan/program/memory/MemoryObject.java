@@ -22,6 +22,11 @@ public class MemoryObject extends IConst implements ExprInterface, LastValueInte
     private final int index;
     private int size;
     BigInteger address;
+    // TODO
+    // Right now we assume that either the whole object is atomic or it is not.
+    // Generally, this is no necessarily true for structs, but right now we
+    // don't have a way of marking anything as atomic for bpl files. 
+    private boolean atomic = false;
 
     private final HashMap<Integer,IConst> initialValues = new HashMap<>();
 
@@ -109,6 +114,14 @@ public class MemoryObject extends IConst implements ExprInterface, LastValueInte
         } else {
         	return ctx.getFormulaManager().getIntegerFormulaManager().makeVariable(name);
         }
+    }
+
+    public boolean isAtomic() {
+        return atomic;
+    }
+
+    public void markAsAtomic() {
+        this.atomic = true;
     }
 
     @Override

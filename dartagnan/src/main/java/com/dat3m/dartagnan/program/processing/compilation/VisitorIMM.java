@@ -27,6 +27,22 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 	protected VisitorIMM() {}
 
 	@Override
+	public List<Event> visitLoad(Load e) {
+		String mo = e.getMo();
+        return eventSequence(
+        		newLoad(e.getResultRegister(), e.getAddress(), mo == null || mo.equals(C11.NONATOMIC) ? C11.MO_RELAXED : mo)
+        );
+	}
+
+	@Override
+	public List<Event> visitStore(Store e) {
+		String mo = e.getMo();
+        return eventSequence(
+        		newStore(e.getAddress(), e.getMemValue(), mo == null || mo.equals(C11.NONATOMIC) ? C11.MO_RELAXED : mo)
+        );
+	}
+	
+	@Override
 	public List<Event> visitCreate(Create e) {
         Store store = newStore(e.getAddress(), e.getMemValue(), extractStoreMo(e.getMo()));
         store.addFilters(C11.PTHREAD);
@@ -114,16 +130,17 @@ class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
 		IOpBin op = e.getOp();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
-		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+		Fence optionalFenceBefore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+		Fence optionalFenceAfter = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		
         Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
         Load load = newRMWLoad(resultRegister, address, extractLoadMo(mo));
 
         return eventSequence(
-        		optionalFence,
+        		optionalFenceBefore,
                 load,
                 newLocal(dummyReg, new IExprBin(resultRegister, op, (IExpr) e.getMemValue())),
-        		optionalFence,
+        		optionalFenceAfter,
                 newRMWStore(load, address, dummyReg, extractStoreMo(mo))
         );
 	}

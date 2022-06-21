@@ -7,8 +7,14 @@ RC11
  * Cat coding by Sicon Colin.
  *)
 
+(* Define co (and fr) *)
+include "cos.cat"
+
+// This is needed for herd which can create a single event for rmw instructions
+let myrmw = [RMW] | rmw
+
 let eco = (rf | co | fr)+
-let rs = [W]; (po & loc)?; [W & (RLX | REL | ACQ_REL | ACQ | SC)]; (rf; rmw)*
+let rs = [W]; (po & loc)?; [W & (RLX | REL | ACQ_REL | ACQ | SC)]; (rf; myrmw)*
 let sw = [(REL | ACQ_REL | SC)]; ([F]; po)?; rs; rf; [R & (RLX | REL | ACQ | ACQ_REL | SC)]; (po; [F])?; [(ACQ | ACQ_REL | SC)]
 let hb = (po | sw)+
 
@@ -20,7 +26,7 @@ let pscf = [F & SC]; (hb | hb; eco; hb); [F & SC]
 let psc = pscb | pscf
 
 irreflexive hb; eco? as coherence1
-irreflexive (rmw; eco) as coherencermw
-empty (rmw & (fr; co)) as atomicity
+irreflexive (myrmw; eco) as coherencermw
+empty (myrmw & (fr; co)) as atomicity
 acyclic psc as SC
 acyclic (po | rf) as no-thin-air

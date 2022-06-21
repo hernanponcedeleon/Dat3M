@@ -37,7 +37,14 @@ import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 
 class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 
-	protected VisitorArm8() {}
+	// If the source WMM does not allow OOTA behaviors (e.g. RC11)
+	// we need to strength the compilation following the paper
+	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
+	private final boolean useRC11Scheme; 
+	
+	protected VisitorArm8(boolean useRC11Scheme) {
+		this.useRC11Scheme = useRC11Scheme;
+	}
 	
 	@Override
 	public List<Event> visitCreate(Create e) {
@@ -116,8 +123,8 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
 
-        Load loadValue = newRMWLoadExclusive(regValue, address, Tag.ARMv8.extractLoadMoFromCMo(mo));
-        Store storeValue = newRMWStoreExclusive(address, value, Tag.ARMv8.extractStoreMoFromCMo(mo), e.is(STRONG));
+        Load loadValue = newRMWLoadExclusive(regValue, address, ARMv8.extractLoadMoFromCMo(mo));
+        Store storeValue = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), e.is(STRONG));
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
         if (!e.is(STRONG)) {
@@ -153,8 +160,8 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
         Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
         Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
 
-        Load load = newRMWLoadExclusive(resultRegister, address, Tag.ARMv8.extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreExclusive(address, dummyReg, Tag.ARMv8.extractStoreMoFromCMo(mo), true);
+        Load load = newRMWLoadExclusive(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
+        Store store = newRMWStoreExclusive(address, dummyReg, ARMv8.extractStoreMoFromCMo(mo), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -170,22 +177,22 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitAtomicLoad(AtomicLoad e) {
         return eventSequence(
-                newLoad(e.getResultRegister(), e.getAddress(), Tag.ARMv8.extractLoadMoFromCMo(e.getMo()))
+                newLoad(e.getResultRegister(), e.getAddress(), ARMv8.extractLoadMoFromCMo(e.getMo()))
         );
 	}
 
 	@Override
 	public List<Event> visitAtomicStore(AtomicStore e) {
         return eventSequence(
-                newStore(e.getAddress(), e.getMemValue(), Tag.ARMv8.extractStoreMoFromCMo(e.getMo()))
+                newStore(e.getAddress(), e.getMemValue(), useRC11Scheme ? ARMv8.MO_REL : ARMv8.extractStoreMoFromCMo(e.getMo()))
         );
 	}
 
 	@Override
 	public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
 		String mo = e.getMo();
-        Fence fence = mo.equals(Tag.C11.MO_RELEASE) || mo.equals(Tag.C11.MO_ACQUIRE_RELEASE) || mo.equals(Tag.C11.MO_SC) ? AArch64.DMB.newISHBarrier()
-                        : mo.equals(Tag.C11.MO_ACQUIRE) ? AArch64.DSB.newISHLDBarrier() : null;
+        Fence fence = mo.equals(C11.MO_RELEASE) || mo.equals(C11.MO_ACQUIRE_RELEASE) || mo.equals(C11.MO_SC) ? AArch64.DMB.newISHBarrier()
+                        : mo.equals(C11.MO_ACQUIRE) ? AArch64.DSB.newISHLDBarrier() : null;
 
     return eventSequence(
                 fence
@@ -199,8 +206,8 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-        Load load = newRMWLoadExclusive(resultRegister, address, Tag.ARMv8.extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreExclusive(address, value, Tag.ARMv8.extractStoreMoFromCMo(mo), true);
+        Load load = newRMWLoadExclusive(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
+        Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -226,8 +233,8 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
 
-        Load load = newRMWLoadExclusive(regValue, address, Tag.ARMv8.extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreExclusive(address, value, Tag.ARMv8.extractStoreMoFromCMo(mo), true);
+        Load load = newRMWLoadExclusive(regValue, address, ARMv8.extractLoadMoFromCMo(mo));
+        Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), true);
 
         // --- Add success events ---
         return eventSequence(

@@ -1,0 +1,25 @@
+C mp_relaxed
+
+(*
+ * Taken from Overhauling SC Atomics in C11 and OpenCL
+ *)
+
+{
+[x] = 0;
+[y] = 0;
+}
+
+P0 (atomic_int* y, int* x) {
+ *x = 1;
+ atomic_store_explicit(y,1,memory_order_relaxed);
+}
+
+P1 (atomic_int* y, int* x) {
+ int r0 = atomic_load_explicit(y,memory_order_relaxed);
+ int r1 = -1;
+ if (1 == r0) {
+   r1 = *x;
+ }
+}
+
+exists (1:r0=1 /\ 1:r1=0)

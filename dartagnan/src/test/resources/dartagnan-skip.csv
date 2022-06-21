@@ -1,0 +1,8 @@
+// This file contains test for which dartagnan gives a different result than herd and thus we skip them in the CI
+// For each of them there should be a proper explanation of why the results of both tools differ
+
+// sb (po) is different for C11 than hardware models. In particular it is not a total order (due to C11 not guaranteeing the evaluation order of function parameters). See https://github.com/herd/herdtools7/issues/394 for a discussion
+litmus/C11/auto/linearisation.litmus
+
+// The read of an acquire CAS is tagged as ACQ only if the CAS success. Since we don't yet support dynamic tagging, we cannot model this situation.
+litmus/LKMM/dart/C-atomic-cmpxchg-failure-02.litmus

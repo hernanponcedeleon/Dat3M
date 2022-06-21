@@ -1,0 +1,14 @@
+C a3_reorder+Wsc+acq
+{ [x] = 0; [y] = 0; [zero] = 0; }
+
+P0 (atomic_int* x, atomic_int* y) {
+  *y = 1;
+  atomic_store_explicit(x, 1, memory_order_release);
+}
+
+P1 (atomic_int* x, atomic_int* y, atomic_int* zero) {
+  atomic_store_explicit(y, 1, memory_order_seq_cst);
+  int r1 = atomic_load_explicit(x, memory_order_acquire);
+}
+
+exists (1:r1=1)

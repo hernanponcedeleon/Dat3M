@@ -15,7 +15,7 @@ public class HerdLinux extends AbstractHerd {
 
 	@Parameterized.Parameters(name = "{index}: {0} {1}")
     public static Iterable<Object[]> data() throws IOException {
-		return buildParameters("litmus/C/");
+		return buildParameters("litmus/LKMM/", "LKMM");
     }
     
     public HerdLinux(String name, Result expected) {

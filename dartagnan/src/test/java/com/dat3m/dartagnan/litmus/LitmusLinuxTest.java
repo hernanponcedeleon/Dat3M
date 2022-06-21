@@ -15,7 +15,7 @@ public class LitmusLinuxTest extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-		return buildLitmusTests("litmus/C/");
+		return buildLitmusTests("litmus/LKMM/", "LKMM");
     }
 
     @Override
@@ -28,7 +28,7 @@ public class LitmusLinuxTest extends AbstractLitmusTest {
         return Providers.createWmmFromName(() -> "linux-kernel");
     }
 
-    public LitmusLinuxTest(String path, Result expected) {
-        super(path, expected);
+    public LitmusLinuxTest(String path, String arch, Result expected) {
+        super(path, arch, expected);
     }
 }

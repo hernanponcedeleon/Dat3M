@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.processing.ProgramProcessor;
+import com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme;
 import com.dat3m.dartagnan.utils.printer.Printer;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
@@ -18,6 +19,7 @@ import org.sosy_lab.common.configuration.Options;
 import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.LEADING_SYNC;
 
 @Options
 public class Compilation implements ProgramProcessor {
@@ -35,6 +37,18 @@ public class Compilation implements ProgramProcessor {
 
     public Arch getTarget() { return target; }
     public void setTarget(Arch target) { this.target = target;}
+
+    @Option(name = USE_RC11_TO_ARCH_SCHEME,
+            description = "Use the RC11 to Arch (Power/ARMv8) compilation scheme to forbid out-of-thin-air behaviours.",
+            secure = true,
+            toUppercase = true)
+    private boolean useRC11Scheme = false;
+
+    @Option(name = C_TO_POWER_SCHEME,
+            description = "Use the leading/trailing-sync compilation scheme from C to Power.",
+            secure = true,
+            toUppercase = true)
+    private PowerScheme cToPowerScheme = LEADING_SYNC;
 
     @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
             description = "Prints the program after compilation.",
@@ -76,9 +90,9 @@ public class Compilation implements ProgramProcessor {
             case TSO:
                 visitor = new VisitorTso(); break;
             case POWER:
-                visitor = new VisitorPower(); break;
+                visitor = new VisitorPower(useRC11Scheme, cToPowerScheme); break;
             case ARM8:
-                visitor = new VisitorArm8(); break;
+                visitor = new VisitorArm8(useRC11Scheme); break;
             case IMM:
                 visitor = new VisitorIMM(); break;
             default:

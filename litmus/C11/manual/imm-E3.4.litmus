@@ -1,0 +1,19 @@
+C imm-E3.4
+
+(*
+ * Bridging the Gap between Programming Languages and Hardware Weak Memory Models
+ *)
+
+{}
+
+P0 (atomic_int* x, atomic_int* y) {
+    int r0 = atomic_load_explicit(x, memory_order_acquire);
+    atomic_store_explicit(y, 1, memory_order_release);
+}
+
+P1 (atomic_int* x, atomic_int* y) {
+    int r0 = atomic_load_explicit(y, memory_order_acquire);
+    atomic_store_explicit(x, 1, memory_order_release);
+}
+
+exists (0:r0=1 /\ 1:r0=1)

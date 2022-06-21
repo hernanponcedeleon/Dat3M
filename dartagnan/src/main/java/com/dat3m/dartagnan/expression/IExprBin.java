@@ -81,6 +81,9 @@ public class IExprBin extends IExpr implements ExprInterface {
 
     @Override
     public int hashCode() {
+    	if(op.equals(IOpBin.R_SHIFT)) {
+    		return lhs.hashCode() >>> rhs.hashCode();
+    	}
         return (op.combine(BigInteger.valueOf(lhs.hashCode()), BigInteger.valueOf(rhs.hashCode()))).intValue();
     }
 

@@ -66,14 +66,14 @@ public class PrinterTest {
 
 	@Test()
 	public void PrintLinux2() throws Exception {
-		Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/C/dart/C-atomic-fetch-simple-01.litmus"));
+		Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/LKMM/dart/C-atomic-fetch-simple-01.litmus"));
 		assertNotNull(new Printer().print(p));
 		assertNotNull(p.getAss().toString());
 	}
 	
 	@Test()
 	public void PrintLinux3() throws Exception {
-		Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/C/manual/atomic/C-atomic-01.litmus"));
+		Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/LKMM/manual/atomic/C-atomic-01.litmus"));
 		assertNotNull(new Printer().print(p));
 		assertNotNull(p.getAss().toString());
 	}

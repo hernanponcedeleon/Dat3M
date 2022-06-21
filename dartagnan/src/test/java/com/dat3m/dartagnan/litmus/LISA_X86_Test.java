@@ -13,7 +13,7 @@ public class LISA_X86_Test extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-		return buildLitmusTests("litmus/LISA/X86/");
+		return buildLitmusTests("litmus/LISA/X86/", "LISA");
     }
 
     @Override
@@ -21,7 +21,7 @@ public class LISA_X86_Test extends AbstractLitmusTest {
         return () -> Arch.TSO;
     }
 
-    public LISA_X86_Test(String path, Result expected) {
-        super(path, expected);
+    public LISA_X86_Test(String path, String arch, Result expected) {
+        super(path, arch, expected);
     }
 }

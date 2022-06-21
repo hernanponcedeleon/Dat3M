@@ -30,10 +30,25 @@ import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
+import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.LEADING_SYNC;
 
-class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
+public class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 
-	protected VisitorPower() {}
+	// The compilation schemes below follows the paper
+	// "Clarifying and Compiling C/C++ Concurrency: from C++11 to POWER"
+	// The paper does not defines the mappings for RMW but we derive them
+	// using the same pattern as for Load/Store	
+	private final PowerScheme cToPowerScheme;
+	// Some language memory models (e.g. RC11) are non-dependency tracking and might need a 
+	// strong version of no-OOTA, thus we need to strength the compilation following the papers
+	// "Repairing Sequential Consistency in C/C++11"
+	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
+	private final boolean useRC11Scheme; 
+
+	protected VisitorPower(boolean useRC11Scheme, PowerScheme cToPowerScheme) {
+		this.useRC11Scheme = useRC11Scheme;
+		this.cToPowerScheme = cToPowerScheme;
+	}
 	
 	@Override
 	public List<Event> visitCreate(Create e) {
@@ -121,14 +136,34 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
             optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
         }
 
-        Fence optionalMemoryBarrier = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier()
-                : mo.equals(C11.MO_RELEASE) || mo.equals(C11.MO_ACQUIRE_RELEASE) ? Power.newLwSyncBarrier()
-                : null;
-        Fence optionalISyncBarrier = mo.equals(C11.MO_SC) || mo.equals(C11.MO_ACQUIRE) || mo.equals(C11.MO_ACQUIRE_RELEASE) ? Power.newISyncBarrier() : null;
+        Fence optionalBarrierBefore = null;
+        Fence optionalBarrierAfter = null;
+        
+        switch(mo) {
+			case C11.MO_SC:
+				if(cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+					optionalBarrierAfter = Power.newISyncBarrier();
+				} else {
+					optionalBarrierBefore = Power.newLwSyncBarrier();
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_ACQUIRE:
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+			case C11.MO_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				break;
+			case C11.MO_ACQUIRE_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+		}
 
         return eventSequence(
                 // Indentation shows the branching structure
-                optionalMemoryBarrier,
+                optionalBarrierBefore,
                 loadExpected,
                 loadValue,
                 casCmpResult,
@@ -140,7 +175,7 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 casFail,
                     storeExpected,
                 casEnd,
-                optionalISyncBarrier
+                optionalBarrierAfter
         );
 	}
 
@@ -161,23 +196,42 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
-        Fence optionalMemoryBarrier = null;
+        Fence optionalBarrierBefore = null;
         // Academics papers (e.g. https://plv.mpi-sws.org/imm/paper.pdf) say an isync barrier is enough
         // However, power compilers in godbolt.org use a lwsync.
         // We stick to the literature to potentially find bugs in what researchers claim.
-        Fence optionalISyncBarrier = mo.equals(C11.MO_SC) || mo.equals(C11.MO_ACQUIRE) || mo.equals(C11.MO_ACQUIRE_RELEASE) ? Power.newISyncBarrier() : null;
-        optionalMemoryBarrier = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier()
-                : mo.equals(C11.MO_RELEASE) || mo.equals(C11.MO_ACQUIRE_RELEASE) ? Power.newLwSyncBarrier()
-                : null;
+        Fence optionalBarrierAfter = null;
+        
+        switch(mo) {
+			case C11.MO_SC:
+				if(cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+					optionalBarrierAfter = Power.newISyncBarrier();
+				} else {
+					optionalBarrierBefore = Power.newLwSyncBarrier();
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_ACQUIRE:
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+			case C11.MO_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				break;
+			case C11.MO_ACQUIRE_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+		}
 
         return eventSequence(
-                optionalMemoryBarrier,
+        		optionalBarrierBefore,
                 load,
                 fakeCtrlDep,
                 label,
                 localOp,
                 store,
-                optionalISyncBarrier
+                optionalBarrierAfter
         );
 	}
 
@@ -187,27 +241,42 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 		
+		Fence optionalBarrierBefore = null;
         Load load = newLoad(resultRegister, address, mo);
-        Fence optionalMemoryBarrier = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier() : null;
-        Label optionalLabel =
-                (mo.equals(Tag.C11.MO_SC) || mo.equals(Tag.C11.MO_ACQUIRE) || mo.equals(Tag.C11.MO_RELAXED)) ?
-                        newLabel("FakeDep") :
-                        null;
-        CondJump optionalFakeCtrlDep =
-                (mo.equals(Tag.C11.MO_SC) || mo.equals(Tag.C11.MO_ACQUIRE) || mo.equals(Tag.C11.MO_RELAXED)) ?
-                        newFakeCtrlDep(resultRegister, optionalLabel) :
-                        null;
-        Fence optionalISyncBarrier =
-                (mo.equals(Tag.C11.MO_SC) || mo.equals(Tag.C11.MO_ACQUIRE)) ?
-                        Power.newISyncBarrier() :
-                        null;
+        Label optionalLabel = null;
+        CondJump optionalFakeCtrlDep = null;
+        Fence optionalBarrierAfter = null;
         
+        switch(mo) {
+			case C11.MO_SC:
+				if(cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+					optionalLabel = newLabel("FakeDep");
+					optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
+					optionalBarrierAfter = Power.newISyncBarrier();
+				} else {
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_ACQUIRE:
+				optionalLabel = newLabel("FakeDep");
+				optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+			case C11.MO_RELAXED:
+				if(useRC11Scheme) {
+					optionalLabel = newLabel("FakeDep");
+					optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);					
+				}
+				break;
+		}
+
         return eventSequence(
-                optionalMemoryBarrier,
+                optionalBarrierBefore,
                 load,
                 optionalFakeCtrlDep,
                 optionalLabel,
-                optionalISyncBarrier
+                optionalBarrierAfter
         );
 	}
 
@@ -217,21 +286,35 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
+        Fence optionalBarrierBefore = null;
         Store store = newStore(address, value, mo);
-        Fence optionalMemoryBarrier = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier()
-                : mo.equals(Tag.C11.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        Fence optionalBarrierAfter = null;
+        
+        switch(mo) {
+			case C11.MO_SC:
+				if(cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+				} else {
+					optionalBarrierBefore = Power.newLwSyncBarrier();
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				break;
+        }
         
         return eventSequence(
-                optionalMemoryBarrier,
-                store
+                optionalBarrierBefore,
+                store,
+                optionalBarrierAfter
         );
 	}
 
 	@Override
 	public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
 		String mo = e.getMo();
-        Fence fence = mo.equals(Tag.C11.MO_ACQUIRE) || mo.equals(Tag.C11.MO_RELEASE) || mo.equals(Tag.C11.MO_ACQUIRE_RELEASE) || mo.equals(Tag.C11.MO_SC) ?
-                        Power.newLwSyncBarrier() : null;
+        Fence fence = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier() : Power.newLwSyncBarrier();
 
         return eventSequence(
                 fence
@@ -251,19 +334,38 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
-        Fence optionalMemoryBarrier = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier()
-                : mo.equals(C11.MO_RELEASE) || mo.equals(C11.MO_ACQUIRE_RELEASE) ? Power.newLwSyncBarrier()
-                : null;
-
-        Fence optionalISyncBarrier = mo.equals(C11.MO_SC) || mo.equals(C11.MO_ACQUIRE) || mo.equals(C11.MO_ACQUIRE_RELEASE) ? Power.newISyncBarrier() : null;
-
+        Fence optionalBarrierBefore = null;
+        Fence optionalBarrierAfter = null;
+        
+        switch(mo) {
+			case C11.MO_SC:
+				if(cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+					optionalBarrierAfter = Power.newISyncBarrier();
+				} else {
+					optionalBarrierBefore = Power.newLwSyncBarrier();
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_ACQUIRE:
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+			case C11.MO_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				break;
+			case C11.MO_ACQUIRE_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+		}
+        
         return eventSequence(
-                optionalMemoryBarrier,
+        		optionalBarrierBefore,
                 load,
                 fakeCtrlDep,
                 label,
                 store,
-                optionalISyncBarrier
+                optionalBarrierAfter
         );
 	}
 
@@ -282,20 +384,40 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
         Load load = newRMWLoadExclusive(regValue, address, null);
         Store store = newRMWStoreExclusive(address, value, null, true);
 
-        Fence optionalMemoryBarrier = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier()
-                : mo.equals(C11.MO_RELEASE) || mo.equals(C11.MO_ACQUIRE_RELEASE) ? Power.newLwSyncBarrier()
-                : null;
-        Fence optionalISyncBarrier = mo.equals(C11.MO_SC) || mo.equals(C11.MO_ACQUIRE) || mo.equals(C11.MO_ACQUIRE_RELEASE) ? Power.newISyncBarrier() : null;
+        Fence optionalBarrierBefore = null;
+        Fence optionalBarrierAfter = null;
+        
+        switch(mo) {
+			case C11.MO_SC:
+				if(cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+					optionalBarrierAfter = Power.newISyncBarrier();
+				} else {
+					optionalBarrierBefore = Power.newLwSyncBarrier();
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_ACQUIRE:
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+			case C11.MO_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				break;
+			case C11.MO_ACQUIRE_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+		}
         
         // --- Add success events ---
         return eventSequence(
                 // Indentation shows the branching structure
-                optionalMemoryBarrier,
+        		optionalBarrierBefore,
                 load,
                 casCmpResult,
                 branchOnCasCmpResult,
                     store,
-                optionalISyncBarrier,
+                optionalBarrierAfter,
                 casEnd
         );
 	}
@@ -627,4 +749,10 @@ class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
                 testOp
         );
 	};
+	
+	public enum PowerScheme {
+
+		LEADING_SYNC, TRAILING_SYNC;
+		
+	}
 }

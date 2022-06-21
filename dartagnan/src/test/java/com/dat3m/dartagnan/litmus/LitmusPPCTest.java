@@ -13,7 +13,7 @@ public class LitmusPPCTest extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("litmus/PPC/");
+        return buildLitmusTests("litmus/PPC/", "PPC");
     }
 
     @Override
@@ -21,8 +21,8 @@ public class LitmusPPCTest extends AbstractLitmusTest {
         return () -> Arch.POWER;
     }
 
-    public LitmusPPCTest(String path, Result expected) {
-        super(path, expected);
+    public LitmusPPCTest(String path, String arch, Result expected) {
+        super(path, arch, expected);
     }
 
 }

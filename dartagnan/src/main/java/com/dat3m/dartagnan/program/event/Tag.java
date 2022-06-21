@@ -75,11 +75,14 @@ public final class Tag {
     public static final class C11 {
         private C11() {}
 
+        public static final String ATOMIC    	= "A";
+        public static final String NONATOMIC    = "NA";
+        
         public static final String PTHREAD    	= "PTHREAD";
         public static final String LOCK    		= "LOCK";
 
         public static final String MO_RELAXED           = "RLX";
-        public static final String MO_CONSUME           = "CONS";
+        public static final String MO_CONSUME           = "CON";
         public static final String MO_ACQUIRE           = "ACQ";
         public static final String MO_RELEASE           = "REL";
         public static final String MO_ACQUIRE_RELEASE   = "ACQ_REL";
@@ -130,26 +133,28 @@ public final class Tag {
     public static final class Linux {
         private Linux() {}
 
-        public static final String NORETURN      = "Noreturn";
-        public static final String RCU_SYNC      = "Sync-rcu";
-        public static final String SRCU_SYNC     = "Sync-srcu";
-        public static final String RCU_LOCK      = "Rcu-lock";
-        public static final String RCU_UNLOCK    = "Rcu-unlock";
-        public static final String MO_MB         = "Mb";
-        public static final String MO_RMB		 = "Rmb";
-        public static final String MO_WMB		 = "Wmb";
-        public static final String MO_RELAXED    = "Relaxed";
-        public static final String MO_RELEASE    = "Release";
-        public static final String MO_ACQUIRE    = "Acquire";
-        public static final String MO_ONCE       = "Once";
-        public static final String LOCK_READ     = "LKR";
-        public static final String LOCK_WRITE    = "LKW";
-        public static final String UNLOCK        = "UL";
-        public static final String LOCK_FAIL     = "UL";
-        public static final String READ_LOCKED   = "LF";
-        public static final String READ_UNLOCKED = "RU";
-        public static final String BEFORE_ATOMIC = "Before-atomic";
-        public static final String AFTER_ATOMIC  = "After-atomic";
+        public static final String NORETURN           = "Noreturn";
+        public static final String RCU_SYNC           = "Sync-rcu";
+        public static final String SRCU_SYNC          = "Sync-srcu";
+        public static final String RCU_LOCK           = "Rcu-lock";
+        public static final String RCU_UNLOCK         = "Rcu-unlock";
+        public static final String MO_MB              = "Mb";
+        public static final String MO_RMB		      = "Rmb";
+        public static final String MO_WMB		      = "Wmb";
+        public static final String MO_RELAXED         = "Relaxed";
+        public static final String MO_RELEASE         = "Release";
+        public static final String MO_ACQUIRE         = "Acquire";
+        public static final String MO_ONCE            = "Once";
+        public static final String LOCK_READ          = "LKR";
+        public static final String LOCK_WRITE         = "LKW";
+        public static final String UNLOCK             = "UL";
+        public static final String LOCK_FAIL          = "UL";
+        public static final String READ_LOCKED        = "LF";
+        public static final String READ_UNLOCKED      = "RU";
+        public static final String BEFORE_ATOMIC      = "Before-atomic";
+        public static final String AFTER_ATOMIC       = "After-atomic";
+        public static final String AFTER_SPINLOCK     = "After-spinlock";
+        public static final String AFTER_UNLOCK_LOCK  = "After-unlock-lock";
 
         public static String loadMO(String mo){
             return mo.equals(MO_ACQUIRE) ? MO_ACQUIRE : MO_ONCE;
@@ -161,8 +166,10 @@ public final class Tag {
 
         public static String toText(String mo){
             switch (mo){
-                case MO_ACQUIRE:
-                    return "_acquire";
+            	case MO_RELAXED:
+                	return "_relaxed";
+            	case MO_ACQUIRE:
+            		return "_acquire";
                 case MO_RELEASE:
                     return "_release";
                 case MO_MB:

@@ -152,6 +152,10 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public void addFilters(String... params){
 		addFilters(Arrays.asList(params));
 	}
+	public void removeFilters(Collection<? extends String> filters) { filter.removeAll(filters); }
+	public void removeFilters(String... params){
+		removeFilters(Arrays.asList(params));
+	}
 
 	// The return value should not get modified directly.
 	public Set<String> getFilters() {

@@ -13,7 +13,7 @@ public class LitmusAARCH64Test extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("litmus/AARCH64/");
+        return buildLitmusTests("litmus/AARCH64/", "ARM8");
     }
 
     @Override
@@ -21,8 +21,8 @@ public class LitmusAARCH64Test extends AbstractLitmusTest {
         return () -> Arch.ARM8;
     }
 
-    public LitmusAARCH64Test(String path, Result expected) {
-        super(path, expected);
+    public LitmusAARCH64Test(String path, String arch, Result expected) {
+        super(path, arch, expected);
     }
 
 }

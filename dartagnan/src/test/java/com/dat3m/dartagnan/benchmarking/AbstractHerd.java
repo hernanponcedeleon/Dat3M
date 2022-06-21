@@ -21,9 +21,9 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public abstract class AbstractHerd extends AbstractExternalTool {
 
-	static Iterable<Object[]> buildParameters(String litmusPath) throws IOException {
+	static Iterable<Object[]> buildParameters(String litmusPath, String arch) throws IOException {
     	int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
-        Map<String, Result> expectationMap = ResourceHelper.getExpectedResults();
+        Map<String, Result> expectationMap = ResourceHelper.getExpectedResults(arch);
 
         try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))) {
             return fileStream
