@@ -72,11 +72,11 @@ li
     ;
 
 lw
-    :   Lw register Comma offset LPar register RPar
+    :   Lw (Period mo)? register Comma offset LPar register RPar
     ;
 
 sw
-    :   Sw register Comma offset LPar register RPar
+    :   Sw (Period mo)? register Comma offset LPar register RPar
     ;
     
 fence
@@ -89,6 +89,7 @@ fenceMode
     |   Write
     |   ReadWrite
     |   Tso
+    |   Synchronize
     ;
     
 ori
@@ -120,6 +121,11 @@ assertionValue
     :   location
     |   threadId Colon register
     |   constant
+    ;
+
+mo
+    :   Acq
+    |   Rel
     ;
 
 Locations
@@ -183,6 +189,18 @@ ReadWrite
 
 Tso
     :   'tso'
+    ;
+
+Synchronize
+    :   'i'
+    ;
+
+Acq
+    :   'aq'
+    ;
+
+Rel
+    :   'rl'
     ;
 
 Register

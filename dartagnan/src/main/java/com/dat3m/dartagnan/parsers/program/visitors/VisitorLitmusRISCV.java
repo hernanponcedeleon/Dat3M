@@ -120,14 +120,16 @@ public class VisitorLitmusRISCV
 	public Object visitLw(LitmusRISCVParser.LwContext ctx) {
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLoad(r1, ra, null));
+        String mo = ctx.mo() != null ? ctx.mo().getText() : null;
+        return programBuilder.addChild(mainThread, EventFactory.newLoad(r1, ra, mo));
 	}
 
 	@Override
 	public Object visitSw(LitmusRISCVParser.SwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newStore(ra, r1, null));
+        String mo = ctx.mo() != null ? ctx.mo().getText() : null;
+        return programBuilder.addChild(mainThread, EventFactory.newStore(ra, r1, mo));
 	}
 	
 	@Override
