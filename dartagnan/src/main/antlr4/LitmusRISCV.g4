@@ -62,13 +62,23 @@ instruction
     :
     |   li
     |   xor
-    |   ori
+    |   and
+    |   or
     |   add
+    |   xori
+    |   andi
+    |   ori
+    |   addi
     |   lw
     |   sw
+    |   lr
+    |   sc
     |   label
     |   branchCond
     |   fence
+    |   amoor
+    |   amoswap
+    |   amoadd
     ;
 
 li
@@ -83,16 +93,49 @@ sw
     :   Sw (Period mo)? register Comma offset LPar register RPar
     ;
 
+lr
+    :   Lr Period size register Comma offset LPar register RPar
+    ;
+
+sc
+    :   Sc Period size register Comma register Comma offset LPar register RPar
+    ;
+
+size
+    :   Word
+    |   Double
+    ;
+
 xor
     :   Xor register Comma register Comma register
+    ;
+
+and
+    :   And register Comma register Comma register
+    ;
+
+or
+    :   Or register Comma register Comma register
+    ;
+
+add
+    :   Add register Comma register Comma register
+    ;
+
+xori
+    :   Xori register Comma register Comma constant
+    ;
+
+andi
+    :   Andi register Comma register Comma constant
     ;
 
 ori
     :   Ori register Comma register Comma constant
     ;
 
-add
-    :   Add register Comma register Comma register
+addi
+    :   Addi register Comma register Comma constant
     ;
 
 branchCond
@@ -104,16 +147,33 @@ label
     ;
 
 fence
-    :   Fence fenceMode Comma fenceMode
-    |   Fence Period fenceMode
+    :   Fence (Period)? fenceMode
     ;
     
 fenceMode
-    :   Read
-    |   Write
+    :   ReadRead
     |   ReadWrite
+    |   ReadReadWrite
+    |   WriteRead
+    |   WriteWrite
+    |   WriteReadWrite
+    |   ReadWriteRead
+    |   ReadWriteWrite
+    |   ReadWriteReadWrite
     |   Tso
     |   Synchronize
+    ;
+    
+amoor
+    :   Amoor Period size Period mo Period mo register Comma register Comma LPar register RPar
+    ;
+    
+amoswap
+    :   Amoswap Period size Period mo Period mo register Comma register Comma LPar register RPar
+    ;
+    
+amoadd
+    :   Amoadd Period size (Period mo)? register Comma register Comma LPar register RPar
     ;
     
 location
@@ -156,6 +216,30 @@ Add
     :   'add'
     ;
 
+Addi
+    :   'addi'
+    ;
+
+Amoor
+    :   'amoor'
+    ;
+
+Amoswap
+    :   'amoswap'
+    ;
+
+Amoadd
+    :   'amoadd'
+    ;
+
+Andi
+    :   'andi'
+    ;
+
+And
+    :   'and'
+    ;
+
 Beq
     :   'beq'
     ;
@@ -183,8 +267,16 @@ Bge
 Li  :   'li'
     ;
 
+Lr
+    :   'lr'
+    ;
+
 Lw
     :   'lw'
+    ;
+
+Sc
+    :   'sc'
     ;
 
 Sw
@@ -195,6 +287,10 @@ Fence
     :   'fence'
     ;
 
+Or
+    :   'or'
+    ;
+
 Ori
     :   'ori'
     ;
@@ -203,16 +299,44 @@ Xor
     :   'xor'
     ;
 
-Read
-    :   'r'
+Xori
+    :   'xori'
     ;
 
-Write
-    :   'w'
+ReadRead
+    :   'r' Comma 'r'
     ;
 
 ReadWrite
-    :   'rw'
+    :   'r' Comma 'w'
+    ;
+
+ReadReadWrite
+    :   'r' Comma 'rw'
+    ;
+
+WriteRead
+    :   'w' Comma 'r'
+    ;
+
+WriteWrite
+    :   'w' Comma 'w'
+    ;
+
+WriteReadWrite
+    :   'w' Comma 'rw'
+    ;
+
+ReadWriteRead
+    :   'rw' Comma 'r'
+    ;
+
+ReadWriteWrite
+    :   'rw' Comma 'w'
+    ;
+
+ReadWriteReadWrite
+    :   'rw' Comma 'rw'
     ;
 
 Tso
@@ -229,6 +353,14 @@ Acq
 
 Rel
     :   'rl'
+    ;
+
+Word
+    :   'w'
+    ;
+
+Double
+    :   'd'
     ;
 
 Register
