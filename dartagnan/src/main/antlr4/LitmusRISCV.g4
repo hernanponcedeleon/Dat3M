@@ -61,10 +61,14 @@ instructionRow
 instruction
     :
     |   li
+    |   xor
+    |   ori
+    |   add
     |   lw
     |   sw
+    |   label
+    |   branchCond
     |   fence
-    |   ori
     ;
 
 li
@@ -78,7 +82,27 @@ lw
 sw
     :   Sw (Period mo)? register Comma offset LPar register RPar
     ;
-    
+
+xor
+    :   Xor register Comma register Comma register
+    ;
+
+ori
+    :   Ori register Comma register Comma constant
+    ;
+
+add
+    :   Add register Comma register Comma register
+    ;
+
+branchCond
+    :   cond register Comma register Comma Label
+    ;
+
+label
+    :   Label Colon
+    ;
+
 fence
     :   Fence fenceMode Comma fenceMode
     |   Fence Period fenceMode
@@ -90,10 +114,6 @@ fenceMode
     |   ReadWrite
     |   Tso
     |   Synchronize
-    ;
-    
-ori
-    :   Ori register Comma register Comma constant
     ;
     
 location
@@ -130,6 +150,10 @@ mo
 
 Locations
     :   'locations'
+    ;
+
+Add
+    :   'add'
     ;
 
 Beq
@@ -173,6 +197,10 @@ Fence
 
 Ori
     :   'ori'
+    ;
+
+Xor
+    :   'xor'
     ;
 
 Read

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
@@ -10,6 +11,7 @@ import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.misc.Interval;
 
@@ -117,6 +119,33 @@ public class VisitorLitmusRISCV
 	}
 	
 	@Override
+	public Object visitXor(LitmusRISCVParser.XorContext ctx) {
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.XOR, r3)));
+
+	}
+	
+	@Override
+	public Object visitAdd(LitmusRISCVParser.AddContext ctx) {
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.PLUS, r3)));
+
+	}
+	
+
+	@Override
+	public Object visitOri(LitmusRISCVParser.OriContext ctx) {
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+        Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.OR, constant)));
+	}
+
+	@Override
 	public Object visitLw(LitmusRISCVParser.LwContext ctx) {
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
@@ -133,19 +162,25 @@ public class VisitorLitmusRISCV
 	}
 	
 	@Override
+	public Object visitLabel(LitmusRISCVParser.LabelContext ctx) {
+		return programBuilder.addChild(mainThread, programBuilder.getOrCreateLabel(ctx.Label().getText()));
+	}
+	
+	@Override
+	public Object visitBranchCond(LitmusRISCVParser.BranchCondContext ctx) {
+        Label label = programBuilder.getOrCreateLabel(ctx.Label().getText());
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+        Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
+        Atom expr = new Atom(r1, ctx.cond().op, r2);
+        return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
+	}
+	
+	@Override
 	public Object visitFence(LitmusRISCVParser.FenceContext ctx) {
 		String name = ctx.fenceMode(0).getText();
 		if(ctx.fenceMode(1) != null) {
 			name = name + "." + ctx.fenceMode(1).getText(); 
 		}
 		return programBuilder.addChild(mainThread, EventFactory.newFence("Fence." + name));
-	}
-
-	@Override
-	public Object visitOri(LitmusRISCVParser.OriContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
-        Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.OR, constant)));
 	}
 }
