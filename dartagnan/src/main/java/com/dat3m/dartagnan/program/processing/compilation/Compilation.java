@@ -38,6 +38,11 @@ public class Compilation implements ProgramProcessor {
     public Arch getTarget() { return target; }
     public void setTarget(Arch target) { this.target = target;}
 
+    @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
+            description = "Prints the program after compilation.",
+            secure = true)
+    private boolean print = false;
+
     @Option(name = USE_RC11_TO_ARCH_SCHEME,
             description = "Use the RC11 to Arch (Power/ARMv8) compilation scheme to forbid out-of-thin-air behaviours.",
             secure = true,
@@ -49,11 +54,6 @@ public class Compilation implements ProgramProcessor {
             secure = true,
             toUppercase = true)
     private PowerScheme cToPowerScheme = LEADING_SYNC;
-
-    @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
-            description = "Prints the program after compilation.",
-            secure = true)
-    private boolean print = false;
 
     // =====================================================================
 
@@ -95,6 +95,8 @@ public class Compilation implements ProgramProcessor {
                 visitor = new VisitorArm8(useRC11Scheme); break;
             case IMM:
                 visitor = new VisitorIMM(); break;
+            case RISCV:
+                visitor = new VisitorRISCV(); break;
             default:
                 throw new UnsupportedOperationException(String.format("Compilation to %s is not supported.", target));
         }
