@@ -186,7 +186,7 @@ public class VisitorLitmusRISCV
 	public Object visitLw(LitmusRISCVParser.LwContext ctx) {
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        String mo = ctx.mo() != null ? ctx.mo().getText() : null;
+        String mo = ctx.moRISCV() != null ? ctx.moRISCV().mo : null;
         return programBuilder.addChild(mainThread, EventFactory.newLoad(r1, ra, mo));
 	}
 
@@ -194,7 +194,7 @@ public class VisitorLitmusRISCV
 	public Object visitSw(LitmusRISCVParser.SwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        String mo = ctx.mo() != null ? ctx.mo().getText() : null;
+        String mo = ctx.moRISCV() != null ? ctx.moRISCV().mo : null;
         return programBuilder.addChild(mainThread, EventFactory.newStore(ra, r1, mo));
 	}
 	
@@ -221,6 +221,6 @@ public class VisitorLitmusRISCV
 	
 	@Override
 	public Object visitFence(LitmusRISCVParser.FenceContext ctx) {
-		return programBuilder.addChild(mainThread, EventFactory.newFence("Fence." + ctx.fenceMode().getText()));
+		return programBuilder.addChild(mainThread, EventFactory.newFence("Fence." + ctx.fenceMode().mode));
 	}
 }

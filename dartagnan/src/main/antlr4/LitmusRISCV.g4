@@ -2,6 +2,10 @@ grammar LitmusRISCV;
 
 import LitmusAssertions;
 
+@header{
+import static com.dat3m.dartagnan.program.event.Tag.*;
+}
+
 main
     :    LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionFilter? assertionList? EOF
     ;
@@ -86,11 +90,11 @@ li
     ;
 
 lw
-    :   Lw (Period mo)? register Comma offset LPar register RPar
+    :   Lw (Period moRISCV)? register Comma offset LPar register RPar
     ;
 
 sw
-    :   Sw (Period mo)? register Comma offset LPar register RPar
+    :   Sw (Period moRISCV)? register Comma offset LPar register RPar
     ;
 
 lr
@@ -150,30 +154,30 @@ fence
     :   Fence (Period)? fenceMode
     ;
     
-fenceMode
-    :   ReadRead
-    |   ReadWrite
-    |   ReadReadWrite
-    |   WriteRead
-    |   WriteWrite
-    |   WriteReadWrite
-    |   ReadWriteRead
-    |   ReadWriteWrite
-    |   ReadWriteReadWrite
-    |   Tso
-    |   Synchronize
+fenceMode returns [String mode]
+    :   ReadRead {$mode = "r.r";}
+    |   ReadWrite {$mode = "r.w";}
+    |   ReadReadWrite {$mode = "r.rw";}
+    |   WriteRead {$mode = "w.r";}
+    |   WriteWrite {$mode = "w.w";}
+    |   WriteReadWrite {$mode = "w.rw";}
+    |   ReadWriteRead {$mode = "rw.r";}
+    |   ReadWriteWrite {$mode = "rw.w";}
+    |   ReadWriteReadWrite {$mode = "rw.rw";}
+    |   Tso {$mode = "tso";}
+    |   Synchronize {$mode = "i";}
     ;
     
 amoor
-    :   Amoor Period size Period mo Period mo register Comma register Comma LPar register RPar
+    :   Amoor Period size Period moRISCV Period moRISCV register Comma register Comma LPar register RPar
     ;
     
 amoswap
-    :   Amoswap Period size Period mo Period mo register Comma register Comma LPar register RPar
+    :   Amoswap Period size Period moRISCV Period moRISCV register Comma register Comma LPar register RPar
     ;
     
 amoadd
-    :   Amoadd Period size (Period mo)? register Comma register Comma LPar register RPar
+    :   Amoadd Period size (Period moRISCV)? register Comma register Comma LPar register RPar
     ;
     
 location
@@ -203,9 +207,9 @@ assertionValue
     |   constant
     ;
 
-mo
-    :   Acq
-    |   Rel
+moRISCV returns [String mo]
+    :   Acq   {$mo = RISCV.MO_ACQ;}
+    |   Rel   {$mo = RISCV.MO_REL;}
     ;
 
 Locations
