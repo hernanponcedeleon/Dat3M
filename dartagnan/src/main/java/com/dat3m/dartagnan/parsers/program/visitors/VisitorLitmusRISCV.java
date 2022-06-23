@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import org.antlr.v4.runtime.misc.Interval;
 
@@ -222,5 +223,27 @@ public class VisitorLitmusRISCV
 	@Override
 	public Object visitFence(LitmusRISCVParser.FenceContext ctx) {
 		return programBuilder.addChild(mainThread, EventFactory.newFence("Fence." + ctx.fenceMode().mode));
+	}
+	
+	@Override
+	public Object visitAmoadd(LitmusRISCVParser.AmoaddContext ctx) {
+		Register rd = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+		Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
+		Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
+		String moR = ctx.moRISCV(0) != null ? ctx.moRISCV(0).mo : null;
+		String moW = ctx.moRISCV(1) != null ? ctx.moRISCV(1).mo : null;
+		String mo = moR != null ? (moW != null ? Tag.RISCV.MO_ACQ_REL : moR) : moW; 
+		return programBuilder.addChild(mainThread, EventFactory.RISCV.newAmoOp(rd, r2, ra, mo, IOpBin.PLUS));
+	}
+	
+	@Override
+	public Object visitAmoor(LitmusRISCVParser.AmoorContext ctx) {
+		Register rd = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+		Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
+		Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
+		String moR = ctx.moRISCV(0) != null ? ctx.moRISCV(0).mo : null;
+		String moW = ctx.moRISCV(1) != null ? ctx.moRISCV(1).mo : null;
+		String mo = moR != null ? (moW != null ? Tag.RISCV.MO_ACQ_REL : moR) : moW; 
+		return programBuilder.addChild(mainThread, EventFactory.RISCV.newAmoOp(rd, r2, ra, mo, IOpBin.OR));
 	}
 }

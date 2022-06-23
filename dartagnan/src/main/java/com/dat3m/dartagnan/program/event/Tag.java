@@ -69,7 +69,16 @@ public final class Tag {
         public static final String MO_REL 		= "Rel";
         public static final String MO_ACQ_REL 	= "AcqRel";
 
-    }
+        public static final String AMO 			= "AMO";
+        
+        public static String extractLoadMo(String mo) {
+            return mo.equals(RISCV.MO_ACQ) || mo.equals(RISCV.MO_ACQ_REL) ? MO_ACQ : null;
+        }
+
+        public static String extractStoreMo(String mo) {
+            return mo.equals(RISCV.MO_REL) || mo.equals(RISCV.MO_ACQ_REL) ? MO_REL : null;
+        }
+}
 
     // =============================================================================================
     // ============================================ TSO ============================================

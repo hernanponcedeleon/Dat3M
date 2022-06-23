@@ -169,15 +169,15 @@ fenceMode returns [String mode]
     ;
     
 amoor
-    :   Amoor Period size Period moRISCV Period moRISCV register Comma register Comma LPar register RPar
+    :   Amoor Period size (Period moRISCV)* register Comma register Comma LPar register RPar
     ;
     
 amoswap
-    :   Amoswap Period size Period moRISCV Period moRISCV register Comma register Comma LPar register RPar
+    :   Amoswap Period size (Period moRISCV)* register Comma register Comma LPar register RPar
     ;
     
 amoadd
-    :   Amoadd Period size (Period moRISCV)? register Comma register Comma LPar register RPar
+    :   Amoadd Period size (Period moRISCV)* register Comma register Comma LPar register RPar
     ;
     
 location
