@@ -187,25 +187,31 @@ public class VisitorLitmusRISCV
 	public Object visitLw(LitmusRISCVParser.LwContext ctx) {
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        String mo = ctx.moRISCV() != null ? ctx.moRISCV().mo : null;
-        return programBuilder.addChild(mainThread, EventFactory.newLoad(r1, ra, mo));
+        return programBuilder.addChild(mainThread, EventFactory.newLoad(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
 	}
 
 	@Override
 	public Object visitSw(LitmusRISCVParser.SwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        String mo = ctx.moRISCV() != null ? ctx.moRISCV().mo : null;
-        return programBuilder.addChild(mainThread, EventFactory.newStore(ra, r1, mo));
+        return programBuilder.addChild(mainThread, EventFactory.newStore(ra, r1, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
 	}
 	
-//	@Override
-//	public Object visitLr(LitmusRISCVParser.LrContext ctx) {
-//        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
-//        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-//        return programBuilder.addChild(mainThread, EventFactory.newRMWLoadExclusive(r1, ra, null));
-//	}
-	
+	@Override
+	public Object visitLr(LitmusRISCVParser.LrContext ctx) {
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        return programBuilder.addChild(mainThread, EventFactory.newRMWLoadExclusive(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
+	}
+
+	@Override
+	public Object visitSc(LitmusRISCVParser.ScContext ctx) {
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+        Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
+        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
+        return programBuilder.addChild(mainThread, EventFactory.RISCV.newStoreExclusive(r1, ra, r2, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
+	}
+
 	@Override
 	public Object visitLabel(LitmusRISCVParser.LabelContext ctx) {
 		return programBuilder.addChild(mainThread, programBuilder.getOrCreateLabel(ctx.Label().getText()));
@@ -230,10 +236,7 @@ public class VisitorLitmusRISCV
 		Register rd = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
 		Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
 		Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-		String moR = ctx.moRISCV(0) != null ? ctx.moRISCV(0).mo : null;
-		String moW = ctx.moRISCV(1) != null ? ctx.moRISCV(1).mo : null;
-		String mo = moR != null ? (moW != null ? Tag.RISCV.MO_ACQ_REL : moR) : moW; 
-		return programBuilder.addChild(mainThread, EventFactory.RISCV.newAmoOp(rd, r2, ra, mo, IOpBin.PLUS));
+		return programBuilder.addChild(mainThread, EventFactory.RISCV.newAmoOp(rd, r2, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1)), IOpBin.PLUS));
 	}
 	
 	@Override
@@ -241,9 +244,16 @@ public class VisitorLitmusRISCV
 		Register rd = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
 		Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
 		Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-		String moR = ctx.moRISCV(0) != null ? ctx.moRISCV(0).mo : null;
-		String moW = ctx.moRISCV(1) != null ? ctx.moRISCV(1).mo : null;
-		String mo = moR != null ? (moW != null ? Tag.RISCV.MO_ACQ_REL : moR) : moW; 
-		return programBuilder.addChild(mainThread, EventFactory.RISCV.newAmoOp(rd, r2, ra, mo, IOpBin.OR));
+		return programBuilder.addChild(mainThread, EventFactory.RISCV.newAmoOp(rd, r2, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1)), IOpBin.OR));
+	}
+	
+	// =======================================
+	// ================ Utils ================
+	// =======================================
+	
+	private String getMo(LitmusRISCVParser.MoRISCVContext mo1, LitmusRISCVParser.MoRISCVContext mo2) {
+		String moR = mo1 != null ? mo1.mo : null;
+		String moW = mo2 != null ? mo2.mo : null;
+		return moR != null ? (moW != null ? Tag.RISCV.MO_ACQ_REL : moR) : moW;
 	}
 }

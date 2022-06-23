@@ -90,19 +90,19 @@ li
     ;
 
 lw
-    :   Lw (Period moRISCV)? register Comma offset LPar register RPar
+    :   Lw (Period moRISCV)* register Comma offset LPar register RPar
     ;
 
 sw
-    :   Sw (Period moRISCV)? register Comma offset LPar register RPar
+    :   Sw (Period moRISCV)* register Comma offset LPar register RPar
     ;
 
 lr
-    :   Lr Period size register Comma offset LPar register RPar
+    :   Lr Period size (Period moRISCV)* register Comma offset LPar register RPar
     ;
 
 sc
-    :   Sc Period size register Comma register Comma offset LPar register RPar
+    :   Sc Period size (Period moRISCV)* register Comma register Comma offset LPar register RPar
     ;
 
 size
