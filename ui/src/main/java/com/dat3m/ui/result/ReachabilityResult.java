@@ -18,6 +18,7 @@ import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -28,16 +29,13 @@ import static com.dat3m.dartagnan.configuration.Property.REACHABILITY;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static java.lang.Boolean.TRUE;
 
-import java.util.EnumSet;
-
 public class ReachabilityResult {
 
     private final Program program;
     private final Wmm wmm;
     private final UiOptions options;
-	private boolean safetyViolationFound = false;
 
-    private String verdict = "";
+    private String verdict;
 
     public ReachabilityResult(Program program, Wmm wmm, UiOptions options){
         this.program = program;
@@ -105,15 +103,7 @@ public class ReachabilityResult {
                     }
                     // Verification ended, we can interrupt the timeout Thread
                     t.interrupt();
-            		for(Axiom ax : wmm.getAxioms()) {
-                		if(ax.isFlagged() && TRUE.equals(prover.getModel().evaluate(CAT.getSMTVariable(ax, ctx)))) {
-                			verdict += "Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getName());
-                		}                			
-            		}
-                    buildVerdict(result);
-            		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(ctx)))) {
-            			safetyViolationFound = true;
-            		}
+                    buildVerdict(result, prover.getModel(), ctx);
                 }
             } catch (InterruptedException e){
             	verdict = "TIMEOUT";
@@ -123,11 +113,17 @@ public class ReachabilityResult {
         }
     }
 
-    private void buildVerdict(Result result){
-        StringBuilder sb = new StringBuilder();
-        sb.append("\n").append("Condition ").append(program.getAss().toStringWithType()).append("\n");
-        sb.append(program.getFormat().equals(LITMUS) ? safetyViolationFound ? "Ok" : "No" : result).append("\n");
-        verdict += sb.toString();
+    private void buildVerdict(Result result, Model m, SolverContext ctx){
+        StringBuilder sb = new StringBuilder();    	
+		for(Axiom ax : wmm.getAxioms()) {
+    		if(ax.isFlagged() && TRUE.equals(m.evaluate(CAT.getSMTVariable(ax, ctx)))) {
+    			sb.append("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getName())).append("\n");
+    		}                			
+		}
+		// TODO We might want to output different messages once we allow to check LIVENESS from the UI
+		sb.append("Condition ").append(program.getAss().toStringWithType()).append("\n");
+		sb.append(program.getFormat().equals(LITMUS) ? TRUE.equals(m.evaluate(REACHABILITY.getSMTVariable(ctx))) ? "Ok" : "No" : result).append("\n");			
+        verdict = sb.toString();
     }
 
     private boolean validate(){
