@@ -114,15 +114,15 @@ public class ReachabilityResult {
     }
 
     private void buildVerdict(Result result, Model m, SolverContext ctx){
-        StringBuilder sb = new StringBuilder();    	
+        StringBuilder sb = new StringBuilder();
 		for(Axiom ax : wmm.getAxioms()) {
     		if(ax.isFlagged() && TRUE.equals(m.evaluate(CAT.getSMTVariable(ax, ctx)))) {
     			sb.append("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getName())).append("\n");
-    		}                			
+    		}
 		}
 		// TODO We might want to output different messages once we allow to check LIVENESS from the UI
 		sb.append("Condition ").append(program.getAss().toStringWithType()).append("\n");
-		sb.append(program.getFormat().equals(LITMUS) ? TRUE.equals(m.evaluate(REACHABILITY.getSMTVariable(ctx))) ? "Ok" : "No" : result).append("\n");			
+		sb.append(program.getFormat().equals(LITMUS) ? TRUE.equals(m.evaluate(REACHABILITY.getSMTVariable(ctx))) ? "Ok" : "No" : result).append("\n");
         verdict = sb.toString();
     }
 
