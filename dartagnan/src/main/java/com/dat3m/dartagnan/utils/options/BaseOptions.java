@@ -62,7 +62,7 @@ public abstract class BaseOptions {
 
 	@Option(
 		name=WITNESS_GRAPHVIZ,
-		description="Generates a violation graph in /output.")
+		description="Generates a violation graph in $DAT3M_OUTPUT.")
 	private boolean generateGraphviz = false;
 		
 	public boolean generateGraphviz() { return generateGraphviz; }

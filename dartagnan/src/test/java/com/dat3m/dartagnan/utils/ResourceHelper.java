@@ -84,6 +84,6 @@ public class ResourceHelper {
         int dirIndex = name.lastIndexOf("/");
         String dirPrefix = dirIndex == -1 ? "" : name.substring(0, dirIndex + 1);
         String fileName = dirIndex == -1 ? name : name.substring(dirIndex + 1);
-        return String.format("%s/output/%s%s-%s.csv", System.getenv("DAT3M_HOME"), dirPrefix, testingClass.getSimpleName(), fileName);
+        return String.format("%s/%s%s-%s.csv", System.getenv("DAT3M_OUTPUT"), dirPrefix, testingClass.getSimpleName(), fileName);
     }
 }
