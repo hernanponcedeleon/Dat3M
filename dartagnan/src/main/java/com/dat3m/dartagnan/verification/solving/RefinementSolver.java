@@ -372,7 +372,7 @@ public class RefinementSolver {
 
         String programName = task.getProgram().getName();
         programName = programName.substring(0, programName.lastIndexOf("."));
-        String directoryName = String.format("%s/output/refinement/%s-%s-debug/", System.getenv("DAT3M_HOME"), programName, task.getProgram().getArch());
+        String directoryName = String.format("%s/refinement/%s-%s-debug/", System.getenv("DAT3M_OUTPUT"), programName, task.getProgram().getArch());
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
         // File with reason edges only
         generateGraphvizFile(model, iterationCount, edgeFilter, directoryName, fileNameBase);

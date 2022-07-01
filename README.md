@@ -33,9 +33,10 @@ docker run -w /home/Dat3M -it dartagnan /bin/bash
 
 **From Sources**
 
-Set Dat3M's home and add it to the path
+Set Dat3M's home and the folder to generate output files (the output folder can be something different)
 ```
 export DAT3M_HOME=<Dat3M's root>
+export DAT3M_OUTPUT=$DAT3M_HOME/output
 ```
 
 At least the following compiler flag needs to be set, further can be added  

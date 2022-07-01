@@ -159,7 +159,7 @@ public class Dartagnan extends BaseOptions {
                 	ExecutionModel m = new ExecutionModel(task);
                 	m.initialize(prover.getModel(), ctx);
     				String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
-    				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_HOME") + "/output/", name);        		
+    				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name);        		
             	}
 
             	boolean safetyViolationFound = false;

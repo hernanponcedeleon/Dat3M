@@ -23,7 +23,7 @@ public class ProgramParser {
             compileWithClang(file);
             compileWithSmack(file);
             String name = file.getName().substring(0, file.getName().lastIndexOf('.'));
-            return new ProgramParser().parse(new File(System.getenv("DAT3M_HOME") + "/output/" + name + ".bpl"));    		
+            return new ProgramParser().parse(new File(System.getenv("DAT3M_OUTPUT") + "/" + name + ".bpl"));    		
     	}
 
         Program program;
@@ -48,7 +48,7 @@ public class ProgramParser {
                 }
                 compileWithClang(CFile);
 	            compileWithSmack(CFile);
-	            File BplFile = new File(System.getenv("DAT3M_HOME") + "/output/" + name + ".bpl");
+	            File BplFile = new File(System.getenv("DAT3M_OUTPUT") + "/" + name + ".bpl");
 	            BplFile.deleteOnExit();
 	            Program p = new ProgramParser().parse(BplFile);
 	            CFile.delete();
