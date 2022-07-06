@@ -40,5 +40,6 @@ RUN cd home && \
 RUN ln -s clang-12 /usr/bin/clang
 
 ENV DAT3M_HOME=/home/Dat3M
+ENV DAT3M_OUTPUT=$DAT3M_HOME/output
 ENV CFLAGS="-I$DAT3M_HOME/include"
 ENV SMACK_FLAGS="-q -t --no-memory-splitting"
