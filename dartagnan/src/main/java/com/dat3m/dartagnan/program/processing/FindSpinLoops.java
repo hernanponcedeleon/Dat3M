@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.lang.svcomp.LoopEnd;
+import com.dat3m.dartagnan.program.event.lang.svcomp.LoopStart;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
@@ -63,23 +63,31 @@ public class FindSpinLoops implements ProgramProcessor {
         logger.info("# of spinloops: {}", spinloops);
 }
 
+	// This method assumes the following implementation of await_while
+	// #define await_while(cond)                                                  \
+    // for (int tmp = (__VERIFIER_loop_begin(), 0); __VERIFIER_spin_start(),  \
+    //     tmp = cond, __VERIFIER_spin_end(!tmp), tmp;)
     private void markAnnotatedSpinLoops(Thread t){
-    	Event pred = t.getEntry();
-        Event curr = pred.getSuccessor();
+        Event curr = t.getEntry();
         while (curr != null) {
-        	if(curr instanceof LoopEnd) {
-        		// This assume the following implementation of await_while
-        		// #define await_while(cond)                                                  \
-        	    // for (int tmp = (__VERIFIER_loop_begin(), 0); __VERIFIER_spin_start(),  \
-        	    //     tmp = cond, __VERIFIER_spin_end(!tmp), tmp;)
-        		Event spinloop = curr.getSuccessors().stream().filter(e -> e instanceof CondJump && ((CondJump)e).isGoto()).findFirst().get();
-        		spinloop.addFilters(Tag.SPINLOOP, Tag.NOOPT);
-                ((CondJump)spinloop).getLabel().addFilters(Tag.SPINLOOP, Tag.NOOPT);
-        		spinloops++;
-        	}
+            // Find start of spinloop.
+            if (curr.getSuccessor() instanceof LoopStart) {
+                Label label = (Label) curr;
+                // This looks for all backjumps to the label
+                List<CondJump> backjumps = label.getJumpSet()
+                        .stream().filter(x -> x.getOId() > label.getOId())
+                        .collect(Collectors.toList());
+
+                if (!backjumps.isEmpty()) {
+                    // No need to check if the loop is side effect free
+                	// The user guarantees this by using the annotation
+                	label.addFilters(Tag.SPINLOOP, Tag.NOOPT);
+                    backjumps.forEach(x -> x.addFilters(Tag.SPINLOOP, Tag.NOOPT));
+                    spinloops++;
+                }
+            }
             curr = curr.getSuccessor();
         }
-
         t.clearCache();
     }
 
