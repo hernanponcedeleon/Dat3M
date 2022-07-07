@@ -247,6 +247,14 @@ public class VisitorLitmusRISCV
 		return programBuilder.addChild(mainThread, EventFactory.RISCV.newAmoOp(rd, r2, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1)), IOpBin.OR));
 	}
 	
+	@Override
+	public Object visitAmoswap(LitmusRISCVParser.AmoswapContext ctx) {
+		Register rd = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+		Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
+		Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
+		return programBuilder.addChild(mainThread, EventFactory.RISCV.newAmoSwap(rd, r2, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
+	}
+
 	// =======================================
 	// ================ Utils ================
 	// =======================================
