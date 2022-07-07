@@ -72,6 +72,10 @@ public class FindSpinLoops implements ProgramProcessor {
         while (curr != null) {
             // Find start of spinloop.
             if (curr.getSuccessor() instanceof LoopStart) {
+            	if(!(curr instanceof Label)) {
+            		logger.warn("LoopStart does not match expected use (ot should be followed by a Label)");
+            		continue;
+            	}
                 Label label = (Label) curr;
                 // This looks for all backjumps to the label
                 List<CondJump> backjumps = label.getJumpSet()
