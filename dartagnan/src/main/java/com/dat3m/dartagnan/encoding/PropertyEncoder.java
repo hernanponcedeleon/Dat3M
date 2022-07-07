@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -146,26 +145,24 @@ public class PropertyEncoder implements Encoder {
             List<SpinLoop> spinLoops = new ArrayList<>();
             spinloopsMap.put(t, spinLoops);
 
-            for (Event start : spinStarts) {
-            	Label label = (Label) start;
-
-                // This looks for all backjumps to the label that form a spinloop
-                List<CondJump> backjumps = label.getJumpSet()
-                        .stream().filter(x -> x.getOId() > label.getOId() && x.is(Tag.SPINLOOP))
-                        .collect(Collectors.toList());
-
-                Event cur = start.getSuccessor();
-                for(CondJump spinloop : backjumps) {
+            Event cur = t.getEntry();
+            List<Load> loads = new ArrayList<>();
+            while(cur != null) {
+            	if(spinStarts.contains(cur)) {
+            		// A new loop started: we reset the load list
+            		loads = new ArrayList<>();
+            	}
+                if(cur.is(Tag.READ)) {
+                    loads.add((Load)cur);
+                }
+                if(cur.is(Tag.SPINLOOP) && !spinStarts.contains(cur)) {
+                	// We found one possible end of the loop
                     SpinLoop loop = new SpinLoop();
-                    loop.bound = spinloop;
-                    while (!cur.equals(spinloop)) {
-                        if (cur.is(Tag.READ)) {
-                            loop.loads.add((Load)cur);
-                        }
-                        cur = cur.getSuccessor();
-                    }
-                    spinLoops.add(loop);
-                }                
+                    loop.bound = cur;
+                    loop.loads.addAll(loads);
+                	spinLoops.add(loop);
+                }
+            	cur = cur.getSuccessor();
             }
         }
 
