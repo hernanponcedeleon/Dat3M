@@ -153,10 +153,12 @@ public class PropertyEncoder implements Encoder {
             		loads = new ArrayList<>();
             	}
                 if(cur.is(Tag.READ)) {
+                	// Update
                     loads.add((Load)cur);
                 }
                 if(cur.is(Tag.SPINLOOP) && !spinStarts.contains(cur)) {
                 	// We found one possible end of the loop
+                	// There might be others thus we keep the load list
                     SpinLoop loop = new SpinLoop();
                     loop.bound = cur;
                     loop.loads.addAll(loads);
