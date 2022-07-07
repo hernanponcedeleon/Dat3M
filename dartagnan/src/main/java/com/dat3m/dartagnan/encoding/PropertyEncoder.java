@@ -145,17 +145,26 @@ public class PropertyEncoder implements Encoder {
             List<SpinLoop> spinLoops = new ArrayList<>();
             spinloopsMap.put(t, spinLoops);
 
-            for (Event start : spinStarts) {
-                SpinLoop loop = new SpinLoop();
-                Event cur = start.getSuccessor();
-                while (!cur.is(Tag.SPINLOOP)) {
-                    if (cur.is(Tag.READ)) {
-                        loop.loads.add((Load)cur);
-                    }
-                    cur = cur.getSuccessor();
+            Event cur = t.getEntry();
+            List<Load> loads = new ArrayList<>();
+            while(cur != null) {
+            	if(spinStarts.contains(cur)) {
+            		// A new loop started: we reset the load list
+            		loads = new ArrayList<>();
+            	}
+                if(cur.is(Tag.READ)) {
+                	// Update
+                    loads.add((Load)cur);
                 }
-                loop.bound = cur;
-                spinLoops.add(loop);
+                if(cur.is(Tag.SPINLOOP) && !spinStarts.contains(cur)) {
+                	// We found one possible end of the loop
+                	// There might be others thus we keep the load list
+                    SpinLoop loop = new SpinLoop();
+                    loop.bound = cur;
+                    loop.loads.addAll(loads);
+                	spinLoops.add(loop);
+                }
+            	cur = cur.getSuccessor();
             }
         }
 
