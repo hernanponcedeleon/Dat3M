@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -146,16 +147,25 @@ public class PropertyEncoder implements Encoder {
             spinloopsMap.put(t, spinLoops);
 
             for (Event start : spinStarts) {
-                SpinLoop loop = new SpinLoop();
+            	Label label = (Label) start;
+
+                // This looks for all backjumps to the label that form a spinloop
+                List<CondJump> backjumps = label.getJumpSet()
+                        .stream().filter(x -> x.getOId() > label.getOId() && x.is(Tag.SPINLOOP))
+                        .collect(Collectors.toList());
+
                 Event cur = start.getSuccessor();
-                while (!cur.is(Tag.SPINLOOP)) {
-                    if (cur.is(Tag.READ)) {
-                        loop.loads.add((Load)cur);
+                for(CondJump spinloop : backjumps) {
+                    SpinLoop loop = new SpinLoop();
+                    loop.bound = spinloop;
+                    while (!cur.equals(spinloop)) {
+                        if (cur.is(Tag.READ)) {
+                            loop.loads.add((Load)cur);
+                        }
+                        cur = cur.getSuccessor();
                     }
-                    cur = cur.getSuccessor();
-                }
-                loop.bound = cur;
-                spinLoops.add(loop);
+                    spinLoops.add(loop);
+                }                
             }
         }
 
