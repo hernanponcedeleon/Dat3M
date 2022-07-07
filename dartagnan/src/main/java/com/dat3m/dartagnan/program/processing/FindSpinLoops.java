@@ -73,7 +73,7 @@ public class FindSpinLoops implements ProgramProcessor {
             // Find start of spinloop.
             if (curr.getSuccessor() instanceof LoopStart) {
             	if(!(curr instanceof Label)) {
-            		logger.warn("LoopStart does not match expected use (ot should be followed by a Label)");
+            		logger.warn("LoopStart does not match expected use (it should be preceeded by a Label)");
             		continue;
             	}
                 Label label = (Label) curr;
