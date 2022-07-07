@@ -71,7 +71,7 @@ public final class Tag {
 
         public static final String AMO 			= "AMO";
         // Store conditional
-        public static final String X	 		= "X";
+        public static final String STCOND	 	= "X";
         
         public static String extractLoadMo(String mo) {
             return mo.equals(RISCV.MO_ACQ) || mo.equals(RISCV.MO_ACQ_REL) ? MO_ACQ : null;

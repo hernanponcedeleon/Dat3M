@@ -21,7 +21,7 @@ public class StoreExclusiveRISCV extends RMWStoreExclusive implements RegWriter 
 	public StoreExclusiveRISCV(Register register, IExpr address, ExprInterface value, String mo) {
 		super(address, value, mo, false);
 		this.resultRegister = register;
-		addFilters(Tag.RISCV.X);
+		addFilters(Tag.RISCV.STCOND);
 	}
 
 	@Override
