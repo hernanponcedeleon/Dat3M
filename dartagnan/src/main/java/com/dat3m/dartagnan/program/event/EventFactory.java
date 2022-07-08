@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.riscv.AmoOp;
 import com.dat3m.dartagnan.program.event.arch.riscv.AmoSwap;
-import com.dat3m.dartagnan.program.event.arch.riscv.StoreExclusiveRISCV;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
@@ -442,10 +441,6 @@ public class EventFactory {
         
         public static AmoSwap newAmoSwap(Register rd, Register r2, IExpr address, String mo) {
             return new AmoSwap(rd, r2, address, mo);
-        }
-        
-        public static StoreExclusiveRISCV newStoreExclusive(Register register, IExpr address, ExprInterface value, String mo) {
-        	return new StoreExclusiveRISCV(register, address, value, mo);
         }
     }
 
