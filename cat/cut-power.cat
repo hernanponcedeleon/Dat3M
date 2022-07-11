@@ -1,0 +1,52 @@
+Power
+
+include "cos.cat"
+include "fences.cat"
+
+(* Uniproc *)
+let com = rf | fr | co
+acyclic (po-loc | com) as uniproc
+
+(*******)
+(* ppo *)
+(*******)
+let dp = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe;rfe)
+
+(* Initial value *)
+let ii0 = dp | rfi | rdw
+let ic0 = 0
+let ci0 = ctrlisync | detour
+let cc0 = dp | po-loc | ctrl | (addr;po)
+
+(* Fixpoint from i -> c in instructions and transitivity *)
+let rec ii = ii0 | ci | (ic;ci) | (ii;ii)
+and ic = ic0 | ii | cc | (ic;cc) | (ii;ic)
+and ci = ci0 | (ci;ii) | (cc;ci)
+and cc = cc0 | ci | (ci;ic) | (cc;cc)
+
+let ppo = (R*W & ic) | (R*R & ii)
+
+(**********)
+(* fences *)
+(**********)
+
+let fence = (R*M & lwsync) | (W*W & lwsync) | sync
+
+(* happens before *)
+let hb = ppo | fence | rfe
+acyclic hb
+
+(* prop *)
+let propbase = (fence | (rfe;fence));hb*
+let prop = (W*W & propbase)| (com*;propbase*;sync;hb*)
+
+acyclic co | prop
+irreflexive fre;prop;hb*
+
+(* Atomic: Basic LDXR/STXR constraint to forbid intervening writes. *)
+empty rmw & (fre; coe) as atomic
+
+(* Forcing fr to be cut *)
+empty(fr \ fr)
