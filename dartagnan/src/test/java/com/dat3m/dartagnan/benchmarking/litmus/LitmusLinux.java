@@ -16,7 +16,7 @@ public class LitmusLinux extends AbstractLitmus {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-		return buildLitmusTests("litmus/LKMM/", "LKMM");
+		return buildLitmusTests("litmus/LKMM/", "LKMM-NDR");
     }
 
     @Override
@@ -26,7 +26,7 @@ public class LitmusLinux extends AbstractLitmus {
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "linux-kernel");
+        return Providers.createWmmFromName(() -> "lkmm-no-data-race");
     }
 
     public LitmusLinux(String path, String arch, Result expected) {

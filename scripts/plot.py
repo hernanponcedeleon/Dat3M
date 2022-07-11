@@ -27,17 +27,17 @@ mapping_title = dict([
 ])
 
 mapping_files = dict([
-    ('two-TSO', csvPath + 'LitmusX86Test-two-solvers.csv'),
-    ('refinement-TSO', csvPath + 'LitmusX86Test-refinement.csv'),
+    ('two-TSO', csvPath + 'LitmusX86-two-solvers.csv'),
+    ('refinement-TSO', csvPath + 'LitmusX86-refinement.csv'),
     ('herd-TSO', csvPath + 'HerdX86-.csv'),
-    ('two-Power', csvPath + 'LitmusPPCTest-two-solvers.csv'),
-    ('refinement-Power', csvPath + 'LitmusPPCTest-refinement.csv'),
+    ('two-Power', csvPath + 'LitmusPPC-two-solvers.csv'),
+    ('refinement-Power', csvPath + 'LitmusPPC-refinement.csv'),
     ('herd-Power', csvPath + 'HerdPPC-.csv'),
-    ('two-ARM8', csvPath + 'LitmusAARCH64Test-two-solvers.csv'),
-    ('refinement-ARM8', csvPath + 'LitmusAARCH64Test-refinement.csv'),
+    ('two-ARM8', csvPath + 'LitmusAARCH64-two-solvers.csv'),
+    ('refinement-ARM8', csvPath + 'LitmusAARCH64-refinement.csv'),
     ('herd-ARM8', csvPath + 'HerdAARCH64-.csv'),
-    ('two-Linux', csvPath + 'LitmusLinuxTest-two-solvers.csv'),
-    ('refinement-Linux', csvPath + 'LitmusLinuxTest-refinement.csv'),
+    ('two-Linux', csvPath + 'LitmusLinux-two-solvers.csv'),
+    ('refinement-Linux', csvPath + 'LitmusLinux-refinement.csv'),
     ('herd-Linux', csvPath + 'HerdLinux-.csv')
 ])
 

@@ -10,7 +10,7 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
-public class LitmusAARCH64Test extends AbstractLitmus {
+public class LitmusAARCH64 extends AbstractLitmus {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
@@ -22,7 +22,7 @@ public class LitmusAARCH64Test extends AbstractLitmus {
         return () -> Arch.ARM8;
     }
 
-    public LitmusAARCH64Test(String path, String arch, Result expected) {
+    public LitmusAARCH64(String path, String arch, Result expected) {
         super(path, arch, expected);
     }
 
