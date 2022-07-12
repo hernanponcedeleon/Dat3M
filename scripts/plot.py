@@ -89,7 +89,7 @@ genmcRC11 = pd.read_csv(csvPath + 'GenmcRC11-.csv')
 nidhugg = pd.read_csv(csvPath + 'Nidhugg-.csv')
 
 lncol = 3
-my_colors = ['tab:blue', 'plum', 'orange']
+my_colors = ['tab:blue', 'tab:cyan', 'orange']
 for a in arch:
     df = df_empty = pd.DataFrame({'benchmark' : []})
     df['benchmark'] = genmcIMM.iloc[:, 0].apply(lambda x: x.replace(".c", ""))
@@ -110,19 +110,19 @@ for a in arch:
         ## colums are: benchmark, result, time
         df['GenMC'] = genmcIMM.iloc[:, 2]
         lncol = 4
-        my_colors = ['tab:blue', 'plum', 'orange', 'tab:green']
+        my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:green']
 
     if a == 'RC11':
         ## colums are: benchmark, result, time
         df['GenMC'] = genmcRC11.iloc[:, 2]
         lncol = 4
-        my_colors = ['tab:blue', 'plum', 'orange', 'tab:green']
+        my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:green']
 
     if a == 'TSO':
         ## colums are: benchmark, result, time
         df['Nidhugg'] = nidhugg.iloc[:, 2]
         lncol = 4
-        my_colors = ['tab:blue', 'plum', 'orange', 'tab:red']
+        my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:red']
 
     plt.figure()
     df.set_index('benchmark').plot.bar(log=True, width=0.8, color=my_colors)
