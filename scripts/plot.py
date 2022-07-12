@@ -90,6 +90,7 @@ nidhugg = pd.read_csv(csvPath + 'Nidhugg-.csv')
 
 lncol = 3
 my_colors = ['tab:blue', 'tab:cyan', 'orange']
+
 for a in arch:
     df = df_empty = pd.DataFrame({'benchmark' : []})
     df['benchmark'] = genmcIMM.iloc[:, 0].apply(lambda x: x.replace(".c", ""))
@@ -123,6 +124,9 @@ for a in arch:
         df['Nidhugg'] = nidhugg.iloc[:, 2]
         lncol = 4
         my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:red']
+
+    df.loc["Total"] = df.loc[:, df.columns != 'benchmark'].mean()
+    df[['benchmark']] = df[['benchmark']].fillna('average')
 
     plt.figure()
     df.set_index('benchmark').plot.bar(log=True, width=0.8, color=my_colors)
