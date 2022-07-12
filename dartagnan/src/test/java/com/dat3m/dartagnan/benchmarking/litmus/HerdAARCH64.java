@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.benchmarking;
+package com.dat3m.dartagnan.benchmarking.litmus;
 
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
@@ -11,19 +11,19 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public class HerdPPC extends AbstractHerd {
+public class HerdAARCH64 extends AbstractHerd {
 
 	@Parameterized.Parameters(name = "{index}: {0} {1}")
     public static Iterable<Object[]> data() throws IOException {
-		return buildParameters("litmus/PPC/", "PPC");
+		return buildParameters("litmus/AARCH64/", "ARM8");
     }
     
-    public HerdPPC(String name, Result expected) {
+    public HerdAARCH64(String name, Result expected) {
         super(name, expected);
     }
     
 	@Override
 	protected Provider<List<String>> getToolOptionsProvider() {
-		return Provider.fromSupplier(() -> Arrays.asList("-model", System.getenv("DAT3M_HOME") + "/cat/power.cat"));
+		return Provider.fromSupplier(() -> Arrays.asList("-model", System.getenv("DAT3M_HOME") + "/cat/aarch64.cat"));
 	}
 }

@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.benchmarking;
+package com.dat3m.dartagnan.benchmarking.litmus;
 
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;

@@ -15,7 +15,6 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
@@ -25,11 +24,6 @@ public class DartagnanPower extends AbstractCTest {
 
     public DartagnanPower(String name, Arch target, Result expected) {
         super(name, target, expected);
-    }
-
-    @Override
-    protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + name + ".bpl");
     }
 
     @Override

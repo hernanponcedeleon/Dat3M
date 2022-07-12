@@ -12,9 +12,9 @@ import java.util.List;
 import static com.dat3m.dartagnan.utils.Result.*;
 
 @RunWith(Parameterized.class)
-public class Genmc extends AbstractExternalTool {
+public class GenmcIMM extends AbstractExternalTool {
 
-    public Genmc(String name, Result expected) {
+    public GenmcIMM(String name, Result expected) {
         super(name, expected);
     }
 
