@@ -61,7 +61,12 @@ cFiles = [csvPath + 'GenmcIMM-.csv',
           csvPath + 'DartagnanIMM-assume.csv',
           csvPath + 'DartagnanIMM-refinement.csv',
           csvPath + 'DartagnanRC11-assume.csv',
-          csvPath + 'DartagnanRC11-refinement.csv'
+          csvPath + 'DartagnanRC11-refinement.csv',
+          csvPath + 'CuttingTSO-refinement.csv',
+          csvPath + 'CuttingPower-refinement.csv',
+          csvPath + 'CuttingARM8-refinement.csv',
+          csvPath + 'CuttingIMM-refinement.csv',
+          csvPath + 'CuttingRC11-refinement.csv'
         ]
 
 ## Create empty csv files for non existent ones
@@ -83,33 +88,41 @@ genmcIMM = pd.read_csv(csvPath + 'GenmcIMM-.csv')
 genmcRC11 = pd.read_csv(csvPath + 'GenmcRC11-.csv')
 nidhugg = pd.read_csv(csvPath + 'Nidhugg-.csv')
 
-lncol = 2
-my_colors = ['tab:blue', 'orange']
+lncol = 3
+my_colors = ['tab:blue', 'plum', 'orange']
 for a in arch:
     df = df_empty = pd.DataFrame({'benchmark' : []})
     df['benchmark'] = genmcIMM.iloc[:, 0].apply(lambda x: x.replace(".c", ""))
-    for m in methods:
-        current_df = pd.DataFrame(pd.read_csv(csvPath + 'Dartagnan' + a + '-' + m + '.csv'))
-        ## colums are: benchmark, result, time
-        df[mapping_method[m]] = current_df.iloc[:, 2]
+
+    current_df = pd.DataFrame(pd.read_csv(csvPath + 'Dartagnan' + a + '-refinement.csv'))
+    ## colums are: benchmark, result, time
+    df[mapping_method['refinement']] = current_df.iloc[:, 2]
+
+    current_df = pd.DataFrame(pd.read_csv(csvPath + 'Cutting' + a + '-refinement.csv'))
+    ## colums are: benchmark, result, time
+    df['Cutting'] = current_df.iloc[:, 2]
+
+    current_df = pd.DataFrame(pd.read_csv(csvPath + 'Dartagnan' + a + '-assume.csv'))
+    ## colums are: benchmark, result, time
+    df[mapping_method['assume']] = current_df.iloc[:, 2]
 
     if a == 'IMM':
         ## colums are: benchmark, result, time
         df['GenMC'] = genmcIMM.iloc[:, 2]
-        lncol = 3
-        my_colors = ['tab:blue', 'orange', 'tab:green']
+        lncol = 4
+        my_colors = ['tab:blue', 'plum', 'orange', 'tab:green']
 
     if a == 'RC11':
         ## colums are: benchmark, result, time
         df['GenMC'] = genmcRC11.iloc[:, 2]
-        lncol = 3
-        my_colors = ['tab:blue', 'orange', 'tab:green']
+        lncol = 4
+        my_colors = ['tab:blue', 'plum', 'orange', 'tab:green']
 
     if a == 'TSO':
         ## colums are: benchmark, result, time
         df['Nidhugg'] = nidhugg.iloc[:, 2]
-        lncol = 3
-        my_colors = ['tab:blue', 'orange', 'tab:red']
+        lncol = 4
+        my_colors = ['tab:blue', 'plum', 'orange', 'tab:red']
 
     plt.figure()
     df.set_index('benchmark').plot.bar(log=True, width=0.8, color=my_colors)

@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.verification.RefinementTask;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.c.AbstractCTest;
@@ -66,12 +65,6 @@ public class CuttingIMM extends AbstractCTest {
                 {"lfds/treiber-3", IMM, UNKNOWN},
 		});
     }
-
-	@Test
-	@CSVLogger.FileName("csv/assume")
-	public void testAssume() throws Exception {
-		assertEquals(expected, AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
-	}
 
 	@Test
 	@CSVLogger.FileName("csv/refinement")
