@@ -93,7 +93,6 @@ my_colors = ['tab:blue', 'tab:cyan', 'orange']
 
 for a in arch:
     df = df_empty = pd.DataFrame({'benchmark' : []})
-    df['benchmark'] = genmcIMM.iloc[:, 0].apply(lambda x: x.replace(".c", ""))
 
     current_df = pd.DataFrame(pd.read_csv(csvPath + 'Dartagnan' + a + '-refinement.csv'))
     ## colums are: benchmark, result, time
@@ -124,6 +123,8 @@ for a in arch:
         df['Nidhugg'] = nidhugg.iloc[:, 2]
         lncol = 4
         my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:red']
+
+    df['benchmark'] = current_df.iloc[:, 0].apply(lambda x: x.replace(".bpl", ""))
 
     df.loc["Total"] = df.loc[:, df.columns != 'benchmark'].mean()
     df[['benchmark']] = df[['benchmark']].fillna('average')
