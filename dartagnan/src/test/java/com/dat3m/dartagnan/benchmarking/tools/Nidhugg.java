@@ -1,5 +1,6 @@
-package com.dat3m.dartagnan.benchmarking;
+package com.dat3m.dartagnan.benchmarking.tools;
 
+import com.dat3m.dartagnan.benchmarking.AbstractExternalTool;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
@@ -21,11 +22,6 @@ public class Nidhugg extends AbstractExternalTool {
     @Override
     protected Provider<String> getProgramPathProvider() {
         return Provider.fromSupplier(() -> System.getenv("DAT3M_HOME") + "/benchmarks/" + name + "-u.ll");
-    }
-
-    @Override
-    protected long getTimeout() {
-        return 900000;
     }
 
 	@Override
