@@ -17,9 +17,9 @@ import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class DartagnanTSO extends AbstractDartagnanTest {
+public class TSO extends AbstractDartagnanTest {
 
-    public DartagnanTSO(String name, Arch target, Result expected) {
+    public TSO(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
 
