@@ -13,7 +13,7 @@ if not os.path.exists(figurePath):
 mapping_method = dict([
     ('assume', 'Dartagnan'),
     ('two', 'Dartagnan'),
-    ('refinement', 'CAAT'),
+    ('caat', 'CAAT'),
     ('herd', 'Herd'),
 ])
 
@@ -28,16 +28,16 @@ mapping_title = dict([
 
 mapping_files = dict([
     ('two-TSO', csvPath + 'LitmusX86-two-solvers.csv'),
-    ('refinement-TSO', csvPath + 'LitmusX86-refinement.csv'),
+    ('caat-TSO', csvPath + 'LitmusX86-caat.csv'),
     ('herd-TSO', csvPath + 'HerdX86-.csv'),
     ('two-Power', csvPath + 'LitmusPPC-two-solvers.csv'),
-    ('refinement-Power', csvPath + 'LitmusPPC-refinement.csv'),
+    ('caat-Power', csvPath + 'LitmusPPC-caat.csv'),
     ('herd-Power', csvPath + 'HerdPPC-.csv'),
     ('two-ARM8', csvPath + 'LitmusAARCH64-two-solvers.csv'),
-    ('refinement-ARM8', csvPath + 'LitmusAARCH64-refinement.csv'),
+    ('caat-ARM8', csvPath + 'LitmusAARCH64-caat.csv'),
     ('herd-ARM8', csvPath + 'HerdAARCH64-.csv'),
     ('two-Linux', csvPath + 'LitmusLinux-two-solvers.csv'),
-    ('refinement-Linux', csvPath + 'LitmusLinux-refinement.csv'),
+    ('caat-Linux', csvPath + 'LitmusLinux-caat.csv'),
     ('herd-Linux', csvPath + 'HerdLinux-.csv')
 ])
 
@@ -52,21 +52,21 @@ for key in mapping_files.keys():
 cFiles = [csvPath + 'GenmcIMM-.csv',
           csvPath + 'GenmcRC11-.csv',
           csvPath + 'Nidhugg-.csv',
-          csvPath + 'DartagnanTSO-assume.csv',
-          csvPath + 'DartagnanTSO-refinement.csv',
-          csvPath + 'DartagnanPower-assume.csv',
-          csvPath + 'DartagnanPower-refinement.csv',
-          csvPath + 'DartagnanARM8-assume.csv',
-          csvPath + 'DartagnanARM8-refinement.csv',
-          csvPath + 'DartagnanIMM-assume.csv',
-          csvPath + 'DartagnanIMM-refinement.csv',
-          csvPath + 'DartagnanRC11-assume.csv',
-          csvPath + 'DartagnanRC11-refinement.csv',
-          csvPath + 'CuttingTSO-refinement.csv',
-          csvPath + 'CuttingPower-refinement.csv',
-          csvPath + 'CuttingARM8-refinement.csv',
-          csvPath + 'CuttingIMM-refinement.csv',
-          csvPath + 'CuttingRC11-refinement.csv'
+          csvPath + 'TSO-assume.csv',
+          csvPath + 'TSO-caat.csv',
+          csvPath + 'TSO-cutting.csv',
+          csvPath + 'Power-assume.csv',
+          csvPath + 'Power-caat.csv',
+          csvPath + 'Power-cutting.csv',
+          csvPath + 'ARM8-assume.csv',
+          csvPath + 'ARM8-caat.csv',
+          csvPath + 'ARM8-cutting.csv',
+          csvPath + 'IMM-assume.csv',
+          csvPath + 'IMM-caat.csv',
+          csvPath + 'IMM-cutting.csv',
+          csvPath + 'RC11-assume.csv',
+          csvPath + 'RC11-caat.csv',
+          csvPath + 'RC11-cutting.csv'
         ]
 
 ## Create empty csv files for non existent ones
@@ -81,7 +81,6 @@ for file in cFiles:
 #### Generates bar char for the lock benchmarks ###
 ###################################################
 
-methods = ['refinement','assume']
 arch = ['TSO', 'Power', 'ARM8', 'IMM', 'RC11']
 
 genmcIMM = pd.read_csv(csvPath + 'GenmcIMM-.csv')
@@ -94,15 +93,16 @@ my_colors = ['tab:blue', 'tab:cyan', 'orange']
 for a in arch:
     df = df_empty = pd.DataFrame({'benchmark' : []})
 
-    current_df = pd.DataFrame(pd.read_csv(csvPath + 'Dartagnan' + a + '-refinement.csv'))
+    current_df = pd.DataFrame(pd.read_csv(csvPath + a + '-caat.csv'))
     ## colums are: benchmark, result, time
-    df[mapping_method['refinement']] = current_df.iloc[:, 2]
+    df[mapping_method['caat']] = current_df.iloc[:, 2]
+    df['benchmark'] = current_df.iloc[:, 0].apply(lambda x: x.replace(".bpl", ""))
 
-    current_df = pd.DataFrame(pd.read_csv(csvPath + 'Cutting' + a + '-refinement.csv'))
+    current_df = pd.DataFrame(pd.read_csv(csvPath + a + '-cutting.csv'))
     ## colums are: benchmark, result, time
-    df['Cutting'] = current_df.iloc[:, 2]
+    df['cutting'] = current_df.iloc[:, 2]
 
-    current_df = pd.DataFrame(pd.read_csv(csvPath + 'Dartagnan' + a + '-assume.csv'))
+    current_df = pd.DataFrame(pd.read_csv(csvPath + a + '-assume.csv'))
     ## colums are: benchmark, result, time
     df[mapping_method['assume']] = current_df.iloc[:, 2]
 
@@ -123,8 +123,6 @@ for a in arch:
         df['Nidhugg'] = nidhugg.iloc[:, 2]
         lncol = 4
         my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:red']
-
-    df['benchmark'] = current_df.iloc[:, 0].apply(lambda x: x.replace(".bpl", ""))
 
     df.loc["Total"] = df.loc[:, df.columns != 'benchmark'].mean()
     df[['benchmark']] = df[['benchmark']].fillna('average')
@@ -148,17 +146,17 @@ for a in arch:
 
 arch = ['TSO', 'Power', 'ARM8', 'Linux']
 
-total = df_empty = pd.DataFrame({mapping_method['refinement'] : []})
+total = df_empty = pd.DataFrame({mapping_method['caat'] : []})
 
 for a in arch:
     df = df_empty = pd.DataFrame({'benchmark' : []})
     df['benchmark'] = pd.read_csv(mapping_files['two-' + a]).iloc[:, 0].apply(lambda x: os.path.basename(x))
     df['two'] = pd.read_csv(mapping_files['two-' + a]).iloc[:, 2]
-    df['refinement'] = pd.read_csv(mapping_files['refinement-' + a]).iloc[:, 2]
+    df['caat'] = pd.read_csv(mapping_files['caat-' + a]).iloc[:, 2]
     df['herd'] = pd.read_csv(mapping_files['herd-' + a]).iloc[:, 2]
 
     total.loc[a + '\n (' + str(len(df.index)) + ')', mapping_method['two']] = df['two'].sum()
-    total.loc[a + '\n (' + str(len(df.index)) + ')', mapping_method['refinement']] = df['refinement'].sum()
+    total.loc[a + '\n (' + str(len(df.index)) + ')', mapping_method['caat']] = df['caat'].sum()
     total.loc[a + '\n (' + str(len(df.index)) + ')', mapping_method['herd']] = df['herd'].sum()
         
 #########################
