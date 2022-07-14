@@ -147,7 +147,7 @@ public abstract class AbstractLitmus {
     }
 
     @Test
-    @CSVLogger.FileName("csv/refinement")
+    @CSVLogger.FileName("csv/caat")
     public void testRefinement() throws Exception {
         assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(),
                 RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(taskProvider.get())));

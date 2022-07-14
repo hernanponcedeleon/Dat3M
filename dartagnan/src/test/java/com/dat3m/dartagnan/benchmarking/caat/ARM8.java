@@ -1,13 +1,10 @@
-package com.dat3m.dartagnan.benchmarking;
+package com.dat3m.dartagnan.benchmarking.caat;
 
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
-import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.c.AbstractCTest;
+import com.dat3m.dartagnan.benchmarking.AbstractDartagnanTest;
 import com.dat3m.dartagnan.configuration.Arch;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,25 +18,10 @@ import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class CuttingARM8 extends AbstractCTest {
+public class ARM8 extends AbstractDartagnanTest {
 
-    public CuttingARM8(String name, Arch target, Result expected) {
+    public ARM8(String name, Arch target, Result expected) {
         super(name, target, expected);
-    }
-
-    @Override
-    protected long getTimeout() {
-        return 900000;
-    }
-
-    @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "cut-aarch64");
-    }
-
-    @Override
-    protected Provider<Integer> getBoundProvider() {
-        return Provider.fromSupplier(() -> 2);
     }
 
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
@@ -61,7 +43,7 @@ public class CuttingARM8 extends AbstractCTest {
     }
 
 	@Test
-	@CSVLogger.FileName("csv/refinement")
+	@CSVLogger.FileName("csv/caat")
 	public void testRefinement() throws Exception {
 		assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(),
 				RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(taskProvider.get())));

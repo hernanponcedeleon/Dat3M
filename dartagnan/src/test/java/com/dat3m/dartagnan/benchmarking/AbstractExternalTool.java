@@ -31,12 +31,14 @@ public abstract class AbstractExternalTool {
 
     // =================== Modifiable behavior ====================
 
+    protected long getTimeout() {
+    	return 900000;
+    }
+
     protected abstract Provider<String> getProgramPathProvider();
     protected abstract Provider<String> getToolCmdProvider();
     protected abstract Provider<List<String>> getToolOptionsProvider();
-    protected abstract long getTimeout();
     protected abstract Result getResult(String output);
-
     protected void preExecutionCmds() throws Exception { }
     
     // =============================================================
