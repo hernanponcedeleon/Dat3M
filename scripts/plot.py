@@ -100,7 +100,7 @@ for a in arch:
 
     current_df = pd.DataFrame(pd.read_csv(csvPath + a + '-cutting.csv'))
     ## colums are: benchmark, result, time
-    df['cutting'] = current_df.iloc[:, 2]
+    df['Cutting'] = current_df.iloc[:, 2]
 
     current_df = pd.DataFrame(pd.read_csv(csvPath + a + '-assume.csv'))
     ## colums are: benchmark, result, time
