@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# These timeouts are to avoid that the test hung, not to limit each benchmark execution.
-# The first one runs Dartagnan an CAAT and thus the higher timeout.
-timeout 7200 mvn test -Dtest=DartagnanRC11
-timeout 5400 mvn test -Dtest=CuttingRC11
+timeout 5400 mvn test -Dtest=caat.RC11
+timeout 5400 mvn test -Dtest=assume.RC11
+timeout 5400 mvn test -Dtest=cutting.RC11
 timeout 5400 mvn test -Dtest=GenmcRC11
