@@ -36,16 +36,16 @@ public class DataRaceSolver {
 		Result res = UNKNOWN;
 			
 		logger.info("Starting encoding using " + ctx.getVersion());
-		prover.addConstraint(programEncoder.encodeFullProgram(ctx));
-		prover.addConstraint(wmmEncoder.encodeFullMemoryModel(ctx));
+		prover.addConstraint(programEncoder.encodeFullProgram());
+		prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
 		prover.push();
 
-		prover.addConstraint(propertyEncoder.encodeDataRaces(ctx));
+		prover.addConstraint(propertyEncoder.encodeDataRaces());
 
 		logger.info("Starting first solver.check()");
 		if(prover.isUnsat()) {
 			prover.pop();
-			prover.addConstraint(propertyEncoder.encodeBoundEventExec(ctx));
+			prover.addConstraint(propertyEncoder.encodeBoundEventExec());
 			logger.info("Starting second solver.check()");
 			res = prover.isUnsat() ? PASS : UNKNOWN;
 		} else {

@@ -82,7 +82,9 @@ public class ExceptionsTest {
                 .withConfig(config)
                 .build(p, cat, Property.getDefault());
 		// The program must be compiled before being able to construct an Encoder for it
-    	ProgramEncoder.fromConfig(task.getProgram(), Context.create(), config);
+        try(SolverContext ctx = createContext()) {
+            ProgramEncoder.fromConfig(task.getProgram(), Context.create(), config, ctx);
+        }
     }
 
     @Test(expected = IllegalArgumentException.class)

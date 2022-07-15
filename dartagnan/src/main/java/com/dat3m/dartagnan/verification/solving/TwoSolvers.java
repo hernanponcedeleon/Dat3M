@@ -35,18 +35,18 @@ public class TwoSolvers {
         WmmEncoder wmmEncoder = task.getWmmEncoder();
         SymmetryEncoder symmEncoder = task.getSymmetryEncoder();
 
-        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
+        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty());
         if(ctx.getFormulaManager().getBooleanFormulaManager().isFalse(propertyEncoding)) {
             logger.info("Verification finished: property trivially holds");
        		return PASS;        	
         }
 
         logger.info("Starting encoding using " + ctx.getVersion());
-        BooleanFormula encodeProg = programEncoder.encodeFullProgram(ctx);
+        BooleanFormula encodeProg = programEncoder.encodeFullProgram();
         prover1.addConstraint(encodeProg);
         prover2.addConstraint(encodeProg);
         
-        BooleanFormula encodeWmm = wmmEncoder.encodeFullMemoryModel(ctx);
+        BooleanFormula encodeWmm = wmmEncoder.encodeFullMemoryModel();
 		prover1.addConstraint(encodeWmm);
         prover2.addConstraint(encodeWmm);
        	
@@ -56,7 +56,7 @@ public class TwoSolvers {
 		prover1.addConstraint(encodeWitness);
         prover2.addConstraint(encodeWitness);
 
-        BooleanFormula encodeSymm = symmEncoder.encodeFullSymmetry(ctx);
+        BooleanFormula encodeSymm = symmEncoder.encodeFullSymmetry();
         prover1.addConstraint(encodeSymm);
         prover2.addConstraint(encodeSymm);
 
@@ -64,7 +64,7 @@ public class TwoSolvers {
 
         logger.info("Starting first solver.check()");
         if(prover1.isUnsat()) {
-			prover2.addConstraint(propertyEncoder.encodeBoundEventExec(ctx));
+			prover2.addConstraint(propertyEncoder.encodeBoundEventExec());
             logger.info("Starting second solver.check()");
             res = prover2.isUnsat() ? PASS : Result.UNKNOWN;
         } else {

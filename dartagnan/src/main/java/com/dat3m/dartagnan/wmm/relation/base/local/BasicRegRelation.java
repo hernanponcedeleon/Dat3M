@@ -55,7 +55,7 @@ abstract class BasicRegRelation extends StaticRelation {
         return minTupleSet.contains(t) ? 
         		getExecPair(t, ctx) :
         		maxTupleSet.contains(t) ?
-        				task.getProgramEncoder().dependencyEdge(t.getFirst(), t.getSecond(), ctx) :
+        				task.getProgramEncoder().dependencyEdge(t.getFirst(), t.getSecond()) :
         				ctx.getFormulaManager().getBooleanFormulaManager().makeFalse();
     }
 

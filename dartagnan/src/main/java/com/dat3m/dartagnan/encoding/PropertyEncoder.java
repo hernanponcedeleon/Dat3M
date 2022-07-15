@@ -52,44 +52,44 @@ public class PropertyEncoder {
     private final Program program;
     private final Wmm memoryModel;
     private final AliasAnalysis alias;
+    private final SolverContext ctx;
 
     // =====================================================================
 
-    private PropertyEncoder(Program program, Wmm wmm, Context context, Configuration config) throws InvalidConfigurationException {
+    private PropertyEncoder(Program program, Wmm wmm, Context context, Configuration config, SolverContext solverContext) throws InvalidConfigurationException {
         checkArgument(program.isCompiled(),
                 "The program must get compiled first before its properties can be encoded.");
         this.program = checkNotNull(program);
         this.memoryModel = checkNotNull(wmm);
         this.alias = context.requires(AliasAnalysis.class);
         config.inject(this);
+        this.ctx = solverContext;
     }
 
-    public static PropertyEncoder fromConfig(Program program, Wmm wmm, Context context, Configuration config) throws InvalidConfigurationException {
-        return new PropertyEncoder(program, wmm, context, config);
+    public static PropertyEncoder fromConfig(Program program, Wmm wmm, Context context, Configuration config, SolverContext ctx) throws InvalidConfigurationException {
+        return new PropertyEncoder(program, wmm, context, config, ctx);
     }
 
-    public void initializeEncoding(SolverContext context) { }
-
-    public BooleanFormula encodeSpecification(EnumSet<Property> property, SolverContext ctx) {
+    public BooleanFormula encodeSpecification(EnumSet<Property> property) {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
     	// We have a default property therefore this false will always be overwritten
     	BooleanFormula enc = bmgr.makeFalse();
     	if(property.contains(REACHABILITY)) {
-    		enc = bmgr.or(enc, encodeAssertions(ctx));
+    		enc = bmgr.or(enc, encodeAssertions());
     	}
     	if(property.contains(LIVENESS)) {
-    		enc = bmgr.or(enc, encodeLiveness(ctx));
+    		enc = bmgr.or(enc, encodeLiveness());
     	}
     	if(property.contains(RACES)) {
-    		enc = bmgr.or(enc, encodeDataRaces(ctx));
+    		enc = bmgr.or(enc, encodeDataRaces());
     	}
     	if(property.contains(CAT)) {
-    		enc = bmgr.or(enc, encodeCATProperties(ctx));
+    		enc = bmgr.or(enc, encodeCATProperties());
     	}
     	return enc;
     }
 
-    public BooleanFormula encodeBoundEventExec(SolverContext ctx){
+    public BooleanFormula encodeBoundEventExec(){
         logger.info("Encoding bound events execution");
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
@@ -97,7 +97,7 @@ public class PropertyEncoder {
                 .stream().map(Event::exec).reduce(bmgr.makeFalse(), bmgr::or);
     }
 
-    public BooleanFormula encodeAssertions(SolverContext ctx) {
+    public BooleanFormula encodeAssertions() {
         logger.info("Encoding assertions");
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
@@ -108,7 +108,7 @@ public class PropertyEncoder {
         return bmgr.isFalse(assertionEncoding) ? assertionEncoding : bmgr.and(REACHABILITY.getSMTVariable(ctx), enc);
     }
 
-    public BooleanFormula encodeCATProperties(SolverContext ctx) {
+    public BooleanFormula encodeCATProperties() {
         logger.info("Encoding CAT properties");
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
@@ -119,14 +119,15 @@ public class PropertyEncoder {
     		if(!ax.isFlagged()) {
     			continue;
     		}
-			cat = bmgr.and(cat, bmgr.equivalence(CAT.getSMTVariable(ax, ctx), ax.consistent(ctx)));
-			one = bmgr.or(one, CAT.getSMTVariable(ax, ctx));
+            BooleanFormula var = CAT.getSMTVariable(ax, ctx);
+			cat = bmgr.and(cat, bmgr.equivalence(var, ax.consistent(ctx)));
+			one = bmgr.or(one, var);
     	}
 		// No need to use the SMT variable if the formula is trivially false
         return bmgr.isFalse(one) ? one : bmgr.and(one, cat);
     }
 
-    public BooleanFormula encodeLiveness(SolverContext ctx) {
+    public BooleanFormula encodeLiveness() {
 
         // We assume a spinloop to consist of a tagged label and bound jump.
         // Further, we assume that the spinloops are indeed correct, i.e., side-effect free
@@ -213,7 +214,7 @@ public class PropertyEncoder {
         return bmgr.isFalse(enc) ? enc : bmgr.and(LIVENESS.getSMTVariable(ctx), enc);
     }
 
-    public BooleanFormula encodeDataRaces(SolverContext ctx) {
+    public BooleanFormula encodeDataRaces() {
         final String hb = "hb";
         checkState(memoryModel.getAxioms().stream().anyMatch(ax ->
                         ax.isAcyclicity() && ax.getRelation().getName().equals(hb)),

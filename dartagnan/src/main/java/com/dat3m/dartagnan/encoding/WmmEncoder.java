@@ -23,20 +23,23 @@ public class WmmEncoder {
     private static final Logger logger = LogManager.getLogger(WmmEncoder.class);
 
     private final Wmm memoryModel;
-    private boolean isInitialized = false;
+    private final SolverContext ctx;
 
     // =====================================================================
 
-    private WmmEncoder(Wmm memoryModel, Context context) {
+    private WmmEncoder(Wmm memoryModel, Context context, SolverContext solverContext) {
         this.memoryModel = Preconditions.checkNotNull(memoryModel);
         context.requires(RelationAnalysis.class);
+        ctx = solverContext;
     }
 
-    public static WmmEncoder fromConfig(Wmm memoryModel, Context context, Configuration config) throws InvalidConfigurationException {
-        return new WmmEncoder(memoryModel, context);
+    public static WmmEncoder fromConfig(Wmm memoryModel, Context context, Configuration config, SolverContext ctx) throws InvalidConfigurationException {
+        WmmEncoder encoder = new WmmEncoder(memoryModel, context, ctx);
+        encoder.initializeEncoding();
+        return encoder;
     }
 
-    public void initializeEncoding(SolverContext ctx) {
+    private void initializeEncoding() {
         for(String relName : Wmm.BASE_RELATIONS) {
             memoryModel.getRelationRepository().getRelation(relName);
         }
@@ -61,24 +64,17 @@ public class WmmEncoder {
         for (RecursiveGroup recursiveGroup : Lists.reverse(memoryModel.getRecursiveGroups())) {
             recursiveGroup.updateEncodeTupleSets();
         }
-
-        isInitialized = true;
     }
 
-    private void checkInitialized() {
-        Preconditions.checkState(isInitialized, "initializeEncoding must get called before encoding.");
-    }
-
-    public BooleanFormula encodeFullMemoryModel(SolverContext ctx) {
+    public BooleanFormula encodeFullMemoryModel() {
         return ctx.getFormulaManager().getBooleanFormulaManager().and(
-                encodeRelations(ctx), encodeConsistency(ctx)
+                encodeRelations(), encodeConsistency()
         );
     }
 
     // This methods initializes all relations and encodes all base relations
     // It does NOT encode the axioms nor any non-base relation yet!
-    public BooleanFormula encodeAnarchicSemantics(SolverContext ctx) {
-        checkInitialized();
+    public BooleanFormula encodeAnarchicSemantics() {
         logger.info("Encoding anarchic semantics");
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
@@ -92,11 +88,10 @@ public class WmmEncoder {
     // Initializes everything just like encodeAnarchicSemantics but also encodes all
     // relations that are needed for the axioms (but does NOT encode the axioms themselves yet)
     // NOTE: It avoids encoding relations that do NOT affect the axioms, i.e. unused relations
-    public BooleanFormula encodeRelations(SolverContext ctx) {
-        checkInitialized();
+    public BooleanFormula encodeRelations() {
         logger.info("Encoding relations");
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula enc = encodeAnarchicSemantics(ctx);
+        BooleanFormula enc = encodeAnarchicSemantics();
         for (Axiom ax : memoryModel.getAxioms()) {
             enc = bmgr.and(enc, ax.getRelation().encode(ctx));
         }
@@ -104,8 +99,7 @@ public class WmmEncoder {
     }
 
     // Encodes all axioms. This should be called after <encodeRelations>
-    public BooleanFormula encodeConsistency(SolverContext ctx) {
-        checkInitialized();
+    public BooleanFormula encodeConsistency() {
         logger.info("Encoding consistency");
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula expr = bmgr.makeTrue();

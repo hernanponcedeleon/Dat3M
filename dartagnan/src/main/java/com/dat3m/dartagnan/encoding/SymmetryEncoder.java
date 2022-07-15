@@ -39,6 +39,7 @@ public class SymmetryEncoder {
     private final Wmm memoryModel;
     private final ThreadSymmetry symm;
     private final Relation rel;
+    private final SolverContext ctx;
 
     @Option(name = BREAK_SYMMETRY_ON_RELATION,
             description = "The relation on which symmetry breaking should happen." +
@@ -53,10 +54,11 @@ public class SymmetryEncoder {
 
     // =====================================================================
 
-    private SymmetryEncoder(Wmm memoryModel, Context context, Configuration config) throws InvalidConfigurationException {
+    private SymmetryEncoder(Wmm memoryModel, Context context, Configuration config, SolverContext solverContext) throws InvalidConfigurationException {
         this.memoryModel = Preconditions.checkNotNull(memoryModel);
         this.symm = context.requires(ThreadSymmetry.class);
         config.inject(this);
+        ctx = solverContext;
 
         RelationRepository repo = memoryModel.getRelationRepository();
         if (symmBreakRelName.isEmpty()) {
@@ -73,13 +75,11 @@ public class SymmetryEncoder {
         }
     }
 
-    public static SymmetryEncoder fromConfig(Wmm memoryModel, Context context, Configuration config) throws InvalidConfigurationException {
-        return new SymmetryEncoder(memoryModel, context, config);
+    public static SymmetryEncoder fromConfig(Wmm memoryModel, Context context, Configuration config, SolverContext ctx) throws InvalidConfigurationException {
+        return new SymmetryEncoder(memoryModel, context, config, ctx);
     }
 
-    public void initializeEncoding(SolverContext context) { }
-
-    public BooleanFormula encodeFullSymmetry(SolverContext ctx) {
+    public BooleanFormula encodeFullSymmetry() {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         if (rel == null) {
@@ -87,12 +87,12 @@ public class SymmetryEncoder {
         }
 
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
-            enc = bmgr.and(enc, encodeSymmetryClass(symmClass, ctx));
+            enc = bmgr.and(enc, encodeSymmetryClass(symmClass));
         }
         return enc;
     }
 
-    public BooleanFormula encodeSymmetryClass(EquivalenceClass<Thread> symmClass, SolverContext ctx) {
+    public BooleanFormula encodeSymmetryClass(EquivalenceClass<Thread> symmClass) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         if (rel == null || symmClass.getEquivalence() != symm) {

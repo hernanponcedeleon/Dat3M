@@ -138,15 +138,10 @@ public class VerificationTask {
     }
 
     public void initializeEncoders(SolverContext ctx) throws InvalidConfigurationException {
-        progEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
-        propertyEncoder = PropertyEncoder.fromConfig(program, memoryModel,analysisContext, config);
-        wmmEncoder = WmmEncoder.fromConfig(memoryModel, analysisContext, config);
-        symmetryEncoder = SymmetryEncoder.fromConfig(memoryModel, analysisContext, config);
-
-        progEncoder.initializeEncoding(ctx);
-        propertyEncoder.initializeEncoding(ctx);
-        wmmEncoder.initializeEncoding(ctx);
-        symmetryEncoder.initializeEncoding(ctx);
+        progEncoder = ProgramEncoder.fromConfig(program, analysisContext, config, ctx);
+        propertyEncoder = PropertyEncoder.fromConfig(program, memoryModel,analysisContext, config, ctx);
+        wmmEncoder = WmmEncoder.fromConfig(memoryModel, analysisContext, config, ctx);
+        symmetryEncoder = SymmetryEncoder.fromConfig(memoryModel, analysisContext, config, ctx);
     }
 
 
