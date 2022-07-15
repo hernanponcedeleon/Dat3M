@@ -32,7 +32,7 @@ import static com.dat3m.dartagnan.expression.utils.Utils.generalEqualZero;
 import static com.google.common.collect.Lists.reverse;
 
 @Options
-public class ProgramEncoder implements Encoder {
+public class ProgramEncoder {
 
     private static final Logger logger = LogManager.getLogger(ProgramEncoder.class);
 

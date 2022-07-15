@@ -32,7 +32,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_BY_SY
 import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_ON_RELATION;
 
 @Options
-public class SymmetryEncoder implements Encoder {
+public class SymmetryEncoder {
 
     private static final Logger logger = LogManager.getLogger(SymmetryEncoder.class);
 
@@ -77,7 +77,6 @@ public class SymmetryEncoder implements Encoder {
         return new SymmetryEncoder(memoryModel, context, config);
     }
 
-    @Override
     public void initializeEncoding(SolverContext context) { }
 
     public BooleanFormula encodeFullSymmetry(SolverContext ctx) {

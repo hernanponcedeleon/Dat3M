@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -12,7 +11,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 
-public abstract class Event implements Encoder, Comparable<Event> {
+public abstract class Event implements Comparable<Event> {
 
 	public static final int PRINT_PAD_EXTRA = 50;
 

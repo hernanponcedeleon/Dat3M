@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.relation;
 
-import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
@@ -28,7 +27,7 @@ import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
  * @author Florian Furbach
  */
 //TODO: Remove "Encoder" once we split data and operations appropriately
-public abstract class Relation implements Encoder, Dependent<Relation> {
+public abstract class Relation implements Dependent<Relation> {
 
     public static boolean PostFixApprox = false;
 
@@ -78,7 +77,6 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     //  data objects, static analysers (relation analysis) and encoders of said data objects.
     //  Once we split these aspects, we might get rid of these methods
 
-    // Due to being an encoder
     public void initializeEncoding(SolverContext ctx) {
     	Preconditions.checkState(this.maxTupleSet != null && this.minTupleSet != null,
     			String.format("No available relation data to encode %s. Perform RelationAnalysis before encoding.", this));
