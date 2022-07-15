@@ -13,6 +13,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.List;
 
+import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
+
 public class RelFencerel extends StaticRelation {
 
     private final String fenceName;
@@ -96,7 +98,7 @@ public class RelFencerel extends StaticRelation {
 		BooleanFormula enc = bmgr.makeTrue();
 
         List<Event> fences = task.getProgram().getCache().getEvents(FilterBasic.get(fenceName));
-
+        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
         for(Tuple tuple : encodeTupleSet){
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
@@ -111,7 +113,7 @@ public class RelFencerel extends StaticRelation {
             }
 
             BooleanFormula rel = this.getSMTVar(tuple, ctx);
-            enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(getExecPair(tuple, ctx), orClause)));
+            enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(execution(tuple.getFirst(), tuple.getSecond(), exec, ctx), orClause)));
         }
 
         return enc;

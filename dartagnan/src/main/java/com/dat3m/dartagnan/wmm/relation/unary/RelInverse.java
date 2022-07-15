@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -7,6 +8,8 @@ import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 
 /**
  *
@@ -62,10 +65,10 @@ public class RelInverse extends UnaryRelation {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
 
-
+        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
 		TupleSet minSet = getMinTupleSet();
         for(Tuple tuple : encodeTupleSet){
-        	BooleanFormula opt = minSet.contains(tuple) ? getExecPair(tuple, ctx) : r1.getSMTVar(tuple.getInverse(), ctx);
+            BooleanFormula opt = minSet.contains(tuple) ? execution(tuple.getFirst(), tuple.getSecond(), exec, ctx) : r1.getSMTVar(tuple.getInverse(), ctx);
             enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), opt));
         }
         return enc;

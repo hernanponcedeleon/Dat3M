@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.relation.base.local;
 
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.Dependency;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -10,6 +11,8 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Collection;
+
+import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 
 abstract class BasicRegRelation extends StaticRelation {
 
@@ -52,8 +55,9 @@ abstract class BasicRegRelation extends StaticRelation {
 
     @Override
     public BooleanFormula getSMTVar(Tuple t, SolverContext ctx) {
-        return minTupleSet.contains(t) ? 
-        		getExecPair(t, ctx) :
+        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+        return minTupleSet.contains(t) ?
+                execution(t.getFirst(), t.getSecond(), exec, ctx) :
         		maxTupleSet.contains(t) ?
         				task.getProgramEncoder().dependencyEdge(t.getFirst(), t.getSecond()) :
         				ctx.getFormulaManager().getBooleanFormulaManager().makeFalse();

@@ -15,6 +15,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.Map;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
+
 /**
  *
  * @author Florian Furbach
@@ -98,14 +100,15 @@ public class RelTrans extends UnaryRelation {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
 
+        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
         TupleSet minSet = getMinTupleSet();
         TupleSet r1Max = r1.getMaxTupleSet();
         for(Tuple tuple : fullEncodeTupleSet){
             if (minSet.contains(tuple)) {
                 if(Relation.PostFixApprox) {
-                    enc = bmgr.and(enc, bmgr.implication(getExecPair(tuple, ctx), this.getSMTVar(tuple, ctx)));
+                    enc = bmgr.and(enc, bmgr.implication(execution(tuple.getFirst(), tuple.getSecond(), exec, ctx), this.getSMTVar(tuple, ctx)));
                 } else {
-                    enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
+                    enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), execution(tuple.getFirst(), tuple.getSecond(), exec, ctx)));
                 }
                 continue;
             }

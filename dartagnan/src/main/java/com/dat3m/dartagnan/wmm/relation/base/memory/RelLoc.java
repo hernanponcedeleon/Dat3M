@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.relation.base.memory;
 
 import com.dat3m.dartagnan.expression.utils.Utils;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
@@ -15,6 +16,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Collection;
 
+import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 import static com.dat3m.dartagnan.program.event.Tag.MEMORY;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.LOC;
 
@@ -62,10 +64,11 @@ public class RelLoc extends Relation {
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 
     	BooleanFormula enc = bmgr.makeTrue();
+        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
         for(Tuple tuple : encodeTupleSet) {
         	BooleanFormula rel = this.getSMTVar(tuple, ctx);
             enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(
-                    getExecPair(tuple, ctx),
+                execution(tuple.getFirst(), tuple.getSecond(), exec, ctx),
                     Utils.generalEqual(
                             ((MemEvent)tuple.getFirst()).getMemAddressExpr(),
                             ((MemEvent)tuple.getSecond()).getMemAddressExpr(), ctx)

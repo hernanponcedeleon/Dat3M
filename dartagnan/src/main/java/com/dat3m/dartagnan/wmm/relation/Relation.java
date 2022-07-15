@@ -19,7 +19,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 /**
@@ -179,15 +178,6 @@ public abstract class Relation implements Dependent<Relation> {
 
     public final BooleanFormula getSMTVar(Event e1, Event e2, SolverContext ctx) {
         return getSMTVar(new Tuple(e1, e2), ctx);
-    }
-
-    protected BooleanFormula getExecPair(Event e1, Event e2, SolverContext ctx) {
-        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
-        return execution(e1, e2, exec, ctx);
-    }
-
-    protected final BooleanFormula getExecPair(Tuple t, SolverContext ctx) {
-        return getExecPair(t.getFirst(), t.getSecond(), ctx);
     }
 
     protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {

@@ -13,6 +13,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
+
 /**
  *
  * @author Florian Furbach
@@ -116,11 +118,11 @@ public class RelComposition extends BinaryRelation {
         TupleSet r1Set = r1.getEncodeTupleSet();
         TupleSet r2Set = r2.getEncodeTupleSet();
         TupleSet minSet = getMinTupleSet();
-
+        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
         for(Tuple tuple : encodeTupleSet) {
             BooleanFormula expr = bmgr.makeFalse();
             if (minSet.contains(tuple)) {
-                expr = getExecPair(tuple, ctx);
+                expr = execution(tuple.getFirst(), tuple.getSecond(), exec, ctx);
             } else {
                 for (Tuple t1 : r1Set.getByFirst(tuple.getFirst())) {
                     Tuple t2 = new Tuple(t1.getSecond(), tuple.getSecond());
