@@ -58,7 +58,7 @@ public class RefinementTask extends VerificationTask {
 			description="Refinement starts from this baseline WMM.",
 			secure=true,
 			toUppercase=true)
-		private EnumSet<Baseline> baselines = EnumSet.allOf(Baseline.class);//= EnumSet.noneOf(Baseline.class);
+		private EnumSet<Baseline> baselines = EnumSet.noneOf(Baseline.class);//= EnumSet.noneOf(Baseline.class);
 
     // ======================================================================
 
