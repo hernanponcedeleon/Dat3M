@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.c;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
-import com.dat3m.dartagnan.configuration.Arch;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -14,9 +14,10 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
-import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.configuration.Arch.*;
+import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -43,9 +44,9 @@ public class LFDSTestLarge extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-            {"SafeStack-3-3-1", TSO, FAIL},
-            {"SafeStack-3-3-1", ARM8, FAIL},
-            {"SafeStack-3-3-1", POWER, FAIL},
+            {"safe_stack-3", TSO, FAIL},
+            {"safe_stack-3", ARM8, FAIL},
+            {"safe_stack-3", POWER, FAIL},
             {"dglm-3", TSO, UNKNOWN},
             {"dglm-3", ARM8, UNKNOWN},
             {"dglm-3", POWER, UNKNOWN},
