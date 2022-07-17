@@ -3,7 +3,11 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#ifdef FAIL
+#define CAS(ptr, expected, desired) (atomic_compare_exchange_strong_explicit(ptr, expected, desired, __ATOMIC_RELAXED, __ATOMIC_RELAXED))
+#else
 #define CAS(ptr, expected, desired) (atomic_compare_exchange_strong_explicit(ptr, expected, desired, __ATOMIC_ACQ_REL, __ATOMIC_RELAXED))
+#endif
 #define load(loc) (atomic_load_explicit(loc, __ATOMIC_ACQUIRE))
 #define store(loc, val) (atomic_store_explicit(loc, val, __ATOMIC_RELEASE))
 #define rx_load(loc) (atomic_load_explicit(loc, __ATOMIC_RELAXED))
