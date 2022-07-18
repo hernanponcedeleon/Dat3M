@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
-import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
@@ -21,7 +20,6 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -49,6 +47,7 @@ public class PropertyEncoder {
 
     private static final Logger logger = LogManager.getLogger(PropertyEncoder.class);
 
+    private final WmmEncoder wmm;
     private final Program program;
     private final Wmm memoryModel;
     private final AliasAnalysis alias;
@@ -56,18 +55,19 @@ public class PropertyEncoder {
 
     // =====================================================================
 
-    private PropertyEncoder(Program program, Wmm wmm, Context context, Configuration config, SolverContext solverContext) throws InvalidConfigurationException {
-        checkArgument(program.isCompiled(),
+    private PropertyEncoder(WmmEncoder wmm) throws InvalidConfigurationException {
+        checkArgument(wmm.task().getProgram().isCompiled(),
                 "The program must get compiled first before its properties can be encoded.");
-        this.program = checkNotNull(program);
-        this.memoryModel = checkNotNull(wmm);
-        this.alias = context.requires(AliasAnalysis.class);
-        config.inject(this);
-        this.ctx = solverContext;
+        this.wmm = wmm;
+        this.program = wmm.task().getProgram();
+        this.memoryModel = wmm.task().getMemoryModel();
+        this.alias = wmm.analysisContext().requires(AliasAnalysis.class);
+        wmm.task().getConfig().inject(this);
+        this.ctx = wmm.solverContext();
     }
 
-    public static PropertyEncoder fromConfig(Program program, Wmm wmm, Context context, Configuration config, SolverContext ctx) throws InvalidConfigurationException {
-        return new PropertyEncoder(program, wmm, context, config, ctx);
+    public static PropertyEncoder fromConfig(WmmEncoder encoder) throws InvalidConfigurationException {
+        return new PropertyEncoder(checkNotNull(encoder));
     }
 
     public BooleanFormula encodeSpecification(EnumSet<Property> property) {
@@ -120,7 +120,7 @@ public class PropertyEncoder {
     			continue;
     		}
             BooleanFormula var = CAT.getSMTVariable(ax, ctx);
-			cat = bmgr.and(cat, bmgr.equivalence(var, ax.consistent(ctx)));
+			cat = bmgr.and(cat, bmgr.equivalence(var, ax.consistent(wmm)));
 			one = bmgr.or(one, var);
     	}
 		// No need to use the SMT variable if the formula is trivially false

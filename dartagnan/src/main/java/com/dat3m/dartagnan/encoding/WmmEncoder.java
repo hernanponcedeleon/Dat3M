@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
@@ -20,6 +19,7 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,6 +34,7 @@ public class WmmEncoder {
     private final Wmm memoryModel;
     private final Context analysisContext;
     private final SolverContext ctx;
+    private final Map<Relation, Set<Tuple>> tuples = new HashMap<>();
 
     // =====================================================================
 
@@ -61,6 +62,10 @@ public class WmmEncoder {
 
     public SolverContext solverContext() {
         return ctx;
+    }
+
+    public Set<Tuple> tupleSet(Relation relation) {
+        return tuples.getOrDefault(relation, Set.of());
     }
 
     /**
@@ -124,11 +129,12 @@ public class WmmEncoder {
 
         while(!queue.isEmpty()) {
             Relation relation = queue.keySet().iterator().next();
-            TupleSet delta = new TupleSet(difference(intersection(queue.remove(relation), relation.getMaxTupleSet()), relation.getEncodeTupleSet()));
+            Set<Tuple> set = tuples.computeIfAbsent(relation, k -> new HashSet<>());
+            Set<Tuple> delta = new HashSet<>(difference(intersection(queue.remove(relation), relation.getMaxTupleSet()), set));
             if(delta.isEmpty()) {
                 continue;
             }
-            relation.addEncodeTupleSet(delta);
+            set.addAll(delta);
             relation.activate(delta, buffer);
         }
     }
@@ -177,12 +183,12 @@ public class WmmEncoder {
         	if(ax.isFlagged()) {
         		continue;
         	}
-            expr = bmgr.and(expr, ax.consistent(ctx));
+            expr = bmgr.and(expr, ax.consistent(this));
         }
         return expr;
     }
 
     private BooleanFormula encode(Relation relation) {
-        return relation.encode(relation.getEncodeTupleSet(), this);
+        return relation.encode(tuples.getOrDefault(relation, Set.of()), this);
     }
 }

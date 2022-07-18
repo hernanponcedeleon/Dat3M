@@ -108,8 +108,8 @@ public class RelComposition extends BinaryRelation {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
 
-        TupleSet r1Set = r1.getEncodeTupleSet();
-        TupleSet r2Set = r2.getEncodeTupleSet();
+        TupleSet r1Max = r1.getMaxTupleSet();
+        TupleSet r2Max = r2.getMaxTupleSet();
         TupleSet minSet = getMinTupleSet();
         ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
         for(Tuple tuple : encodeTupleSet) {
@@ -117,9 +117,9 @@ public class RelComposition extends BinaryRelation {
             if (minSet.contains(tuple)) {
                 expr = execution(tuple.getFirst(), tuple.getSecond(), exec, ctx);
             } else {
-                for (Tuple t1 : r1Set.getByFirst(tuple.getFirst())) {
+                for (Tuple t1 : r1Max.getByFirst(tuple.getFirst())) {
                     Tuple t2 = new Tuple(t1.getSecond(), tuple.getSecond());
-                    if (r2Set.contains(t2)) {
+                    if (r2Max.contains(t2)) {
                         expr = bmgr.or(expr, bmgr.and(r1.getSMTVar(t1, ctx), r2.getSMTVar(t2, ctx)));
                     }
                 }

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -76,7 +77,7 @@ public abstract class Axiom implements Dependent<Relation> {
 
     public abstract TupleSet getEncodeTupleSet();
 
-    public abstract BooleanFormula consistent(SolverContext ctx);
+    public abstract BooleanFormula consistent(WmmEncoder encoder);
 
     @Override
     public int hashCode() {
