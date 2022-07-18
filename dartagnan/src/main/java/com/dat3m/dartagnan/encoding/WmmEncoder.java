@@ -51,6 +51,18 @@ public class WmmEncoder {
         return encoder;
     }
 
+    public VerificationTask task() {
+        return task;
+    }
+
+    public Context analysisContext() {
+        return analysisContext;
+    }
+
+    public SolverContext solverContext() {
+        return ctx;
+    }
+
     /**
      * Instances live during {@link WmmEncoder}'s initialization phase.
      * Pass requests for tuples to be added to the encoding, between relations.
@@ -134,7 +146,7 @@ public class WmmEncoder {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         for(String relName : Wmm.BASE_RELATIONS){
-            enc = bmgr.and(enc, memoryModel.getRelationRepository().getRelation(relName).encode(ctx));
+            enc = bmgr.and(enc, encode(memoryModel.getRelationRepository().getRelation(relName)));
         }
 
         return enc;
@@ -149,7 +161,7 @@ public class WmmEncoder {
         BooleanFormula enc = encodeAnarchicSemantics();
         for(Relation r : memoryModel.getRelationRepository().getRelations()) {
             if(!r.getIsNamed() || !Wmm.BASE_RELATIONS.contains(r.getName())) {
-                enc = bmgr.and(enc, r.encode(ctx));
+                enc = bmgr.and(enc, encode(r));
             }
         }
         return enc;
@@ -168,5 +180,9 @@ public class WmmEncoder {
             expr = bmgr.and(expr, ax.consistent(ctx));
         }
         return expr;
+    }
+
+    private BooleanFormula encode(Relation relation) {
+        return relation.encode(relation.getEncodeTupleSet(), this);
     }
 }

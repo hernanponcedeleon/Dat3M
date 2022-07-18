@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -9,6 +10,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+
+import java.util.Set;
 
 import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 
@@ -67,11 +70,12 @@ public class RelIntersection extends BinaryRelation {
     }
 
     @Override
-    public BooleanFormula encode(SolverContext ctx) {
+    public BooleanFormula encode(Set<Tuple> encodeTupleSet, WmmEncoder encoder) {
+        SolverContext ctx = encoder.solverContext();
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
 
-        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+        ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
         TupleSet min = getMinTupleSet();
         for(Tuple tuple : encodeTupleSet){
             if (min.contains(tuple)) {

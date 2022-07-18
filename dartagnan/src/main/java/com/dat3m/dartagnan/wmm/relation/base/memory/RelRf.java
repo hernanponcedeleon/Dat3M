@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -166,14 +167,15 @@ public class RelRf extends Relation {
     }
 
     @Override
-    public BooleanFormula encode(SolverContext ctx) {
+    public BooleanFormula encode(Set<Tuple> encodeTupleSet, WmmEncoder encoder) {
+        SolverContext ctx = encoder.solverContext();
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 
     	BooleanFormula enc = bmgr.makeTrue();
         Map<MemEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
 
-        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+        ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
         for(Tuple tuple : maxTupleSet){
             MemEvent w = (MemEvent) tuple.getFirst();
             MemEvent r = (MemEvent) tuple.getSecond();

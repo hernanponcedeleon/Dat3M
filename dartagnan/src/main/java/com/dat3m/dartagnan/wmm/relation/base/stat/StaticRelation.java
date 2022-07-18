@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -8,6 +9,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+
+import java.util.Set;
 
 import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 
@@ -40,11 +43,12 @@ public abstract class StaticRelation extends Relation {
     }
 
     @Override
-    public BooleanFormula encode(SolverContext ctx) {
+    public BooleanFormula encode(Set<Tuple> encodeTupleSet, WmmEncoder encoder) {
+        SolverContext ctx = encoder.solverContext();
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
 
-        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+        ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
         for(Tuple tuple : encodeTupleSet) {
         	BooleanFormula rel = this.getSMTVar(tuple, ctx);
             enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(execution(tuple.getFirst(), tuple.getSecond(), exec, ctx))));

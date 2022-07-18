@@ -58,11 +58,12 @@ public class RelInverse extends UnaryRelation {
     }
 
     @Override
-    public BooleanFormula encode(SolverContext ctx) {
+    public BooleanFormula encode(Set<Tuple> encodeTupleSet, WmmEncoder encoder) {
+        SolverContext ctx = encoder.solverContext();
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
 
-        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+        ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
 		TupleSet minSet = getMinTupleSet();
         for(Tuple tuple : encodeTupleSet){
             BooleanFormula opt = minSet.contains(tuple) ? execution(tuple.getFirst(), tuple.getSecond(), exec, ctx) : r1.getSMTVar(tuple.getInverse(), ctx);

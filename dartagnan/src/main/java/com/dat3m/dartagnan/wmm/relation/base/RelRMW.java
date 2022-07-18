@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.base;
 
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -25,6 +26,7 @@ import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
@@ -134,12 +136,13 @@ public class RelRMW extends StaticRelation {
     }
 
     @Override
-    public BooleanFormula encode(SolverContext ctx) {
+    public BooleanFormula encode(Set<Tuple> encodeTupleSet, WmmEncoder encoder) {
+        SolverContext ctx = encoder.solverContext();
         FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         
         // Encode base (not exclusive pairs) RMW
-        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
+        ExecutionAnalysis exec = encoder.analysisContext().get(ExecutionAnalysis.class);
         BooleanFormula enc = bmgr.and(encodeTupleSet.stream()
             .filter(baseMaxTupleSet::contains)
             .map(t -> bmgr.equivalence(getSMTVar(t, ctx), execution(t.getFirst(), t.getSecond(), exec, ctx)))
@@ -147,7 +150,7 @@ public class RelRMW extends StaticRelation {
 
         // Encode RMW for exclusive pairs
 		BooleanFormula unpredictable = bmgr.makeFalse();
-        for(Thread thread : task.getProgram().getThreads()) {
+        for(Thread thread : encoder.task().getProgram().getThreads()) {
             for (Event store : thread.getCache().getEvents(storeExclFilter)) {
             	BooleanFormula storeExec = bmgr.makeFalse();
                 for (Event load : thread.getCache().getEvents(loadExclFilter)) {

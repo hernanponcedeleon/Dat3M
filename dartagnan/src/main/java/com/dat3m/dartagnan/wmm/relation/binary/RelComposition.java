@@ -103,14 +103,15 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    public BooleanFormula encode(SolverContext ctx) {
+    public BooleanFormula encode(Set<Tuple> encodeTupleSet, WmmEncoder encoder) {
+        SolverContext ctx = encoder.solverContext();
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
 
         TupleSet r1Set = r1.getEncodeTupleSet();
         TupleSet r2Set = r2.getEncodeTupleSet();
         TupleSet minSet = getMinTupleSet();
-        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+        ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
         for(Tuple tuple : encodeTupleSet) {
             BooleanFormula expr = bmgr.makeFalse();
             if (minSet.contains(tuple)) {

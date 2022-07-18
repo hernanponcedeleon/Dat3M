@@ -159,8 +159,8 @@ public abstract class Relation implements Dependent<Relation> {
         return getName().equals(((Relation)obj).getName());
     }
 
-    public BooleanFormula encode(SolverContext ctx) {
-        return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
+    public BooleanFormula encode(Set<Tuple> encodeTupleSet, WmmEncoder encoder) {
+        return encoder.solverContext().getFormulaManager().getBooleanFormulaManager().makeTrue();
     }
 
     public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {

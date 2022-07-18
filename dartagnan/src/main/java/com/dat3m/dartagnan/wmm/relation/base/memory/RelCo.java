@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -24,6 +25,7 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.CO_ANTISYMMETRY;
 import static com.dat3m.dartagnan.configuration.Property.LIVENESS;
@@ -136,17 +138,18 @@ public class RelCo extends Relation {
     }
 
     @Override
-    public BooleanFormula encode(SolverContext ctx) {
-        AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
-        WmmAnalysis wmmAnalysis = analysisContext.get(WmmAnalysis.class);
+    public BooleanFormula encode(Set<Tuple> encodeTupleSet, WmmEncoder encoder) {
+        SolverContext ctx = encoder.solverContext();
+        AliasAnalysis alias = encoder.analysisContext().get(AliasAnalysis.class);
+        WmmAnalysis wmmAnalysis = encoder.analysisContext().get(WmmAnalysis.class);
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
         
     	BooleanFormula enc = bmgr.makeTrue();
 
-        List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
-        List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
+        List<Event> eventsInit = encoder.task().getProgram().getCache().getEvents(FilterBasic.get(INIT));
+        List<Event> eventsStore = encoder.task().getProgram().getCache().getEvents(FilterMinus.get(
                 FilterBasic.get(WRITE),
                 FilterBasic.get(INIT)
         ));
@@ -168,8 +171,8 @@ public class RelCo extends Relation {
 
         enc = bmgr.and(enc, distinct);
 
-        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
-        for(Event w :  task.getProgram().getCache().getEvents(FilterBasic.get(WRITE))) {
+        ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
+        for(Event w :  encoder.task().getProgram().getCache().getEvents(FilterBasic.get(WRITE))) {
             MemEvent w1 = (MemEvent)w;
             BooleanFormula lastCo = w1.exec();
 
@@ -200,7 +203,7 @@ public class RelCo extends Relation {
                 }
             }
 
-            if (task.getProgram().getFormat().equals(LITMUS) || task.getProperty().contains(LIVENESS)) {
+            if (encoder.task().getProgram().getFormat().equals(LITMUS) || encoder.task().getProperty().contains(LIVENESS)) {
                 BooleanFormula lastCoExpr = getLastCoVar(w1, ctx);
                 enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
 
