@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
-import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
@@ -27,7 +26,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2INT;
 import static com.dat3m.dartagnan.expression.op.IOpUn.BV2UINT;
 
@@ -61,7 +59,6 @@ public class ConstantPropagation implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-    	Preconditions.checkState(ARCH_PRECISION < 0, "Constant propagation cannot be used with bit-vector expressions");
         Preconditions.checkArgument(program.isUnrolled(), "The program needs to be unrolled before constant propagation.");
         Preconditions.checkArgument(!program.isCompiled(), "Constant propagation needs to be run before compilation.");
         for(Thread thread : program.getThreads()) {
@@ -150,19 +147,11 @@ public class ConstantPropagation implements ProgramProcessor {
     		if(op.equals(BV2INT) || op.equals(BV2UINT)) {
     			return input;
     		}
-    		// Due to other propagation the types are not guaranteed
-    		if(!(evaluate(un.getInner(), map) instanceof IExpr)) {
-    			return TOP;
-    		}
 			IExpr inner = (IExpr) evaluate(un.getInner(), map);
 			return inner == TOP ? inner : new IExprUn(op, inner).visit(simplifier);
     	}
     	if(input instanceof IExprBin) {
     		IExprBin bin = (IExprBin)input;
-    		// Due to other propagation the types are not guaranteed
-    		if(!(evaluate(bin.getLHS(), map) instanceof IExpr && evaluate(bin.getRHS(), map) instanceof IExpr)) {
-    			return TOP;
-    		}
     		IExpr lhs = (IExpr) evaluate(bin.getLHS(), map);
 			IExpr rhs = (IExpr) evaluate(bin.getRHS(), map);
 			return lhs == TOP || rhs == TOP ?
@@ -172,10 +161,6 @@ public class ConstantPropagation implements ProgramProcessor {
     	if(input instanceof IfExpr) {
     		IfExpr ife = (IfExpr)input;
     		ExprInterface guard = evaluate(ife.getGuard(), map);
-    		// Due to other propagation the types are not guaranteed
-    		if(!(evaluate(ife.getTrueBranch(), map) instanceof IExpr && evaluate(ife.getFalseBranch(), map) instanceof IExpr)) {
-    			return TOP;
-    		}
     		IExpr tbranch = (IExpr) evaluate(ife.getTrueBranch(), map);
 			IExpr fbranch = (IExpr) evaluate(ife.getFalseBranch(), map);
 			return tbranch == TOP || fbranch == TOP || guard == TOP ?
@@ -186,8 +171,7 @@ public class ConstantPropagation implements ProgramProcessor {
     		Atom atom = (Atom)input;
     		ExprInterface lhs = evaluate(atom.getLHS(), map);
     		ExprInterface rhs = evaluate(atom.getRHS(), map);
-			COpBin op = atom.getOp();
-			return (lhs == TOP | rhs == TOP || op.isSigned()) ? TOP : new Atom(lhs, op, rhs).visit(simplifier);
+			return (lhs == TOP | rhs == TOP) ? TOP : new Atom(lhs, atom.getOp(), rhs).visit(simplifier);
     	}
     	if(input instanceof BExprUn) {
     		BExprUn un = (BExprUn)input;
