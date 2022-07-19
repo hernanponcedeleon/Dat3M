@@ -66,7 +66,7 @@ public enum COpBin {
             case UGTE: case ULTE: case UGT: case ULT:
             	return false;
             default:
-                throw new UnsupportedOperationException(this + " cannot be inverted");
+                throw new UnsupportedOperationException("isSigned() not implemented for " + this);
         }
     }
 
