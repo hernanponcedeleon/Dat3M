@@ -112,7 +112,7 @@ for a in arch:
         lncol = 4
         my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:green']
 
-    if a == 'RC11':
+    if a == 'C11':
         ## colums are: benchmark, result, time
         df['GenMC'] = genmcRC11.iloc[:, 2]
         lncol = 4
@@ -125,11 +125,16 @@ for a in arch:
         my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:red']
 
     df.loc["Total"] = df.loc[:, df.columns != 'benchmark'].mean()
-    df[['benchmark']] = df[['benchmark']].fillna('average')
+    df[['benchmark']] = df[['benchmark']].fillna('$\overline{\mathcal{X}}$')
 
     plt.figure()
     df.set_index('benchmark').plot.bar(log=True, width=0.8, color=my_colors)
     plt.title(mapping_title[a])
+    for i in range(len(df.columns)):
+        bars = plt.gca().containers[i-1]
+        hatches = ["//////" if x == 12 else '' for x in range(len(df.index))]
+        for bar, hatch, label in zip(bars, hatches, df.index):
+            bar.set_hatch(hatch)
     plt.xticks(rotation=45, ha='right')
     plt.xlabel('')
     plt.ylabel('Time (ms)')
