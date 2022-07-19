@@ -23,8 +23,11 @@ RMW_OPT="atomic_rmw"
 OOTA_OPT="no_oota"
 UNI_OPT="uniproc"
 
+CUT="cut-"
+
+
 ## Bias "," results in no bias being used
-declare -a BIASES=( "," $RMW_OPT $OOTA_OPT $UNI_OPT $RMW_OPT,$OOTA_OPT $RMW_OPT,$UNI_OPT $OOTA_OPT,$UNI_OPT $RMW_OPT,$OOTA_OPT,$UNI_OPT )
+declare -a BIASES=( "," $RMW_OPT $OOTA_OPT $RMW_OPT,$OOTA_OPT $UNI_OPT $RMW_OPT,$UNI_OPT $OOTA_OPT,$UNI_OPT $RMW_OPT,$OOTA_OPT,$UNI_OPT )
 declare -a TARGETS=( "LKMM ARM8 Power" )
 
 for TARGET in ${TARGETS[@]}; do
@@ -47,27 +50,31 @@ for TARGET in ${TARGETS[@]}; do
 
     for BIAS in ${BIASES[@]}; do
     
+        RMW="\ding{56}"
+        if [[ $BIAS == *"$RMW_OPT"* ]]; then
+            RMW="\ding{52}"
+        fi
+
+        OOTA="\ding{56}"
+        if [[ $BIAS == *"$OOTA_OPT"* ]]; then
+            OOTA="\ding{52}"
+        fi
+
+        UNI="\ding{56}"
+        if [[ $BIAS == *"$UNI_OPT"* ]]; then
+            UNI="\ding{52}"
+            ## When using uniproc bias, we cut the fr relation
+            if [[ $CAT != *"$CUT"* ]]; then
+                CAT=$CUT$CAT
+            fi
+        fi
+
         ## Run Dartagnan
         start=`python3 -c 'import time; print(int(time.time() * 1000))'`
         OUTPUT=$(timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.0.0.jar cat/$CAT $DAT3M_OPTIONS --target=$TARGET --refinement.baseline=$BIAS $BENCHMARK)
         end=`python3 -c 'import time; print(int(time.time() * 1000))'`
         TIME=$((end-start))
         
-        RMW=\ding{52}
-        if [[ $BIAS == *"$RMW_OPT"* ]]; then
-            RMW=\ding{56}
-        fi
-
-        OOTA=\ding{52}
-        if [[ $BIAS == *"$OOTA_OPT"* ]]; then
-            OOTA=\ding{56}
-        fi
-
-        UNI=\ding{52}
-        if [[ $BIAS == *"$UNI_OPT"* ]]; then
-            UNI=\ding{56}
-        fi
-
         if [[ $OUTPUT == *"$DAT3M_FINISHED"* ]]; then
             if [[ $OUTPUT == *"$DAT3M_FAIL"* ]]; then
                 RESULT="FAIL"
