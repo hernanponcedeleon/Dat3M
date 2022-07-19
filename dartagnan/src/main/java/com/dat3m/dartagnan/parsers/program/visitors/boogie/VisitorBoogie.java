@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
@@ -301,7 +302,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				.setSourceCodeFile(sourceCodeFile)
 				.addFilters(Tag.ASSERTION);
        	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-		programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end));
+		CondJump jump = EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end);
+		jump.addFilters(Tag.EARLYTERMINATION);
+		programBuilder.addChild(threadCount, jump);
     	return null;
     }
     
@@ -338,7 +341,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 					.setSourceCodeFile(sourceCodeFile)
 					.addFilters(Tag.ASSERTION);
 	       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-			programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end));
+			CondJump jump = EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end);
+	       	// We treat these jumps as bound so they do not interfere with liveness check
+	       	jump.addFilters(Tag.EARLYTERMINATION);
+			programBuilder.addChild(threadCount, jump);
 			return null;
 		}
 
