@@ -15,7 +15,7 @@ public class Compilation {
 	
 	private static final Logger logger = LogManager.getLogger(Compilation.class);
 	
-	public static void compileWithSmack(File file) throws Exception {
+	public static void compileWithSmack(File file, String cflags) throws Exception {
 		String name = file.getName().contains("_tmp") ?
 				file.getName().substring(0, file.getName().lastIndexOf('_')) :
 				file.getName().substring(0, file.getName().lastIndexOf('.'));
@@ -27,10 +27,15 @@ public class Compilation {
     		cmd.add(option);
     	}
     	// Here there is not need to iterate over CFLAG values
-        cmd.add("--clang-options=-I" + System.getenv("DAT3M_HOME") + "/include/smack " + System.getenv().getOrDefault("CFLAGS", ""));
+    	cflags = cflags.equals("") ? System.getenv().getOrDefault("CFLAGS", "") : cflags; 
+        cmd.add("--clang-options=-I" + System.getenv("DAT3M_HOME") + "/include/smack -I" + 
+        								System.getenv("DAT3M_HOME") + "/include/clang " + cflags);
     	cmd.addAll(asList("-bpl", System.getenv("DAT3M_OUTPUT") + "/" + name + ".bpl"));
     	cmd.add(file.getAbsolutePath());
     	
+		logger.info("Compiling with smack");
+    	logger.debug("Running " + String.join(" ", cmd));
+
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
     	Process proc = processBuilder.start();
     	proc.waitFor();
@@ -43,18 +48,19 @@ public class Compilation {
 				}
 			}
     		logger.info("Compiling with smack");
-        	logger.debug("Running " + String.join(" ", cmd));
     		tries++;
         	proc = processBuilder.start();
         	proc.waitFor();
     	}
 	}	
 
-	public static void compileWithClang(File file) throws Exception {
+	public static void compileWithClang(File file, String cflags) throws Exception {
 		ArrayList<String> cmd = new ArrayList<String>();
-    	cmd.addAll(asList("clang", "-S", "-o", System.getenv("DAT3M_OUTPUT") + "/test.s"));
+    	cmd.addAll(asList("clang", "-S", "-I" + System.getenv("DAT3M_HOME") + "/include/clang", 
+    			"-o", System.getenv("DAT3M_OUTPUT") + "/test.s"));
     	// Needed to handle more than one flag in CFLAGS
-    	for(String option : System.getenv().getOrDefault("CFLAGS", "").split(" ")) {
+    	cflags = cflags.equals("") ? System.getenv().getOrDefault("CFLAGS", "") : cflags;
+    	for(String option : cflags.split(" ")) {
     		cmd.add(option);
     	}
     	cmd.add(file.getAbsolutePath());

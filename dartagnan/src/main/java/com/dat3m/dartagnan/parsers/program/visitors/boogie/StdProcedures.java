@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -20,6 +21,7 @@ import java.util.List;
 public class StdProcedures {
 	
 	public static List<String> STDPROCEDURES = Arrays.asList(
+			"get_my_tid",
 			"devirtbounce",
 			"external_alloc",
 			"$alloc",
@@ -48,6 +50,13 @@ public class StdProcedures {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
 		if(name.equals("$alloc") || name.equals("$malloc") || name.equals("calloc") || name.equals("malloc") || name.equals("external_alloc") ) {
 			alloc(visitor, ctx);
+			return;
+		}
+		if(name.equals("get_my_tid")) {
+			String registerName = ctx.call_params().Ident(0).getText();
+			Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
+			IValue tid = new IValue(BigInteger.valueOf(visitor.threadCount), ARCH_PRECISION);
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, tid));
 			return;
 		}
 		if(name.equals("__assert_rtn") || name.equals("assert_.i32") || name.equals("__assert_fail")) {
