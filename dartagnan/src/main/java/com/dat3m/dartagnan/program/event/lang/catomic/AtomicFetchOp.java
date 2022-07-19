@@ -25,7 +25,7 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
     @Override
     public String toString() {
     	String tag = mo != null ? "_explicit" : "";
-        return resultRegister + " = atomic_fetch_" + op.toLinuxName() + tag + "(*" + address + ", " + value + (mo != null ? ", " + mo : "") + ")";
+        return resultRegister + " = atomic_fetch_" + op.toLinuxName() + tag + "(*" + address + ", " + value + (mo != null ? ", " + mo : "") + ")\t### C11";
     }
 
     public IOpBin getOp() {

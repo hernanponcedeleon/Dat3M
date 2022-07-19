@@ -39,7 +39,7 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
     public String toString() {
     	String tag = is(STRONG) ? "_strong" : "_weak";
     	tag += mo != null ? "_explicit" : "";
-        return resultRegister + " = atomic_compare_exchange" + tag + "(*" + address + ", " + expectedAddr + ", " + value + (mo != null ? ", " + mo : "") + ")";
+        return resultRegister + " = atomic_compare_exchange" + tag + "(*" + address + ", " + expectedAddr + ", " + value + (mo != null ? ", " + mo : "") + ")\t### C11";
     }
 
     // Unrolling
