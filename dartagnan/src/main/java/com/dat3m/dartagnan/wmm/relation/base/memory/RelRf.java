@@ -179,7 +179,7 @@ public class RelRf extends Relation {
         for(Tuple tuple : maxTupleSet){
             MemEvent w = (MemEvent) tuple.getFirst();
             MemEvent r = (MemEvent) tuple.getSecond();
-            BooleanFormula edge = this.getSMTVar(tuple, ctx);
+            BooleanFormula edge = encoder.edge(this, tuple);
 
             // The boogie file might have a different type (Ints vs BVs) that the imposed by ARCH_PRECISION
             // In such cases we perform the transformation

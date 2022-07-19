@@ -69,7 +69,7 @@ public class RelLoc extends Relation {
     	BooleanFormula enc = bmgr.makeTrue();
         ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
         for(Tuple tuple : encodeTupleSet) {
-        	BooleanFormula rel = this.getSMTVar(tuple, ctx);
+        	BooleanFormula rel = encoder.edge(this, tuple);
             enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(
                 execution(tuple.getFirst(), tuple.getSecond(), exec, ctx),
                     Utils.generalEqual(

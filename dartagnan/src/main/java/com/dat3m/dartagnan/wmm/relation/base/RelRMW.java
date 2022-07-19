@@ -145,7 +145,7 @@ public class RelRMW extends StaticRelation {
         ExecutionAnalysis exec = encoder.analysisContext().get(ExecutionAnalysis.class);
         BooleanFormula enc = bmgr.and(encodeTupleSet.stream()
             .filter(baseMaxTupleSet::contains)
-            .map(t -> bmgr.equivalence(getSMTVar(t, ctx), execution(t.getFirst(), t.getSecond(), exec, ctx)))
+            .map(t -> bmgr.equivalence(encoder.edge(this, t), execution(t.getFirst(), t.getSecond(), exec, ctx)))
             .toArray(BooleanFormula[]::new));
 
         // Encode RMW for exclusive pairs
@@ -166,7 +166,7 @@ public class RelRMW extends StaticRelation {
                         unpredictable = bmgr.or(unpredictable, bmgr.and(isExecPair, bmgr.not(sameAddress)));
 
                         // Relation between exclusive load and store
-                        enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(load, store, ctx), bmgr.and(isExecPair, sameAddress)));
+                        enc = bmgr.and(enc, bmgr.equivalence(encoder.edge(this, load, store), bmgr.and(isExecPair, sameAddress)));
 
                         // Can be executed if addresses mismatch, but behaviour is "constrained unpredictable"
                         // The implementation does not include all possible unpredictable cases: in case of address

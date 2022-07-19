@@ -141,7 +141,7 @@ public class VerificationTask {
         progEncoder = ProgramEncoder.fromConfig(program, analysisContext, config, ctx);
         wmmEncoder = WmmEncoder.fromConfig(this, analysisContext, ctx);
         propertyEncoder = PropertyEncoder.fromConfig(wmmEncoder);
-        symmetryEncoder = SymmetryEncoder.fromConfig(memoryModel, analysisContext, config, ctx);
+        symmetryEncoder = SymmetryEncoder.fromConfig(wmmEncoder);
     }
 
 

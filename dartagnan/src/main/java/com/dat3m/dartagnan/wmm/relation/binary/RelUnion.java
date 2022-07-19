@@ -78,16 +78,17 @@ public class RelUnion extends BinaryRelation {
         ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
         TupleSet min = getMinTupleSet();
         for(Tuple tuple : encodeTupleSet){
+            BooleanFormula edge = encoder.edge(this, tuple);
             if (min.contains(tuple)) {
-                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), execution(tuple.getFirst(), tuple.getSecond(), exec, ctx)));
+                enc = bmgr.and(enc, bmgr.equivalence(edge, execution(tuple.getFirst(), tuple.getSecond(), exec, ctx)));
                 continue;
             }
-            BooleanFormula opt1 = r1.getSMTVar(tuple, ctx);
-            BooleanFormula opt2 = r2.getSMTVar(tuple, ctx);
+            BooleanFormula opt1 = encoder.edge(r1, tuple);
+            BooleanFormula opt2 = encoder.edge(r2, tuple);
             if (Relation.PostFixApprox) {
-                enc = bmgr.and(enc, bmgr.implication(bmgr.or(opt1, opt2), this.getSMTVar(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.implication(bmgr.or(opt1, opt2), edge));
             } else {
-                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), bmgr.or(opt1, opt2)));
+                enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.or(opt1, opt2)));
             }
         }
         return enc;

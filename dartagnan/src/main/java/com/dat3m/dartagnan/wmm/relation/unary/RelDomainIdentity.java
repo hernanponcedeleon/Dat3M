@@ -71,9 +71,9 @@ public class RelDomainIdentity extends UnaryRelation {
             BooleanFormula opt = bmgr.makeFalse();
             //TODO: Optimize using minSets (but no CAT uses this anyway)
             for(Tuple tuple2 : r1.getMaxTupleSet().getByFirst(e)){
-                opt = bmgr.or(r1.getSMTVar(e, tuple2.getSecond(), ctx));
+                opt = bmgr.or(encoder.edge(r1, tuple2));
             }
-            enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(e, e, ctx), opt));
+            enc = bmgr.and(enc, bmgr.equivalence(encoder.edge(this, e, e), opt));
         }
         return enc;
     }

@@ -109,11 +109,12 @@ public class RelTrans extends UnaryRelation {
         TupleSet minSet = getMinTupleSet();
         TupleSet r1Max = r1.getMaxTupleSet();
         for(Tuple tuple : encodeTupleSet){
+            BooleanFormula edge = encoder.edge(this, tuple);
             if (minSet.contains(tuple)) {
                 if(Relation.PostFixApprox) {
-                    enc = bmgr.and(enc, bmgr.implication(execution(tuple.getFirst(), tuple.getSecond(), exec, ctx), this.getSMTVar(tuple, ctx)));
+                    enc = bmgr.and(enc, bmgr.implication(execution(tuple.getFirst(), tuple.getSecond(), exec, ctx), edge));
                 } else {
-                    enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), execution(tuple.getFirst(), tuple.getSecond(), exec, ctx)));
+                    enc = bmgr.and(enc, bmgr.equivalence(edge, execution(tuple.getFirst(), tuple.getSecond(), exec, ctx)));
                 }
                 continue;
             }
@@ -123,22 +124,22 @@ public class RelTrans extends UnaryRelation {
             Event e2 = tuple.getSecond();
 
             if(r1Max.contains(tuple)){
-                orClause = bmgr.or(orClause, r1.getSMTVar(tuple, ctx));
+                orClause = bmgr.or(orClause, encoder.edge(r1, tuple));
             }
 
 
             for(Tuple t : r1Max.getByFirst(e1)){
                 Event e3 = t.getSecond();
                 if(e3.getCId() != e1.getCId() && e3.getCId() != e2.getCId() && transitiveReachabilityMap.get(e3).contains(e2)){
-                    BooleanFormula tVar = minSet.contains(t) ? this.getSMTVar(t, ctx) : r1.getSMTVar(t, ctx);
-                    orClause = bmgr.or(orClause, bmgr.and(tVar, this.getSMTVar(e3, e2, ctx)));
+                    BooleanFormula tVar = encoder.edge(minSet.contains(t) ? this : r1, t);
+                    orClause = bmgr.or(orClause, bmgr.and(tVar, encoder.edge(this, e3, e2)));
                 }
             }
 
             if(Relation.PostFixApprox) {
-                enc = bmgr.and(enc, bmgr.implication(orClause, this.getSMTVar(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.implication(orClause, edge));
             } else {
-                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), orClause));
+                enc = bmgr.and(enc, bmgr.equivalence(edge, orClause));
             }
         }
 

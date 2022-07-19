@@ -66,8 +66,8 @@ public class RelInverse extends UnaryRelation {
         ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
 		TupleSet minSet = getMinTupleSet();
         for(Tuple tuple : encodeTupleSet){
-            BooleanFormula opt = minSet.contains(tuple) ? execution(tuple.getFirst(), tuple.getSecond(), exec, ctx) : r1.getSMTVar(tuple.getInverse(), ctx);
-            enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), opt));
+            BooleanFormula opt = minSet.contains(tuple) ? execution(tuple.getFirst(), tuple.getSecond(), exec, ctx) : encoder.edge(r1, tuple.getInverse());
+            enc = bmgr.and(enc, bmgr.equivalence(encoder.edge(this, tuple), opt));
         }
         return enc;
     }

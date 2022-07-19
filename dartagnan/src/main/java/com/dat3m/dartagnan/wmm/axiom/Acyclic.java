@@ -164,7 +164,7 @@ public class Acyclic extends Axiom {
                     // If an edge is guessed to be in a cycle, the edge must belong to relation, 
                     // and both events must also be guessed to be on the cycle.
                     enc = bmgr.and(enc, bmgr.implication(getSMTCycleVar(tuple, ctx),
-                    		bmgr.and(rel.getSMTVar(tuple, ctx), cycleVar(rel.getName(), e1, ctx), cycleVar(rel.getName(), e2, ctx))));
+                    		bmgr.and(encoder.edge(rel, tuple), cycleVar(rel.getName(), e1, ctx), cycleVar(rel.getName(), e2, ctx))));
                 }
             }
             // A cycle exists if there is an event in the cycle.
@@ -173,7 +173,7 @@ public class Acyclic extends Axiom {
             for(Tuple tuple : encodeTupleSet){
                 Event e1 = tuple.getFirst();
                 Event e2 = tuple.getSecond();
-    			enc = bmgr.and(enc, bmgr.implication(rel.getSMTVar(tuple, ctx), 
+    			enc = bmgr.and(enc, bmgr.implication(encoder.edge(rel, tuple),
     									imgr.lessThan(
     											Utils.intVar(rel.getName(), e1, ctx), 
     											Utils.intVar(rel.getName(), e2, ctx))));

@@ -115,7 +115,7 @@ public class RelFencerel extends StaticRelation {
                         .map(Event::exec).reduce(bmgr.makeFalse(), bmgr::or);
             }
 
-            BooleanFormula rel = this.getSMTVar(tuple, ctx);
+            BooleanFormula rel = encoder.edge(this, tuple);
             enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(execution(tuple.getFirst(), tuple.getSecond(), exec, ctx), orClause)));
         }
 

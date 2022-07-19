@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.utils.symmetry;
 
 import com.dat3m.dartagnan.encoding.SymmetryEncoder;
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
@@ -201,6 +202,7 @@ public class CoSymmetryBreaking {
                     "Make sure that <initialize> gets called before encoding.");
             return enc;
         }
+        WmmEncoder encoder = task.getWmmEncoder();
         List<Thread> symmThreads = info.threads;
 
         // ============= Construct rows =============
@@ -218,7 +220,7 @@ public class CoSymmetryBreaking {
         if (info.hasMustEdges) {
             r1.add(info.writes.get(0).exec());
         }
-        r1.addAll(Lists.transform(r1Tuples, t -> co.getSMTVar(t, ctx)));
+        r1.addAll(Lists.transform(r1Tuples, t -> encoder.edge(co, t)));
 
         // Construct symmetric rows
         Thread rep = symmClass.getRepresentative();
@@ -230,7 +232,7 @@ public class CoSymmetryBreaking {
             if (info.hasMustEdges) {
                 r2.add(symm.map(info.writes.get(0), t2).exec());
             }
-            r2.addAll(Lists.transform(r2Tuples, t -> co.getSMTVar(t, ctx)));
+            r2.addAll(Lists.transform(r2Tuples, t -> encoder.edge(co, t)));
 
             final String id = "_" + rep.getId() + "_" + i;
             // NOTE: We want to have r1 >= r2 but lexLeader encodes r1 <= r2, so we swap r1 and r2.

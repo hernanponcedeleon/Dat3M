@@ -69,15 +69,15 @@ public class RelCrit extends StaticRelation {
                             BooleanFormula relation = bmgr.and(execution(lock, unlock, exec, ctx));
                             for(Event otherLock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_LOCK))){
                                 if(lock.getCId() < otherLock.getCId() && otherLock.getCId() < unlock.getCId()){
-                                    relation = bmgr.and(relation, bmgr.not(this.getSMTVar(otherLock, unlock, ctx)));
+                                    relation = bmgr.and(relation, bmgr.not(encoder.edge(this, otherLock, unlock)));
                                 }
                             }
                             for(Event otherUnlock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_UNLOCK))){
                                 if(lock.getCId() < otherUnlock.getCId() && otherUnlock.getCId() < unlock.getCId()){
-                                    relation = bmgr.and(relation, bmgr.not(this.getSMTVar(lock, otherUnlock, ctx)));
+                                    relation = bmgr.and(relation, bmgr.not(encoder.edge(this, lock, otherUnlock)));
                                 }
                             }
-                            enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), relation));
+                            enc = bmgr.and(enc, bmgr.equivalence(encoder.edge(this, tuple), relation));
                         }
                     }
                 }

@@ -120,12 +120,12 @@ public class RelComposition extends BinaryRelation {
                 for (Tuple t1 : r1Max.getByFirst(tuple.getFirst())) {
                     Tuple t2 = new Tuple(t1.getSecond(), tuple.getSecond());
                     if (r2Max.contains(t2)) {
-                        expr = bmgr.or(expr, bmgr.and(r1.getSMTVar(t1, ctx), r2.getSMTVar(t2, ctx)));
+                        expr = bmgr.or(expr, bmgr.and(encoder.edge(r1, t1), encoder.edge(r2, t2)));
                     }
                 }
             }
 
-            enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), expr));
+            enc = bmgr.and(enc, bmgr.equivalence(encoder.edge(this, tuple), expr));
         }
         return enc;
     }

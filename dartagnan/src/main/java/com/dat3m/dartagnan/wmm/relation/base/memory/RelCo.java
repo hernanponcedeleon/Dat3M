@@ -16,9 +16,6 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
@@ -27,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.CO_ANTISYMMETRY;
 import static com.dat3m.dartagnan.configuration.Property.LIVENESS;
 import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 import static com.dat3m.dartagnan.expression.utils.Utils.*;
@@ -35,39 +31,18 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
-@Options
 public class RelCo extends Relation {
 
 	private static final Logger logger = LogManager.getLogger(RelCo.class);
-
-    // =========================== Configurables ===========================
-
-	@Option(
-		name=CO_ANTISYMMETRY,
-		description="Encodes the antisymmetry of coherences explicitly.",
-		secure=true)
-	private boolean antisymmetry = false;
 
 	// =====================================================================
 
     public RelCo(){
         term = CO;
         forceDoEncode = true;
-    }
-
-    @Override
-    public void initializeEncoding(SolverContext ctx) {
-        super.initializeEncoding(ctx);
-        try {
-            task.getConfig().inject(this);
-            logger.info("{}: {}", CO_ANTISYMMETRY, antisymmetry);
-        } catch(InvalidConfigurationException e) {
-            logger.warn(e.getMessage());
-        }
     }
 
     @Override
@@ -178,7 +153,7 @@ public class RelCo extends Relation {
 
             for(Tuple t : maxTupleSet.getByFirst(w1)){
                 MemEvent w2 = (MemEvent)t.getSecond();
-                BooleanFormula relation = getSMTVar(t, ctx);
+                BooleanFormula relation = encoder.edge(this, t);
                 BooleanFormula execPair = execution(t.getFirst(), t.getSecond(), exec, ctx);
                 lastCo = bmgr.and(lastCo, bmgr.not(relation));
 
@@ -225,31 +200,6 @@ public class RelCo extends Relation {
             }
         }
         return enc;
-    }
-    
-    @Override
-    public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
-        if(!antisymmetry) {
-            return super.getSMTVar(edge, ctx);
-        }
-
-    	FormulaManager fmgr = ctx.getFormulaManager();
-		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-
-        MemEvent first = (MemEvent) edge.getFirst();
-        MemEvent second = (MemEvent) edge.getSecond();
-        // Doing the check at the java level seems to slightly improve  performance
-        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
-        return !getMaxTupleSet().contains(edge)
-            ? bmgr.makeFalse()
-            : first.getCId() <= second.getCId()
-            ? edge(getName(), first, second, ctx)
-            : bmgr.and(
-                execution(edge.getFirst(), edge.getSecond(), exec, ctx),
-                first.getAddress().equals(second.getAddress())
-                    ? bmgr.makeTrue()
-                    : generalEqual(first.getMemAddressExpr(), second.getMemAddressExpr(), ctx),
-                bmgr.not(getSMTVar(edge.getInverse(), ctx)));
     }
 
     public IntegerFormula getIntVar(Event write, SolverContext ctx) {

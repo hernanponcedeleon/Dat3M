@@ -1,19 +1,28 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.relation.base.local.RelAddrDirect;
+import com.dat3m.dartagnan.wmm.relation.base.local.RelIdd;
+import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -23,9 +32,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.CO_ANTISYMMETRY;
+import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
+import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.google.common.collect.Sets.difference;
 import static com.google.common.collect.Sets.intersection;
 
+@Options
 public class WmmEncoder {
 
     private static final Logger logger = LogManager.getLogger(WmmEncoder.class);
@@ -35,6 +48,14 @@ public class WmmEncoder {
     private final Context analysisContext;
     private final SolverContext ctx;
     private final Map<Relation, Set<Tuple>> tuples = new HashMap<>();
+
+    // =========================== Configurables ===========================
+
+    @Option(
+        name=CO_ANTISYMMETRY,
+        description="Encodes the antisymmetry of coherences explicitly.",
+        secure=true)
+    private boolean antisymmetry = false;
 
     // =====================================================================
 
@@ -48,6 +69,8 @@ public class WmmEncoder {
 
     public static WmmEncoder fromConfig(VerificationTask task, Context context, SolverContext ctx) throws InvalidConfigurationException {
         WmmEncoder encoder = new WmmEncoder(task, context, ctx);
+        task.getConfig().inject(encoder);
+        logger.info("{}: {}", CO_ANTISYMMETRY, encoder.antisymmetry);
         encoder.initializeEncoding();
         return encoder;
     }
@@ -66,6 +89,35 @@ public class WmmEncoder {
 
     public Set<Tuple> tupleSet(Relation relation) {
         return tuples.getOrDefault(relation, Set.of());
+    }
+
+    public BooleanFormula edge(Relation relation, Event first, Event second) {
+        return edge(relation, new Tuple(first, second));
+    }
+
+    public BooleanFormula edge(Relation relation, Tuple tuple) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        if(relation.getMaxTupleSet().contains(tuple)) {
+            return bmgr.makeFalse();
+        }
+        if(relation instanceof RelIdd || relation instanceof RelAddrDirect) {
+            return relation.getMinTupleSet().contains(tuple)
+                ? execution(tuple.getFirst(), tuple.getSecond(), analysisContext.get(ExecutionAnalysis.class), ctx)
+                : task.getProgramEncoder().dependencyEdge(tuple.getFirst(), tuple.getSecond());
+        }
+        if(antisymmetry && relation instanceof RelCo && tuple.getSecond().getCId() <= tuple.getFirst().getCId()) {
+            MemEvent first = (MemEvent) tuple.getFirst();
+            MemEvent second = (MemEvent) tuple.getSecond();
+            // Doing the check at the java level seems to slightly improve  performance
+            ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+            return bmgr.and(
+                execution(tuple.getFirst(), tuple.getSecond(), exec, ctx),
+                first.getAddress().equals(second.getAddress())
+                    ? bmgr.makeTrue()
+                    : generalEqual(first.getMemAddressExpr(), second.getMemAddressExpr(), ctx),
+                bmgr.not(Utils.edge(relation.getName(), tuple.getSecond(), tuple.getFirst(), ctx)));
+        }
+        return Utils.edge(relation.getName(), tuple.getFirst(), tuple.getSecond(), ctx);
     }
 
     /**

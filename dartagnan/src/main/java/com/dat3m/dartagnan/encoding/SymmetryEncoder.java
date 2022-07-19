@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
-import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -16,7 +15,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -36,6 +34,7 @@ public class SymmetryEncoder {
 
     private static final Logger logger = LogManager.getLogger(SymmetryEncoder.class);
 
+    private final WmmEncoder wmmEncoder;
     private final Wmm memoryModel;
     private final ThreadSymmetry symm;
     private final Relation rel;
@@ -54,11 +53,12 @@ public class SymmetryEncoder {
 
     // =====================================================================
 
-    private SymmetryEncoder(Wmm memoryModel, Context context, Configuration config, SolverContext solverContext) throws InvalidConfigurationException {
-        this.memoryModel = Preconditions.checkNotNull(memoryModel);
-        this.symm = context.requires(ThreadSymmetry.class);
-        config.inject(this);
-        ctx = solverContext;
+    private SymmetryEncoder(WmmEncoder wmm) throws InvalidConfigurationException {
+        wmmEncoder = wmm;
+        memoryModel = wmm.task().getMemoryModel();
+        symm = wmm.analysisContext().requires(ThreadSymmetry.class);
+        wmm.task().getConfig().inject(this);
+        ctx = wmm.solverContext();
 
         RelationRepository repo = memoryModel.getRelationRepository();
         if (symmBreakRelName.isEmpty()) {
@@ -75,8 +75,8 @@ public class SymmetryEncoder {
         }
     }
 
-    public static SymmetryEncoder fromConfig(Wmm memoryModel, Context context, Configuration config, SolverContext ctx) throws InvalidConfigurationException {
-        return new SymmetryEncoder(memoryModel, context, config, ctx);
+    public static SymmetryEncoder fromConfig(WmmEncoder wmmEncoder) throws InvalidConfigurationException {
+        return new SymmetryEncoder(Preconditions.checkNotNull(wmmEncoder));
     }
 
     public BooleanFormula encodeFullSymmetry() {
@@ -124,8 +124,8 @@ public class SymmetryEncoder {
             Function<Event, Event> p = symm.createTransposition(t1, t2);
             List<Tuple> r2Tuples = r1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
 
-            List<BooleanFormula> r1 = Lists.transform(r1Tuples, t -> rel.getSMTVar(t, ctx));
-            List<BooleanFormula> r2 = Lists.transform(r2Tuples, t -> rel.getSMTVar(t, ctx));
+            List<BooleanFormula> r1 = Lists.transform(r1Tuples, t -> wmmEncoder.edge(rel, t));
+            List<BooleanFormula> r2 = Lists.transform(r2Tuples, t -> wmmEncoder.edge(rel, t));
             final String id = "_" + rep.getId() + "_" + i;
             enc = bmgr.and(enc, encodeLexLeader(id, r2, r1, ctx)); // r1 >= r2
 

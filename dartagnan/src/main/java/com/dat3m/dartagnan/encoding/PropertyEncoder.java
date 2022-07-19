@@ -186,7 +186,7 @@ public class PropertyEncoder {
                 for (Load load : pair.loads) {
                     BooleanFormula coMaximalLoad = bmgr.makeFalse();
                     for (Tuple rfEdge : rf.getMaxTupleSet().getBySecond(load)) {
-                        coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(rf.getSMTVar(rfEdge, ctx), co.getLastCoVar(rfEdge.getFirst(), ctx)));
+                        coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(wmm.edge(rf, rfEdge), co.getLastCoVar(rfEdge.getFirst(), ctx)));
                     }
                     allCoMaximalLoad = bmgr.and(allCoMaximalLoad, coMaximalLoad);
                 }

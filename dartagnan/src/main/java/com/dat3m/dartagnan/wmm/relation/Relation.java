@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -18,8 +17,6 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 /**
  *
@@ -151,16 +148,6 @@ public abstract class Relation implements Dependent<Relation> {
 
     public BooleanFormula encode(Set<Tuple> encodeTupleSet, WmmEncoder encoder) {
         return encoder.solverContext().getFormulaManager().getBooleanFormulaManager().makeTrue();
-    }
-
-    public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
-        return !getMaxTupleSet().contains(edge) ?
-        		ctx.getFormulaManager().getBooleanFormulaManager().makeFalse() :
-                edge(getName(), edge.getFirst(), edge.getSecond(), ctx);
-    }
-
-    public final BooleanFormula getSMTVar(Event e1, Event e2, SolverContext ctx) {
-        return getSMTVar(new Tuple(e1, e2), ctx);
     }
 
     protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {

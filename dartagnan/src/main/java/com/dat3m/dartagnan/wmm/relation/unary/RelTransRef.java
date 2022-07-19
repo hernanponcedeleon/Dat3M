@@ -70,7 +70,7 @@ public class RelTransRef extends RelTrans {
 
         for(Tuple tuple : encodeTupleSet) {
             if(tuple.isLoop()) {
-                enc = bmgr.and(enc, bmgr.equivalence(tuple.getFirst().exec(), this.getSMTVar(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.equivalence(tuple.getFirst().exec(), encoder.edge(this, tuple)));
             }
         }
         return enc;

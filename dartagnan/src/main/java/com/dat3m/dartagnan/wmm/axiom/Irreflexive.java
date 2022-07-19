@@ -36,7 +36,7 @@ public class Irreflexive extends Axiom {
 		BooleanFormula enc = bmgr.makeTrue();
         for(Tuple tuple : encoder.tupleSet(rel)){
             if(tuple.isLoop()){
-                enc = bmgr.and(enc, bmgr.not(rel.getSMTVar(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.not(encoder.edge(rel, tuple)));
             }
         }
         return negated ? bmgr.not(enc) : enc;
