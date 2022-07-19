@@ -42,9 +42,9 @@ public class ProgramParser {
         	case "c":
         	case "i":
 				File CFile = path.equals("") ?
-						// This if for the case where the user fully type the program instead of loading it
+						// This is for the case where the user fully typed the program instead of loading it
 						File.createTempFile("dat3m", ".c") :
-						// This if for the case where the user loaded the program 						
+						// This is for the case where the user loaded the program 						
 						new File(path, "dat3m.c");
 				CFile.deleteOnExit();
         		String name = CFile.getName().substring(0, CFile.getName().lastIndexOf('.'));
