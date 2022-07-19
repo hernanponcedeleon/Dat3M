@@ -22,7 +22,7 @@ public final class Tag {
     public static final String REG_READER   	= "rR";
     public static final String ASSERTION    	= "ASS";
     public static final String BOUND   			= "BOUND";
-    public static final String EARLYTERMINATION	= "BOUND";
+    public static final String EARLYTERMINATION	= "EARLYTERMINATION";
     public static final String SPINLOOP   		= "SPINLOOP";
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
     public static final String NOOPT   			= "NOOPT";
