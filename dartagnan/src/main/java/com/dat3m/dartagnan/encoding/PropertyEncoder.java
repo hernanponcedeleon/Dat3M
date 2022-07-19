@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
+import com.dat3m.dartagnan.program.filter.FilterUnion;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
@@ -200,7 +201,8 @@ public class PropertyEncoder implements Encoder {
         BooleanFormula atLeastOneStuck = bmgr.makeFalse();
         for (Thread t : program.getThreads()) {
             BooleanFormula isStuck = isStuckMap.getOrDefault(t, bmgr.makeFalse());
-            BooleanFormula isDone = t.getCache().getEvents(FilterBasic.get(Tag.BOUND)).stream()
+            BooleanFormula isDone = t.getCache().getEvents(FilterUnion
+            		.get(FilterBasic.get(Tag.BOUND), FilterBasic.get(Tag.EARLYTERMINATION))).stream()
                     .map(e -> bmgr.not(e.exec())).reduce(bmgr.makeTrue(), bmgr::and);
 
             atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
