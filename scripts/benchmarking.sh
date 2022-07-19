@@ -59,11 +59,6 @@ for TARGET in ${TARGETS[@]}; do
             MOPT="caat"
         fi
 
-        ## Removed old log files
-        if test -f "$DAT3M_OUTPUT/$TARGET-$METHOD.log"; then
-            rm $DAT3M_OUTPUT/$TARGET-$METHOD.log
-        fi
-        
         ## Start CSV files
         echo benchmark, result, time > $DAT3M_OUTPUT/csv/$TARGET-$METHOD.csv
 
@@ -74,9 +69,6 @@ for TARGET in ${TARGETS[@]}; do
             end=`python3 -c 'import time; print(int(time.time() * 1000))'`
             TIME=$((end-start))
             
-            ## Save log
-            echo $OUTPUT >> $DAT3M_OUTPUT/$TARGET-$METHOD.log
-
             if [[ $OUTPUT == *"$DAT3M_FINISHED"* ]];
             then
                 if [[ $OUTPUT == *"$DAT3M_FAIL"* ]];
@@ -99,10 +91,6 @@ for TARGET in ${TARGETS[@]}; do
     ## Run GenMC
     if [[ "$TARGET" == "C11" ]] || [[ "$TARGET" == "IMM" ]]
     then
-        ## Removed old log files
-        if test -f "$DAT3M_OUTPUT/$TARGET-genmc.log"; then
-            rm $DAT3M_OUTPUT/GenMC-$TARGET.log
-        fi
 
         ## Start CSV files
         echo benchmark, result, time > $DAT3M_OUTPUT/csv/$TARGET-genmc.csv
@@ -112,9 +100,6 @@ for TARGET in ${TARGETS[@]}; do
             OUTPUT=$(timeout $TIMEOUT genmc $WMM -unroll=2 $C_PATH$BENCHMARK.c)
             end=`python3 -c 'import time; print(int(time.time() * 1000))'`
             TIME=$((end-start))
-
-            ## Save log
-            echo $OUTPUT >> $DAT3M_OUTPUT/$TARGET-genmc.log
 
             if [[ $OUTPUT == *"$GENMC_PASS"* ]];
             then
@@ -138,24 +123,17 @@ for TARGET in ${TARGETS[@]}; do
     ## Run Nidhugg
     if [[ "$TARGET" == "TSO" ]]
     then
-        ## Removed old log files
-        if test -f "$DAT3M_OUTPUT/$TARGET-nidhugg.log"; then
-            rm $DAT3M_OUTPUT/$TARGET-nidhugg.log
-        fi
 
         ## Start CSV files
         echo benchmark, result, time > $DAT3M_OUTPUT/csv/$TARGET-nidhugg.csv
 
         for BENCHMARK in ${BENCHMARKS[@]}; do
-            clang -emit-llvm -S -o $C_PATH$BENCHMARK.ll $C_PATH$BENCHMARK.c >> $DAT3M_OUTPUT/$TARGET-nidhugg.log
-            nidhugg --unroll=2 --transform=$C_PATH$BENCHMARK-u.ll $C_PATH$BENCHMARK.ll >> $DAT3M_OUTPUT/$TARGET-nidhugg.log
+            clang -emit-llvm -S -o $C_PATH$BENCHMARK.ll $C_PATH$BENCHMARK.c
+            nidhugg --unroll=2 --transform=$C_PATH$BENCHMARK-u.ll $C_PATH$BENCHMARK.ll
             start=`python3 -c 'import time; print(int(time.time() * 1000))'`
             OUTPUT=$(timeout $TIMEOUT nidhugg -tso $C_PATH$BENCHMARK-u.ll)
             end=`python3 -c 'import time; print(int(time.time() * 1000))'`
             TIME=$((end-start))
-
-            ## Save log
-            echo $OUTPUT >> $DAT3M_OUTPUT/$TARGET-nidhugg.log
 
             if [[ $OUTPUT == *"$GENMC_PASS"* ]];
             then
