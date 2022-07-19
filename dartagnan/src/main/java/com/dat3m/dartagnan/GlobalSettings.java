@@ -32,13 +32,10 @@ public class GlobalSettings {
 
     // --------------------
 
-    // === Recursion depth ===
-    public static final int MAX_RECURSION_DEPTH = 200;
-
     public static void LogGlobalSettings() {
         // General settings
+    	logger.info("ARCH_PRECISION: " + ARCH_PRECISION);
     	logger.info("ATOMIC_AS_LOCK: " + ATOMIC_AS_LOCK);
-    	logger.info("MAX_RECURSION_DEPTH: " + MAX_RECURSION_DEPTH);
 
     	// Refinement settings
         logger.info("REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES: " + REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES);

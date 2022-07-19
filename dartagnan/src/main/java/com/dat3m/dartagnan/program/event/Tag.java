@@ -135,7 +135,6 @@ public final class Tag {
 
         public static final String NORETURN           = "Noreturn";
         public static final String RCU_SYNC           = "Sync-rcu";
-        public static final String SRCU_SYNC          = "Sync-srcu";
         public static final String RCU_LOCK           = "Rcu-lock";
         public static final String RCU_UNLOCK         = "Rcu-unlock";
         public static final String MO_MB              = "Mb";
@@ -162,6 +161,27 @@ public final class Tag {
 
         public static String storeMO(String mo){
             return mo.equals(MO_RELEASE) ? MO_RELEASE : MO_ONCE;
+        }
+
+        // NOTE: The order below needs to be in sync with /include/lkmm.h 
+        public static String intToMo(int i) {
+            switch(i) {
+                case 0: return MO_RELAXED;
+                case 1: return MO_ONCE;
+                case 2: return MO_ACQUIRE;
+                case 3: return MO_RELEASE;
+                case 4: return MO_MB;
+                case 5: return MO_WMB;
+                case 6: return MO_RMB;
+                case 7: return RCU_LOCK;
+                case 8: return RCU_UNLOCK;
+                case 9: return RCU_SYNC;
+                case 10: return BEFORE_ATOMIC;
+                case 11: return AFTER_ATOMIC;
+                case 12: return AFTER_SPINLOCK;
+                default:
+                    throw new UnsupportedOperationException("The memory order is not recognized");
+            }
         }
 
         public static String toText(String mo){

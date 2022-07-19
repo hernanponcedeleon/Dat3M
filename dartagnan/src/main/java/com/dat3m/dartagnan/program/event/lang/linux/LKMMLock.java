@@ -12,6 +12,10 @@ public class LKMMLock extends MemEvent {
 		super(lock, null);
 	}
 
+    protected LKMMLock(LKMMLock other){
+        super(other);
+    }
+
 	public IExpr getLock() {
 		return address;
 	}
@@ -20,6 +24,14 @@ public class LKMMLock extends MemEvent {
 	public String toString() {
 		return String.format("spin_lock(*%s)", address);
 	}
+
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public LKMMLock getCopy(){
+        return new LKMMLock(this);
+    }
 
 	// Visitor
 	// -----------------------------------------------------------------------------------------------------------------

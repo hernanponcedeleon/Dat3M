@@ -266,6 +266,10 @@ public class EventFactory {
         public static LoopEnd newLoopEnd() {
             return new LoopEnd();
         }
+
+        public static LoopBound newLoopBound(int bound) {
+        	return new LoopBound(bound);
+        }
     }
 
     // =============================================================================================
