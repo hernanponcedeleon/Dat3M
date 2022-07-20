@@ -2,15 +2,19 @@ package com.dat3m.dartagnan.wmm.analysis;
 
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class RelationAnalysis {
 
@@ -49,6 +53,12 @@ public class RelationAnalysis {
         for (Axiom ax : memoryModel.getAxioms()) {
             ax.getRelation().updateRecursiveGroupId(ax.getRelation().getRecursiveGroupId());
         }
+
+        DependencyGraph<Relation> dep = memoryModel.getRelationDependencyGraph();
+        checkArgument(memoryModel.getRelationRepository().getRelations().stream()
+                        .filter(RelMinus.class::isInstance)
+                        .noneMatch(r -> dep.get(r.getSecond()).getDependencies().contains(dep.get(r))),
+                "Unstratified model.");
 
         // ------------------------------------------------
         //ensure that the repository contains all base relations
