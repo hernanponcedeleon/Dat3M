@@ -31,10 +31,10 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
         IExpr address = e.getAddress();
         String mo = e.getMo();
 		
-        Load load = newRMWLoad(resultRegister, address, Tag.RISCV.extractLoadMo(mo));
+        Load load = newRMWLoad(resultRegister, address, mo);
 		load.addFilters(RISCV.AMO);
 		
-        RMWStore store = newRMWStore(load, address, new IExprBin(resultRegister, e.getOp(), e.getOperand()), Tag.RISCV.extractStoreMo(mo));
+        RMWStore store = newRMWStore(load, address, new IExprBin(resultRegister, e.getOp(), e.getOperand()), mo);
         store.addFilters(RISCV.AMO);
         
 		return eventSequence(
@@ -49,10 +49,10 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
         IExpr address = e.getAddress();
         String mo = e.getMo();
 		
-        Load load = newRMWLoad(resultRegister, address, Tag.RISCV.extractLoadMo(mo));
+        Load load = newRMWLoad(resultRegister, address, mo);
 		load.addFilters(RISCV.AMO);
 		
-        RMWStore store = newRMWStore(load, address, e.getValue(), Tag.RISCV.extractStoreMo(mo));
+        RMWStore store = newRMWStore(load, address, e.getValue(), mo);
         store.addFilters(RISCV.AMO);
         
 		return eventSequence(
