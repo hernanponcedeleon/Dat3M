@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 /**
  *
@@ -28,21 +27,5 @@ public class RelInverse extends UnaryRelation {
     @Override
     public <T> T accept(Visitor<? extends T> v) {
         return v.visitInverse(this, r1);
-    }
-
-    @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = r1.getMinTupleSet().inverse();
-        }
-        return minTupleSet;
-    }
-
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            maxTupleSet = r1.getMaxTupleSet().inverse();
-        }
-        return maxTupleSet;
     }
 }

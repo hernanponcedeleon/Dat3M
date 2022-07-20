@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.Context;
@@ -12,8 +11,6 @@ import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -21,7 +18,6 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  *
@@ -35,9 +31,6 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
 
     protected VerificationTask task;
     protected Context analysisContext;
-
-    protected TupleSet minTupleSet = null;
-    protected TupleSet maxTupleSet = null;
 
     public Relation() { }
 
@@ -64,8 +57,6 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
     public void configure(Configuration config) throws InvalidConfigurationException { }
     // Due to being an encoder
     public void initializeEncoding(SolverContext ctx) {
-    	Preconditions.checkState(this.maxTupleSet != null && this.minTupleSet != null,
-    			String.format("No available relation data to encode %s. Perform RelationAnalysis before encoding.", this));
     }
 
     // TODO: We misuse <task> as data object and analysis information object.
@@ -73,20 +64,6 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
     public void initializeRelationAnalysis(VerificationTask task, Context context) {
         this.task = task;
         this.analysisContext = context;
-        this.maxTupleSet = null;
-        this.minTupleSet = null;
-    }
-
-    public abstract TupleSet getMinTupleSet();
-
-    public abstract TupleSet getMaxTupleSet();
-
-    public TupleSet getMinTupleSetRecursive(){
-        return getMinTupleSet();
-    }
-
-    public TupleSet getMaxTupleSetRecursive(){
-        return getMaxTupleSet();
     }
 
     public String getName() {
@@ -150,11 +127,6 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
 
     public BooleanFormula getSMTVar(Tuple edge, EncodingContext c) {
         return c.edgeVariable(getName(), edge.getFirst(), edge.getSecond());
-    }
-
-    protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {
-        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
-        tupleSet.removeIf(t -> exec.areMutuallyExclusive(t.getFirst(), t.getSecond()));
     }
 
     // ========================== Utility methods =========================

@@ -1,13 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
-import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
-
-import java.util.Map;
-import java.util.Set;
 
 /**
  *
@@ -32,41 +25,5 @@ public class RelTrans extends UnaryRelation {
     @Override
     public <T> T accept(Visitor<? extends T> v) {
         return v.visitTransitiveClosure(this, r1);
-    }
-
-    @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            //TODO: Make sure this is correct and efficient
-            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-            minTupleSet = new TupleSet(r1.getMinTupleSet());
-            boolean changed;
-            int size = minTupleSet.size();
-            do {
-                minTupleSet.addAll(minTupleSet.postComposition(r1.getMinTupleSet(),
-                        (t1, t2) -> exec.isImplied(t1.getFirst(), t1.getSecond())
-                                || exec.isImplied(t2.getSecond(), t1.getSecond())));
-                changed = minTupleSet.size() != size;
-                size = minTupleSet.size();
-            } while (changed);
-            removeMutuallyExclusiveTuples(minTupleSet);
-        }
-        return minTupleSet;
-    }
-
-
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            Map<Event,Set<Event>> transitiveReachabilityMap = r1.getMaxTupleSet().transMap();
-            maxTupleSet = new TupleSet();
-            for(Event e1 : transitiveReachabilityMap.keySet()){
-                for(Event e2 : transitiveReachabilityMap.get(e1)){
-                    maxTupleSet.add(new Tuple(e1, e2));
-                }
-            }
-            removeMutuallyExclusiveTuples(maxTupleSet);
-        }
-        return maxTupleSet;
     }
 }

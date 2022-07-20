@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -36,11 +37,13 @@ public class Acyclic extends Axiom {
 
     @Override
     protected Set<Tuple> getEncodeTupleSet(Context analysisContext) {
+        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
+        RelationAnalysis ra = analysisContext.get(RelationAnalysis.class);
         logger.info("Computing encodeTupleSet for " + this);
         // ====== Construct [Event -> Successor] mapping ======
         Map<Event, Collection<Event>> succMap = new HashMap<>();
-        TupleSet relMaxTuple = rel.getMaxTupleSet();
-        for (Tuple t : relMaxTuple) {
+        final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
+        for (Tuple t : k.getMaySet()) {
             succMap.computeIfAbsent(t.getFirst(), key -> new ArrayList<>()).add(t.getSecond());
         }
 
@@ -51,7 +54,7 @@ public class Acyclic extends Axiom {
             for (DependencyGraph<Event>.Node node1 : scc) {
                 for (DependencyGraph<Event>.Node node2 : scc) {
                     Tuple t = new Tuple(node1.getContent(), node2.getContent());
-                    if (relMaxTuple.contains(t)) {
+                    if (k.getMaySet().contains(t)) {
                         result.add(t);
                     }
                 }
@@ -60,13 +63,13 @@ public class Acyclic extends Axiom {
 
         logger.info("encodeTupleSet size " + result.size());
         if (GlobalSettings.REDUCE_ACYCLICITY_ENCODE_SETS) {
-            reduceWithMinSets(result);
+            reduceWithMinSets(result, exec, ra);
             logger.info("reduced encodeTupleSet size " + result.size());
         }
         return result;
     }
 
-    private void reduceWithMinSets(TupleSet encodeSet) {
+    private void reduceWithMinSets(TupleSet encodeSet, ExecutionAnalysis exec, RelationAnalysis ra) {
         /*
             ASSUMPTION: MinSet is acyclic!
             IDEA:
@@ -85,8 +88,7 @@ public class Acyclic extends Axiom {
                       and b is implied by either a or c.
                     - It is possible to reduce must(rel) but that may give a less precise result.
          */
-        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-        TupleSet minSet = rel.getMinTupleSet();
+        final TupleSet minSet = ra.getKnowledge(rel).getMustSet();
 
         // (1) Approximate transitive closure of minSet (only gets computed when crossEdges are available)
         List<Tuple> crossEdges = minSet.stream()
@@ -194,7 +196,8 @@ public class Acyclic extends Axiom {
         // We use a vertex-elimination graph based encoding.
         final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-        final ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+        final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
+        final RelationAnalysis ra = context.getAnalysisContext().requires(RelationAnalysis.class);
         final Relation rel = this.rel;
 
         // Build original graph G
@@ -266,7 +269,7 @@ public class Acyclic extends Axiom {
         }
 
         // --- Create encoding ---
-        final Set<Tuple> minSet = rel.getMinTupleSet();
+        final Set<Tuple> minSet = ra.getKnowledge(rel).getMustSet();
         BooleanFormula enc = bmgr.makeTrue();
         final EncodingContext.EdgeEncoder edge = context.edge(rel);
         // Basic lifting

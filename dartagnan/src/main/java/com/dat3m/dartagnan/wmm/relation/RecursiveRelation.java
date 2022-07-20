@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 /**
  *
@@ -48,41 +47,5 @@ public class RecursiveRelation extends Relation {
     @Override
     public <T> T accept(Visitor<? extends T> v) {
         return v.visitRecursive(this, r1);
-    }
-
-    @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-        }
-        return minTupleSet;
-    }
-
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-        }
-        return maxTupleSet;
-    }
-
-    @Override
-    public TupleSet getMinTupleSetRecursive(){
-        if(doRecurse){
-            doRecurse = false;
-            minTupleSet = r1.getMinTupleSetRecursive();
-            return minTupleSet;
-        }
-        return getMinTupleSet();
-    }
-
-    @Override
-    public TupleSet getMaxTupleSetRecursive(){
-        if(doRecurse){
-            doRecurse = false;
-            maxTupleSet = r1.getMaxTupleSetRecursive();
-            return maxTupleSet;
-        }
-        return getMaxTupleSet();
     }
 }

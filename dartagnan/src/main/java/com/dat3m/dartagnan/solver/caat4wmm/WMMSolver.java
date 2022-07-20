@@ -32,7 +32,7 @@ public class WMMSolver {
 
     private WMMSolver(VerificationTask task, Context analysisContext, Set<Relation> cutRelations, ExecutionModel m) {
         analysisContext.requires(RelationAnalysis.class);
-        this.executionGraph = new ExecutionGraph(task, cutRelations, true);
+        this.executionGraph = new ExecutionGraph(task, analysisContext, cutRelations, true);
         this.executionModel = m;
         this.reasoner = new CoreReasoner(task, analysisContext, executionGraph);
         this.solver = CAATSolver.create();

@@ -12,9 +12,11 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.*;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -63,6 +65,7 @@ public class ExecutionGraph {
     // assigned during construction.
 
     private final VerificationTask verificationTask;
+    private final RelationAnalysis ra;
     private final BiMap<Relation, RelationGraph> relationGraphMap;
     private final BiMap<FilterAbstract, SetPredicate> filterSetMap;
     private final BiMap<Axiom, Constraint> constraintMap;
@@ -75,8 +78,9 @@ public class ExecutionGraph {
 
     // ============= Construction & Init ===============
 
-    public ExecutionGraph(VerificationTask verificationTask, Set<Relation> cutRelations, boolean createOnlyAxiomRelevantGraphs) {
+    public ExecutionGraph(VerificationTask verificationTask, Context analysisContext, Set<Relation> cutRelations, boolean createOnlyAxiomRelevantGraphs) {
         this.verificationTask = verificationTask;
+        ra = analysisContext.requires(RelationAnalysis.class);
         relationGraphMap = HashBiMap.create();
         filterSetMap = HashBiMap.create();
         constraintMap = HashBiMap.create();
@@ -294,7 +298,7 @@ public class ExecutionGraph {
                 graph = new EmptyGraph();
             } else {
                 // This is a fallback for all unimplemented static graphs
-                graph = new StaticDefaultWMMGraph(rel);
+                graph = new StaticDefaultWMMGraph(rel, ra);
             }
         } else {
             throw new UnsupportedOperationException(relClass.toString() + " has no associated graph yet.");

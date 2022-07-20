@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -29,11 +30,13 @@ public class CoreReasoner {
     private final ExecutionGraph executionGraph;
     private final Wmm memoryModel;
     private final ExecutionAnalysis exec;
+    private final RelationAnalysis ra;
 
     public CoreReasoner(VerificationTask task, Context analysisContext, ExecutionGraph executionGraph) {
         this.executionGraph = executionGraph;
         this.memoryModel = task.getMemoryModel();
         this.exec = analysisContext.requires(ExecutionAnalysis.class);
+        this.ra = analysisContext.requires(RelationAnalysis.class);
     }
 
 
@@ -56,10 +59,10 @@ public class CoreReasoner {
                 Tuple tuple = new Tuple(e1, e2);
                 Relation rel = memoryModel.getRelation(lit.getName());
 
-                if (lit.isPositive() && rel.getMinTupleSet().contains(tuple)) {
+                if (lit.isPositive() && ra.getKnowledge(rel).getMustSet().contains(tuple)) {
                     // Statically present edges
                     addExecReason(tuple, coreReason);
-                } else if (lit.isNegative() && !rel.getMaxTupleSet().contains(tuple)) {
+                } else if (lit.isNegative() && !ra.getKnowledge(rel).getMaySet().contains(tuple)) {
                     // Statically absent edges
                 } else {
                     if (rel.getName().equals(RF) || rel.getName().equals(CO)

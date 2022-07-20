@@ -1,12 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
-import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
-
-import java.util.List;
 
 public class RelCartesian extends StaticRelation {
     private final FilterAbstract filter1;
@@ -40,23 +34,5 @@ public class RelCartesian extends StaticRelation {
     @Override
     public <T> T accept(Visitor<? extends T> v) {
         return v.visitProduct(this, filter1, filter2);
-    }
-
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-            List<Event> l1 = task.getProgram().getCache().getEvents(filter1);
-            List<Event> l2 = task.getProgram().getCache().getEvents(filter2);
-            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-            for(Event e1 : l1){
-                for(Event e2 : l2){
-                    if (!exec.areMutuallyExclusive(e1, e2)) {
-                        maxTupleSet.add(new Tuple(e1, e2));
-                    }
-                }
-            }
-        }
-        return maxTupleSet;
     }
 }

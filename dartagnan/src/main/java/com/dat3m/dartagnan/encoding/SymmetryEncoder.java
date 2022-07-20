@@ -39,6 +39,7 @@ public class SymmetryEncoder implements Encoder {
     private final EncodingContext context;
     private final List<Axiom> axioms;
     private final ThreadSymmetry symm;
+    private final RelationAnalysis ra;
 
     @Option(name = BREAK_SYMMETRY_ON,
             description = "The target to break symmetry on. Allowed options are:\n" +
@@ -60,7 +61,7 @@ public class SymmetryEncoder implements Encoder {
         context = c;
         axioms = List.copyOf(m.getAxioms());
         symm = c.getAnalysisContext().requires(ThreadSymmetry.class);
-        a.requires(RelationAnalysis.class);
+        ra = a.requires(RelationAnalysis.class);
         config.inject(this);
 
         if (symmBreakTarget.isEmpty()) {
@@ -100,7 +101,7 @@ public class SymmetryEncoder implements Encoder {
                             " Symmetry breaking was disabled.", symmBreakTarget);
                     return bmgr.makeTrue();
                 }
-                maySet = rel.getMaxTupleSet();
+                maySet = ra.getKnowledge(rel).getMaySet();
                 edgeEncoder = context.edge(rel);
         }
         return symm.getNonTrivialClasses().stream()
@@ -172,12 +173,12 @@ public class SymmetryEncoder implements Encoder {
         final Map<Event, Integer> combOutDegree = new HashMap<>(outEvents.size());
         for (Event e : inEvents) {
             int syncDeg = axioms.stream()
-                    .mapToInt(ax -> ax.getRelation().getMinTupleSet().getBySecond(e).size() + 1).max().orElse(0);
+                    .mapToInt(ax -> ra.getKnowledge(ax.getRelation()).getMustSet().getBySecond(e).size() + 1).max().orElse(0);
             combInDegree.put(e, syncDeg);
         }
         for (Event e : outEvents) {
             int syncDec = axioms.stream()
-                    .mapToInt(ax -> ax.getRelation().getMinTupleSet().getByFirst(e).size() + 1).max().orElse(0);
+                    .mapToInt(ax -> ra.getKnowledge(ax.getRelation()).getMustSet().getByFirst(e).size() + 1).max().orElse(0);
             combOutDegree.put(e, syncDec);
         }
 

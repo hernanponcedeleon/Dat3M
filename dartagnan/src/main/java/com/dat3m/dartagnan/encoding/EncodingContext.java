@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.apache.logging.log4j.LogManager;
@@ -38,6 +39,7 @@ public final class EncodingContext {
     private final Context analysisContext;
     private final ExecutionAnalysis executionAnalysis;
     private final AliasAnalysis aliasAnalysis;
+    private final RelationAnalysis relationAnalysis;
     private final SolverContext solverContext;
     private final FormulaManager formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
@@ -65,6 +67,7 @@ public final class EncodingContext {
         a.requires(BranchEquivalence.class);
         executionAnalysis = a.requires(ExecutionAnalysis.class);
         aliasAnalysis = a.requires(AliasAnalysis.class);
+        relationAnalysis = a.requires(RelationAnalysis.class);
         solverContext = checkNotNull(s);
         formulaManager = s.getFormulaManager();
         booleanFormulaManager = formulaManager.getBooleanFormulaManager();
@@ -211,11 +214,12 @@ public final class EncodingContext {
     }
 
     public EdgeEncoder edge(Relation relation) {
+        RelationAnalysis.Knowledge k = relationAnalysis.getKnowledge(relation);
         return tuple -> {
-            if (!relation.getMaxTupleSet().contains(tuple)) {
+            if (!k.getMaySet().contains(tuple)) {
                 return booleanFormulaManager.makeFalse();
             }
-            if (relation.getMinTupleSet().contains(tuple)) {
+            if (k.getMustSet().contains(tuple)) {
                 return execution(tuple.getFirst(), tuple.getSecond());
             }
             return relation.getSMTVar(tuple, this);

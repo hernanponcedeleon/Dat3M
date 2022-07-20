@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.verification.model.EventData;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.sosy_lab.java_smt.api.Model;
@@ -34,9 +35,10 @@ public class DynamicDefaultWMMGraph extends MaterializedWMMGraph {
         EncodingContext ctx = model.getContext();
         Relation relation = ctx.getTask().getMemoryModel().getRelation(name);
         EncodingContext.EdgeEncoder edge = ctx.edge(relation);
-
-        if (relation.getMaxTupleSet().size() < domain.size() * domain.size()) {
-            relation.getMaxTupleSet()
+        RelationAnalysis ra = ctx.getAnalysisContext().get(RelationAnalysis.class);
+        RelationAnalysis.Knowledge k = ra.getKnowledge(relation);
+        if (k.getMaySet().size() < domain.size() * domain.size()) {
+            k.getMaySet()
                     .stream().map(t -> this.getEdgeFromTuple(t, m, edge)).filter(Objects::nonNull)
                     .forEach(simpleGraph::add);
         } else {

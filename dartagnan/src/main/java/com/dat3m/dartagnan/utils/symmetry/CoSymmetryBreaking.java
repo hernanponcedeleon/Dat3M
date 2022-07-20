@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
@@ -76,6 +77,7 @@ public class CoSymmetryBreaking {
     private final VerificationTask task;
     private final ThreadSymmetry symm;
     private final AliasAnalysis alias;
+    private final RelationAnalysis ra;
     private final Relation co;
 
     private final Map<EquivalenceClass<Thread>, Info> infoMap;
@@ -92,6 +94,7 @@ public class CoSymmetryBreaking {
         this.task = context.getTask();
         this.symm = context.getAnalysisContext().requires(ThreadSymmetry.class);
         this.alias = context.getAnalysisContext().requires(AliasAnalysis.class);
+        this.ra = context.getAnalysisContext().requires(RelationAnalysis.class);
         this.co = task.getMemoryModel().getRelation(RelationNameRepository.CO);
         infoMap = new HashMap<>();
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
@@ -123,7 +126,7 @@ public class CoSymmetryBreaking {
         for (Store w : writes) {
             int syncDeg = 0;
             for (Axiom ax : axioms) {
-                TupleSet minSet = ax.getRelation().getMinTupleSet();
+                final TupleSet minSet = ra.getKnowledge(ax.getRelation()).getMustSet();
                 syncDeg = Math.max(syncDeg, (1 + minSet.getBySecond(w).size()) * (1 + minSet.getByFirst(w).size()));
             }
             syncDegreeMap.put(w, syncDeg);
