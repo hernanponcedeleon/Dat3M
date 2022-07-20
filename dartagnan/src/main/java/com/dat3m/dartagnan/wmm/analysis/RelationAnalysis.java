@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
+import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -22,6 +23,24 @@ public class RelationAnalysis {
 
     public static RelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
         return new RelationAnalysis(task, context, config);
+    }
+
+    /**
+     * Fetches results of this analysis.
+     * @param relation Some element in the associated task's memory model.
+     * @return Event pairs that could participate in {@code relation} in some execution.
+     */
+    public TupleSet may(Relation relation) {
+        return relation.getMaxTupleSet();
+    }
+
+    /**
+     * Fetches results of this analysis.
+     * @param relation Some element in the associated task's memory model.
+     * @return Event pairs that cannot be missing in {@code relation} in any execution that executes both events.
+     */
+    public TupleSet must(Relation relation) {
+        return relation.getMinTupleSet();
     }
 
     private void run(VerificationTask task, Context context) {
