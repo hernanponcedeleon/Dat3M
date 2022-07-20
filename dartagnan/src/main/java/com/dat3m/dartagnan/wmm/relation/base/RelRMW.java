@@ -12,8 +12,6 @@ import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterIntersection;
 import com.dat3m.dartagnan.program.filter.FilterUnion;
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -53,9 +51,6 @@ public class RelRMW extends StaticRelation {
             FilterBasic.get(Tag.WRITE)
     );
 
-    // Set without exclusive events
-    private TupleSet baseMaxTupleSet;
-
     public RelRMW(){
         term = RMW;
         forceDoEncode = true;
@@ -63,16 +58,9 @@ public class RelRMW extends StaticRelation {
 
 
     @Override
-    public void initializeRelationAnalysis(VerificationTask task, Context context) {
-        super.initializeRelationAnalysis(task, context);
-        this.baseMaxTupleSet = null;
-    }
-
-    @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             getMaxTupleSet();
-            minTupleSet = baseMaxTupleSet;
 
         }
         return minTupleSet;
@@ -82,13 +70,13 @@ public class RelRMW extends StaticRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
         	logger.info("Computing maxTupleSet for " + getName());
-            baseMaxTupleSet = new TupleSet();
+            minTupleSet = new TupleSet();
 
             // RMWLoad -> RMWStore
             FilterAbstract filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(Tag.WRITE));
             for(Event store : task.getProgram().getCache().getEvents(filter)){
             	if(store instanceof RMWStore) {
-                    baseMaxTupleSet.add(new Tuple(((RMWStore)store).getLoadEvent(), store));            		
+                    minTupleSet.add(new Tuple(((RMWStore)store).getLoadEvent(), store));
             	}
             }
 
@@ -98,7 +86,7 @@ public class RelRMW extends StaticRelation {
             filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), locks);
             for(Event e : task.getProgram().getCache().getEvents(filter)){
             	// Connect Load to Store
-            	baseMaxTupleSet.add(new Tuple(e, e.getSuccessor().getSuccessor()));
+                minTupleSet.add(new Tuple(e, e.getSuccessor().getSuccessor()));
             }
 
             // Atomics blocks: BeginAtomic -> EndAtomic
@@ -107,15 +95,15 @@ public class RelRMW extends StaticRelation {
                 List<Event> block = ((EndAtomic)end).getBlock().stream().filter(x -> x.is(Tag.VISIBLE)).collect(Collectors.toList());
                 for (int i = 0; i < block.size(); i++) {
                     for (int j = i + 1; j < block.size(); j++) {
-                        baseMaxTupleSet.add(new Tuple(block.get(i), block.get(j)));
+                        minTupleSet.add(new Tuple(block.get(i), block.get(j)));
                     }
 
                 }
             }
-            removeMutuallyExclusiveTuples(baseMaxTupleSet);
+            removeMutuallyExclusiveTuples(minTupleSet);
 
             maxTupleSet = new TupleSet();
-            maxTupleSet.addAll(baseMaxTupleSet);
+            maxTupleSet.addAll(minTupleSet);
 
             // LoadExcl -> StoreExcl
             //TODO: This can be improved using branching analysis
@@ -144,7 +132,7 @@ public class RelRMW extends StaticRelation {
         // Encode base (not exclusive pairs) RMW
         ExecutionAnalysis exec = encoder.analysisContext().get(ExecutionAnalysis.class);
         BooleanFormula enc = bmgr.and(encodeTupleSet.stream()
-            .filter(baseMaxTupleSet::contains)
+            .filter(minTupleSet::contains)
             .map(t -> bmgr.equivalence(encoder.edge(this, t), execution(t.getFirst(), t.getSecond(), exec, ctx)))
             .toArray(BooleanFormula[]::new));
 
