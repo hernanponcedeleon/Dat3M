@@ -70,7 +70,7 @@ public class Wmm {
         }
 
         for (Relation relation : relationRepository.getRelations()) {
-            if(relation.getIsNamed()){
+            if(relation.getIsNamed() && !(relation instanceof RecursiveRelation)){
                 sb.append(relation).append("\n");
             }
         }

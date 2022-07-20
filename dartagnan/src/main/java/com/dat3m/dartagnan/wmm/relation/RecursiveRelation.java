@@ -1,11 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.encoding.WmmEncoder;
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Collections;
 import java.util.List;
@@ -36,24 +33,6 @@ public class RecursiveRelation extends Relation {
 
     public static String makeTerm(String name){
         return name;
-    }
-
-    @Override
-    public void initializeEncoding(SolverContext ctx){
-        if(doRecurse){
-            doRecurse = false;
-            super.initializeEncoding(ctx);
-            r1.initializeEncoding(ctx);
-        }
-    }
-
-    @Override
-    public void initializeRelationAnalysis(VerificationTask task, Context context) {
-        if(doRecurse){
-            doRecurse = false;
-            super.initializeRelationAnalysis(task, context);
-            r1.initializeRelationAnalysis(task, context);
-        }
     }
 
     public void setConcreteRelation(Relation r1){

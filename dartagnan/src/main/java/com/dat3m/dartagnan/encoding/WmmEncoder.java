@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.local.RelAddrDirect;
 import com.dat3m.dartagnan.wmm.relation.base.local.RelIdd;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
-import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.google.common.base.Preconditions;
@@ -27,7 +26,6 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -156,10 +154,6 @@ public class WmmEncoder {
     private void initializeEncoding() {
         for(String relName : Wmm.BASE_RELATIONS) {
             memoryModel.getRelationRepository().getRelation(relName);
-        }
-
-        for(RecursiveGroup recursiveGroup : memoryModel.getRecursiveGroups()){
-            recursiveGroup.setDoRecurse();
         }
 
         for(Relation relation : memoryModel.getRelationRepository().getRelations()){

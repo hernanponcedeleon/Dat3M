@@ -26,7 +26,6 @@ import com.google.common.base.Preconditions;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,13 +36,7 @@ public class RelationRepository {
     private final Map<String, Relation> relationMap = new HashMap<>();
 
     public Set<Relation> getRelations(){
-        Set<Relation> set = new HashSet<>();
-        for(Map.Entry<String, Relation> entry : relationMap.entrySet()){
-            if(!entry.getValue().getIsNamed() || entry.getValue().getName().equals(entry.getKey())){
-                set.add(entry.getValue());
-            }
-        }
-        return set;
+        return Set.copyOf(relationMap.values());
     }
 
     public Relation getRelation(String name){

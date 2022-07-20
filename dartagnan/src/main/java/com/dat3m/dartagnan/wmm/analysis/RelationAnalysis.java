@@ -49,13 +49,11 @@ public class RelationAnalysis {
         for (Axiom ax : memoryModel.getAxioms()) {
             ax.getRelation().updateRecursiveGroupId(ax.getRelation().getRecursiveGroupId());
         }
-        for(RecursiveGroup recursiveGroup : memoryModel.getRecursiveGroups()){
-            recursiveGroup.setDoRecurse();
-        }
 
         // ------------------------------------------------
+        //ensure that the repository contains all base relations
         for(String relName : Wmm.BASE_RELATIONS){
-            memoryModel.getRelationRepository().getRelation(relName).initializeRelationAnalysis(task, context);
+            memoryModel.getRelationRepository().getRelation(relName);
         }
         for (Relation rel : memoryModel.getRelationRepository().getRelations()) {
             rel.initializeRelationAnalysis(task, context);
