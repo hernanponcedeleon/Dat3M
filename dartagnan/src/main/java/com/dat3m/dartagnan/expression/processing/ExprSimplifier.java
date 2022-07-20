@@ -184,7 +184,7 @@ public class ExprSimplifier extends ExprTransformer {
             	// Rule for associativity (rhs is IConst) since we cannot reduce MemoryObjects
             	// Either op can be +/-, but this does not affect correctness
             	// e.g. (&mem + x) - y -> &mem + reduced(x - y)
-            	if(lhs instanceof IExprBin && ((IExprBin)lhs).getRHS() instanceof IConst) {
+            	if(lhs instanceof IExprBin && ((IExprBin)lhs).getRHS() instanceof IConst  && ((IExprBin)lhs).getOp() != R_SHIFT) {
         			IExprBin lhsBin = (IExprBin)lhs;
             		IExpr newLHS = lhsBin.getLHS();
 					IExpr newRHS = new IExprBin(lhsBin.getRHS(), lhsBin.getOp(), rhs).reduce();

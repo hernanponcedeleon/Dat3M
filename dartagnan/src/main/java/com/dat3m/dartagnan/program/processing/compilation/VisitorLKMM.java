@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -36,6 +37,7 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
         store.addFilters(C11.PTHREAD);
 
         return eventSequence(
+        		EventFactory.Linux.newMemoryBarrier(),
                 store
         );
 	}
@@ -43,6 +45,7 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
 	@Override
 	public List<Event> visitEnd(End e) {
         return eventSequence(
+        		EventFactory.Linux.newMemoryBarrier(),
                 newStore(e.getAddress(), IValue.ZERO, Tag.Linux.MO_RELEASE)
         );
 	}
@@ -55,7 +58,8 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
         
         return eventSequence(
         		load,
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
+        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit()),
+        		EventFactory.Linux.newMemoryBarrier()
         );
 	}
 
@@ -65,7 +69,8 @@ public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>
 
         return eventSequence(
         		newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE),
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
+        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()),
+            	EventFactory.Linux.newMemoryBarrier()
         );
 	}
 

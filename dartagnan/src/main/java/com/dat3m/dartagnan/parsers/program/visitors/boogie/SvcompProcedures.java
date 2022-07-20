@@ -25,6 +25,7 @@ public class SvcompProcedures {
 			"__VERIFIER_assert",
 //			"__VERIFIER_assume",
 //			"assume_abort_if_not",
+			"__VERIFIER_loop_bound",
 			"__VERIFIER_loop_begin",
 			"__VERIFIER_spin_start",
 			"__VERIFIER_spin_end",
@@ -176,5 +177,10 @@ public class SvcompProcedures {
 					.setCLine(visitor.currentLine)
 					.setSourceCodeFile(visitor.sourceCodeFile);		
 	    }
+	}
+
+	private static void __VERIFIER_loop_bound(VisitorBoogie visitor, Call_cmdContext ctx) {
+		int bound = ((IExpr)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValueAsInt();
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBound(bound));
 	}
 }
