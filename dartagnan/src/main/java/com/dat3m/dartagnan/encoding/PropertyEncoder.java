@@ -12,12 +12,14 @@ import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelRf;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 
+import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -174,6 +176,8 @@ public class PropertyEncoder {
         // Compute "stuckness": A thread is stuck if it reaches a spinloop bound event
         // while reading from a co-maximal write.
         Map<Thread, BooleanFormula> isStuckMap = new HashMap<>();
+        RelationAnalysis ra = wmm.analysisContext().get(RelationAnalysis.class);
+        TupleSet mayRf = ra.may(rf);
         for (Thread t : program.getThreads()) {
             List<SpinLoop> loops = spinloopsMap.get(t);
             if (loops.isEmpty()) {
@@ -185,7 +189,7 @@ public class PropertyEncoder {
                 BooleanFormula allCoMaximalLoad = bmgr.makeTrue();
                 for (Load load : pair.loads) {
                     BooleanFormula coMaximalLoad = bmgr.makeFalse();
-                    for (Tuple rfEdge : rf.getMaxTupleSet().getBySecond(load)) {
+                    for (Tuple rfEdge : mayRf.getBySecond(load)) {
                         coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(wmm.edge(rf, rfEdge), co.getLastCoVar(rfEdge.getFirst(), ctx)));
                     }
                     allCoMaximalLoad = bmgr.and(allCoMaximalLoad, coMaximalLoad);

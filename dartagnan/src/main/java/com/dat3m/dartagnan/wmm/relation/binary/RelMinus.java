@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.relation.binary;
 
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -76,7 +77,8 @@ public class RelMinus extends BinaryRelation {
 		BooleanFormula enc = bmgr.makeTrue();
 
         ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
-        TupleSet min = getMinTupleSet();
+        RelationAnalysis ra = encoder.analysisContext().requires(RelationAnalysis.class);
+        TupleSet min = ra.must(this);
         for(Tuple tuple : encodeTupleSet){
             BooleanFormula edge = encoder.edge(this, tuple);
             if (min.contains(tuple)) {

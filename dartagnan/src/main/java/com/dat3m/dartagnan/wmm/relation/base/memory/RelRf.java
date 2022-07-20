@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterIntersection;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -176,8 +177,9 @@ public class RelRf extends Relation {
     	BooleanFormula enc = bmgr.makeTrue();
         Map<MemEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
 
-        ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
-        for(Tuple tuple : maxTupleSet){
+        ExecutionAnalysis exec = encoder.analysisContext().get(ExecutionAnalysis.class);
+        RelationAnalysis ra = encoder.analysisContext().get(RelationAnalysis.class);
+        for(Tuple tuple : ra.may(this)) {
             MemEvent w = (MemEvent) tuple.getFirst();
             MemEvent r = (MemEvent) tuple.getSecond();
             BooleanFormula edge = encoder.edge(this, tuple);

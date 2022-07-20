@@ -96,11 +96,12 @@ public class WmmEncoder {
 
     public BooleanFormula edge(Relation relation, Tuple tuple) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        if(relation.getMaxTupleSet().contains(tuple)) {
+        RelationAnalysis ra = analysisContext.get(RelationAnalysis.class);
+        if(ra.may(relation).contains(tuple)) {
             return bmgr.makeFalse();
         }
         if(relation instanceof RelIdd || relation instanceof RelAddrDirect) {
-            return relation.getMinTupleSet().contains(tuple)
+            return ra.must(relation).contains(tuple)
                 ? execution(tuple.getFirst(), tuple.getSecond(), analysisContext.get(ExecutionAnalysis.class), ctx)
                 : task.getProgramEncoder().dependencyEdge(tuple.getFirst(), tuple.getSecond());
         }
@@ -175,7 +176,7 @@ public class WmmEncoder {
         while(!queue.isEmpty()) {
             Relation relation = queue.keySet().iterator().next();
             Set<Tuple> set = tuples.computeIfAbsent(relation, k -> new HashSet<>());
-            Set<Tuple> delta = new HashSet<>(difference(intersection(queue.remove(relation), relation.getMaxTupleSet()), set));
+            Set<Tuple> delta = new HashSet<>(difference(intersection(queue.remove(relation), ra.may(relation)), set));
             if(delta.isEmpty()) {
                 continue;
             }

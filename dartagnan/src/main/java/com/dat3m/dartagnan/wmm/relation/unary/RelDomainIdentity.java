@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.relation.unary;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -53,8 +54,10 @@ public class RelDomainIdentity extends UnaryRelation {
     public void activate(Set<Tuple> activeSet, WmmEncoder.Buffer buf) {
         //TODO: Optimize using minSets (but no CAT uses this anyway)
         TupleSet r1Set = new TupleSet();
+        RelationAnalysis ra = buf.analysisContext().get(RelationAnalysis.class);
+        TupleSet may1 = ra.may(r1);
         for(Tuple tuple : activeSet){
-            r1Set.addAll(r1.getMaxTupleSet().getByFirst(tuple.getFirst()));
+            r1Set.addAll(may1.getByFirst(tuple.getFirst()));
 
         }
         buf.send(r1, r1Set);
@@ -65,12 +68,13 @@ public class RelDomainIdentity extends UnaryRelation {
         SolverContext ctx = encoder.solverContext();
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
-
+        RelationAnalysis ra = encoder.analysisContext().get(RelationAnalysis.class);
+        TupleSet may1 = ra.may(r1);
         for(Tuple tuple1 : encodeTupleSet){
             Event e = tuple1.getFirst();
             BooleanFormula opt = bmgr.makeFalse();
             //TODO: Optimize using minSets (but no CAT uses this anyway)
-            for(Tuple tuple2 : r1.getMaxTupleSet().getByFirst(e)){
+            for(Tuple tuple2 : may1.getByFirst(e)){
                 opt = bmgr.or(encoder.edge(r1, tuple2));
             }
             enc = bmgr.and(enc, bmgr.equivalence(encoder.edge(this, e, e), opt));

@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -103,6 +104,8 @@ public class RelFencerel extends StaticRelation {
 
         List<Event> fences = encoder.task().getProgram().getCache().getEvents(FilterBasic.get(fenceName));
         ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
+        RelationAnalysis ra = encoder.analysisContext().requires(RelationAnalysis.class);
+        TupleSet minTupleSet = ra.must(this);
         for(Tuple tuple : encodeTupleSet){
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();

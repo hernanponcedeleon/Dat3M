@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
@@ -121,10 +122,11 @@ public class CoSymmetryBreaking {
         // axioms. The sync-degree of w for axiom(r) is computed via must(r).
         List<Axiom> axioms = task.getAxioms();
         Map<Store, Integer> syncDegreeMap = new HashMap<>(writes.size());
+        RelationAnalysis ra = task.getAnalysisContext().get(RelationAnalysis.class);
         for (Store w : writes) {
             int syncDeg = 0;
             for (Axiom ax : axioms) {
-                TupleSet minSet = ax.getRelation().getMinTupleSet();
+                TupleSet minSet = ra.must(ax.getRelation());
                 syncDeg = Math.max(syncDeg, (1 + minSet.getBySecond(w).size()) * (1 + minSet.getByFirst(w).size()));
             }
             syncDegreeMap.put(w, syncDeg);

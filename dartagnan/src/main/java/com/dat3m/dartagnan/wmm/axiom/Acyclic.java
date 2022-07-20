@@ -190,8 +190,6 @@ public class Acyclic extends Axiom {
     }
 
     private BooleanFormula getSMTCycleVar(Tuple edge, SolverContext ctx) {
-        return !rel.getMaxTupleSet().contains(edge) ?
-                ctx.getFormulaManager().getBooleanFormulaManager().makeFalse() :
-                edge(getName() + "-cycle", edge.getFirst(), edge.getSecond(), ctx);
+        return edge(getName() + "-cycle", edge.getFirst(), edge.getSecond(), ctx);
     }
 }

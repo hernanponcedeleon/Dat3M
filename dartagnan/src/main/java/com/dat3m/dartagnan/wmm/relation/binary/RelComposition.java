@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.relation.binary;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -85,8 +86,9 @@ public class RelComposition extends BinaryRelation {
         TupleSet r1Set = new TupleSet();
         TupleSet r2Set = new TupleSet();
 
-        TupleSet r1Max = r1.getMaxTupleSet();
-        TupleSet r2Max = r2.getMaxTupleSet();
+        RelationAnalysis ra = buf.analysisContext().get(RelationAnalysis.class);
+        TupleSet r1Max = ra.may(r1);
+        TupleSet r2Max = ra.may(r2);
         for (Tuple t : activeSet) {
             Event e1 = t.getFirst();
             Event e3 = t.getSecond();
@@ -109,10 +111,11 @@ public class RelComposition extends BinaryRelation {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
 
-        TupleSet r1Max = r1.getMaxTupleSet();
-        TupleSet r2Max = r2.getMaxTupleSet();
-        TupleSet minSet = getMinTupleSet();
-        ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
+        ExecutionAnalysis exec = encoder.analysisContext().get(ExecutionAnalysis.class);
+        RelationAnalysis ra = encoder.analysisContext().get(RelationAnalysis.class);
+        TupleSet r1Max = ra.may(r1);
+        TupleSet r2Max = ra.may(r2);
+        TupleSet minSet = ra.must(this);
         for(Tuple tuple : encodeTupleSet) {
             BooleanFormula expr = bmgr.makeFalse();
             if (minSet.contains(tuple)) {

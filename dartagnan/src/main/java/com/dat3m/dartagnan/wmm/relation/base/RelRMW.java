@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterIntersection;
 import com.dat3m.dartagnan.program.filter.FilterUnion;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -82,7 +83,7 @@ public class RelRMW extends StaticRelation {
             }
 
             // Locks: Load -> Assume/CondJump -> Store
-            FilterAbstract locks = FilterUnion.get(FilterBasic.get(Tag.C11.LOCK), 
+            FilterAbstract locks = FilterUnion.get(FilterBasic.get(Tag.C11.LOCK),
             									   FilterBasic.get(Tag.Linux.LOCK_READ));
             filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), locks);
             for(Event e : task.getProgram().getCache().getEvents(filter)){
@@ -133,8 +134,9 @@ public class RelRMW extends StaticRelation {
         
         // Encode base (not exclusive pairs) RMW
         ExecutionAnalysis exec = encoder.analysisContext().get(ExecutionAnalysis.class);
+        RelationAnalysis ra = encoder.analysisContext().get(RelationAnalysis.class);
         BooleanFormula enc = bmgr.and(encodeTupleSet.stream()
-            .filter(minTupleSet::contains)
+            .filter(ra.must(this)::contains)
             .map(t -> bmgr.equivalence(encoder.edge(this, t), execution(t.getFirst(), t.getSecond(), exec, ctx)))
             .toArray(BooleanFormula[]::new));
 

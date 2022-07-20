@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -63,8 +64,9 @@ public class RelInverse extends UnaryRelation {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
 
-        ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
-		TupleSet minSet = getMinTupleSet();
+        ExecutionAnalysis exec = encoder.analysisContext().get(ExecutionAnalysis.class);
+        RelationAnalysis ra = encoder.analysisContext().get(RelationAnalysis.class);
+		TupleSet minSet = ra.must(this);
         for(Tuple tuple : encodeTupleSet){
             BooleanFormula opt = minSet.contains(tuple) ? execution(tuple.getFirst(), tuple.getSecond(), exec, ctx) : encoder.edge(r1, tuple.getInverse());
             enc = bmgr.and(enc, bmgr.equivalence(encoder.edge(this, tuple), opt));

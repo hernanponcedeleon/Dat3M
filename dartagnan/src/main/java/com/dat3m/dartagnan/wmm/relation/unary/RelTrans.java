@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -88,6 +89,8 @@ public class RelTrans extends UnaryRelation {
     @Override
     public void activate(Set<Tuple> news, WmmEncoder.Buffer buf) {
         HashSet<Tuple> factors = new HashSet<>();
+        RelationAnalysis ra = buf.analysisContext().get(RelationAnalysis.class);
+        TupleSet maxTupleSet = ra.may(this);
         for(Tuple t : news) {
             for(Tuple t1 : maxTupleSet.getByFirst(t.getFirst())) {
                 Tuple t2 = new Tuple(t1.getSecond(), t.getSecond());
@@ -98,7 +101,7 @@ public class RelTrans extends UnaryRelation {
             }
         }
         buf.send(this, factors);
-        buf.send(r1, Sets.intersection(news, r1.getMaxTupleSet()));
+        buf.send(r1, Sets.intersection(news, ra.may(r1)));
     }
 
     @Override
@@ -107,9 +110,10 @@ public class RelTrans extends UnaryRelation {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
 
-        ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
-        TupleSet minSet = getMinTupleSet();
-        TupleSet r1Max = r1.getMaxTupleSet();
+        ExecutionAnalysis exec = encoder.analysisContext().get(ExecutionAnalysis.class);
+        RelationAnalysis ra = encoder.analysisContext().get(RelationAnalysis.class);
+        TupleSet minSet = ra.must(this);
+        TupleSet r1Max = ra.may(r1);
         for(Tuple tuple : encodeTupleSet){
             BooleanFormula edge = encoder.edge(this, tuple);
             if (minSet.contains(tuple)) {

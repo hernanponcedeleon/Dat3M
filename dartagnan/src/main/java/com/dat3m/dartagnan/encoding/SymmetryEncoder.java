@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
@@ -109,7 +110,8 @@ public class SymmetryEncoder {
         // These need to get skipped.
         Thread t1 = symmThreads.get(0);
         List<Tuple> r1Tuples = new ArrayList<>();
-        for (Tuple t : rel.getMaxTupleSet()) {
+        RelationAnalysis ra = wmmEncoder.analysisContext().get(RelationAnalysis.class);
+        for (Tuple t : ra.may(rel)) {
             Event a = t.getFirst();
             Event b = t.getSecond();
             if (!a.is(Tag.C11.PTHREAD) && !b.is(Tag.C11.PTHREAD) && a.getThread() == t1) {
@@ -157,14 +159,15 @@ public class SymmetryEncoder {
         Map<Event, Integer> combOutDegree = new HashMap<>(outEvents.size());
 
         List<Axiom> axioms = memoryModel.getAxioms();
+        RelationAnalysis ra = wmmEncoder.analysisContext().get(RelationAnalysis.class);
         for (Event e : inEvents) {
             int syncDeg = axioms.stream()
-                    .mapToInt(ax -> ax.getRelation().getMinTupleSet().getBySecond(e).size() + 1).max().orElse(0);
+                    .mapToInt(ax -> ra.must(ax.getRelation()).getBySecond(e).size() + 1).max().orElse(0);
             combInDegree.put(e, syncDeg);
         }
         for (Event e : outEvents) {
             int syncDec = axioms.stream()
-                    .mapToInt(ax -> ax.getRelation().getMinTupleSet().getByFirst(e).size() + 1).max().orElse(0);
+                    .mapToInt(ax -> ra.must(ax.getRelation()).getByFirst(e).size() + 1).max().orElse(0);
             combOutDegree.put(e, syncDec);
         }
 

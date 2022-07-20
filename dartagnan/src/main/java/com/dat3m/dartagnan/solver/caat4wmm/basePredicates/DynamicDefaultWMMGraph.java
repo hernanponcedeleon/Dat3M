@@ -3,8 +3,10 @@ package com.dat3m.dartagnan.solver.caat4wmm.basePredicates;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.verification.model.EventData;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.Model;
 
 import java.util.Collections;
@@ -31,8 +33,9 @@ public class DynamicDefaultWMMGraph extends MaterializedWMMGraph {
         // still in use. The caller should make sure that the underlying model is still alive right now.
         Model m = model.getModel();
 
-        if (relation.getMaxTupleSet().size() < domain.size() * domain.size()) {
-            relation.getMaxTupleSet()
+        TupleSet may = model.getTask().getAnalysisContext().get(RelationAnalysis.class).may(relation);
+        if(may.size() < domain.size() * domain.size()) {
+            may
                     .stream().map(t -> this.getEdgeFromTuple(t, m)).filter(Objects::nonNull)
                     .forEach(simpleGraph::add);
         } else {

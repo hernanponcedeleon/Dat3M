@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -148,7 +149,10 @@ public class RelCo extends Relation {
 
         enc = bmgr.and(enc, distinct);
 
-        ExecutionAnalysis exec = encoder.analysisContext().requires(ExecutionAnalysis.class);
+        ExecutionAnalysis exec = encoder.analysisContext().get(ExecutionAnalysis.class);
+        RelationAnalysis ra = encoder.analysisContext().get(RelationAnalysis.class);
+        TupleSet maxTupleSet = ra.may(this);
+        TupleSet minTupleSet = ra.must(this);
         for(Event w :  encoder.task().getProgram().getCache().getEvents(FilterBasic.get(WRITE))) {
             MemEvent w1 = (MemEvent)w;
             BooleanFormula lastCo = w1.exec();
@@ -168,7 +172,7 @@ public class RelCo extends Relation {
                 )));
 
                 // ============ Local consistency optimizations ============
-                if (getMinTupleSet().contains(t)) {
+                if(minTupleSet.contains(t)) {
                    enc = bmgr.and(enc, bmgr.equivalence(relation, execPair));
                 } else if (wmmAnalysis.isLocallyConsistent()) {
                     if (w2.is(INIT) || t.isBackward()){
