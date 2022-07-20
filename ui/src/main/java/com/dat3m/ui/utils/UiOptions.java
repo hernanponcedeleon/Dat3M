@@ -11,13 +11,15 @@ public class UiOptions {
 	private final int bound;
 	private final Solvers solver;
 	private final int timeout;
+	private final String cflags;
 
-	public UiOptions(Arch target, Method method, int bound, Solvers solver, int timeout) {
+	public UiOptions(Arch target, Method method, int bound, Solvers solver, int timeout, String cflags) {
 		this.target = target;
 		this.method = method;
 		this.bound = bound;
 		this.solver = solver;
 		this.timeout = timeout;
+		this.cflags = cflags;
 	}
 	
 	public Arch getTarget(){
@@ -38,5 +40,9 @@ public class UiOptions {
 
 	public int getTimeout() {
 		return timeout;
+	}
+	
+	public String getCflags(){
+		return cflags;
 	}
 }

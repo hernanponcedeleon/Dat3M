@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 import static com.dat3m.ui.options.utils.Helper.solversOrderedValues;
+import static java.awt.FlowLayout.LEFT;
 import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static javax.swing.BorderFactory.createTitledBorder;
@@ -36,6 +37,8 @@ public class OptionsPane extends JPanel implements ActionListener {
 
     private final BoundField boundField;
     private final TimeoutField timeoutField;
+    
+    private final JTextField cflagsField;
 
     private final JButton testButton;
     private final JButton clearButton;
@@ -58,6 +61,9 @@ public class OptionsPane extends JPanel implements ActionListener {
         
         boundField = new BoundField();
         timeoutField = new TimeoutField();
+        
+        cflagsField = new JTextField();
+        cflagsField.setColumns(20);
 
         testButton = new TestButton();
         clearButton = new ClearButton();
@@ -89,10 +95,11 @@ public class OptionsPane extends JPanel implements ActionListener {
     public UiOptions getOptions(){
         int bound = Integer.parseInt(boundField.getText());
         int timeout = Integer.parseInt(timeoutField.getText());
+        String cflags = cflagsField.getText();
         Arch target = (Arch)targetPane.getSelectedItem();
         Method method = (Method)methodPane.getSelectedItem();
         Solvers solver = (Solvers)solverPane.getSelectedItem();
-        return new UiOptions(target, method, bound, solver, timeout);
+        return new UiOptions(target, method, bound, solver, timeout, cflags);
     }
 
     private int getIconHeight(){
@@ -115,12 +122,16 @@ public class OptionsPane extends JPanel implements ActionListener {
         boundsPane.setMaximumSize(new Dimension(OPTWIDTH, 50));
         boundsPane.setDividerSize(0);
 
+        JPanel cflagsPane = new JPanel(new FlowLayout(LEFT));
+        cflagsPane.add(new JLabel("CFLAGS: "));
+        cflagsPane.add(cflagsField);
+
         // Inner borders
         Border emptyBorder = BorderFactory.createEmptyBorder();
 
         JSplitPane graphPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         graphPane.setDividerSize(0);
-        JComponent[] panes = { targetPane, methodPane, solverPane, boundsPane, testButton, clearButton, graphPane, scrollConsole };
+        JComponent[] panes = { targetPane, methodPane, solverPane, boundsPane, cflagsPane, testButton, clearButton, graphPane, scrollConsole };
         Iterator<JComponent> it = Arrays.asList(panes).iterator();
         JComponent current = iconPane;
         current.setBorder(emptyBorder);

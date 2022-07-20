@@ -23,7 +23,7 @@ mapping_title = dict([
     ('ARM8', 'ARM8'),
     ('Linux', 'LKMM'),
     ('IMM', 'IMM'),
-    ('RC11', 'RC11')
+    ('C11', 'RC11')
 ])
 
 mapping_files = dict([
@@ -49,12 +49,10 @@ for key in mapping_files.keys():
         f.write('dummy, UNKNOWN, 1\n')
         f.close()
 
-cFiles = [csvPath + 'GenmcIMM-.csv',
-          csvPath + 'GenmcRC11-.csv',
-          csvPath + 'Nidhugg-.csv',
-          csvPath + 'TSO-assume.csv',
+cFiles = [csvPath + 'TSO-assume.csv',
           csvPath + 'TSO-caat.csv',
           csvPath + 'TSO-cutting.csv',
+          csvPath + 'TSO-nidhugg.csv',
           csvPath + 'Power-assume.csv',
           csvPath + 'Power-caat.csv',
           csvPath + 'Power-cutting.csv',
@@ -64,9 +62,11 @@ cFiles = [csvPath + 'GenmcIMM-.csv',
           csvPath + 'IMM-assume.csv',
           csvPath + 'IMM-caat.csv',
           csvPath + 'IMM-cutting.csv',
+          csvPath + 'IMM-genmc.csv',
           csvPath + 'RC11-assume.csv',
           csvPath + 'RC11-caat.csv',
-          csvPath + 'RC11-cutting.csv'
+          csvPath + 'RC11-cutting.csv',
+          csvPath + 'RC11-genmc.csv'
         ]
 
 ## Create empty csv files for non existent ones
@@ -81,11 +81,11 @@ for file in cFiles:
 #### Generates bar char for the lock benchmarks ###
 ###################################################
 
-arch = ['TSO', 'Power', 'ARM8', 'IMM', 'RC11']
+arch = ['TSO', 'Power', 'ARM8', 'IMM', 'C11']
 
-genmcIMM = pd.read_csv(csvPath + 'GenmcIMM-.csv')
-genmcRC11 = pd.read_csv(csvPath + 'GenmcRC11-.csv')
-nidhugg = pd.read_csv(csvPath + 'Nidhugg-.csv')
+genmcIMM = pd.read_csv(csvPath + 'IMM-genmc.csv')
+genmcRC11 = pd.read_csv(csvPath + 'C11-genmc.csv')
+nidhugg = pd.read_csv(csvPath + 'TSO-nidhugg.csv')
 
 lncol = 3
 my_colors = ['tab:blue', 'tab:cyan', 'orange']
@@ -112,7 +112,7 @@ for a in arch:
         lncol = 4
         my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:green']
 
-    if a == 'RC11':
+    if a == 'C11':
         ## colums are: benchmark, result, time
         df['GenMC'] = genmcRC11.iloc[:, 2]
         lncol = 4
@@ -125,11 +125,16 @@ for a in arch:
         my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:red']
 
     df.loc["Total"] = df.loc[:, df.columns != 'benchmark'].mean()
-    df[['benchmark']] = df[['benchmark']].fillna('average')
+    df[['benchmark']] = df[['benchmark']].fillna('$\overline{\mathcal{X}}$')
 
     plt.figure()
     df.set_index('benchmark').plot.bar(log=True, width=0.8, color=my_colors)
     plt.title(mapping_title[a])
+    for i in range(len(df.columns)):
+        bars = plt.gca().containers[i-1]
+        hatches = ["//////" if x == 12 else '' for x in range(len(df.index))]
+        for bar, hatch, label in zip(bars, hatches, df.index):
+            bar.set_hatch(hatch)
     plt.xticks(rotation=45, ha='right')
     plt.xlabel('')
     plt.ylabel('Time (ms)')
@@ -137,7 +142,7 @@ for a in arch:
     plt.legend(loc='upper center', ncol=lncol)
     plt.ylim(1, 10000000)
     plt.axhline(y=1000000, color='grey', linestyle='--')
-    plt.savefig(figurePath + a + '.png')
+    plt.savefig(figurePath + mapping_title[a] + '.png')
     plt.close()
 
 ###########################################

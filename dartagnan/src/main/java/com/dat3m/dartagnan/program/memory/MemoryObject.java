@@ -22,6 +22,7 @@ public class MemoryObject extends IConst implements ExprInterface, LastValueInte
     private final int index;
     private int size;
     BigInteger address;
+	private String cVar;
     // TODO
     // Right now we assume that either the whole object is atomic or it is not.
     // Generally, this is no necessarily true for structs, but right now we
@@ -34,6 +35,14 @@ public class MemoryObject extends IConst implements ExprInterface, LastValueInte
         this.index = index;
         size = s;
     }
+
+	public String getCVar() {
+		return cVar;
+	}
+
+	public void setCVar(String name) {
+		this.cVar = name;
+	}
 
     /**
      * @return
@@ -141,7 +150,7 @@ public class MemoryObject extends IConst implements ExprInterface, LastValueInte
 
     @Override
     public String toString(){
-        return "&mem" + index;
+        return cVar != null ? cVar : ("&mem" + index);
     }
 
     @Override

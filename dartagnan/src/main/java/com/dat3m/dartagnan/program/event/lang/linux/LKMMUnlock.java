@@ -15,10 +15,22 @@ public class LKMMUnlock extends Store {
 		addFilters(Tag.Linux.UNLOCK);
 	}
 
+    protected LKMMUnlock(LKMMUnlock other){
+        super(other);
+    }
+
 	@Override
 	public String toString() {
 		return String.format("spin_unlock(*%s)", address);
 	}
+
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public LKMMUnlock getCopy(){
+        return new LKMMUnlock(this);
+    }
 
 	// Visitor
 	// -----------------------------------------------------------------------------------------------------------------
