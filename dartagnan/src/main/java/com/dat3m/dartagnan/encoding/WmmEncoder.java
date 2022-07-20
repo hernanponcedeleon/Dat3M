@@ -136,8 +136,8 @@ public class WmmEncoder {
         public VerificationTask task() {
             return task;
         }
-        public <T> T get(Class<T> c) {
-            return analysisContext.get(c);
+        public Context analysisContext() {
+            return analysisContext;
         }
         /**
          * Called whenever a batch of new relationships has been marked.
