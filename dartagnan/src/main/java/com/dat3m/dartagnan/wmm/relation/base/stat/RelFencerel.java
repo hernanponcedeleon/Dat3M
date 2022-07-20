@@ -40,24 +40,25 @@ public class RelFencerel extends StaticRelation {
     public String getFenceName() { return fenceName; }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-            minTupleSet = new TupleSet();
-            for(Thread t : task.getProgram().getThreads()){
-                List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));
-                List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(Tag.MEMORY));
-                for (Event fence : fences) {
-                    int numEventsBeforeFence = (int) memEvents.stream()
-                            .mapToInt(Event::getCId).filter(id -> id < fence.getCId())
-                            .count();
-                    List<Event> eventsBefore = memEvents.subList(0, numEventsBeforeFence);
-                    List<Event> eventsAfter = memEvents.subList(numEventsBeforeFence, memEvents.size());
-
-                    for (Event e1 : eventsBefore) {
-                        boolean isImpliedByE1 = exec.isImplied(e1, fence);
-                        for (Event e2 : eventsAfter) {
-                            if((isImpliedByE1 || exec.isImplied(e2, fence)) && !exec.areMutuallyExclusive(e1, e2)) {
+    public void initializeRelationAnalysis(RelationAnalysis.Buffer a) {
+        ExecutionAnalysis exec = a.analysisContext().get(ExecutionAnalysis.class);
+        TupleSet maxTupleSet = new TupleSet();
+        TupleSet minTupleSet = new TupleSet();
+        for(Thread t : a.task().getProgram().getThreads()){
+            List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));
+            List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(Tag.MEMORY));
+            for (Event fence : fences) {
+                int numEventsBeforeFence = (int) memEvents.stream()
+                    .mapToInt(Event::getCId).filter(id -> id < fence.getCId())
+                    .count();
+                List<Event> eventsBefore = memEvents.subList(0, numEventsBeforeFence);
+                List<Event> eventsAfter = memEvents.subList(numEventsBeforeFence, memEvents.size());
+                for (Event e1 : eventsBefore) {
+                    boolean isImpliedByE1 = exec.isImplied(e1, fence);
+                    for (Event e2 : eventsAfter) {
+                        if(!exec.areMutuallyExclusive(e1, e2)) {
+                            maxTupleSet.add(new Tuple(e1, e2));
+                            if(isImpliedByE1 || exec.isImplied(e2, fence)) {
                                 minTupleSet.add(new Tuple(e1, e2));
                             }
                         }
@@ -65,35 +66,7 @@ public class RelFencerel extends StaticRelation {
                 }
             }
         }
-        return minTupleSet;
-    }
-
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-            for(Thread t : task.getProgram().getThreads()){
-                List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));
-                List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(Tag.MEMORY));
-                for (Event fence : fences) {
-                    int numEventsBeforeFence = (int) memEvents.stream()
-                            .mapToInt(Event::getCId).filter(id -> id < fence.getCId())
-                            .count();
-                    List<Event> eventsBefore = memEvents.subList(0, numEventsBeforeFence);
-                    List<Event> eventsAfter = memEvents.subList(numEventsBeforeFence, memEvents.size());
-
-                    for (Event e1 : eventsBefore) {
-                        for (Event e2 : eventsAfter) {
-                            if(!exec.areMutuallyExclusive(e1, e2)) {
-                                maxTupleSet.add(new Tuple(e1, e2));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return maxTupleSet;
+        a.send(this, maxTupleSet, minTupleSet);
     }
 
     @Override

@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.core.IfAsJump;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
 import com.dat3m.dartagnan.program.filter.FilterUnion;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
@@ -24,34 +25,32 @@ public class RelCtrlDirect extends StaticRelation {
     }
 
     @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
+    public void initializeRelationAnalysis(RelationAnalysis.Buffer a) {
+        TupleSet maxTupleSet = new TupleSet();
 
-            // NOTE: If's (under Linux) have different notion of ctrl dependency than conditional jumps!
-            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-            for(Thread thread : task.getProgram().getThreads()){
-                for(Event e1 : thread.getCache().getEvents(FilterBasic.get(Tag.CMP))){
-                    for(Event e2 : ((IfAsJump) e1).getBranchesEvents()){
-                        maxTupleSet.add(new Tuple(e1, e2));
-                    }
+        // NOTE: If's (under Linux) have different notion of ctrl dependency than conditional jumps!
+        ExecutionAnalysis exec = a.analysisContext().get(ExecutionAnalysis.class);
+        for(Thread thread : a.task().getProgram().getThreads()){
+            for(Event e1 : thread.getCache().getEvents(FilterBasic.get(Tag.CMP))){
+                for(Event e2 : ((IfAsJump) e1).getBranchesEvents()){
+                    maxTupleSet.add(new Tuple(e1, e2));
                 }
-                
-                // Relates jumps (except those implementing Ifs and their internal jump to end) with all later events
-                List<Event> condJumps = thread.getCache().getEvents(FilterMinus.get(
-                		FilterBasic.get(Tag.JUMP),
-                		FilterUnion.get(FilterBasic.get(Tag.CMP), FilterBasic.get(Tag.IFI))));
-                if(!condJumps.isEmpty()){
-                    for(Event e2 : thread.getCache().getEvents(FilterBasic.get(Tag.ANY))){
-                        for(Event e1 : condJumps){
-                            if(e1.getCId() < e2.getCId() && !exec.areMutuallyExclusive(e1, e2)) {
-                                maxTupleSet.add(new Tuple(e1, e2));
-                            }
+            }
+
+            // Relates jumps (except those implementing Ifs and their internal jump to end) with all later events
+            List<Event> condJumps = thread.getCache().getEvents(FilterMinus.get(
+                    FilterBasic.get(Tag.JUMP),
+                    FilterUnion.get(FilterBasic.get(Tag.CMP), FilterBasic.get(Tag.IFI))));
+            if(!condJumps.isEmpty()){
+                for(Event e2 : thread.getCache().getEvents(FilterBasic.get(Tag.ANY))){
+                    for(Event e1 : condJumps){
+                        if(e1.getCId() < e2.getCId() && !exec.areMutuallyExclusive(e1, e2)) {
+                            maxTupleSet.add(new Tuple(e1, e2));
                         }
                     }
                 }
             }
         }
-        return maxTupleSet;
+        a.send(this, maxTupleSet, maxTupleSet);
     }
 }

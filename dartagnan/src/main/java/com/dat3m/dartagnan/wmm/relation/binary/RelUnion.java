@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.wmm.relation.binary;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -37,37 +36,9 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = new TupleSet(Sets.union(r1.getMinTupleSet(), r2.getMinTupleSet()));
-        }
-        return minTupleSet;
-    }
-
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            maxTupleSet = new TupleSet(Sets.union(r1.getMaxTupleSet(), r2.getMaxTupleSet()));
-        }
-        return maxTupleSet;
-    }
-
-    @Override
-    public TupleSet getMinTupleSetRecursive(){
-        if(recursiveGroupId > 0 && minTupleSet != null){
-            minTupleSet.addAll(Sets.union(r1.getMinTupleSetRecursive(), r2.getMinTupleSetRecursive()));
-            return minTupleSet;
-        }
-        return getMinTupleSet();
-    }
-
-    @Override
-    public TupleSet getMaxTupleSetRecursive(){
-        if(recursiveGroupId > 0 && maxTupleSet != null){
-            maxTupleSet.addAll(Sets.union(r1.getMaxTupleSetRecursive(), r2.getMaxTupleSetRecursive()));
-            return maxTupleSet;
-        }
-        return getMaxTupleSet();
+    public void initializeRelationAnalysis(RelationAnalysis.Buffer a) {
+        a.listen(r1, (may, must) -> a.send(this, may, must));
+        a.listen(r2, (may, must) -> a.send(this, may, must));
     }
 
     @Override

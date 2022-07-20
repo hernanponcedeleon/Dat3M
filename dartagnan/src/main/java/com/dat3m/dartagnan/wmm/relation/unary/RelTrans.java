@@ -3,8 +3,6 @@ package com.dat3m.dartagnan.wmm.relation.unary;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -43,47 +41,20 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public void initializeRelationAnalysis(VerificationTask task, Context context) {
-        super.initializeRelationAnalysis(task, context);
-        transitiveReachabilityMap = null;
-    }
-
-    @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            //TODO: Make sure this is correct and efficient
-            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-            minTupleSet = new TupleSet(r1.getMinTupleSet());
-            boolean changed;
-            int size = minTupleSet.size();
-            do {
-                minTupleSet.addAll(minTupleSet.postComposition(r1.getMinTupleSet(),
-                        (t1, t2) -> (exec.isImplied(t1.getFirst(), t1.getSecond())
-                                || exec.isImplied(t2.getSecond(), t1.getSecond()))
-                            && !exec.areMutuallyExclusive(t1.getFirst(), t2.getSecond())));
-                changed = minTupleSet.size() != size;
-                size = minTupleSet.size();
-            } while (changed);
-        }
-        return minTupleSet;
-    }
-
-
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            transitiveReachabilityMap = r1.getMaxTupleSet().transMap();
-            maxTupleSet = new TupleSet();
-            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-            for(Event e1 : transitiveReachabilityMap.keySet()){
-                for(Event e2 : transitiveReachabilityMap.get(e1)){
-                    if(!exec.areMutuallyExclusive(e1, e2)) {
-                        maxTupleSet.add(new Tuple(e1, e2));
-                    }
-                }
-            }
-        }
-        return maxTupleSet;
+    public void initializeRelationAnalysis(RelationAnalysis.Buffer a) {
+        ExecutionAnalysis exec = a.analysisContext().get(ExecutionAnalysis.class);
+        TupleSet maySet = a.may(this);
+        TupleSet mustSet = a.must(this);
+        a.listen(this, (may, must) -> {
+            TupleSet maxTupleSet = may.postComposition(maySet,
+                (t1, t2) -> !exec.areMutuallyExclusive(t1.getFirst(), t2.getSecond()));
+            TupleSet minTupleSet = must.postComposition(mustSet,
+                (t1, t2) -> (exec.isImplied(t1.getFirst(), t1.getSecond())
+                        || exec.isImplied(t2.getSecond(), t1.getSecond()))
+                    && !exec.areMutuallyExclusive(t1.getFirst(), t2.getSecond()));
+            a.send(this,maxTupleSet,minTupleSet);
+        });
+        a.listen(r1, (may, must) -> a.send(this, may, must));
     }
 
     @Override
@@ -112,6 +83,7 @@ public class RelTrans extends UnaryRelation {
 
         ExecutionAnalysis exec = encoder.analysisContext().get(ExecutionAnalysis.class);
         RelationAnalysis ra = encoder.analysisContext().get(RelationAnalysis.class);
+        TupleSet may = ra.may(this);
         TupleSet minSet = ra.must(this);
         TupleSet r1Max = ra.may(r1);
         for(Tuple tuple : encodeTupleSet){
@@ -136,7 +108,7 @@ public class RelTrans extends UnaryRelation {
 
             for(Tuple t : r1Max.getByFirst(e1)){
                 Event e3 = t.getSecond();
-                if(e3.getCId() != e1.getCId() && e3.getCId() != e2.getCId() && transitiveReachabilityMap.get(e3).contains(e2)){
+                if(e3.getCId() != e1.getCId() && e3.getCId() != e2.getCId() && may.contains(new Tuple(e3, e2))){
                     BooleanFormula tVar = encoder.edge(minSet.contains(t) ? this : r1, t);
                     orClause = bmgr.or(orClause, bmgr.and(tVar, encoder.edge(this, e3, e2)));
                 }

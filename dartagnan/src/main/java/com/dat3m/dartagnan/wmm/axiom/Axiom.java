@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -25,9 +24,6 @@ public abstract class Axiom implements Dependent<Relation> {
     protected final boolean flag;
     protected String name;
 
-    protected VerificationTask task;
-    protected Context analysisContext;
-
     Axiom(Relation rel, boolean negated, boolean flag) {
         this.rel = rel;
         this.negated = negated;
@@ -35,13 +31,9 @@ public abstract class Axiom implements Dependent<Relation> {
     }
 
     public void initializeEncoding(SolverContext ctx) {
-        Preconditions.checkState(this.task != null,
-                "No available relation data to encode. Perform RelationAnalysis before encoding.");
     }
 
     public void initializeRelationAnalysis(VerificationTask task, Context context) {
-        this.task = task;
-        this.analysisContext = context;
     }
 
     @Override

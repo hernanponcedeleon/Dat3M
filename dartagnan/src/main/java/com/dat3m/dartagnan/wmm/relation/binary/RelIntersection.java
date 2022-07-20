@@ -37,37 +37,13 @@ public class RelIntersection extends BinaryRelation {
     }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = new TupleSet(Sets.intersection(r1.getMinTupleSet(), r2.getMinTupleSet()));
-        }
-        return minTupleSet;
-    }
-
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            maxTupleSet = new TupleSet(Sets.intersection(r1.getMaxTupleSet(), r2.getMaxTupleSet()));
-        }
-        return maxTupleSet;
-    }
-
-    @Override
-    public TupleSet getMinTupleSetRecursive(){
-        if(recursiveGroupId > 0 && minTupleSet != null){
-            minTupleSet.addAll(Sets.intersection(r1.getMinTupleSetRecursive(), r2.getMinTupleSetRecursive()));
-            return minTupleSet;
-        }
-        return getMinTupleSet();
-    }
-
-    @Override
-    public TupleSet getMaxTupleSetRecursive(){
-        if(recursiveGroupId > 0 && maxTupleSet != null){
-            maxTupleSet.addAll(Sets.intersection(r1.getMaxTupleSetRecursive(), r2.getMaxTupleSetRecursive()));
-            return maxTupleSet;
-        }
-        return getMaxTupleSet();
+    public void initializeRelationAnalysis(RelationAnalysis.Buffer a) {
+        Set<Tuple> may1 = a.may(r1);
+        Set<Tuple> may2 = a.may(r2);
+        Set<Tuple> must1 = a.must(r1);
+        Set<Tuple> must2 = a.must(r2);
+        a.listen(r1, (may, must) -> a.send(this, Sets.intersection(may, may2), Sets.intersection(must, must2)));
+        a.listen(r2, (may, must) -> a.send(this, Sets.intersection(may, may1), Sets.intersection(must, must1)));
     }
 
     @Override

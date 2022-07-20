@@ -2,16 +2,14 @@ package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.Map;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
@@ -37,28 +35,10 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            super.getMinTupleSet();
-            for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(Tag.VISIBLE))){
-                minTupleSet.add(new Tuple(e, e));
-            }
-        }
-        return minTupleSet;
-    }
-
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            super.getMaxTupleSet();
-            for (Map.Entry<Event, Set<Event>> entry : transitiveReachabilityMap.entrySet()) {
-                entry.getValue().remove(entry.getKey());
-            }
-            for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(Tag.VISIBLE))){
-                maxTupleSet.add(new Tuple(e, e));
-            }
-        }
-        return maxTupleSet;
+    public void initializeRelationAnalysis(RelationAnalysis.Buffer a) {
+        super.initializeRelationAnalysis(a);
+        Set<Tuple> set = a.task().getProgram().getCache().getEvents(FilterBasic.get(Tag.VISIBLE)).stream().map(e -> new Tuple(e, e)).collect(toSet());
+        a.send(this, set, set);
     }
 
     @Override

@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.encoding.WmmEncoder;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.Collections;
 import java.util.List;
@@ -48,39 +48,8 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-        }
-        return minTupleSet;
-    }
-
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-        }
-        return maxTupleSet;
-    }
-
-    @Override
-    public TupleSet getMinTupleSetRecursive(){
-        if(doRecurse){
-            doRecurse = false;
-            minTupleSet = r1.getMinTupleSetRecursive();
-            return minTupleSet;
-        }
-        return getMinTupleSet();
-    }
-
-    @Override
-    public TupleSet getMaxTupleSetRecursive(){
-        if(doRecurse){
-            doRecurse = false;
-            maxTupleSet = r1.getMaxTupleSetRecursive();
-            return maxTupleSet;
-        }
-        return getMaxTupleSet();
+    public void initializeRelationAnalysis(RelationAnalysis.Buffer a) {
+        a.listen(r1, (may, must) -> a.send(this, may, must));
     }
 
     @Override

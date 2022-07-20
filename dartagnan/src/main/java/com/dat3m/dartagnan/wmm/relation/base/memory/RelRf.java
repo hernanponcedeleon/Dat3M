@@ -38,55 +38,44 @@ public class RelRf extends Relation {
         forceDoEncode = true;
     }
 
-    @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-        }
-        return minTupleSet;
-    }
+    public void initializeRelationAnalysis(RelationAnalysis.Buffer a) {
+        ExecutionAnalysis exec = a.analysisContext().get(ExecutionAnalysis.class);
+        AliasAnalysis alias = a.analysisContext().get(AliasAnalysis.class);
+        WmmAnalysis wmmAnalysis = a.analysisContext().get(WmmAnalysis.class);
+        logger.info("Computing maxTupleSet for " + getName());
+        TupleSet maxTupleSet = new TupleSet();
 
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-            AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
-            WmmAnalysis wmmAnalysis = analysisContext.get(WmmAnalysis.class);
-        	logger.info("Computing maxTupleSet for " + getName());
-            maxTupleSet = new TupleSet();
+        List<Event> loadEvents = a.task().getProgram().getCache().getEvents(FilterBasic.get(READ));
+        List<Event> storeEvents = a.task().getProgram().getCache().getEvents(FilterBasic.get(WRITE));
 
-            List<Event> loadEvents = task.getProgram().getCache().getEvents(FilterBasic.get(READ));
-            List<Event> storeEvents = task.getProgram().getCache().getEvents(FilterBasic.get(WRITE));
-
-            for(Event e1 : storeEvents){
-                for(Event e2 : loadEvents){
-                    if(alias.mayAlias((MemEvent) e1, (MemEvent) e2)
-                            && !exec.areMutuallyExclusive(e1, e2)){
-                    	maxTupleSet.add(new Tuple(e1, e2));
-                    }
+        for(Event e1 : storeEvents){
+            for(Event e2 : loadEvents){
+                if(alias.mayAlias((MemEvent) e1, (MemEvent) e2)
+                        && !exec.areMutuallyExclusive(e1, e2)){
+                   	maxTupleSet.add(new Tuple(e1, e2));
                 }
             }
-            if (wmmAnalysis.isLocallyConsistent()) {
-                applyLocalConsistency();
-            }
-            if (wmmAnalysis.doesRespectAtomicBlocks()) {
-                atomicBlockOptimization();
-            }
-
-            logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
-        return maxTupleSet;
+        if(wmmAnalysis.isLocallyConsistent()) {
+            applyLocalConsistency(maxTupleSet, a);
+        }
+        if(wmmAnalysis.doesRespectAtomicBlocks()) {
+            atomicBlockOptimization(maxTupleSet, a);
+        }
+
+        logger.info("new knowledge size for {}: 0/{}", getName(), maxTupleSet);
+        a.send(this,maxTupleSet,new TupleSet());
     }
 
-    private void applyLocalConsistency() {
+    private void applyLocalConsistency(TupleSet maxTupleSet, RelationAnalysis.Buffer a) {
         // Remove future reads
         maxTupleSet.removeIf(Tuple::isBackward);
 
         // Remove past reads
-        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-        AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
+        ExecutionAnalysis exec = a.analysisContext().get(ExecutionAnalysis.class);
+        AliasAnalysis alias = a.analysisContext().get(AliasAnalysis.class);
         Set<Tuple> deletedTuples = new HashSet<>();
-        for (Event r : task.getProgram().getCache().getEvents(FilterBasic.get(READ))) {
+        for (Event r : a.task().getProgram().getCache().getEvents(FilterBasic.get(READ))) {
             MemEvent read = (MemEvent)r;
 
             // The set of same-thread writes as well as init writes that could be read from (all before the read)
@@ -123,7 +112,7 @@ public class RelRf extends Relation {
         maxTupleSet.removeAll(deletedTuples);
     }
 
-    private void atomicBlockOptimization() {
+    private void atomicBlockOptimization(TupleSet maxTupleSet, RelationAnalysis.Buffer a) {
         //TODO: This function can not only reduce rf-edges
         // but we could also figure out implied coherences:
         // Assume w1 and w2 are aliasing in the same block and w1 is before w2,
@@ -135,10 +124,10 @@ public class RelRf extends Relation {
         int sizeBefore = maxTupleSet.size();
 
         // Atomics blocks: BeginAtomic -> EndAtomic
-        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-        AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
+        ExecutionAnalysis exec = a.analysisContext().get(ExecutionAnalysis.class);
+        AliasAnalysis alias = a.analysisContext().get(AliasAnalysis.class);
         FilterAbstract filter = FilterIntersection.get(FilterBasic.get(RMW), FilterBasic.get(SVCOMP.SVCOMPATOMIC));
-        for(Event end : task.getProgram().getCache().getEvents(filter)) {
+        for(Event end : a.task().getProgram().getCache().getEvents(filter)) {
             // Collect memEvents of the atomic block
             List<Store> writes = new ArrayList<>();
             List<Load> reads = new ArrayList<>();

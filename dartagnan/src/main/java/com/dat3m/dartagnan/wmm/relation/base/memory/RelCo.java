@@ -47,72 +47,43 @@ public class RelCo extends Relation {
     }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-            WmmAnalysis wmmAnalysis = analysisContext.get(WmmAnalysis.class);
-            if (wmmAnalysis.isLocallyConsistent()) {
-                applyLocalConsistencyMinSet();
-            }
-        }
-        return minTupleSet;
-    }
-
-    private void applyLocalConsistencyMinSet() {
-        for (Tuple t : getMaxTupleSet()) {
-            AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
-            MemEvent w1 = (MemEvent) t.getFirst();
-            MemEvent w2 = (MemEvent) t.getSecond();
-            if (!w1.is(INIT) && alias.mustAlias(w1, w2) && (w1.is(INIT) || t.isForward())) {
-                minTupleSet.add(t);
-            }
-        }
-    }
-
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-        	logger.info("Computing maxTupleSet for " + getName());
-            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-        	AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
-            WmmAnalysis wmmAnalysis = analysisContext.get(WmmAnalysis.class);
-            maxTupleSet = new TupleSet();
-            List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
-            List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
-                    FilterBasic.get(WRITE),
-                    FilterBasic.get(INIT)
-            ));
-
-            for(Event e1 : eventsInit){
-                for(Event e2 : eventsStore){
-                    if(alias.mayAlias((MemEvent) e1, (MemEvent)e2)){
-                        maxTupleSet.add(new Tuple(e1, e2));
+    public void initializeRelationAnalysis(RelationAnalysis.Buffer a) {
+        logger.info("Computing knowledge for {}", getName());
+        AliasAnalysis alias = a.analysisContext().get(AliasAnalysis.class);
+        WmmAnalysis wmmAnalysis = a.analysisContext().get(WmmAnalysis.class);
+        TupleSet may = new TupleSet();
+        TupleSet must = new TupleSet();
+        List<Event> eventsInit = a.task().getProgram().getCache().getEvents(FilterBasic.get(INIT));
+        List<Event> eventsStore = a.task().getProgram().getCache().getEvents(FilterMinus.get(FilterBasic.get(WRITE),FilterBasic.get(INIT)));
+        for(Event e1 : eventsInit) {
+            MemEvent w1 = (MemEvent) e1;
+            for(Event e2 : eventsStore) {
+                MemEvent w2 = (MemEvent) e2;
+                if(alias.mayAlias(w1,w2)){
+                    Tuple t = new Tuple(e1,e2);
+                    may.add(t);
+                    if(alias.mustAlias(w1,w2)) {
+                        must.add(t);
                     }
                 }
             }
-
-            for(Event e1 : eventsStore){
-                for(Event e2 : eventsStore){
-                    if(e1.getCId() != e2.getCId()
-                            && alias.mayAlias((MemEvent) e1, (MemEvent)e2)
-                            && !exec.areMutuallyExclusive(e1, e2)){
-                        maxTupleSet.add(new Tuple(e1, e2));
+        }
+        boolean lc = wmmAnalysis.isLocallyConsistent();
+        for(Event e1 : eventsStore) {
+            MemEvent w1 = (MemEvent) e1;
+            for(Event e2 : eventsStore) {
+                MemEvent w2 = (MemEvent) e2;
+                Tuple t = new Tuple(e1,e2);
+                if(!t.isLoop() && alias.mayAlias(w1,w2) && (!lc || !t.isBackward())) {
+                    may.add(t);
+                    if(lc && t.isForward() && alias.mustAlias(w1,w2)) {
+                        must.add(t);
                     }
                 }
             }
-
-            if (wmmAnalysis.isLocallyConsistent()) {
-                applyLocalConsistencyMaxSet();
-            }
-
-            logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
-        return maxTupleSet;
-    }
-
-    private void applyLocalConsistencyMaxSet() {
-        //TODO: Make sure that this is correct and does not cause any issues with totality of co
-        maxTupleSet.removeIf(t -> t.getSecond().is(INIT) || t.isBackward());
+        logger.info("knowledge size for {}: {}/{}", getName(), must.size(), may.size());
+        a.send(this, may, must);
     }
 
     @Override

@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan.wmm.relation.base.local;
 
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -13,29 +15,14 @@ abstract class BasicRegRelation extends StaticRelation {
 
     abstract Collection<Register> getRegisters(Event regReader);
 
-    protected abstract Collection<Event> getEvents();
+    protected abstract Collection<Event> getEvents(Program program);
 
     @Override
-    public TupleSet getMinTupleSet() {
-        if(minTupleSet == null){
-            mkTupleSets();
-        }
-        return minTupleSet;
-    }
-
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            mkTupleSets();
-        }
-        return maxTupleSet;
-    }
-
-    private void mkTupleSets() {
-        maxTupleSet = new TupleSet();
-        minTupleSet = new TupleSet();
-        Dependency dep = analysisContext.requires(Dependency.class);
-        for(Event regReader : getEvents()){
+    public void initializeRelationAnalysis(RelationAnalysis.Buffer a) {
+        TupleSet maxTupleSet = new TupleSet();
+        TupleSet minTupleSet = new TupleSet();
+        Dependency dep = a.analysisContext().requires(Dependency.class);
+        for(Event regReader : getEvents(a.task().getProgram())){
             for(Register register : getRegisters(regReader)){
                 Dependency.State r = dep.of(regReader, register);
                 for(Event regWriter : r.may) {
@@ -46,5 +33,6 @@ abstract class BasicRegRelation extends StaticRelation {
                 }
             }
         }
+        a.send(this, maxTupleSet, minTupleSet);
     }
 }

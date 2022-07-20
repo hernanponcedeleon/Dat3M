@@ -36,38 +36,10 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = new TupleSet(Sets.difference(r1.getMinTupleSet(), r2.getMaxTupleSet()));
-        }
-        return minTupleSet;
-    }
-
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            maxTupleSet = new TupleSet(Sets.difference(r1.getMaxTupleSet(), r2.getMinTupleSet()));
-            r2.getMaxTupleSet();
-        }
-        return maxTupleSet;
-    }
-
-    @Override
-    public TupleSet getMinTupleSetRecursive(){
-        if(recursiveGroupId > 0 && minTupleSet != null){
-            minTupleSet.addAll(Sets.difference(r1.getMinTupleSetRecursive(), r2.getMaxTupleSetRecursive()));
-            return minTupleSet;
-        }
-        return getMinTupleSet();
-    }
-
-    @Override
-    public TupleSet getMaxTupleSetRecursive(){
-        if(recursiveGroupId > 0 && maxTupleSet != null){
-            maxTupleSet.addAll(Sets.difference(r1.getMaxTupleSetRecursive(), r2.getMinTupleSetRecursive()));
-            return maxTupleSet;
-        }
-        return getMaxTupleSet();
+    public void initializeRelationAnalysis(RelationAnalysis.Buffer a) {
+        TupleSet may2 = a.may(r2);
+        TupleSet must2 = a.must(r2);
+        a.listen(r1, (may1, must1) -> a.send(this, Sets.difference(may1, must2), Sets.difference(must1, may2)));
     }
 
     @Override

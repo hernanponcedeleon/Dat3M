@@ -57,73 +57,60 @@ public class RelRMW extends StaticRelation {
         forceDoEncode = true;
     }
 
-
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            getMaxTupleSet();
+    public void initializeRelationAnalysis(RelationAnalysis.Buffer a) {
+        ExecutionAnalysis exec = a.analysisContext().get(ExecutionAnalysis.class);
+        logger.info("Computing maxTupleSet for " + getName());
+        TupleSet minTupleSet = new TupleSet();
 
+        // RMWLoad -> RMWStore
+        FilterAbstract filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(Tag.WRITE));
+        for(Event store : a.task().getProgram().getCache().getEvents(filter)){
+            if(store instanceof RMWStore) {
+                minTupleSet.add(new Tuple(((RMWStore)store).getLoadEvent(), store));
+            }
         }
-        return minTupleSet;
-    }
 
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-        	logger.info("Computing maxTupleSet for " + getName());
-            minTupleSet = new TupleSet();
+        // Locks: Load -> Assume/CondJump -> Store
+        FilterAbstract locks = FilterUnion.get(FilterBasic.get(Tag.C11.LOCK),
+   	            FilterBasic.get(Tag.Linux.LOCK_READ));
+        filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), locks);
+        for(Event e : a.task().getProgram().getCache().getEvents(filter)){
+            // Connect Load to Store
+            minTupleSet.add(new Tuple(e, e.getSuccessor().getSuccessor()));
+        }
 
-            // RMWLoad -> RMWStore
-            FilterAbstract filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(Tag.WRITE));
-            for(Event store : task.getProgram().getCache().getEvents(filter)){
-            	if(store instanceof RMWStore) {
-                    minTupleSet.add(new Tuple(((RMWStore)store).getLoadEvent(), store));
-            	}
-            }
-
-            // Locks: Load -> Assume/CondJump -> Store
-            FilterAbstract locks = FilterUnion.get(FilterBasic.get(Tag.C11.LOCK),
-            									   FilterBasic.get(Tag.Linux.LOCK_READ));
-            filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), locks);
-            for(Event e : task.getProgram().getCache().getEvents(filter)){
-            	// Connect Load to Store
-                minTupleSet.add(new Tuple(e, e.getSuccessor().getSuccessor()));
-            }
-
-            // Atomics blocks: BeginAtomic -> EndAtomic
-            filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(SVCOMPATOMIC));
-            for(Event end : task.getProgram().getCache().getEvents(filter)){
-                List<Event> block = ((EndAtomic)end).getBlock().stream().filter(x -> x.is(Tag.VISIBLE)).collect(Collectors.toList());
-                for (int i = 0; i < block.size(); i++) {
-                    Event e1 = block.get(i);
-                    for(Event e2 : block.subList(i + 1, block.size())) {
-                        if(!exec.areMutuallyExclusive(e1, e2)) {
-                            minTupleSet.add(new Tuple(e1, e2));
-                        }
-                    }
-
-                }
-            }
-
-            maxTupleSet = new TupleSet();
-            maxTupleSet.addAll(minTupleSet);
-
-            // LoadExcl -> StoreExcl
-            //TODO: This can be improved using branching analysis
-            // to find guaranteed pairs (the encoding can then also be improved)
-            for(Thread thread : task.getProgram().getThreads()){
-                for(Event load : thread.getCache().getEvents(loadExclFilter)){
-                    for(Event store : thread.getCache().getEvents(storeExclFilter)){
-                        if(load.getCId() < store.getCId() && !exec.areMutuallyExclusive(load, store)){
-                            maxTupleSet.add(new Tuple(load, store));
-                        }
+        // Atomics blocks: BeginAtomic -> EndAtomic
+        filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(SVCOMPATOMIC));
+        for(Event end : a.task().getProgram().getCache().getEvents(filter)){
+            List<Event> block = ((EndAtomic)end).getBlock().stream().filter(x -> x.is(Tag.VISIBLE)).collect(Collectors.toList());
+            for (int i = 0; i < block.size(); i++) {
+                Event e1 = block.get(i);
+                for(Event e2 : block.subList(i + 1, block.size())) {
+                    if(!exec.areMutuallyExclusive(e1, e2)) {
+                        minTupleSet.add(new Tuple(e1, e2));
                     }
                 }
             }
-            logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
-        return maxTupleSet;
+
+        TupleSet maxTupleSet = new TupleSet();
+        maxTupleSet.addAll(minTupleSet);
+
+        // LoadExcl -> StoreExcl
+        //TODO: This can be improved using branching analysis
+        // to find guaranteed pairs (the encoding can then also be improved)
+        for(Thread thread : a.task().getProgram().getThreads()){
+            for(Event load : thread.getCache().getEvents(loadExclFilter)){
+                for(Event store : thread.getCache().getEvents(storeExclFilter)){
+                    if(load.getCId() < store.getCId() && !exec.areMutuallyExclusive(load, store)){
+                        maxTupleSet.add(new Tuple(load, store));
+                    }
+                }
+            }
+        }
+        logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
+        a.send(this, maxTupleSet, minTupleSet);
     }
 
     @Override

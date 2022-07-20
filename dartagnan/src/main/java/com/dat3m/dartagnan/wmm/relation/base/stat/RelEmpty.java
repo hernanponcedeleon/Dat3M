@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 
 public class RelEmpty extends StaticRelation {
 
@@ -9,19 +9,6 @@ public class RelEmpty extends StaticRelation {
         term = name;
     }
 
-    @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-        }
-        return minTupleSet;
-    }
-
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-        }
-        return maxTupleSet;
+    public void initializeRelationAnalysis(RelationAnalysis.Buffer a) {
     }
 }

@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -26,30 +27,20 @@ public class RelCrit extends StaticRelation {
     }
 
     @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-            // Todo
-        }
-        return minTupleSet;
-    }
-
-    @Override
-    public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-            for(Thread thread : task.getProgram().getThreads()){
-                for(Event lock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_LOCK))){
-                    for(Event unlock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_UNLOCK))){
-                        if(lock.getCId() < unlock.getCId() && !exec.areMutuallyExclusive(lock, unlock)) {
-                            maxTupleSet.add(new Tuple(lock, unlock));
-                        }
+    public void initializeRelationAnalysis(RelationAnalysis.Buffer a) {
+        TupleSet maxTupleSet = new TupleSet();
+        // Todo
+        ExecutionAnalysis exec = a.analysisContext().get(ExecutionAnalysis.class);
+        for(Thread thread : a.task().getProgram().getThreads()) {
+            for(Event lock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_LOCK))) {
+                for(Event unlock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_UNLOCK))) {
+                    if(lock.getCId() < unlock.getCId() && !exec.areMutuallyExclusive(lock, unlock)) {
+                        maxTupleSet.add(new Tuple(lock, unlock));
                     }
                 }
             }
         }
-        return maxTupleSet;
+        a.send(this,maxTupleSet,new TupleSet());
     }
 
     // TODO: Not the most efficient implementation

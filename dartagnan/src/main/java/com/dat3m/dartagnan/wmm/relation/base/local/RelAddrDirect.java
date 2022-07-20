@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.base.local;
 
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -18,8 +19,8 @@ public class RelAddrDirect extends BasicRegRelation {
     }
 
     @Override
-    protected Collection<Event> getEvents() {
-        return task.getProgram().getCache().getEvents(FilterBasic.get(Tag.MEMORY));
+    protected Collection<Event> getEvents(Program p) {
+        return p.getCache().getEvents(FilterBasic.get(Tag.MEMORY));
     }
 
     @Override
