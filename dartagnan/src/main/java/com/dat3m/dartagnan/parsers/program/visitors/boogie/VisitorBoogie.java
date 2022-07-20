@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
@@ -296,20 +297,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     
     @Override 
     public Object visitAssert_cmd(Assert_cmdContext ctx) {
-    	// In boogie transformation, assertions result in "assert false".
-    	// The control flow checks the corresponding expression, thus
-    	// we cannot just add the expression to the AbstractAssertion.
-    	// We need to create an event carrying the value of the expression 
-    	// and see if this event can be executed.
-    	IExpr expr = (IExpr)ctx.proposition().expr().accept(this);
-    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, expr.getPrecision());
-    	assertionIndex++;
-		programBuilder.addChild(threadCount, EventFactory.newLocal(ass, expr))
-				.setCLine(currentLine)
-				.setSourceCodeFile(sourceCodeFile)
-				.addFilters(Tag.ASSERTION);
-       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-		programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end));
+    	addAssertion((IExpr)ctx.proposition().expr().accept(this));
     	return null;
     }
     
@@ -339,14 +327,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	       	return null;
 		}
 		if(name.equals("reach_error")) {
-	    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, ARCH_PRECISION);
-	    	assertionIndex++;
-			programBuilder.addChild(threadCount, EventFactory.newLocal(ass, new BConst(false)))
-					.setCLine(currentLine)
-					.setSourceCodeFile(sourceCodeFile)
-					.addFilters(Tag.ASSERTION);
-	       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-			programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end));
+			addAssertion(IValue.ZERO);
 			return null;
 		}
 
@@ -784,4 +765,17 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		return null;
 	}
 
+	protected void addAssertion(IExpr expr) {
+		Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, expr.getPrecision());
+    	assertionIndex++;
+    	programBuilder.addChild(threadCount, EventFactory.newLocal(ass, expr))
+				.setCLine(currentLine)
+				.setSourceCodeFile(sourceCodeFile)
+				.addFilters(Tag.ASSERTION);
+       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+		CondJump jump = EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end);
+		jump.addFilters(Tag.EARLYTERMINATION);
+		programBuilder.addChild(threadCount, jump);
+		
+	}
 }

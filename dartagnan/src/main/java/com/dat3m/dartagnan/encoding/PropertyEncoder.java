@@ -200,7 +200,7 @@ public class PropertyEncoder implements Encoder {
         BooleanFormula atLeastOneStuck = bmgr.makeFalse();
         for (Thread t : program.getThreads()) {
             BooleanFormula isStuck = isStuckMap.getOrDefault(t, bmgr.makeFalse());
-            BooleanFormula isDone = t.getCache().getEvents(FilterBasic.get(Tag.BOUND)).stream()
+            BooleanFormula isDone = t.getCache().getEvents(FilterBasic.get(Tag.EARLYTERMINATION)).stream()
                     .map(e -> bmgr.not(e.exec())).reduce(bmgr.makeTrue(), bmgr::and);
 
             atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);

@@ -174,7 +174,7 @@ public class LoopUnrolling implements ProgramProcessor {
                     }
                     CondJump boundEvent = EventFactory.newGoto(exit);
                     boundEvent.addFilters(cont.getFilters()); // Keep tags of original jump.
-                    boundEvent.addFilters(Tag.BOUND, Tag.NOOPT);
+                    boundEvent.addFilters(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
 
                     cont.getPredecessor().setSuccessor(boundEvent);
                     boundEvent.setSuccessor(cont.getSuccessor());
