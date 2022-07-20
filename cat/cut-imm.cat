@@ -1,0 +1,30 @@
+(* CAT for IMM *)
+
+(* coherence *)
+let rs = [W];po-loc;[W] | [W];(po-loc?;rf;rmw)*                                                 (* release sequence *)
+let release = ([W & REL] | [(F & REL) | (F & ACQ_REL) | (F & SC)];po);rs                        (* release prefix *)
+let sw = release;(rfi | po-loc?;rfe);([R & ACQ] | po;[(F & ACQ) | (F & ACQ_REL) | (F & SC)])    (* synchronizes with *)
+let hb = (po | sw)+                                                                             (* happens-before *)
+let eco = rf | co;(rf?) | fr;(rf?)                                                              (* extended coherence order *)
+
+irreflexive hb;(eco?)
+(* alternative *)
+(* acyclic ((hb & loc) | rf | co | fr) *)
+
+(* atomicity *)
+empty rmw & (fre;coe)
+
+(* global ordering against OOTA*)
+
+let bob = po;[W & REL] | [R & ACQ];po | po;[F] | [F];po | [W & REL];po-loc;[W]                  (* barrier order *)
+let deps = data | ctrl | addr;(po?) | casdep | [R & RMW];po                                     (* syntactic dependencies *)
+let ppo = [R];(deps | rfi)+;[W]                                                                 (* preserved program order *)
+let detour = (coe;rfe) & po                                                                     (* detour *)
+let psc = [F & SC];hb;eco;hb;[F & SC]                                                           (* partial SC fence order *)
+
+(* no OOTA *)
+let ar = rfe | bob | ppo | detour | psc | [W & STRONG];po;[W]
+acyclic ar
+
+(* Forcing fr to be cut *)
+empty(fr \ fr)

@@ -3,29 +3,30 @@ package com.dat3m.dartagnan.program.event;
 public final class Tag {
     private Tag() { }
 
-    public static final String ANY          = "_";
-    public static final String INIT         = "IW";
-    public static final String READ         = "R";
-    public static final String WRITE        = "W";
-    public static final String MEMORY       = "M";
-    public static final String FENCE        = "F";
-    public static final String RMW          = "RMW";
-    public static final String EXCL         = "EXCL";
-    public static final String STRONG       = "STRONG";
-    public static final String LOCAL        = "T";
-    public static final String LABEL        = "LB";
-    public static final String CMP          = "C";
-    public static final String IFI          = "IFI";	// Internal jump in Ifs to goto end 
-    public static final String JUMP    		= "J";
-    public static final String VISIBLE      = "V";
-    public static final String REG_WRITER   = "rW";
-    public static final String REG_READER   = "rR";
-    public static final String ASSERTION    = "ASS";
-    public static final String BOUND   		= "BOUND";
-    public static final String SPINLOOP   	= "SPINLOOP";
+    public static final String ANY          	= "_";
+    public static final String INIT         	= "IW";
+    public static final String READ         	= "R";
+    public static final String WRITE        	= "W";
+    public static final String MEMORY       	= "M";
+    public static final String FENCE        	= "F";
+    public static final String RMW          	= "RMW";
+    public static final String EXCL         	= "EXCL";
+    public static final String STRONG       	= "STRONG";
+    public static final String LOCAL        	= "T";
+    public static final String LABEL        	= "LB";
+    public static final String CMP          	= "C";
+    public static final String IFI          	= "IFI";	// Internal jump in Ifs to goto end 
+    public static final String JUMP    			= "J";
+    public static final String VISIBLE      	= "V";
+    public static final String REG_WRITER   	= "rW";
+    public static final String REG_READER   	= "rR";
+    public static final String ASSERTION    	= "ASS";
+    public static final String BOUND   			= "BOUND";
+    public static final String EARLYTERMINATION	= "EARLYTERMINATION";
+    public static final String SPINLOOP   		= "SPINLOOP";
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
-    public static final String NOOPT   		= "NOOPT";
-    public static final String ANNOTATION   = "ANNOTATION";
+    public static final String NOOPT   			= "NOOPT";
+    public static final String ANNOTATION   	= "ANNOTATION";
 
     // =============================================================================================
     // =========================================== ARMv8 ===========================================
@@ -159,7 +160,6 @@ public final class Tag {
 
         public static final String NORETURN           = "Noreturn";
         public static final String RCU_SYNC           = "Sync-rcu";
-        public static final String SRCU_SYNC          = "Sync-srcu";
         public static final String RCU_LOCK           = "Rcu-lock";
         public static final String RCU_UNLOCK         = "Rcu-unlock";
         public static final String MO_MB              = "Mb";
@@ -186,6 +186,27 @@ public final class Tag {
 
         public static String storeMO(String mo){
             return mo.equals(MO_RELEASE) ? MO_RELEASE : MO_ONCE;
+        }
+
+        // NOTE: The order below needs to be in sync with /include/lkmm.h 
+        public static String intToMo(int i) {
+            switch(i) {
+                case 0: return MO_RELAXED;
+                case 1: return MO_ONCE;
+                case 2: return MO_ACQUIRE;
+                case 3: return MO_RELEASE;
+                case 4: return MO_MB;
+                case 5: return MO_WMB;
+                case 6: return MO_RMB;
+                case 7: return RCU_LOCK;
+                case 8: return RCU_UNLOCK;
+                case 9: return RCU_SYNC;
+                case 10: return BEFORE_ATOMIC;
+                case 11: return AFTER_ATOMIC;
+                case 12: return AFTER_SPINLOCK;
+                default:
+                    throw new UnsupportedOperationException("The memory order is not recognized");
+            }
         }
 
         public static String toText(String mo){

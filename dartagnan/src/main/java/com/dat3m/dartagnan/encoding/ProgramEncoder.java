@@ -258,7 +258,7 @@ public class ProgramEncoder implements Encoder {
                     assert writer instanceof RegWriter;
                     BooleanFormula edge;
                     if(state.must.contains(writer)) {
-                        edge = writer.exec();
+                        edge = bmgr.and(writer.exec(), reader.cf());
                     } else {
                         edge = dependencyEdgeVariable(writer, reader, bmgr);
                         enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.and(writer.exec(), reader.cf(), bmgr.not(overwrite))));

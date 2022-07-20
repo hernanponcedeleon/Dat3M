@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBound;
 import com.dat3m.dartagnan.utils.printer.Printer;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
@@ -97,15 +98,37 @@ public class LoopUnrolling implements ProgramProcessor {
 
     private void unrollThread(Thread thread, int defaultBound) {
         Event cur = thread.getEntry();
+        Map<Label, Integer> boundAnnotationMap = new HashMap<>();
+        LoopBound curBoundAnn = null;
 
         while (cur != null) {
             Event next = cur.getSuccessor();
-            if (cur instanceof CondJump && ((CondJump) cur).getLabel().getOId() < cur.getOId()) {
+            if (cur instanceof LoopBound) {
+                if (curBoundAnn != null) {
+                    logger.warn("Found loop bound annotation that overwrites a previous, unused annotation.");
+                }
+                curBoundAnn = (LoopBound) cur;
+            } else if (curBoundAnn != null && cur instanceof Label) {
+                Label label = (Label)cur;
+                if (label.getJumpSet().stream().anyMatch(jump -> jump.getOId() > label.getOId())) {
+                    // The label denotes the beginning of a loop, and we found a LoopBound annotation before,
+                    // so we remember the bound and reset the annotation tracker.
+                    boundAnnotationMap.put(label, curBoundAnn.getBound());
+                    curBoundAnn = null;
+                }
+            } else if (cur instanceof CondJump && ((CondJump) cur).getLabel().getOId() < cur.getOId()) {
                 CondJump jump = (CondJump) cur;
                 if (jump.getLabel().getJumpSet().stream().allMatch(x -> x.getOId() <= jump.getOId())) {
-                    //TODO: Get different bounds for different loops (e.g. via annotations)
-                    int bound = jump.is(Tag.SPINLOOP) ? 1 : defaultBound;
-                    unrollLoop((CondJump) cur, bound);
+                    int bound;
+                    if (boundAnnotationMap.containsKey(jump.getLabel())) {
+                        bound = boundAnnotationMap.get(jump.getLabel());
+                    } else if (jump.is(Tag.SPINLOOP)) {
+                        // We let annotations get precedence over the default bound of spin loops.
+                        bound = 1;
+                    } else {
+                        bound = defaultBound;
+                    }
+                    unrollLoop(jump, bound);
                 }
             }
             cur = next;
@@ -151,7 +174,7 @@ public class LoopUnrolling implements ProgramProcessor {
                     }
                     CondJump boundEvent = EventFactory.newGoto(exit);
                     boundEvent.addFilters(cont.getFilters()); // Keep tags of original jump.
-                    boundEvent.addFilters(Tag.BOUND, Tag.NOOPT);
+                    boundEvent.addFilters(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
 
                     cont.getPredecessor().setSuccessor(boundEvent);
                     boundEvent.setSuccessor(cont.getSuccessor());

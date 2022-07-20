@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
@@ -49,6 +50,7 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProced
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.STDPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.handleStdFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.SVCOMPPROCEDURES;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LkmmProcedures.*;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.handleSvcompFunction;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
@@ -58,7 +60,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	protected ProgramBuilder programBuilder;
 	protected int threadCount = 0;
 	protected int currentThread = 0;
-    
+	private Set<String> threadLocalVariables = new HashSet<String>();
+
 	protected int currentLine= -1;
 	protected String sourceCodeFile = "";
 	
@@ -129,6 +132,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		pool.addIntPtr(threadCount + 1, next);
     		visitProc_decl(procedures.get(nextName), true, threadCallingValues.get(threadCount));	
     	}
+
+    	logger.info("Number of threads (including main): " + threadCount);
+
     	return programBuilder.build();
     }
 
@@ -167,6 +173,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			String name = ident.getText();
 			String type = ctx.typed_idents().type().getText();
 			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : ARCH_PRECISION;
+			if(ctx.getText().contains(":treadLocal")) {
+				threadLocalVariables.add(name);
+			}
 			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name) && ATOMICPROCEDURES.stream().noneMatch(name::startsWith)) {
 				int size = ctx.getText().contains(":allocSize")
 					? Integer.parseInt(ctx.getText().split(":allocSize")[1].split("}")[0])
@@ -288,20 +297,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     
     @Override 
     public Object visitAssert_cmd(Assert_cmdContext ctx) {
-    	// In boogie transformation, assertions result in "assert false".
-    	// The control flow checks the corresponding expression, thus
-    	// we cannot just add the expression to the AbstractAssertion.
-    	// We need to create an event carrying the value of the expression 
-    	// and see if this event can be executed.
-    	IExpr expr = (IExpr)ctx.proposition().expr().accept(this);
-    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, expr.getPrecision());
-    	assertionIndex++;
-		programBuilder.addChild(threadCount, EventFactory.newLocal(ass, expr))
-				.setCLine(currentLine)
-				.setSourceCodeFile(sourceCodeFile)
-				.addFilters(Tag.ASSERTION);
-       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-		programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end));
+    	addAssertion((IExpr)ctx.proposition().expr().accept(this));
     	return null;
     }
     
@@ -331,14 +327,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	       	return null;
 		}
 		if(name.equals("reach_error")) {
-	    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, ARCH_PRECISION);
-	    	assertionIndex++;
-			programBuilder.addChild(threadCount, EventFactory.newLocal(ass, new BConst(false)))
-					.setCLine(currentLine)
-					.setSourceCodeFile(sourceCodeFile)
-					.addFilters(Tag.ASSERTION);
-	       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-			programBuilder.addChild(threadCount, EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end));
+			addAssertion(IValue.ZERO);
 			return null;
 		}
 
@@ -359,6 +348,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(STDPROCEDURES.stream().anyMatch(name::startsWith)) {
 			handleStdFunction(this, ctx);
+			return null;
+		}
+		if(LKMMPROCEDURES.stream().anyMatch(name::equals)) {
+			handleLkmmFunction(this, ctx);
 			return null;
 		}
 		if(name.contains("__VERIFIER_atomic_")) {
@@ -651,6 +644,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         if(register != null){
             return register;
         }
+        if(threadLocalVariables.contains(name)) {
+            return programBuilder.getOrNewObject(String.format("%s(%s)", name, threadCount));
+        }
         MemoryObject object = programBuilder.getObject(name);
         if(object != null) {
             return object;
@@ -769,4 +765,17 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		return null;
 	}
 
+	protected void addAssertion(IExpr expr) {
+		Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, expr.getPrecision());
+    	assertionIndex++;
+    	programBuilder.addChild(threadCount, EventFactory.newLocal(ass, expr))
+				.setCLine(currentLine)
+				.setSourceCodeFile(sourceCodeFile)
+				.addFilters(Tag.ASSERTION);
+       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+		CondJump jump = EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end);
+		jump.addFilters(Tag.EARLYTERMINATION);
+		programBuilder.addChild(threadCount, jump);
+		
+	}
 }

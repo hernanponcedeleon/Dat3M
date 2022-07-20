@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.configuration.Property.*;
@@ -63,6 +64,7 @@ public class Dartagnan extends BaseOptions {
         }
 
     	CreateGitInfo();
+    	LogGlobalSettings();
 
     	String[] argKeyword = Arrays.stream(args)
 				.filter(s->s.startsWith("-"))
@@ -159,19 +161,14 @@ public class Dartagnan extends BaseOptions {
                 	ExecutionModel m = new ExecutionModel(task);
                 	m.initialize(prover.getModel(), ctx);
     				String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
-    				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_HOME") + "/output/", name);        		
+    				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name);        		
             	}
-                
-                if (p.getFormat().equals(SourceLanguage.LITMUS)) {
-                    if (p.getAssFilter() != null) {
-                        System.out.println("Filter " + (p.getAssFilter()));
-                    }
-                    System.out.println("Condition " + p.getAss().toStringWithType());
-                    System.out.println(result == FAIL ? "Ok" : "No");
-                }
+
+            	boolean safetyViolationFound = false;
             	if((result == FAIL && !p.getAss().getInvert()) || 
             			(result == PASS && p.getAss().getInvert())) {
             		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(ctx)))) {
+            			safetyViolationFound = true;
             			System.out.println("Safety violation found");
             		}
             		if(TRUE.equals(prover.getModel().evaluate(LIVENESS.getSMTVariable(ctx)))) {
@@ -182,7 +179,15 @@ public class Dartagnan extends BaseOptions {
                 			System.out.println("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getName()));
                 		}                			
             		}
-                    System.out.println(result);
+                }
+                if (p.getFormat().equals(SourceLanguage.LITMUS)) {
+                    if (p.getAssFilter() != null) {
+                        System.out.println("Filter " + (p.getAssFilter()));
+                    }
+                    System.out.println("Condition " + p.getAss().toStringWithType());
+                    System.out.println(safetyViolationFound ? "Ok" : "No");
+                } else {
+                    System.out.println(result);                	
                 }
 
 				try {

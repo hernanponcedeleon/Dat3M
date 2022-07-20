@@ -11,6 +11,8 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 
+import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
+
 import java.util.EnumSet;
 
 import org.junit.ClassRule;
@@ -36,7 +38,10 @@ public abstract class AbstractCTest {
 
     // =================== Modifiable behavior ====================
 
-    protected abstract Provider<String> getProgramPathProvider();
+    protected Provider<String> getProgramPathProvider() {
+    	return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + name + ".bpl");
+    }
+
     protected abstract long getTimeout();
 
     protected Provider<Integer> getBoundProvider() {

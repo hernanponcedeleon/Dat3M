@@ -15,7 +15,6 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
@@ -25,11 +24,6 @@ public class CnaTSO extends AbstractCTest {
 
     public CnaTSO(String name, Arch target, Result expected) {
         super(name, target, expected);
-    }
-
-    @Override
-    protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "locks/" + name + ".bpl");
     }
 
     @Override
@@ -45,16 +39,16 @@ public class CnaTSO extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-                {"cna-4", TSO, PASS},
-                {"cna-4-rel2rx_unlock1", TSO, PASS},
-                {"cna-4-rel2rx_unlock2", TSO, PASS},
-                {"cna-4-rel2rx_unlock3", TSO, PASS},
-                {"cna-4-rel2rx_unlock4", TSO, PASS},
-                {"cna-4-rel2rx_lock", TSO, PASS},
-                {"cna-4-acq2rx_lock", TSO, PASS},
-                {"cna-4-acq2rx_unlock", TSO, PASS},
-                {"cna-4-acq2rx_succ1", TSO, PASS},
-                {"cna-4-acq2rx_succ2", TSO, PASS},
+                {"locks/cna-4", TSO, PASS},
+                {"locks/cna-4-rel2rx_unlock1", TSO, PASS},
+                {"locks/cna-4-rel2rx_unlock2", TSO, PASS},
+                {"locks/cna-4-rel2rx_unlock3", TSO, PASS},
+                {"locks/cna-4-rel2rx_unlock4", TSO, PASS},
+                {"locks/cna-4-rel2rx_lock", TSO, PASS},
+                {"locks/cna-4-acq2rx_lock", TSO, PASS},
+                {"locks/cna-4-acq2rx_unlock", TSO, PASS},
+                {"locks/cna-4-acq2rx_succ1", TSO, PASS},
+                {"locks/cna-4-acq2rx_succ2", TSO, PASS},
 		});
     }
 

@@ -25,7 +25,7 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
 
     @Override
     public String toString() {
-        return "atomic_" + op.toLinuxName() + "(" + value + ", " + address + ")";
+        return "atomic_" + op.toLinuxName() + "(" + value + ", " + address + ")\t### LKMM";
     }
 
     public IOpBin getOp() {

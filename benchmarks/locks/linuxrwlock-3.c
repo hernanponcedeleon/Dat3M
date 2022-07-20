@@ -114,20 +114,17 @@ void *threadW(void *arg)
 
 void *threadRW(void *arg)
 {
-    for (int i = 0; i < 2; i++) {
-        if ((i % 2) == 0) {
-            read_lock(&mylock);
-            int r = shareddata;
-            assert(r == shareddata);
-            read_unlock(&mylock);
-        } else {
-            write_lock(&mylock);
-            shareddata = i;
-            assert(shareddata == i);
-            sum++;
-            write_unlock(&mylock);
-        }
-    }
+    read_lock(&mylock);
+    int r = shareddata;
+    assert(r == shareddata);
+    read_unlock(&mylock);
+
+    write_lock(&mylock);
+    shareddata = 2;
+    assert(shareddata == 2);
+    sum++;
+    write_unlock(&mylock);
+
     return NULL;
 }
 

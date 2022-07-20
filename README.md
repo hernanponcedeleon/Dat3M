@@ -13,6 +13,7 @@ Requirements
 * [Java](https://openjdk.java.net/projects/jdk/16/) 8 or above
 * [Smack](https://github.com/smackers/smack) 2.8.0 or above (only to verify C programs)
 * [Clang](https://clang.llvm.org) the concrete version depends on Smack (only to verify C programs)
+* [Graphviz](https://graphviz.org) (only if option `--witness.graphviz=true` is used)
 
 Installation
 ======
@@ -33,9 +34,10 @@ docker run -w /home/Dat3M -it dartagnan /bin/bash
 
 **From Sources**
 
-Set Dat3M's home and add it to the path
+Set Dat3M's home and the folder to generate output files (the output folder can be something different)
 ```
 export DAT3M_HOME=<Dat3M's root>
+export DAT3M_OUTPUT=$DAT3M_HOME/output
 ```
 
 At least the following compiler flag needs to be set, further can be added  

@@ -30,7 +30,7 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.getCSVFileName;
              as possible, to get the most accurate timings. The rule populates the created .csv files.
            - Annotate test methods with the @CSVLogger.FileName Attribute. e.g.
                 @CSVLogger.FileName("csv/mytest")
-             which will cause the creation of a .csv file "DAT3M_HOME/output/csv/<TESTCLASS>-mytest.csv"
+             which will cause the creation of a .csv file "DAT3M_OUTPUT/csv/<TESTCLASS>-mytest.csv"
              ( See ResourceHelper.getCSVFileName for details)
            - The <nameSupplier> is used to name the entry inside the .csv file
 

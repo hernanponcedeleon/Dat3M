@@ -115,8 +115,8 @@ public class WitnessGraph extends ElemWithAttributes {
 	}
 	
 	public void write() {
-		try (FileWriter fw = new FileWriter(String.format("%s/output/%s.graphml", 
-				System.getenv("DAT3M_HOME"), Files.getNameWithoutExtension(getProgram())))) {
+		try (FileWriter fw = new FileWriter(String.format("%s/%s.graphml", 
+				System.getenv("DAT3M_OUTPUT"), Files.getNameWithoutExtension(getProgram())))) {
 			fw.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
 			fw.write("<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
 			for(GraphAttributes attr : GraphAttributes.values()) {fw.write("<key attr.name=\"" + attr.toString() + "\" attr.type=\"string\" for=\"graph\" id=\"" + attr + "\"/>\n");}
