@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
@@ -79,8 +80,28 @@ public class RelationAnalysis {
             baseRel.getMinTupleSet();
         }
         for (RecursiveGroup recursiveGroup : memoryModel.getRecursiveGroups()) {
-            recursiveGroup.initMaxTupleSets();
-            recursiveGroup.initMinTupleSets();
+            boolean changed = true;
+            while(changed){
+                changed = false;
+                for(RecursiveRelation relation : recursiveGroup.getRelations()){
+                    relation.setDoRecurse();
+                    int oldSize = relation.getMaxTupleSet().size();
+                    if(oldSize != relation.getMaxTupleSetRecursive().size()){
+                        changed = true;
+                    }
+                }
+            }
+            boolean changed1 = true;
+            while(changed1){
+                changed1 = false;
+                for(RecursiveRelation relation : recursiveGroup.getRelations()){
+                    relation.setDoRecurse();
+                    int oldSize = relation.getMinTupleSet().size();
+                    if(oldSize != relation.getMinTupleSetRecursive().size()){
+                        changed1 = true;
+                    }
+                }
+            }
         }
         for (Axiom ax : memoryModel.getAxioms()) {
             ax.getRelation().getMaxTupleSet();
