@@ -8,6 +8,9 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
