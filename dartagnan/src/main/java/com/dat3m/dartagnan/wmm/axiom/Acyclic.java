@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -37,11 +38,12 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-    public TupleSet getEncodeTupleSet(){
+    public void activate(WmmEncoder.Buffer buf){
         logger.info("Computing encodeTupleSet for " + this);
         // ====== Construct [Event -> Successor] mapping ======
         Map<Event, Collection<Event>> succMap = new HashMap<>();
-        TupleSet relMaxTuple = rel.getMaxTupleSet();
+        RelationAnalysis ra = buf.analysisContext().get(RelationAnalysis.class);
+        TupleSet relMaxTuple = ra.may(rel);
         for (Tuple t : relMaxTuple) {
             succMap.computeIfAbsent(t.getFirst(), key -> new ArrayList<>()).add(t.getSecond());
         }
@@ -62,13 +64,13 @@ public class Acyclic extends Axiom {
 
         logger.info("encodeTupleSet size " + result.size());
         if (GlobalSettings.REDUCE_ACYCLICITY_ENCODE_SETS) {
-            reduceWithMinSets(result);
+            reduceWithMinSets(result, ra, buf);
             logger.info("reduced encodeTupleSet size " + result.size());
         }
-        return result;
+        buf.send(rel, result);
     }
 
-    private void reduceWithMinSets(TupleSet encodeSet) {
+    private void reduceWithMinSets(TupleSet encodeSet, RelationAnalysis ra, WmmEncoder.Buffer buf) {
         /*
             ASSUMPTION: MinSet is acyclic!
             IDEA:
@@ -87,8 +89,8 @@ public class Acyclic extends Axiom {
                       and b is implied by either a or c.
                     - It is possible to reduce must(rel) but that may give a less precise result.
          */
-        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-        TupleSet minSet = rel.getMinTupleSet();
+        ExecutionAnalysis exec = buf.analysisContext().get(ExecutionAnalysis.class);
+        TupleSet minSet = ra.must(rel);
 
         // (1) Approximate transitive closure of minSet (only gets computed when crossEdges are available)
         List<Tuple> crossEdges = minSet.stream()

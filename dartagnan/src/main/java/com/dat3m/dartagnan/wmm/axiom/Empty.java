@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
 import com.dat3m.dartagnan.encoding.WmmEncoder;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -19,8 +19,9 @@ public class Empty extends Axiom {
     }
 
     @Override
-    public TupleSet getEncodeTupleSet(){
-        return rel.getMaxTupleSet();
+    public void activate(WmmEncoder.Buffer buf) {
+        RelationAnalysis ra = buf.analysisContext().get(RelationAnalysis.class);
+        buf.send(rel, ra.may(rel));
     }
 
     @Override

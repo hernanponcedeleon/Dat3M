@@ -27,6 +27,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -172,11 +173,9 @@ public class WmmEncoder {
         // ====================== Compute encoding information =================
         Buffer buffer = new Buffer(task, analysisContext);
         Map<Relation, Set<Tuple>> queue = buffer.queue;
+        RelationAnalysis ra = analysisContext.get(RelationAnalysis.class);
         for (Axiom ax : memoryModel.getAxioms()) {
-            Set<Tuple> set = ax.getEncodeTupleSet();
-            if(!set.isEmpty()) {
-                queue.merge(ax.getRelation(), set, Sets::union);
-            }
+            ax.activate(buffer);
         }
 
         while(!queue.isEmpty()) {
