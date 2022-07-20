@@ -75,11 +75,11 @@ public final class Tag {
         public static final String STCOND	 	= "X";
         
         public static String extractLoadMo(String mo) {
-            return mo.equals(RISCV.MO_ACQ) || mo.equals(RISCV.MO_ACQ_REL) ? MO_ACQ : null;
+            return RISCV.MO_ACQ.equals(mo) || RISCV.MO_ACQ_REL.equals(mo) ? MO_ACQ : null;
         }
 
         public static String extractStoreMo(String mo) {
-            return mo.equals(RISCV.MO_REL) || mo.equals(RISCV.MO_ACQ_REL) ? MO_REL : null;
+            return RISCV.MO_REL.equals(mo) || RISCV.MO_ACQ_REL.equals(mo) ? MO_REL : null;
         }
 }
 
