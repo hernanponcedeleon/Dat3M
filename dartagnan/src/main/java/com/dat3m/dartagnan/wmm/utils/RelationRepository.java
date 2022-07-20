@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.utils;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.dat3m.dartagnan.program.filter.FilterUnion;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.RelCrit;
@@ -157,7 +158,11 @@ public class RelationRepository {
             case IDDTRANS:
                 return getRelation(RelTrans.class, getRelation(IDD));
             case DATA:
-                return getRelation(RelIntersection.class, getRelation(IDDTRANS), getRelation(RW)).setName(DATA);
+                return getRelation(RelIntersection.class, 
+                			getRelation(IDDTRANS), 
+                			getRelation(RelCartesian.class, 
+                					FilterUnion.get(FilterBasic.get(Tag.READ), FilterBasic.get(Tag.RISCV.STCOND)), 
+                					FilterBasic.get(Tag.WRITE))).setName(DATA);
             case ADDR:
                 return getRelation(RelIntersection.class,
                         getRelation(

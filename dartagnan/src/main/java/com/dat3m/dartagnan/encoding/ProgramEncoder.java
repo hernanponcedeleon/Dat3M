@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -225,7 +226,10 @@ public class ProgramEncoder implements Encoder {
      * Contextualized with the result of {@link #encodeDependencies(SolverContext) encode}.
      */
     public BooleanFormula dependencyEdge(Event writer, Event reader, SolverContext ctx) {
-        Preconditions.checkArgument(writer instanceof RegWriter);
+        Preconditions.checkArgument(writer instanceof RegWriter || writer.is(Tag.RISCV.STCOND));
+        if(writer.is(Tag.RISCV.STCOND)) {
+        	return writer.exec();
+        }
         Register register = ((RegWriter) writer).getResultRegister();
         Dependency.State r = dep.of(reader, register);
         Preconditions.checkArgument(r.may.contains(writer));

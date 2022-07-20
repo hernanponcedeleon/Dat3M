@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.Collection;
 
@@ -26,4 +28,14 @@ public class RelIdd extends BasicRegRelation {
     Collection<Register> getRegisters(Event regReader){
         return ((RegReaderData) regReader).getDataRegs();
     }
+    
+    @Override
+    public TupleSet getMaxTupleSet(){
+    	super.getMaxTupleSet();
+        for(Event sc : task.getProgram().getCache().getEvents(FilterBasic.get(Tag.RISCV.STCOND))){
+        	maxTupleSet.add(new Tuple(sc, sc.getSuccessor()));
+        }
+        return maxTupleSet;
+    }
+
 }
