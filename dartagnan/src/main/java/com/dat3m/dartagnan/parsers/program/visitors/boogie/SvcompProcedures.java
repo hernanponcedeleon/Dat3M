@@ -8,13 +8,10 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -58,7 +55,7 @@ public class SvcompProcedures {
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopEnd());
 			break;
 		case "__VERIFIER_assert":
-			__VERIFIER_assert(visitor, ctx);
+	    	visitor.addAssertion((IExpr)ctx.call_params().exprs().accept(visitor));
 			break;
 		case "__VERIFIER_assume":
 		case "assume_abort_if_not":
@@ -96,23 +93,6 @@ public class SvcompProcedures {
 		default:
 			throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
 		}
-	}
-
-	private static void __VERIFIER_assert(VisitorBoogie visitor, Call_cmdContext ctx) {
-    	IExpr expr = (IExpr)ctx.call_params().exprs().accept(visitor);
-    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, expr.getPrecision());
-    	visitor.assertionIndex++;
-    	if(expr instanceof IConst && ((IConst)expr).getValue().equals(BigInteger.ONE)) {
-    		return;
-    	}
-    	Local event = EventFactory.newLocal(ass, expr);
-		event.addFilters(Tag.ASSERTION);
-		visitor.programBuilder.addChild(visitor.threadCount, event);
-       	Label end = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-       	CondJump jump = EventFactory.newJump(new Atom(expr, NEQ, IValue.ONE), end);
-       	// We treat these jumps as bound so they do not interfere with liveness check
-       	jump.addFilters(Tag.EARLYTERMINATION);
-		visitor.programBuilder.addChild(visitor.threadCount, jump);
 	}
 
 	private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
