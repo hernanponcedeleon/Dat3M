@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.visitors;
 
 import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
+import com.dat3m.dartagnan.program.event.arch.riscv.AmoAbstract;
 import com.dat3m.dartagnan.program.event.arch.riscv.AmoOp;
 import com.dat3m.dartagnan.program.event.arch.riscv.AmoSwap;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
@@ -88,8 +89,9 @@ public interface EventVisitor<T> {
 	default T visitXchg(Xchg e) { return visitMemEvent(e); }
 
 	// RISCV Events
-	default T visitAmoOp(AmoOp e) { return visitMemEvent(e); }
-	default T visitAmoSwap(AmoSwap e) { return visitMemEvent(e); }
+	default T visitRMWAbstract(AmoAbstract e) { return visitMemEvent(e); }
+	default T visitAmoOp(AmoOp e) { return visitRMWAbstract(e); }
+	default T visitAmoSwap(AmoSwap e) { return visitRMWAbstract(e); }
 	
 	// LISA Events
 	default T visitRMW(RMW e) { return visitMemEvent(e); }

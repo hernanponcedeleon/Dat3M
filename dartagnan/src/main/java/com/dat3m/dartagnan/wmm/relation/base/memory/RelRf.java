@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.relation.base.memory;
 
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.event.arch.riscv.AmoAbstract;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -182,8 +183,8 @@ public class RelRf extends Relation {
             Formula a1 = w.getMemAddressExpr();
             Formula a2 = r.getMemAddressExpr();
             BooleanFormula sameAddress = generalEqual(a1, a2, ctx);
-            Formula v1 = w.getMemValueExpr();
-            Formula v2 = r.getMemValueExpr();
+            Formula v1 = w instanceof AmoAbstract ? ((AmoAbstract)w).getStoreMemValueExpr() :  w.getMemValueExpr();
+            Formula v2 = r instanceof AmoAbstract ? ((AmoAbstract)r).getLoadMemValueExpr() :  r.getMemValueExpr();
             BooleanFormula sameValue = generalEqual(v1, v2, ctx);
 
             edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(edge);
