@@ -41,7 +41,8 @@ public class AmoOp extends AmoAbstract {
     public void initializeEncoding(SolverContext ctx) {
         super.initializeEncoding(ctx);
         memLoadValueExpr = resultRegister.toIntFormulaResult(this, ctx);
-        memStoreValueExpr = new IExprBin(resultRegister, getOp(), getOperand()).toIntFormula(this, ctx);
+        // TODO Below we need "r_result" and not "r"
+        memStoreValueExpr = new IExprBin(resultRegister, op, r2).toIntFormula(this, ctx);
     }
 
     // Unrolling
