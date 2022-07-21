@@ -61,7 +61,7 @@ public abstract class MemEvent extends Event {
     }
     
     public void setMemValue(ExprInterface value){
-        throw new RuntimeException("MemValue is not available for event " + this.getClass().getName());
+        throw new RuntimeException("SetValue is not available for event " + this.getClass().getName());
     }
     
     public String getMo(){
