@@ -25,7 +25,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
 
     @Override
     public String toString() {
-        return resultRegister + " := atomic_add_unless" + "(" + address + ", " + value + ", " + cmp + ")";
+        return resultRegister + " := atomic_add_unless" + "(" + address + ", " + value + ", " + cmp + ")\t### LKMM";
     }
 
     public ExprInterface getCmp() {

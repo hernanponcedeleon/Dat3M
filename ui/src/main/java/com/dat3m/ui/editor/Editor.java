@@ -35,6 +35,7 @@ public class Editor extends RTextScrollPane implements ActionListener {
 
     private final ImmutableSet<String> allowedFormats;
     private String loadedFormat = "";
+    private String loadedPath = "";
 
     private Set<ActionListener> actionListeners = new HashSet<>();
 
@@ -73,12 +74,17 @@ public class Editor extends RTextScrollPane implements ActionListener {
         return loadedFormat;
     }
 
+    public String getLoadedPath(){
+        return loadedPath;
+    }
+
     @Override
     public void actionPerformed(ActionEvent event) {
         if(code.editorMenuImportActionCommand().equals(event.getActionCommand())){
             chooser.setCurrentDirectory(new File(getProperty("user.dir") + "/.."));
             if(chooser.showOpenDialog(null) == APPROVE_OPTION){
                 String path = chooser.getSelectedFile().getPath();
+                loadedPath = path.substring(0, path.lastIndexOf('/') + 1);
                 String format = path.substring(path.lastIndexOf('.') + 1).trim();
                 if(allowedFormats.contains(format)){
                     loadedFormat = format;

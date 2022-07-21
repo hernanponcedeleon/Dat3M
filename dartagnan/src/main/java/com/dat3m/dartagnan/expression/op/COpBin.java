@@ -58,6 +58,18 @@ public enum COpBin {
         }
     }
 
+    public boolean isSigned() {
+        switch(this){
+            case EQ: case NEQ:
+            case GTE: case LTE: case GT: case LT:
+            	return true;
+            case UGTE: case ULTE: case UGT: case ULT:
+            	return false;
+            default:
+                throw new UnsupportedOperationException("isSigned() not implemented for " + this);
+        }
+    }
+
     public BooleanFormula encode(Formula e1, Formula e2, SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         if(e1 instanceof BooleanFormula && e2 instanceof BooleanFormula) {

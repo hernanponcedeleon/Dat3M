@@ -48,6 +48,9 @@ public class RefinementTask extends VerificationTask {
     private Context baselineContext;
     private WmmEncoder baselineWmmEncoder;
 
+    //FIXME: This is only used to fix issue #280 (https://github.com/hernanponcedeleon/Dat3M/issues/280)
+    private VerificationTask baselineTask;
+
 
     // =========================== Configurables ===========================
 
@@ -76,11 +79,11 @@ public class RefinementTask extends VerificationTask {
     @Override
     public void performStaticWmmAnalyses() throws InvalidConfigurationException {
         super.performStaticWmmAnalyses();
-        VerificationTask newTask = new VerificationTask(getProgram(), baselineModel, getProperty(), getWitness(), getConfig());
+        baselineTask = new VerificationTask(getProgram(), baselineModel, getProperty(), getWitness(), getConfig());
         baselineContext = Context.createCopyFrom(getAnalysisContext());
         baselineContext.invalidate(WmmAnalysis.class);
         baselineContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(baselineModel, getConfig()));
-        baselineContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(newTask, baselineContext, getConfig()));
+        baselineContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(baselineTask, baselineContext, getConfig()));
     }
 
     @Override
@@ -92,7 +95,11 @@ public class RefinementTask extends VerificationTask {
         propertyEncoder = PropertyEncoder.fromConfig(baselineWmmEncoder);
         symmetryEncoder = SymmetryEncoder.fromConfig(baselineWmmEncoder);
 
-		logger.info("{}: {}", BASELINE, baselines);
+        // FIXME: Here we share some encoders with the baselineTask, to fix issue #280 for now.
+        baselineTask.progEncoder = this.progEncoder;
+        baselineTask.propertyEncoder = this.propertyEncoder;
+
+        logger.info("{}: {}", BASELINE, baselines);
     }
 
     public static RefinementTask fromVerificationTaskWithDefaultBaselineWMM(VerificationTask task)

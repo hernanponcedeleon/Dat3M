@@ -10,10 +10,8 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,6 +25,7 @@ public class SvcompProcedures {
 			"__VERIFIER_assert",
 //			"__VERIFIER_assume",
 //			"assume_abort_if_not",
+			"__VERIFIER_loop_bound",
 			"__VERIFIER_loop_begin",
 			"__VERIFIER_spin_start",
 			"__VERIFIER_spin_end",
@@ -47,68 +46,57 @@ public class SvcompProcedures {
 	public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
 		switch(name) {
-		case "__VERIFIER_loop_begin":
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBegin());
-			break;
-		case "__VERIFIER_spin_start":
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopStart());
-			break;
-		case "__VERIFIER_spin_end":
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopEnd());
-			break;
-		case "__VERIFIER_assert":
-			__VERIFIER_assert(visitor, ctx);
-			break;
-		case "__VERIFIER_assume":
-		case "assume_abort_if_not":
-			__VERIFIER_assume(visitor, ctx);
-			break;
-		case "__VERIFIER_atomic_begin":
-			if(GlobalSettings.ATOMIC_AS_LOCK) {
-				__VERIFIER_atomic(visitor, true);
-			} else {
-				__VERIFIER_atomic_begin(visitor);	
-			}
-			break;
-		case "__VERIFIER_atomic_end":
-			if(GlobalSettings.ATOMIC_AS_LOCK) {
-				__VERIFIER_atomic(visitor, false);
-			} else {
-				__VERIFIER_atomic_end(visitor);
-			}
-			break;
-		case "__VERIFIER_nondet_bool":
-			__VERIFIER_nondet_bool(visitor, ctx);
-			break;
-		case "__VERIFIER_nondet_int":
-		case "__VERIFIER_nondet_uint":
-		case "__VERIFIER_nondet_unsigned_int":
-		case "__VERIFIER_nondet_short":
-		case "__VERIFIER_nondet_ushort":
-		case "__VERIFIER_nondet_unsigned_short":
-		case "__VERIFIER_nondet_long":
-		case "__VERIFIER_nondet_ulong":
-		case "__VERIFIER_nondet_char":
-		case "__VERIFIER_nondet_uchar":
-			__VERIFIER_nondet(visitor, ctx, name);
-			break;
-		default:
-			throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
+			case "__VERIFIER_loop_bound":
+				__VERIFIER_loop_bound(visitor, ctx);
+				break;
+			case "__VERIFIER_loop_begin":
+				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBegin());
+				break;
+			case "__VERIFIER_spin_start":
+				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopStart());
+				break;
+			case "__VERIFIER_spin_end":
+				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopEnd());
+				break;
+			case "__VERIFIER_assert":
+				visitor.addAssertion((IExpr)ctx.call_params().exprs().accept(visitor));
+				break;
+			case "__VERIFIER_assume":
+			case "assume_abort_if_not":
+				__VERIFIER_assume(visitor, ctx);
+				break;
+			case "__VERIFIER_atomic_begin":
+				if(GlobalSettings.ATOMIC_AS_LOCK) {
+					__VERIFIER_atomic(visitor, true);
+				} else {
+					__VERIFIER_atomic_begin(visitor);
+				}
+				break;
+			case "__VERIFIER_atomic_end":
+				if(GlobalSettings.ATOMIC_AS_LOCK) {
+					__VERIFIER_atomic(visitor, false);
+				} else {
+					__VERIFIER_atomic_end(visitor);
+				}
+				break;
+			case "__VERIFIER_nondet_bool":
+				__VERIFIER_nondet_bool(visitor, ctx);
+				break;
+			case "__VERIFIER_nondet_int":
+			case "__VERIFIER_nondet_uint":
+			case "__VERIFIER_nondet_unsigned_int":
+			case "__VERIFIER_nondet_short":
+			case "__VERIFIER_nondet_ushort":
+			case "__VERIFIER_nondet_unsigned_short":
+			case "__VERIFIER_nondet_long":
+			case "__VERIFIER_nondet_ulong":
+			case "__VERIFIER_nondet_char":
+			case "__VERIFIER_nondet_uchar":
+				__VERIFIER_nondet(visitor, ctx, name);
+				break;
+			default:
+				throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
 		}
-	}
-
-	private static void __VERIFIER_assert(VisitorBoogie visitor, Call_cmdContext ctx) {
-    	IExpr expr = (IExpr)ctx.call_params().exprs().accept(visitor);
-    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, expr.getPrecision());
-    	visitor.assertionIndex++;
-    	if(expr instanceof IConst && ((IConst)expr).getValue().equals(BigInteger.ONE)) {
-    		return;
-    	}
-    	Local event = EventFactory.newLocal(ass, expr);
-		event.addFilters(Tag.ASSERTION);
-		visitor.programBuilder.addChild(visitor.threadCount, event);
-       	Label end = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-       	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newJump(new Atom(ass, NEQ, expr), end));
 	}
 
 	private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -192,5 +180,10 @@ public class SvcompProcedures {
 					.setCLine(visitor.currentLine)
 					.setSourceCodeFile(visitor.sourceCodeFile);		
 	    }
+	}
+
+	private static void __VERIFIER_loop_bound(VisitorBoogie visitor, Call_cmdContext ctx) {
+		int bound = ((IExpr)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValueAsInt();
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBound(bound));
 	}
 }
