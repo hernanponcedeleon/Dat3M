@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.riscv.AmoAbstract;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
@@ -84,10 +83,6 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     @Override
     public boolean mayAlias(MemEvent x, MemEvent y) {
-    	// TODO make this properly
-    	if(x instanceof AmoAbstract || y instanceof AmoAbstract) {
-    		return true;
-    	}
         return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
     }
 
@@ -125,8 +120,6 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
                 addAllAddresses(l,value.address());
             }
         }
-    	System.out.println("Loads: " + loads);
-    	System.out.println("Stores: " + stores);
     }
 
     protected void processRegs(Local e) {
