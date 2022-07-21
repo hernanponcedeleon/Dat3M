@@ -22,6 +22,7 @@ import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.configuration.Property.CAT;
@@ -104,7 +105,7 @@ public class ReachabilityResult {
                     }
                     // Verification ended, we can interrupt the timeout Thread
                     t.interrupt();
-                    buildVerdict(result, prover.getModel(), ctx);
+                    buildVerdict(result, prover, ctx);
                 }
             } catch (InterruptedException e){
             	verdict = "TIMEOUT";
@@ -114,18 +115,20 @@ public class ReachabilityResult {
         }
     }
 
-    private void buildVerdict(Result result, Model m, SolverContext ctx){
+    private void buildVerdict(Result result, ProverEnvironment prover, SolverContext ctx) throws SolverException {
         StringBuilder sb = new StringBuilder();
-        if(result.equals(FAIL)) {
-    		for(Axiom ax : wmm.getAxioms()) {
-        		if(ax.isFlagged() && TRUE.equals(m.evaluate(CAT.getSMTVariable(ax, ctx)))) {
-        			sb.append("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getName())).append("\n");
-        		}
-    		}
-        }
+        Model model = result.equals(FAIL) ? prover.getModel() : null;
+    	for(Axiom ax : wmm.getAxioms()) {
+        	if(ax.isFlagged() && model != null && TRUE.equals(model.evaluate(CAT.getSMTVariable(ax, ctx)))) {
+        		sb.append("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getName())).append("\n");
+        	}
+    	}
 		// TODO We might want to output different messages once we allow to check LIVENESS from the UI
 		sb.append("Condition ").append(program.getAss().toStringWithType()).append("\n");
-		sb.append(program.getFormat().equals(LITMUS) ? (result.equals(FAIL) && TRUE.equals(m.evaluate(REACHABILITY.getSMTVariable(ctx)))) ? "Ok" : "No" : result).append("\n");
+		sb.append(program.getFormat().equals(LITMUS) ? (model != null && TRUE.equals(model.evaluate(REACHABILITY.getSMTVariable(ctx)))) ? "Ok" : "No" : result).append("\n");
+		if(model != null) {
+			model.close();			
+		}
         verdict = sb.toString();
     }
 
