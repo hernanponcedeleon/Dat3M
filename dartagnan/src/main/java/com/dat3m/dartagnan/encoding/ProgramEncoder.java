@@ -213,29 +213,6 @@ public class ProgramEncoder implements Encoder {
     }
 
     /**
-     * @param writer
-     * Overwrites some register.
-     * @param reader
-     * Happens on the same thread as {@code writer} and could use its value,
-     * meaning that {@code writer} appears in {@code may(reader,R)} for some register {@code R}.
-     * @param ctx
-     * Builder of expressions and formulas.
-     * @return
-     * Proposition that {@code reader} directly uses the value from {@code writer}, if both are executed.
-     * Contextualized with the result of {@link #encodeDependencies(SolverContext) encode}.
-     */
-    public BooleanFormula dependencyEdge(Event writer, Event reader, SolverContext ctx) {
-        Preconditions.checkArgument(writer instanceof RegWriter);
-        Register register = ((RegWriter) writer).getResultRegister();
-        Dependency.State r = dep.of(reader, register);
-        Preconditions.checkArgument(r.may.contains(writer));
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return r.must.contains(writer) ? 
-        		execution(writer, reader, exec, ctx) :
-        		dependencyEdgeVariable(writer, reader, bmgr);
-    }
-
-    /**
      * @param ctx
      * Builder of expressions and formulas.
      * @return
@@ -315,7 +292,7 @@ public class ProgramEncoder implements Encoder {
         return enc;
     }
 
-    private static BooleanFormula dependencyEdgeVariable(Event writer, Event reader, BooleanFormulaManager bmgr) {
-        return bmgr.makeVariable("__dep " + writer.getCId() + " " + reader.getCId());
+    public static BooleanFormula dependencyEdgeVariable(Event writer, Event reader, BooleanFormulaManager bmgr) {
+        return bmgr.makeVariable("idd " + writer.getCId() + " " + reader.getCId());
     }
 }
