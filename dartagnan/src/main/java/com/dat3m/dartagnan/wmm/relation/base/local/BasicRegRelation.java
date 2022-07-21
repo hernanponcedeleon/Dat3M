@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.relation.base.local;
 
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.Dependency;
+import com.dat3m.dartagnan.program.event.arch.riscv.AmoAbstract;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -41,9 +42,18 @@ abstract class BasicRegRelation extends StaticRelation {
             for(Register register : getRegisters(regReader)){
                 Dependency.State r = dep.of(regReader, register);
                 for(Event regWriter : r.may) {
+                	// AmoAbstract events are guarantee to succeed, thus their destination 
+                	// register is always constant and thus it does not create a dependency.
+                	if(regWriter instanceof AmoAbstract) {
+                		continue;
+                	}
                     maxTupleSet.add(new Tuple(regWriter, regReader));
                 }
                 for(Event regWriter : r.must) {
+                	// Same as above
+                	if(regWriter instanceof AmoAbstract) {
+                		continue;
+                	}
                     minTupleSet.add(new Tuple(regWriter, regReader));
                 }
             }
