@@ -19,7 +19,7 @@ public class AmoSwap extends AmoAbstract {
 
     @Override
 	public String toString() {
-		return String.format("%s = amoswap(%s, %s%s)", resultRegister, address, r2, (mo != null ? ", " + mo : ""));
+		return String.format("%s = amoswap(*%s, %s%s)", resultRegister, address, r2, (mo != null ? ", " + mo : ""));
 		
 	}
     

@@ -24,7 +24,7 @@ public class AmoOp extends AmoAbstract {
 
 	@Override
 	public String toString() {
-		return String.format("%s = amo%s(%s, %s%s)", resultRegister, op.toLinuxName(), address, r2, (mo != null ? ", " + mo : ""));
+		return String.format("%s = amo%s(*%s, %s%s)", resultRegister, op.toLinuxName(), address, r2, (mo != null ? ", " + mo : ""));
 		
 	}
 	
