@@ -17,10 +17,6 @@ public class AmoSwap extends AmoAbstract {
         super(other);
     }
 
-	public Register getValue() {
-		return r2;
-	}
-	
     @Override
 	public String toString() {
 		return String.format("%s = amoswap(%s, %s%s)", resultRegister, address, r2, (mo != null ? ", " + mo : ""));

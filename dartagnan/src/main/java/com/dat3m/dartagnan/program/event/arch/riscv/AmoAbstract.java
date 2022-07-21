@@ -51,6 +51,10 @@ public abstract class AmoAbstract extends MemEvent implements RegWriter, RegRead
 		return resultRegister;
 	}
 
+    public Formula getMemValueExpr(){
+    	throw new RuntimeException("MemValueExpr is not available for event " + this.getClass().getName());
+    }
+
     public Formula getLoadMemValueExpr(){
     	Preconditions.checkState(memLoadValueExpr != null);
     	return memLoadValueExpr;
