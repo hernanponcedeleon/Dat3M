@@ -57,7 +57,8 @@ public class RelRf extends Relation {
 
             for(Event e1 : storeEvents){
                 for(Event e2 : loadEvents){
-                    if(alias.mayAlias((MemEvent) e1, (MemEvent) e2)){
+                	// AMO instructions are both READ and WRITE, we avoid adding (e1,e1) tuples.
+                    if(e1.getCId() != e2.getCId() && alias.mayAlias((MemEvent) e1, (MemEvent) e2)){
                     	maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
