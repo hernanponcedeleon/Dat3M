@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterIntersection;
 import com.dat3m.dartagnan.program.filter.FilterUnion;
@@ -59,25 +58,24 @@ public class RelRMW extends StaticRelation {
             minTupleSet = new TupleSet();
 
             // RMWLoad -> RMWStore
-            FilterAbstract filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(Tag.WRITE));
-            for(Event store : task.getProgram().getCache().getEvents(filter)){
+            for(Event store : task.getProgram().getCache().getEvents(
+                    FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(Tag.WRITE)))){
             	if(store instanceof RMWStore) {
                     minTupleSet.add(new Tuple(((RMWStore)store).getLoadEvent(), store));
             	}
             }
 
             // Locks: Load -> Assume/CondJump -> Store
-            FilterAbstract locks = FilterUnion.get(FilterBasic.get(Tag.C11.LOCK), 
-            									   FilterBasic.get(Tag.Linux.LOCK_READ));
-            filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), locks);
-            for(Event e : task.getProgram().getCache().getEvents(filter)){
+            for(Event e : task.getProgram().getCache().getEvents(FilterIntersection.get(
+                    FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(Tag.READ)),
+                    FilterUnion.get(FilterBasic.get(Tag.C11.LOCK), FilterBasic.get(Tag.Linux.LOCK_READ))))){
             	// Connect Load to Store
                 minTupleSet.add(new Tuple(e, e.getSuccessor().getSuccessor()));
             }
 
             // Atomics blocks: BeginAtomic -> EndAtomic
-            filter = FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(SVCOMPATOMIC));
-            for(Event end : task.getProgram().getCache().getEvents(filter)){
+            for(Event end : task.getProgram().getCache().getEvents(
+                    FilterIntersection.get(FilterBasic.get(Tag.RMW), FilterBasic.get(SVCOMPATOMIC)))){
                 List<Event> block = ((EndAtomic)end).getBlock().stream().filter(x -> x.is(Tag.VISIBLE)).collect(Collectors.toList());
                 for (int i = 0; i < block.size(); i++) {
                     for (int j = i + 1; j < block.size(); j++) {
@@ -108,9 +106,8 @@ public class RelRMW extends StaticRelation {
         BooleanFormula unpredictable = bmgr.makeFalse();
         Map<Event, BooleanFormula> map = new HashMap<>();
         for(Tuple tuple : maxTupleSet) {
-            // not necessarily memory events
-            Event load = tuple.getFirst();
-            Event store = tuple.getSecond();
+            MemEvent load = (MemEvent) tuple.getFirst();
+            MemEvent store = (MemEvent) tuple.getSecond();
             BooleanFormula rel = this.getSMTVar(tuple, ctx);
             if(minTupleSet.contains(tuple)) {
                 enc = bmgr.and(enc, bmgr.equivalence(rel, getExecPair(tuple, ctx)));
@@ -123,7 +120,7 @@ public class RelRMW extends StaticRelation {
                 BooleanFormula isExecPair = bmgr.and(isPair, store.exec());
                 enc = bmgr.and(enc, bmgr.equivalence(isPair, pairingCond(load, store, ctx)));
                 // If load and store have the same address
-                BooleanFormula sameAddress = generalEqual(((MemEvent) load).getMemAddressExpr(), ((MemEvent) store).getMemAddressExpr(), ctx);
+                BooleanFormula sameAddress = generalEqual(load.getMemAddressExpr(), store.getMemAddressExpr(), ctx);
                 unpredictable = bmgr.or(unpredictable, bmgr.and(isExecPair, bmgr.not(sameAddress)));
                 // Relation between exclusive load and store
                 enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(isExecPair, sameAddress)));
