@@ -47,34 +47,27 @@ public class RelCrit extends StaticRelation {
         return maxTupleSet;
     }
 
-    // TODO: Not the most efficient implementation
-    // Let's see if we need to keep a reference to a thread in events for anything else, and then optimize this method
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
-        for(Thread thread : task.getProgram().getThreads()){
-            for(Event lock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_LOCK))){
-                for(Event unlock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_UNLOCK))){
-                    if(lock.getCId() < unlock.getCId()){
-                        Tuple tuple = new Tuple(lock, unlock);
-                        if(encodeTupleSet.contains(tuple)){
-                        	BooleanFormula relation = bmgr.and(getExecPair(lock, unlock, ctx));
-                            for(Event otherLock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_LOCK))){
-                                if(lock.getCId() < otherLock.getCId() && otherLock.getCId() < unlock.getCId()){
-                                    relation = bmgr.and(relation, bmgr.not(this.getSMTVar(otherLock, unlock, ctx)));
-                                }
-                            }
-                            for(Event otherUnlock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_UNLOCK))){
-                                if(lock.getCId() < otherUnlock.getCId() && otherUnlock.getCId() < unlock.getCId()){
-                                    relation = bmgr.and(relation, bmgr.not(this.getSMTVar(lock, otherUnlock, ctx)));
-                                }
-                            }
-                            enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), relation));
-                        }
-                    }
+        for(Tuple tuple : maxTupleSet) {
+            Event lock = tuple.getFirst();
+            Event unlock = tuple.getSecond();
+            BooleanFormula relation = getExecPair(tuple, ctx);
+            for(Tuple t : maxTupleSet.getBySecond(unlock)) {
+                Event otherLock = t.getFirst();
+                if(lock.getCId() < otherLock.getCId() && otherLock.getCId() < unlock.getCId()) {
+                    relation = bmgr.and(relation, bmgr.not(getSMTVar(t, ctx)));
                 }
             }
+            for(Tuple t : maxTupleSet.getByFirst(lock)) {
+                Event otherUnlock = t.getSecond();
+                if(lock.getCId() < otherUnlock.getCId() && otherUnlock.getCId() < unlock.getCId()) {
+                    relation = bmgr.and(relation, bmgr.not(getSMTVar(t, ctx)));
+                }
+            }
+            enc = bmgr.and(enc, bmgr.equivalence(getSMTVar(tuple, ctx), relation));
         }
         return enc;
     }
