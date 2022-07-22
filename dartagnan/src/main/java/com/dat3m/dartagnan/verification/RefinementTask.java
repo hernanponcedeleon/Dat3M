@@ -98,6 +98,7 @@ public class RefinementTask extends VerificationTask {
         // FIXME: Here we share some encoders with the baselineTask, to fix issue #280 for now.
         baselineTask.progEncoder = this.progEncoder;
         baselineTask.propertyEncoder = this.propertyEncoder;
+        wmmEncoder = baselineWmmEncoder;
 
         logger.info("{}: {}", BASELINE, baselines);
     }
