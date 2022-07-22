@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.event.arch.aarch64;
+package com.dat3m.dartagnan.program.event.arch.excl;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
