@@ -6,10 +6,6 @@ import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.ProgramEncoder;
-import com.dat3m.dartagnan.encoding.PropertyEncoder;
-import com.dat3m.dartagnan.encoding.SymmetryEncoder;
-import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.*;
@@ -28,7 +24,6 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -42,7 +37,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /*
 Represents a verification task.
  */
-//TODO: The encoders should go from this class
 @Options
 public class VerificationTask {
 
@@ -53,13 +47,6 @@ public class VerificationTask {
     private final WitnessGraph witness;
     private final Configuration config;
     protected final Context analysisContext;
-
-
-    // Encoders
-    protected ProgramEncoder progEncoder;
-    protected PropertyEncoder propertyEncoder;
-    protected WmmEncoder wmmEncoder;
-    protected SymmetryEncoder symmetryEncoder;
 
     protected VerificationTask(Program program, Wmm memoryModel, EnumSet<Property> property, WitnessGraph witness, Configuration config)
     throws InvalidConfigurationException {
@@ -99,11 +86,6 @@ public class VerificationTask {
         return memoryModel.getRelationDependencyGraph();
     }
 
-    public ProgramEncoder getProgramEncoder() { return progEncoder; }
-    public PropertyEncoder getPropertyEncoder() { return propertyEncoder; }
-    public WmmEncoder getWmmEncoder() { return wmmEncoder; }
-    public SymmetryEncoder getSymmetryEncoder() { return symmetryEncoder; }
-
 
     // ===================== Utility Methods ====================
 
@@ -136,19 +118,6 @@ public class VerificationTask {
         analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(memoryModel, config));
         analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(memoryModel, this, analysisContext, config));
     }
-
-    public void initializeEncoders(SolverContext ctx) throws InvalidConfigurationException {
-        progEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
-        propertyEncoder = PropertyEncoder.fromConfig(program, memoryModel,analysisContext, config);
-        wmmEncoder = WmmEncoder.fromConfig(memoryModel, analysisContext, config);
-        symmetryEncoder = SymmetryEncoder.fromConfig(memoryModel, analysisContext, config);
-
-        progEncoder.initializeEncoding(ctx);
-        propertyEncoder.initializeEncoding(ctx);
-        wmmEncoder.initializeEncoding(ctx);
-        symmetryEncoder.initializeEncoding(ctx);
-    }
-
 
     // ==================== Builder =====================
 

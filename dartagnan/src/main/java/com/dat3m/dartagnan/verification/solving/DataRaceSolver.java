@@ -2,11 +2,16 @@ package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.encoding.PropertyEncoder;
+import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Wmm;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -23,15 +28,24 @@ public class DataRaceSolver {
 
 	public static Result run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
 			throws InterruptedException, SolverException, InvalidConfigurationException {
+		Program program = task.getProgram();
+		Wmm memoryModel = task.getMemoryModel();
+		Context analysisContext = task.getAnalysisContext();
+		Configuration config = task.getConfig();
 
 		task.preprocessProgram();
 		task.performStaticProgramAnalyses();
 		task.performStaticWmmAnalyses();
 
-		task.initializeEncoders(ctx);
-		ProgramEncoder programEncoder = task.getProgramEncoder();
-		PropertyEncoder propertyEncoder = task.getPropertyEncoder();
-		WmmEncoder wmmEncoder = task.getWmmEncoder();
+		ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
+		PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, memoryModel,analysisContext, config);
+		WmmEncoder wmmEncoder = WmmEncoder.fromConfig(memoryModel, analysisContext, config);
+		SymmetryEncoder symmetryEncoder = SymmetryEncoder.fromConfig(memoryModel, analysisContext, config);
+
+		programEncoder.initializeEncoding(ctx);
+		propertyEncoder.initializeEncoding(ctx);
+		wmmEncoder.initializeEncoding(ctx);
+		symmetryEncoder.initializeEncoding(ctx);
 		
 		Result res = UNKNOWN;
 			
