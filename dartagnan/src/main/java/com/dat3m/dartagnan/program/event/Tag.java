@@ -74,13 +74,6 @@ public final class Tag {
         // Store conditional
         public static final String STCOND	 	= "X";
         
-        public static String extractLoadMo(String mo) {
-            return RISCV.MO_ACQ.equals(mo) || RISCV.MO_ACQ_REL.equals(mo) ? MO_ACQ : null;
-        }
-
-        public static String extractStoreMo(String mo) {
-            return RISCV.MO_REL.equals(mo) || RISCV.MO_ACQ_REL.equals(mo) ? MO_REL : null;
-        }
 }
 
     // =============================================================================================
