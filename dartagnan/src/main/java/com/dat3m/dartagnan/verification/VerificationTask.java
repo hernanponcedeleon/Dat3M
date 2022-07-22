@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.*;
@@ -114,7 +115,16 @@ public class VerificationTask {
         }
     }
 
-    public void performStaticWmmAnalyses() throws InvalidConfigurationException {
+    /**
+     * Performs all memory-model-based static analyses.
+     * @param memoryModel Base for the analyses.
+     * @param analysisContext Collection of static analyses already performed for this task.
+     *                        Also receives the results.
+     * @param config User-defined options to further specify the behavior.
+     * @exception InvalidConfigurationException Some user-defined option does not match the format.
+     * @exception UnsatisfiedRequirementException Some static analysis is missing.
+     */
+    public void performStaticWmmAnalyses(Wmm memoryModel, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(memoryModel, config));
         analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(memoryModel, this, analysisContext, config));
     }

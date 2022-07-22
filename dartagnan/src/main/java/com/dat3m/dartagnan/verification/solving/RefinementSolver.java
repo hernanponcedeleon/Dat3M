@@ -18,8 +18,6 @@ import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -67,6 +65,7 @@ public class RefinementSolver {
             throws InterruptedException, SolverException, InvalidConfigurationException {
 
         Program program = task.getProgram();
+        Wmm memoryModel = task.getMemoryModel();
         Wmm baselineModel = task.getBaselineModel();
         Context analysisContext = task.getAnalysisContext();
         Configuration config = task.getConfig();
@@ -74,14 +73,12 @@ public class RefinementSolver {
 		task.preprocessProgram();
         // We cut the rhs of differences to get a semi-positive model, if possible.
         // This call modifies the baseline model!
-        Set<Relation> cutRelations = cutRelationDifferences(task.getMemoryModel(), task.getBaselineModel());
+        Set<Relation> cutRelations = cutRelationDifferences(memoryModel, baselineModel);
         task.performStaticProgramAnalyses();
-        task.performStaticWmmAnalyses();
 
         Context baselineContext = Context.createCopyFrom(analysisContext);
-        baselineContext.invalidate(WmmAnalysis.class);
-        baselineContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(baselineModel, config));
-        baselineContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(baselineModel, task, baselineContext, config));
+        task.performStaticWmmAnalyses(memoryModel, analysisContext, config);
+        task.performStaticWmmAnalyses(baselineModel, baselineContext, config);
 
         ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
         PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, baselineModel, analysisContext, config);
