@@ -17,6 +17,7 @@ import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 public class RMWStoreExclusive extends Store implements RegReaderData {
 
     protected transient BooleanFormula execVar;
+    protected transient BooleanFormula isPaired;
 
     public RMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean strong){
         super(address, value, mo);
@@ -40,8 +41,13 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
     public void initializeEncoding(SolverContext ctx) {
         super.initializeEncoding(ctx);
         execVar = is(Tag.STRONG) ? cfVar : ctx.getFormulaManager().makeVariable(BooleanType, "exec(" + repr() + ")");
+        isPaired = ctx.getFormulaManager().makeVariable(BooleanType, "isPaired(" + repr() + ")");
     }
 
+    public BooleanFormula isPaired() {
+    	return isPaired;
+    }
+    
     @Override
     public String toString(){
     	String tag = is(Tag.STRONG) ? " strong" : "";
