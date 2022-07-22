@@ -30,7 +30,7 @@ public class DataRaceSolver {
 			throws InterruptedException, SolverException, InvalidConfigurationException {
 		Program program = task.getProgram();
 		Wmm memoryModel = task.getMemoryModel();
-		Context analysisContext = task.getAnalysisContext();
+		Context analysisContext = Context.create();
 		Configuration config = task.getConfig();
 
 		task.preprocessProgram();

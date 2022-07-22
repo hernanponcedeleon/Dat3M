@@ -28,7 +28,7 @@ public class AssumeSolver {
         Result res = Result.UNKNOWN;
         Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
-        Context analysisContext = task.getAnalysisContext();
+        Context analysisContext = Context.create();
         Configuration config = task.getConfig();
 
         task.preprocessProgram();

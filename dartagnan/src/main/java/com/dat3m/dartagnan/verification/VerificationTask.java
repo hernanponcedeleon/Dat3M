@@ -47,7 +47,6 @@ public class VerificationTask {
     private final EnumSet<Property> property;
     private final WitnessGraph witness;
     private final Configuration config;
-    protected final Context analysisContext;
 
     protected VerificationTask(Program program, Wmm memoryModel, EnumSet<Property> property, WitnessGraph witness, Configuration config)
     throws InvalidConfigurationException {
@@ -56,7 +55,6 @@ public class VerificationTask {
         this.property = checkNotNull(property);
         this.witness = checkNotNull(witness);
         this.config = checkNotNull(config);
-        this.analysisContext = Context.create();
 
         config.recursiveInject(this);
     }
@@ -74,8 +72,6 @@ public class VerificationTask {
     public WitnessGraph getWitness() { return witness; }
     
 	public EnumSet<Property> getProperty() { return property; }
-
-    public Context getAnalysisContext() { return analysisContext; }
 
     public Set<Relation> getRelations() {
     	return memoryModel.getRelationRepository().getRelations();

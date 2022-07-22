@@ -67,7 +67,7 @@ public class RefinementSolver {
         Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
         Wmm baselineModel = task.getBaselineModel();
-        Context analysisContext = task.getAnalysisContext();
+        Context analysisContext = Context.create();
         Configuration config = task.getConfig();
 
 		task.preprocessProgram();
