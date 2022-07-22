@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -97,7 +96,7 @@ public class WmmEncoder {
     public BooleanFormula edge(Relation relation, Tuple tuple) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         RelationAnalysis ra = analysisContext.get(RelationAnalysis.class);
-        if(ra.may(relation).contains(tuple)) {
+        if(!ra.may(relation).contains(tuple)) {
             return bmgr.makeFalse();
         }
         if(relation instanceof RelIdd || relation instanceof RelAddrDirect) {
