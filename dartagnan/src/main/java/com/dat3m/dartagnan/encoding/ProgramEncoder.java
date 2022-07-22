@@ -115,7 +115,8 @@ public class ProgramEncoder implements Encoder {
                 encodeControlFlow(ctx),
                 encodeFinalRegisterValues(ctx),
                 encodeFilter(ctx),
-                encodeDependencies(ctx));
+                encodeDependencies(ctx),
+                encodeStoreExclusiveDependencies(ctx));
     }
 
     public BooleanFormula encodeControlFlow(SolverContext ctx) {
