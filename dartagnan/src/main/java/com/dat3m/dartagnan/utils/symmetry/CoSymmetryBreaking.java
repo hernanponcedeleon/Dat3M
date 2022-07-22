@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -88,10 +89,10 @@ public class CoSymmetryBreaking {
         boolean hasMustEdges; // True if the coherences of the first write in <writes> can be broken via must-edges.
     }
 
-    public CoSymmetryBreaking(VerificationTask task) {
+    public CoSymmetryBreaking(VerificationTask task, Context analysisContext) {
         this.task = Preconditions.checkNotNull(task);
-        this.symm = task.getAnalysisContext().requires(ThreadSymmetry.class);
-        this.alias = task.getAnalysisContext().requires(AliasAnalysis.class);
+        this.symm = analysisContext.requires(ThreadSymmetry.class);
+        this.alias = analysisContext.requires(AliasAnalysis.class);
         this.co = task.getMemoryModel().getRelationRepository().getRelation(RelationNameRepository.CO);
         infoMap = new HashMap<>();
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {

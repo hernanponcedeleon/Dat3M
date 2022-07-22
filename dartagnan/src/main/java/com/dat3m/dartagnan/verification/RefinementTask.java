@@ -80,7 +80,7 @@ public class RefinementTask extends VerificationTask {
     public void performStaticWmmAnalyses() throws InvalidConfigurationException {
         super.performStaticWmmAnalyses();
         baselineTask = new VerificationTask(getProgram(), baselineModel, getProperty(), getWitness(), getConfig());
-        baselineContext = Context.createCopyFrom(getAnalysisContext());
+        baselineContext = Context.createCopyFrom(analysisContext);
         baselineContext.invalidate(WmmAnalysis.class);
         baselineContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(baselineModel, getConfig()));
         baselineContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(baselineTask, baselineContext, getConfig()));
@@ -88,10 +88,10 @@ public class RefinementTask extends VerificationTask {
 
     @Override
     public void initializeEncoders(SolverContext ctx) throws InvalidConfigurationException {
-        progEncoder = ProgramEncoder.fromConfig(getProgram(), getAnalysisContext(), getConfig());
-        propertyEncoder = PropertyEncoder.fromConfig(getProgram(), baselineModel, getAnalysisContext(), getConfig());
-        //wmmEncoder = WmmEncoder.fromConfig(getMemoryModel(), getAnalysisContext(), getConfig());
-        symmetryEncoder = SymmetryEncoder.fromConfig(baselineModel, getAnalysisContext(), getConfig());
+        progEncoder = ProgramEncoder.fromConfig(getProgram(), analysisContext, getConfig());
+        propertyEncoder = PropertyEncoder.fromConfig(getProgram(), baselineModel, analysisContext, getConfig());
+        //wmmEncoder = WmmEncoder.fromConfig(getMemoryModel(), analysisContext, getConfig());
+        symmetryEncoder = SymmetryEncoder.fromConfig(baselineModel, analysisContext, getConfig());
         baselineWmmEncoder = WmmEncoder.fromConfig(baselineModel, baselineContext, getConfig());
 
         // FIXME: Here we share some encoders with the baselineTask, to fix issue #280 for now.

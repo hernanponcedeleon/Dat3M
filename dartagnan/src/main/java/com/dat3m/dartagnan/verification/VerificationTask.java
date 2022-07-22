@@ -52,7 +52,7 @@ public class VerificationTask {
     private final EnumSet<Property> property;
     private final WitnessGraph witness;
     private final Configuration config;
-    private final Context analysisContext;
+    protected final Context analysisContext;
 
 
     // Encoders

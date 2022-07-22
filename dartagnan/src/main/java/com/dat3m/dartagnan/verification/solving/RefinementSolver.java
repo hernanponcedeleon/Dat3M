@@ -78,8 +78,8 @@ public class RefinementSolver {
         BooleanFormula globalRefinement = bmgr.makeTrue();
 
         Program program = task.getProgram();
-        WMMSolver solver = new WMMSolver(task, cutRelations);
-        Refiner refiner = new Refiner(task);
+        WMMSolver solver = new WMMSolver(task, task.getAnalysisContext(), cutRelations);
+        Refiner refiner = new Refiner(task, task.getAnalysisContext());
         CAATSolver.Status status = INCONSISTENT;
 
         BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);

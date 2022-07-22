@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -36,10 +37,10 @@ public class Refiner {
     private final List<Function<Event, Event>> symmPermutations;
     private final SymmetryLearning learningOption;
 
-    public Refiner(RefinementTask task) {
+    public Refiner(RefinementTask task, Context analysisContext) {
         this.task = task;
         this.learningOption = REFINEMENT_SYMMETRY_LEARNING;
-        symm = task.getAnalysisContext().requires(ThreadSymmetry.class);
+        symm = analysisContext.requires(ThreadSymmetry.class);
         symmPermutations = computeSymmetryPermutations();
     }
 
