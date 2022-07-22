@@ -13,10 +13,13 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -27,6 +30,7 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.*;
 
@@ -62,24 +66,37 @@ public class RefinementSolver {
     public static Result run(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
 
+        Program program = task.getProgram();
+        Wmm baselineModel = task.getBaselineModel();
+        Context analysisContext = task.getAnalysisContext();
+        Configuration config = task.getConfig();
+
 		task.preprocessProgram();
         // We cut the rhs of differences to get a semi-positive model, if possible.
         // This call modifies the baseline model!
         Set<Relation> cutRelations = cutRelationDifferences(task.getMemoryModel(), task.getBaselineModel());
         task.performStaticProgramAnalyses();
         task.performStaticWmmAnalyses();
-		task.initializeEncoders(ctx);
 
-        ProgramEncoder programEncoder = task.getProgramEncoder();
-        PropertyEncoder propertyEncoder = task.getPropertyEncoder();
-        WmmEncoder baselineEncoder = task.getBaselineWmmEncoder();
-        SymmetryEncoder symmEncoder = task.getSymmetryEncoder();
+        Context baselineContext = Context.createCopyFrom(analysisContext);
+        baselineContext.invalidate(WmmAnalysis.class);
+        baselineContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(baselineModel, config));
+        baselineContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(baselineModel, task, baselineContext, config));
+
+        ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
+        PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, baselineModel, analysisContext, config);
+        SymmetryEncoder symmEncoder = SymmetryEncoder.fromConfig(baselineModel, analysisContext, config);
+        WmmEncoder baselineEncoder = WmmEncoder.fromConfig(baselineModel, baselineContext, config);
+        programEncoder.initializeEncoding(ctx);
+        propertyEncoder.initializeEncoding(ctx);
+        symmEncoder.initializeEncoding(ctx);
+        baselineEncoder.initializeEncoding(ctx);
+
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula globalRefinement = bmgr.makeTrue();
 
-        Program program = task.getProgram();
-        WMMSolver solver = new WMMSolver(task, task.getAnalysisContext(), cutRelations);
-        Refiner refiner = new Refiner(task, task.getAnalysisContext());
+        WMMSolver solver = new WMMSolver(task, analysisContext, cutRelations);
+        Refiner refiner = new Refiner(task, analysisContext);
         CAATSolver.Status status = INCONSISTENT;
 
         BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);

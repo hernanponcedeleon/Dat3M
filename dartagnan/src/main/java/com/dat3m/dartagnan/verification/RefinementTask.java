@@ -3,15 +3,9 @@ package com.dat3m.dartagnan.verification;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Baseline;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.ProgramEncoder;
-import com.dat3m.dartagnan.encoding.PropertyEncoder;
-import com.dat3m.dartagnan.encoding.SymmetryEncoder;
-import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.axiom.Empty;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -25,7 +19,6 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.EnumSet;
 
@@ -45,8 +38,6 @@ public class RefinementTask extends VerificationTask {
 	private static final Logger logger = LogManager.getLogger(RefinementTask.class);
 
     private final Wmm baselineModel;
-    private Context baselineContext;
-    private WmmEncoder baselineWmmEncoder;
 
 
     // =========================== Configurables ===========================
@@ -71,33 +62,6 @@ public class RefinementTask extends VerificationTask {
         return baselineModel;
     }
 
-    public WmmEncoder getBaselineWmmEncoder() { return baselineWmmEncoder; }
-
-    @Override
-    public void performStaticWmmAnalyses() throws InvalidConfigurationException {
-        super.performStaticWmmAnalyses();
-        baselineContext = Context.createCopyFrom(analysisContext);
-        baselineContext.invalidate(WmmAnalysis.class);
-        baselineContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(baselineModel, getConfig()));
-        baselineContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(baselineModel, this, baselineContext, getConfig()));
-    }
-
-    @Override
-    public void initializeEncoders(SolverContext ctx) throws InvalidConfigurationException {
-        progEncoder = ProgramEncoder.fromConfig(getProgram(), analysisContext, getConfig());
-        propertyEncoder = PropertyEncoder.fromConfig(getProgram(), baselineModel, analysisContext, getConfig());
-        //wmmEncoder = WmmEncoder.fromConfig(getMemoryModel(), analysisContext, getConfig());
-        symmetryEncoder = SymmetryEncoder.fromConfig(baselineModel, analysisContext, getConfig());
-        baselineWmmEncoder = WmmEncoder.fromConfig(baselineModel, baselineContext, getConfig());
-
-        progEncoder.initializeEncoding(ctx);
-        propertyEncoder.initializeEncoding(ctx);
-        //wmmEncoder.initializeEncoding(ctx);
-        symmetryEncoder.initializeEncoding(ctx);
-        baselineWmmEncoder.initializeEncoding(ctx);
-		logger.info("{}: {}", BASELINE, baselines);
-    }
-
     public static RefinementTask fromVerificationTaskWithDefaultBaselineWMM(VerificationTask task)
             throws InvalidConfigurationException {
         return new RefinementTaskBuilder()
@@ -110,6 +74,7 @@ public class RefinementTask extends VerificationTask {
         Wmm baseline = new Wmm();
         RelationRepository repo = baseline.getRelationRepository();
         Relation rf = repo.getRelation(RF);
+        logger.info("{}: {}", BASELINE, baselines);
 
         if(baselines.contains(UNIPROC)) {
 	        // ---- acyclic(po-loc | rf) ----
