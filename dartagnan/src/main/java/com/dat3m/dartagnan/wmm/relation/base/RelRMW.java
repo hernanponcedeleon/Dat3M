@@ -108,8 +108,9 @@ public class RelRMW extends StaticRelation {
         BooleanFormula unpredictable = bmgr.makeFalse();
         Map<Event, BooleanFormula> map = new HashMap<>();
         for(Tuple tuple : maxTupleSet) {
-            MemEvent load = (MemEvent) tuple.getFirst();
-            MemEvent store = (MemEvent) tuple.getSecond();
+            // not necessarily memory events
+            Event load = tuple.getFirst();
+            Event store = tuple.getSecond();
             BooleanFormula rel = this.getSMTVar(tuple, ctx);
             if(minTupleSet.contains(tuple)) {
                 enc = bmgr.and(enc, bmgr.equivalence(rel, getExecPair(tuple, ctx)));
@@ -122,7 +123,7 @@ public class RelRMW extends StaticRelation {
                 BooleanFormula isExecPair = bmgr.and(isPair, store.exec());
                 enc = bmgr.and(enc, bmgr.equivalence(isPair, pairingCond(load, store, ctx)));
                 // If load and store have the same address
-                BooleanFormula sameAddress = generalEqual(load.getMemAddressExpr(), store.getMemAddressExpr(), ctx);
+                BooleanFormula sameAddress = generalEqual(((MemEvent) load).getMemAddressExpr(), ((MemEvent) store).getMemAddressExpr(), ctx);
                 unpredictable = bmgr.or(unpredictable, bmgr.and(isExecPair, bmgr.not(sameAddress)));
                 // Relation between exclusive load and store
                 enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(isExecPair, sameAddress)));
