@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.dat3m.dartagnan.program.filter.FilterUnion;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -14,7 +15,6 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CRIT;
 
 public class RelCrit extends StaticRelation {
-    //TODO: We can optimize this a lot by using branching analysis
 
     public RelCrit(){
         term = CRIT;
@@ -23,26 +23,21 @@ public class RelCrit extends StaticRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-            // Todo
+            getMaxTupleSet();
         }
         return minTupleSet;
     }
 
     @Override
     public TupleSet getMaxTupleSet(){
-        if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-            for(Thread thread : task.getProgram().getThreads()){
-                for(Event lock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_LOCK))){
-                    for(Event unlock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_UNLOCK))){
-                        if(lock.getCId() < unlock.getCId()){
-                            maxTupleSet.add(new Tuple(lock, unlock));
-                        }
-                    }
-                }
-            }
-            removeMutuallyExclusiveTuples(maxTupleSet);
+        if(maxTupleSet != null) {
+            return maxTupleSet;
+        }
+        maxTupleSet = new TupleSet();
+        minTupleSet = new TupleSet();
+        FilterUnion filter = FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_LOCK), FilterBasic.get(Tag.Linux.RCU_UNLOCK));
+        for(Thread thread : task.getProgram().getThreads()) {
+            addMatchingTupleSet(thread.getCache().getEvents(filter), Tag.Linux.RCU_LOCK, Tag.Linux.RCU_UNLOCK);
         }
         return maxTupleSet;
     }

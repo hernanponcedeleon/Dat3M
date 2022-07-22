@@ -39,16 +39,6 @@ public class RelRMW extends StaticRelation {
 
 	private static final Logger logger = LogManager.getLogger(RelRMW.class);
 
-    private final FilterAbstract loadExclFilter = FilterIntersection.get(
-            FilterBasic.get(Tag.EXCL),
-            FilterBasic.get(Tag.READ)
-    );
-
-    private final FilterAbstract storeExclFilter = FilterIntersection.get(
-            FilterBasic.get(Tag.EXCL),
-            FilterBasic.get(Tag.WRITE)
-    );
-
     public RelRMW(){
         term = RMW;
         forceDoEncode = true;
@@ -102,18 +92,9 @@ public class RelRMW extends StaticRelation {
             maxTupleSet.addAll(minTupleSet);
 
             // LoadExcl -> StoreExcl
-            //TODO: This can be improved using branching analysis
-            // to find guaranteed pairs (the encoding can then also be improved)
-            for(Thread thread : task.getProgram().getThreads()){
-                for(Event load : thread.getCache().getEvents(loadExclFilter)){
-                    for(Event store : thread.getCache().getEvents(storeExclFilter)){
-                        if(load.getCId() < store.getCId()){
-                            maxTupleSet.add(new Tuple(load, store));
-                        }
-                    }
-                }
+            for(Thread thread : task.getProgram().getThreads()) {
+                addMatchingTupleSet(thread.getCache().getEvents(FilterBasic.get(Tag.EXCL)), Tag.READ, Tag.WRITE);
             }
-            removeMutuallyExclusiveTuples(maxTupleSet);
             logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
         return maxTupleSet;
