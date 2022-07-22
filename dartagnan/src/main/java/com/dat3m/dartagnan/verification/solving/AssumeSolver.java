@@ -32,7 +32,7 @@ public class AssumeSolver {
         Configuration config = task.getConfig();
 
         task.preprocessProgram();
-       	task.performStaticProgramAnalyses();
+       	task.performStaticProgramAnalyses(analysisContext, config);
        	task.performStaticWmmAnalyses(memoryModel, analysisContext, config);
 
         ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);

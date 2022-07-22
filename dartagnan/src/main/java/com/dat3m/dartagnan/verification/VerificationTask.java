@@ -99,7 +99,15 @@ public class VerificationTask {
         }
     }
 
-    public void performStaticProgramAnalyses() throws InvalidConfigurationException {
+    /**
+     * Performs all static program analyses.
+     * @param analysisContext Collection of static analyses already performed for this task.
+     *                        Also receives the results.
+     * @param config User-defined options to further specify the behavior.
+     * @exception InvalidConfigurationException Some user-defined option does not match the format.
+     * @exception UnsatisfiedRequirementException Some static analysis is missing.
+     */
+    public void performStaticProgramAnalyses(Context analysisContext, Configuration config) throws InvalidConfigurationException {
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
         analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, analysisContext, config));
         analysisContext.register(Dependency.class, Dependency.fromConfig(program, analysisContext, config));
