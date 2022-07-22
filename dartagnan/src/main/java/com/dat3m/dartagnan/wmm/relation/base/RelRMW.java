@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -22,7 +21,9 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
@@ -122,56 +123,53 @@ public class RelRMW extends StaticRelation {
     protected BooleanFormula encodeApprox(SolverContext ctx) {
         FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-        
-        // Encode base (not exclusive pairs) RMW
-        TupleSet origEncodeTupleSet = encodeTupleSet;
-        encodeTupleSet = new TupleSet(Sets.intersection(encodeTupleSet, minTupleSet));
-        BooleanFormula enc = super.encodeApprox(ctx);
-        encodeTupleSet = origEncodeTupleSet;
-
-        // Encode RMW for exclusive pairs
-		BooleanFormula unpredictable = bmgr.makeFalse();
-        for(Thread thread : task.getProgram().getThreads()) {
-            for (Event store : thread.getCache().getEvents(storeExclFilter)) {
-            	BooleanFormula storeExec = bmgr.makeFalse();
-                for (Event load : thread.getCache().getEvents(loadExclFilter)) {
-                    if (load.getCId() < store.getCId()) {
-
-                        // Encode if load and store form an exclusive pair
-                    	BooleanFormula isPair = exclPair(load, store, ctx);
-                    	BooleanFormula isExecPair = bmgr.and(isPair, store.exec());
-                        enc = bmgr.and(enc, bmgr.equivalence(isPair, pairingCond(thread, load, store, ctx)));
-
-                        // If load and store have the same address
-                        BooleanFormula sameAddress = generalEqual(((MemEvent)load).getMemAddressExpr(), ((MemEvent)store).getMemAddressExpr(), ctx);
-                        unpredictable = bmgr.or(unpredictable, bmgr.and(isExecPair, bmgr.not(sameAddress)));
-
-                        // Relation between exclusive load and store
-                        enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(load, store, ctx), bmgr.and(isExecPair, sameAddress)));
-
-                        // Can be executed if addresses mismatch, but behaviour is "constrained unpredictable"
-                        // The implementation does not include all possible unpredictable cases: in case of address
-                        // mismatch, addresses of read and write are unknown, i.e. read and write can use any address
-                        storeExec = bmgr.or(storeExec, isPair);
-                    }
+        BooleanFormula enc = bmgr.makeTrue();
+        BooleanFormula unpredictable = bmgr.makeFalse();
+        Map<Event, BooleanFormula> map = new HashMap<>();
+        for(Tuple tuple : maxTupleSet) {
+            MemEvent load = (MemEvent) tuple.getFirst();
+            MemEvent store = (MemEvent) tuple.getSecond();
+            BooleanFormula rel = this.getSMTVar(tuple, ctx);
+            if(minTupleSet.contains(tuple)) {
+                enc = bmgr.and(enc, bmgr.equivalence(rel, getExecPair(tuple, ctx)));
+                if(!store.cfImpliesExec()) {
+                    map.merge(store, load.exec(), bmgr::or);
                 }
-                enc = bmgr.and(enc, bmgr.implication(store.exec(), storeExec));
+            } else {
+                // Encode if load and store form an exclusive pair
+                BooleanFormula isPair = exclPair(load, store, ctx);
+                BooleanFormula isExecPair = bmgr.and(isPair, store.exec());
+                enc = bmgr.and(enc, bmgr.equivalence(isPair, pairingCond(load, store, ctx)));
+                // If load and store have the same address
+                BooleanFormula sameAddress = generalEqual(load.getMemAddressExpr(), store.getMemAddressExpr(), ctx);
+                unpredictable = bmgr.or(unpredictable, bmgr.and(isExecPair, bmgr.not(sameAddress)));
+                // Relation between exclusive load and store
+                enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(isExecPair, sameAddress)));
+                // Can be executed if addresses mismatch, but behaviour is "constrained unpredictable"
+                // The implementation does not include all possible unpredictable cases: in case of address
+                // mismatch, addresses of read and write are unknown, i.e. read and write can use any address
+                map.merge(store, isPair, bmgr::or);
             }
+        }
+        for(Map.Entry<Event, BooleanFormula> entry : map.entrySet()) {
+            enc = bmgr.and(enc, bmgr.implication(entry.getKey().exec(), entry.getValue()));
         }
         return bmgr.and(enc, bmgr.equivalence(Flag.ARM_UNPREDICTABLE_BEHAVIOUR.repr(ctx), unpredictable));
     }
 
-    private BooleanFormula pairingCond(Thread thread, Event load, Event store, SolverContext ctx){
+    private BooleanFormula pairingCond(Event load, Event store, SolverContext ctx){
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula pairingCond = bmgr.and(load.exec(), store.cf());
 
-        for (Event otherLoad : thread.getCache().getEvents(loadExclFilter)) {
-            if (otherLoad.getCId() > load.getCId() && otherLoad.getCId() < store.getCId()) {
+        for (Tuple t : maxTupleSet.getBySecond(store)) {
+            Event otherLoad = t.getFirst();
+            if(otherLoad.getCId() > load.getCId()) {
                 pairingCond = bmgr.and(pairingCond, bmgr.not(otherLoad.exec()));
             }
         }
-        for (Event otherStore : thread.getCache().getEvents(storeExclFilter)) {
-            if (otherStore.getCId() > load.getCId() && otherStore.getCId() < store.getCId()) {
+        for (Tuple t : maxTupleSet.getByFirst(load)) {
+            Event otherStore = t.getSecond();
+            if(otherStore.getCId() < store.getCId()) {
                 pairingCond = bmgr.and(pairingCond, bmgr.not(otherStore.cf()));
             }
         }
