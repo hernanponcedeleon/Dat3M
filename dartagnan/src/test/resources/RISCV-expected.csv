@@ -538,7 +538,6 @@ litmus/RISCV/S+[rf-addr-ws]+ctrl.litmus,0
 litmus/RISCV/3.LB+addr+data+data.litmus,0
 litmus/RISCV/S+rfi-addr+poaqp.litmus,1
 litmus/RISCV/SB+posprl-porlp-addrs.litmus,1
-litmus/RISCV/ISA-LB-DEP-ADDR3-SUCCESS.litmus,1
 litmus/RISCV/Z6.1+fence.w.w+fence.w.w+fence.rw.rw.litmus,0
 litmus/RISCV/SB+fence.rw.rw+porlp-addrs.litmus,1
 litmus/RISCV/R+rfi-ctrlfencei+rfi-ctrlfencei-rfi.litmus,1
@@ -783,7 +782,6 @@ litmus/RISCV/R+fence.w.w+porlaq.litmus,1
 litmus/RISCV/SB+poprl-posrlp-addr+poprl-posrlp-ctrlfencei.litmus,1
 litmus/RISCV/SB+po+pos-po.litmus,1
 litmus/RISCV/SB+popaq-ctrlfenceiaqp+poprl-porlaq-addrsaqp.litmus,1
-litmus/RISCV/ISA16.litmus,1
 litmus/RISCV/ISA2+fence.rw.rw+poaqp+ctrlfencei.litmus,1
 litmus/RISCV/SB+poprl-porlaq+poprl-porlaq-ctrlfenceiaqp.litmus,1
 litmus/RISCV/MP+poprl+addr-rfipaq-poaqp.litmus,0
@@ -934,7 +932,6 @@ litmus/RISCV/R+poprl+[rf-fence.rw.rw-rf].litmus,0
 litmus/RISCV/SB+fence.rw.rws+pospx.litmus,0
 litmus/RISCV/IRIW+fence.rw.rw+ctrlfencei.litmus,1
 litmus/RISCV/S+po+addr.litmus,1
-litmus/RISCV/ISA-DEP-SUCCESS.litmus,0
 litmus/RISCV/3.LB+fence.r.rw+fence.rw.w+fence.rw.rw.litmus,0
 litmus/RISCV/ISA2+fence.rw.rw+fence.r.rw+fence.rw.rws.litmus,0
 litmus/RISCV/S+[rf-data-ws]+ctrl.litmus,0
@@ -1112,7 +1109,6 @@ litmus/RISCV/3.LB+data+pos+poaqp.litmus,0
 litmus/RISCV/WRR+2W+pospx+fence.rw.rws.litmus,0
 litmus/RISCV/W+RWC+fence.rw.rw+addr+posxaq.litmus,0
 litmus/RISCV/R+fence.rw.rw+rfi-ctrlfencei.litmus,1
-litmus/RISCV/ISA-DEP-SUCCESS-SUCCESS.litmus,1
 litmus/RISCV/WRW+WR+fence.rw.rwss+X.litmus,0
 litmus/RISCV/LB+addr+data.litmus,0
 litmus/RISCV/WRC+fence.rw.rws+posxx.litmus,0
@@ -1201,7 +1197,6 @@ litmus/RISCV/SB+fence.rw.w+fence.rw.rw.litmus,1
 litmus/RISCV/Z6.2+poprl+ctrl+poaqp.litmus,0
 litmus/RISCV/SB+popaq+pos-popaq.litmus,1
 litmus/RISCV/LB+fence.r.rw-[rf-fr]+fence.rw.w.litmus,0
-litmus/RISCV/ISA18.litmus,0
 litmus/RISCV/Z6.2+fence.w.w+poaqp+fence.rw.rw.litmus,0
 litmus/RISCV/LB+[fr-rf]-fence.rw.w+fence.r.rw.litmus,0
 litmus/RISCV/Z6.2+fence.rw.rw+ctrlfencei+addr.litmus,0
@@ -1297,7 +1292,6 @@ litmus/RISCV/2+2W+fence.rw.ws.litmus,0
 litmus/RISCV/WRC+ctrlfencei+poaqp.litmus,0
 litmus/RISCV/SB+porlaq-poaqp+poprl-porlaq-ctrlfenceiaqp.litmus,1
 litmus/RISCV/SB+posrlp-addr+poprl-posrlaq-poaqp.litmus,1
-litmus/RISCV/ISA-LB-DEP-ADDR2-SUCCESS.litmus,1
 litmus/RISCV/MP+fence.rw.rw-[rf-fr]+fence.rw.rw.litmus,0
 litmus/RISCV/IRIW+fence.r.rw+poaqp.litmus,0
 litmus/RISCV/SB+porlaq-addraqp+posprl-porlaq-ctrlfenceiaqp.litmus,1
@@ -1437,7 +1431,6 @@ litmus/RISCV/SB+popaq-ctrlfenceiaqp+pos-popaq-ctrlfenceiaqp.litmus,1
 litmus/RISCV/SB+poprl-posrlp-ctrlfenceiss.litmus,0
 litmus/RISCV/Z6.3+fence.rw.w+fence.w.w+fence.r.rws.litmus,0
 litmus/RISCV/Z6.3+poprl+fence.rw.w+addrs.litmus,0
-litmus/RISCV/ISA13+BIS.litmus,0
 litmus/RISCV/Z6.2+poprl+fence.rw.rw+ctrl.litmus,0
 litmus/RISCV/SB+poprl-rfirlp+rfi-ctrlfencei-rfi.litmus,1
 litmus/RISCV/IRRWIW+poaqps.litmus,0
@@ -1490,7 +1483,6 @@ litmus/RISCV/Z6.1+fence.rw.w+fence.w.w+addr.litmus,0
 litmus/RISCV/SB+rfi-addr+rfipaq-poaqp.litmus,1
 litmus/RISCV/R+fence.rw.rw+poprl-porlp.litmus,1
 litmus/RISCV/LB+fence.r.rw+poaqp-[rf-fr].litmus,0
-litmus/RISCV/2+2Swap.litmus,1
 litmus/RISCV/2+2W+fence.tso+fence.tsoxp.litmus,0
 litmus/RISCV/SB+pos-addrs.litmus,1
 litmus/RISCV/S+fence.w.w+fence.i.litmus,1
@@ -1541,7 +1533,6 @@ litmus/RISCV/LB+ctrlfencei+data-rfi-data.litmus,0
 litmus/RISCV/Z6.2+fence.w.w+data+ctrl.litmus,0
 litmus/RISCV/MP+pos-rfi-ctrl+ctrlfencei-rfi-addr.litmus,1
 litmus/RISCV/Z6.1+fence.w.w+poprl+fence.rw.w.litmus,0
-litmus/RISCV/2+2Swap+Acqs.litmus,0
 litmus/RISCV/S+[rf-poprl-ws]rlp+poaqp.litmus,0
 litmus/RISCV/S+fence.w.w-[rf-fr]+fence.rw.w.litmus,0
 litmus/RISCV/RWC+fence.rw.rwspx+pospx.litmus,0
@@ -1833,7 +1824,6 @@ litmus/RISCV/WWC+pospx+fence.rw.rws+X.litmus,0
 litmus/RISCV/MP+popar+po+NEW.litmus,1
 litmus/RISCV/SB+porlaq-poaqp+posprl-porlp-addrs.litmus,1
 litmus/RISCV/MP+[ws-rf]-data+ctrlfencei.litmus,1
-litmus/RISCV/ISA-OLD+TER.litmus,1
 litmus/RISCV/LB+[fr-fence.rw.rw-ws]+ctrlfencei.litmus,0
 litmus/RISCV/R+fence.w.w+poprl-rfirlp-ctrlfenceis.litmus,0
 litmus/RISCV/LB+ctrl+ctrl-fri-rfi-addr.litmus,0
@@ -1927,7 +1917,6 @@ litmus/RISCV/R+poprl+poprl-posrlaq-ctrlfenceiaqp.litmus,1
 litmus/RISCV/MP+fence.w.w+[fr-fence.w.w-rf].litmus,0
 litmus/RISCV/SB+rfi-addr-rfi+poprl-rfirlp-ctrlfencei.litmus,1
 litmus/RISCV/MP+wsi-rfi-ctrl+fence.rw.rw.litmus,1
-litmus/RISCV/ISA10.litmus,1
 litmus/RISCV/MP+fence.rw.rw+addr-rfi-addr.litmus,0
 litmus/RISCV/LB+[fr-rf]-ctrlfencei+fence.rw.rw.litmus,0
 litmus/RISCV/SB+posprl-porlp-addr+poprl-porlp-addrs.litmus,1
@@ -2333,7 +2322,6 @@ litmus/RISCV/MP+[rf-addr-fr]+addr.litmus,0
 litmus/RISCV/SB+popaq-ctrlfenceiaqp+pos-popaq-ctrlfenceisaqp.litmus,1
 litmus/RISCV/R+poprl+popaq-ctrlfenceiaqp.litmus,1
 litmus/RISCV/MP+[ws-rf]-ctrlfencei+poaqp.litmus,0
-litmus/RISCV/ForwardAMO.litmus,0
 litmus/RISCV/R+pos-rfi-addr+rfipaq-poaqp.litmus,1
 litmus/RISCV/LB+data+data-rfi-ctrlfencei.litmus,0
 litmus/RISCV/WRC+fence.r.rw+poaqp.litmus,0
@@ -2503,7 +2491,6 @@ litmus/RISCV/Z6.1+poprl+fence.rw.w+ctrl.litmus,0
 litmus/RISCV/LB+addr+data-rfi-addr.litmus,0
 litmus/RISCV/SB+popaq-addraqp+popaq-poaqp.litmus,1
 litmus/RISCV/R+poprl+pospaq-ctrlfenceiaqp.litmus,1
-litmus/RISCV/ISA-MP-DEP-SUCCESS-SWAP.litmus,1
 litmus/RISCV/S+rfi-data+data-rfi-addr.litmus,1
 litmus/RISCV/ISA2+pos+poprl+fence.rw.rw.litmus,0
 litmus/RISCV/3.LB+fence.r.rw+fence.rw.w+pos.litmus,0
@@ -2617,7 +2604,6 @@ litmus/RISCV/R+poprl-rfirlp-data+poprl-rfirlaq-poaqp.litmus,1
 litmus/RISCV/SB+poprl-porlaq-addrsaqp+poprl-porlaq-poaqp.litmus,1
 litmus/RISCV/S+[rf-fence.rw.rw-fr]+data.litmus,0
 litmus/RISCV/IRIW+fence.r.rw+ctrlfencei.litmus,1
-litmus/RISCV/ForwardSc.litmus,0
 litmus/RISCV/SB+popaq-posaqp+pos-po-ctrlfenceis.litmus,1
 litmus/RISCV/SB+poprl-porlp+po-addrs.litmus,1
 litmus/RISCV/ISA2+pos+poaqp+poaqp.litmus,0
@@ -3004,7 +2990,6 @@ litmus/RISCV/MP+poprl-rfirlp-ctrlfencei+ctrlfencei-rfi-ctrlfencei.litmus,1
 litmus/RISCV/LB+[fr-poprl-ws]rlp+fence.rw.rw.litmus,0
 litmus/RISCV/SB+pos-popaq-posaqp+poprl-porlaq-addrsaqp.litmus,1
 litmus/RISCV/RWC+fence.rw.rws+pos.litmus,0
-litmus/RISCV/ISA12.litmus,1
 litmus/RISCV/ISA2+fence.rw.rw+data+fence.rw.rws.litmus,0
 litmus/RISCV/3.LB+fence.rw.rw+poprl+ctrl.litmus,0
 litmus/RISCV/Z6.2+fence.rw.rw+pos+data.litmus,0
@@ -3318,7 +3303,6 @@ litmus/RISCV/SB+popaq-addraqps.litmus,1
 litmus/RISCV/RWC+fence.rw.rwsxp+pos+X.litmus,0
 litmus/RISCV/LB+po+poaqp.litmus,1
 litmus/RISCV/Z6.2+poprl+addr+data.litmus,0
-litmus/RISCV/ISA-S-DEP-ADDR-SUCCESS.litmus,0
 litmus/RISCV/R+fence.rw.w+po-ctrlfenceis.litmus,1
 litmus/RISCV/Z6.2+fence.w.w+fence.rw.rw+poaqp.litmus,0
 litmus/RISCV/Z6.2+fence.rw.rw+poaqp+data.litmus,0
@@ -3340,7 +3324,6 @@ litmus/RISCV/R+pos-rfi-data+poprl-rfirlp-addr.litmus,1
 litmus/RISCV/ISA2+pos+addr+fence.rw.rw.litmus,0
 litmus/RISCV/S+rfi-ctrl+ctrlfencei-rfi-ctrlfencei.litmus,1
 litmus/RISCV/MP+fence.rw.rwss.litmus,0
-litmus/RISCV/ISA11+BIS.litmus,1
 litmus/RISCV/S+poprl-rfirlp-addr+ctrlfencei-rfi-addr.litmus,1
 litmus/RISCV/S+[rf-fence.r.rw-ws]+fence.rw.w.litmus,0
 litmus/RISCV/IRRWIW+addr+data.litmus,0
@@ -3459,7 +3442,6 @@ litmus/RISCV/SB+popaq-poaqp+pos-popaq-posaqp.litmus,1
 litmus/RISCV/S+[rf-poprl-ws]rlp+fence.rw.rw.litmus,0
 litmus/RISCV/MP+wsi-rfi-addr+fence.rw.rw.litmus,1
 litmus/RISCV/S+rfi-data+addr.litmus,1
-litmus/RISCV/ISA-Rel-Acq.litmus,1
 litmus/RISCV/SB+poprl-posrlaq-addrsaqp+poprl-posrlaq-posaqp.litmus,0
 litmus/RISCV/MP+rfi-data+addr-rfi-addr.litmus,1
 litmus/RISCV/MP+fence.w.w+addr-rfipaq-poaqp.litmus,0
@@ -3712,7 +3694,6 @@ litmus/RISCV/LB+po+poarar+NEW.litmus,1
 litmus/RISCV/MP+fence.w.w+ctrlfencei-rfipaq-poaqp.litmus,1
 litmus/RISCV/LB+fence.r.rw+ctrl.litmus,0
 litmus/RISCV/SB+poprl-posrlaq-addrsaqp+poprl-posrlaq-ctrlfenceisaqp.litmus,0
-litmus/RISCV/ISA-DEP-CTRL.litmus,1
 litmus/RISCV/MP+[ws-rf]-fence.rw.rw+fence.rw.rw.litmus,0
 litmus/RISCV/MP+poprl+[fr-rf]paq-poaqp.litmus,0
 litmus/RISCV/ISA2+poprl+fence.r.rw+addrs.litmus,0
@@ -3879,7 +3860,6 @@ litmus/RISCV/SB+pospaq-poaqp+pos-pospaq-addraqp.litmus,1
 litmus/RISCV/R+fence.w.w+porlaq-addraqp.litmus,1
 litmus/RISCV/SB+pos-popaq-addrsaqp+pos-popaq-ctrlfenceiaqp.litmus,1
 litmus/RISCV/R+pos-rfi-data+rfi-ctrlfencei.litmus,1
-litmus/RISCV/ISA-MP-DEP-ADDR-LR-SUCCESS.litmus,1
 litmus/RISCV/Z6.2+fence.rw.rw+poprl+fence.rw.w.litmus,0
 litmus/RISCV/Z6.1+fence.w.w+fence.rw.rw+fence.r.rw.litmus,0
 litmus/RISCV/ISA2+pos+data+poaqp.litmus,0
@@ -4195,7 +4175,6 @@ litmus/RISCV/ISA2+fence.rw.rw+addr+ctrlfencei.litmus,1
 litmus/RISCV/3.LB+fence.rw.rw+fence.rw.rw+ctrlfencei.litmus,0
 litmus/RISCV/WRW+WR+poss.litmus,0
 litmus/RISCV/S+poprl-rfirlp-data+fence.rw.rw.litmus,1
-litmus/RISCV/LR-SC-NOT-FENCE.litmus,0
 litmus/RISCV/LB+fence.rw.w+data-rfi-ctrl.litmus,0
 litmus/RISCV/SB+popaq-posaqp+pos-po-addrs.litmus,1
 litmus/RISCV/SB+porlaq-ctrlfenceiaqp+poprl-porlaq-addraqp.litmus,1
@@ -4472,7 +4451,6 @@ litmus/RISCV/3.LB+fence.r.rw+pos+fence.rw.rw.litmus,0
 litmus/RISCV/ISA2+fence.w.w+ctrl+ctrlfenceis.litmus,0
 litmus/RISCV/ISA2+fence.w.w+poaqp+addr.litmus,0
 litmus/RISCV/LB+addr-rfi-ctrlfencei+data-rfi-ctrl.litmus,0
-litmus/RISCV/ISA-LB-DEP-ADDR-SUCCESS.litmus,1
 litmus/RISCV/SB+posrlaq-addraqp+poprl-posrlaq-poaqp.litmus,1
 litmus/RISCV/S+fence.rw.w+addr-rfi-ctrl.litmus,0
 litmus/RISCV/Z6.0+fence.w.w+poaqp+fence.rw.rw.litmus,0
@@ -4581,7 +4559,6 @@ litmus/RISCV/LB+data-rfi-addr+ctrl-rfi-addr.litmus,0
 litmus/RISCV/IRWIW+ctrls.litmus,0
 litmus/RISCV/S+rfi-data+ctrl-rfi-ctrlfencei.litmus,1
 litmus/RISCV/SB+poprl-porlaq+porlaq-addrsaqp.litmus,1
-litmus/RISCV/S+fence.w.w+fri-rfi-ctrl+REAL.litmus,1
 litmus/RISCV/MP+[ws-fence.rw.rw-fr]+poaqp.litmus,0
 litmus/RISCV/S+fence.rw.w-[rf-fr]+ctrl.litmus,0
 litmus/RISCV/R+poprl-rfirlp-ctrl+rfi-addr.litmus,1
@@ -4633,7 +4610,6 @@ litmus/RISCV/Z6.2+fence.w.w+addr+fence.rw.w.litmus,0
 litmus/RISCV/Z6.2+fence.rw.rw+fence.rw.w+data.litmus,0
 litmus/RISCV/MP+poprl-rfirlp-ctrlfencei+ctrlfencei-rfi-ctrlfenceis.litmus,1
 litmus/RISCV/SB+poprl-porlaq+pos-popaq-addrsaqp.litmus,1
-litmus/RISCV/ISA-OLD+BIS.litmus,0
 litmus/RISCV/MP+poprl-[rfrlp-fr]+fence.rw.rw.litmus,0
 litmus/RISCV/WRW+WR+data+posxaq-addraqp.litmus,0
 litmus/RISCV/SB+porlaq-addraqp+posprl-porlaq-ctrlfenceisaqp.litmus,1
@@ -5165,7 +5141,6 @@ litmus/RISCV/SB+pos-popaq-ctrlfenceiaqp+pos-popaq-poaqp.litmus,1
 litmus/RISCV/R+fence.rw.w+popaq-posaqp.litmus,1
 litmus/RISCV/R+fence.rw.w+posrlp-addr.litmus,1
 litmus/RISCV/2+2W+fence.tsoxp+fence.tsoxx.litmus,0
-litmus/RISCV/ISA-MP-DEP-SUCCESS-SWAP-SIMPLE.litmus,1
 litmus/RISCV/LB+data-rfi-ctrlfencei+ctrlfencei-rfi-data.litmus,0
 litmus/RISCV/ISA2+fence.rw.rw+poaqp+addrs.litmus,0
 litmus/RISCV/SB+fence.rw.rw+poprl-posrlaq-poaqp.litmus,1
@@ -5209,7 +5184,6 @@ litmus/RISCV/SB+posprl-porlaq-ctrlfenceiaqp+poprl-porlaq-addraqp.litmus,1
 litmus/RISCV/WRC+fence.rw.rws.litmus,0
 litmus/RISCV/WRW+2W+addr+fence.w.w.litmus,0
 litmus/RISCV/ISA2+fence.rw.rw+poprl+fence.rw.rws.litmus,0
-litmus/RISCV/Andy22.litmus,0
 litmus/RISCV/WRW+WR+pos+posxp.litmus,0
 litmus/RISCV/3.LB+addr+poaqp+data.litmus,0
 litmus/RISCV/SB+fence.rw.rw+posprl-porlaq-addraqp.litmus,1
@@ -5820,11 +5794,9 @@ litmus/RISCV/R+poprl+fence.r.rw.litmus,1
 litmus/RISCV/MP+poprl+addr-rfi-addr.litmus,0
 litmus/RISCV/Z6.2+poprl+fence.rw.rw+fence.rw.w.litmus,0
 litmus/RISCV/SB+poprl-posrlaq+poprl-posrlaq-posaqp.litmus,0
-litmus/RISCV/ISA10+BIS.litmus,1
 litmus/RISCV/IRRWIW+poaqp+ctrlfencei.litmus,0
 litmus/RISCV/Z6.3+poprl+poprl+fence.r.rws.litmus,0
 litmus/RISCV/S+poprl+fence.w.w.litmus,1
-litmus/RISCV/ISA-DEP-WW-CTRL.litmus,0
 litmus/RISCV/MP+[ws-rf]-fence.rw.w+fence.rw.rw.litmus,0
 litmus/RISCV/Z6.2+fence.rw.w+poaqp+poaqp.litmus,0
 litmus/RISCV/WWC+fence.rw.rwspx+pos+X.litmus,0
@@ -5908,14 +5880,12 @@ litmus/RISCV/S+[rf-ctrlfencei-fr]+poprl.litmus,1
 litmus/RISCV/SB+popaq+popaq-addrsaqp.litmus,1
 litmus/RISCV/MP+fence.rw.w+[fr-fence.rw.w-rf].litmus,0
 litmus/RISCV/ISA2+fence.rw.w+addr+addrs.litmus,0
-litmus/RISCV/AMO-FENCE.litmus,1
 litmus/RISCV/Z6.1+fence.rw.w+poprl+fence.r.rw.litmus,0
 litmus/RISCV/SB+porlp-addrs+porlp-addr.litmus,1
 litmus/RISCV/SB+poprl-rfirlp+poprl-rfirlp-ctrlfenceis.litmus,0
 litmus/RISCV/R+poprl-rfirlp-ctrl+poprl-rfirlp-addr.litmus,1
 litmus/RISCV/R+fence.w.w+poprl-porlp-addr.litmus,1
 litmus/RISCV/IRRWIW+ctrlfencei+poaqp.litmus,1
-litmus/RISCV/ISA11.litmus,0
 litmus/RISCV/LB+ctrlfencei-[fr-ws]+poprl.litmus,0
 litmus/RISCV/S+fence.rw.rw+ctrl-fri-rfi-addr.litmus,0
 litmus/RISCV/SB+pos-popaq-posaqp+poprl-porlp-addrs.litmus,1
@@ -6260,9 +6230,7 @@ litmus/RISCV/R+fence.rw.rw+fence.i.litmus,1
 litmus/RISCV/MP+[rf-addr-fr]+fence.r.rw.litmus,0
 litmus/RISCV/MP+poprl-rfirlp-addr+addr-rfi.litmus,1
 litmus/RISCV/R+fence.rw.w+poprl-posrlaq.litmus,0
-litmus/RISCV/Andy27+FILTER.litmus,0
 litmus/RISCV/CoRR+fence.rw.rws.litmus,0
-litmus/RISCV/ISA13.litmus,0
 litmus/RISCV/Z6.3+fence.rw.rw+poprl+poaqp.litmus,0
 litmus/RISCV/MP+fence.rw.rw+ctrlfencei-rfi-ctrlfenceis.litmus,0
 litmus/RISCV/MP+[ws-poprl-ws]rlp+addr.litmus,0
@@ -6597,7 +6565,6 @@ litmus/RISCV/S+poprl-rfirlp-addr+fence.rw.rw.litmus,1
 litmus/RISCV/3.LB+fence.rw.w+poprl+pos.litmus,0
 litmus/RISCV/Z6.1+fence.w.w+fence.rw.rw+ctrl.litmus,0
 litmus/RISCV/SB+posprl-porlp-addr+posprl-porlaq-posaqp.litmus,1
-litmus/RISCV/ISA-MP-DEP-ADDR-LR-FAIL.litmus,1
 litmus/RISCV/SB+posprl-posrlp-addr+posprl-posrlaq-poaqp.litmus,1
 litmus/RISCV/R+fence.rw.rwspx+fence.rw.rwsxp.litmus,0
 litmus/RISCV/SB+fence.rw.rw+pospaq-ctrlfenceiaqp.litmus,1
@@ -6706,7 +6673,6 @@ litmus/RISCV/SB+fence.rw.rw+pos-popaq-posaqp.litmus,1
 litmus/RISCV/S+fence.rw.rw+fence.rw.w.litmus,0
 litmus/RISCV/WWC+data+fence.rw.rw.litmus,0
 litmus/RISCV/MP+poprl-rfirlp-ctrl+addr-rfi-addrs.litmus,1
-litmus/RISCV/ISA-DEP-ADDR.litmus,1
 litmus/RISCV/R+fence.rw.w+porlaq-addrsaqp.litmus,1
 litmus/RISCV/W+RWC+poprl+fence.rw.rw+posxaq.litmus,0
 litmus/RISCV/LB+fence.r.rw+addr.litmus,0
