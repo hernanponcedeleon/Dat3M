@@ -14,12 +14,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -114,21 +109,20 @@ public class RelationAnalysis {
         for (Axiom ax : memoryModel.getAxioms()) {
             ax.getRelation().updateRecursiveGroupId(ax.getRelation().getRecursiveGroupId());
         }
-
-        DependencyGraph<Relation> dep = memoryModel.getRelationDependencyGraph();
-        checkArgument(memoryModel.getRelationRepository().getRelations().stream()
-                        .filter(RelMinus.class::isInstance)
-                        .noneMatch(r -> dep.get(r.getSecond()).getDependencies().contains(dep.get(r))),
-                "Unstratified model.");
-
-        for (Relation rel : memoryModel.getRelationRepository().getRelations()) {
-            knowledgeMap.put(rel, new Knowledge());
-        }
-
         // ------------------------------------------------
         //ensure that the repository contains all base relations
         for(String relName : Wmm.BASE_RELATIONS){
             memoryModel.getRelationRepository().getRelation(relName);
+        }
+
+        DependencyGraph<Relation> dep = memoryModel.getRelationDependencyGraph();
+        checkArgument(memoryModel.getRelationRepository().getRelations().stream()
+                        .filter(RelMinus.class::isInstance)
+                        .noneMatch(r -> dep.get(r).getSCC().contains(dep.get(r.getSecond()))),
+                "Unstratifiable model.");
+
+        for (Relation rel : memoryModel.getRelationRepository().getRelations()) {
+            knowledgeMap.put(rel, new Knowledge());
         }
         Buffer buffer = new Buffer();
         for (Relation rel : memoryModel.getRelationRepository().getRelations()) {
@@ -138,7 +132,7 @@ public class RelationAnalysis {
             ax.initializeRelationAnalysis(task, context);
         }
 
-        // ------------------------------------------------
+        // ------------------------------------------------#
         for(Set<DependencyGraph<Relation>.Node> scc : memoryModel.getRelationDependencyGraph().getSCCs()) {
             verify(buffer.qLocal.isEmpty(), "queue for last stratum was not empty");
             buffer.stratum.clear();
