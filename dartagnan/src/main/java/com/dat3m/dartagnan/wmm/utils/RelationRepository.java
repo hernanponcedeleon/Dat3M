@@ -164,21 +164,29 @@ public class RelationRepository {
                 return getRelation(RelTrans.class, getRelation(IDD));
             case DATA:
                 return getRelation(RelIntersection.class, 
-                			getRelation(IDDTRANS), 
-                			getRelation(RelCartesian.class, 
-                					FilterUnion.get(FilterBasic.get(Tag.READ), FilterBasic.get(Tag.RISCV.STCOND)), 
-                					FilterBasic.get(Tag.WRITE))).setName(DATA);
+                		getRelation(IDDTRANS), 
+                		getRelation(RelCartesian.class, 
+                				FilterUnion.get(FilterBasic.get(Tag.READ), FilterBasic.get(Tag.RISCV.STCOND)), 
+                				FilterBasic.get(Tag.WRITE))
+                		).setName(DATA);
             case ADDR:
                 return getRelation(RelIntersection.class,
                         getRelation(
                                 RelUnion.class,
                                 getRelation(ADDRDIRECT),
                                 getRelation(RelComposition.class, getRelation(IDDTRANS), getRelation(ADDRDIRECT))
-                        ), getRelation(RM)).setName(ADDR);
+                        ),
+                        getRelation(RelCartesian.class, 
+            					FilterUnion.get(FilterBasic.get(Tag.READ), FilterBasic.get(Tag.RISCV.STCOND)), 
+            					FilterBasic.get(Tag.MEMORY))
+                        ).setName(ADDR);
             case CTRL:
                 return getRelation(RelIntersection.class,
                         getRelation(RelComposition.class, getRelation(IDDTRANS), getRelation(CTRLDIRECT)),
-                        getRelation(RV)).setName(CTRL);
+                        getRelation(RelCartesian.class, 
+                        		FilterUnion.get(FilterBasic.get(Tag.READ), FilterBasic.get(Tag.RISCV.STCOND)), 
+                        		FilterBasic.get(Tag.VISIBLE))
+                        ).setName(CTRL);
             case POLOC:
                 return getRelation(RelIntersection.class, getRelation(PO), getRelation(LOC)).setName(POLOC);
             case RFE:
