@@ -2,13 +2,14 @@ package com.dat3m.dartagnan.wmm.relation.base.local;
 
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.Dependency;
-import com.dat3m.dartagnan.program.event.arch.riscv.AmoAbstract;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import static com.dat3m.dartagnan.configuration.Arch.RISCV;
 
 import java.util.Collection;
 
@@ -39,21 +40,19 @@ abstract class BasicRegRelation extends StaticRelation {
         minTupleSet = new TupleSet();
         Dependency dep = analysisContext.requires(Dependency.class);
         for(Event regReader : getEvents()){
-            for(Register register : getRegisters(regReader)){
+            for(Register register : getRegisters(regReader)) {
+            	// Register x0 is hardwired to the constant 0 in RISCV
+            	// https://en.wikichip.org/wiki/risc-v/registers
+            	// and thus it generates no dependency, see
+            	// https://github.com/herd/herdtools7/issues/408
+            	if(task.getProgram().getArch().equals(RISCV) && register.getName().equals("x0")) {
+            		continue;
+            	}
                 Dependency.State r = dep.of(regReader, register);
                 for(Event regWriter : r.may) {
-                	// AmoAbstract events are guarantee to succeed, thus their destination 
-                	// register is always constant and thus it does not create a dependency.
-                	if(regWriter instanceof AmoAbstract) {
-                		continue;
-                	}
                     maxTupleSet.add(new Tuple(regWriter, regReader));
                 }
                 for(Event regWriter : r.must) {
-                	// Same as above
-                	if(regWriter instanceof AmoAbstract) {
-                		continue;
-                	}
                     minTupleSet.add(new Tuple(regWriter, regReader));
                 }
             }
