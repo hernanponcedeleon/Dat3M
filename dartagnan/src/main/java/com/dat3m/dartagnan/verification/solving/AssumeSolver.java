@@ -19,7 +19,7 @@ import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static java.util.Collections.singletonList;
 
-public class AssumeSolver {
+public class AssumeSolver extends ModelChecker {
 
     private static final Logger logger = LogManager.getLogger(AssumeSolver.class);
 
@@ -31,9 +31,9 @@ public class AssumeSolver {
         Context analysisContext = Context.create();
         Configuration config = task.getConfig();
 
-        task.preprocessProgram();
-       	task.performStaticProgramAnalyses(analysisContext, config);
-       	task.performStaticWmmAnalyses(memoryModel, analysisContext, config);
+        preprocessProgram(task, config);
+       	performStaticProgramAnalyses(task, analysisContext, config);
+       	performStaticWmmAnalyses(task, memoryModel, analysisContext, config);
 
         ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
         PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, memoryModel,analysisContext, config);

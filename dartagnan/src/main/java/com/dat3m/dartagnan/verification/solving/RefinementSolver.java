@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.RefinementTask;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -54,7 +55,7 @@ import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.g
         - Refines the used memory model if the found execution was inconsistent, using the explanations
           provided by the theory solver.
  */
-public class RefinementSolver {
+public class RefinementSolver extends ModelChecker {
 
     private static final Logger logger = LogManager.getLogger(RefinementSolver.class);
 
@@ -70,15 +71,15 @@ public class RefinementSolver {
         Context analysisContext = Context.create();
         Configuration config = task.getConfig();
 
-		task.preprocessProgram();
+        preprocessProgram(task, config);
         // We cut the rhs of differences to get a semi-positive model, if possible.
         // This call modifies the baseline model!
         Set<Relation> cutRelations = cutRelationDifferences(memoryModel, baselineModel);
-        task.performStaticProgramAnalyses(analysisContext, config);
+        performStaticProgramAnalyses(task, analysisContext, config);
 
         Context baselineContext = Context.createCopyFrom(analysisContext);
-        task.performStaticWmmAnalyses(memoryModel, analysisContext, config);
-        task.performStaticWmmAnalyses(baselineModel, baselineContext, config);
+        performStaticWmmAnalyses(task, memoryModel, analysisContext, config);
+        performStaticWmmAnalyses(task, baselineModel, baselineContext, config);
 
         ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
         PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, baselineModel, analysisContext, config);
@@ -366,7 +367,7 @@ public class RefinementSolver {
     // This code is pure debugging code that will generate graphical representations
     // of each refinement iteration.
     // Generate .dot files and .png files per iteration
-    private static void generateGraphvizFiles(RefinementTask task, ExecutionModel model, int iterationCount, DNF<CoreLiteral> reasons) {
+    private static void generateGraphvizFiles(VerificationTask task, ExecutionModel model, int iterationCount, DNF<CoreLiteral> reasons) {
         //   =============== Visualization code ==================
         // The edgeFilter filters those co/rf that belong to some violation reason
         BiPredicate<EventData, EventData> edgeFilter = (e1, e2) -> {

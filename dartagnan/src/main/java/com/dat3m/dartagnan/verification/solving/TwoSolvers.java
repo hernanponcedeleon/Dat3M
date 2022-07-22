@@ -21,7 +21,7 @@ import org.sosy_lab.java_smt.api.SolverException;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 
-public class TwoSolvers {
+public class TwoSolvers extends ModelChecker {
 
     private static final Logger logger = LogManager.getLogger(TwoSolvers.class);
 
@@ -33,9 +33,9 @@ public class TwoSolvers {
         Context analysisContext = Context.create();
         Configuration config = task.getConfig();
     	
-    	task.preprocessProgram();
-        task.performStaticProgramAnalyses(analysisContext, config);
-        task.performStaticWmmAnalyses(memoryModel, analysisContext, config);
+    	preprocessProgram(task, config);
+        performStaticProgramAnalyses(task, analysisContext, config);
+        performStaticWmmAnalyses(task, memoryModel, analysisContext, config);
 
         ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
         PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, memoryModel,analysisContext, config);

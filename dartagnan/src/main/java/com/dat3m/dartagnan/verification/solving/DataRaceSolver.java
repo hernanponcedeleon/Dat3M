@@ -19,7 +19,7 @@ import org.sosy_lab.java_smt.api.SolverException;
 
 import static com.dat3m.dartagnan.utils.Result.*;
 
-public class DataRaceSolver {
+public class DataRaceSolver extends ModelChecker {
 	
 	// This analysis assumes that CAT file defining the memory model has a happens-before 
 	// relation named hb: it should contain the following axiom "acyclic hb"
@@ -33,9 +33,9 @@ public class DataRaceSolver {
 		Context analysisContext = Context.create();
 		Configuration config = task.getConfig();
 
-		task.preprocessProgram();
-		task.performStaticProgramAnalyses(analysisContext, config);
-		task.performStaticWmmAnalyses(memoryModel, analysisContext, config);
+		preprocessProgram(task, config);
+		performStaticProgramAnalyses(task, analysisContext, config);
+		performStaticWmmAnalyses(task, memoryModel, analysisContext, config);
 
 		ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
 		PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, memoryModel,analysisContext, config);
