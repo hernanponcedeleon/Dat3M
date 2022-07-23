@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -11,10 +10,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
@@ -65,7 +61,6 @@ public class ProgramEncoder implements Encoder {
     private final BranchEquivalence eq;
     private final ExecutionAnalysis exec;
     private final Dependency dep;
-    private final AliasAnalysis alias;
     private boolean isInitialized = false;
 
     private ProgramEncoder(Program program, Context context, Configuration config) throws InvalidConfigurationException {
@@ -74,7 +69,6 @@ public class ProgramEncoder implements Encoder {
         this.eq = context.requires(BranchEquivalence.class);
         this.exec = context.requires(ExecutionAnalysis.class);
         this.dep = context.requires(Dependency.class);
-        this.alias = context.requires(AliasAnalysis.class);
         config.inject(this);
 
         logger.info("{}: {}", ALLOW_PARTIAL_EXECUTIONS, shouldAllowPartialExecutions);
@@ -233,6 +227,10 @@ public class ProgramEncoder implements Encoder {
      */
     public BooleanFormula dependencyEdge(Event writer, Event reader, SolverContext ctx) {
         Preconditions.checkArgument(writer instanceof RegWriter || writer.is(Tag.RISCV.STCOND));
+        // RISCV store conditionals are not instances of RegWriter, but they still propagate
+        // dependencies. This is achieved by adding the store and its successor (the store status)
+        // to the maxTupleSet of RelIdd. The propagation with future events follows from the status
+        // writing to the register. Thus the whole dependency depends on the store being executed.
         if(writer.is(Tag.RISCV.STCOND)) {
         	return writer.exec();
         }

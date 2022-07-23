@@ -29,6 +29,11 @@ public class Compilation implements ProgramProcessor {
 
     // =========================== Configurables ===========================
 
+    @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
+            description = "Prints the program after compilation.",
+            secure = true)
+    private boolean print = false;
+
     @Option(name = TARGET,
             description = "The target architecture to which the program shall be compiled to.",
             secure = true,
@@ -37,11 +42,6 @@ public class Compilation implements ProgramProcessor {
 
     public Arch getTarget() { return target; }
     public void setTarget(Arch target) { this.target = target;}
-
-    @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
-            description = "Prints the program after compilation.",
-            secure = true)
-    private boolean print = false;
 
     @Option(name = USE_RC11_TO_ARCH_SCHEME,
             description = "Use the RC11 to Arch (Power/ARMv8) compilation scheme to forbid out-of-thin-air behaviours.",

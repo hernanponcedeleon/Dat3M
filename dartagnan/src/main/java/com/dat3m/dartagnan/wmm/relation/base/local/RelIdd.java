@@ -32,6 +32,7 @@ public class RelIdd extends BasicRegRelation {
     @Override
     public TupleSet getMaxTupleSet(){
     	super.getMaxTupleSet();
+    	// RISCV store conditional generate idd dependencies if they are executed
         for(Event sc : task.getProgram().getCache().getEvents(FilterBasic.get(Tag.RISCV.STCOND))){
         	maxTupleSet.add(new Tuple(sc, sc.getSuccessor()));
         }

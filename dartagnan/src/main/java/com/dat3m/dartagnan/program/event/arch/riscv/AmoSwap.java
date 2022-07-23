@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class AmoSwap extends AmoAbstract {
 
-    // Loads from address into rd and stores to address the value rd op r2 
+    // Loads from address into rd and stores to address the value r2 
 	public AmoSwap(Register rd, Register r2, IExpr address, String mo) {
 		super(rd, r2, address, mo);
 	}

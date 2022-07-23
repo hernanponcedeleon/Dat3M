@@ -163,7 +163,7 @@ public class RelRMW extends StaticRelation {
                         // Relation between exclusive load and store
                         enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(load, store, ctx), bmgr.and(isExecPair, sameAddress)));
 
-                        // For ARMv8, store can be executed if addresses mismatch, but behaviour is "constrained unpredictable"
+                        // For ARMv8, the store can be executed if addresses mismatch, but behaviour is "constrained unpredictable"
                         // The implementation does not include all possible unpredictable cases: in case of address
                         // mismatch, addresses of read and write are unknown, i.e. read and write can use any address.
                         // For RISCV, addresses should match.
