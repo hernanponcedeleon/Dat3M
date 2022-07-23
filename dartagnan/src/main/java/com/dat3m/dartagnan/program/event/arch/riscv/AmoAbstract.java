@@ -40,7 +40,6 @@ public abstract class AmoAbstract extends MemEvent implements RegWriter, RegRead
 	@Override
 	public ImmutableSet<Register> getDataRegs() {
 		Set<Register> ret = new HashSet<>();
-		ret.add(resultRegister);
 		ret.add(r2);
 		ret.addAll(address.getRegs());
 		return ImmutableSet.copyOf(ret);
