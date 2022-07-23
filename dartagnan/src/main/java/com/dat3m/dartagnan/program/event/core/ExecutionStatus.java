@@ -44,6 +44,10 @@ public class ExecutionStatus extends Event implements RegWriter {
         return regResultExpr;
     }
 
+    public Event getStatusEvent(){
+        return event;
+    }
+
     @Override
     public String toString() {
         return register + " <- status(" + event.toString() + ")";

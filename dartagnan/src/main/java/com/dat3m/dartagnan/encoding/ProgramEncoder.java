@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -231,8 +232,8 @@ public class ProgramEncoder implements Encoder {
         // dependencies. This is achieved by adding the store and its successor (the store status)
         // to the maxTupleSet of RelIdd. The propagation with future events follows from the status
         // writing to the register. Thus the whole dependency depends on the store being executed.
-        if(writer.is(Tag.RISCV.STCOND)) {
-        	return writer.exec();
+        if(writer.is(Tag.RISCV.STCOND) && reader instanceof ExecutionStatus && ((ExecutionStatus)reader).getStatusEvent().equals(writer)) {
+        	return ctx.getFormulaManager().getBooleanFormulaManager().and(writer.exec(), reader.exec());
         }
         Register register = ((RegWriter) writer).getResultRegister();
         Dependency.State r = dep.of(reader, register);
