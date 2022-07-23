@@ -438,6 +438,16 @@ public class EventFactory {
     public static class RISCV {
         private RISCV() {}
 
+        public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean isStrong) {
+            RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong);
+            store.addFilters(Tag.RISCV.STCOND, Tag.MATCHADDRESS);
+            return store;
+        }
+
+        public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo) {
+            return RISCV.newRMWStoreExclusive(address, value, mo, false);
+        }
+
         public static AmoOp newAmoOp(Register rd, Register r2, IExpr address, String mo, IOpBin op) {
             return new AmoOp(rd, r2, address, mo, op);
         }
@@ -465,6 +475,16 @@ public class EventFactory {
     // =============================================================================================
     public static class Power {
         private Power() {}
+
+        public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean isStrong) {
+            RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong);
+            store.addFilters(Tag.RISCV.STCOND, Tag.MATCHADDRESS);
+            return store;
+        }
+
+        public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo) {
+            return Power.newRMWStoreExclusive(address, value, mo, false);
+        }
 
         public static Fence newISyncBarrier() {
             return newFence(ISYNC);
