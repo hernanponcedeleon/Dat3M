@@ -1,0 +1,17 @@
+RISCV CoWR0
+"PosWR Fre"
+Cycle=Fre PosWR
+Relax=
+Safe=Fre PosWR
+Generator=diy7 (version 7.47+2)
+Prefetch=
+Com=Fr
+Orig=PosWR Fre
+{
+0:x6=x;
+}
+ P0          ;
+ ori x5,x0,1 ;
+ sw x5,0(x6) ;
+ lw x7,0(x6) ;
+exists (not (0:x7=1 /\ x=1))

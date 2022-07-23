@@ -1,0 +1,15 @@
+RISCV Luc01
+Orig=RfeARAR PodRWARP RfiPAR FreARAR PodWWARAR WseARAR
+(* Difference with axiomatic model *)
+{
+0:x6=x;
+1:x6=x; 1:x8=y;
+2:x6=y; 2:x8=x;
+}
+ P0                         | P1                       | P2                         ;
+ ori x5,x0,2                | amoor.w.aq.rl x5,x0,(x6) | ori x5,x0,2                ;
+ amoswap.w.aq.rl x0,x5,(x6) | ori x7,x0,1              | amoswap.w.aq.rl x0,x5,(x6) ;
+                            | sw x7,0(x8)              | ori x7,x0,1                ;
+                            | amoor.w.aq.rl x9,x0,(x8) | amoswap.w.aq.rl x0,x7,(x8) ;
+exists
+(x=2 /\ y=2 /\ 1:x5=2 /\ 1:x9=1)

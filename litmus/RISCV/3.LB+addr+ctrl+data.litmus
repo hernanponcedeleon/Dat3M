@@ -1,0 +1,22 @@
+RISCV 3.LB+addr+ctrl+data
+"DpAddrdW Rfe DpCtrldW Rfe DpDatadW Rfe"
+Cycle=Rfe DpAddrdW Rfe DpCtrldW Rfe DpDatadW
+Relax=
+Safe=Rfe DpAddrdW DpDatadW DpCtrldW
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:x=W
+Com=Rf Rf Rf
+Orig=DpAddrdW Rfe DpCtrldW Rfe DpDatadW Rfe
+{
+0:x6=x; 0:x9=y;
+1:x6=y; 1:x8=z;
+2:x6=z; 2:x8=x;
+}
+ P0            | P1             | P2           ;
+ lw x5,0(x6)   | lw x5,0(x6)    | lw x5,0(x6)  ;
+ xor x7,x5,x5  | bne x5,x0,LC00 | xor x7,x5,x5 ;
+ ori x8,x0,1   | LC00:          | ori x7,x7,1  ;
+ add x10,x9,x7 | ori x7,x0,1    | sw x7,0(x8)  ;
+ sw x8,0(x10)  | sw x7,0(x8)    |              ;
+exists
+(0:x5=1 /\ 1:x5=1 /\ 2:x5=1)

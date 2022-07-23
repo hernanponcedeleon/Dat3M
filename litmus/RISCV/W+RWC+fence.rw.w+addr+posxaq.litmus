@@ -1,0 +1,22 @@
+RISCV W+RWC+fence.rw.w+addr+posxaq
+"Fence.rw.wdWW Rfe DpAddrdR FrePX PosWRXAq FreAqP"
+Cycle=Rfe DpAddrdR FrePX PosWRXAq FreAqP Fence.rw.wdWW
+Relax=PosWRXAq
+Safe=Rfe Fre Fence.rw.wdWW DpAddrdR
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr Fr
+Orig=Fence.rw.wdWW Rfe DpAddrdR FrePX PosWRXAq FreAqP
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x9=x;
+2:x5=x;
+}
+ P0          | P1            | P2               ;
+ ori x5,x0,2 | lw x5,0(x6)   | ori x6,x0,1      ;
+ sw x5,0(x6) | xor x7,x5,x5  | lr.w x7,0(x5)    ;
+ fence rw,w  | add x10,x9,x7 | sc.w x8,x6,0(x5) ;
+ ori x7,x0,1 | lw x8,0(x10)  | lw.aq x9,0(x5)   ;
+ sw x7,0(x8) |               |                  ;
+exists
+(x=2 /\ 1:x5=1 /\ 1:x8=0 /\ 2:x8=0 /\ 2:x7=0 /\ 2:x9=1)

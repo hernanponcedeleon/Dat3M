@@ -1,0 +1,22 @@
+RISCV S+poxxs
+"PodWWXX RfeXX PodRWXX WseXX"
+Cycle=RfeXX PodRWXX WseXX PodWWXX
+Relax=
+Safe=PodWW PodRW RfeXX WseXX
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Ws
+Orig=PodWWXX RfeXX PodRWXX WseXX
+{
+0:x5=x; 0:x9=y;
+1:x5=y; 1:x8=x;
+}
+ P0                 | P1                ;
+ ori x6,x0,2        | lr.w x6,0(x5)     ;
+ lr.w x7,0(x5)      | sc.w x7,x6,0(x5)  ;
+ sc.w x8,x6,0(x5)   | ori x9,x0,1       ;
+ ori x10,x0,1       | lr.w x10,0(x8)    ;
+ lr.w x11,0(x9)     | sc.w x11,x9,0(x8) ;
+ sc.w x12,x10,0(x9) |                   ;
+exists
+(x=2 /\ y=1 /\ 0:x12=0 /\ 0:x8=0 /\ 0:x7=1 /\ 0:x11=0 /\ 1:x11=0 /\ 1:x7=0 /\ 1:x6=1 /\ 1:x10=0)

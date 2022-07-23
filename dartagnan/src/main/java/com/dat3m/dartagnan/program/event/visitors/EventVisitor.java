@@ -1,7 +1,9 @@
 package com.dat3m.dartagnan.program.event.visitors;
 
-import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
+import com.dat3m.dartagnan.program.event.arch.riscv.AmoAbstract;
+import com.dat3m.dartagnan.program.event.arch.riscv.AmoOp;
+import com.dat3m.dartagnan.program.event.arch.riscv.AmoSwap;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
@@ -9,6 +11,7 @@ import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
@@ -85,6 +88,11 @@ public interface EventVisitor<T> {
 	// TSO Events
 	default T visitXchg(Xchg e) { return visitMemEvent(e); }
 
+	// RISCV Events
+	default T visitAmoAbstract(AmoAbstract e) { return visitMemEvent(e); }
+	default T visitAmoOp(AmoOp e) { return visitAmoAbstract(e); }
+	default T visitAmoSwap(AmoSwap e) { return visitAmoAbstract(e); }
+	
 	// LISA Events
 	default T visitRMW(RMW e) { return visitMemEvent(e); }
 

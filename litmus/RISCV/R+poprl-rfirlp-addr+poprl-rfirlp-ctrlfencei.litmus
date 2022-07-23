@@ -1,0 +1,25 @@
+RISCV R+poprl-rfirlp-addr+poprl-rfirlp-ctrlfencei
+"PodWWPRl RfiRlP DpAddrdW Wse PodWWPRl RfiRlP DpCtrlFenceIdR Fre"
+Cycle=Fre PodWWPRl RfiRlP DpAddrdW Wse PodWWPRl RfiRlP DpCtrlFenceIdR
+Relax=Rfi
+Safe=Fre Wse DpAddrdW DpCtrlFenceIdR PodWWPRl
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:z=W,1:z=F,1:x=T
+Com=Ws Fr
+Orig=PodWWPRl RfiRlP DpAddrdW Wse PodWWPRl RfiRlP DpCtrlFenceIdR Fre
+{
+0:x6=x; 0:x8=y; 0:x12=z;
+1:x6=z; 1:x8=a; 1:x11=x;
+}
+ P0              | P1             ;
+ ori x5,x0,1     | ori x5,x0,2    ;
+ sw x5,0(x6)     | sw x5,0(x6)    ;
+ ori x7,x0,1     | ori x7,x0,1    ;
+ sw.rl x7,0(x8)  | sw.rl x7,0(x8) ;
+ lw x9,0(x8)     | lw x9,0(x8)    ;
+ xor x10,x9,x9   | bne x9,x0,LC00 ;
+ ori x11,x0,1    | LC00:          ;
+ add x13,x12,x10 | fence.i        ;
+ sw x11,0(x13)   | lw x10,0(x11)  ;
+exists
+(z=2 /\ 0:x9=1 /\ 1:x9=1 /\ 1:x10=0)

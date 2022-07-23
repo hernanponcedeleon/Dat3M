@@ -124,10 +124,12 @@ public class RelRMW extends StaticRelation {
                 unpredictable = bmgr.or(unpredictable, bmgr.and(isExecPair, bmgr.not(sameAddress)));
                 // Relation between exclusive load and store
                 enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(isExecPair, sameAddress)));
-                // Can be executed if addresses mismatch, but behaviour is "constrained unpredictable"
+                // For ARMv8, the store can be executed if addresses mismatch, but behaviour is "constrained unpredictable"
                 // The implementation does not include all possible unpredictable cases: in case of address
-                // mismatch, addresses of read and write are unknown, i.e. read and write can use any address
-                map.merge(store, isPair, bmgr::or);
+                // mismatch, addresses of read and write are unknown, i.e. read and write can use any address.
+                // For RISCV and Power, addresses should match.
+                BooleanFormula succCond = store.is(Tag.MATCHADDRESS) ? bmgr.and(isPair, sameAddress) : isPair;
+                map.merge(store, succCond, bmgr::or);
             }
         }
         for(Map.Entry<Event, BooleanFormula> entry : map.entrySet()) {

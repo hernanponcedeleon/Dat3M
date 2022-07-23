@@ -1,0 +1,20 @@
+RISCV ISA-MP-DEP-SUCCESS-SWAP
+(*
+ MP-style success dependency inserted in load-to-load, second load part of
+ amoswap.
+ From an idea by Jonas Oberhausen.
+*)
+{
+0:x6=x; 0:x8=y;
+1:x6=x; 1:x8=y; 1:x10=z;
+}
+ P0          | P1                ;
+ ori x5,x0,2 | lw x2,0(x8)       ;
+ sw x5,0(x6) | lr.w x3,0(x10)    ;
+ fence w,w   | sc.w x4,x2,0(x10) ;
+ ori x7,x0,1 | amoswap.w x5,x4,0(x6) ;
+ sw x7,0(x8) |                   ;
+
+locations [1:x4;]
+exists
+(1:x2=1 /\ 1:x5=0)

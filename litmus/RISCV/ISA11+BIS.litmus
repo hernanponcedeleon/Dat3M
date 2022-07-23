@@ -1,0 +1,22 @@
+RISCV ISA11+BIS
+
+(* ISA11 without amo's *)
+{
+  uint64_t x;
+  uint64_t y;
+  0:s0=x; 0:s1=y;
+  1:s0=x; 1:s1=y;
+}
+
+
+ P0                     |  P1                     ;
+ li t1,2                | li t3,2                 ;
+ li t2,1                | li t4,1                 ;
+ sd t1,0(s0)            | sd t3,0(s1)             ;
+ lr.d.aq a0,0(s0)       | amoswap.d.rl x0,t4,(s0) ;
+ or t3,t2,a0            |                         ;
+ sc.d t4,t3,0(s0)       |                         ;
+ sd t2,0(s1)            |                         ;
+
+filter 0:t4=0
+exists 0:a0=2 /\ x=3 /\ y=2

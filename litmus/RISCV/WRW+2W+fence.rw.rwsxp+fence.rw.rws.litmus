@@ -1,0 +1,21 @@
+RISCV WRW+2W+fence.rw.rwsxp+fence.rw.rws
+"RfePX Fence.rw.rwsRWXP Wse Fence.rw.rwsWW Wse"
+Cycle=Wse Fence.rw.rwsWW Wse RfePX Fence.rw.rwsRWXP
+Relax=RfePX
+Safe=Wse Fence.rw.rwsWW Fence.rw.rwsRW
+Generator=diy7 (version 7.47+2)
+Prefetch=
+Com=Rf Ws Ws
+Orig=RfePX Fence.rw.rwsRWXP Wse Fence.rw.rwsWW Wse
+{
+0:x6=x;
+1:x5=x;
+2:x6=x;
+}
+ P0          | P1               | P2          ;
+ ori x5,x0,1 | lr.w x6,0(x5)    | ori x5,x0,3 ;
+ sw x5,0(x6) | sc.w x7,x6,0(x5) | sw x5,0(x6) ;
+             | fence rw,rw      | fence rw,rw ;
+             | ori x8,x0,2      | ori x7,x0,4 ;
+             | sw x8,0(x5)      | sw x7,0(x6) ;
+exists (not (1:x7=0 /\ (x=2 /\ (1:x6=0 \/ 1:x6=1 \/ 1:x6=3 \/ 1:x6=4) \/ x=1 /\ (1:x6=4 \/ 1:x6=3 \/ 1:x6=0) \/ x=4 /\ (1:x6=0 \/ 1:x6=1 \/ 1:x6=3)) \/ 1:x7=1 /\ (x=2 /\ (1:x6=4 \/ 1:x6=3 \/ 1:x6=1 \/ 1:x6=0) \/ x=1 /\ (1:x6=0 \/ 1:x6=3 \/ 1:x6=4) \/ x=4 /\ (1:x6=3 \/ 1:x6=1 \/ 1:x6=0))))

@@ -1,0 +1,20 @@
+RISCV SB+fence.rw.rw+ctrlfence.r.r
+"based on: Fence.rw.rwdWR FrePX RfiXP DpCtrldR Fence.r.rdRR Fre"
+Generator=diyone7 (version 7.47+6(dev))
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=Fence.rw.rwdWR FrePX RfiXP DpCtrldR Fence.r.rdRR Fre
+{
+0:x6=x; 0:x8=y;
+1:x5=y; 1:x13=x;
+}
+ P0          | P1               ;
+ ori x5,x0,1 | ori x6,x0,1      ;
+ sw x5,0(x6) | lr.w x7,0(x5)    ;
+ fence rw,rw | sc.w x8,x6,0(x5) ;
+ lw x7,0(x8) | bne x8,x0,LC00   ;
+             | LC00:            ;
+             | fence r,r        ;
+             | lw x12,0(x13)    ;
+exists
+(y=1 /\ 0:x7=0 /\ 1:x8=0 /\ 1:x7=0 /\ 1:x12=0)

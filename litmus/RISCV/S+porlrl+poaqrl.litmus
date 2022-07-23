@@ -1,0 +1,20 @@
+RISCV S+porlrl+poaqrl
+"PodWWRlRl RfeRlAq PodRWAqRl WseRlRl"
+Cycle=PodRWAqRl WseRlRl PodWWRlRl RfeRlAq
+Relax=
+Safe=PodWW PodRW RfeRlAq WseRlRl
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Ws
+Orig=PodWWRlRl RfeRlAq PodRWAqRl WseRlRl
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x8=x;
+}
+ P0             | P1             ;
+ ori x5,x0,2    | lw.aq x5,0(x6) ;
+ sw.rl x5,0(x6) | ori x7,x0,1    ;
+ ori x7,x0,1    | sw.rl x7,0(x8) ;
+ sw.rl x7,0(x8) |                ;
+exists
+(x=2 /\ 1:x5=1)

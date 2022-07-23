@@ -5,14 +5,16 @@ import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
+import com.dat3m.dartagnan.program.event.arch.riscv.AmoOp;
+import com.dat3m.dartagnan.program.event.arch.riscv.AmoSwap;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
@@ -155,6 +157,9 @@ public class EventFactory {
         return new ExecutionStatus(register, event);
     }
 
+    public static StoreExclusive newExclusiveStore(Register register, IExpr address, ExprInterface value, String mo) {
+        return new StoreExclusive(register, address, value, mo);
+    }
 
     // =============================================================================================
     // ========================================== Pthread ==========================================
@@ -278,10 +283,6 @@ public class EventFactory {
 
     public static class AArch64 {
         private AArch64() {}
-
-        public static StoreExclusive newExclusiveStore(Register register, IExpr address, ExprInterface value, String mo) {
-            return new StoreExclusive(register, address, value, mo);
-        }
 
         public static class DMB {
             private DMB() {}
@@ -432,6 +433,32 @@ public class EventFactory {
 
 
     // =============================================================================================
+    // =========================================== RISCV ===========================================
+    // =============================================================================================
+    public static class RISCV {
+        private RISCV() {}
+
+        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
+            RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong);
+            store.addFilters(Tag.RISCV.STCOND, Tag.MATCHADDRESS);
+            return store;
+        }
+
+        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo) {
+            return RISCV.newRMWStoreConditional(address, value, mo, false);
+        }
+
+        public static AmoOp newAmoOp(Register rd, Register r2, IExpr address, String mo, IOpBin op) {
+            return new AmoOp(rd, r2, address, mo, op);
+        }
+        
+        public static AmoSwap newAmoSwap(Register rd, Register r2, IExpr address, String mo) {
+            return new AmoSwap(rd, r2, address, mo);
+        }
+    }
+
+
+    // =============================================================================================
     // =========================================== LISA ============================================
     // =============================================================================================
     public static class LISA {
@@ -448,6 +475,16 @@ public class EventFactory {
     // =============================================================================================
     public static class Power {
         private Power() {}
+
+        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
+            RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong);
+            store.addFilters(Tag.MATCHADDRESS);
+            return store;
+        }
+
+        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo) {
+            return Power.newRMWStoreConditional(address, value, mo, false);
+        }
 
         public static Fence newISyncBarrier() {
             return newFence(ISYNC);

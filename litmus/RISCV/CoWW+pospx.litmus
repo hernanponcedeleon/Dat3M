@@ -1,0 +1,19 @@
+RISCV CoWW+pospx
+"PosWWPX WseXP"
+Cycle=PosWWPX WseXP
+Relax=PosWWPX
+Safe=Wse
+Generator=diy7 (version 7.47+2)
+Prefetch=
+Com=Ws
+Orig=PosWWPX WseXP
+{
+0:x6=x;
+}
+ P0               ;
+ ori x5,x0,1      ;
+ sw x5,0(x6)      ;
+ ori x7,x0,2      ;
+ lr.w x8,0(x6)    ;
+ sc.w x9,x7,0(x6) ;
+exists (not (0:x8=1 /\ (0:x9=0 /\ x=2 \/ 0:x9=1 /\ x=1)))

@@ -1,0 +1,21 @@
+RISCV MP+fence.rw.rw+rmw-wsi-rfi-addr
+"Fence.rw.rwdWW Rfe Rmw Wsi Rfi DpAddrdR Fre"
+Generator=diyone7 (version 7.48+2(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=Fence.rw.rwdWW Rfe Rmw Wsi Rfi DpAddrdR Fre
+{
+0:x6=x; 0:x8=y;
+1:x5=y; 1:x12=x;
+}
+ P0          | P1                   ;
+ ori x5,x0,1 | ori x7,x0,2          ;
+ sw x5,0(x6) | amoswap.w x6,x7,(x5) ;
+ fence rw,rw | ori x8,x0,3          ;
+ ori x7,x0,1 | sw x8,0(x5)          ;
+ sw x7,0(x8) | lw x9,0(x5)          ;
+             | xor x10,x9,x9        ;
+             | add x13,x12,x10      ;
+             | lw x11,0(x13)        ;
+exists
+(y=3 /\ 1:x6=1 /\ 1:x9=3 /\ 1:x11=0)

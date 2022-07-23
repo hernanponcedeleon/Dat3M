@@ -15,6 +15,7 @@ public class ProgramParser {
 
     private static final String TYPE_LITMUS_AARCH64     = "AARCH64";
     private static final String TYPE_LITMUS_PPC         = "PPC";
+    private static final String TYPE_LITMUS_RISCV       = "RISCV";
     private static final String TYPE_LITMUS_X86         = "X86";
     private static final String TYPE_LITMUS_LISA        = "LISA";
     private static final String TYPE_LITMUS_C           = "C";
@@ -90,6 +91,8 @@ public class ProgramParser {
             return new ParserLitmusX86();
         } else if(programText.indexOf(TYPE_LITMUS_LISA) == 0){
             return new ParserLitmusLISA();
+        } else if(programText.indexOf(TYPE_LITMUS_RISCV) == 0){
+            return new ParserLitmusRISCV();
         }
         throw new ParsingException("Unknown input file type");
     }

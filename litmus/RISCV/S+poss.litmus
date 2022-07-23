@@ -1,0 +1,19 @@
+RISCV S+poss
+"PosWW Rfe PosRW Wse"
+Cycle=Rfe PosRW Wse PosWW
+Relax=
+Safe=Rfe Wse PosWW PosRW
+Generator=diy7 (version 7.47+2)
+Prefetch=
+Com=Rf Ws
+Orig=PosWW Rfe PosRW Wse
+{
+0:x6=x;
+1:x6=x;
+}
+ P0          | P1          ;
+ ori x5,x0,1 | lw x5,0(x6) ;
+ sw x5,0(x6) | ori x7,x0,3 ;
+ ori x7,x0,2 | sw x7,0(x6) ;
+ sw x7,0(x6) |             ;
+exists (not (x=3 /\ (1:x5=2 \/ 1:x5=1 \/ 1:x5=0) \/ x=2 /\ (1:x5=0 \/ 1:x5=1)))

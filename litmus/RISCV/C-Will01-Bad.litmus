@@ -1,0 +1,15 @@
+RISCV C-Will01-Bad
+(* Faulty compilation of C-Will01, amoadd.w.aqrl is no full fence *)
+{ ok=1;
+0:x6=x; 0:x7=y; 0:x12=z; 0:x14=ok;
+1:x6=z; 1:x8=x;
+}
+ P0                       | P1          ;
+ ori x5,x0,1              | lw x5,0(x6) ;
+ sw x5,0(x6)              | fence r,r   ;
+ ori x8,x0,1              | lw x7,0(x8) ;
+ amoadd.w.aq.rl x9,x5,(x7)|             ;
+ ori x11,x0,1             |             ;
+ sw x11,0(x12)            |             ;
+exists
+(1:x5=1 /\ 1:x7=0)

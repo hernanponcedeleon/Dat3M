@@ -1,0 +1,22 @@
+RISCV ISA2+fence.rw.w+poaqp+ctrlfenceis
+"Fence.rw.wdWW RfePAq PodRWAqP Rfe DpCtrlFenceIsR Fre"
+Cycle=Rfe DpCtrlFenceIsR Fre Fence.rw.wdWW RfePAq PodRWAqP
+Relax=
+Safe=Rfe Fre Fence.rw.wdWW DpCtrlFenceIsR PodRWAqP
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf Fr
+Orig=Fence.rw.wdWW RfePAq PodRWAqP Rfe DpCtrlFenceIsR Fre
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x8=x;
+2:x6=x;
+}
+ P0          | P1             | P2             ;
+ ori x5,x0,2 | lw.aq x5,0(x6) | lw x5,0(x6)    ;
+ sw x5,0(x6) | ori x7,x0,1    | bne x5,x0,LC00 ;
+ fence rw,w  | sw x7,0(x8)    | LC00:          ;
+ ori x7,x0,1 |                | fence.i        ;
+ sw x7,0(x8) |                | lw x7,0(x6)    ;
+exists
+(x=2 /\ 1:x5=1 /\ 2:x5=1 /\ 2:x7=1)

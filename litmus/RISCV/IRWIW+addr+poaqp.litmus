@@ -1,0 +1,23 @@
+RISCV IRWIW+addr+poaqp
+"Rfe DpAddrdW Wse RfePAq PodRWAqP Wse"
+Cycle=Rfe DpAddrdW Wse RfePAq PodRWAqP Wse
+Relax=
+Safe=Rfe Wse DpAddrdW PodRWAqP
+Generator=diy7 (version 7.47+2)
+Prefetch=1:x=F,1:y=W,3:y=F,3:x=W
+Com=Rf Ws Rf Ws
+Orig=Rfe DpAddrdW Wse RfePAq PodRWAqP Wse
+{
+0:x6=x;
+1:x6=x; 1:x9=y;
+2:x6=y;
+3:x6=y; 3:x8=x;
+}
+ P0          | P1            | P2          | P3             ;
+ ori x5,x0,2 | lw x5,0(x6)   | ori x5,x0,2 | lw.aq x5,0(x6) ;
+ sw x5,0(x6) | xor x7,x5,x5  | sw x5,0(x6) | ori x7,x0,1    ;
+             | ori x8,x0,1   |             | sw x7,0(x8)    ;
+             | add x10,x9,x7 |             |                ;
+             | sw x8,0(x10)  |             |                ;
+exists
+(x=2 /\ y=2 /\ 1:x5=2 /\ 3:x5=2)

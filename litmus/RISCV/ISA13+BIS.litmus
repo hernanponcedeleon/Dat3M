@@ -1,0 +1,15 @@
+RISCV ISA13+BIS
+{
+uint64_t x;
+uint64_t y;
+
+0:s0=x; 0:s1=y;
+1:s0=x; 1:s1=y;
+}
+
+ P0                     | P1           ;
+ li t0,1                | li t0,1      ;
+ amoor.d.aq a0,t0,0(s0) | sd t0,0(s1)  ;
+ ld a2,0(s1)            | fence rw,rw  ;
+                        | ld a2,0(s0)  ;
+exists 0:a2=0 /\ 1:a2=0

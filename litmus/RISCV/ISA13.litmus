@@ -1,0 +1,16 @@
+RISCV ISA13
+Hash=a05b05209e12b622034855bb94db48cd
+{
+uint64_t x;
+uint64_t y;
+
+0:s0=x; 0:s1=y;
+1:s0=x; 1:s1=y;
+}
+
+ P0                     | P1                     ;
+ li t0,1                | amoor.d.aq a1,x0,0(s1) ;
+ amoor.d.aq a0,t0,0(s0) | ld a2,0(s0)            ;
+ sd t0,0(s1)            |                        ;
+
+exists 1:a1=1 /\ 1:a2=0

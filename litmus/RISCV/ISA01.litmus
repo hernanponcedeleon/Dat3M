@@ -1,0 +1,16 @@
+RISCV ISA01
+
+(* RISCV V2.3, Fig 1.1 *)
+{
+0:s0 = x; 1:s0 = x;
+}
+P0           | P1          ;
+li t1,1      | li t4,4     ;
+sw t1,0(s0)  | sw t4,0(s0) ;
+li t2,2      | li t5,5     ;
+sw t2,0(s0)  | sw t5,0(s0) ;
+lw a0,0(s0)  |             ;
+li t3,3      |             ;
+sw t3,0(s0)  |             ;
+
+forall 0:a0=2 \/ 0:a0=4 \/ 0:a0=5
