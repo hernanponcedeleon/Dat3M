@@ -28,7 +28,7 @@ public abstract class AmoAbstract extends MemEvent implements RegWriter, RegRead
         super(address, mo);
         this.resultRegister = rd;
         this.r2 = r2;
-        addFilters(ANY, VISIBLE, MEMORY, READ, WRITE, REG_WRITER, REG_READER, RISCV.AMO);
+        addFilters(ANY, VISIBLE, MEMORY, READ, WRITE, REG_WRITER, REG_READER, RMW, RISCV.AMO);
     }
 
     AmoAbstract(AmoAbstract other){
