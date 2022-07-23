@@ -89,9 +89,9 @@ public interface EventVisitor<T> {
 	default T visitXchg(Xchg e) { return visitMemEvent(e); }
 
 	// RISCV Events
-	default T visitRMWAbstract(AmoAbstract e) { return visitMemEvent(e); }
-	default T visitAmoOp(AmoOp e) { return visitRMWAbstract(e); }
-	default T visitAmoSwap(AmoSwap e) { return visitRMWAbstract(e); }
+	default T visitAmoAbstract(AmoAbstract e) { return visitMemEvent(e); }
+	default T visitAmoOp(AmoOp e) { return visitAmoAbstract(e); }
+	default T visitAmoSwap(AmoSwap e) { return visitAmoAbstract(e); }
 	
 	// LISA Events
 	default T visitRMW(RMW e) { return visitMemEvent(e); }

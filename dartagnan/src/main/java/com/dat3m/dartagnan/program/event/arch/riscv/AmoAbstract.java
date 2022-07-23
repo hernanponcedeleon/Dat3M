@@ -74,6 +74,6 @@ public abstract class AmoAbstract extends MemEvent implements RegWriter, RegRead
 
 	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitRMWAbstract(this);
+		return visitor.visitAmoAbstract(this);
 	}
 }
