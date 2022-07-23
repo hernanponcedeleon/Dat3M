@@ -438,14 +438,14 @@ public class EventFactory {
     public static class RISCV {
         private RISCV() {}
 
-        public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean isStrong) {
+        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
             RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong);
             store.addFilters(Tag.RISCV.STCOND, Tag.MATCHADDRESS);
             return store;
         }
 
-        public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo) {
-            return RISCV.newRMWStoreExclusive(address, value, mo, false);
+        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo) {
+            return RISCV.newRMWStoreConditional(address, value, mo, false);
         }
 
         public static AmoOp newAmoOp(Register rd, Register r2, IExpr address, String mo, IOpBin op) {
@@ -476,14 +476,14 @@ public class EventFactory {
     public static class Power {
         private Power() {}
 
-        public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean isStrong) {
+        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
             RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong);
-            store.addFilters(Tag.RISCV.STCOND, Tag.MATCHADDRESS);
+            store.addFilters(Tag.MATCHADDRESS);
             return store;
         }
 
-        public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo) {
-            return Power.newRMWStoreExclusive(address, value, mo, false);
+        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo) {
+            return Power.newRMWStoreConditional(address, value, mo, false);
         }
 
         public static Fence newISyncBarrier() {
