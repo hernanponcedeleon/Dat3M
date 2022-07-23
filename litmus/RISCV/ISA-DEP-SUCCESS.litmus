@@ -1,0 +1,25 @@
+RISCV ISA-DEP-SUCCESS
+
+(* Fig A.8 of, illustrate rule 11 (success dependency) *)
+{
+  uint64_t x;
+  uint64_t y;
+  uint64_t z;
+  0:s0=x; 0:s1=y; 0:s2=z;
+  1:s0=x; 1:s2=z;
+}
+
+
+ P0                     |  P1            ;
+ ld a0,0(s0)            | ld a3,0(s2)    ;
+ lr.d a1,0(s1)          | sd a3,0(s0)    ;
+ sc.d a2,a0,0(s1)       |                ;
+ addi  a2,a2,2          |                ;
+ sd a2,0(s2)            |                ;
+
+
+~exists
+  (not(0:a0 = 0) /\ not(1:a3 = 0) /\ y=0 /\ not(0:a2=0))
+  \/
+  (0:a0=2 /\ 1:a3=2 /\ y=2 /\ 0:a2=2)
+  

@@ -1,0 +1,24 @@
+RISCV SB+porlaq-ctrlfenceisaqp+poprl-porlaq-addrsaqp
+"PodWRRlAq DpCtrlFenceIsRAqP Fre PodWWPRl PodWRRlAq DpAddrsRAqP FrePRl"
+Cycle=Fre PodWWPRl PodWRRlAq DpAddrsRAqP FrePRl PodWRRlAq DpCtrlFenceIsRAqP
+Relax=PodWRRlAq
+Safe=Fre DpAddrsR DpCtrlFenceIsR PodWWPRl
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=PodWRRlAq DpCtrlFenceIsRAqP Fre PodWWPRl PodWRRlAq DpAddrsRAqP FrePRl
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x8=z; 1:x10=x;
+}
+ P0             | P1              ;
+ ori x5,x0,1    | ori x5,x0,1     ;
+ sw.rl x5,0(x6) | sw x5,0(x6)     ;
+ lw.aq x7,0(x8) | ori x7,x0,1     ;
+ bne x7,x0,LC00 | sw.rl x7,0(x8)  ;
+ LC00:          | lw.aq x9,0(x10) ;
+ fence.i        | xor x11,x9,x9   ;
+ lw x9,0(x8)    | add x13,x10,x11 ;
+                | lw x12,0(x13)   ;
+exists
+(0:x9=0 /\ 1:x12=0)

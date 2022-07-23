@@ -1,0 +1,20 @@
+RISCV ISA10+TER
+
+(* Variation on ISA V2.3 fig. 1.10, RDW, internal *)
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x9=z; 1:x15=x;
+}
+ P0          | P1              ;
+ ori x5,x0,1 | lw x5,0(x6)     ;
+ sw x5,0(x6) | andi x7,x5,4    ;
+ fence w,w   | add x10,x9,x7   ;
+ ori x7,x0,1 | lw x8,0(x10)    ;
+ sw x7,0(x8) | ori x11,x0,1    ;
+             | sw x11,0(x9)    ;
+             | lw x12,0(x9)    ;
+             | andi x13,x12,4  ;
+             | add x16,x15,x13 ;
+             | lw x14,0(x16)   ;
+exists
+(1:x5=1 /\ 1:x8=0 /\ 1:x12=1 /\ 1:x14=0)

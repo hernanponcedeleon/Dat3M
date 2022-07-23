@@ -1,0 +1,18 @@
+RISCV Andy27+FILTER
+{
+0:x7=A; 0:x8=B;
+1:x7=A; 1:x8=B;
+}
+ P0                 | P1           ;
+                    | lw x1,0(x8)  ;
+ lr.w x1,0(x7)      | sw x1,0(x7)  ;
+ addi x2,x1,1       |              ;
+ sc.w x3,x2,0(x7)   |              ;
+ bne x3,x0,OUT      |              ;
+ lr.w x4,0(x8)      |              ;
+ addi x5,x4,1       |              ;
+ sc.w x6,x5,0(x8)   |              ;
+OUT:                |              ;
+filter (0:x3=0)
+exists
+(0:x4=0 /\ 0:x6=0 /\ 0:x1=1 /\ 1:x1=1)

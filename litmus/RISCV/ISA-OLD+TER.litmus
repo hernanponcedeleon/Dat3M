@@ -1,0 +1,14 @@
+RISCV ISA-OLD+TER
+{
+  0:s0=x; 0:s1=y;
+  1:s0=x; 1:s1=y;
+}
+(* D. Lustig version of ISA-OLD+BIS, amoor ..,x0,.. -> lw.aq *)
+
+  P0                      | P1                     ;
+ li t1,1                  | li t2,2                ;
+ sw t1,0(s0)              | amoswap.w a0,t2,0(s1)  ;
+ amoswap.w.rl x0,t1,0(s1) | lw.aq     a1,0(s1)  ;
+                          | lw        a2,0(s0)     ;
+
+~exists 1:a0=1 /\ 1:a1=2 /\ 1:a2=0

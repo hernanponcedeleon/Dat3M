@@ -1,0 +1,21 @@
+RISCV LB+data+datapx-dataxp
+"based on: DpDatadW Rfe DpDatadWPX PodWWXP Rfe"
+Generator=diyone7 (version 7.47+2)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+Orig=DpDatadW Rfe DpDatadWPX PodWWXP Rfe
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x8=z; 1:x12=x;
+}
+ P0           | P1                ;
+ lw x5,0(x6)  | lw x5,0(x6)       ;
+ xor x7,x5,x5 | xor x7,x5,x5      ;
+ ori x7,x7,1  | ori x7,x7,1       ;
+ sw x7,0(x8)  | lr.w x9,0(x8)     ;
+              | sc.w x10,x7,0(x8) ;
+              | xor x11,x10,x10   ;
+              | ori x11,x11,1     ;
+              | sw x11,0(x12)     ;
+exists
+(z=1 /\ 0:x5=1 /\ 1:x10=0 /\ 1:x5=1)

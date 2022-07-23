@@ -1,0 +1,21 @@
+RISCV Z6.3+poprl+poprl+fence.rw.rws
+"PodWWPRl WseRlP PodWWPRl RfeRlP Fence.rw.rwsRR Fre"
+Cycle=Fre PodWWPRl WseRlP PodWWPRl RfeRlP Fence.rw.rwsRR
+Relax=
+Safe=Rfe Fre Wse Fence.rw.rwsRR PodWWPRl
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Ws Rf Fr
+Orig=PodWWPRl WseRlP PodWWPRl RfeRlP Fence.rw.rwsRR Fre
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x8=x;
+2:x6=x;
+}
+ P0             | P1             | P2          ;
+ ori x5,x0,2    | ori x5,x0,2    | lw x5,0(x6) ;
+ sw x5,0(x6)    | sw x5,0(x6)    | fence rw,rw ;
+ ori x7,x0,1    | ori x7,x0,1    | lw x7,0(x6) ;
+ sw.rl x7,0(x8) | sw.rl x7,0(x8) |             ;
+exists
+(x=2 /\ y=2 /\ 2:x5=1 /\ 2:x7=1)

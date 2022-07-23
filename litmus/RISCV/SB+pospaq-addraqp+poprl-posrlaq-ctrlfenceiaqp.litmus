@@ -1,0 +1,25 @@
+RISCV SB+pospaq-addraqp+poprl-posrlaq-ctrlfenceiaqp
+"PosWRPAq DpAddrdRAqP Fre PodWWPRl PosWRRlAq DpCtrlFenceIdRAqP Fre"
+Cycle=Fre PosWRPAq DpAddrdRAqP Fre PodWWPRl PosWRRlAq DpCtrlFenceIdRAqP
+Relax=PosWRPAq
+Safe=Fre DpAddrdR DpCtrlFenceIdR PodWWPRl
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=PosWRPAq DpAddrdRAqP Fre PodWWPRl PosWRRlAq DpCtrlFenceIdRAqP Fre
+{
+0:x6=x; 0:x10=y;
+1:x6=y; 1:x8=z; 1:x11=x;
+}
+ P0             | P1             ;
+ ori x5,x0,1    | ori x5,x0,1    ;
+ sw x5,0(x6)    | sw x5,0(x6)    ;
+ lw.aq x7,0(x6) | ori x7,x0,1    ;
+ xor x8,x7,x7   | sw.rl x7,0(x8) ;
+ add x11,x10,x8 | lw.aq x9,0(x8) ;
+ lw x9,0(x11)   | bne x9,x0,LC00 ;
+                | LC00:          ;
+                | fence.i        ;
+                | lw x10,0(x11)  ;
+exists
+(0:x9=0 /\ 1:x10=0)

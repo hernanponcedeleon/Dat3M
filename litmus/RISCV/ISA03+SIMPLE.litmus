@@ -1,0 +1,19 @@
+RISCV ISA03+SIMPLE
+
+(* ISA V2.3, Fig 1.3, spinlock, adapt, test mutual exclusion *)
+
+{
+0:a0=lock; 0:a5=a;
+1:a0=lock; 1:a5=a;
+}
+ P0                      | P1                      ;
+ li t0,1                 | li t0,1                 ;
+ amoswap.w.aq t0,t0,(a0) | amoswap.w.aq t0,t0,(a0) ;
+ lw t1,0(a5)             | lw t1,0(a5)             ;
+ addi t1,t1,1            | addi t1,t1,1            ;
+ sw t1,0(a5)             | sw t1,0(a5)             ;
+ amoswap.w.rl x0,x0,(a0) | amoswap.w.rl x0,x0,(a0) ;
+
+
+filter (0:t0=0 /\ 1:t0=0)
+forall (a=2)

@@ -1,0 +1,19 @@
+RISCV CoRW1+fence.rw.rwsxp
+"Fence.rw.rwsRWXP RfePX"
+Cycle=RfePX Fence.rw.rwsRWXP
+Relax=RfePX
+Safe=Fence.rw.rwsRW
+Generator=diy7 (version 7.47+2)
+Prefetch=
+Com=Rf
+Orig=Fence.rw.rwsRWXP RfePX
+{
+0:x5=x;
+}
+ P0               ;
+ lr.w x6,0(x5)    ;
+ sc.w x7,x6,0(x5) ;
+ fence rw,rw      ;
+ ori x8,x0,1      ;
+ sw x8,0(x5)      ;
+exists (not (0:x6=0 /\ x=1 /\ (0:x7=0 \/ 0:x7=1)))

@@ -1,0 +1,18 @@
+RISCV ISA-Rel-Acq
+
+(* ISA, C11 problematic release-acquire sequence *)
+
+{
+ uint64_t x; uint64_t y;
+ 0:s0=x; 0:s1=y;
+ 1:s0=x; 1:s1=y;
+}
+
+ P0          | P1                    ;
+ ori x6,x0,1 | ori x6,x0,1           ;
+ sd x6,0(s0) | amoswap.d a0,x6,0(s1) ;
+ fence w,w   | ld.aq a1,0(s1)        ;
+ sd x6,0(s1) | ld a2,0(s0)           ;
+
+locations [1:a0;1:a1;1:a2;]
+~exists 1:a0=1 /\ 1:a2=0

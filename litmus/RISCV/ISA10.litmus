@@ -1,0 +1,21 @@
+RISCV ISA10
+
+(* ISA V2.3 fig. 1.10, RSW *)
+{
+  int x; int y; int z;
+  0:s0=x; 0:s1=y;
+  1:s0=x; 1:s1=y; 1:s2=z;
+  
+}
+
+ P0            | P1           ;
+ li t1,1       | lw a0,0(s1)  ;
+ sw t1,0(s0)   | xor t2,a0,a0 ;
+ fence w,w     | add s3,s2,t2 ;
+ sw t1,0(s1)   | lw a1,0(s3)  ;
+               | lw a2,0(s2)  ;
+               | xor t3,a2,a2 ;
+               | add s0,s0,t3 ;
+               | lw a3,0(s0)  ;
+
+exists (1:a0=1 /\ 1:a3 = 0)

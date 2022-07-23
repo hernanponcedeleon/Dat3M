@@ -1,0 +1,17 @@
+RISCV LR-SC-diff-loc2
+"both sc.w succeed even though in some state both lr.w reserve the same footprint"
+{
+0:x6=x; 0:x3=a; 0:x5=b; 0:x9=y;
+1:x6=x; 1:x3=b; 1:x5=a; 1:x9=z;
+}
+ P0                           | P1                           ;
+ lr.w x1,0(x6)    (* R x=0 *) | lr.w x1,0(x6)    (* R x=0 *) ;
+ xor x2,x1,x1                 | xor x2,x1,x1                 ;
+ ori x2,x2,1                  | ori x2,x2,1                  ;
+ sw x2,0(x3)      (* W a=1 *) | sw x2,0(x3)      (* W b=1 *) ;
+ lw x4,0(x5)      (* R b=1 *) | lw x4,0(x5)      (* R a=1 *) ;
+ xor x7,x4,x4                 | xor x7,x4,x4                 ;
+ ori x7,x7,1                  | ori x7,x7,1                  ;
+ sc.w x8,x7,0(x9) (* W y=1 *) | sc.w x8,x7,0(x9) (* W z=1 *) ;
+exists
+(x=0 /\ y=1 /\ z=1 /\ a=1 /\ b=1 /\ 0:x1=0 /\ 0:x4=1 /\ 0:x8=0 /\ 1:x1=0 /\ 1:x4=1 /\ 1:x8=0)

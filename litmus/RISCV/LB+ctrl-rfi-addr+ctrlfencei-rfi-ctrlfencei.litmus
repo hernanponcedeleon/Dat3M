@@ -1,0 +1,28 @@
+RISCV LB+ctrl-rfi-addr+ctrlfencei-rfi-ctrlfencei
+"DpCtrldW Rfi DpAddrdW Rfe DpCtrlFenceIdW Rfi DpCtrlFenceIdW Rfe"
+Cycle=Rfi DpAddrdW Rfe DpCtrlFenceIdW Rfi DpCtrlFenceIdW Rfe DpCtrldW
+Relax=Rfi
+Safe=Rfe DpAddrdW DpCtrldW DpCtrlFenceIdW
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:z=W,1:z=F,1:x=W
+Com=Rf Rf
+Orig=DpCtrldW Rfi DpAddrdW Rfe DpCtrlFenceIdW Rfi DpCtrlFenceIdW Rfe
+{
+0:x6=x; 0:x8=y; 0:x12=z;
+1:x6=z; 1:x8=a; 1:x11=x;
+}
+ P0              | P1             ;
+ lw x5,0(x6)     | lw x5,0(x6)    ;
+ bne x5,x0,LC00  | bne x5,x0,LC01 ;
+ LC00:           | LC01:          ;
+ ori x7,x0,1     | fence.i        ;
+ sw x7,0(x8)     | ori x7,x0,1    ;
+ lw x9,0(x8)     | sw x7,0(x8)    ;
+ xor x10,x9,x9   | lw x9,0(x8)    ;
+ ori x11,x0,1    | bne x9,x0,LC02 ;
+ add x13,x12,x10 | LC02:          ;
+ sw x11,0(x13)   | fence.i        ;
+                 | ori x10,x0,1   ;
+                 | sw x10,0(x11)  ;
+exists
+(0:x5=1 /\ 0:x9=1 /\ 1:x5=1 /\ 1:x9=1)

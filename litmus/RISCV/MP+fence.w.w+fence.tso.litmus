@@ -1,0 +1,14 @@
+RISCV MP+fence.w.w+fence.tso
+"based on: Fence.w.wdWW Rfe Fence.rw.rwdRR Fre"
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x8=x;
+}
+ P0          | P1          ;
+ ori x5,x0,1 | lw x5,0(x6) ;
+ sw x5,0(x6) | fence.tso   ;
+ fence w,w   | lw x7,0(x8) ;
+ ori x7,x0,1 |             ;
+ sw x7,0(x8) |             ;
+~exists
+(1:x5=1 /\ 1:x7=0)

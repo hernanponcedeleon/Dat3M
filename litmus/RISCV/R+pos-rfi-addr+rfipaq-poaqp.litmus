@@ -1,0 +1,25 @@
+RISCV R+pos-rfi-addr+rfipaq-poaqp
+"PosWW Rfi DpAddrdW Wse RfiPAq PodRRAqP Fre"
+Cycle=Rfi DpAddrdW Wse RfiPAq PodRRAqP Fre PosWW
+Relax=Rfi
+Safe=Fre Wse PosWW DpAddrdW PodRRAqP
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Ws Fr
+Orig=PosWW Rfi DpAddrdW Wse RfiPAq PodRRAqP Fre
+{
+0:x6=x; 0:x11=y;
+1:x6=y; 1:x9=x;
+}
+ P0             | P1             ;
+ ori x5,x0,1    | ori x5,x0,2    ;
+ sw x5,0(x6)    | sw x5,0(x6)    ;
+ ori x7,x0,2    | lw.aq x7,0(x6) ;
+ sw x7,0(x6)    | lw x8,0(x9)    ;
+ lw x8,0(x6)    |                ;
+ xor x9,x8,x8   |                ;
+ ori x10,x0,1   |                ;
+ add x12,x11,x9 |                ;
+ sw x10,0(x12)  |                ;
+exists
+(x=2 /\ y=2 /\ 0:x8=2 /\ 1:x7=2 /\ 1:x8=0)

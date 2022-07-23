@@ -1,0 +1,24 @@
+RISCV R+poprl-rfirlp-data+rfi-addr-rfi
+"PodWWPRl RfiRlP DpDatadW Wse Rfi DpAddrdW Rfi Fre"
+Cycle=Rfi Fre PodWWPRl RfiRlP DpDatadW Wse Rfi DpAddrdW
+Relax=Rfi
+Safe=Fre Wse DpAddrdW DpDatadW PodWWPRl
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:z=W,1:z=F,1:x=T
+Com=Ws Fr
+Orig=PodWWPRl RfiRlP DpDatadW Wse Rfi DpAddrdW Rfi Fre
+{
+0:x6=x; 0:x8=y; 0:x11=z;
+1:x6=z; 1:x10=x;
+}
+ P0             | P1             ;
+ ori x5,x0,2    | ori x5,x0,2    ;
+ sw x5,0(x6)    | sw x5,0(x6)    ;
+ ori x7,x0,1    | lw x7,0(x6)    ;
+ sw.rl x7,0(x8) | xor x8,x7,x7   ;
+ lw x9,0(x8)    | ori x9,x0,1    ;
+ xor x10,x9,x9  | add x11,x10,x8 ;
+ ori x10,x10,1  | sw x9,0(x11)   ;
+ sw x10,0(x11)  | lw x12,0(x10)  ;
+exists
+(x=2 /\ z=2 /\ 0:x9=1 /\ 1:x7=2 /\ 1:x12=1)

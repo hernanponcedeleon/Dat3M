@@ -1,0 +1,20 @@
+RISCV ISA-DEP-ADDR
+
+(* Typical load to load syntactic address dependency, Forbid *)
+
+{
+ int64_t x;
+ int64_t y;
+ 0:s0=x; 0:s1=y;
+ 1:s0=x; 1:s1=y;
+}
+
+
+  P0         | P1           ;
+ li t1,1     | ld a1,0(s0)  ;
+ sd t1,0(s1) | xor a2,a1,a1 ;
+ fence w,w   | add s2,s1,a2 ;
+ sd t1,0(s0) | ld a5,0(s2)  ;
+~exists (1:a1=1 /\ 1:a5=0)
+
+ 

@@ -1,0 +1,24 @@
+RISCV S+rfi-addr+data-rfi-data
+"Rfi DpAddrdW Rfe DpDatadW Rfi DpDatadW Wse"
+Cycle=Rfi DpAddrdW Rfe DpDatadW Rfi DpDatadW Wse
+Relax=Rfi
+Safe=Rfe Wse DpAddrdW DpDatadW
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Ws
+Orig=Rfi DpAddrdW Rfe DpDatadW Rfi DpDatadW Wse
+{
+0:x6=x; 0:x10=y;
+1:x6=y; 1:x8=z; 1:x11=x;
+}
+ P0             | P1            ;
+ ori x5,x0,2    | lw x5,0(x6)   ;
+ sw x5,0(x6)    | xor x7,x5,x5  ;
+ lw x7,0(x6)    | ori x7,x7,1   ;
+ xor x8,x7,x7   | sw x7,0(x8)   ;
+ ori x9,x0,1    | lw x9,0(x8)   ;
+ add x11,x10,x8 | xor x10,x9,x9 ;
+ sw x9,0(x11)   | ori x10,x10,1 ;
+                | sw x10,0(x11) ;
+exists
+(x=2 /\ 0:x7=2 /\ 1:x5=1 /\ 1:x9=1)

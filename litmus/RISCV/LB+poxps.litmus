@@ -1,0 +1,20 @@
+RISCV LB+poxps
+"PodRWXP RfePX PodRWXP RfePX"
+Cycle=RfePX PodRWXP RfePX PodRWXP
+Relax=PodRWXP
+Safe=Rfe
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+Orig=PodRWXP RfePX PodRWXP RfePX
+{
+0:x5=x; 0:x9=y;
+1:x5=y; 1:x9=x;
+}
+ P0               | P1               ;
+ lr.w x6,0(x5)    | lr.w x6,0(x5)    ;
+ sc.w x7,x6,0(x5) | sc.w x7,x6,0(x5) ;
+ ori x8,x0,1      | ori x8,x0,1      ;
+ sw x8,0(x9)      | sw x8,0(x9)      ;
+exists
+(x=1 /\ y=1 /\ 0:x7=0 /\ 0:x6=1 /\ 1:x7=0 /\ 1:x6=1)

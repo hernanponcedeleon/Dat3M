@@ -1,0 +1,14 @@
+RISCV LB+amoadd-data-amoadd.rl+amoadd.aq-data-amoadd
+{
+0:x3=x; 0:x6=y;
+1:x3=y; 1:x6=x;
+}
+
+ P0                     | P1                     ;
+ ori x2,x0,1            | ori x2,x0,1            ;
+ amoadd.w x1,x2,(x3)    | amoadd.w.aq x1,x2,(x3) ;
+ xor x4,x1,x1           | xor x4,x1,x1           ;
+ ori x4,x4,1            | ori x4,x4,1            ;
+ amoadd.w.rl x5,x4,(x6) | amoadd.w x5,x4,(x6)    ;
+exists
+(x=2 /\ y=2 /\ 0:x1=1 /\ 0:x5=0 /\ 1:x1=1 /\ 1:x5=0)

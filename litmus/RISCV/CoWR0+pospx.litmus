@@ -1,0 +1,18 @@
+RISCV CoWR0+pospx
+"PosWRPX FreXP"
+Cycle=PosWRPX FreXP
+Relax=PosWRPX
+Safe=Fre
+Generator=diy7 (version 7.47+2)
+Prefetch=
+Com=Fr
+Orig=PosWRPX FreXP
+{
+0:x6=x;
+}
+ P0               ;
+ ori x5,x0,1      ;
+ sw x5,0(x6)      ;
+ lr.w x7,0(x6)    ;
+ sc.w x8,x7,0(x6) ;
+exists (not (0:x7=1 /\ x=1 /\ (0:x8=0 \/ 0:x8=1)))

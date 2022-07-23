@@ -9,6 +9,8 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import static com.dat3m.dartagnan.configuration.Arch.RISCV;
+
 import java.util.Collection;
 
 abstract class BasicRegRelation extends StaticRelation {
@@ -38,7 +40,14 @@ abstract class BasicRegRelation extends StaticRelation {
         minTupleSet = new TupleSet();
         Dependency dep = analysisContext.requires(Dependency.class);
         for(Event regReader : getEvents()){
-            for(Register register : getRegisters(regReader)){
+            for(Register register : getRegisters(regReader)) {
+            	// Register x0 is hardwired to the constant 0 in RISCV
+            	// https://en.wikichip.org/wiki/risc-v/registers
+            	// and thus it generates no dependency, see
+            	// https://github.com/herd/herdtools7/issues/408
+            	if(task.getProgram().getArch().equals(RISCV) && register.getName().equals("x0")) {
+            		continue;
+            	}
                 Dependency.State r = dep.of(regReader, register);
                 for(Event regWriter : r.may) {
                     maxTupleSet.add(new Tuple(regWriter, regReader));

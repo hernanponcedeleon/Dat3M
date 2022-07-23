@@ -12,6 +12,8 @@ public final class Tag {
     public static final String RMW          	= "RMW";
     public static final String EXCL         	= "EXCL";
     public static final String STRONG       	= "STRONG";
+    // For SC events in RISCV and Power, addresses should match
+    public static final String MATCHADDRESS     = "MATCHADDRESS";
     public static final String LOCAL        	= "T";
     public static final String LABEL        	= "LB";
     public static final String CMP          	= "C";
@@ -58,6 +60,23 @@ public final class Tag {
         }
 
     }
+
+    // =============================================================================================
+    // =========================================== RISCV ===========================================
+    // =============================================================================================
+
+    public static final class RISCV {
+        private RISCV() { }
+
+        public static final String MO_ACQ 		= "Acq";
+        public static final String MO_REL 		= "Rel";
+        public static final String MO_ACQ_REL 	= "AcqRel";
+
+        public static final String AMO 			= "AMO";
+        // Store conditional
+        public static final String STCOND	 	= "X";
+        
+}
 
     // =============================================================================================
     // ============================================ TSO ============================================
