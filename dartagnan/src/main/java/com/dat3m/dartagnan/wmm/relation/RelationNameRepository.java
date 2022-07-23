@@ -18,9 +18,8 @@ public class RelationNameRepository {
 	public static final String EMPTY = "0";
 	public static final String RFINV = "rf^-1";
 	public static final String FR = "fr";
-	public static final String RW = "(R*W)";
-	public static final String RM = "(R*M)";
-	public static final String RV = "(R*V)";
+	public static final String MM = "(M*M)";
+	public static final String MV = "(M*V)";
 	public static final String IDDTRANS = "idd^+";
 	public static final String DATA = "data";
 	public static final String ADDR = "addr";

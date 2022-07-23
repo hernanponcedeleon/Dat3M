@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.wmm.utils;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.filter.FilterUnion;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.RelCrit;
@@ -154,21 +153,14 @@ public class RelationRepository {
             			getRelation(RelComposition.class, getRelation(RFINV), getRelation(CO)), 
             			getRelation(ID))
             			.setName(FR);
-            case RW:
-                return getRelation(RelCartesian.class, FilterBasic.get(Tag.READ), FilterBasic.get(Tag.WRITE));
-            case RM:
-                return getRelation(RelCartesian.class, FilterBasic.get(Tag.READ), FilterBasic.get(Tag.MEMORY));
-            case RV:
-                return getRelation(RelCartesian.class, FilterBasic.get(Tag.READ), FilterBasic.get(Tag.VISIBLE));
+            case MM:
+                return getRelation(RelCartesian.class, FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.MEMORY));
+            case MV:
+                return getRelation(RelCartesian.class, FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.VISIBLE));
             case IDDTRANS:
                 return getRelation(RelTrans.class, getRelation(IDD));
             case DATA:
-                return getRelation(RelIntersection.class, 
-                		getRelation(IDDTRANS), 
-                		getRelation(RelCartesian.class, 
-                				FilterUnion.get(FilterBasic.get(Tag.READ), FilterBasic.get(Tag.RISCV.STCOND)), 
-                				FilterBasic.get(Tag.WRITE))
-                		).setName(DATA);
+                return getRelation(RelIntersection.class, getRelation(IDDTRANS), getRelation(MM)).setName(DATA);
             case ADDR:
                 return getRelation(RelIntersection.class,
                         getRelation(
@@ -176,17 +168,14 @@ public class RelationRepository {
                                 getRelation(ADDRDIRECT),
                                 getRelation(RelComposition.class, getRelation(IDDTRANS), getRelation(ADDRDIRECT))
                         ),
-                        getRelation(RelCartesian.class, 
-            					FilterUnion.get(FilterBasic.get(Tag.READ), FilterBasic.get(Tag.RISCV.STCOND)), 
-            					FilterBasic.get(Tag.MEMORY))
-                        ).setName(ADDR);
+                        getRelation(MM)).setName(ADDR);
             case CTRL:
                 return getRelation(RelIntersection.class,
-                        getRelation(RelComposition.class, getRelation(IDDTRANS), getRelation(CTRLDIRECT)),
-                        getRelation(RelCartesian.class, 
-                        		FilterUnion.get(FilterBasic.get(Tag.READ), FilterBasic.get(Tag.RISCV.STCOND)), 
-                        		FilterBasic.get(Tag.VISIBLE))
-                        ).setName(CTRL);
+                        getRelation(
+                        		RelComposition.class, 
+                        		getRelation(IDDTRANS), 
+                        		getRelation(CTRLDIRECT)),
+                        getRelation(MV)).setName(CTRL);
             case POLOC:
                 return getRelation(RelIntersection.class, getRelation(PO), getRelation(LOC)).setName(POLOC);
             case RFE:
