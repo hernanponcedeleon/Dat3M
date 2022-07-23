@@ -115,8 +115,7 @@ public class ProgramEncoder implements Encoder {
                 encodeControlFlow(ctx),
                 encodeFinalRegisterValues(ctx),
                 encodeFilter(ctx),
-                encodeDependencies(ctx),
-                encodeStoreExclusiveDependencies(ctx));
+                encodeDependencies(ctx));
     }
 
     public BooleanFormula encodeControlFlow(SolverContext ctx) {
@@ -285,32 +284,6 @@ public class ProgramEncoder implements Encoder {
         return enc;
     }
 
-    public BooleanFormula encodeStoreExclusiveDependencies(SolverContext ctx) {
-        logger.info("Encoding dependencies os StoreExclusive");
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula enc = bmgr.makeTrue();
-        for(Event e1 : program.getCache().getEvents(FilterBasic.get(Tag.RISCV.STCOND))) {
-        	RMWStoreExclusive sc = (RMWStoreExclusive)e1;
-        	BooleanFormula isPaired = bmgr.makeFalse();
-        	for(Event e2 : program.getCache().getEvents(FilterBasic.get(Tag.READ))) {
-        		MemEvent read = (MemEvent)e2;
-        		if(read.getThread().equals(sc.getThread()) && read.getCId() < sc.getCId() && alias.mayAlias(sc, read)) {
-        			BooleanFormula overridePairing = bmgr.makeFalse();
-        			for(Event e3 : program.getCache().getEvents(FilterBasic.get(Tag.RISCV.STCOND))) {
-        				RMWStoreExclusive sc2 = (RMWStoreExclusive)e3;
-        				if(read.getThread().equals(e3.getThread()) && read.getCId() < e3.getCId() && e3.getCId() < sc.getCId() && alias.mayAlias(sc, sc2)) {
-        					overridePairing = bmgr.or(overridePairing, bmgr.and(sc2.exec(), generalEqual(sc.getMemAddressExpr(), sc2.getMemAddressExpr(), ctx), bmgr.not(sc2.isPaired())));
-        				}
-        			}
-        			isPaired = bmgr.or(isPaired, bmgr.and(read.exec(), generalEqual(sc.getMemAddressExpr(), read.getMemAddressExpr(), ctx), bmgr.not(overridePairing)));
-        		}
-        	}
-    		enc = bmgr.and(enc, bmgr.equivalence(sc.isPaired(), isPaired));
-    		enc = bmgr.and(enc, bmgr.implication(sc.exec(), sc.isPaired()));
-        }
-		return enc;
-    }
-    
     public BooleanFormula encodeFilter(SolverContext ctx) {
     	return program.getAssFilter() != null ? 
     			program.getAssFilter().encode(ctx) :
