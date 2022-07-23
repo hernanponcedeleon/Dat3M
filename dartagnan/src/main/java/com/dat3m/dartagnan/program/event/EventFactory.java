@@ -455,7 +455,48 @@ public class EventFactory {
         public static AmoSwap newAmoSwap(Register rd, Register r2, IExpr address, String mo) {
             return new AmoSwap(rd, r2, address, mo);
         }
-    }
+
+        public static Fence newRRFence() {
+            return new Fence("Fence.r.r");
+        }
+
+        public static Fence newRWFence() {
+            return new Fence("Fence.r.w");
+        }
+
+        public static Fence newRRWFence() {
+            return new Fence("Fence.r.rw");
+        }
+
+        public static Fence newWRFence() {
+            return new Fence("Fence.w.r");
+        }
+
+        public static Fence newWWFence() {
+            return new Fence("Fence.w.w");
+        }
+
+        public static Fence newWRWFence() {
+            return new Fence("Fence.w.rw");
+        }
+
+        public static Fence newRWRFence() {
+            return new Fence("Fence.rw.r");
+        }
+
+        public static Fence newRWWFence() {
+            return new Fence("Fence.rw.w");
+        }
+
+        public static Fence newRWRWFence() {
+            return new Fence("Fence.rw.rw");
+        }
+
+        public static Fence newTsoFence() {
+            return new Fence("Fence.tso");
+        }
+
+}
 
 
     // =============================================================================================

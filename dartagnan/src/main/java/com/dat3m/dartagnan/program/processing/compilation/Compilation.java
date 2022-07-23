@@ -19,6 +19,7 @@ import org.sosy_lab.common.configuration.Options;
 import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.program.processing.compilation.AtomicityScheme.LLSC;
 import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.LEADING_SYNC;
 
 @Options
@@ -54,6 +55,12 @@ public class Compilation implements ProgramProcessor {
             secure = true,
             toUppercase = true)
     private PowerScheme cToPowerScheme = LEADING_SYNC;
+
+    @Option(name = ATOMICITY_SCHEME,
+            description = "Compilation mapping enforces atomicity using exclusive pairs or AMO instructions.",
+            secure = true,
+            toUppercase = true)
+    private AtomicityScheme atomicityScheme = LLSC;
 
     // =====================================================================
 
@@ -96,7 +103,7 @@ public class Compilation implements ProgramProcessor {
             case IMM:
                 visitor = new VisitorIMM(); break;
             case RISCV:
-                visitor = new VisitorRISCV(); break;
+                visitor = new VisitorRISCV(atomicityScheme); break;
             default:
                 throw new UnsupportedOperationException(String.format("Compilation to %s is not supported.", target));
         }
