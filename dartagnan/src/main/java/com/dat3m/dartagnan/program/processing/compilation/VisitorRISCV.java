@@ -19,7 +19,7 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitStoreExclusive(StoreExclusive e) {
         RMWStoreExclusive store = newRMWStoreExclusive(e.getAddress(), e.getMemValue(), e.getMo());
-        store.addFilters(Tag.RISCV.STCOND);
+        store.addFilters(Tag.RISCV.STCOND, Tag.MATCHADDRESS);
 
         return eventSequence(
                 store,

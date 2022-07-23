@@ -166,8 +166,8 @@ public class RelRMW extends StaticRelation {
                         // For ARMv8, the store can be executed if addresses mismatch, but behaviour is "constrained unpredictable"
                         // The implementation does not include all possible unpredictable cases: in case of address
                         // mismatch, addresses of read and write are unknown, i.e. read and write can use any address.
-                        // For RISCV, addresses should match.
-                        BooleanFormula succCond = store.is(Tag.RISCV.STCOND) ? bmgr.and(isPair, sameAddress) : isPair;
+                        // For RISCV and Power, addresses should match.
+                        BooleanFormula succCond = store.is(Tag.MATCHADDRESS) ? bmgr.and(isPair, sameAddress) : isPair;
                         storeExec = bmgr.or(storeExec, succCond);
                     }
                 }
