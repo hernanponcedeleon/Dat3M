@@ -65,9 +65,9 @@ cFiles = [csvPath + 'TSO-assume.csv',
           csvPath + 'IMM-assume.csv',
           csvPath + 'IMM-caat.csv',
           csvPath + 'IMM-genmc.csv',
-          csvPath + 'RC11-assume.csv',
-          csvPath + 'RC11-caat.csv',
-          csvPath + 'RC11-genmc.csv'
+          csvPath + 'C11-assume.csv',
+          csvPath + 'C11-caat.csv',
+          csvPath + 'C11-genmc.csv'
         ]
 
 ## Create empty csv files for non existent ones
@@ -85,7 +85,7 @@ for file in cFiles:
 arch = ['TSO', 'Power', 'ARM8', 'RISCV', 'IMM', 'C11']
 
 genmcIMM = pd.read_csv(csvPath + 'IMM-genmc.csv')
-genmcRC11 = pd.read_csv(csvPath + 'RC11-genmc.csv')
+genmcRC11 = pd.read_csv(csvPath + 'C11-genmc.csv')
 nidhugg = pd.read_csv(csvPath + 'TSO-nidhugg.csv')
 
 lncol = 2
