@@ -46,8 +46,7 @@ let r4 = fence
 let r5 = [AQ];po;[M]
 let r6 = [M];po;[RL]
 let r7 = [RCsc];po;[RCsc]
-// We don't support relation aliases
-//let r8 = rmw
+let r8 = rmw
 (* Syntactic Dependencies *)
 let r9 = [M];addr;[M]
 let r10 = [M];data;[W]
@@ -64,8 +63,7 @@ let ppo =
 | r5
 | r6
 | r7
-// We don't support relation aliases
-//| r8
+| r8
 | rmw
 | r9
 | r10
