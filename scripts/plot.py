@@ -99,10 +99,6 @@ for a in arch:
     df[mapping_method['caat']] = current_df.iloc[:, 2]
     df['benchmark'] = current_df.iloc[:, 0].apply(lambda x: x.replace(".bpl", ""))
 
-    current_df = pd.DataFrame(pd.read_csv(csvPath + a + '-cutting.csv'))
-    ## colums are: benchmark, result, time
-    df['Cutting'] = current_df.iloc[:, 2]
-
     current_df = pd.DataFrame(pd.read_csv(csvPath + a + '-assume.csv'))
     ## colums are: benchmark, result, time
     df[mapping_method['assume']] = current_df.iloc[:, 2]
