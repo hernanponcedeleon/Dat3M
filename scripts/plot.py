@@ -21,6 +21,7 @@ mapping_title = dict([
     ('TSO', 'TSO'),
     ('Power', 'Power'),
     ('ARM8', 'ARM8'),
+    ('RISCV', 'RISCV'),
     ('Linux', 'LKMM'),
     ('IMM', 'IMM'),
     ('C11', 'RC11')
@@ -36,6 +37,9 @@ mapping_files = dict([
     ('two-ARM8', csvPath + 'LitmusAARCH64-two-solvers.csv'),
     ('caat-ARM8', csvPath + 'LitmusAARCH64-caat.csv'),
     ('herd-ARM8', csvPath + 'HerdAARCH64-.csv'),
+    ('two-RISCV', csvPath + 'LitmusRISCV-two-solvers.csv'),
+    ('caat-RISCV', csvPath + 'LitmusRISCV-caat.csv'),
+    ('herd-RISCV', csvPath + 'HerdRISCV-.csv'),
     ('two-Linux', csvPath + 'LitmusLinux-two-solvers.csv'),
     ('caat-Linux', csvPath + 'LitmusLinux-caat.csv'),
     ('herd-Linux', csvPath + 'HerdLinux-.csv')
@@ -51,21 +55,18 @@ for key in mapping_files.keys():
 
 cFiles = [csvPath + 'TSO-assume.csv',
           csvPath + 'TSO-caat.csv',
-          csvPath + 'TSO-cutting.csv',
           csvPath + 'TSO-nidhugg.csv',
           csvPath + 'Power-assume.csv',
           csvPath + 'Power-caat.csv',
-          csvPath + 'Power-cutting.csv',
           csvPath + 'ARM8-assume.csv',
           csvPath + 'ARM8-caat.csv',
-          csvPath + 'ARM8-cutting.csv',
+          csvPath + 'RISCV-assume.csv',
+          csvPath + 'RISCV-caat.csv',
           csvPath + 'IMM-assume.csv',
           csvPath + 'IMM-caat.csv',
-          csvPath + 'IMM-cutting.csv',
           csvPath + 'IMM-genmc.csv',
           csvPath + 'RC11-assume.csv',
           csvPath + 'RC11-caat.csv',
-          csvPath + 'RC11-cutting.csv',
           csvPath + 'RC11-genmc.csv'
         ]
 
@@ -81,14 +82,14 @@ for file in cFiles:
 #### Generates bar char for the lock benchmarks ###
 ###################################################
 
-arch = ['TSO', 'Power', 'ARM8', 'IMM', 'C11']
+arch = ['TSO', 'Power', 'ARM8', 'RISCV', 'IMM', 'C11']
 
 genmcIMM = pd.read_csv(csvPath + 'IMM-genmc.csv')
 genmcRC11 = pd.read_csv(csvPath + 'C11-genmc.csv')
 nidhugg = pd.read_csv(csvPath + 'TSO-nidhugg.csv')
 
-lncol = 3
-my_colors = ['tab:blue', 'tab:cyan', 'orange']
+lncol = 2
+my_colors = ['tab:blue', 'orange']
 
 for a in arch:
     df = df_empty = pd.DataFrame({'benchmark' : []})
@@ -109,20 +110,20 @@ for a in arch:
     if a == 'IMM':
         ## colums are: benchmark, result, time
         df['GenMC'] = genmcIMM.iloc[:, 2]
-        lncol = 4
-        my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:green']
+        lncol = 3
+        my_colors = ['tab:blue', 'orange', 'tab:green']
 
     if a == 'C11':
         ## colums are: benchmark, result, time
         df['GenMC'] = genmcRC11.iloc[:, 2]
-        lncol = 4
-        my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:green']
+        lncol = 3
+        my_colors = ['tab:blue', 'orange', 'tab:green']
 
     if a == 'TSO':
         ## colums are: benchmark, result, time
         df['Nidhugg'] = nidhugg.iloc[:, 2]
-        lncol = 4
-        my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:red']
+        lncol = 3
+        my_colors = ['tab:blue', 'orange', 'tab:red']
 
     df.loc["Total"] = df.loc[:, df.columns != 'benchmark'].mean()
     df[['benchmark']] = df[['benchmark']].fillna('$\overline{\mathcal{X}}$')
@@ -149,7 +150,7 @@ for a in arch:
 ### Generates plot for the litmus tests ###
 ###########################################
 
-arch = ['TSO', 'Power', 'ARM8', 'Linux']
+arch = ['TSO', 'Power', 'ARM8', 'RISCV' 'Linux']
 
 total = df_empty = pd.DataFrame({mapping_method['caat'] : []})
 
