@@ -146,7 +146,7 @@ for a in arch:
 ### Generates plot for the litmus tests ###
 ###########################################
 
-arch = ['TSO', 'Power', 'ARM8', 'RISCV' 'Linux']
+arch = ['TSO', 'Power', 'ARM8', 'RISCV', 'Linux']
 
 total = df_empty = pd.DataFrame({mapping_method['caat'] : []})
 
