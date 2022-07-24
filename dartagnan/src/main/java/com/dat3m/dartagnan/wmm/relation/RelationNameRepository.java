@@ -1,5 +1,9 @@
 package com.dat3m.dartagnan.wmm.relation;
 
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Arrays;
+
 public class RelationNameRepository {
 
 	public static final String POWITHLOCALEVENTS = "_po";
@@ -41,17 +45,25 @@ public class RelationNameRepository {
 	public static final String CTRLISB = "ctrlisb";
 	public static final String CASDEP = "casdep";
 	// Any new string must be also added to method contains() below
+
+	public static final ImmutableSet<String> RELATION_NAMES;
+
+	static {
+		// CARE: Using reflection inside the class initializer is dangerous,
+		// but it works here because all constants get initialized before the initializer runs.
+		RELATION_NAMES = Arrays.stream(RelationNameRepository.class.getDeclaredFields())
+				.filter(f -> f.getType().equals(String.class))
+				.map(f -> {
+					try {
+						return (String)f.get(null);
+					} catch (IllegalAccessException e) {
+						throw new RuntimeException(e);
+					}
+				}).collect(ImmutableSet.toImmutableSet());
+	}
 	
 	public static boolean contains(String name) {
-		switch (name) {
-			case POWITHLOCALEVENTS: case PO: case LOC: case ID: case INT: case EXT: case CO: case RF: case RMW: case CRIT: case IDD:
-			case ADDRDIRECT: case CTRLDIRECT: case EMPTY: case RFINV: case FR: case MM: case MV: case IDDTRANS: case DATA: case ADDR:
-			case CTRL: case POLOC: case RFE: case RFI: case COE: case COI: case FRE: case FRI: case MFENCE: case ISH: case ISB:
-			case SYNC: case ISYNC: case LWSYNC: case CTRLISYNC: case CTRLISB: case CASDEP:
-				return true;
-			default:
-				return false;
-		}
+		return RELATION_NAMES.contains(name);
 	}
 
 }
