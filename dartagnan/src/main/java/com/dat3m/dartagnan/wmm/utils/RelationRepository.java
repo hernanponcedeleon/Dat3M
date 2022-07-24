@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.relation.base.RelCrit;
 import com.dat3m.dartagnan.wmm.relation.base.RelRMW;
 import com.dat3m.dartagnan.wmm.relation.base.local.RelAddrDirect;
@@ -50,8 +51,8 @@ public class RelationRepository {
     public Relation getRelation(String name){
         Relation relation = relationMap.get(name);
         if(relation == null){
-            relation = getBasicRelation(name);
-            if(relation != null){
+            if(RelationNameRepository.contains(name)){
+                relation = getBasicRelation(name);
                 addRelation(relation);
             }
         }
@@ -91,6 +92,10 @@ public class RelationRepository {
         if(relation.getIsNamed()){
             relationMap.put(relation.getName(), relation);
         }
+    }
+
+    public void addAlias(String alias, Relation relation) {
+        relationMap.put(alias, relation);
     }
 
     public boolean containsRelation(String name) {
@@ -207,6 +212,7 @@ public class RelationRepository {
             case CTRLISB:
                 return getRelation(RelIntersection.class, getRelation(CTRL), getRelation(ISB)).setName(CTRLISB);
             default:
+            	Preconditions.checkState(!RelationNameRepository.contains(name), name + " belongs to RelationNameRepository but has no associated relation");
                 return null;
         }
     }

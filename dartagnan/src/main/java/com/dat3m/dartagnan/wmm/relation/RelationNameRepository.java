@@ -40,5 +40,18 @@ public class RelationNameRepository {
 	public static final String CTRLISYNC = "ctrlisync";
 	public static final String CTRLISB = "ctrlisb";
 	public static final String CASDEP = "casdep";
+	// Any new string must be also added to method contains() below
+	
+	public static boolean contains(String name) {
+		switch (name) {
+			case POWITHLOCALEVENTS: case PO: case LOC: case ID: case INT: case EXT: case CO: case RF: case RMW: case CRIT: case IDD:
+			case ADDRDIRECT: case CTRLDIRECT: case EMPTY: case RFINV: case FR: case MM: case MV: case IDDTRANS: case DATA: case ADDR:
+			case CTRL: case POLOC: case RFE: case RFI: case COE: case COI: case FRE: case FRI: case MFENCE: case ISH: case ISB:
+			case SYNC: case ISYNC: case LWSYNC: case CTRLISYNC: case CTRLISB: case CASDEP:
+				return true;
+			default:
+				return false;
+		}
+	}
 
 }
