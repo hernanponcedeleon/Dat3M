@@ -20,14 +20,13 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.program.event.Tag.SVCOMP.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RMW;
+import static com.google.common.base.Preconditions.checkState;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 /*
@@ -104,36 +103,46 @@ public class RelRMW extends StaticRelation {
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         BooleanFormula unpredictable = bmgr.makeFalse();
-        Map<Event, BooleanFormula> map = new HashMap<>();
-        for(Tuple tuple : maxTupleSet) {
-            MemEvent load = (MemEvent) tuple.getFirst();
-            MemEvent store = (MemEvent) tuple.getSecond();
-            BooleanFormula rel = this.getSMTVar(tuple, ctx);
-            if(minTupleSet.contains(tuple)) {
-                enc = bmgr.and(enc, bmgr.equivalence(rel, getExecPair(tuple, ctx)));
-                if(!store.cfImpliesExec()) {
-                    map.merge(store, load.exec(), bmgr::or);
+        for(Event store : task.getProgram().getCache().getEvents(
+                FilterIntersection.get(FilterBasic.get(Tag.WRITE), FilterBasic.get(Tag.EXCL)))) {
+            checkState(store instanceof MemEvent, "non-memory event participating in '" + getName() + "'");
+            BooleanFormula storeExec = bmgr.makeFalse();
+            for(Tuple t : maxTupleSet.getBySecond(store)) {
+                MemEvent load = (MemEvent) t.getFirst();
+                if(minTupleSet.contains(t)) {
+                    storeExec = bmgr.or(storeExec, load.exec());
+                    continue;
                 }
-            } else {
+                BooleanFormula sameAddress = generalEqual(load.getMemAddressExpr(), ((MemEvent) store).getMemAddressExpr(), ctx);
                 // Encode if load and store form an exclusive pair
                 BooleanFormula isPair = exclPair(load, store, ctx);
-                BooleanFormula isExecPair = bmgr.and(isPair, store.exec());
-                enc = bmgr.and(enc, bmgr.equivalence(isPair, pairingCond(load, store, ctx)));
-                // If load and store have the same address
-                BooleanFormula sameAddress = generalEqual(load.getMemAddressExpr(), store.getMemAddressExpr(), ctx);
-                unpredictable = bmgr.or(unpredictable, bmgr.and(isExecPair, bmgr.not(sameAddress)));
-                // Relation between exclusive load and store
-                enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(isExecPair, sameAddress)));
+                BooleanFormula pairingCond = pairingCond(load, store, ctx);
                 // For ARMv8, the store can be executed if addresses mismatch, but behaviour is "constrained unpredictable"
                 // The implementation does not include all possible unpredictable cases: in case of address
                 // mismatch, addresses of read and write are unknown, i.e. read and write can use any address.
                 // For RISCV and Power, addresses should match.
-                BooleanFormula succCond = store.is(Tag.MATCHADDRESS) ? bmgr.and(isPair, sameAddress) : isPair;
-                map.merge(store, succCond, bmgr::or);
+                if(store.is(Tag.MATCHADDRESS)) {
+                    pairingCond = bmgr.and(pairingCond, sameAddress);
+                } else {
+                    unpredictable = bmgr.or(unpredictable, bmgr.and(store.exec(), isPair, bmgr.not(sameAddress)));
+                }
+                enc = bmgr.and(enc, bmgr.equivalence(isPair, pairingCond));
+                storeExec = bmgr.or(storeExec, isPair);
             }
+            enc = bmgr.and(enc, bmgr.implication(store.exec(), storeExec));
         }
-        for(Map.Entry<Event, BooleanFormula> entry : map.entrySet()) {
-            enc = bmgr.and(enc, bmgr.implication(entry.getKey().exec(), entry.getValue()));
+        for(Tuple tuple : encodeTupleSet) {
+            MemEvent load = (MemEvent) tuple.getFirst();
+            MemEvent store = (MemEvent) tuple.getSecond();
+            enc = bmgr.and(enc, bmgr.equivalence(
+                    getSMTVar(tuple, ctx),
+                    minTupleSet.contains(tuple) ?
+                            getExecPair(tuple, ctx) :
+                            // Relation between exclusive load and store
+                            bmgr.and(
+                                    store.exec(),
+                                    exclPair(load, store, ctx),
+                                    generalEqual(load.getMemAddressExpr(), store.getMemAddressExpr(), ctx))));
         }
         return bmgr.and(enc, bmgr.equivalence(Flag.ARM_UNPREDICTABLE_BEHAVIOUR.repr(ctx), unpredictable));
     }
