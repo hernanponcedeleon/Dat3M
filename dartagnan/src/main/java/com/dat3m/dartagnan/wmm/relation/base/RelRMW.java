@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.base;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -89,8 +90,13 @@ public class RelRMW extends StaticRelation {
             maxTupleSet.addAll(minTupleSet);
 
             // LoadExcl -> StoreExcl
+            AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
             for(Thread thread : task.getProgram().getThreads()) {
-                addMatchingTupleSet(thread.getCache().getEvents(FilterBasic.get(Tag.EXCL)), Tag.READ, Tag.WRITE);
+                addMatchingTupleSet(thread.getCache().getEvents(FilterBasic.get(Tag.EXCL)), Tag.READ, Tag.WRITE, tuple -> {
+                    if(alias.mustAlias((MemEvent) tuple.getFirst(), (MemEvent) tuple.getSecond())) {
+                        minTupleSet.add(tuple);
+                    }
+                });
             }
             logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }

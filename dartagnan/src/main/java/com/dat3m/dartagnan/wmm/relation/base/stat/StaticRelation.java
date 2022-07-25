@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
@@ -55,7 +56,7 @@ public abstract class StaticRelation extends Relation {
         return enc;
     }
 
-    protected void addMatchingTupleSet(List<Event> events, String open, String close) {
+    protected void addMatchingTupleSet(List<Event> events, String open, String close, Consumer<Tuple> outMust) {
         ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
         // assume order by cId
         // assume cId describes a topological sorting over the control flow
@@ -80,7 +81,7 @@ public abstract class StaticRelation extends Relation {
                 Tuple tuple = new Tuple(load, store);
                 maxTupleSet.add(tuple);
                 if(candidates.subList(i + 1, size).stream().allMatch(e -> exec.areMutuallyExclusive(load, e))) {
-                    minTupleSet.add(tuple);
+                    outMust.accept(tuple);
                 }
             }
         }

@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.base;
 
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterUnion;
@@ -12,6 +11,8 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import static com.dat3m.dartagnan.program.event.Tag.Linux.RCU_LOCK;
+import static com.dat3m.dartagnan.program.event.Tag.Linux.RCU_UNLOCK;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CRIT;
 
 public class RelCrit extends StaticRelation {
@@ -35,9 +36,9 @@ public class RelCrit extends StaticRelation {
         }
         maxTupleSet = new TupleSet();
         minTupleSet = new TupleSet();
-        FilterUnion filter = FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_LOCK), FilterBasic.get(Tag.Linux.RCU_UNLOCK));
+        FilterUnion filter = FilterUnion.get(FilterBasic.get(RCU_LOCK), FilterBasic.get(RCU_UNLOCK));
         for(Thread thread : task.getProgram().getThreads()) {
-            addMatchingTupleSet(thread.getCache().getEvents(filter), Tag.Linux.RCU_LOCK, Tag.Linux.RCU_UNLOCK);
+            addMatchingTupleSet(thread.getCache().getEvents(filter), RCU_LOCK, RCU_UNLOCK, minTupleSet::add);
         }
         return maxTupleSet;
     }
