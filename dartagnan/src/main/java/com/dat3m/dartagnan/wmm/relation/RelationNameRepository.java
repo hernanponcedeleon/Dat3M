@@ -1,5 +1,9 @@
 package com.dat3m.dartagnan.wmm.relation;
 
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Arrays;
+
 public class RelationNameRepository {
 
 	public static final String POWITHLOCALEVENTS = "_po";
@@ -40,5 +44,26 @@ public class RelationNameRepository {
 	public static final String CTRLISYNC = "ctrlisync";
 	public static final String CTRLISB = "ctrlisb";
 	public static final String CASDEP = "casdep";
+	// Any new string must be also added to method contains() below
+
+	public static final ImmutableSet<String> RELATION_NAMES;
+
+	static {
+		// CARE: Using reflection inside the class initializer is dangerous,
+		// but it works here because all constants get initialized before the initializer runs.
+		RELATION_NAMES = Arrays.stream(RelationNameRepository.class.getDeclaredFields())
+				.filter(f -> f.getType().equals(String.class))
+				.map(f -> {
+					try {
+						return (String)f.get(null);
+					} catch (IllegalAccessException e) {
+						throw new RuntimeException(e);
+					}
+				}).collect(ImmutableSet.toImmutableSet());
+	}
+	
+	public static boolean contains(String name) {
+		return RELATION_NAMES.contains(name);
+	}
 
 }

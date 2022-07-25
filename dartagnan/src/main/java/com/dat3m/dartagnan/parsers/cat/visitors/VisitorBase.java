@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 
 import java.lang.reflect.Constructor;
@@ -62,8 +63,12 @@ public class VisitorBase extends CatBaseVisitor<Object> implements CatVisitor<Ob
     public Object visitLetDefinition(CatParser.LetDefinitionContext ctx) {
         Relation r = ctx.e.accept(relationVisitor);
         if(r != null){
-            r.setName(ctx.n.getText());
-            relationRepository.updateRelation(r);
+        	if(RelationNameRepository.contains(r.getName()) || r.getIsNamed()) {
+        		relationRepository.addAlias(ctx.n.getText(), r);
+        	} else {
+                r.setName(ctx.n.getText());
+                relationRepository.updateRelation(r);
+        	}
         } else {
             FilterAbstract f = ctx.e.accept(filterVisitor);
             f.setName(ctx.n.getText());
