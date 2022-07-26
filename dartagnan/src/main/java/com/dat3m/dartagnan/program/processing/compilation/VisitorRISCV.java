@@ -44,6 +44,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.newRMWLoadExclusive
 import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_ACQUIRE;
+import static com.dat3m.dartagnan.program.event.EventFactory.newExecutionStatusWithDependencyTracking;
 import java.util.List;
 
 class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
@@ -104,7 +105,7 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 
         return eventSequence(
                 store,
-                newExecutionStatus(e.getResultRegister(), store)
+                newExecutionStatusWithDependencyTracking(e.getResultRegister(), store)
         );
 	}
 
@@ -163,12 +164,6 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
 		switch (atomicityScheme) {
 			case AMO:
-				Register dummy = e.getThread().newRegister(e.getResultRegister().getPrecision());
-				Local local = newLocal(dummy, e.getMemValue());
-				return eventSequence(
-						local,
-						RISCV.newAmoOp(e.getResultRegister(), dummy, e.getAddress(), Tag.RISCV.fromC11Mo(e.getMo()), e.getOp())
-				);
 			case LLSC:
 				Register resultRegister = e.getResultRegister();
 				IOpBin op = e.getOp();
@@ -254,12 +249,6 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 	public List<Event> visitAtomicXchg(AtomicXchg e) {
 		switch (atomicityScheme) {
 			case AMO:
-				Register dummy = e.getThread().newRegister(e.getResultRegister().getPrecision());
-				Local local = newLocal(dummy, e.getMemValue());
-				return eventSequence(
-						local,
-						RISCV.newAmoSwap(e.getResultRegister(), dummy, e.getAddress(), Tag.RISCV.fromC11Mo(e.getMo()))
-				);
 			case LLSC:
 				Register resultRegister = e.getResultRegister();
 				ExprInterface value = e.getMemValue();

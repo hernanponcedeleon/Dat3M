@@ -150,11 +150,7 @@ public class RelationRepository {
             case RFINV:
                 return getRelation(RelInverse.class, getRelation(RF));
             case FR:
-            	// We remove ID pairs introduced by AMO events
-                return getRelation(RelMinus.class, 
-            			getRelation(RelComposition.class, getRelation(RFINV), getRelation(CO)), 
-            			getRelation(ID))
-            			.setName(FR);
+                return getRelation(RelComposition.class, getRelation(RFINV), getRelation(CO)).setName(FR);
             case MM:
                 return getRelation(RelCartesian.class, FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.MEMORY));
             case MV:

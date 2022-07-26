@@ -21,7 +21,7 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
  */
 public class Wmm {
 
-    public final static ImmutableSet<String> BASE_RELATIONS = ImmutableSet.of(CO, RF);
+    public final static ImmutableSet<String> BASE_RELATIONS = ImmutableSet.of(CO, RF, RMW);
 
 
     private final List<Axiom> axioms = new ArrayList<>();

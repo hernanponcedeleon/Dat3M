@@ -23,8 +23,7 @@ mapping_title = dict([
     ('ARM8', 'ARM8'),
     ('RISCV', 'RISCV'),
     ('Linux', 'LKMM'),
-    ('IMM', 'IMM'),
-    ('C11', 'RC11')
+    ('IMM', 'IMM')
 ])
 
 mapping_files = dict([
@@ -68,6 +67,7 @@ cFiles = [csvPath + 'TSO-assume.csv',
           csvPath + 'C11-assume.csv',
           csvPath + 'C11-caat.csv',
           csvPath + 'C11-genmc.csv'
+          csvPath + 'IMM-genmc.csv'
         ]
 
 ## Create empty csv files for non existent ones
@@ -85,7 +85,6 @@ for file in cFiles:
 arch = ['TSO', 'Power', 'ARM8', 'RISCV', 'IMM', 'C11']
 
 genmcIMM = pd.read_csv(csvPath + 'IMM-genmc.csv')
-genmcRC11 = pd.read_csv(csvPath + 'C11-genmc.csv')
 nidhugg = pd.read_csv(csvPath + 'TSO-nidhugg.csv')
 
 lncol = 2
