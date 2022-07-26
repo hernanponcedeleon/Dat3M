@@ -58,6 +58,9 @@ abstract class BasicRegRelation extends StaticRelation {
                 }
                 for(Event regWriter : r.must) {
                     minTupleSet.add(new Tuple(regWriter, regReader));
+                    if(regWriter instanceof ExecutionStatus && ((ExecutionStatus)regWriter).getTrackDep()) {
+                    	minTupleSet.add(new Tuple(((ExecutionStatus)regWriter).getStatusEvent(), regWriter));
+                    }
                 }
             }
         }
