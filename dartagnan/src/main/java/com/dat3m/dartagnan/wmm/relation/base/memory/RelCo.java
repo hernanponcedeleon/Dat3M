@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.wmm.relation.base.memory;
 
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.arch.riscv.AmoAbstract;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -212,9 +211,7 @@ public class RelCo extends Relation {
                     Formula a1 = w1.getMemAddressExpr();
                     Formula a2 = address.toIntFormula(init,ctx);
                     BooleanFormula sameAddress = generalEqual(a1, a2, ctx); 
-                    Formula v1 = w1 instanceof AmoAbstract ? 
-                    		((AmoAbstract)w1).getStoreMemValueExpr() :  
-                    		w1.getMemValueExpr();
+                    Formula v1 = w1.getMemValueExpr();
                     Formula v2 = init.getBase().getLastMemValueExpr(ctx,init.getOffset());
                     BooleanFormula sameValue = generalEqual(v1, v2, ctx);
                     enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
