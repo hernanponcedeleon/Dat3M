@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.relation.base.local;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -51,6 +52,9 @@ abstract class BasicRegRelation extends StaticRelation {
                 Dependency.State r = dep.of(regReader, register);
                 for(Event regWriter : r.may) {
                     maxTupleSet.add(new Tuple(regWriter, regReader));
+                    if(regWriter instanceof ExecutionStatus && ((ExecutionStatus)regWriter).getTrackDep()) {
+                    	maxTupleSet.add(new Tuple(((ExecutionStatus)regWriter).getStatusEvent(), regWriter));
+                    }
                 }
                 for(Event regWriter : r.must) {
                     minTupleSet.add(new Tuple(regWriter, regReader));

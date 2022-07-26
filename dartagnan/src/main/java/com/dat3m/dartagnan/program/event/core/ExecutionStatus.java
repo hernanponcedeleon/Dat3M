@@ -21,10 +21,12 @@ public class ExecutionStatus extends Event implements RegWriter {
     private final Register register;
     private final Event event;
     private Formula regResultExpr;
+    private final boolean trackDep;
 
-    public ExecutionStatus(Register register, Event event){
+    public ExecutionStatus(Register register, Event event, boolean trackDep){
         this.register = register;
         this.event = event;
+        this.trackDep = trackDep;
         addFilters(Tag.ANY, Tag.LOCAL, Tag.REG_WRITER);
     }
 
@@ -46,6 +48,10 @@ public class ExecutionStatus extends Event implements RegWriter {
 
     public Event getStatusEvent(){
         return event;
+    }
+
+    public boolean getTrackDep(){
+        return trackDep;
     }
 
     @Override

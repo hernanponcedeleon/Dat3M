@@ -154,7 +154,11 @@ public class EventFactory {
     }
 
     public static ExecutionStatus newExecutionStatus(Register register, Event event) {
-        return new ExecutionStatus(register, event);
+        return new ExecutionStatus(register, event, false);
+    }
+
+    public static ExecutionStatus newExecutionStatusWithDependencyTracking(Register register, Event event) {
+        return new ExecutionStatus(register, event, true);
     }
 
     public static StoreExclusive newExclusiveStore(Register register, IExpr address, ExprInterface value, String mo) {
