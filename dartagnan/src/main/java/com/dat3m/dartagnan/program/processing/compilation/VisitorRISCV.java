@@ -47,8 +47,15 @@ import static com.dat3m.dartagnan.program.event.EventFactory.newExecutionStatusW
 import java.util.List;
 
 class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
+	// Some language memory models (e.g. RC11) are non-dependency tracking and might need a 
+	// strong version of no-OOTA, thus we need to strength the compilation following the papers
+	// "Repairing Sequential Consistency in C/C++11"
+	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
+	private final boolean useRC11Scheme; 
 
-	protected VisitorRISCV() {}
+	protected VisitorRISCV(boolean useRC11Scheme) {
+		this.useRC11Scheme = useRC11Scheme;
+	}
 	
 	@Override
 	public List<Event> visitCreate(Create e) {
@@ -187,10 +194,14 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 		String mo = e.getMo();
 		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? RISCV.newRWRWFence() :  null;
 		Fence optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? RISCV.newRRWFence() :  null;
+		Label optionalLabel = useRC11Scheme ? newLabel("FakeDep") : null;
+		CondJump optionalFakeCtrlDep = useRC11Scheme ? newFakeCtrlDep(e.getResultRegister(), optionalLabel) : null;					
 
 		return eventSequence(
 				optionalBarrierBefore,
 				newLoad(e.getResultRegister(), e.getAddress(), null),
+				optionalFakeCtrlDep,
+				optionalLabel,
 				optionalBarrierAfter
 		);
 	}
