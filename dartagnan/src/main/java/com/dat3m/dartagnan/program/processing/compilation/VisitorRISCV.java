@@ -24,6 +24,9 @@ import com.dat3m.dartagnan.program.event.lang.catomic.AtomicXchg;
 import com.dat3m.dartagnan.program.event.lang.linux.LKMMFence;
 import com.dat3m.dartagnan.program.event.lang.linux.LKMMLoad;
 import com.dat3m.dartagnan.program.event.lang.linux.LKMMStore;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWCmpXchg;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWXchg;
 import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
@@ -285,8 +288,8 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 		Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
 		
 		return eventSequence(
-				newStore(e.getAddress(), e.getMemValue(), null),
-        		optionalMemoryBarrier
+        		optionalMemoryBarrier,
+				newStore(e.getAddress(), e.getMemValue(), null)
         );
 
 	}
@@ -316,4 +319,92 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
                 optionalMemoryBarrier
         );
 	}
+	
+	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
+		Register resultRegister = e.getResultRegister();
+		IExpr address = e.getAddress();
+		ExprInterface value = e.getMemValue();
+		String mo = e.getMo();
+
+		Register dummy = e.getThread().newRegister(e.getResultRegister().getPrecision());
+        Label casEnd = newLabel("CAS_end");
+        CondJump branchOnCasCmpResult = newJump(new Atom(dummy, NEQ, e.getCmp()), casEnd);
+        
+        Load load = newRMWLoadExclusive(dummy, address, null);
+        Store store = RISCV.newRMWStoreConditional(address, value, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : null, true);
+        ExecutionStatus status = newExecutionStatusWithDependencyTracking(resultRegister, store);
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newJumpUnless(resultRegister, label);
+        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
+        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
+
+        return eventSequence(
+                // Indentation shows the branching structure
+        		optionalMemoryBarrierBefore,
+                load,
+                branchOnCasCmpResult,
+                    store,
+                    status,
+                    fakeCtrlDep,
+                    label,
+                    optionalMemoryBarrierAfter,
+                casEnd,
+                newLocal(resultRegister, dummy)
+        );
+	}
+	
+	// Following
+	// https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
+	// The linux kernel uses AMO instructions which we don't yet support
+	@Override
+	public List<Event> visitRMWXchg(RMWXchg e) {
+		Register resultRegister = e.getResultRegister();
+		ExprInterface value = e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+        Load load = newRMWLoadExclusive(dummy, address,  mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.RISCV.MO_ACQ : null);
+        Store store = RISCV.newRMWStoreConditional(address, value, mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_RELEASE) ? Tag.RISCV.MO_ACQ_REL : null, true);
+        ExecutionStatus status = newExecutionStatusWithDependencyTracking(dummy, store);
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newJumpUnless(dummy, label);
+
+        return eventSequence(
+                load,
+                newLocal(resultRegister, dummy),
+                store,
+                status,
+                fakeCtrlDep,
+                label
+        );
+	}
+	
+	// Following
+	// https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
+	// The linux kernel uses AMO instructions which we don't yet support
+	@Override
+	public List<Event> visitRMWOp(RMWOp e) {
+		Register resultRegister = e.getResultRegister();
+		IOpBin op = e.getOp();
+		IExpr value = (IExpr) e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+        Load load = newRMWLoadExclusive(dummy, address,  mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.RISCV.MO_ACQ : null);
+        Store store = RISCV.newRMWStoreConditional(address, new IExprBin(dummy, op, value), mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_RELEASE) ? Tag.RISCV.MO_ACQ_REL : null, true);
+        ExecutionStatus status = newExecutionStatusWithDependencyTracking(resultRegister, store);
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newJumpUnless(dummy, label);
+
+        return eventSequence(
+                load,
+                store,
+                status,
+                fakeCtrlDep,
+                label
+        );
+	};
+
 }
