@@ -207,11 +207,11 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitAtomicStore(AtomicStore e) {
 		String mo = e.getMo();
-		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) ? RISCV.newRWWFence() :  null;
+		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) || useRC11Scheme ? RISCV.newRWWFence() :  null;
 
 		return eventSequence(
 				optionalBarrierBefore,
-				newStore(e.getAddress(), e.getMemValue(), useRC11Scheme ? Tag.RISCV.MO_REL : null)
+				newStore(e.getAddress(), e.getMemValue(), null)
 		);
 	}
 
