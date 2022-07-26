@@ -240,7 +240,7 @@ public class ProgramEncoder implements Encoder {
             Preconditions.checkArgument(status.getStatusEvent().equals(writer),
                     "ExecutionStatus %s tracks %s, but %s was provided.",
                     status, status.getStatusEvent(), writer);
-        	return ctx.getFormulaManager().getBooleanFormulaManager().and(writer.exec(), reader.exec());
+            return execution(writer, reader, exec, ctx);
         } else {
             Register register = ((RegWriter) writer).getResultRegister();
             Dependency.State r = dep.of(reader, register);
