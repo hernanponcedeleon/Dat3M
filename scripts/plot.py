@@ -21,6 +21,7 @@ mapping_title = dict([
     ('TSO', 'TSO'),
     ('Power', 'Power'),
     ('ARM8', 'ARM8'),
+    ('RISCV', 'RISCV'),
     ('Linux', 'LKMM'),
     ('IMM', 'IMM')
 ])
@@ -35,6 +36,9 @@ mapping_files = dict([
     ('two-ARM8', csvPath + 'LitmusAARCH64-two-solvers.csv'),
     ('caat-ARM8', csvPath + 'LitmusAARCH64-caat.csv'),
     ('herd-ARM8', csvPath + 'HerdAARCH64-.csv'),
+    ('two-RISCV', csvPath + 'LitmusRISCV-two-solvers.csv'),
+    ('caat-RISCV', csvPath + 'LitmusRISCV-caat.csv'),
+    ('herd-RISCV', csvPath + 'HerdRISCV-.csv'),
     ('two-Linux', csvPath + 'LitmusLinux-two-solvers.csv'),
     ('caat-Linux', csvPath + 'LitmusLinux-caat.csv'),
     ('herd-Linux', csvPath + 'HerdLinux-.csv')
@@ -55,8 +59,14 @@ cFiles = [csvPath + 'TSO-assume.csv',
           csvPath + 'Power-caat.csv',
           csvPath + 'ARM8-assume.csv',
           csvPath + 'ARM8-caat.csv',
+          csvPath + 'RISCV-assume.csv',
+          csvPath + 'RISCV-caat.csv',
           csvPath + 'IMM-assume.csv',
           csvPath + 'IMM-caat.csv',
+          csvPath + 'IMM-genmc.csv',
+          csvPath + 'C11-assume.csv',
+          csvPath + 'C11-caat.csv',
+          csvPath + 'C11-genmc.csv'
           csvPath + 'IMM-genmc.csv'
         ]
 
@@ -72,7 +82,7 @@ for file in cFiles:
 #### Generates bar char for the lock benchmarks ###
 ###################################################
 
-arch = ['TSO', 'Power', 'ARM8', 'IMM']
+arch = ['TSO', 'Power', 'ARM8', 'RISCV', 'IMM', 'C11']
 
 genmcIMM = pd.read_csv(csvPath + 'IMM-genmc.csv')
 nidhugg = pd.read_csv(csvPath + 'TSO-nidhugg.csv')
@@ -95,6 +105,12 @@ for a in arch:
     if a == 'IMM':
         ## colums are: benchmark, result, time
         df['GenMC'] = genmcIMM.iloc[:, 2]
+        lncol = 3
+        my_colors = ['tab:blue', 'orange', 'tab:green']
+
+    if a == 'C11':
+        ## colums are: benchmark, result, time
+        df['GenMC'] = genmcRC11.iloc[:, 2]
         lncol = 3
         my_colors = ['tab:blue', 'orange', 'tab:green']
 
@@ -129,7 +145,7 @@ for a in arch:
 ### Generates plot for the litmus tests ###
 ###########################################
 
-arch = ['TSO', 'Power', 'ARM8', 'Linux']
+arch = ['TSO', 'Power', 'ARM8', 'RISCV', 'Linux']
 
 total = df_empty = pd.DataFrame({mapping_method['caat'] : []})
 

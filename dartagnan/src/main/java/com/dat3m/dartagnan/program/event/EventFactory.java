@@ -449,8 +449,48 @@ public class EventFactory {
         public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo) {
             return RISCV.newRMWStoreConditional(address, value, mo, false);
         }
-    }
 
+        public static Fence newRRFence() {
+            return new Fence("Fence.r.r");
+        }
+
+        public static Fence newRWFence() {
+            return new Fence("Fence.r.w");
+        }
+
+        public static Fence newRRWFence() {
+            return new Fence("Fence.r.rw");
+        }
+
+        public static Fence newWRFence() {
+            return new Fence("Fence.w.r");
+        }
+
+        public static Fence newWWFence() {
+            return new Fence("Fence.w.w");
+        }
+
+        public static Fence newWRWFence() {
+            return new Fence("Fence.w.rw");
+        }
+
+        public static Fence newRWRFence() {
+            return new Fence("Fence.rw.r");
+        }
+
+        public static Fence newRWWFence() {
+            return new Fence("Fence.rw.w");
+        }
+
+        public static Fence newRWRWFence() {
+            return new Fence("Fence.rw.rw");
+        }
+
+        public static Fence newTsoFence() {
+            return new Fence("Fence.tso");
+        }
+
+    }
 
     // =============================================================================================
     // =========================================== LISA ============================================

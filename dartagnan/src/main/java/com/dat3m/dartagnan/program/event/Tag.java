@@ -75,7 +75,29 @@ public final class Tag {
         // Store conditional
         public static final String STCOND	 	= "X";
         
-}
+        public static String fromC11Mo(String cMo) {
+        	switch (cMo) {
+			case C11.MO_ACQUIRE:
+				return MO_ACQ;
+			case C11.MO_RELEASE:
+				return MO_REL;
+			case C11.MO_ACQUIRE_RELEASE:
+			case C11.MO_SC:
+				return MO_ACQ_REL;
+			default:
+				return null;
+			}
+        }
+        
+        public static String extractStoreMoFromCMo(String cMo) {
+            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_RELEASE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_REL : null;
+        }
+
+        public static String extractLoadMoFromCMo(String cMo) {
+            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_ACQUIRE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_ACQ : null;
+        }
+
+    }
 
     // =============================================================================================
     // ============================================ TSO ============================================
