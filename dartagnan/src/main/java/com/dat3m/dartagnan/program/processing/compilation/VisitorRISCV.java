@@ -47,8 +47,17 @@ import static com.dat3m.dartagnan.program.event.EventFactory.newExecutionStatusW
 import java.util.List;
 
 class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
+	// Some language memory models (e.g. RC11) are non-dependency tracking and might need a 
+	// strong version of no-OOTA, thus we need to strength the compilation. None of the usual paper
+	// "Repairing Sequential Consistency in C/C++11"
+	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
+	// talk about compilation to RISCV, but since it is closer to ARMv8 than Power
+	// we use the same scheme as AMRv8
+	private final boolean useRC11Scheme; 
 
-	protected VisitorRISCV() {}
+	protected VisitorRISCV(boolean useRC11Scheme) {
+		this.useRC11Scheme = useRC11Scheme;
+	}
 	
 	@Override
 	public List<Event> visitCreate(Create e) {
@@ -198,7 +207,7 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitAtomicStore(AtomicStore e) {
 		String mo = e.getMo();
-		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) ? RISCV.newRWWFence() :  null;
+		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) || useRC11Scheme ? RISCV.newRWWFence() :  null;
 
 		return eventSequence(
 				optionalBarrierBefore,

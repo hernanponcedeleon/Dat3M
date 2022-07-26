@@ -96,7 +96,7 @@ public class Compilation implements ProgramProcessor {
             case IMM:
                 visitor = new VisitorIMM(); break;
             case RISCV:
-                visitor = new VisitorRISCV(); break;
+                visitor = new VisitorRISCV(useRC11Scheme); break;
             default:
                 throw new UnsupportedOperationException(String.format("Compilation to %s is not supported.", target));
         }
