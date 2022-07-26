@@ -22,8 +22,7 @@ for METHOD in ${METHODS[@]}; do
     ## Run Dartagnan
     for BENCHMARK in ${BENCHMARKS[@]}; do
         start=`python3 -c 'import time; print(int(time.time() * 1000))'`
-        echo timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.0.0.jar cat/imm.cat --bound=2 --target=imm --method=$METHOD $BPL_PATH$BENCHMARK.bpl
-#        OUTPUT=$(timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.0.0.jar cat/imm.cat --bound=2 --target=imm --method=$METHOD $BPL_PATH$BENCHMARK.bpl)
+        OUTPUT=$(timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.0.0.jar cat/imm.cat --bound=2 --target=imm --method=$METHOD $BPL_PATH$BENCHMARK.bpl)
         end=`python3 -c 'import time; print(int(time.time() * 1000))'`
         TIME=$((end-start))
         
