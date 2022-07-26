@@ -32,7 +32,6 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
-import static com.dat3m.dartagnan.program.event.EventFactory.newExecutionStatus;
 import static com.dat3m.dartagnan.program.event.EventFactory.newFakeCtrlDep;
 import static com.dat3m.dartagnan.program.event.EventFactory.newGoto;
 import static com.dat3m.dartagnan.program.event.EventFactory.newJump;
@@ -131,14 +130,10 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
         Load loadValue = newRMWLoadExclusive(regValue, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store storeValue = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), e.is(STRONG));
         Register statusReg = e.getThread().newRegister("status(" + e.getUId() + ")",precision);
-        // Execution status is normally optional.
-        // Here we make it mandatory to guarantee that the RMWStoreExclusive
-        // is followed by a ExecutionStatus which is required in RelIdd 
-        ExecutionStatus execStatus = newExecutionStatus(statusReg, storeValue);
-        Local optionalUpdateCasCmpResult = null;
-        if (!e.is(STRONG)) {
-            optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
-        }
+        // We normally make the following two events optional.
+        // Here we make them mandatory to guarantee correct dependencies.
+        ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, storeValue);
+        Local updateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
 
         return eventSequence(
                 // Indentation shows the branching structure
@@ -148,7 +143,7 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
                 branchOnCasCmpResult,
                     storeValue,
                     execStatus,
-                    optionalUpdateCasCmpResult,
+                    updateCasCmpResult,
                     gotoCasEnd,
                 casFail,
                     storeExpected,
@@ -170,10 +165,9 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
         Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
         Register statusReg = e.getThread().newRegister("status(" + e.getUId() + ")", resultRegister.getPrecision());
-        // Execution status is normally optional.
-        // Here we make it mandatory to guarantee that the RMWStoreExclusive
-        // is followed by a ExecutionStatus which is required in RelIdd 
-        ExecutionStatus execStatus = newExecutionStatus(statusReg, store);
+        // We normally make the following optional.
+        // Here we make it mandatory to guarantee correct dependencies.
+        ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
 
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
@@ -245,10 +239,9 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
         Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store store = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
         Register statusReg = e.getThread().newRegister("status(" + e.getUId() + ")", resultRegister.getPrecision());
-        // Execution status is normally optional.
-        // Here we make it mandatory to guarantee that the RMWStoreExclusive
-        // is followed by a ExecutionStatus which is required in RelIdd 
-        ExecutionStatus execStatus = newExecutionStatus(statusReg, store);
+        // We normally make the following optional.
+        // Here we make it mandatory to guarantee correct dependencies.
+        ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
