@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
-import static com.dat3m.dartagnan.program.event.EventFactory.newExecutionStatus;
+import static com.dat3m.dartagnan.program.event.EventFactory.newExecutionStatusWithDependencyTracking;
 import java.util.List;
 
 class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
@@ -20,7 +20,7 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 
         return eventSequence(
                 store,
-                newExecutionStatus(e.getResultRegister(), store)
+                newExecutionStatusWithDependencyTracking(e.getResultRegister(), store)
         );
 	}
 

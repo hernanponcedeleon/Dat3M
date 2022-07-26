@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
@@ -227,21 +226,30 @@ public class ProgramEncoder implements Encoder {
      * Contextualized with the result of {@link #encodeDependencies(SolverContext) encode}.
      */
     public BooleanFormula dependencyEdge(Event writer, Event reader, SolverContext ctx) {
-        Preconditions.checkArgument(writer instanceof RegWriter || writer.is(Tag.RISCV.STCOND));
-        // RISCV store conditionals are not instances of RegWriter, but they still propagate
-        // dependencies. This is achieved by adding the store and its successor (the store status)
-        // to the maxTupleSet of RelIdd. The propagation with future events follows from the status
-        // writing to the register. Thus the whole dependency depends on the store being executed.
-        if(writer.is(Tag.RISCV.STCOND) && reader instanceof ExecutionStatus && ((ExecutionStatus)reader).getStatusEvent().equals(writer)) {
-        	return ctx.getFormulaManager().getBooleanFormulaManager().and(writer.exec(), reader.exec());
+        Preconditions.checkArgument(writer instanceof RegWriter || reader instanceof ExecutionStatus);
+
+        if(reader instanceof ExecutionStatus) {
+            // RISCV store conditionals are not instances of RegWriter, but they still propagate dependencies.
+            // The propagation with future events follows from the status writing to the register.
+            // We achieve this by using an instance of ExecutionStatus that tracks dependencies.
+            // BasicRegRelation will add the corresponding pair to the maxTupleSet if dependency is tracked.
+            // Thus, the whole dependency depends on the store being executed.
+            ExecutionStatus status = (ExecutionStatus)reader;
+            Preconditions.checkArgument(status.doesTrackDep(),
+                    "ExecutionStatus %s does not track dependencies", status);
+            Preconditions.checkArgument(status.getStatusEvent().equals(writer),
+                    "ExecutionStatus %s tracks %s, but %s was provided.",
+                    status, status.getStatusEvent(), writer);
+            return execution(writer, reader, exec, ctx);
+        } else {
+            Register register = ((RegWriter) writer).getResultRegister();
+            Dependency.State r = dep.of(reader, register);
+            Preconditions.checkArgument(r.may.contains(writer));
+            BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+            return r.must.contains(writer) ?
+                    execution(writer, reader, exec, ctx) :
+                    dependencyEdgeVariable(writer, reader, bmgr);
         }
-        Register register = ((RegWriter) writer).getResultRegister();
-        Dependency.State r = dep.of(reader, register);
-        Preconditions.checkArgument(r.may.contains(writer));
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return r.must.contains(writer) ? 
-        		execution(writer, reader, exec, ctx) :
-        		dependencyEdgeVariable(writer, reader, bmgr);
     }
 
     /**

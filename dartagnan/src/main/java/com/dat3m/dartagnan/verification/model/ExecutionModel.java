@@ -403,6 +403,17 @@ public class ExecutionModel {
             ctrlDepMap.put(eventMap.get(e), new HashSet<>(curCtrlDeps));
         }
 
+        if (e instanceof ExecutionStatus) {
+            // ---- Track data dependency due to execution tracking ----
+            ExecutionStatus status = (ExecutionStatus) e;
+            Event tracked = status.getStatusEvent();
+            HashSet<EventData> deps = new HashSet<>();
+            if (eventExists(tracked) && status.doesTrackDep()) {
+                deps.add(eventMap.get(tracked));
+            }
+            lastRegWrites.put(status.getResultRegister(), deps);
+        }
+
         if (e instanceof RegReaderData) {
             // ---- Track data dependency ----
             RegReaderData reader = (RegReaderData)e;
