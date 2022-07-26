@@ -6,8 +6,6 @@ import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
-import com.dat3m.dartagnan.program.event.arch.riscv.AmoOp;
-import com.dat3m.dartagnan.program.event.arch.riscv.AmoSwap;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
@@ -446,14 +444,6 @@ public class EventFactory {
 
         public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo) {
             return RISCV.newRMWStoreConditional(address, value, mo, false);
-        }
-
-        public static AmoOp newAmoOp(Register rd, Register r2, IExpr address, String mo, IOpBin op) {
-            return new AmoOp(rd, r2, address, mo, op);
-        }
-        
-        public static AmoSwap newAmoSwap(Register rd, Register r2, IExpr address, String mo) {
-            return new AmoSwap(rd, r2, address, mo);
         }
     }
 

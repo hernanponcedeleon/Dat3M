@@ -72,7 +72,6 @@ public final class Tag {
         public static final String MO_REL 		= "Rel";
         public static final String MO_ACQ_REL 	= "AcqRel";
 
-        public static final String AMO 			= "AMO";
         // Store conditional
         public static final String STCOND	 	= "X";
         
