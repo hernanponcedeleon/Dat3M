@@ -48,9 +48,11 @@ import java.util.List;
 
 class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 	// Some language memory models (e.g. RC11) are non-dependency tracking and might need a 
-	// strong version of no-OOTA, thus we need to strength the compilation following the papers
+	// strong version of no-OOTA, thus we need to strength the compilation. None of the usual paper
 	// "Repairing Sequential Consistency in C/C++11"
 	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
+	// talk about compilation to RISCV, but since it is closer to ARMv8 than Power
+	// we use the same scheme as AMRv8
 	private final boolean useRC11Scheme; 
 
 	protected VisitorRISCV(boolean useRC11Scheme) {
@@ -194,14 +196,10 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 		String mo = e.getMo();
 		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? RISCV.newRWRWFence() :  null;
 		Fence optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? RISCV.newRRWFence() :  null;
-		Label optionalLabel = useRC11Scheme ? newLabel("FakeDep") : null;
-		CondJump optionalFakeCtrlDep = useRC11Scheme ? newFakeCtrlDep(e.getResultRegister(), optionalLabel) : null;					
 
 		return eventSequence(
 				optionalBarrierBefore,
 				newLoad(e.getResultRegister(), e.getAddress(), null),
-				optionalFakeCtrlDep,
-				optionalLabel,
 				optionalBarrierAfter
 		);
 	}
@@ -213,7 +211,7 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 
 		return eventSequence(
 				optionalBarrierBefore,
-				newStore(e.getAddress(), e.getMemValue(), null)
+				newStore(e.getAddress(), e.getMemValue(), useRC11Scheme ? Tag.RISCV.MO_REL : null)
 		);
 	}
 
