@@ -64,7 +64,6 @@ let ppo =
 | r6
 | r7
 | r8
-| rmw
 | r9
 | r10
 | r11
