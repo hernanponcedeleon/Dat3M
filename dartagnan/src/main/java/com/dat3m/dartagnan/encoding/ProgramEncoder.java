@@ -226,23 +226,30 @@ public class ProgramEncoder implements Encoder {
      * Contextualized with the result of {@link #encodeDependencies(SolverContext) encode}.
      */
     public BooleanFormula dependencyEdge(Event writer, Event reader, SolverContext ctx) {
-        Preconditions.checkArgument(writer instanceof RegWriter || 
-        		(reader instanceof ExecutionStatus && ((ExecutionStatus)reader).getTrackDep()));
-        // RISCV store conditionals are not instances of RegWriter, but they still propagate dependencies.
-        // The propagation with future events follows from the status writing to the register. 
-        // We achieve this by using an instance of ExecutionStatus that tracks dependencies.
-        // BasicRegRelation will add the corresponding pair to the maxTupleSet if dependency is tracked.
-        // Thus the whole dependency depends on the store being executed.
-        if(reader instanceof ExecutionStatus && ((ExecutionStatus)reader).getTrackDep() && ((ExecutionStatus)reader).getStatusEvent().equals(writer)) {
+        Preconditions.checkArgument(writer instanceof RegWriter || reader instanceof ExecutionStatus);
+
+        if(reader instanceof ExecutionStatus) {
+            // RISCV store conditionals are not instances of RegWriter, but they still propagate dependencies.
+            // The propagation with future events follows from the status writing to the register.
+            // We achieve this by using an instance of ExecutionStatus that tracks dependencies.
+            // BasicRegRelation will add the corresponding pair to the maxTupleSet if dependency is tracked.
+            // Thus, the whole dependency depends on the store being executed.
+            ExecutionStatus status = (ExecutionStatus)reader;
+            Preconditions.checkArgument(status.doesTrackDep(),
+                    "ExecutionStatus %s does not track dependencies", status);
+            Preconditions.checkArgument(status.getStatusEvent().equals(writer),
+                    "ExecutionStatus %s tracks %s, but %s was provided.",
+                    status, status.getStatusEvent(), writer);
         	return ctx.getFormulaManager().getBooleanFormulaManager().and(writer.exec(), reader.exec());
+        } else {
+            Register register = ((RegWriter) writer).getResultRegister();
+            Dependency.State r = dep.of(reader, register);
+            Preconditions.checkArgument(r.may.contains(writer));
+            BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+            return r.must.contains(writer) ?
+                    execution(writer, reader, exec, ctx) :
+                    dependencyEdgeVariable(writer, reader, bmgr);
         }
-        Register register = ((RegWriter) writer).getResultRegister();
-        Dependency.State r = dep.of(reader, register);
-        Preconditions.checkArgument(r.may.contains(writer));
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return r.must.contains(writer) ? 
-        		execution(writer, reader, exec, ctx) :
-        		dependencyEdgeVariable(writer, reader, bmgr);
     }
 
     /**

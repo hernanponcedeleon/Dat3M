@@ -10,9 +10,11 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.configuration.Arch.RISCV;
-
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
+import static com.dat3m.dartagnan.configuration.Arch.RISCV;
 
 abstract class BasicRegRelation extends StaticRelation {
 
@@ -40,10 +42,13 @@ abstract class BasicRegRelation extends StaticRelation {
         maxTupleSet = new TupleSet();
         minTupleSet = new TupleSet();
         Dependency dep = analysisContext.requires(Dependency.class);
+        // We need to track ExecutionStatus events separately, because they induce data-dependencies
+        // without reading from a register.
+        Set<ExecutionStatus> execStatusRegWriter = new HashSet<>();
         for(Event regReader : getEvents()){
             for(Register register : getRegisters(regReader)) {
             	// Register x0 is hardwired to the constant 0 in RISCV
-            	// https://en.wikichip.org/wiki/risc-v/registers
+            	// https://en.wikichip.org/wiki/risc-v/registers,
             	// and thus it generates no dependency, see
             	// https://github.com/herd/herdtools7/issues/408
             	if(task.getProgram().getArch().equals(RISCV) && register.getName().equals("x0")) {
@@ -52,16 +57,21 @@ abstract class BasicRegRelation extends StaticRelation {
                 Dependency.State r = dep.of(regReader, register);
                 for(Event regWriter : r.may) {
                     maxTupleSet.add(new Tuple(regWriter, regReader));
-                    if(regWriter instanceof ExecutionStatus && ((ExecutionStatus)regWriter).getTrackDep()) {
-                    	maxTupleSet.add(new Tuple(((ExecutionStatus)regWriter).getStatusEvent(), regWriter));
+                    if (regWriter instanceof ExecutionStatus) {
+                        execStatusRegWriter.add((ExecutionStatus) regWriter);
                     }
                 }
                 for(Event regWriter : r.must) {
                     minTupleSet.add(new Tuple(regWriter, regReader));
-                    if(regWriter instanceof ExecutionStatus && ((ExecutionStatus)regWriter).getTrackDep()) {
-                    	minTupleSet.add(new Tuple(((ExecutionStatus)regWriter).getStatusEvent(), regWriter));
-                    }
                 }
+            }
+        }
+
+        for (ExecutionStatus execStatus : execStatusRegWriter) {
+            if (execStatus.doesTrackDep()) {
+                Tuple t = new Tuple(execStatus.getStatusEvent(), execStatus);
+                minTupleSet.add(t);
+                maxTupleSet.add(t);
             }
         }
     }
