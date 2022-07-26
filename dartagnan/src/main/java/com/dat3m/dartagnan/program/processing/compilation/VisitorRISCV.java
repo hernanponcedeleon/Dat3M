@@ -49,11 +49,7 @@ import java.util.List;
 
 class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 
-	private final AtomicityScheme atomicityScheme;
-	
-	protected VisitorRISCV(AtomicityScheme atomicityScheme) {
-		this.atomicityScheme = atomicityScheme;
-	}
+	protected VisitorRISCV() {}
 	
 	@Override
 	public List<Event> visitCreate(Create e) {
@@ -162,40 +158,34 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 	
 	@Override
 	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
-		switch (atomicityScheme) {
-			case AMO:
-			case LLSC:
-				Register resultRegister = e.getResultRegister();
-				IOpBin op = e.getOp();
-				IExpr value = (IExpr) e.getMemValue();
-				IExpr address = e.getAddress();
-				String mo = e.getMo();
-				
-		        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-		        Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
-	
-		        Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
-		        Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
-		        Register statusReg = e.getThread().newRegister("status(" + e.getUId() + ")", resultRegister.getPrecision());
-		        // Execution status is normally optional.
-		        // Here we make it mandatory to guarantee that the RMWStoreExclusive
-		        // is followed by a ExecutionStatus which is required in RelIdd 
-		        ExecutionStatus execStatus = newExecutionStatus(statusReg, store);
+		Register resultRegister = e.getResultRegister();
+		IOpBin op = e.getOp();
+		IExpr value = (IExpr) e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		
+        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+        Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
 
-		        Label label = newLabel("FakeDep");
-		        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-	
-		        return eventSequence(
-		                load,
-		                fakeCtrlDep,
-		                label,
-		                localOp,
-		                store,
-		                execStatus
-		        );
-			default:
-	            throw new UnsupportedOperationException(String.format("%s compilation scheme not supported.", atomicityScheme));
-		}
+        Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+        Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
+        Register statusReg = e.getThread().newRegister("status(" + e.getUId() + ")", resultRegister.getPrecision());
+        // Execution status is normally optional.
+        // Here we make it mandatory to guarantee that the RMWStoreExclusive
+        // is followed by a ExecutionStatus which is required in RelIdd 
+        ExecutionStatus execStatus = newExecutionStatus(statusReg, store);
+
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+        return eventSequence(
+                load,
+                fakeCtrlDep,
+                label,
+                localOp,
+                store,
+                execStatus
+        );
 	}
 
 	@Override
@@ -247,34 +237,28 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 
 	@Override
 	public List<Event> visitAtomicXchg(AtomicXchg e) {
-		switch (atomicityScheme) {
-			case AMO:
-			case LLSC:
-				Register resultRegister = e.getResultRegister();
-				ExprInterface value = e.getMemValue();
-				IExpr address = e.getAddress();
-				String mo = e.getMo();
-	
-		        Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
-		        Store store = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
-		        Register statusReg = e.getThread().newRegister("status(" + e.getUId() + ")", resultRegister.getPrecision());
-		        // Execution status is normally optional.
-		        // Here we make it mandatory to guarantee that the RMWStoreExclusive
-		        // is followed by a ExecutionStatus which is required in RelIdd 
-		        ExecutionStatus execStatus = newExecutionStatus(statusReg, store);
-		        Label label = newLabel("FakeDep");
-		        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-	
-		        return eventSequence(
-		                load,
-		                fakeCtrlDep,
-		                label,
-		                store,
-		                execStatus
-		        );
-			default:
-	            throw new UnsupportedOperationException(String.format("%s compilation scheme not supported.", atomicityScheme));
-		}
+		Register resultRegister = e.getResultRegister();
+		ExprInterface value = e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+        Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+        Store store = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
+        Register statusReg = e.getThread().newRegister("status(" + e.getUId() + ")", resultRegister.getPrecision());
+        // Execution status is normally optional.
+        // Here we make it mandatory to guarantee that the RMWStoreExclusive
+        // is followed by a ExecutionStatus which is required in RelIdd 
+        ExecutionStatus execStatus = newExecutionStatus(statusReg, store);
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+        return eventSequence(
+                load,
+                fakeCtrlDep,
+                label,
+                store,
+                execStatus
+        );
 	}
 	
     // =============================================================================================
