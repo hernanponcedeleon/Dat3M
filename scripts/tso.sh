@@ -12,9 +12,21 @@ NIDHUGG_PASS="No errors were detected"
 NIDHUGG_FAIL="Assertion violation"
 
 declare -a BENCHMARKS=( "locks/ttas-5" "locks/ticketlock-6" "locks/mutex-4" "locks/spinlock-5" "locks/linuxrwlock-3" "locks/mutex_musl-4" "lfds/safe_stack-3" "lfds/chase-lev-5" "lfds/dglm-3" "lfds/harris-3" "lfds/ms-3" "lfds/treiber-3" )
-declare -a METHODS=( "caat assume" )
+declare -a METHODS=( "caat assume cutting" )
+
+CAT=tso.cat
 
 for METHOD in ${METHODS[@]}; do
+
+    ## We use METHOD for file names and MOPT to call the tool
+    MOPT=$METHOD
+
+    ## Update memory model for cutting
+    if [[ "$METHOD" == "cutting" ]]
+    then
+        CAT=cut-$CAT
+        MOPT="caat"
+    fi
 
     ## Start CSV files
     echo benchmark, result, time > $DAT3M_OUTPUT/csv/TSO-$METHOD.csv
@@ -22,7 +34,7 @@ for METHOD in ${METHODS[@]}; do
     ## Run Dartagnan
     for BENCHMARK in ${BENCHMARKS[@]}; do
         start=`python3 -c 'import time; print(int(time.time() * 1000))'`
-        OUTPUT=$(timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.0.0.jar cat/tso.cat --bound=2 --target=tso --method=$METHOD $BPL_PATH$BENCHMARK.bpl)
+        OUTPUT=$(timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.0.0.jar cat/$CAT --bound=2 --target=tso --method=$MOPT $BPL_PATH$BENCHMARK.bpl)
         end=`python3 -c 'import time; print(int(time.time() * 1000))'`
         TIME=$((end-start))
         

@@ -23,6 +23,7 @@ mapping_title = dict([
     ('ARM8', 'ARM8'),
     ('RISCV', 'RISCV'),
     ('Linux', 'LKMM'),
+    ('C11', 'RC11'),
     ('IMM', 'IMM')
 ])
 
@@ -54,20 +55,24 @@ for key in mapping_files.keys():
 
 cFiles = [csvPath + 'TSO-assume.csv',
           csvPath + 'TSO-caat.csv',
+          csvPath + 'TSO-cutting.csv',
           csvPath + 'TSO-nidhugg.csv',
           csvPath + 'Power-assume.csv',
           csvPath + 'Power-caat.csv',
+          csvPath + 'Power-cutting.csv',
           csvPath + 'ARM8-assume.csv',
           csvPath + 'ARM8-caat.csv',
+          csvPath + 'ARM8-cutting.csv',
           csvPath + 'RISCV-assume.csv',
           csvPath + 'RISCV-caat.csv',
           csvPath + 'IMM-assume.csv',
           csvPath + 'IMM-caat.csv',
+          csvPath + 'IMM-cutting.csv',
           csvPath + 'IMM-genmc.csv',
           csvPath + 'C11-assume.csv',
           csvPath + 'C11-caat.csv',
-          csvPath + 'C11-genmc.csv'
-          csvPath + 'IMM-genmc.csv'
+          csvPath + 'C11-cutting.csv',
+          csvPath + 'C11-genmc.csv',
         ]
 
 ## Create empty csv files for non existent ones
@@ -85,10 +90,11 @@ for file in cFiles:
 arch = ['TSO', 'Power', 'ARM8', 'RISCV', 'IMM', 'C11']
 
 genmcIMM = pd.read_csv(csvPath + 'IMM-genmc.csv')
+genmcRC11 = pd.read_csv(csvPath + 'C11-genmc.csv')
 nidhugg = pd.read_csv(csvPath + 'TSO-nidhugg.csv')
 
-lncol = 2
-my_colors = ['tab:blue', 'orange']
+lncol = 3
+my_colors = ['tab:blue', 'tab:cyan', 'orange']
 
 for a in arch:
     df = df_empty = pd.DataFrame({'benchmark' : []})
@@ -98,6 +104,14 @@ for a in arch:
     df[mapping_method['caat']] = current_df.iloc[:, 2]
     df['benchmark'] = current_df.iloc[:, 0].apply(lambda x: x.replace(".bpl", ""))
 
+    if a != 'RISCV':
+        current_df = pd.DataFrame(pd.read_csv(csvPath + a + '-cutting.csv'))
+        ## colums are: benchmark, result, time
+        df['Cutting'] = current_df.iloc[:, 2]
+    else:
+        lncol = 2
+        my_colors = ['tab:blue', 'orange']
+        
     current_df = pd.DataFrame(pd.read_csv(csvPath + a + '-assume.csv'))
     ## colums are: benchmark, result, time
     df[mapping_method['assume']] = current_df.iloc[:, 2]
@@ -105,21 +119,21 @@ for a in arch:
     if a == 'IMM':
         ## colums are: benchmark, result, time
         df['GenMC'] = genmcIMM.iloc[:, 2]
-        lncol = 3
-        my_colors = ['tab:blue', 'orange', 'tab:green']
-
+        lncol = 4
+        my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:green']
+        
     if a == 'C11':
         ## colums are: benchmark, result, time
         df['GenMC'] = genmcRC11.iloc[:, 2]
-        lncol = 3
-        my_colors = ['tab:blue', 'orange', 'tab:green']
-
+        lncol = 4
+        my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:green']
+        
     if a == 'TSO':
         ## colums are: benchmark, result, time
         df['Nidhugg'] = nidhugg.iloc[:, 2]
-        lncol = 3
-        my_colors = ['tab:blue', 'orange', 'tab:red']
-
+        lncol = 4
+        my_colors = ['tab:blue', 'tab:cyan', 'orange', 'tab:red']
+        
     df.loc["Total"] = df.loc[:, df.columns != 'benchmark'].mean()
     df[['benchmark']] = df[['benchmark']].fillna('$\overline{\mathcal{X}}$')
 
@@ -175,3 +189,4 @@ plt.legend(loc='upper center', ncol=3)
 plt.ylim(1, 10000000)
 plt.savefig(figurePath + 'litmus.png')
 plt.close()
+
