@@ -12,7 +12,7 @@ public class LKMMToRISCVTest extends AbstractCompilationTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("litmus/LKMM/");
+        return buildLitmusTests("litmus/LKMM/dart/");
     }
 
     public LKMMToRISCVTest(String path) {
