@@ -25,8 +25,22 @@ public class IncrementalSolver extends ModelChecker {
 
     private static final Logger logger = LogManager.getLogger(IncrementalSolver.class);
 
+    private final SolverContext ctx;
+    private final ProverEnvironment prover;
+    private final VerificationTask task;
+
+    private IncrementalSolver(SolverContext c, ProverEnvironment p, VerificationTask t) {
+        ctx = c;
+        prover = p;
+        task = t;
+    }
+
     public static Result run(SolverContext ctx, ProverEnvironment prover, VerificationTask task) 
     		throws InterruptedException, SolverException, InvalidConfigurationException {
+        return new IncrementalSolver(ctx, prover, task).run();
+    }
+
+    private Result run() throws InterruptedException, SolverException, InvalidConfigurationException {
         Result res = Result.UNKNOWN;
         Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();

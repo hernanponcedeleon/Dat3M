@@ -25,8 +25,23 @@ public class TwoSolvers extends ModelChecker {
 
     private static final Logger logger = LogManager.getLogger(TwoSolvers.class);
 
+    private final SolverContext ctx;
+    private final ProverEnvironment prover1,prover2;
+    private final VerificationTask task;
+
+    private TwoSolvers(SolverContext c, ProverEnvironment p1, ProverEnvironment p2, VerificationTask t) {
+        ctx = c;
+        prover1 = p1;
+        prover2 = p2;
+        task = t;
+    }
+
     public static Result run(SolverContext ctx, ProverEnvironment prover1, ProverEnvironment prover2, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
+        return new TwoSolvers(ctx, prover1, prover2, task).run();
+    }
+
+    private Result run() throws InterruptedException, SolverException, InvalidConfigurationException {
     	Result res = Result.UNKNOWN;
         Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
