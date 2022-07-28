@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.analysis;
+package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.program.Program;
@@ -22,14 +22,19 @@ public interface AliasAnalysis {
     static AliasAnalysis fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
         Config c = new Config(config);
 		logger.info("Selected Alias Analysis: " + c.method);
+        AliasAnalysis a;
     	switch (c.method) {
             case FIELD_SENSITIVE:
-                return FieldSensitiveAndersen.fromConfig(program, config);
+                a = FieldSensitiveAndersen.fromConfig(program, config);
+                break;
             case FIELD_INSENSITIVE:
-                return AndersenAliasAnalysis.fromConfig(program, config);
+                a = AndersenAliasAnalysis.fromConfig(program, config);
+                break;
             default:
                 throw new UnsupportedOperationException("Alias method not recognized");
         }
+
+        return c.addEqualityAnalysis ? new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, config)) : a;
     }
 
     @Options
@@ -38,8 +43,31 @@ public interface AliasAnalysis {
                 description = "General type of analysis that approximates the 'loc' relationship between memory events.")
         private Alias method = Alias.FIELD_SENSITIVE;
 
+        private final boolean addEqualityAnalysis = true;
+
         private Config(Configuration config) throws InvalidConfigurationException {
             config.inject(this);
+        }
+    }
+
+    final class CombinedAliasAnalysis implements AliasAnalysis {
+
+        private final AliasAnalysis a1;
+        private final AliasAnalysis a2;
+
+        private CombinedAliasAnalysis(AliasAnalysis a1, AliasAnalysis a2) {
+            this.a1 = a1;
+            this.a2 = a2;
+        }
+
+        @Override
+        public boolean mustAlias(MemEvent a, MemEvent b) {
+            return a1.mustAlias(a, b) || a2.mustAlias(a, b);
+        }
+
+        @Override
+        public boolean mayAlias(MemEvent a, MemEvent b) {
+            return a1.mayAlias(a, b) && a2.mayAlias(a, b);
         }
     }
 
