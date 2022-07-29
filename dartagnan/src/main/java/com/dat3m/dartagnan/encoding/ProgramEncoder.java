@@ -313,6 +313,11 @@ public class ProgramEncoder implements Encoder {
         FormulaManager fmgr = ctx.getFormulaManager();
         BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 
+        if (program.getFormat() == Program.SourceLanguage.BOOGIE) {
+            // Boogie does not have assertions over final register values, so we do not need to encode them.
+            return bmgr.makeTrue();
+        }
+
         BooleanFormula enc = bmgr.makeTrue();
         for(Map.Entry<Register,Dependency.State> e : dep.finalWriters().entrySet()) {
             Formula value = e.getKey().getLastValueExpr(ctx);

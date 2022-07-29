@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
-import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -21,7 +22,7 @@ import org.sosy_lab.java_smt.api.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.expression.utils.Utils.*;
+import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
@@ -34,6 +35,7 @@ public class RelRf extends Relation {
         term = RF;
         forceDoEncode = true;
     }
+
 
     @Override
     public TupleSet getMinTupleSet(){
@@ -198,6 +200,9 @@ public class RelRf extends Relation {
 
     private BooleanFormula encodeEdgeSeq(Event read, List<BooleanFormula> edges, SolverContext ctx){
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        if (GlobalSettings.ALLOW_MULTIREADS) {
+            return bmgr.implication(read.exec(), bmgr.or(edges));
+        }
     	
         int num = edges.size();
         int readId = read.getCId();
