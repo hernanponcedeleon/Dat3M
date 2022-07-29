@@ -306,8 +306,7 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 				optionalMemoryBarrier = AArch64.DMB.newISHBarrier();
 				break;
 			default:
-				optionalMemoryBarrier = null;
-				break;
+				throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
 		}
 
 		return eventSequence(
