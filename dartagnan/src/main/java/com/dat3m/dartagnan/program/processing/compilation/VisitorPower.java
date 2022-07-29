@@ -467,12 +467,19 @@ public class VisitorPower extends VisitorBase implements EventVisitor<List<Event
 	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
 	@Override
 	public List<Event> visitLKMMFence(LKMMFence e) {
-		String mo = e.getName();
-        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_MB) 
-        		|| mo.equals(Tag.Linux.MO_WMB) || mo.equals(Tag.Linux.MO_RMB)
-        		|| mo.equals(Tag.Linux.BEFORE_ATOMIC) || mo.equals(Tag.Linux.AFTER_ATOMIC) ?
-        		Power.newSyncBarrier() : null;
-        
+		Fence optionalMemoryBarrier;
+		switch(e.getName()) {
+			case Tag.Linux.MO_MB:
+			case Tag.Linux.MO_RMB:
+			case Tag.Linux.MO_WMB:
+			case Tag.Linux.BEFORE_ATOMIC:
+			case Tag.Linux.AFTER_ATOMIC:
+				optionalMemoryBarrier = Power.newSyncBarrier();
+				break;
+			default:
+				throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
+		}
+		
         return eventSequence(
                 optionalMemoryBarrier
         );

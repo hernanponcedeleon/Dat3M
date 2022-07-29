@@ -320,7 +320,7 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 				optionalMemoryBarrier = RISCV.newWWFence();
 				break;
 			default:
-				throw new UnsupportedOperationException("Fence " + e.getName() + " is not supported");
+				throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
 		}
 
 		return eventSequence(
