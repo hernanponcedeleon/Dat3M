@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory.AArch64;
 import com.dat3m.dartagnan.program.event.EventFactory.RISCV;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -25,9 +24,11 @@ import com.dat3m.dartagnan.program.event.lang.catomic.AtomicXchg;
 import com.dat3m.dartagnan.program.event.lang.linux.LKMMFence;
 import com.dat3m.dartagnan.program.event.lang.linux.LKMMLoad;
 import com.dat3m.dartagnan.program.event.lang.linux.LKMMStore;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWAddUnless;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWOpAndTest;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWOpReturn;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWXchg;
 import com.dat3m.dartagnan.program.event.lang.pthread.Create;
@@ -46,6 +47,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.newLabel;
 import static com.dat3m.dartagnan.program.event.EventFactory.newLoad;
 import static com.dat3m.dartagnan.program.event.EventFactory.newLocal;
 import static com.dat3m.dartagnan.program.event.EventFactory.newRMWLoadExclusive;
+import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStoreExclusive;
 import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_ACQUIRE;
@@ -376,7 +378,7 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
-        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
+        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
                 load,
@@ -491,4 +493,84 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
         );
 	};
 	
+	// This is a simplified version that should be correct according to the instruction's semantics.
+	// The implementation from the kernel is overly complicated, but since it relies on several macros
+	// (atomic_add_unless -> atomic_fetch_add_unless -> atomic_try_cmpxchg -> atomic_cmpxchg)
+	// and not on inlined assembly, we don't really need to test that the compilation is correct
+	// (the other methods implementing the macros are been tested already).
+	@Override
+	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+		Register resultRegister = e.getResultRegister();
+		IExpr address = e.getAddress();
+		ExprInterface value = e.getMemValue();
+		String mo = e.getMo();
+		int precision = resultRegister.getPrecision();
+
+        Register regValue = e.getThread().newRegister(precision);
+		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
+
+		Load load = newRMWLoadExclusive(regValue, address, null);
+        Store store = RISCV.newRMWStoreConditional(address, new IExprBin(regValue, IOpBin.PLUS, (IExpr) value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : null, true);
+        ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
+
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
+
+        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+		ExprInterface unless = e.getCmp();
+        Label cauEnd = newLabel("CAddU_end");
+        CondJump branchOnCauCmpResult = newJump(new Atom(dummy, EQ, IValue.ZERO), cauEnd);
+        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
+
+        return eventSequence(
+                // Indentation shows the branching structure
+                load,
+                newLocal(dummy, new Atom(regValue, NEQ, unless)),
+                branchOnCauCmpResult,
+                    store,
+                    status,
+                    fakeCtrlDep,
+                    label,
+                    optionalMemoryBarrierAfter,
+                cauEnd,
+                newLocal(resultRegister, dummy)
+        );
+	};
+	
+	// The implementation is arch_${atomic}_op_return(i, v) == 0;
+	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
+	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
+	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
+	@Override
+	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
+		Register resultRegister = e.getResultRegister();
+		IOpBin op = e.getOp();
+		IExpr value = (IExpr) e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		
+        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
+        Register retReg = e.getThread().newRegister(resultRegister.getPrecision());
+        Local localOp = newLocal(retReg, new IExprBin(dummy, op, value));
+        Local testOp = newLocal(resultRegister, new Atom(retReg, EQ, IValue.ZERO));
+
+        Load load = newRMWLoadExclusive(dummy, address, null);
+        Store store = newRMWStoreExclusive(address, retReg, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : null, true);
+        ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
+        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
+        
+        return eventSequence(
+                load,
+                localOp,
+                store,
+                status,
+                fakeCtrlDep,
+                label,
+                optionalMemoryBarrierAfter,
+                testOp
+        );	
+	};
 }
