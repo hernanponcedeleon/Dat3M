@@ -34,7 +34,7 @@ public interface AliasAnalysis {
                 throw new UnsupportedOperationException("Alias method not recognized");
         }
 
-        return c.addEqualityAnalysis ? new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, config)) : a;
+        return new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, config));
     }
 
     @Options
@@ -42,8 +42,6 @@ public interface AliasAnalysis {
         @Option(name = ALIAS_METHOD,
                 description = "General type of analysis that approximates the 'loc' relationship between memory events.")
         private Alias method = Alias.FIELD_SENSITIVE;
-
-        private final boolean addEqualityAnalysis = true;
 
         private Config(Configuration config) throws InvalidConfigurationException {
             config.inject(this);
