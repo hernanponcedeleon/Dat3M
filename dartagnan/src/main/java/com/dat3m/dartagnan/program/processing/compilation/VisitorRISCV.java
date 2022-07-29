@@ -305,6 +305,10 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 		switch(e.getName()) {
 			// smp_mb()
 			case Tag.Linux.MO_MB:
+			// https://elixir.bootlin.com/linux/v5.18/source/include/asm-generic/barrier.h
+			// https://elixir.bootlin.com/linux/v5.18/source/arch/riscv/include/asm/barrier.h 
+			case Tag.Linux.BEFORE_ATOMIC:
+			case Tag.Linux.AFTER_ATOMIC:
 				optionalMemoryBarrier = RISCV.newRWRWFence();
 				break;
 			// smp_rmb()
@@ -316,8 +320,7 @@ class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
 				optionalMemoryBarrier = RISCV.newWWFence();
 				break;
 			default:
-				optionalMemoryBarrier = null;
-				break;
+				throw new UnsupportedOperationException("Fence " + e.getName() + " is not supported");
 		}
 
 		return eventSequence(
