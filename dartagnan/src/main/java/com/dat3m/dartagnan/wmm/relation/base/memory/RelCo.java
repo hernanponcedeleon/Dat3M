@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -23,10 +24,11 @@ import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.CO_ANTISYMMETRY;
 import static com.dat3m.dartagnan.configuration.Property.LIVENESS;
@@ -148,21 +150,26 @@ public class RelCo extends Relation {
         ));
 
 		for(Event e : eventsInit) {
-            enc = bmgr.and(enc, imgr.equal(getIntVar(e, ctx), imgr.makeNumber(BigInteger.ZERO)));
+            enc = bmgr.and(enc, imgr.equal(getClockVar(e, ctx), imgr.makeNumber(BigInteger.ZERO)));
         }
-
-        List<IntegerFormula> intVars = new ArrayList<>();
         for(Event w : eventsStore) {
-        	IntegerFormula coVar = getIntVar(w, ctx);
-            enc = bmgr.and(enc, imgr.greaterThan(coVar, imgr.makeNumber(BigInteger.ZERO)));
-            intVars.add(coVar);
+            enc = bmgr.and(enc, imgr.greaterThan(getClockVar(w, ctx), imgr.makeNumber(BigInteger.ZERO)));
         }
 
-        BooleanFormula distinct = intVars.size() > 1 ?
-        		imgr.distinct(intVars) :
-                bmgr.makeTrue();
-
-        enc = bmgr.and(enc, distinct);
+        // We find classes of events such that events in different classes
+        // may never alias.
+        // It suffices to generate distinctness constraints per class.
+        DependencyGraph<Event> aliasGraph = DependencyGraph.from(eventsStore, e ->
+                Stream.concat(
+                        maxTupleSet.getByFirst(e).stream().map(Tuple::getSecond),
+                        maxTupleSet.getBySecond(e).stream().map(Tuple::getFirst)
+                )::iterator
+        );
+        for (Set<DependencyGraph<Event>.Node> aliasClass : aliasGraph.getSCCs()) {
+            List<IntegerFormula> clockVars = aliasClass.stream().map(DependencyGraph.Node::getContent)
+                    .filter(e -> !e.is(INIT)).map(e -> getClockVar(e, ctx)).collect(Collectors.toList());
+            enc = bmgr.and(enc, imgr.distinct(clockVars));
+        }
 
         final Set<Tuple> transCo = findTransitivelyImpliedCo();
         final TupleSet maxSet = getMaxTupleSet();
@@ -181,7 +188,7 @@ public class RelCo extends Relation {
                 Formula a2 = w2.getMemAddressExpr();
                 BooleanFormula sameAddress = generalEqual(a1, a2, ctx);
                 BooleanFormula clockConstr = (w1.is(INIT) || transCo.contains(t)) ? bmgr.makeTrue()
-                        : imgr.lessThan(getIntVar(w1, ctx), getIntVar(w2, ctx));
+                        : imgr.lessThan(getClockVar(w1, ctx), getClockVar(w2, ctx));
 
                 if (minSet.contains(t)) {
                     enc = bmgr.and(enc, clockConstr, bmgr.equivalence(relation, execPair));
@@ -280,8 +287,8 @@ public class RelCo extends Relation {
     							bmgr.makeFalse());
     }
 
-    public IntegerFormula getIntVar(Event write, SolverContext ctx) {
-    	Preconditions.checkArgument(write.is(WRITE), "Cannot get an int-var for non-writes.");
+    public IntegerFormula getClockVar(Event write, SolverContext ctx) {
+    	Preconditions.checkArgument(write.is(WRITE), "Cannot get a clock-var for non-writes.");
         return intVar(term, write, ctx);
     }
 
