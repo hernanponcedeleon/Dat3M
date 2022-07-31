@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -24,9 +25,7 @@ import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -222,6 +221,89 @@ public class RelCo extends Relation {
                 }
             }
         }
+        return enc;
+    }
+
+    protected BooleanFormula encodeApproxNew(SolverContext ctx) {
+        AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
+        FormulaManager fmgr = ctx.getFormulaManager();
+        BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+        IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+
+        BooleanFormula enc = bmgr.makeTrue();
+
+        List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
+        List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
+                FilterBasic.get(WRITE),
+                FilterBasic.get(INIT)
+        ));
+
+        for(Event e : eventsInit) {
+            //enc = bmgr.and(enc, imgr.equal(getClockVar(e, ctx), imgr.makeNumber(BigInteger.ZERO)));
+        }
+        for(Event w : eventsStore) {
+            //enc = bmgr.and(enc, imgr.greaterThan(getClockVar(w, ctx), imgr.makeNumber(BigInteger.ZERO)));
+        }
+
+        List<MemEvent> writes = new ArrayList<>(
+                Lists.transform(task.getProgram().getCache().getEvents(FilterBasic.get(WRITE)), e -> (MemEvent)e));
+        writes.sort(Comparator.comparingInt(Event::getCId));
+        final Set<Tuple> transCo = findTransitivelyImpliedCo();
+        final TupleSet maxSet = getMaxTupleSet();
+        final TupleSet minSet = getMinTupleSet();
+
+        for (int i = 0; i < writes.size() - 1; i++) {
+            MemEvent w1 = writes.get(i);
+            for (MemEvent w2 : writes.subList(i + 1, writes.size())) {
+                Tuple t = new Tuple(w1, w2);
+                if (!maxSet.contains(t) && !maxSet.contains(t.getInverse())) {
+                    continue;
+                }
+
+                BooleanFormula coF = getSMTVar(w1, w2, ctx);
+                BooleanFormula coB = getSMTVar(w2, w1, ctx);
+                BooleanFormula execPair = getExecPair(t, ctx);
+                BooleanFormula sameAddress = alias.mustAlias(w1, w2) ? bmgr.makeTrue() :
+                        generalEqual(w1.getMemAddressExpr(), w2.getMemAddressExpr(), ctx);
+                BooleanFormula pairingCond = bmgr.and(execPair, sameAddress);
+                BooleanFormula fCond = (transCo.contains(t)) ? bmgr.makeTrue() :
+                        imgr.lessThan(getClockVar(w1, ctx), getClockVar(w2, ctx));
+                BooleanFormula bCond = (transCo.contains(t.getInverse())) ? bmgr.makeTrue() :
+                        imgr.lessThan(getClockVar(w2, ctx), getClockVar(w1, ctx));
+
+                if (maxSet.contains(t)) {
+                    enc = bmgr.and(enc, bmgr.implication(coF, fCond));
+                }
+                if (maxSet.contains(t.getInverse())) {
+                    enc = bmgr.and(enc, bmgr.implication(coB, bCond));
+                }
+                enc = bmgr.and(enc, bmgr.equivalence(pairingCond, bmgr.or(coF, coB)));
+            }
+        }
+
+        /*
+
+            if (task.getProgram().getFormat().equals(LITMUS) || task.getProperty().contains(LIVENESS)) {
+                BooleanFormula lastCoExpr = getLastCoVar(w1, ctx);
+                enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
+
+                for (Event i : eventsInit) {
+                    Init init = (Init) i;
+                    if (!alias.mayAlias(w1, init)) {
+                        continue;
+                    }
+
+                    IExpr address = init.getAddress();
+                    Formula a1 = w1.getMemAddressExpr();
+                    Formula a2 = address.toIntFormula(init,ctx);
+                    BooleanFormula sameAddress = generalEqual(a1, a2, ctx);
+                    Formula v1 = w1.getMemValueExpr();
+                    Formula v2 = init.getBase().getLastMemValueExpr(ctx,init.getOffset());
+                    BooleanFormula sameValue = generalEqual(v1, v2, ctx);
+                    enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
+                }
+            }
+        }*/
         return enc;
     }
 
