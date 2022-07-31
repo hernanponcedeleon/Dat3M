@@ -28,7 +28,7 @@ CUT="cut-"
 
 ## Bias "," results in no bias being used
 declare -a BIASES=( "," $RMW_OPT $OOTA_OPT $RMW_OPT,$OOTA_OPT $UNI_OPT $RMW_OPT,$UNI_OPT $OOTA_OPT,$UNI_OPT $RMW_OPT,$OOTA_OPT,$UNI_OPT )
-declare -a TARGETS=( "LKMM ARM8 Power" )
+declare -a TARGETS=( "LKMM ARM8 Power RISCV" )
 
 for TARGET in ${TARGETS[@]}; do
 
@@ -46,6 +46,10 @@ for TARGET in ${TARGETS[@]}; do
 
     if [[ "$TARGET" == "Power" ]]; then
         CAT="power.cat"
+    fi
+
+    if [[ "$TARGET" == "RISCV" ]]; then
+        CAT="riscv.cat"
     fi
 
     for BIAS in ${BIASES[@]}; do
