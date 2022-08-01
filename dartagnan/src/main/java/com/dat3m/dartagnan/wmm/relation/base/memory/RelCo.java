@@ -224,7 +224,7 @@ public class RelCo extends Relation {
             }
 
             BooleanFormula lastCoExpr = getLastCoVar(w1, ctx);
-            enc = bmgr.and(enc, bmgr.implication(lastCoExpr, lastCo));
+            enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
             for (Event i : initEvents) {
                 Init init = (Init) i;
                 if (!alias.mayAlias(w1, init)) {
