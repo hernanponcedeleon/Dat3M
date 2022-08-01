@@ -198,15 +198,20 @@ public class RelCo extends Relation {
         final TupleSet minSet = getMinTupleSet();
         final TupleSet maxSet = getMaxTupleSet();
         final List<Event> initEvents = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
-        final List<Event> writes = task.getProgram().getCache().getEvents(FilterBasic.get(WRITE));
+        final List<MemEvent> writes = Lists.transform(task.getProgram().getCache().getEvents(FilterBasic.get(WRITE)), MemEvent.class::cast);
 
         BooleanFormula enc = bmgr.makeTrue();
         // Find all writes that can potentially be final writes (i.e. are not guaranteed to get overwritten)
-        Set<MemEvent> possiblyLastWrite = new HashSet<>(Lists.transform(writes, MemEvent.class::cast));
-        minSet.stream().filter(t -> exec.isImplied(t.getFirst(), t.getSecond()))
+        Set<MemEvent> possiblyLastWrite = new HashSet<>(writes);
+        minSet.stream().filter(t -> t.getFirst() != t.getSecond() && exec.isImplied(t.getFirst(), t.getSecond()))
                 .map(Tuple::getFirst).forEach(possiblyLastWrite::remove);
 
-        for (MemEvent w1 : possiblyLastWrite) {
+        for (MemEvent w1 : writes) {
+            if (!possiblyLastWrite.contains(w1)) {
+                enc = bmgr.and(enc, bmgr.equivalence(getLastCoVar(w1, ctx), bmgr.makeFalse()));
+                continue;
+            }
+
             BooleanFormula lastCo = w1.exec();
             // ---- Find all possibly overwriting writes ----
             for (Tuple t : maxSet.getByFirst(w1)) {
@@ -305,6 +310,9 @@ public class RelCo extends Relation {
 
     public IntegerFormula getClockVar(Event write, SolverContext ctx) {
     	Preconditions.checkArgument(write.is(WRITE), "Cannot get a clock-var for non-writes.");
+        if (write.is(INIT)) {
+            return ctx.getFormulaManager().getIntegerFormulaManager().makeNumber(0);
+        }
         return intVar(term, write, ctx);
     }
 
