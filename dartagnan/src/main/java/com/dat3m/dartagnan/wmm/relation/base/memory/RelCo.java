@@ -104,7 +104,7 @@ public class RelCo extends Relation {
         	logger.info("Computing maxTupleSet for " + getName());
         	final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
             final WmmAnalysis wmmAnalysis = analysisContext.get(WmmAnalysis.class);
-            final List<Event> eventsStores = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
+            final List<Event> eventsStores = task.getProgram().getCache().getEvents(FilterBasic.get(WRITE));
             final List<Event> eventsNonInitStores= task.getProgram().getCache().getEvents(FilterMinus.get(
                     FilterBasic.get(WRITE),
                     FilterBasic.get(INIT)
