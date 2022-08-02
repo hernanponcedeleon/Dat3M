@@ -199,15 +199,16 @@ public class RelCo extends Relation {
         final TupleSet maxSet = getMaxTupleSet();
         final List<Event> initEvents = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
         final List<MemEvent> writes = Lists.transform(task.getProgram().getCache().getEvents(FilterBasic.get(WRITE)), MemEvent.class::cast);
+        final boolean doEncodeFinalAddressValues = task.getProgram().getFormat() == LITMUS;
 
         BooleanFormula enc = bmgr.makeTrue();
         // Find all writes that can potentially be final writes (i.e. are not guaranteed to get overwritten)
-        Set<MemEvent> possiblyLastWrite = new HashSet<>(writes);
+        Set<MemEvent> possiblyLastWrites = new HashSet<>(writes);
         minSet.stream().filter(t -> t.getFirst() != t.getSecond() && exec.isImplied(t.getFirst(), t.getSecond()))
-                .map(Tuple::getFirst).forEach(possiblyLastWrite::remove);
+                .map(Tuple::getFirst).forEach(possiblyLastWrites::remove);
 
         for (MemEvent w1 : writes) {
-            if (!possiblyLastWrite.contains(w1)) {
+            if (!possiblyLastWrites.contains(w1)) {
                 enc = bmgr.and(enc, bmgr.equivalence(getLastCoVar(w1, ctx), bmgr.makeFalse()));
                 continue;
             }
@@ -216,8 +217,9 @@ public class RelCo extends Relation {
             // ---- Find all possibly overwriting writes ----
             for (Tuple t : maxSet.getByFirst(w1)) {
                 MemEvent w2 = (MemEvent) t.getSecond();
-                if (possiblyLastWrite.contains(w2)) {
-                    if (minSet.getByFirst(w1).stream().anyMatch(t2 -> t2.getSecond() != w2 && exec.isImplied(w2, t2.getSecond()))) {
+                if (possiblyLastWrites.contains(w2)) {
+                    if (minSet.getByFirst(w1).stream().map(Tuple::getSecond).filter(possiblyLastWrites::contains)
+                            .anyMatch(w3 -> w2 != w3 && exec.isImplied(w2, w3))) {
                         // ... if w2 was executed then so would t2.getSecond. But t2.getSecond already witnesses
                         // that w1 is not the last write, so we never need to encode w2 as a witness.
                         continue;
@@ -230,19 +232,22 @@ public class RelCo extends Relation {
 
             BooleanFormula lastCoExpr = getLastCoVar(w1, ctx);
             enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
-            for (Event i : initEvents) {
-                Init init = (Init) i;
-                if (!alias.mayAlias(w1, init)) {
-                    continue;
+
+            if (doEncodeFinalAddressValues) {
+                for (Event i : initEvents) {
+                    Init init = (Init) i;
+                    if (!alias.mayAlias(w1, init)) {
+                        continue;
+                    }
+                    IExpr address = init.getAddress();
+                    Formula a1 = w1.getMemAddressExpr();
+                    Formula a2 = address.toIntFormula(init, ctx);
+                    BooleanFormula sameAddress = alias.mustAlias(init, w1) ? bmgr.makeTrue() : generalEqual(a1, a2, ctx);
+                    Formula v1 = w1.getMemValueExpr();
+                    Formula v2 = init.getBase().getLastMemValueExpr(ctx, init.getOffset());
+                    BooleanFormula sameValue = generalEqual(v1, v2, ctx);
+                    enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
-                IExpr address = init.getAddress();
-                Formula a1 = w1.getMemAddressExpr();
-                Formula a2 = address.toIntFormula(init, ctx);
-                BooleanFormula sameAddress = alias.mustAlias(init, w1) ? bmgr.makeTrue() : generalEqual(a1, a2, ctx);
-                Formula v1 = w1.getMemValueExpr();
-                Formula v2 = init.getBase().getLastMemValueExpr(ctx,init.getOffset());
-                BooleanFormula sameValue = generalEqual(v1, v2, ctx);
-                enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
             }
         }
         return enc;
