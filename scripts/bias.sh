@@ -73,7 +73,7 @@ for TARGET in ${TARGETS[@]}; do
             fi
         fi
 
-        ## Run Dartagnan
+        ## Run Dartagnan with CAAT
         start=`python3 -c 'import time; print(int(time.time() * 1000))'`
         OUTPUT=$(timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.0.0.jar cat/$CAT $DAT3M_OPTIONS --target=$TARGET --refinement.baseline=$BIAS $BENCHMARK)
         end=`python3 -c 'import time; print(int(time.time() * 1000))'`
@@ -94,4 +94,26 @@ for TARGET in ${TARGETS[@]}; do
         ## Save CSV
         echo $RMW, $OOTA, $UNI, $RESULT, $TIME >> $DAT3M_OUTPUT/csv/bias-$TARGET.csv
     done
+    
+    ## Run Dartagnan with eager encoding
+    start=`python3 -c 'import time; print(int(time.time() * 1000))'`
+    OUTPUT=$(timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.0.0.jar cat/$CAT $DAT3M_OPTIONS --target=$TARGET --refinement.baseline=$BIAS $BENCHMARK --method=assume)
+    end=`python3 -c 'import time; print(int(time.time() * 1000))'`
+    TIME=$((end-start))
+    
+    if [[ $OUTPUT == *"$DAT3M_FINISHED"* ]]; then
+        if [[ $OUTPUT == *"$DAT3M_FAIL"* ]]; then
+            RESULT="FAIL"
+        else
+            RESULT="PASS"
+        fi
+    else
+        RESULT="ERROR"
+        ## From seconds to miliseconds
+        TIME=$((1000*$TIMEOUT))
+    fi
+    
+    ## Save CSV
+    echo -, -, -, $RESULT, $TIME >> $DAT3M_OUTPUT/csv/bias-$TARGET.csv
+
 done
