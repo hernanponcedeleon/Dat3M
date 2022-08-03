@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.relation.base.memory;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.event.EventCache;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -24,6 +25,7 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -74,8 +76,8 @@ public class RelCo extends Relation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
+            final WmmAnalysis wmmAnalysis = analysisContext.get(WmmAnalysis.class);
             minTupleSet = new TupleSet();
-            WmmAnalysis wmmAnalysis = analysisContext.get(WmmAnalysis.class);
             if (wmmAnalysis.isLocallyConsistent()) {
                 applyLocalConsistencyMinSet();
             }
@@ -84,7 +86,7 @@ public class RelCo extends Relation {
     }
 
     private void applyLocalConsistencyMinSet() {
-        AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
+        final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
         for (Tuple t : getMaxTupleSet()) {
             MemEvent w1 = (MemEvent) t.getFirst();
             MemEvent w2 = (MemEvent) t.getSecond();
@@ -98,27 +100,19 @@ public class RelCo extends Relation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
         	logger.info("Computing maxTupleSet for " + getName());
-        	AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
-            WmmAnalysis wmmAnalysis = analysisContext.get(WmmAnalysis.class);
-            maxTupleSet = new TupleSet();
-            List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
-            List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
+        	final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
+            final WmmAnalysis wmmAnalysis = analysisContext.get(WmmAnalysis.class);
+            final List<Event> eventsStores = task.getProgram().getCache().getEvents(FilterBasic.get(WRITE));
+            final List<Event> eventsNonInitStores= task.getProgram().getCache().getEvents(FilterMinus.get(
                     FilterBasic.get(WRITE),
                     FilterBasic.get(INIT)
             ));
 
-            for(Event e1 : eventsInit){
-                for(Event e2 : eventsStore){
-                    if(alias.mayAlias((MemEvent) e1, (MemEvent)e2)){
-                        maxTupleSet.add(new Tuple(e1, e2));
-                    }
-                }
-            }
-
-            for(Event e1 : eventsStore){
-                for(Event e2 : eventsStore){
-                    if(e1.getCId() != e2.getCId() && alias.mayAlias((MemEvent) e1, (MemEvent)e2)){
-                        maxTupleSet.add(new Tuple(e1, e2));
+            maxTupleSet = new TupleSet();
+            for (Event w1 : eventsStores) {
+                for (Event w2 : eventsNonInitStores) {
+                    if(w1.getCId() != w2.getCId() && alias.mayAlias((MemEvent) w1, (MemEvent)w2)){
+                        maxTupleSet.add(new Tuple(w1, w2));
                     }
                 }
             }
@@ -135,33 +129,29 @@ public class RelCo extends Relation {
 
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
-        AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
-    	FormulaManager fmgr = ctx.getFormulaManager();
-		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-        IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-        
-    	BooleanFormula enc = bmgr.makeTrue();
+		final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        final IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+        final EventCache cache = task.getProgram().getCache();
+        final List<MemEvent> writes = Lists.transform(cache.getEvents(FilterBasic.get(WRITE)), MemEvent.class::cast);
+        final TupleSet maxSet = getMaxTupleSet();
+        final TupleSet minSet = getMinTupleSet();
 
-        List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
-        List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
-                FilterBasic.get(WRITE),
-                FilterBasic.get(INIT)
-        ));
-
-		for(Event e : eventsInit) {
-            enc = bmgr.and(enc, imgr.equal(getClockVar(e, ctx), imgr.makeNumber(BigInteger.ZERO)));
-        }
-        for(Event w : eventsStore) {
-            enc = bmgr.and(enc, imgr.greaterThan(getClockVar(w, ctx), imgr.makeNumber(BigInteger.ZERO)));
+        BooleanFormula enc = bmgr.makeTrue();
+        // Encode clock conditions (init = 0, non-init > 0).
+        for (MemEvent w : writes) {
+            enc = bmgr.and(enc, w.is(INIT)
+                            ? imgr.equal(getClockVar(w, ctx), imgr.makeNumber(BigDecimal.ZERO))
+                            : imgr.greaterThan(getClockVar(w, ctx), imgr.makeNumber(BigInteger.ZERO)));
         }
 
         // We find classes of events such that events in different classes
         // may never alias.
         // It suffices to generate distinctness constraints per class.
-        DependencyGraph<Event> aliasGraph = DependencyGraph.from(eventsStore, e ->
+        final List<Event> eventsStore = cache.getEvents(FilterMinus.get(FilterBasic.get(WRITE), FilterBasic.get(INIT)));
+        final DependencyGraph<Event> aliasGraph = DependencyGraph.from(eventsStore, e ->
                 Stream.concat(
-                        maxTupleSet.getByFirst(e).stream().map(Tuple::getSecond),
-                        maxTupleSet.getBySecond(e).stream().map(Tuple::getFirst)
+                        maxSet.getByFirst(e).stream().map(Tuple::getSecond),
+                        maxSet.getBySecond(e).stream().map(Tuple::getFirst)
                 )::iterator
         );
         for (Set<DependencyGraph<Event>.Node> aliasClass : aliasGraph.getSCCs()) {
@@ -171,21 +161,12 @@ public class RelCo extends Relation {
         }
 
         final Set<Tuple> transCo = findTransitivelyImpliedCo();
-        final TupleSet maxSet = getMaxTupleSet();
-        final TupleSet minSet = getMinTupleSet();
-        for(Event w :  task.getProgram().getCache().getEvents(FilterBasic.get(WRITE))) {
-            MemEvent w1 = (MemEvent)w;
-            BooleanFormula lastCo = w1.exec();
-
+        for(MemEvent w1 : writes) {
             for(Tuple t : maxSet.getByFirst(w1)){
                 MemEvent w2 = (MemEvent)t.getSecond();
                 BooleanFormula relation = getSMTVar(t, ctx);
                 BooleanFormula execPair = getExecPair(t, ctx);
-                lastCo = bmgr.and(lastCo, bmgr.not(relation));
-
-                Formula a1 = w1.getMemAddressExpr();
-                Formula a2 = w2.getMemAddressExpr();
-                BooleanFormula sameAddress = generalEqual(a1, a2, ctx);
+                BooleanFormula sameAddress = generalEqual(w1.getMemAddressExpr(), w2.getMemAddressExpr(), ctx);
                 BooleanFormula clockConstr = (w1.is(INIT) || transCo.contains(t)) ? bmgr.makeTrue()
                         : imgr.lessThan(getClockVar(w1, ctx), getClockVar(w2, ctx));
 
@@ -199,23 +180,69 @@ public class RelCo extends Relation {
                     enc = bmgr.and(enc, bmgr.equivalence(relation, bmgr.and(execPair, sameAddress, clockConstr)));
                 }
             }
+        }
 
-            if (task.getProgram().getFormat().equals(LITMUS) || task.getProperty().contains(LIVENESS)) {
-                BooleanFormula lastCoExpr = getLastCoVar(w1, ctx);
-                enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
+        final boolean doEncodeLastCo = task.getProgram().getFormat().equals(LITMUS) || task.getProperty().contains(LIVENESS);
+        if (doEncodeLastCo) {
+            enc = bmgr.and(enc, encodeLastCoConstraints(ctx));
+        }
+        return enc;
+    }
 
-                for (Event i : eventsInit) {
+    private BooleanFormula encodeLastCoConstraints(SolverContext ctx) {
+        final AliasAnalysis alias = analysisContext.requires(AliasAnalysis.class);
+        final ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        final TupleSet minSet = getMinTupleSet();
+        final TupleSet maxSet = getMaxTupleSet();
+        final List<Event> initEvents = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
+        final List<MemEvent> writes = Lists.transform(task.getProgram().getCache().getEvents(FilterBasic.get(WRITE)), MemEvent.class::cast);
+        final boolean doEncodeFinalAddressValues = task.getProgram().getFormat() == LITMUS;
+
+        BooleanFormula enc = bmgr.makeTrue();
+        // Find all writes that can potentially be final writes (i.e. are not guaranteed to get overwritten)
+        Set<MemEvent> possiblyLastWrites = new HashSet<>(writes);
+        minSet.stream().filter(t -> t.getFirst() != t.getSecond() && exec.isImplied(t.getFirst(), t.getSecond()))
+                .map(Tuple::getFirst).forEach(possiblyLastWrites::remove);
+
+        for (MemEvent w1 : writes) {
+            if (!possiblyLastWrites.contains(w1)) {
+                enc = bmgr.and(enc, bmgr.equivalence(getLastCoVar(w1, ctx), bmgr.makeFalse()));
+                continue;
+            }
+
+            BooleanFormula lastCo = w1.exec();
+            // ---- Find all possibly overwriting writes ----
+            for (Tuple t : maxSet.getByFirst(w1)) {
+                MemEvent w2 = (MemEvent) t.getSecond();
+                if (possiblyLastWrites.contains(w2)) {
+                    if (minSet.getByFirst(w1).stream().map(Tuple::getSecond).filter(possiblyLastWrites::contains)
+                            .anyMatch(w3 -> w2 != w3 && exec.isImplied(w2, w3))) {
+                        // ... if w2 was executed then so would t2.getSecond. But t2.getSecond already witnesses
+                        // that w1 is not the last write, so we never need to encode w2 as a witness.
+                        continue;
+                    }
+
+                    BooleanFormula isAfter = minSet.contains(t) ? bmgr.not(w2.exec()) : bmgr.not(getSMTVar(t, ctx));
+                    lastCo = bmgr.and(lastCo, isAfter);
+                }
+            }
+
+            BooleanFormula lastCoExpr = getLastCoVar(w1, ctx);
+            enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
+
+            if (doEncodeFinalAddressValues) {
+                for (Event i : initEvents) {
                     Init init = (Init) i;
                     if (!alias.mayAlias(w1, init)) {
                         continue;
                     }
-
                     IExpr address = init.getAddress();
                     Formula a1 = w1.getMemAddressExpr();
-                    Formula a2 = address.toIntFormula(init,ctx);
-                    BooleanFormula sameAddress = generalEqual(a1, a2, ctx); 
+                    Formula a2 = address.toIntFormula(init, ctx);
+                    BooleanFormula sameAddress = alias.mustAlias(init, w1) ? bmgr.makeTrue() : generalEqual(a1, a2, ctx);
                     Formula v1 = w1.getMemValueExpr();
-                    Formula v2 = init.getBase().getLastMemValueExpr(ctx,init.getOffset());
+                    Formula v2 = init.getBase().getLastMemValueExpr(ctx, init.getOffset());
                     BooleanFormula sameValue = generalEqual(v1, v2, ctx);
                     enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
@@ -327,11 +354,11 @@ public class RelCo extends Relation {
 
      */
     private Set<Tuple> findTransitivelyImpliedCo() {
-        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
-        Set<Tuple> transCo = new HashSet<>();
-
+        final ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
         final TupleSet min = getMinTupleSet();
         final TupleSet max = getMaxTupleSet();
+
+        Set<Tuple> transCo = new HashSet<>();
         for (final Tuple t : max) {
             final MemEvent e1 = (MemEvent) t.getFirst();
             final MemEvent e2 = (MemEvent) t.getSecond();
@@ -352,14 +379,12 @@ public class RelCo extends Relation {
         if(!antisymmetry) {
             return super.getSMTVar(edge, ctx);
         }
+		final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 
-    	FormulaManager fmgr = ctx.getFormulaManager();
-		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-
-        MemEvent first = (MemEvent) edge.getFirst();
-        MemEvent second = (MemEvent) edge.getSecond();
+        final MemEvent first = (MemEvent) edge.getFirst();
+        final MemEvent second = (MemEvent) edge.getSecond();
         // Doing the check at the java level seems to slightly improve  performance
-        BooleanFormula eqAdd = first.getAddress().equals(second.getAddress()) ? bmgr.makeTrue() :
+        final BooleanFormula eqAdd = first.getAddress().equals(second.getAddress()) ? bmgr.makeTrue() :
                 generalEqual(first.getMemAddressExpr(), second.getMemAddressExpr(), ctx);
         return !getMaxTupleSet().contains(edge) ? bmgr.makeFalse() :
     		first.getCId() <= second.getCId() ?
@@ -371,6 +396,9 @@ public class RelCo extends Relation {
 
     public IntegerFormula getClockVar(Event write, SolverContext ctx) {
     	Preconditions.checkArgument(write.is(WRITE), "Cannot get a clock-var for non-writes.");
+        if (write.is(INIT)) {
+            return ctx.getFormulaManager().getIntegerFormulaManager().makeNumber(0);
+        }
         return intVar(term, write, ctx);
     }
 

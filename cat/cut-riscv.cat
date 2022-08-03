@@ -1,0 +1,90 @@
+Partial
+
+(***************)
+(* Definitions *)
+(***************)
+
+(*************)
+(* Utilities *)
+(*************)
+
+let fence.r.r = [R];fencerel(Fence.r.r);[R]
+let fence.r.w = [R];fencerel(Fence.r.w);[W]
+let fence.r.rw = [R];fencerel(Fence.r.rw);[M]
+let fence.w.r = [W];fencerel(Fence.w.r);[R]
+let fence.w.w = [W];fencerel(Fence.w.w);[W]
+let fence.w.rw = [W];fencerel(Fence.w.rw);[M]
+let fence.rw.r = [M];fencerel(Fence.rw.r);[R]
+let fence.rw.w = [M];fencerel(Fence.rw.w);[W]
+let fence.rw.rw = [M];fencerel(Fence.rw.rw);[M]
+let fence.tso = ([W];fencerel(Fence.tso);[W]) | ([R];fencerel(Fence.tso);[M])
+
+let fence = 
+  fence.r.r | fence.r.w | fence.r.rw |
+  fence.w.r | fence.w.w | fence.w.rw |
+  fence.rw.r | fence.rw.w | fence.rw.rw |
+  fence.tso
+
+
+let po-loc-no-w = po-loc \ (po-loc?;[W];po-loc)
+let rsw = rf^-1;rf
+let AcqRel = AcqRel|Sc (* Compat *)
+let AQ = (Acq|AcqRel)
+let RL = (Rel|AcqRel)
+//let AMO = try AMO with (R & W) (* Compat *)
+let RCsc = (Acq|Rel|AcqRel) & (AMO|X)
+(*************)
+(* ppo rules *)
+(*************)
+
+(* Overlapping-Address Orderings *)
+let r1 = [M];po-loc;[W]
+let r2 = ([R];po-loc-no-w;[R]) \ rsw
+let r3 = [AMO|X];rfi;[R]
+(* Explicit Synchronization *)
+let r4 = fence
+let r5 = [AQ];po;[M]
+let r6 = [M];po;[RL]
+let r7 = [RCsc];po;[RCsc]
+let r8 = rmw
+(* Syntactic Dependencies *)
+let r9 = [M];addr;[M]
+let r10 = [M];data;[W]
+let r11 = [M];ctrl;[W]
+(* Pipeline Dependencies *)
+let r12 = [M];(addr|data);[W];rfi;[R]
+let r13 = [M];addr;[M];po;[W]
+
+let ppo =
+  r1
+| r2
+| r3
+| r4
+| r5
+| r6
+| r7
+| r8
+| r9
+| r10
+| r11
+| r12
+| r13
+
+(* Compute coherence relation *)
+include "cos-opt.cat"
+
+(**********)
+(* Axioms *)
+(**********)
+
+(* Sc per location *)
+acyclic co|rf|fr|po-loc as Coherence
+
+(* Main model axiom *)
+acyclic co|rfe|fr|ppo as Model
+
+(* Atomicity axiom *)
+empty rmw & (fre;coe) as Atomic
+
+(* Forcing fr to be cut *)
+empty(fr \ fr)
