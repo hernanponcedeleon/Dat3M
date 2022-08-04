@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -25,11 +24,8 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.CO_ANTISYMMETRY;
 import static com.dat3m.dartagnan.configuration.Property.LIVENESS;
@@ -100,24 +96,25 @@ public class RelCo extends Relation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
         	logger.info("Computing maxTupleSet for " + getName());
-        	final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
-            final WmmAnalysis wmmAnalysis = analysisContext.get(WmmAnalysis.class);
-            final List<Event> eventsStores = task.getProgram().getCache().getEvents(FilterBasic.get(WRITE));
-            final List<Event> eventsNonInitStores= task.getProgram().getCache().getEvents(FilterMinus.get(
+        	final AliasAnalysis alias = analysisContext.requires(AliasAnalysis.class);
+            final ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+            final WmmAnalysis wmmAnalysis = analysisContext.requires(WmmAnalysis.class);
+            final List<Event> allWrites = task.getProgram().getCache().getEvents(FilterBasic.get(WRITE));
+            final List<Event> nonInitWrites = task.getProgram().getCache().getEvents(FilterMinus.get(
                     FilterBasic.get(WRITE),
                     FilterBasic.get(INIT)
             ));
 
             maxTupleSet = new TupleSet();
-            for (Event w1 : eventsStores) {
-                for (Event w2 : eventsNonInitStores) {
-                    if(w1.getCId() != w2.getCId() && alias.mayAlias((MemEvent) w1, (MemEvent)w2)){
+            for (Event w1 : allWrites) {
+                for (Event w2 : nonInitWrites) {
+                    if(w1.getCId() != w2.getCId() && !exec.areMutuallyExclusive(w1, w2)
+                            && alias.mayAlias((MemEvent) w1, (MemEvent)w2)) {
                         maxTupleSet.add(new Tuple(w1, w2));
                     }
                 }
             }
 
-            removeMutuallyExclusiveTuples(maxTupleSet);
             if (wmmAnalysis.isLocallyConsistent()) {
                 maxTupleSet.removeIf(Tuple::isBackward);
             }
@@ -129,56 +126,51 @@ public class RelCo extends Relation {
 
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
-		final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
+        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
         final EventCache cache = task.getProgram().getCache();
-        final List<MemEvent> writes = Lists.transform(cache.getEvents(FilterBasic.get(WRITE)), MemEvent.class::cast);
+        final List<MemEvent> allWrites = new ArrayList<>(Lists.transform(cache.getEvents(FilterBasic.get(WRITE)), MemEvent.class::cast));
+        allWrites.sort(Comparator.comparingInt(Event::getCId));
         final TupleSet maxSet = getMaxTupleSet();
-        final TupleSet minSet = getMinTupleSet();
+        final Set<Tuple> transCo = findTransitivelyImpliedCo();
+
 
         BooleanFormula enc = bmgr.makeTrue();
-        // Encode clock conditions (init = 0, non-init > 0).
-        for (MemEvent w : writes) {
-            enc = bmgr.and(enc, w.is(INIT)
-                            ? imgr.equal(getClockVar(w, ctx), imgr.makeNumber(BigDecimal.ZERO))
-                            : imgr.greaterThan(getClockVar(w, ctx), imgr.makeNumber(BigInteger.ZERO)));
+        // ---- Encode clock conditions (init = 0, non-init > 0) ----
+        IntegerFormula zero = imgr.makeNumber(0);
+        for (MemEvent w : allWrites) {
+            IntegerFormula clock = getClockVar(w, ctx);
+            enc = bmgr.and(enc, w.is(INIT) ? imgr.equal(clock, zero) : imgr.greaterThan(clock, zero));
         }
 
-        // We find classes of events such that events in different classes
-        // may never alias.
-        // It suffices to generate distinctness constraints per class.
-        final List<Event> eventsStore = cache.getEvents(FilterMinus.get(FilterBasic.get(WRITE), FilterBasic.get(INIT)));
-        final DependencyGraph<Event> aliasGraph = DependencyGraph.from(eventsStore, e ->
-                Stream.concat(
-                        maxSet.getByFirst(e).stream().map(Tuple::getSecond),
-                        maxSet.getBySecond(e).stream().map(Tuple::getFirst)
-                )::iterator
-        );
-        for (Set<DependencyGraph<Event>.Node> aliasClass : aliasGraph.getSCCs()) {
-            List<IntegerFormula> clockVars = aliasClass.stream().map(DependencyGraph.Node::getContent)
-                    .filter(e -> !e.is(INIT)).map(e -> getClockVar(e, ctx)).collect(Collectors.toList());
-            enc = bmgr.and(enc, imgr.distinct(clockVars));
-        }
-
-        final Set<Tuple> transCo = findTransitivelyImpliedCo();
-        for(MemEvent w1 : writes) {
-            for(Tuple t : maxSet.getByFirst(w1)){
-                MemEvent w2 = (MemEvent)t.getSecond();
-                BooleanFormula relation = getSMTVar(t, ctx);
-                BooleanFormula execPair = getExecPair(t, ctx);
-                BooleanFormula sameAddress = generalEqual(w1.getMemAddressExpr(), w2.getMemAddressExpr(), ctx);
-                BooleanFormula clockConstr = (w1.is(INIT) || transCo.contains(t)) ? bmgr.makeTrue()
-                        : imgr.lessThan(getClockVar(w1, ctx), getClockVar(w2, ctx));
-
-                if (minSet.contains(t)) {
-                    enc = bmgr.and(enc, clockConstr, bmgr.equivalence(relation, execPair));
-                } else if (!maxSet.contains(t.getInverse())) {
-                    enc = bmgr.and(enc,
-                            bmgr.equivalence(relation, bmgr.and(execPair, sameAddress)),
-                            bmgr.implication(sameAddress, clockConstr));
-                } else {
-                    enc = bmgr.and(enc, bmgr.equivalence(relation, bmgr.and(execPair, sameAddress, clockConstr)));
+        // ---- Encode coherences ----
+        for (int i = 0; i < allWrites.size() - 1; i++) {
+            MemEvent w1 = allWrites.get(i);
+            for (MemEvent w2 : allWrites.subList(i + 1, allWrites.size())) {
+                Tuple t = new Tuple(w1, w2);
+                boolean forwardPossible = maxSet.contains(t);
+                boolean backwardPossible = maxSet.contains(t.getInverse());
+                if (!forwardPossible && ! backwardPossible) {
+                    continue;
                 }
+
+                BooleanFormula execPair = getExecPair(t, ctx);
+                BooleanFormula sameAddress = alias.mustAlias(w1, w2) ? bmgr.makeTrue() :
+                        generalEqual(w1.getMemAddressExpr(), w2.getMemAddressExpr(), ctx);
+                BooleanFormula pairingCond = bmgr.and(execPair, sameAddress);
+                BooleanFormula fCond = (w1.is(INIT) || transCo.contains(t)) ? bmgr.makeTrue() :
+                        imgr.lessThan(getClockVar(w1, ctx), getClockVar(w2, ctx));
+                BooleanFormula bCond = (w2.is(INIT) || transCo.contains(t.getInverse())) ? bmgr.makeTrue() :
+                        imgr.lessThan(getClockVar(w2, ctx), getClockVar(w1, ctx));
+                BooleanFormula coF = forwardPossible ? getSMTVar(w1, w2, ctx) : bmgr.makeFalse();
+                BooleanFormula coB = backwardPossible ? getSMTVar(w2, w1, ctx) : bmgr.makeFalse();
+
+                enc = bmgr.and(enc,
+                        bmgr.implication(coF, fCond),
+                        bmgr.implication(coB, bCond),
+                        bmgr.equivalence(pairingCond, bmgr.or(coF, coB))
+                );
             }
         }
 
@@ -186,6 +178,7 @@ public class RelCo extends Relation {
         if (doEncodeLastCo) {
             enc = bmgr.and(enc, encodeLastCoConstraints(ctx));
         }
+
         return enc;
     }
 
@@ -195,45 +188,45 @@ public class RelCo extends Relation {
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final TupleSet minSet = getMinTupleSet();
         final TupleSet maxSet = getMaxTupleSet();
-        final List<Event> initEvents = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
-        final List<MemEvent> writes = Lists.transform(task.getProgram().getCache().getEvents(FilterBasic.get(WRITE)), MemEvent.class::cast);
+        final EventCache cache = task.getProgram().getCache();
+        final List<Init> initEvents = Lists.transform(cache.getEvents(FilterBasic.get(INIT)), Init.class::cast);
+        final List<MemEvent> writes = Lists.transform(cache.getEvents(FilterBasic.get(WRITE)), MemEvent.class::cast);
         final boolean doEncodeFinalAddressValues = task.getProgram().getFormat() == LITMUS;
 
-        BooleanFormula enc = bmgr.makeTrue();
-        // Find all writes that can potentially be final writes (i.e. are not guaranteed to get overwritten)
-        Set<MemEvent> possiblyLastWrites = new HashSet<>(writes);
-        minSet.stream().filter(t -> t.getFirst() != t.getSecond() && exec.isImplied(t.getFirst(), t.getSecond()))
-                .map(Tuple::getFirst).forEach(possiblyLastWrites::remove);
+        // Find transitively implied coherences. We can use these to reduce the encoding.
+        final Set<Tuple> transCo = findTransitivelyImpliedCo();
+        // Find all writes that are never last, i.e., those that will always have a co-successor.
+        final Set<Event> dominatedWrites = minSet.stream()
+                .filter(t -> exec.isImplied(t.getFirst(), t.getSecond()))
+                .map(Tuple::getFirst).collect(Collectors.toSet());
 
+
+        // ---- Construct encoding ----
+        BooleanFormula enc = bmgr.makeTrue();
         for (MemEvent w1 : writes) {
-            if (!possiblyLastWrites.contains(w1)) {
+            if (dominatedWrites.contains(w1)) {
                 enc = bmgr.and(enc, bmgr.equivalence(getLastCoVar(w1, ctx), bmgr.makeFalse()));
                 continue;
             }
 
-            BooleanFormula lastCo = w1.exec();
+            BooleanFormula isLast = w1.exec();
             // ---- Find all possibly overwriting writes ----
             for (Tuple t : maxSet.getByFirst(w1)) {
-                MemEvent w2 = (MemEvent) t.getSecond();
-                if (possiblyLastWrites.contains(w2)) {
-                    if (minSet.getByFirst(w1).stream().map(Tuple::getSecond).filter(possiblyLastWrites::contains)
-                            .anyMatch(w3 -> w2 != w3 && exec.isImplied(w2, w3))) {
-                        // ... if w2 was executed then so would t2.getSecond. But t2.getSecond already witnesses
-                        // that w1 is not the last write, so we never need to encode w2 as a witness.
-                        continue;
-                    }
-
-                    BooleanFormula isAfter = minSet.contains(t) ? bmgr.not(w2.exec()) : bmgr.not(getSMTVar(t, ctx));
-                    lastCo = bmgr.and(lastCo, isAfter);
+                if (transCo.contains(t)) {
+                    // We can skip the co-edge (w1,w2), because there will be an intermediate write w3
+                    // that already witnesses that w1 is not last.
+                    continue;
                 }
+                Event w2 = t.getSecond();
+                BooleanFormula isAfter = minSet.contains(t) ? bmgr.not(w2.exec()) : bmgr.not(getSMTVar(t, ctx));
+                isLast = bmgr.and(isLast, isAfter);
             }
-
             BooleanFormula lastCoExpr = getLastCoVar(w1, ctx);
-            enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
+            enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, isLast));
 
             if (doEncodeFinalAddressValues) {
-                for (Event i : initEvents) {
-                    Init init = (Init) i;
+                // ---- Encode final values of addresses ----
+                for (Init init : initEvents) {
                     if (!alias.mayAlias(w1, init)) {
                         continue;
                     }
@@ -248,89 +241,6 @@ public class RelCo extends Relation {
                 }
             }
         }
-        return enc;
-    }
-
-    protected BooleanFormula encodeApproxNew(SolverContext ctx) {
-        AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
-        FormulaManager fmgr = ctx.getFormulaManager();
-        BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-        IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-
-        BooleanFormula enc = bmgr.makeTrue();
-
-        List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
-        List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
-                FilterBasic.get(WRITE),
-                FilterBasic.get(INIT)
-        ));
-
-        for(Event e : eventsInit) {
-            //enc = bmgr.and(enc, imgr.equal(getClockVar(e, ctx), imgr.makeNumber(BigInteger.ZERO)));
-        }
-        for(Event w : eventsStore) {
-            //enc = bmgr.and(enc, imgr.greaterThan(getClockVar(w, ctx), imgr.makeNumber(BigInteger.ZERO)));
-        }
-
-        List<MemEvent> writes = new ArrayList<>(
-                Lists.transform(task.getProgram().getCache().getEvents(FilterBasic.get(WRITE)), e -> (MemEvent)e));
-        writes.sort(Comparator.comparingInt(Event::getCId));
-        final Set<Tuple> transCo = findTransitivelyImpliedCo();
-        final TupleSet maxSet = getMaxTupleSet();
-        final TupleSet minSet = getMinTupleSet();
-
-        for (int i = 0; i < writes.size() - 1; i++) {
-            MemEvent w1 = writes.get(i);
-            for (MemEvent w2 : writes.subList(i + 1, writes.size())) {
-                Tuple t = new Tuple(w1, w2);
-                if (!maxSet.contains(t) && !maxSet.contains(t.getInverse())) {
-                    continue;
-                }
-
-                BooleanFormula coF = getSMTVar(w1, w2, ctx);
-                BooleanFormula coB = getSMTVar(w2, w1, ctx);
-                BooleanFormula execPair = getExecPair(t, ctx);
-                BooleanFormula sameAddress = alias.mustAlias(w1, w2) ? bmgr.makeTrue() :
-                        generalEqual(w1.getMemAddressExpr(), w2.getMemAddressExpr(), ctx);
-                BooleanFormula pairingCond = bmgr.and(execPair, sameAddress);
-                BooleanFormula fCond = (transCo.contains(t)) ? bmgr.makeTrue() :
-                        imgr.lessThan(getClockVar(w1, ctx), getClockVar(w2, ctx));
-                BooleanFormula bCond = (transCo.contains(t.getInverse())) ? bmgr.makeTrue() :
-                        imgr.lessThan(getClockVar(w2, ctx), getClockVar(w1, ctx));
-
-                if (maxSet.contains(t)) {
-                    enc = bmgr.and(enc, bmgr.implication(coF, fCond));
-                }
-                if (maxSet.contains(t.getInverse())) {
-                    enc = bmgr.and(enc, bmgr.implication(coB, bCond));
-                }
-                enc = bmgr.and(enc, bmgr.equivalence(pairingCond, bmgr.or(coF, coB)));
-            }
-        }
-
-        /*
-
-            if (task.getProgram().getFormat().equals(LITMUS) || task.getProperty().contains(LIVENESS)) {
-                BooleanFormula lastCoExpr = getLastCoVar(w1, ctx);
-                enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
-
-                for (Event i : eventsInit) {
-                    Init init = (Init) i;
-                    if (!alias.mayAlias(w1, init)) {
-                        continue;
-                    }
-
-                    IExpr address = init.getAddress();
-                    Formula a1 = w1.getMemAddressExpr();
-                    Formula a2 = address.toIntFormula(init,ctx);
-                    BooleanFormula sameAddress = generalEqual(a1, a2, ctx);
-                    Formula v1 = w1.getMemValueExpr();
-                    Formula v2 = init.getBase().getLastMemValueExpr(ctx,init.getOffset());
-                    BooleanFormula sameValue = generalEqual(v1, v2, ctx);
-                    enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
-                }
-            }
-        }*/
         return enc;
     }
 
