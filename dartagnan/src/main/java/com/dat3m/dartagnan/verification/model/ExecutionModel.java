@@ -11,12 +11,14 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
@@ -24,7 +26,6 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
@@ -481,7 +482,31 @@ public class ExecutionModel {
     }
 
     private void extractCoherences() {
+        Relation co = task.getMemoryModel().getRelationRepository().getRelation(CO);
         for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
+            BigInteger addr = addrWrites.getKey();
+            Set<EventData> writes = addrWrites.getValue();
+
+            Map<EventData, List<EventData>> coEdges = new HashMap<>();
+            for (EventData w1 : writes) {
+                coEdges.put(w1, new ArrayList<>());
+                for (EventData w2 : writes) {
+                    if (Boolean.TRUE.equals(model.evaluate(co.getSMTVar(w1.getEvent(), w2.getEvent(), context)))) {
+                        coEdges.get(w1).add(w2);
+                    }
+                }
+            }
+
+            DependencyGraph<EventData> depGraph = DependencyGraph.from(writes, coEdges);
+            List<EventData> coOrder = new ArrayList<>(Lists.reverse(depGraph.getNodeContents()));
+            int i = 0;
+            for (EventData w : coOrder) {
+                w.setCoherenceIndex(i++);
+            }
+            coherenceMap.put(addr, coOrder);
+        }
+
+        /*for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
             BigInteger addr = addrWrites.getKey();
             Set<EventData> writes = addrWrites.getValue();
             Map<EventData, BigInteger> writeCoIndexMap = new HashMap<>(writes.size() * 4 / 3, 0.75f);
@@ -497,6 +522,6 @@ public class ExecutionModel {
             }
 
             coherenceMap.put(addr, Collections.unmodifiableList(sortedWrites));
-        }
+        }*/
     }
 }

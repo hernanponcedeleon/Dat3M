@@ -21,8 +21,11 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -126,7 +129,7 @@ public class RelCo extends Relation {
 
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
-        final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
+        /*final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
         final EventCache cache = task.getProgram().getCache();
@@ -173,6 +176,73 @@ public class RelCo extends Relation {
                 );
             }
         }
+
+        final boolean doEncodeLastCo = task.getProgram().getFormat().equals(LITMUS) || task.getProperty().contains(LIVENESS);
+        if (doEncodeLastCo) {
+            enc = bmgr.and(enc, encodeLastCoConstraints(ctx));
+        }*/
+
+        BooleanFormula enc = encodeApproxSAT(ctx);
+
+        return enc;
+    }
+
+    protected BooleanFormula encodeApproxSAT(SolverContext ctx) {
+        final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
+        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        final EventCache cache = task.getProgram().getCache();
+        final List<MemEvent> allWrites = new ArrayList<>(Lists.transform(cache.getEvents(FilterBasic.get(WRITE)), MemEvent.class::cast));
+        allWrites.sort(Comparator.comparingInt(Event::getCId));
+        final TupleSet maxSet = getMaxTupleSet();
+        final TupleSet minSet = getMinTupleSet();
+        final Set<Tuple> transCo = findTransitivelyImpliedCo();
+
+
+        BooleanFormula enc = bmgr.makeTrue();
+
+        // ---- Encode coherences ----
+        for (int i = 0; i < allWrites.size() - 1; i++) {
+            MemEvent w1 = allWrites.get(i);
+            for (MemEvent w2 : allWrites.subList(i + 1, allWrites.size())) {
+                Tuple t = new Tuple(w1, w2);
+                boolean forwardPossible = maxSet.contains(t);
+                boolean backwardPossible = maxSet.contains(t.getInverse());
+                if (!forwardPossible && ! backwardPossible) {
+                    continue;
+                }
+
+                BooleanFormula execPair = getExecPair(t, ctx);
+                BooleanFormula sameAddress = alias.mustAlias(w1, w2) ? bmgr.makeTrue() :
+                        generalEqual(w1.getMemAddressExpr(), w2.getMemAddressExpr(), ctx);
+                BooleanFormula pairingCond = bmgr.and(execPair, sameAddress);
+                BooleanFormula coF = forwardPossible ? getSMTVar(w1, w2, ctx) : bmgr.makeFalse();
+                BooleanFormula coB = backwardPossible ? getSMTVar(w2, w1, ctx) : bmgr.makeFalse();
+
+                enc = bmgr.and(enc,
+                        transCo.contains(t) ? bmgr.makeTrue() : bmgr.equivalence(pairingCond, bmgr.or(coF, coB)),
+                        bmgr.or(bmgr.not(coF), bmgr.not(coB))
+                );
+
+                if (!minSet.contains(t)) {
+                    for (MemEvent w3 : allWrites) {
+                        Tuple t1 = new Tuple(w1, w3);
+                        Tuple t2 = new Tuple(w3, w2);
+                        if (forwardPossible && maxSet.contains(t1) && maxSet.contains(t2)) {
+                            BooleanFormula co1 = getSMTVar(w1, w3, ctx);
+                            BooleanFormula co2 = getSMTVar(w3, w2, ctx);
+                            enc = bmgr.and(enc, bmgr.implication(bmgr.and(co1, co2), coF));
+                        }
+                        if (backwardPossible && maxSet.contains(t1.getInverse()) && maxSet.contains(t2.getInverse())) {
+                            BooleanFormula co1 = getSMTVar(w2, w3, ctx);
+                            BooleanFormula co2 = getSMTVar(w3, w1, ctx);
+                            enc = bmgr.and(enc, bmgr.implication(bmgr.and(co1, co2), coB));
+                        }
+                    }
+                }
+            }
+        }
+
+
 
         final boolean doEncodeLastCo = task.getProgram().getFormat().equals(LITMUS) || task.getProperty().contains(LIVENESS);
         if (doEncodeLastCo) {
