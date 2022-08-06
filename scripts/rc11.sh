@@ -3,6 +3,11 @@
 BPL_PATH=$DAT3M_HOME/dartagnan/src/test/resources/
 C_PATH=$DAT3M_HOME/benchmarks/
 TIMEOUT=900
+if [ -z "$1" ]; then
+  SOLVER=z3
+else
+  SOLVER=$1
+fi
 
 DAT3M_FINISHED="Verification finished"
 DAT3M_FAIL="FAIL"
@@ -34,7 +39,7 @@ for METHOD in ${METHODS[@]}; do
     ## Run Dartagnan
     for BENCHMARK in ${BENCHMARKS[@]}; do
         start=`python3 -c 'import time; print(int(time.time() * 1000))'`
-        OUTPUT=$(timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.0.0.jar cat/$CAT --bound=2 --target=c11 --method=$MOPT $BPL_PATH$BENCHMARK.bpl)
+        OUTPUT=$(timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.0.0.jar cat/$CAT --bound=2 --target=c11 --method=$MOPT --solver=$SOLVER $BPL_PATH$BENCHMARK.bpl)
         end=`python3 -c 'import time; print(int(time.time() * 1000))'`
         TIME=$((end-start))
         
