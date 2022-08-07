@@ -27,7 +27,10 @@ RUN apt-get update && \
 RUN cd home && \
     git clone https://github.com/smackers/smack.git && \
     cd smack && \
-    sed -i 's/TEST_SMACK=1/TEST_SMACK=0/' bin/build.sh && \
+    sed -i 's/TEST_SMACK:-1/TEST_SMACK:-0/' bin/build.sh && \
+    sed -i 's/INSTALL_Z3:-1/INSTALL_Z3:-0/' bin/build.sh && \
+    sed -i 's/INSTALL_BOOGIE:-1/INSTALL_BOOGIE:-0/' bin/build.sh && \
+    sed -i 's/INSTALL_CORRAL:-1/INSTALL_CORRAL:-0/' bin/build.sh && \
     bash bin/build.sh
 
 # Install Dat3M
