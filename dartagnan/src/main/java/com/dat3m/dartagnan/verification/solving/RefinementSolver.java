@@ -72,9 +72,10 @@ public class RefinementSolver extends ModelChecker {
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
     //TODO (2): Add possibility for Refinement to handle CAT-properties (it ignores them for now).
-    public static Result run(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
+    public static Result run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
-        return new RefinementSolver(ctx, prover, task).run();
+        RefinementTask t = task instanceof RefinementTask ? (RefinementTask) task : RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task);
+        return new RefinementSolver(ctx, prover, t).run();
     }
 
     private Result run() throws InterruptedException, SolverException, InvalidConfigurationException {

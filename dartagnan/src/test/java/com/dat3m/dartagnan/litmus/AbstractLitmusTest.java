@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
-import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.verification.solving.TwoSolvers;
@@ -149,7 +148,6 @@ public abstract class AbstractLitmusTest {
     //@Test
     @CSVLogger.FileName("csv/refinement")
     public void testRefinement() throws Exception {
-        assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(),
-                RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(taskProvider.get())));
+        assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
     }
 }
