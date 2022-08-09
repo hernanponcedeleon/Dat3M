@@ -5,12 +5,12 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
-import com.dat3m.dartagnan.program.analysis.AliasAnalysis;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -25,15 +25,17 @@ import java.math.BigInteger;
 import java.util.List;
 
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
-import static com.dat3m.dartagnan.configuration.Alias.*;
+import static com.dat3m.dartagnan.configuration.Alias.FIELD_INSENSITIVE;
+import static com.dat3m.dartagnan.configuration.Alias.FIELD_SENSITIVE;
 import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_METHOD;
-import static com.dat3m.dartagnan.expression.IValue.*;
-import static com.dat3m.dartagnan.expression.op.COpBin.*;
-import static com.dat3m.dartagnan.expression.op.IOpBin.*;
+import static com.dat3m.dartagnan.expression.IValue.ONE;
+import static com.dat3m.dartagnan.expression.IValue.ZERO;
+import static com.dat3m.dartagnan.expression.op.COpBin.GT;
+import static com.dat3m.dartagnan.expression.op.COpBin.LT;
+import static com.dat3m.dartagnan.expression.op.IOpBin.MULT;
+import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class AnalysisTest {
 

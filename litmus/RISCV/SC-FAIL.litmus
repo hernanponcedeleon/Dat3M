@@ -1,0 +1,10 @@
+RISCV SC-FAIL
+(* lr and sc are to different addresses, Forbid *)
+{
+0:x2=x; 0:x3=y;
+}
+ P0               ;
+ ori x6,x0,1      ;
+ lr.w x7,0(x2)    ;
+ sc.w x8,x6,0(x3) ;
+forall (y=0 /\ 0:x8=1)

@@ -235,7 +235,16 @@ public class ProgramEncoder implements Encoder {
                     assert writer instanceof RegWriter;
                     BooleanFormula edge;
                     if(state.must.contains(writer)) {
-                        edge = bmgr.and(writer.exec(), reader.cf());
+                        if (exec.isImplied(reader, writer) && reader.cfImpliesExec()) {
+                            // This special case is important. Usually, we encode "dep => regValue = regWriterResult"
+                            // By getting rid of the guard "dep" in this special case, we end up with an unconditional
+                            // "regValue = regWriterResult", which allows the solver to eliminate one of the variables
+                            // in preprocessing.
+                            assert state.may.size() == 1;
+                            edge = bmgr.makeTrue();
+                        } else {
+                            edge = bmgr.and(writer.exec(), reader.cf());
+                        }
                     } else {
                         edge = dependencyEdgeVariable(writer, reader, bmgr);
                         enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.and(writer.exec(), reader.cf(), bmgr.not(overwrite))));
@@ -263,6 +272,11 @@ public class ProgramEncoder implements Encoder {
 
         FormulaManager fmgr = ctx.getFormulaManager();
         BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+
+        if (program.getFormat() == Program.SourceLanguage.BOOGIE) {
+            // Boogie does not have assertions over final register values, so we do not need to encode them.
+            return bmgr.makeTrue();
+        }
 
         BooleanFormula enc = bmgr.makeTrue();
         for(Map.Entry<Register,Dependency.State> e : dep.finalWriters().entrySet()) {

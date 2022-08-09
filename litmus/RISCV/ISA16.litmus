@@ -1,0 +1,17 @@
+RISCV ISA16
+
+{
+uint64_t z;
+uint64_t *p = &z;
+uint64_t x; uint64_t y;
+0:s0=x ; 0:s1=y; 0:s2=p;
+1:s0=x ; 1:s2=p;
+}
+
+ P0           | P1          ;
+ ld t1,0(s0)  | ori t2,x0,1 ;
+ andi t2,t1,8 | ld s1,0(s2) ;
+ add s1,s1,t2 | ld t1,0(s1) ;
+ sd s1,0(s2)  | sd t2,0(s0) ;
+
+~exists 0:t1=1 /\ 1:s1=y

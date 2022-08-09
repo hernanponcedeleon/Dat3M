@@ -1,0 +1,23 @@
+RISCV SB+porlp-addrs+porlp-ctrlfenceis
+"PodWRRlP DpAddrsR FrePRl PodWRRlP DpCtrlFenceIsR FrePRl"
+Cycle=DpAddrsR FrePRl PodWRRlP DpCtrlFenceIsR FrePRl PodWRRlP
+Relax=PodWRRlP
+Safe=Fre DpAddrsR DpCtrlFenceIsR
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=PodWRRlP DpAddrsR FrePRl PodWRRlP DpCtrlFenceIsR FrePRl
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x8=x;
+}
+ P0             | P1             ;
+ ori x5,x0,1    | ori x5,x0,1    ;
+ sw.rl x5,0(x6) | sw.rl x5,0(x6) ;
+ lw x7,0(x8)    | lw x7,0(x8)    ;
+ xor x9,x7,x7   | bne x7,x0,LC00 ;
+ add x11,x8,x9  | LC00:          ;
+ lw x10,0(x11)  | fence.i        ;
+                | lw x9,0(x8)    ;
+exists
+(0:x10=0 /\ 1:x9=0)

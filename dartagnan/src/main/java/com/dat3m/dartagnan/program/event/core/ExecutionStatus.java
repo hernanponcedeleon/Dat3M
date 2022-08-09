@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Formula;
@@ -21,10 +20,12 @@ public class ExecutionStatus extends Event implements RegWriter {
     private final Register register;
     private final Event event;
     private Formula regResultExpr;
+    private final boolean trackDep;
 
-    public ExecutionStatus(Register register, Event event){
+    public ExecutionStatus(Register register, Event event, boolean trackDep){
         this.register = register;
         this.event = event;
+        this.trackDep = trackDep;
         addFilters(Tag.ANY, Tag.LOCAL, Tag.REG_WRITER);
     }
 
@@ -42,6 +43,14 @@ public class ExecutionStatus extends Event implements RegWriter {
     @Override
     public Formula getResultRegisterExpr(){
         return regResultExpr;
+    }
+
+    public Event getStatusEvent(){
+        return event;
+    }
+
+    public boolean doesTrackDep(){
+        return trackDep;
     }
 
     @Override

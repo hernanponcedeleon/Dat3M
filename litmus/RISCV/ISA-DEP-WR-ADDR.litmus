@@ -1,0 +1,15 @@
+RISCV ISA-DEP-WR-ADDR
+(* SC-W to R addr dependency through result register *)
+{
+0:x5=x; 0:x10=y;
+1:x6=y; 1:x9=x;
+}
+ P0               | P1            ;
+ ori x6,x0,1      | ori x5,x0,1   ;
+ lr.w x7,0(x5)    | sw x5,0(x6)   ;
+ sc.w x8,x6,0(x5) | fence rw,rw   ;
+ xor x9,x8,x8     | lw x8,0(x9)  ;
+ add x11,x10,x9   |               ;
+ lw x5,0(x11)     |               ;
+exists
+(x=1 /\ 0:x5=0 /\ 1:x8=0)

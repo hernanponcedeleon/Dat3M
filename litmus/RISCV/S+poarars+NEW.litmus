@@ -1,0 +1,20 @@
+RISCV S+poarars+NEW
+"PodWWARAR RfeARAR PodRWARAR WseARAR"
+Cycle=RfeARAR PodRWARAR WseARAR PodWWARAR
+Relax=AR
+Safe=Rfe Wse PodWW PodRW
+Generator=diy7 (version 7.47+3)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Ws
+Orig=PodWWARAR RfeARAR PodRWARAR WseARAR
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x8=x;
+}
+ P0                         | P1                         ;
+ ori x5,x0,2                | amoor.w.aq.rl x5,x0,(x6)   ;
+ amoswap.w.aq.rl x0,x5,(x6) | ori x7,x0,1                ;
+ ori x7,x0,1                | amoswap.w.aq.rl x0,x7,(x8) ;
+ amoswap.w.aq.rl x0,x7,(x8) |                            ;
+exists
+(x=2 /\ 1:x5=1)

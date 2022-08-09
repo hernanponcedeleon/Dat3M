@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
-
 import java.util.Collection;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.IDD;

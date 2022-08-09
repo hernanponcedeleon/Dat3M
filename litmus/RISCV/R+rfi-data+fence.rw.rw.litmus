@@ -1,0 +1,22 @@
+RISCV R+rfi-data+fence.rw.rw
+"Rfi DpDatadW Wse Fence.rw.rwdWR Fre"
+Cycle=Rfi DpDatadW Wse Fence.rw.rwdWR Fre
+Relax=Rfi
+Safe=Fre Wse Fence.rw.rwdWR DpDatadW
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Ws Fr
+Orig=Rfi DpDatadW Wse Fence.rw.rwdWR Fre
+{
+0:x6=x; 0:x9=y;
+1:x6=y; 1:x8=x;
+}
+ P0           | P1          ;
+ ori x5,x0,1  | ori x5,x0,2 ;
+ sw x5,0(x6)  | sw x5,0(x6) ;
+ lw x7,0(x6)  | fence rw,rw ;
+ xor x8,x7,x7 | lw x7,0(x8) ;
+ ori x8,x8,1  |             ;
+ sw x8,0(x9)  |             ;
+exists
+(y=2 /\ 0:x7=1 /\ 1:x7=0)

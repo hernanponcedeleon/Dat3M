@@ -29,6 +29,11 @@ public class Compilation implements ProgramProcessor {
 
     // =========================== Configurables ===========================
 
+    @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
+            description = "Prints the program after compilation.",
+            secure = true)
+    private boolean print = false;
+
     @Option(name = TARGET,
             description = "The target architecture to which the program shall be compiled to.",
             secure = true,
@@ -49,11 +54,6 @@ public class Compilation implements ProgramProcessor {
             secure = true,
             toUppercase = true)
     private PowerScheme cToPowerScheme = LEADING_SYNC;
-
-    @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
-            description = "Prints the program after compilation.",
-            secure = true)
-    private boolean print = false;
 
     // =====================================================================
 
@@ -95,6 +95,8 @@ public class Compilation implements ProgramProcessor {
                 visitor = new VisitorArm8(useRC11Scheme); break;
             case IMM:
                 visitor = new VisitorIMM(); break;
+            case RISCV:
+                visitor = new VisitorRISCV(useRC11Scheme); break;
             default:
                 throw new UnsupportedOperationException(String.format("Compilation to %s is not supported.", target));
         }

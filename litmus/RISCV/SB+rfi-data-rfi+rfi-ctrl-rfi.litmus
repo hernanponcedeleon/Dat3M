@@ -1,0 +1,24 @@
+RISCV SB+rfi-data-rfi+rfi-ctrl-rfi
+"Rfi DpDatadW Rfi Fre Rfi DpCtrldW Rfi Fre"
+Cycle=Rfi Fre Rfi DpDatadW Rfi Fre Rfi DpCtrldW
+Relax=Rfi
+Safe=Fre DpDatadW DpCtrldW
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=Rfi DpDatadW Rfi Fre Rfi DpCtrldW Rfi Fre
+{
+0:x6=x; 0:x9=y;
+1:x6=y; 1:x9=x;
+}
+ P0           | P1             ;
+ ori x5,x0,2  | ori x5,x0,2    ;
+ sw x5,0(x6)  | sw x5,0(x6)    ;
+ lw x7,0(x6)  | lw x7,0(x6)    ;
+ xor x8,x7,x7 | bne x7,x0,LC00 ;
+ ori x8,x8,1  | LC00:          ;
+ sw x8,0(x9)  | ori x8,x0,1    ;
+ lw x10,0(x9) | sw x8,0(x9)    ;
+              | lw x10,0(x9)   ;
+exists
+(x=2 /\ y=2 /\ 0:x7=2 /\ 0:x10=1 /\ 1:x7=2 /\ 1:x10=1)

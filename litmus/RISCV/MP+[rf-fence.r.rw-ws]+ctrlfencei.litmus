@@ -1,0 +1,22 @@
+RISCV MP+[rf-fence.r.rw-ws]+ctrlfencei
+"RfLeave Fence.r.rwdRW WsBack Rfe DpCtrlFenceIdR Fre"
+Cycle=Rfe DpCtrlFenceIdR Fre RfLeave Fence.r.rwdRW WsBack
+Relax=
+Safe=Rfe Fre Fence.r.rwdRW DpCtrlFenceIdR RfLeave WsBack
+Generator=diy7 (version 7.47+2)
+Prefetch=0:x=F,0:y=W,1:x=F,1:y=W,2:y=F,2:x=T
+Com=Rf Ws Fr
+Orig=RfLeave Fence.r.rwdRW WsBack Rfe DpCtrlFenceIdR Fre
+{
+0:x6=x; 0:x8=y;
+1:x6=x; 1:x8=y;
+2:x6=y; 2:x8=x;
+}
+ P0          | P1          | P2             ;
+ ori x5,x0,1 | lw x5,0(x6) | lw x5,0(x6)    ;
+ sw x5,0(x6) | fence r,rw  | bne x5,x0,LC00 ;
+ ori x7,x0,2 | ori x7,x0,1 | LC00:          ;
+ sw x7,0(x8) | sw x7,0(x8) | fence.i        ;
+             |             | lw x7,0(x8)    ;
+exists
+(y=2 /\ 1:x5=1 /\ 2:x5=2 /\ 2:x7=0)

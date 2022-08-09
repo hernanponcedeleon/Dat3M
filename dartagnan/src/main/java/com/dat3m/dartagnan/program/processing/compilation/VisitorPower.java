@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory.Power;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -127,7 +128,7 @@ public class VisitorPower extends VisitorBase implements EventVisitor<List<Event
 
         // Power does not have mo tags, thus we use null
         Load loadValue = newRMWLoadExclusive(regValue, address, null);
-        Store storeValue = newRMWStoreExclusive(address, value, null, e.is(STRONG));
+        Store storeValue = Power.newRMWStoreConditional(address, value, null, e.is(STRONG));
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
         if (!e.is(STRONG)) {
@@ -192,7 +193,7 @@ public class VisitorPower extends VisitorBase implements EventVisitor<List<Event
 
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(resultRegister, address, null);
-        Store store = newRMWStoreExclusive(address, dummyReg, null, true);
+        Store store = Power.newRMWStoreConditional(address, dummyReg, null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -330,7 +331,7 @@ public class VisitorPower extends VisitorBase implements EventVisitor<List<Event
 
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(resultRegister, address, null);
-        Store store = newRMWStoreExclusive(address, value, null, true);
+        Store store = Power.newRMWStoreConditional(address, value, null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -382,7 +383,7 @@ public class VisitorPower extends VisitorBase implements EventVisitor<List<Event
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
         Load load = newRMWLoadExclusive(regValue, address, null);
-        Store store = newRMWStoreExclusive(address, value, null, true);
+        Store store = Power.newRMWStoreConditional(address, value, null, true);
 
         Fence optionalBarrierBefore = null;
         Fence optionalBarrierAfter = null;
@@ -466,12 +467,19 @@ public class VisitorPower extends VisitorBase implements EventVisitor<List<Event
 	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
 	@Override
 	public List<Event> visitLKMMFence(LKMMFence e) {
-		String mo = e.getName();
-        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_MB) 
-        		|| mo.equals(Tag.Linux.MO_WMB) || mo.equals(Tag.Linux.MO_RMB)
-        		|| mo.equals(Tag.Linux.BEFORE_ATOMIC) || mo.equals(Tag.Linux.AFTER_ATOMIC) ?
-        		Power.newSyncBarrier() : null;
-        
+		Fence optionalMemoryBarrier;
+		switch(e.getName()) {
+			case Tag.Linux.MO_MB:
+			case Tag.Linux.MO_RMB:
+			case Tag.Linux.MO_WMB:
+			case Tag.Linux.BEFORE_ATOMIC:
+			case Tag.Linux.AFTER_ATOMIC:
+				optionalMemoryBarrier = Power.newSyncBarrier();
+				break;
+			default:
+				throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
+		}
+		
         return eventSequence(
                 optionalMemoryBarrier
         );
@@ -518,7 +526,7 @@ public class VisitorPower extends VisitorBase implements EventVisitor<List<Event
 
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(dummy, address, null);
-        Store store = newRMWStoreExclusive(address, value, null, true);
+        Store store = Power.newRMWStoreConditional(address, value, null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -551,7 +559,7 @@ public class VisitorPower extends VisitorBase implements EventVisitor<List<Event
 		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(dummy, address, null);
-        Store store = newRMWStoreExclusive(address, value, null, true);
+        Store store = Power.newRMWStoreConditional(address, value, null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -582,7 +590,7 @@ public class VisitorPower extends VisitorBase implements EventVisitor<List<Event
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(dummy, address, null);
-        Store store = newRMWStoreExclusive(address, new IExprBin(dummy, op, value), null, true);
+        Store store = Power.newRMWStoreConditional(address, new IExprBin(dummy, op, value), null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -613,7 +621,7 @@ public class VisitorPower extends VisitorBase implements EventVisitor<List<Event
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(dummy, address, null);
-        Store store = newRMWStoreExclusive(address, dummy, null, true);
+        Store store = Power.newRMWStoreConditional(address, dummy, null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -644,7 +652,7 @@ public class VisitorPower extends VisitorBase implements EventVisitor<List<Event
 		
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
 		Load load = newRMWLoadExclusive(dummy, address, null);
-        Store store = newRMWStoreExclusive(address, new IExprBin(dummy, e.getOp(), value), null, true);
+        Store store = Power.newRMWStoreConditional(address, new IExprBin(dummy, e.getOp(), value), null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -680,7 +688,7 @@ public class VisitorPower extends VisitorBase implements EventVisitor<List<Event
         Register regValue = e.getThread().newRegister(precision);
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(regValue, address, null);
-        Store store = newRMWStoreExclusive(address, new IExprBin(regValue, IOpBin.PLUS, (IExpr) value), null, true);
+        Store store = Power.newRMWStoreConditional(address, new IExprBin(regValue, IOpBin.PLUS, (IExpr) value), null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
@@ -728,7 +736,7 @@ public class VisitorPower extends VisitorBase implements EventVisitor<List<Event
 
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(dummy, address, null);
-        Store store = newRMWStoreExclusive(address, retReg, null, true);
+        Store store = Power.newRMWStoreConditional(address, retReg, null, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 

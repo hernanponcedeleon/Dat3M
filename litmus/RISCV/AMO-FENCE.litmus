@@ -1,0 +1,21 @@
+RISCV AMO-FENCE
+
+(* 
+  Variation on LR-SC-NOT-FENCE
+  AMO with aq.rl qualifier does suffice to implement x86 locked
+  instructions (which have implied fences).
+*)
+
+{
+0:x6=a; 0:x8=b; 0:x10=c;
+1:x6=b; 1:x8=a; 1:x10=d;
+}
+
+ P0                           | P1                           ;
+ ori x5,x0,1                  | ori x5,x0,1                  ;
+ sw x5,0(x6)                  | sw x5,0(x6)                  ;
+ amoswap.w.aq.rl x0,x1,0(x10) | amoswap.w.aq.rl x0,x1,0(x10) ;
+ lw x7,0(x8)                  | lw x7,0(x8)                  ;
+
+~exists (0:x7=0 /\ 1:x7=0)
+

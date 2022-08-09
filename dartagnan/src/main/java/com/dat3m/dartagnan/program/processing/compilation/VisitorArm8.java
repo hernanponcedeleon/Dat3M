@@ -8,9 +8,9 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.EventFactory.AArch64;
 import com.dat3m.dartagnan.program.event.Tag.ARMv8;
 import com.dat3m.dartagnan.program.event.Tag.C11;
-import com.dat3m.dartagnan.program.event.arch.aarch64.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.LKMMFence;
 import com.dat3m.dartagnan.program.event.lang.linux.LKMMLoad;
@@ -306,8 +306,7 @@ class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
 				optionalMemoryBarrier = AArch64.DMB.newISHBarrier();
 				break;
 			default:
-				optionalMemoryBarrier = null;
-				break;
+				throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
 		}
 
 		return eventSequence(

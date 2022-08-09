@@ -1,0 +1,16 @@
+RISCV ISA18
+
+{
+int z;
+int *p = &z;
+0:s0=x; 0:s1=p; 0:s2=y;
+1:s0=x; 1:s1=p;
+}
+
+  P0          | P1          ;
+  li t1,1     | ld s2,0(s1) ;
+  sw t1,0(s0) | lw t1,0(s2) ;
+  fence w,w   | fence.i     ;
+  sd s2,0(s1) | lw t1,0(s0) ;
+
+~exists (1:s2=y /\ 1:t1=0)

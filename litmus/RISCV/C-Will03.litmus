@@ -1,0 +1,13 @@
+RISCV C-Will03
+(* A la RISCV compilation of C-Will03 (heading sync), too weak *)
+{
+0:a0=x; 0:a1=y;
+1:a0=x; 1:a1=y;
+}
+ P0                       | P1          ;
+ fence rw,rw              | li t0,1     ;
+ li t0,1                  | sw t0,0(a0) ;
+ amoadd.w.aq t3,t0,(a1)   | fence rw,rw ;
+ lw t2,0(a0)              | lw t2,0(a1) ;
+
+exists (0:t2=0 /\ 1:t2=0)

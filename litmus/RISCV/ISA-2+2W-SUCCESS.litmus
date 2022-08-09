@@ -1,0 +1,16 @@
+RISCV ISA-2+2W-SUCCESS
+
+{
+0:x8=x; 0:x9=y;
+1:x8=x; 1:x9=y;
+}
+
+  P0             |  P1              ;
+li x2,3          | li x2,3          ;
+lr.w x1,0(x8)    | lr.w x1,0(x9)    ;
+sc.w x3,x2,0(x8) | sc.w x3,x2,0(x9) ;
+ori x4,x3,1      | ori x4,x3,1      ;
+sw x4,0(x9)      | sw x4,0(x8)      ;
+
+locations [0:x1;1:x1;0:x3;1:x3;x;y;]
+exists  (0:x1 = 1 /\ 1:x1=1 /\ x=3 /\ y=3)
