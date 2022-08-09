@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.verification.solving;
 
+import com.dat3m.dartagnan.configuration.Baseline;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.encoding.PropertyEncoder;
 import com.dat3m.dartagnan.encoding.SymmetryEncoder;
@@ -14,36 +15,45 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.axiom.Acyclic;
+import com.dat3m.dartagnan.wmm.axiom.Empty;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelSetIdentity;
+import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
+import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
 import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
+import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
+import static com.dat3m.dartagnan.configuration.OptionNames.BASELINE;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONCLUSIVE;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 /*
     Refinement is a custom solving procedure that starts from a weak memory model (possibly the empty model)
@@ -55,15 +65,26 @@ import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.g
         - Refines the used memory model if the found execution was inconsistent, using the explanations
           provided by the theory solver.
  */
+@Options
 public class RefinementSolver extends ModelChecker {
 
     private static final Logger logger = LogManager.getLogger(RefinementSolver.class);
 
     private final SolverContext ctx;
     private final ProverEnvironment prover;
-    private final RefinementTask task;
+    private final VerificationTask task;
 
-    private RefinementSolver(SolverContext c, ProverEnvironment p, RefinementTask t) {
+    // =========================== Configurables ===========================
+
+    @Option(name=BASELINE,
+            description="Refinement starts from this baseline WMM.",
+            secure=true,
+            toUppercase=true)
+    private EnumSet<Baseline> baselines = EnumSet.noneOf(Baseline.class);
+
+    // ======================================================================
+
+    private RefinementSolver(SolverContext c, ProverEnvironment p, VerificationTask t) {
         ctx = c;
         prover = p;
         task = t;
@@ -74,15 +95,17 @@ public class RefinementSolver extends ModelChecker {
     //TODO (2): Add possibility for Refinement to handle CAT-properties (it ignores them for now).
     public static Result run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
-        RefinementTask t = task instanceof RefinementTask ? (RefinementTask) task : RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task);
-        return new RefinementSolver(ctx, prover, t).run();
+        RefinementSolver solver = new RefinementSolver(ctx, prover, task);
+        task.getConfig().inject(solver);
+        logger.info("{}: {}", BASELINE, solver.baselines);
+        return solver.run();
     }
 
     private Result run() throws InterruptedException, SolverException, InvalidConfigurationException {
 
         Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
-        Wmm baselineModel = task.getBaselineModel();
+        Wmm baselineModel = createDefaultWmm();
         Context analysisContext = Context.create();
         Configuration config = task.getConfig();
 
@@ -109,7 +132,7 @@ public class RefinementSolver extends ModelChecker {
         BooleanFormula globalRefinement = bmgr.makeTrue();
 
         WMMSolver solver = new WMMSolver(task, analysisContext, cutRelations);
-        Refiner refiner = new Refiner(task, analysisContext);
+        Refiner refiner = new Refiner(memoryModel, analysisContext);
         CAATSolver.Status status = INCONSISTENT;
 
         BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
@@ -408,5 +431,49 @@ public class RefinementSolver extends ModelChecker {
         generateGraphvizFile(model, iterationCount, edgeFilter, directoryName, fileNameBase);
         // File with all edges
         generateGraphvizFile(model, iterationCount, (x,y) -> true, directoryName, fileNameBase + "-full");
+    }
+
+    private Wmm createDefaultWmm() {
+        Wmm baseline = new Wmm();
+        RelationRepository repo = baseline.getRelationRepository();
+        Relation rf = repo.getRelation(RF);
+        if(baselines.contains(Baseline.UNIPROC)) {
+            // ---- acyclic(po-loc | rf) ----
+            Relation poloc = repo.getRelation(POLOC);
+            Relation co = repo.getRelation(CO);
+            Relation fr = repo.getRelation(FR);
+            Relation porf = new RelUnion(poloc, rf);
+            repo.addRelation(porf);
+            Relation porfco = new RelUnion(porf, co);
+            repo.addRelation(porfco);
+            Relation porfcofr = new RelUnion(porfco, fr);
+            repo.addRelation(porfcofr);
+            baseline.addAxiom(new Acyclic(porfcofr));
+        }
+        if(baselines.contains(Baseline.NO_OOTA)) {
+            // ---- acyclic (dep | rf) ----
+            Relation data = repo.getRelation(DATA);
+            Relation ctrl = repo.getRelation(CTRL);
+            Relation addr = repo.getRelation(ADDR);
+            Relation dep = new RelUnion(data, addr);
+            repo.addRelation(dep);
+            dep = new RelUnion(ctrl, dep);
+            repo.addRelation(dep);
+            Relation hb = new RelUnion(dep, rf);
+            repo.addRelation(hb);
+            baseline.addAxiom(new Acyclic(hb));
+        }
+        if(baselines.contains(Baseline.ATOMIC_RMW)) {
+            // ---- empty (rmw & fre;coe) ----
+            Relation rmw = repo.getRelation(RMW);
+            Relation coe = repo.getRelation(COE);
+            Relation fre = repo.getRelation(FRE);
+            Relation frecoe = new RelComposition(fre, coe);
+            repo.addRelation(frecoe);
+            Relation rmwANDfrecoe = new RelIntersection(rmw, frecoe);
+            repo.addRelation(rmwANDfrecoe);
+            baseline.addAxiom(new Empty(rmwANDfrecoe));
+        }
+        return baseline;
     }
 }
