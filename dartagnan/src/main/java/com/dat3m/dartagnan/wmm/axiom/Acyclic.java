@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.dat3m.dartagnan.wmm.utils.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.*;
@@ -16,6 +15,7 @@ import org.sosy_lab.java_smt.api.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 import static com.dat3m.dartagnan.wmm.utils.Utils.cycleVar;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
@@ -165,14 +165,15 @@ public class Acyclic extends Axiom {
             // A cycle exists if there is an event in the cycle.
             enc = bmgr.and(enc, eventsInCycle);
         } else {
-            for(Tuple tuple : rel.getEncodeTupleSet()){
+            /*for(Tuple tuple : rel.getEncodeTupleSet()){
                 Event e1 = tuple.getFirst();
                 Event e2 = tuple.getSecond();
     			enc = bmgr.and(enc, bmgr.implication(rel.getSMTVar(tuple, ctx), 
     									imgr.lessThan(
     											Utils.intVar(rel.getName(), e1, ctx), 
     											Utils.intVar(rel.getName(), e2, ctx))));
-            }        	
+            }*/
+            enc = consistentSAT(ctx);
         }        
         return enc;
     }
@@ -183,8 +184,108 @@ public class Acyclic extends Axiom {
     }
 
     private BooleanFormula getSMTCycleVar(Tuple edge, SolverContext ctx) {
-        return !rel.getMaxTupleSet().contains(edge) ?
-                ctx.getFormulaManager().getBooleanFormulaManager().makeFalse() :
-                edge(getName() + "-cycle", edge.getFirst(), edge.getSecond(), ctx);
+        return edge(getName() + "-cycle", edge.getFirst(), edge.getSecond(), ctx);
+    }
+
+
+
+    private BooleanFormula consistentSAT(SolverContext ctx) {
+        // We use a vertex-elimination graph based encoding.
+        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        final Set<Tuple> edgeSet = rel.getEncodeTupleSet();
+
+        // Build original graph G
+        Map<Event, Set<Tuple>> inEdges = new HashMap<>();
+        Map<Event, Set<Tuple>> outEdges = new HashMap<>();
+        Set<Event> nodes = new HashSet<>();
+        for (final Tuple t : rel.getEncodeTupleSet()) {
+            final Event e1 = t.getFirst();
+            final Event e2 = t.getSecond();
+            nodes.add(e1);
+            nodes.add(e2);
+            outEdges.computeIfAbsent(e1, key -> new HashSet<>()).add(t);
+            inEdges.computeIfAbsent(e2, key -> new HashSet<>()).add(t);
+        }
+
+
+        // Build vertex elimination graph G*, by iteratively modifying G
+        Map<Event, Set<Tuple>> inEdgesNew = new HashMap<>();
+        Map<Event, Set<Tuple>> outEdgesNew = new HashMap<>();
+        for (Event e : nodes) {
+            inEdgesNew.put(e, new HashSet<>(inEdges.get(e)));
+            outEdgesNew.put(e, new HashSet<>(outEdges.get(e)));
+        }
+        List<Event[]> triangles = new ArrayList<>();
+
+        // Build variable elimination ordering
+        List<Event> varOrderings = new ArrayList<>(); // We should order this
+        while (!nodes.isEmpty()) {
+            // Find best vertex e
+            Event e = nodes.stream().min(Comparator.comparingInt(ev -> inEdgesNew.get(ev).size() * outEdgesNew.get(ev).size())).get();
+            varOrderings.add(e);
+            nodes.remove(e);
+            // Eliminate e
+            Set<Tuple> in = new HashSet<>(inEdges.get(e));
+            Set<Tuple> out = new HashSet<>(outEdges.get(e));
+            inEdges.remove(e);
+            outEdges.remove(e);
+            in.forEach(t -> outEdges.get(t.getFirst()).remove(t));
+            out.forEach(t -> inEdges.get(t.getSecond()).remove(t));
+            // Create new edges
+            for (Tuple t1 : in) {
+                if (t1.isLoop()) {
+                    continue;
+                }
+                Event e1 = t1.getFirst();
+                for (Tuple t2 : out) {
+                    Event e2 = t2.getSecond();
+                    if (e2 == e1 || t2.isLoop()) {
+                        continue;
+                    }
+                    Tuple t = new Tuple(e1, e2);
+                    // Updates
+                    outEdges.get(e1).add(t);
+                    outEdgesNew.get(e1).add(t);
+                    inEdges.get(e2).add(t);
+                    inEdgesNew.get(e2).add(t);
+                    triangles.add(new Event[]{e1, e, e2});
+                }
+            }
+        }
+
+        // Create encoding
+        final Set<Tuple> minSet = rel.getMinTupleSet();
+        final ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+        BooleanFormula enc = bmgr.makeTrue();
+        for (Tuple t : edgeSet) {
+            BooleanFormula cond = minSet.contains(t) ? execution(t.getFirst(), t.getSecond(), exec, ctx) : rel.getSMTVar(t, ctx);
+            enc = bmgr.and(enc, bmgr.implication(cond, getSMTCycleVar(t, ctx)));
+        }
+
+        // Encode inconsistent assignments
+        for (int i = 0; i < varOrderings.size(); i++) {
+            Set<Tuple> out = outEdgesNew.get(varOrderings.get(i));
+            for (Tuple t : out) {
+                if (varOrderings.indexOf(t.getSecond()) > i && inEdgesNew.get(t.getSecond()).contains(t)) {
+                    BooleanFormula cond = minSet.contains(t) ? bmgr.makeTrue() : getSMTCycleVar(t, ctx);
+                    enc = bmgr.and(enc, bmgr.implication(cond, bmgr.not(getSMTCycleVar(t.getInverse(), ctx))));
+                }
+            }
+        }
+
+        // Encode triangles
+        for (Event[] tri : triangles) {
+            Tuple t1 = new Tuple(tri[0], tri[1]);
+            Tuple t2 = new Tuple(tri[1], tri[2]);
+            Tuple t3 = new Tuple(tri[0], tri[2]);
+
+            BooleanFormula cond = minSet.contains(t3) ?
+                    execution(t3.getFirst(), t3.getSecond(), exec, ctx)
+                    : bmgr.and(getSMTCycleVar(t1, ctx), getSMTCycleVar(t2, ctx));
+
+                enc = bmgr.and(enc, bmgr.implication(cond, getSMTCycleVar(t3, ctx)));
+        }
+
+        return enc;
     }
 }
