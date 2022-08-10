@@ -225,8 +225,8 @@ public class Acyclic extends Axiom {
             varOrderings.add(e);
             nodes.remove(e);
             // Eliminate e
-            Set<Tuple> in = new HashSet<>(inEdges.get(e));
-            Set<Tuple> out = new HashSet<>(outEdges.get(e));
+            Set<Tuple> in = inEdges.get(e);
+            Set<Tuple> out = outEdges.get(e);
             inEdges.remove(e);
             outEdges.remove(e);
             in.forEach(t -> outEdges.get(t.getFirst()).remove(t));
