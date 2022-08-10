@@ -198,82 +198,74 @@ public class Acyclic extends Axiom {
         Map<Event, Set<Tuple>> inEdges = new HashMap<>();
         Map<Event, Set<Tuple>> outEdges = new HashMap<>();
         Set<Event> nodes = new HashSet<>();
+        Set<Event> selfloops = new HashSet<>();         // Special treatment for self-loops
         for (final Tuple t : rel.getEncodeTupleSet()) {
             final Event e1 = t.getFirst();
             final Event e2 = t.getSecond();
-            nodes.add(e1);
-            nodes.add(e2);
-            outEdges.computeIfAbsent(e1, key -> new HashSet<>()).add(t);
-            inEdges.computeIfAbsent(e2, key -> new HashSet<>()).add(t);
+            if (t.isLoop()) {
+                selfloops.add(e1);
+            } else {
+                nodes.add(e1);
+                nodes.add(e2);
+                outEdges.computeIfAbsent(e1, key -> new HashSet<>()).add(t);
+                inEdges.computeIfAbsent(e2, key -> new HashSet<>()).add(t);
+            }
         }
 
-
         // Build vertex elimination graph G*, by iteratively modifying G
-        Map<Event, Set<Tuple>> inEdgesNew = new HashMap<>();
-        Map<Event, Set<Tuple>> outEdgesNew = new HashMap<>();
+        Map<Event, Set<Tuple>> vertEleInEdges = new HashMap<>();
+        Map<Event, Set<Tuple>> vertEleOutEdges = new HashMap<>();
         for (Event e : nodes) {
-            inEdgesNew.put(e, new HashSet<>(inEdges.get(e)));
-            outEdgesNew.put(e, new HashSet<>(outEdges.get(e)));
+            vertEleInEdges.put(e, new HashSet<>(inEdges.get(e)));
+            vertEleOutEdges.put(e, new HashSet<>(outEdges.get(e)));
         }
         List<Event[]> triangles = new ArrayList<>();
 
         // Build variable elimination ordering
         List<Event> varOrderings = new ArrayList<>(); // We should order this
         while (!nodes.isEmpty()) {
-            // Find best vertex e
-            Event e = nodes.stream().min(Comparator.comparingInt(ev -> inEdgesNew.get(ev).size() * outEdgesNew.get(ev).size())).get();
+            // Find best vertex e to eliminate
+            final Event e = nodes.stream().min(Comparator.comparingInt(ev -> vertEleInEdges.get(ev).size() * vertEleOutEdges.get(ev).size())).get();
             varOrderings.add(e);
-            nodes.remove(e);
+
             // Eliminate e
-            Set<Tuple> in = inEdges.get(e);
-            Set<Tuple> out = outEdges.get(e);
-            inEdges.remove(e);
-            outEdges.remove(e);
+            nodes.remove(e);
+            final Set<Tuple> in = inEdges.remove(e);
+            final Set<Tuple> out = outEdges.remove(e);
             in.forEach(t -> outEdges.get(t.getFirst()).remove(t));
             out.forEach(t -> inEdges.get(t.getSecond()).remove(t));
-            // Create new edges
+            // Create new edges due to elimination of e
             for (Tuple t1 : in) {
-                if (t1.isLoop()) {
-                    continue;
-                }
                 Event e1 = t1.getFirst();
                 for (Tuple t2 : out) {
                     Event e2 = t2.getSecond();
-                    if (e2 == e1 || t2.isLoop()) {
+                    if (e2 == e1) {
                         continue;
                     }
                     Tuple t = new Tuple(e1, e2);
-                    // Updates
-                    outEdges.get(e1).add(t);
-                    outEdgesNew.get(e1).add(t);
+                    // Update next graph in the elimination sequence
                     inEdges.get(e2).add(t);
-                    inEdgesNew.get(e2).add(t);
+                    outEdges.get(e1).add(t);
+                    // Update vertex elimination graph
+                    vertEleOutEdges.get(e1).add(t);
+                    vertEleInEdges.get(e2).add(t);
+                    // Store constructed triangle
                     triangles.add(new Event[]{e1, e, e2});
                 }
             }
         }
 
-        // Create encoding
+        // --- Create encoding ---
         final Set<Tuple> minSet = rel.getMinTupleSet();
         final ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
         BooleanFormula enc = bmgr.makeTrue();
+        // Basic lifting
         for (Tuple t : edgeSet) {
             BooleanFormula cond = minSet.contains(t) ? execution(t.getFirst(), t.getSecond(), exec, ctx) : rel.getSMTVar(t, ctx);
             enc = bmgr.and(enc, bmgr.implication(cond, getSMTCycleVar(t, ctx)));
         }
 
-        // Encode inconsistent assignments
-        for (int i = 0; i < varOrderings.size(); i++) {
-            Set<Tuple> out = outEdgesNew.get(varOrderings.get(i));
-            for (Tuple t : out) {
-                if (varOrderings.indexOf(t.getSecond()) > i && inEdgesNew.get(t.getSecond()).contains(t)) {
-                    BooleanFormula cond = minSet.contains(t) ? bmgr.makeTrue() : getSMTCycleVar(t, ctx);
-                    enc = bmgr.and(enc, bmgr.implication(cond, bmgr.not(getSMTCycleVar(t.getInverse(), ctx))));
-                }
-            }
-        }
-
-        // Encode triangles
+        // Encode triangle rules
         for (Event[] tri : triangles) {
             Tuple t1 = new Tuple(tri[0], tri[1]);
             Tuple t2 = new Tuple(tri[1], tri[2]);
@@ -283,7 +275,23 @@ public class Acyclic extends Axiom {
                     execution(t3.getFirst(), t3.getSecond(), exec, ctx)
                     : bmgr.and(getSMTCycleVar(t1, ctx), getSMTCycleVar(t2, ctx));
 
-                enc = bmgr.and(enc, bmgr.implication(cond, getSMTCycleVar(t3, ctx)));
+            enc = bmgr.and(enc, bmgr.implication(cond, getSMTCycleVar(t3, ctx)));
+        }
+
+        //  --- Encode inconsistent assignments ---
+        // Handle self-loops
+        for (Event e : selfloops) {
+            enc = bmgr.and(enc, bmgr.not(rel.getSMTVar(e, e, ctx)));
+        }
+        // Handle remaining cycles
+        for (int i = 0; i < varOrderings.size(); i++) {
+            Set<Tuple> out = vertEleOutEdges.get(varOrderings.get(i));
+            for (Tuple t : out) {
+                if (varOrderings.indexOf(t.getSecond()) > i && vertEleInEdges.get(t.getSecond()).contains(t)) {
+                    BooleanFormula cond = minSet.contains(t) ? bmgr.makeTrue() : getSMTCycleVar(t, ctx);
+                    enc = bmgr.and(enc, bmgr.implication(cond, bmgr.not(getSMTCycleVar(t.getInverse(), ctx))));
+                }
+            }
         }
 
         return enc;
