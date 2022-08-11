@@ -212,6 +212,12 @@ public class Acyclic extends Axiom {
             }
         }
 
+        // Handle corner-cases where some node has no ingoing or outgoing edges
+        for (Event node : nodes) {
+            outEdges.putIfAbsent(node, new HashSet<>());
+            inEdges.putIfAbsent(node, new HashSet<>());
+        }
+
         // Build vertex elimination graph G*, by iteratively modifying G
         Map<Event, Set<Tuple>> vertEleInEdges = new HashMap<>();
         Map<Event, Set<Tuple>> vertEleOutEdges = new HashMap<>();
