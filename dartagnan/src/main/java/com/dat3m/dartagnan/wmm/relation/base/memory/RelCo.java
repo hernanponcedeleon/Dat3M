@@ -21,23 +21,19 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.CO_ANTISYMMETRY;
+import static com.dat3m.dartagnan.configuration.OptionNames.IDL_TO_SAT;
 import static com.dat3m.dartagnan.configuration.Property.LIVENESS;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
@@ -48,11 +44,11 @@ public class RelCo extends Relation {
 
     // =========================== Configurables ===========================
 
-	@Option(
-		name=CO_ANTISYMMETRY,
-		description="Encodes the antisymmetry of coherences explicitly.",
-		secure=true)
-	private boolean antisymmetry = false;
+    @Option(
+            name=IDL_TO_SAT,
+            description = "Use SAT-based encoding for totality and acyclicity.",
+            secure = true)
+    private boolean useSATEncoding = false;
 
 	// =====================================================================
 
@@ -66,7 +62,6 @@ public class RelCo extends Relation {
         super.initializeEncoding(ctx);
         try {
             task.getConfig().inject(this);
-            logger.info("{}: {}", CO_ANTISYMMETRY, antisymmetry);
         } catch(InvalidConfigurationException e) {
             logger.warn(e.getMessage());
         }
@@ -129,7 +124,19 @@ public class RelCo extends Relation {
 
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
-        /*final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
+        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        final boolean doEncodeLastCo = task.getProgram().getFormat().equals(LITMUS) || task.getProperty().contains(LIVENESS);
+
+        BooleanFormula enc = useSATEncoding ? encodeSAT(ctx) : encodeIDL(ctx);
+        if (doEncodeLastCo) {
+            enc = bmgr.and(enc, encodeLastCoConstraints(ctx));
+        }
+
+        return enc;
+    }
+
+    private BooleanFormula encodeIDL(SolverContext ctx) {
+        final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
         final EventCache cache = task.getProgram().getCache();
@@ -137,7 +144,6 @@ public class RelCo extends Relation {
         allWrites.sort(Comparator.comparingInt(Event::getCId));
         final TupleSet maxSet = getMaxTupleSet();
         final Set<Tuple> transCo = findTransitivelyImpliedCo();
-
 
         BooleanFormula enc = bmgr.makeTrue();
         // ---- Encode clock conditions (init = 0, non-init > 0) ----
@@ -177,17 +183,10 @@ public class RelCo extends Relation {
             }
         }
 
-        final boolean doEncodeLastCo = task.getProgram().getFormat().equals(LITMUS) || task.getProperty().contains(LIVENESS);
-        if (doEncodeLastCo) {
-            enc = bmgr.and(enc, encodeLastCoConstraints(ctx));
-        }*/
-
-        BooleanFormula enc = encodeApproxSAT(ctx);
-
         return enc;
     }
 
-    protected BooleanFormula encodeApproxSAT(SolverContext ctx) {
+    protected BooleanFormula encodeSAT(SolverContext ctx) {
         final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final EventCache cache = task.getProgram().getCache();
@@ -197,9 +196,7 @@ public class RelCo extends Relation {
         final TupleSet minSet = getMinTupleSet();
         final Set<Tuple> transCo = findTransitivelyImpliedCo();
 
-
         BooleanFormula enc = bmgr.makeTrue();
-
         // ---- Encode coherences ----
         for (int i = 0; i < allWrites.size() - 1; i++) {
             MemEvent w1 = allWrites.get(i);
@@ -240,13 +237,6 @@ public class RelCo extends Relation {
                     }
                 }
             }
-        }
-
-
-
-        final boolean doEncodeLastCo = task.getProgram().getFormat().equals(LITMUS) || task.getProperty().contains(LIVENESS);
-        if (doEncodeLastCo) {
-            enc = bmgr.and(enc, encodeLastCoConstraints(ctx));
         }
 
         return enc;
@@ -352,26 +342,6 @@ public class RelCo extends Relation {
             }
         }
         return transCo;
-    }
-
-    @Override
-    public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
-        if(!antisymmetry) {
-            return super.getSMTVar(edge, ctx);
-        }
-		final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-
-        final MemEvent first = (MemEvent) edge.getFirst();
-        final MemEvent second = (MemEvent) edge.getSecond();
-        // Doing the check at the java level seems to slightly improve  performance
-        final BooleanFormula eqAdd = first.getAddress().equals(second.getAddress()) ? bmgr.makeTrue() :
-                generalEqual(first.getMemAddressExpr(), second.getMemAddressExpr(), ctx);
-        return !getMaxTupleSet().contains(edge) ? bmgr.makeFalse() :
-    		first.getCId() <= second.getCId() ?
-    				edge(getName(), first, second, ctx) :
-    					bmgr.ifThenElse(bmgr.and(getExecPair(edge, ctx), eqAdd),
-    							bmgr.not(getSMTVar(edge.getInverse(), ctx)),
-    							bmgr.makeFalse());
     }
 
     public IntegerFormula getClockVar(Event write, SolverContext ctx) {
