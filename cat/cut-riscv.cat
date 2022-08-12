@@ -85,3 +85,6 @@ acyclic co|rfe|fr|ppo as Model
 
 (* Atomicity axiom *)
 empty rmw & (fre;coe) as Atomic
+
+(* Forcing fr to be cut *)
+empty(fr \ fr)

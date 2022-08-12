@@ -1,11 +1,13 @@
-package com.dat3m.dartagnan.program.analysis;
+package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -18,9 +20,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.math.BigInteger;
 import java.util.*;
 
-import static com.dat3m.dartagnan.expression.op.IOpBin.MULT;
-import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
-import static com.dat3m.dartagnan.expression.op.IOpBin.R_SHIFT;
+import static com.dat3m.dartagnan.expression.op.IOpBin.*;
 import static com.dat3m.dartagnan.expression.op.IOpUn.MINUS;
 import static com.google.common.base.Verify.verify;
 import static java.util.stream.Collectors.toList;

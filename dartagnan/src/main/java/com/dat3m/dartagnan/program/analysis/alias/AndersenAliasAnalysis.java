@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.analysis;
+package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
@@ -7,7 +7,10 @@ import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.memory.MemoryObject;

@@ -403,6 +403,17 @@ public class ExecutionModel {
             ctrlDepMap.put(eventMap.get(e), new HashSet<>(curCtrlDeps));
         }
 
+        if (e instanceof ExecutionStatus) {
+            // ---- Track data dependency due to execution tracking ----
+            ExecutionStatus status = (ExecutionStatus) e;
+            Event tracked = status.getStatusEvent();
+            HashSet<EventData> deps = new HashSet<>();
+            if (eventExists(tracked) && status.doesTrackDep()) {
+                deps.add(eventMap.get(tracked));
+            }
+            lastRegWrites.put(status.getResultRegister(), deps);
+        }
+
         if (e instanceof RegReaderData) {
             // ---- Track data dependency ----
             RegReaderData reader = (RegReaderData)e;
@@ -476,7 +487,7 @@ public class ExecutionModel {
             Map<EventData, BigInteger> writeCoIndexMap = new HashMap<>(writes.size() * 4 / 3, 0.75f);
 
             for (EventData w : writes) {
-                writeCoIndexMap.put(w, model.evaluate(co.getIntVar(w.getEvent(), context)));
+                writeCoIndexMap.put(w, model.evaluate(co.getClockVar(w.getEvent(), context)));
             }
 
             List<EventData> sortedWrites = writes.stream().sorted(Comparator.comparing(writeCoIndexMap::get)).collect(Collectors.toList());

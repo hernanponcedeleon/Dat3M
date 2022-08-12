@@ -6,8 +6,6 @@ import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
-import com.dat3m.dartagnan.program.event.arch.riscv.AmoOp;
-import com.dat3m.dartagnan.program.event.arch.riscv.AmoSwap;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
@@ -154,7 +152,11 @@ public class EventFactory {
     }
 
     public static ExecutionStatus newExecutionStatus(Register register, Event event) {
-        return new ExecutionStatus(register, event);
+        return new ExecutionStatus(register, event, false);
+    }
+
+    public static ExecutionStatus newExecutionStatusWithDependencyTracking(Register register, Event event) {
+        return new ExecutionStatus(register, event, true);
     }
 
     public static StoreExclusive newExclusiveStore(Register register, IExpr address, ExprInterface value, String mo) {
@@ -448,15 +450,47 @@ public class EventFactory {
             return RISCV.newRMWStoreConditional(address, value, mo, false);
         }
 
-        public static AmoOp newAmoOp(Register rd, Register r2, IExpr address, String mo, IOpBin op) {
-            return new AmoOp(rd, r2, address, mo, op);
+        public static Fence newRRFence() {
+            return new Fence("Fence.r.r");
         }
-        
-        public static AmoSwap newAmoSwap(Register rd, Register r2, IExpr address, String mo) {
-            return new AmoSwap(rd, r2, address, mo);
-        }
-    }
 
+        public static Fence newRWFence() {
+            return new Fence("Fence.r.w");
+        }
+
+        public static Fence newRRWFence() {
+            return new Fence("Fence.r.rw");
+        }
+
+        public static Fence newWRFence() {
+            return new Fence("Fence.w.r");
+        }
+
+        public static Fence newWWFence() {
+            return new Fence("Fence.w.w");
+        }
+
+        public static Fence newWRWFence() {
+            return new Fence("Fence.w.rw");
+        }
+
+        public static Fence newRWRFence() {
+            return new Fence("Fence.rw.r");
+        }
+
+        public static Fence newRWWFence() {
+            return new Fence("Fence.rw.w");
+        }
+
+        public static Fence newRWRWFence() {
+            return new Fence("Fence.rw.rw");
+        }
+
+        public static Fence newTsoFence() {
+            return new Fence("Fence.tso");
+        }
+
+    }
 
     // =============================================================================================
     // =========================================== LISA ============================================

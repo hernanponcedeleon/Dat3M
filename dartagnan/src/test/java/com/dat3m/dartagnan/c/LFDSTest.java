@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.c;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.configuration.Arch;
@@ -46,28 +45,36 @@ public class LFDSTest extends AbstractCTest {
             {"dglm-3", TSO, UNKNOWN},
             {"dglm-3", ARM8, UNKNOWN},
             {"dglm-3", POWER, UNKNOWN},
+            {"dglm-3", RISCV, UNKNOWN},
             {"dglm-3-CAS-relaxed", TSO, UNKNOWN},
             {"dglm-3-CAS-relaxed", ARM8, FAIL},
             {"dglm-3-CAS-relaxed", POWER, FAIL},
+            {"dglm-3-CAS-relaxed", RISCV, FAIL},
             {"ms-3", TSO, UNKNOWN},
             {"ms-3", ARM8, UNKNOWN},
             {"ms-3", POWER, UNKNOWN},
+            {"ms-3", RISCV, UNKNOWN},
             {"ms-3-CAS-relaxed", TSO, UNKNOWN},
             {"ms-3-CAS-relaxed", ARM8, FAIL},
             {"ms-3-CAS-relaxed", POWER, FAIL},
+            {"ms-3-CAS-relaxed", RISCV, FAIL},
             {"treiber-3", TSO, UNKNOWN},
             {"treiber-3", ARM8, UNKNOWN},
             {"treiber-3", POWER, UNKNOWN},
+            {"treiber-3", RISCV, UNKNOWN},
             {"treiber-3-CAS-relaxed", TSO, UNKNOWN},
             {"treiber-3-CAS-relaxed", ARM8, FAIL},
             {"treiber-3-CAS-relaxed", POWER, FAIL},
+            {"treiber-3-CAS-relaxed", RISCV, FAIL},
             {"chase-lev-5", TSO, PASS},
             {"chase-lev-5", ARM8, PASS},
             {"chase-lev-5", POWER, PASS},
+            {"chase-lev-5", RISCV, PASS},
             // These ones have an extra thief that violate the assertion
             {"chase-lev-6", TSO, FAIL},
             {"chase-lev-6", ARM8, FAIL},
             {"chase-lev-6", POWER, FAIL},
+            {"chase-lev-6", RISCV, FAIL},
         });
     }
 
@@ -80,7 +87,6 @@ public class LFDSTest extends AbstractCTest {
 	@Test
 	@CSVLogger.FileName("csv/refinement")
 	public void testRefinement() throws Exception {
-		assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(),
-				RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(taskProvider.get())));
+		assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
 	}
 }

@@ -11,7 +11,8 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
-import com.dat3m.dartagnan.verification.RefinementTask;
+import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -22,6 +23,7 @@ import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_SYMMETRY_LEARNING;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /*
     This class handles the computation of refinement clauses from violations found by the WMM-solver procedure.
@@ -31,15 +33,15 @@ public class Refiner {
 
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
 
-    private final RefinementTask task;
+    private final Wmm memoryModel;
     private final ThreadSymmetry symm;
     private final List<Function<Event, Event>> symmPermutations;
     private final SymmetryLearning learningOption;
 
-    public Refiner(RefinementTask task) {
-        this.task = task;
+    public Refiner(Wmm memoryModel, Context analysisContext) {
+        this.memoryModel = checkNotNull(memoryModel);
         this.learningOption = REFINEMENT_SYMMETRY_LEARNING;
-        symm = task.getAnalysisContext().requires(ThreadSymmetry.class);
+        symm = analysisContext.requires(ThreadSymmetry.class);
         symmPermutations = computeSymmetryPermutations();
     }
 
@@ -132,7 +134,7 @@ public class Refiner {
             enc = generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), context);
         } else if (literal instanceof RelLiteral) {
             RelLiteral lit = (RelLiteral) literal;
-            Relation rel = task.getMemoryModel().getRelationRepository().getRelation(lit.getName());
+            Relation rel = memoryModel.getRelationRepository().getRelation(lit.getName());
             enc = rel.getSMTVar(
                     perm.apply(lit.getData().getFirst()),
                     perm.apply(lit.getData().getSecond()),

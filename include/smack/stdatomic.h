@@ -24,6 +24,8 @@ typedef _Atomic(long long)          atomic_llong;
 typedef _Atomic(unsigned long long) atomic_ullong;
 typedef _Atomic(uintptr_t)          atomic_uintptr_t;
 typedef _Atomic(size_t)             atomic_size_t;
+typedef _Atomic(unsigned int)       atomic_uint_least32_t;
+typedef _Atomic(unsigned long)      atomic_uint_least64_t;
 
 #define ATOMIC_VAR_INIT(VALUE)    (VALUE)
 

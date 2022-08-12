@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IValue;
@@ -233,26 +234,15 @@ public class VisitorLitmusRISCV
 	
 	@Override
 	public Object visitAmoadd(LitmusRISCVParser.AmoaddContext ctx) {
-		Register rd = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
-		Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
-		Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-		return programBuilder.addChild(mainThread, EventFactory.RISCV.newAmoOp(rd, r2, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1)), IOpBin.PLUS));
-	}
+		throw new ParsingException("No support for amoadd instructions");	}
 	
 	@Override
 	public Object visitAmoor(LitmusRISCVParser.AmoorContext ctx) {
-		Register rd = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
-		Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
-		Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-		return programBuilder.addChild(mainThread, EventFactory.RISCV.newAmoOp(rd, r2, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1)), IOpBin.OR));
-	}
+		throw new ParsingException("No support for amoor instructions");	}
 	
 	@Override
 	public Object visitAmoswap(LitmusRISCVParser.AmoswapContext ctx) {
-		Register rd = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
-		Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
-		Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-		return programBuilder.addChild(mainThread, EventFactory.RISCV.newAmoSwap(rd, r2, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
+		throw new ParsingException("No support for amoswap instructions");
 	}
 
 	// =======================================
