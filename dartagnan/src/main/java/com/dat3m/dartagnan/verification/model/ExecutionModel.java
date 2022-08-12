@@ -26,6 +26,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
@@ -453,13 +454,9 @@ public class ExecutionModel {
 
     // ===================================================
 
-    private Relation rf;
     private void extractReadsFrom() {
+        final Relation rf = getMemoryModel().getRelationRepository().getRelation(RF);
         readWriteMap.clear();
-
-        if (rf == null) {
-            rf = getMemoryModel().getRelationRepository().getRelation(RF);
-        }
 
         for (Map.Entry<BigInteger, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
         	BigInteger address = addressedReads.getKey();
@@ -482,46 +479,42 @@ public class ExecutionModel {
     }
 
     private void extractCoherences() {
-        Relation co = task.getMemoryModel().getRelationRepository().getRelation(CO);
-        for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
-            BigInteger addr = addrWrites.getKey();
-            Set<EventData> writes = addrWrites.getValue();
+        final RelCo co = (RelCo) task.getMemoryModel().getRelationRepository().getRelation(CO);
 
-            Map<EventData, List<EventData>> coEdges = new HashMap<>();
-            for (EventData w1 : writes) {
-                coEdges.put(w1, new ArrayList<>());
-                for (EventData w2 : writes) {
-                    if (Boolean.TRUE.equals(model.evaluate(co.getSMTVar(w1.getEvent(), w2.getEvent(), context)))) {
-                        coEdges.get(w1).add(w2);
+        for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
+            final BigInteger addr = addrWrites.getKey();
+            final Set<EventData> writes = addrWrites.getValue();
+
+            List<EventData> coSortedWrites;
+            if (co.usesSATEncoding()) {
+                // --- Extracting co from SAT-based encoding ---
+                Map<EventData, List<EventData>> coEdges = new HashMap<>();
+                for (EventData w1 : writes) {
+                    coEdges.put(w1, new ArrayList<>());
+                    for (EventData w2 : writes) {
+                        if (Boolean.TRUE.equals(model.evaluate(co.getSMTVar(w1.getEvent(), w2.getEvent(), context)))) {
+                            coEdges.get(w1).add(w2);
+                        }
                     }
                 }
+                DependencyGraph<EventData> depGraph = DependencyGraph.from(writes, coEdges);
+                coSortedWrites = new ArrayList<>(Lists.reverse(depGraph.getNodeContents()));
+            } else {
+                // --- Extracting co from IDL-based encoding using clock variables ---
+                Map<EventData, BigInteger> writeClockMap = new HashMap<>(writes.size() * 4 / 3, 0.75f);
+                for (EventData w : writes) {
+                    writeClockMap.put(w, model.evaluate(co.getClockVar(w.getEvent(), context)));
+                }
+                coSortedWrites = writes.stream().sorted(Comparator.comparing(writeClockMap::get)).collect(Collectors.toList());
             }
 
-            DependencyGraph<EventData> depGraph = DependencyGraph.from(writes, coEdges);
-            List<EventData> coOrder = new ArrayList<>(Lists.reverse(depGraph.getNodeContents()));
+            // --- Apply internal clock orders (we always start from 0) --
             int i = 0;
-            for (EventData w : coOrder) {
+            for (EventData w : coSortedWrites) {
                 w.setCoherenceIndex(i++);
             }
-            coherenceMap.put(addr, coOrder);
+            coherenceMap.put(addr, Collections.unmodifiableList(coSortedWrites));
         }
 
-        /*for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
-            BigInteger addr = addrWrites.getKey();
-            Set<EventData> writes = addrWrites.getValue();
-            Map<EventData, BigInteger> writeCoIndexMap = new HashMap<>(writes.size() * 4 / 3, 0.75f);
-
-            for (EventData w : writes) {
-                writeCoIndexMap.put(w, model.evaluate(co.getClockVar(w.getEvent(), context)));
-            }
-
-            List<EventData> sortedWrites = writes.stream().sorted(Comparator.comparing(writeCoIndexMap::get)).collect(Collectors.toList());
-            int i = 0;
-            for (EventData w : sortedWrites) {
-                w.setCoherenceIndex(i++);
-            }
-
-            coherenceMap.put(addr, Collections.unmodifiableList(sortedWrites));
-        }*/
     }
 }

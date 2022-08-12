@@ -50,6 +50,8 @@ public class RelCo extends Relation {
             secure = true)
     private boolean useSATEncoding = false;
 
+    public boolean usesSATEncoding() { return useSATEncoding; }
+
 	// =====================================================================
 
     public RelCo(){
