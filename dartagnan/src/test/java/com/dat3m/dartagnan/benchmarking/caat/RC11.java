@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.benchmarking.AbstractDartagnanTest;
@@ -53,7 +52,6 @@ public class RC11 extends AbstractDartagnanTest {
 	@Test
 	@CSVLogger.FileName("csv/caat")
 	public void testRefinement() throws Exception {
-		assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(),
-				RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(taskProvider.get())));
+		assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
 	}
 }

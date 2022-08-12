@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -28,11 +29,11 @@ public class WMMSolver {
     private final CAATSolver solver;
     private final CoreReasoner reasoner;
 
-    public WMMSolver(VerificationTask task, Set<Relation> cutRelations) {
-        task.getAnalysisContext().requires(RelationAnalysis.class);
+    public WMMSolver(VerificationTask task, Context analysisContext, Set<Relation> cutRelations) {
+        analysisContext.requires(RelationAnalysis.class);
         this.executionGraph = new ExecutionGraph(task, cutRelations, true);
         this.executionModel = new ExecutionModel(task);
-        this.reasoner = new CoreReasoner(task, executionGraph);
+        this.reasoner = new CoreReasoner(task, analysisContext, executionGraph);
         this.solver = CAATSolver.create();
     }
 

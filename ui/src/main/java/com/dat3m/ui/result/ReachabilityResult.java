@@ -2,7 +2,6 @@ package com.dat3m.ui.result;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.IncrementalSolver;
@@ -100,8 +99,7 @@ public class ReachabilityResult {
                             }
                             break;
                         case CAAT:
-                            result = RefinementSolver.run(ctx, prover,
-                                    RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
+                            result = RefinementSolver.run(ctx, prover, task);
                             break;
                     }
                     // Verification ended, we can interrupt the timeout Thread

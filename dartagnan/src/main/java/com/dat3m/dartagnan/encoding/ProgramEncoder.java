@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -214,45 +213,6 @@ public class ProgramEncoder implements Encoder {
     }
 
     /**
-     * @param writer
-     * Overwrites some register.
-     * @param reader
-     * Happens on the same thread as {@code writer} and could use its value,
-     * meaning that {@code writer} appears in {@code may(reader,R)} for some register {@code R}.
-     * @param ctx
-     * Builder of expressions and formulas.
-     * @return
-     * Proposition that {@code reader} directly uses the value from {@code writer}, if both are executed.
-     * Contextualized with the result of {@link #encodeDependencies(SolverContext) encode}.
-     */
-    public BooleanFormula dependencyEdge(Event writer, Event reader, SolverContext ctx) {
-        Preconditions.checkArgument(writer instanceof RegWriter || reader instanceof ExecutionStatus);
-
-        if(reader instanceof ExecutionStatus) {
-            // RISCV store conditionals are not instances of RegWriter, but they still propagate dependencies.
-            // The propagation with future events follows from the status writing to the register.
-            // We achieve this by using an instance of ExecutionStatus that tracks dependencies.
-            // BasicRegRelation will add the corresponding pair to the maxTupleSet if dependency is tracked.
-            // Thus, the whole dependency depends on the store being executed.
-            ExecutionStatus status = (ExecutionStatus)reader;
-            Preconditions.checkArgument(status.doesTrackDep(),
-                    "ExecutionStatus %s does not track dependencies", status);
-            Preconditions.checkArgument(status.getStatusEvent().equals(writer),
-                    "ExecutionStatus %s tracks %s, but %s was provided.",
-                    status, status.getStatusEvent(), writer);
-            return execution(writer, reader, exec, ctx);
-        } else {
-            Register register = ((RegWriter) writer).getResultRegister();
-            Dependency.State r = dep.of(reader, register);
-            Preconditions.checkArgument(r.may.contains(writer));
-            BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-            return r.must.contains(writer) ?
-                    execution(writer, reader, exec, ctx) :
-                    dependencyEdgeVariable(writer, reader, bmgr);
-        }
-    }
-
-    /**
      * @param ctx
      * Builder of expressions and formulas.
      * @return
@@ -346,7 +306,7 @@ public class ProgramEncoder implements Encoder {
         return enc;
     }
 
-    private static BooleanFormula dependencyEdgeVariable(Event writer, Event reader, BooleanFormulaManager bmgr) {
-        return bmgr.makeVariable("__dep " + writer.getCId() + " " + reader.getCId());
+    public static BooleanFormula dependencyEdgeVariable(Event writer, Event reader, BooleanFormulaManager bmgr) {
+        return bmgr.makeVariable("idd " + writer.getCId() + " " + reader.getCId());
     }
 }
