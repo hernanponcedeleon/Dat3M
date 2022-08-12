@@ -1,7 +1,9 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -11,7 +13,6 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.iterate;
@@ -56,34 +57,48 @@ public abstract class StaticRelation extends Relation {
         return enc;
     }
 
-    protected void addMatchingTupleSet(List<Event> events, String open, String close, Consumer<Tuple> outMust) {
+    protected interface MatchConsumer {
+        /**
+         * Called once for each found pair.
+         * @param tuple Pair of events that could match in some execution.
+         * @param noIntermediary There is no event between the pair that could match with any of both.
+         */
+        void accept(Tuple tuple, boolean noIntermediary);
+    }
+
+    /**
+     * Iterates all program-ordered pairs of events that describe.
+     * @param filter Program-ordered collection of relevant events from a same thread.
+     * @param filterFirst Classifies events from {@code events} that appear as first field.
+     * @param filterSecond Classifies events in {@code events} for the second field.
+     * @param match Invoked once for each matched tuple.
+     */
+    protected void findMatchingPairs(FilterAbstract filter, FilterAbstract filterFirst, FilterAbstract filterSecond, MatchConsumer match) {
         ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-        // assume order by cId
-        // assume cId describes a topological sorting over the control flow
-        for(int end = 1; end < events.size(); end++) {
-            Event store = events.get(end);
-            if(!store.is(close)) {
-                continue;
-            }
-            int start = iterate(end - 1, i -> i >= 0, i -> i - 1)
-                    .filter(i -> exec.isImplied(store, events.get(i)))
-                    .findFirst().orElse(0);
-            List<Event> candidates = events.subList(start, end).stream()
-                    .filter(e -> !exec.areMutuallyExclusive(e, store))
-                    .collect(toList());
-            int size = candidates.size();
-            for(int i = 0; i < size; i++) {
-                Event load = candidates.get(i);
-                if(!load.is(open)) {
+        for (Thread thread : task.getProgram().getThreads()) {
+            List<Event> events = thread.getCache().getEvents(filter);
+            // assume order by cId
+            // assume cId describes a topological sorting over the control flow
+            for (int end = 1; end < events.size(); end++) {
+                Event second = events.get(end);
+                if (!filterSecond.filter(second)) {
                     continue;
                 }
-                if(candidates.subList(i + 1, size).stream().anyMatch(e -> exec.isImplied(load, e))) {
-                    continue;
-                }
-                Tuple tuple = new Tuple(load, store);
-                maxTupleSet.add(tuple);
-                if(candidates.subList(i + 1, size).stream().allMatch(e -> exec.areMutuallyExclusive(load, e))) {
-                    outMust.accept(tuple);
+                int start = iterate(end - 1, i -> i >= 0, i -> i - 1)
+                        .filter(i -> exec.isImplied(second, events.get(i)))
+                        .findFirst().orElse(0);
+                List<Event> candidates = events.subList(start, end).stream()
+                        .filter(e -> !exec.areMutuallyExclusive(e, second))
+                        .collect(toList());
+                int size = candidates.size();
+                for (int i = 0; i < size; i++) {
+                    Event first = candidates.get(i);
+                    List<Event> intermediaries = candidates.subList(i + 1, size);
+                    if (filterFirst.filter(first) &&
+                            intermediaries.stream().noneMatch(e -> exec.isImplied(first, e))) {
+                        match.accept(new Tuple(first, second),
+                                intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(first, e)));
+                    }
                 }
             }
         }

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.relation.base;
 
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterUnion;
@@ -36,10 +35,16 @@ public class RelCrit extends StaticRelation {
         }
         maxTupleSet = new TupleSet();
         minTupleSet = new TupleSet();
-        FilterUnion filter = FilterUnion.get(FilterBasic.get(RCU_LOCK), FilterBasic.get(RCU_UNLOCK));
-        for(Thread thread : task.getProgram().getThreads()) {
-            addMatchingTupleSet(thread.getCache().getEvents(filter), RCU_LOCK, RCU_UNLOCK, minTupleSet::add);
-        }
+        findMatchingPairs(
+                FilterUnion.get(FilterBasic.get(RCU_LOCK), FilterBasic.get(RCU_UNLOCK)),
+                FilterBasic.get(RCU_LOCK),
+                FilterBasic.get(RCU_UNLOCK),
+                (tuple, noIntermediary) -> {
+            maxTupleSet.add(tuple);
+            if (noIntermediary) {
+                minTupleSet.add(tuple);
+            }
+        });
         return maxTupleSet;
     }
 
