@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.base;
 
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -27,6 +29,8 @@ import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.program.event.Tag.SVCOMP.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RMW;
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.IntStream.iterate;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 /*
@@ -90,16 +94,39 @@ public class RelRMW extends StaticRelation {
 
             // LoadExcl -> StoreExcl
             AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
-            findMatchingPairs(
-                    FilterBasic.get(Tag.EXCL),
-                    FilterBasic.get(Tag.READ),
-                    FilterBasic.get(Tag.WRITE),
-                    (tuple, noIntermediary) -> {
-                maxTupleSet.add(tuple);
-                if (noIntermediary && alias.mustAlias((MemEvent) tuple.getFirst(), (MemEvent) tuple.getSecond())) {
-                    minTupleSet.add(tuple);
+            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
+            for (Thread thread : task.getProgram().getThreads()) {
+                List<Event> events = thread.getCache().getEvents(FilterBasic.get(Tag.EXCL));
+                // assume order by cId
+                // assume cId describes a topological sorting over the control flow
+                for (int end = 1; end < events.size(); end++) {
+                    Event second = events.get(end);
+                    if (!second.is(Tag.WRITE)) {
+                        continue;
+                    }
+                    int start = iterate(end - 1, i -> i >= 0, i -> i - 1)
+                            .filter(i -> exec.isImplied(second, events.get(i)))
+                            .findFirst().orElse(0);
+                    List<Event> candidates = events.subList(start, end).stream()
+                            .filter(e -> !exec.areMutuallyExclusive(e, second))
+                            .collect(toList());
+                    int size = candidates.size();
+                    for (int i = 0; i < size; i++) {
+                        Event first = candidates.get(i);
+                        List<Event> intermediaries = candidates.subList(i + 1, size);
+                        if (!first.is(Tag.READ) ||
+                                intermediaries.stream().anyMatch(e -> exec.isImplied(first, e))) {
+                            continue;
+                        }
+                        Tuple tuple = new Tuple(first, second);
+                        maxTupleSet.add(tuple);
+                        if (intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(first, e) &&
+                                alias.mustAlias((MemEvent) first, (MemEvent) second))) {
+                            minTupleSet.add(tuple);
+                        }
+                    }
                 }
-            });
+            }
             logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
         return maxTupleSet;
