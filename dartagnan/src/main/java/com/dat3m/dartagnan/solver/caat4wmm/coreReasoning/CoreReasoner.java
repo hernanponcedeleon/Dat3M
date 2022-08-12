@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.solver.caat4wmm.EventDomain;
 import com.dat3m.dartagnan.solver.caat4wmm.ExecutionGraph;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.FenceGraph;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -30,10 +31,10 @@ public class CoreReasoner {
     private final Wmm memoryModel;
     private final ExecutionAnalysis exec;
 
-    public CoreReasoner(VerificationTask task, ExecutionGraph executionGraph) {
+    public CoreReasoner(VerificationTask task, Context analysisContext, ExecutionGraph executionGraph) {
         this.executionGraph = executionGraph;
         this.memoryModel = task.getMemoryModel();
-        this.exec = task.getAnalysisContext().requires(ExecutionAnalysis.class);
+        this.exec = analysisContext.requires(ExecutionAnalysis.class);
     }
 
 
