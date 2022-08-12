@@ -119,7 +119,7 @@ public class CoSymmetryBreaking {
 
         // We compute the (overall) sync-degree of a write w as the maximal sync degree over all
         // axioms. The sync-degree of w for axiom(r) is computed via must(r).
-        List<Axiom> axioms = task.getAxioms();
+        List<Axiom> axioms = task.getMemoryModel().getAxioms();
         Map<Store, Integer> syncDegreeMap = new HashMap<>(writes.size());
         for (Store w : writes) {
             int syncDeg = 0;

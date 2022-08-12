@@ -40,11 +40,7 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
@@ -108,6 +104,8 @@ public class RefinementSolver extends ModelChecker {
         Wmm baselineModel = createDefaultWmm();
         Context analysisContext = Context.create();
         Configuration config = task.getConfig();
+        VerificationTask baselineTask = VerificationTask.builder()
+                .withConfig(task.getConfig()).build(program, baselineModel, task.getProperty());
 
         preprocessProgram(task, config);
         // We cut the rhs of differences to get a semi-positive model, if possible.
@@ -116,8 +114,8 @@ public class RefinementSolver extends ModelChecker {
         performStaticProgramAnalyses(task, analysisContext, config);
 
         Context baselineContext = Context.createCopyFrom(analysisContext);
-        performStaticWmmAnalyses(task, memoryModel, analysisContext, config);
-        performStaticWmmAnalyses(task, baselineModel, baselineContext, config);
+        performStaticWmmAnalyses(task, analysisContext, config);
+        performStaticWmmAnalyses(baselineTask, baselineContext, config);
 
         ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
         PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, baselineModel, analysisContext, config);

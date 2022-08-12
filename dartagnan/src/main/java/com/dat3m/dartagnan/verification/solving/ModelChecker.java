@@ -18,7 +18,6 @@ import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import org.sosy_lab.common.configuration.Configuration;
@@ -74,16 +73,15 @@ public abstract class ModelChecker {
     /**
      * Performs all memory-model-based static analyses.
      * @param task Program, target memory model and property to be checked.
-     * @param memoryModel Base for the analyses.
      * @param analysisContext Collection of static analyses already performed for this task.
      *                        Also receives the results.
      * @param config User-defined options to further specify the behavior.
      * @exception InvalidConfigurationException Some user-defined option does not match the format.
      * @exception UnsatisfiedRequirementException Some static analysis is missing.
      */
-    public static void performStaticWmmAnalyses(VerificationTask task, Wmm memoryModel, Context analysisContext, Configuration config) throws InvalidConfigurationException {
-        analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(memoryModel, config));
-        analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(memoryModel, task, analysisContext, config));
+    public static void performStaticWmmAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
+        analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(task.getMemoryModel(), config));
+        analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
     }
 
     private static void updateAssertions(Program program) {

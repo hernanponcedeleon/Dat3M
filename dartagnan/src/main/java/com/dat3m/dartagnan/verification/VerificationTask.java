@@ -3,19 +3,14 @@ package com.dat3m.dartagnan.verification;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.relation.Relation;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 
 import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -50,24 +45,11 @@ public class VerificationTask {
     }
 
     public Program getProgram() { return program; }
-    
     public Wmm getMemoryModel() { return memoryModel; }
-    
     public Configuration getConfig() { return this.config; }
-    
     public WitnessGraph getWitness() { return witness; }
-    
 	public EnumSet<Property> getProperty() { return property; }
 
-    public Set<Relation> getRelations() {
-    	return memoryModel.getRelationRepository().getRelations();
-    }
-    public List<Axiom> getAxioms() {
-    	return memoryModel.getAxioms();
-    }
-    public DependencyGraph<Relation> getRelationDependencyGraph() {
-        return memoryModel.getRelationDependencyGraph();
-    }
 
     // ==================== Builder =====================
 

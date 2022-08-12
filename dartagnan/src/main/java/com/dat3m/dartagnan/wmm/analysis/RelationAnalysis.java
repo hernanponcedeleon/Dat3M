@@ -23,9 +23,7 @@ public class RelationAnalysis {
 
     /**
      * Performs a static analysis on the relationships that may occur in an execution.
-     * @param memoryModel Collection of relations and axioms to perform this analysis on.
      * @param task Program, target memory model and property to check.
-     *             The target memory model does not have to coincide with {@code memoryModel}.
      * @param context Collection of static analyses already performed on {@code task} with respect to {@code memoryModel}.
      *                Should at least include the following elements:
      *                <ul>
@@ -36,14 +34,15 @@ public class RelationAnalysis {
      *                </ul>
      * @param config User-defined options to further specify the behavior.
      */
-    public static RelationAnalysis fromConfig(Wmm memoryModel, VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
+    public static RelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
         RelationAnalysis a = new RelationAnalysis(task, context, config);
-        a.run(memoryModel, task, context);
+        a.run(task, context);
         return a;
     }
 
-    private void run(Wmm memoryModel, VerificationTask task, Context context) {
+    private void run(VerificationTask task, Context context) {
         // Init data context so that each relation is able to compute its may/must sets.
+        final Wmm memoryModel = task.getMemoryModel();
         for (Axiom ax : memoryModel.getAxioms()) {
             ax.getRelation().updateRecursiveGroupId(ax.getRelation().getRecursiveGroupId());
         }
@@ -55,7 +54,7 @@ public class RelationAnalysis {
         for(String relName : Wmm.BASE_RELATIONS){
             memoryModel.getRelationRepository().getRelation(relName).initializeRelationAnalysis(task, context);
         }
-        for (Relation rel : memoryModel.getRelationRepository().getRelations()) {
+        for (Relation rel : memoryModel.getRelations()) {
             rel.initializeRelationAnalysis(task, context);
         }
         for (Axiom ax : memoryModel.getAxioms()) {

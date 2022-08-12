@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -46,7 +45,7 @@ public class WmmEncoder implements Encoder {
             recursiveGroup.setDoRecurse();
         }
 
-        for(Relation relation : memoryModel.getRelationRepository().getRelations()){
+        for(Relation relation : memoryModel.getRelations()){
             relation.initializeEncoding(ctx);
         }
 

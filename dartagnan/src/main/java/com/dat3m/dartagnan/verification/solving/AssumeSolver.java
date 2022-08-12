@@ -47,7 +47,7 @@ public class AssumeSolver extends ModelChecker {
 
         preprocessProgram(task, config);
        	performStaticProgramAnalyses(task, analysisContext, config);
-       	performStaticWmmAnalyses(task, memoryModel, analysisContext, config);
+       	performStaticWmmAnalyses(task, analysisContext, config);
 
         ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
         PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, memoryModel,analysisContext, config);

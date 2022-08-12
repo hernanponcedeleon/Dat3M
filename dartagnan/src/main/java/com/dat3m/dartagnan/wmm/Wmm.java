@@ -41,6 +41,8 @@ public class Wmm {
         return axioms;
     }
 
+    public Set<Relation> getRelations() { return relationRepository.getRelations(); }
+
     public List<RecursiveGroup> getRecursiveGroups() { return recursiveGroups; }
 
     public void addFilter(FilterAbstract filter) {
