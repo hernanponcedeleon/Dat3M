@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.IntStream.range;
+import static java.util.stream.IntStream.iterate;
 
 //TODO(TH): RelCrit, RelRMW and RelFencerel are NOT strongly static like the other static relations
 // It might be reasonable to group them into weakly static relations (or alternatively the other one's into
@@ -65,7 +65,9 @@ public abstract class StaticRelation extends Relation {
             if(!store.is(close)) {
                 continue;
             }
-            int start = range(end - 1, -1).filter(i -> exec.isImplied(store, events.get(i))).findFirst().orElse(0);
+            int start = iterate(end - 1, i -> i >= 0, i -> i - 1)
+                    .filter(i -> exec.isImplied(store, events.get(i)))
+                    .findFirst().orElse(0);
             List<Event> candidates = events.subList(start, end).stream()
                     .filter(e -> !exec.areMutuallyExclusive(e, store))
                     .collect(toList());
