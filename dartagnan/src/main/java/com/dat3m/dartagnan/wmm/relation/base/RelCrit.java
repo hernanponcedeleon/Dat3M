@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Lists;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -17,6 +16,8 @@ import java.util.List;
 import static com.dat3m.dartagnan.program.event.Tag.Linux.RCU_LOCK;
 import static com.dat3m.dartagnan.program.event.Tag.Linux.RCU_UNLOCK;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CRIT;
+import static com.google.common.collect.Lists.reverse;
+import static java.util.stream.Stream.concat;
 
 public class RelCrit extends StaticRelation {
 
@@ -43,24 +44,25 @@ public class RelCrit extends StaticRelation {
         for (Thread thread : task.getProgram().getThreads()) {
             // assume order by cId
             // assume cId describes a topological sorting over the control flow
-            List<Event> locks = Lists.reverse(thread.getCache().getEvents(FilterBasic.get(RCU_LOCK)));
+            List<Event> locks = reverse(thread.getCache().getEvents(FilterBasic.get(RCU_LOCK)));
             for (Event unlock : thread.getCache().getEvents(FilterBasic.get(RCU_UNLOCK))) {
                 // iteration order assures that all intermediaries were already iterated
                 for (Event lock : locks) {
                     if (unlock.getCId() < lock.getCId() ||
                             exec.areMutuallyExclusive(lock, unlock) ||
-                            minTupleSet.getByFirst(lock).stream().anyMatch(t -> exec.isImplied(lock, t.getSecond()))) {
+                            concat(minTupleSet.getByFirst(lock).stream().map(Tuple::getSecond),
+                                            minTupleSet.getBySecond(unlock).stream().map(Tuple::getFirst))
+                                    .anyMatch(e -> exec.isImplied(lock, e) || exec.isImplied(unlock, e))) {
                         continue;
                     }
-                    boolean noIntermediary = maxTupleSet.getBySecond(unlock).isEmpty() &&
-                            maxTupleSet.getByFirst(lock).isEmpty();
+                    boolean noIntermediary = maxTupleSet.getBySecond(unlock).stream()
+                                    .allMatch(t -> exec.areMutuallyExclusive(lock, t.getFirst())) &&
+                            maxTupleSet.getByFirst(lock).stream()
+                                    .allMatch(t -> exec.areMutuallyExclusive(t.getSecond(), unlock));
                     Tuple tuple = new Tuple(lock, unlock);
                     maxTupleSet.add(tuple);
                     if (noIntermediary) {
                         minTupleSet.add(tuple);
-                        if (exec.isImplied(unlock, lock)) {
-                            break;
-                        }
                     }
                 }
             }
