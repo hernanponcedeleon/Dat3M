@@ -120,8 +120,8 @@ public class RelRMW extends StaticRelation {
                         }
                         Tuple tuple = new Tuple(first, second);
                         maxTupleSet.add(tuple);
-                        if (intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(first, e) &&
-                                alias.mustAlias((MemEvent) first, (MemEvent) second))) {
+                        if (intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(first, e)) &&
+                                alias.mustAlias((MemEvent) first, (MemEvent) second)) {
                             minTupleSet.add(tuple);
                         }
                     }
