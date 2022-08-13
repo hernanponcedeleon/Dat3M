@@ -4,10 +4,10 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.filter.FilterUnion;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.collect.Lists;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -17,8 +17,6 @@ import java.util.List;
 import static com.dat3m.dartagnan.program.event.Tag.Linux.RCU_LOCK;
 import static com.dat3m.dartagnan.program.event.Tag.Linux.RCU_UNLOCK;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CRIT;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.IntStream.iterate;
 
 public class RelCrit extends StaticRelation {
 
@@ -43,32 +41,26 @@ public class RelCrit extends StaticRelation {
         minTupleSet = new TupleSet();
         ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
         for (Thread thread : task.getProgram().getThreads()) {
-            List<Event> events = thread.getCache().getEvents(FilterUnion.get(FilterBasic.get(RCU_LOCK), FilterBasic.get(RCU_UNLOCK)));
             // assume order by cId
             // assume cId describes a topological sorting over the control flow
-            for (int end = 1; end < events.size(); end++) {
-                Event second = events.get(end);
-                if (!second.is(RCU_UNLOCK)) {
-                    continue;
-                }
-                int start = iterate(end - 1, i -> i >= 0, i -> i - 1)
-                        .filter(i -> exec.isImplied(second, events.get(i)))
-                        .findFirst().orElse(0);
-                List<Event> candidates = events.subList(start, end).stream()
-                        .filter(e -> !exec.areMutuallyExclusive(e, second))
-                        .collect(toList());
-                int size = candidates.size();
-                for (int i = 0; i < size; i++) {
-                    Event first = candidates.get(i);
-                    List<Event> intermediaries = candidates.subList(i + 1, size);
-                    if (!first.is(RCU_LOCK) ||
-                            intermediaries.stream().anyMatch(e -> exec.isImplied(first, e))) {
+            List<Event> locks = Lists.reverse(thread.getCache().getEvents(FilterBasic.get(RCU_LOCK)));
+            for (Event unlock : thread.getCache().getEvents(FilterBasic.get(RCU_UNLOCK))) {
+                // iteration order assures that all intermediaries were already iterated
+                for (Event lock : locks) {
+                    if (unlock.getCId() < lock.getCId() ||
+                            exec.areMutuallyExclusive(lock, unlock) ||
+                            minTupleSet.getByFirst(lock).stream().anyMatch(t -> exec.isImplied(lock, t.getSecond()))) {
                         continue;
                     }
-                    Tuple tuple = new Tuple(first, second);
+                    boolean noIntermediary = maxTupleSet.getBySecond(unlock).isEmpty() &&
+                            maxTupleSet.getByFirst(lock).isEmpty();
+                    Tuple tuple = new Tuple(lock, unlock);
                     maxTupleSet.add(tuple);
-                    if (intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(first, e))) {
+                    if (noIntermediary) {
                         minTupleSet.add(tuple);
+                        if (exec.isImplied(unlock, lock)) {
+                            break;
+                        }
                     }
                 }
             }
