@@ -196,7 +196,6 @@ public class RelCo extends Relation {
         allWrites.sort(Comparator.comparingInt(Event::getCId));
         final TupleSet maxSet = getMaxTupleSet();
         final TupleSet minSet = getMinTupleSet();
-        final Set<Tuple> transCo = findTransitivelyImpliedCo();
 
         BooleanFormula enc = bmgr.makeTrue();
         // ---- Encode coherences ----
@@ -204,9 +203,10 @@ public class RelCo extends Relation {
             MemEvent w1 = allWrites.get(i);
             for (MemEvent w2 : allWrites.subList(i + 1, allWrites.size())) {
                 Tuple t = new Tuple(w1, w2);
+                Tuple tInv = t.getInverse();
                 boolean forwardPossible = maxSet.contains(t);
-                boolean backwardPossible = maxSet.contains(t.getInverse());
-                if (!forwardPossible && ! backwardPossible) {
+                boolean backwardPossible = maxSet.contains(tInv);
+                if (!forwardPossible && !backwardPossible) {
                     continue;
                 }
 
@@ -218,11 +218,11 @@ public class RelCo extends Relation {
                 BooleanFormula coB = backwardPossible ? getSMTVar(w2, w1, ctx) : bmgr.makeFalse();
 
                 enc = bmgr.and(enc,
-                        transCo.contains(t) ? bmgr.makeTrue() : bmgr.equivalence(pairingCond, bmgr.or(coF, coB)),
+                        bmgr.equivalence(pairingCond, bmgr.or(coF, coB)),
                         bmgr.or(bmgr.not(coF), bmgr.not(coB))
                 );
 
-                if (!minSet.contains(t)) {
+                if (!minSet.contains(t) && !minSet.contains(tInv)) {
                     for (MemEvent w3 : allWrites) {
                         Tuple t1 = new Tuple(w1, w3);
                         Tuple t2 = new Tuple(w3, w2);
