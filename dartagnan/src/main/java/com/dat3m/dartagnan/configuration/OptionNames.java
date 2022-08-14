@@ -20,10 +20,10 @@ public class OptionNames {
 	public static final String ALLOW_PARTIAL_EXECUTIONS = "encoding.allowPartialExecutions";
 	public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
 	public static final String INITIALIZE_REGISTERS = "encoding.initializeRegisters";
-	public static final String CO_ANTISYMMETRY = "encoding.co.antiSymm";
 	public static final String PRECISION = "encoding.precision";
 	public static final String BREAK_SYMMETRY_ON_RELATION = "encoding.symmetry.breakOnRelation";
 	public static final String BREAK_SYMMETRY_BY_SYNC_DEGREE = "encoding.symmetry.orderBySyncDegree";
+	public static final String IDL_TO_SAT = "encoding.wmm.idl2sat";
 	
 	// Program Processing Options
 	public static final String DETERMINISTIC_REORDERING = "program.processing.detReordering";
