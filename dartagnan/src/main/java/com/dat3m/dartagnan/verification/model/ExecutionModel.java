@@ -11,12 +11,14 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
@@ -452,13 +454,9 @@ public class ExecutionModel {
 
     // ===================================================
 
-    private Relation rf;
     private void extractReadsFrom() {
+        final Relation rf = getMemoryModel().getRelationRepository().getRelation(RF);
         readWriteMap.clear();
-
-        if (rf == null) {
-            rf = getMemoryModel().getRelationRepository().getRelation(RF);
-        }
 
         for (Map.Entry<BigInteger, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
         	BigInteger address = addressedReads.getKey();
@@ -481,22 +479,42 @@ public class ExecutionModel {
     }
 
     private void extractCoherences() {
-        for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
-            BigInteger addr = addrWrites.getKey();
-            Set<EventData> writes = addrWrites.getValue();
-            Map<EventData, BigInteger> writeCoIndexMap = new HashMap<>(writes.size() * 4 / 3, 0.75f);
+        final RelCo co = (RelCo) task.getMemoryModel().getRelationRepository().getRelation(CO);
 
-            for (EventData w : writes) {
-                writeCoIndexMap.put(w, model.evaluate(co.getClockVar(w.getEvent(), context)));
+        for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
+            final BigInteger addr = addrWrites.getKey();
+            final Set<EventData> writes = addrWrites.getValue();
+
+            List<EventData> coSortedWrites;
+            if (co.usesSATEncoding()) {
+                // --- Extracting co from SAT-based encoding ---
+                Map<EventData, List<EventData>> coEdges = new HashMap<>();
+                for (EventData w1 : writes) {
+                    coEdges.put(w1, new ArrayList<>());
+                    for (EventData w2 : writes) {
+                        if (Boolean.TRUE.equals(model.evaluate(co.getSMTVar(w1.getEvent(), w2.getEvent(), context)))) {
+                            coEdges.get(w1).add(w2);
+                        }
+                    }
+                }
+                DependencyGraph<EventData> depGraph = DependencyGraph.from(writes, coEdges);
+                coSortedWrites = new ArrayList<>(Lists.reverse(depGraph.getNodeContents()));
+            } else {
+                // --- Extracting co from IDL-based encoding using clock variables ---
+                Map<EventData, BigInteger> writeClockMap = new HashMap<>(writes.size() * 4 / 3, 0.75f);
+                for (EventData w : writes) {
+                    writeClockMap.put(w, model.evaluate(co.getClockVar(w.getEvent(), context)));
+                }
+                coSortedWrites = writes.stream().sorted(Comparator.comparing(writeClockMap::get)).collect(Collectors.toList());
             }
 
-            List<EventData> sortedWrites = writes.stream().sorted(Comparator.comparing(writeCoIndexMap::get)).collect(Collectors.toList());
+            // --- Apply internal clock orders (we always start from 0) --
             int i = 0;
-            for (EventData w : sortedWrites) {
+            for (EventData w : coSortedWrites) {
                 w.setCoherenceIndex(i++);
             }
-
-            coherenceMap.put(addr, Collections.unmodifiableList(sortedWrites));
+            coherenceMap.put(addr, Collections.unmodifiableList(coSortedWrites));
         }
+
     }
 }
