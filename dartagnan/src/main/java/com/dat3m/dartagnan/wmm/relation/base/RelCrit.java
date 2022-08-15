@@ -11,7 +11,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.LinkedList;
+import java.util.ArrayDeque;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.Tag.Linux.RCU_LOCK;
@@ -74,7 +74,7 @@ public class RelCrit extends StaticRelation {
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples) {
-        LinkedList<Tuple> queue = new LinkedList<>(intersection(tuples, maxTupleSet));
+        ArrayDeque<Tuple> queue = new ArrayDeque<>(intersection(tuples, maxTupleSet));
         while (!queue.isEmpty()) {
             Tuple tuple = queue.remove();
             if (!encodeTupleSet.add(tuple)) {
