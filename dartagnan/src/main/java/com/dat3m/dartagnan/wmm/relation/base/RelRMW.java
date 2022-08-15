@@ -100,28 +100,29 @@ public class RelRMW extends StaticRelation {
                 // assume order by cId
                 // assume cId describes a topological sorting over the control flow
                 for (int end = 1; end < events.size(); end++) {
-                    Event second = events.get(end);
-                    if (!second.is(Tag.WRITE)) {
+                    Event store = events.get(end);
+                    if (!store.is(Tag.WRITE)) {
                         continue;
                     }
                     int start = iterate(end - 1, i -> i >= 0, i -> i - 1)
-                            .filter(i -> exec.isImplied(second, events.get(i)))
+                            .filter(i -> exec.isImplied(store, events.get(i)))
                             .findFirst().orElse(0);
                     List<Event> candidates = events.subList(start, end).stream()
-                            .filter(e -> !exec.areMutuallyExclusive(e, second))
+                            .filter(e -> !exec.areMutuallyExclusive(e, store))
                             .collect(toList());
                     int size = candidates.size();
                     for (int i = 0; i < size; i++) {
-                        Event first = candidates.get(i);
+                        Event load = candidates.get(i);
                         List<Event> intermediaries = candidates.subList(i + 1, size);
-                        if (!first.is(Tag.READ) ||
-                                intermediaries.stream().anyMatch(e -> exec.isImplied(first, e))) {
+                        if (!load.is(Tag.READ) ||
+                                intermediaries.stream().anyMatch(e -> exec.isImplied(load, e))) {
                             continue;
                         }
-                        Tuple tuple = new Tuple(first, second);
+                        Tuple tuple = new Tuple(load, store);
                         maxTupleSet.add(tuple);
-                        if (intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(first, e)) &&
-                                alias.mustAlias((MemEvent) first, (MemEvent) second)) {
+                        if (intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(load, e)) &&
+                                (store.is(Tag.MATCHADDRESS) ||
+                                        alias.mustAlias((MemEvent) load, (MemEvent) store))) {
                             minTupleSet.add(tuple);
                         }
                     }
@@ -144,10 +145,6 @@ public class RelRMW extends StaticRelation {
             BooleanFormula storeExec = bmgr.makeFalse();
             for(Tuple t : maxTupleSet.getBySecond(store)) {
                 MemEvent load = (MemEvent) t.getFirst();
-                if(minTupleSet.contains(t)) {
-                    storeExec = bmgr.or(storeExec, load.exec());
-                    continue;
-                }
                 BooleanFormula sameAddress = generalEqual(load.getMemAddressExpr(), ((MemEvent) store).getMemAddressExpr(), ctx);
                 // Encode if load and store form an exclusive pair
                 BooleanFormula isPair = exclPair(load, store, ctx);
