@@ -126,6 +126,11 @@ public class RefinementSolver extends ModelChecker {
         symmEncoder.initializeEncoding(ctx);
         baselineEncoder.initializeEncoding(ctx);
 
+        //FIXME: This is an ugly fix to inject the configuration into the RelCo-instance that does NOT get encoded.
+        // This is needed because the ExecutionModel will see the settings of the non-encoded instance
+        // which may not align with the encoded one.
+        memoryModel.getRelationRepository().getRelation(CO).initializeEncoding(ctx);
+
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula globalRefinement = bmgr.makeTrue();
 
