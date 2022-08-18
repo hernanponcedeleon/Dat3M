@@ -221,6 +221,7 @@ public class Acyclic extends Axiom {
     private BooleanFormula consistentSAT(SolverContext ctx) {
         // We use a vertex-elimination graph based encoding.
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        final ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
         final Relation rel = this.rel;
         final Set<Tuple> edgeSet = rel.getEncodeTupleSet();
 
@@ -261,7 +262,8 @@ public class Acyclic extends Axiom {
         List<Event> varOrderings = new ArrayList<>(); // We should order this
         while (!nodes.isEmpty()) {
             // Find best vertex e to eliminate
-            final Event e = nodes.stream().min(Comparator.comparingInt(ev -> vertEleInEdges.get(ev).size() * vertEleOutEdges.get(ev).size())).get();
+            final Comparator<Event> comparator = Comparator.comparingInt(ev -> vertEleInEdges.get(ev).size() * vertEleOutEdges.get(ev).size());
+            final Event e = nodes.stream().min(comparator).get();
             varOrderings.add(e);
 
             // Eliminate e
@@ -275,7 +277,7 @@ public class Acyclic extends Axiom {
                 Event e1 = t1.getFirst();
                 for (Tuple t2 : out) {
                     Event e2 = t2.getSecond();
-                    if (e2 == e1) {
+                    if (e2 == e1 || exec.areMutuallyExclusive(e1, e2)) {
                         continue;
                     }
                     Tuple t = new Tuple(e1, e2);
@@ -293,7 +295,6 @@ public class Acyclic extends Axiom {
 
         // --- Create encoding ---
         final Set<Tuple> minSet = rel.getMinTupleSet();
-        final ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
         BooleanFormula enc = bmgr.makeTrue();
         // Basic lifting
         for (Tuple t : edgeSet) {
