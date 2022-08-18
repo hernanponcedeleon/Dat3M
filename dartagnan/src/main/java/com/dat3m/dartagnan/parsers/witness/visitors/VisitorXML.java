@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.XMLParser;
 import com.dat3m.dartagnan.parsers.XMLParser.ElementContext;
 import com.dat3m.dartagnan.parsers.XMLParserBaseVisitor;
-import com.dat3m.dartagnan.parsers.XMLParserVisitor;
 import com.dat3m.dartagnan.witness.Edge;
 import com.dat3m.dartagnan.witness.Node;
 import com.dat3m.dartagnan.witness.WitnessGraph;
@@ -13,7 +12,7 @@ import static com.dat3m.dartagnan.witness.GraphAttributes.*;
 
 import java.util.stream.Collectors;
 
-public class VisitorXML extends XMLParserBaseVisitor<Object> implements XMLParserVisitor<Object> {
+public class VisitorXML extends XMLParserBaseVisitor<Object> {
 	
 	private final WitnessGraph graph = new WitnessGraph();
 	

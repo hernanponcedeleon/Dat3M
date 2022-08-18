@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.parsers.cat.visitors;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
 import com.dat3m.dartagnan.parsers.CatParser;
-import com.dat3m.dartagnan.parsers.CatVisitor;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
@@ -17,7 +16,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.Set;
 
-public class VisitorBase extends CatBaseVisitor<Object> implements CatVisitor<Object> {
+public class VisitorBase extends CatBaseVisitor<Object> {
 
     RelationRepository relationRepository;
     VisitorRelation relationVisitor;

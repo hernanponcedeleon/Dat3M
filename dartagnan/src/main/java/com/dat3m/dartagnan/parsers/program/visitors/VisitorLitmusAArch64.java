@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusAArch64BaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAArch64Parser;
-import com.dat3m.dartagnan.parsers.LitmusAArch64Visitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
@@ -25,8 +24,7 @@ import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 
 import java.math.BigInteger;
 
-public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
-        implements LitmusAArch64Visitor<Object> {
+public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     private final ProgramBuilder programBuilder;
     private int mainThread;

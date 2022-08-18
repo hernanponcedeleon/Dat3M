@@ -12,7 +12,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 
-public class IExprBin extends IExpr implements ExprInterface {
+public class IExprBin extends IExpr {
 
     private final IExpr lhs;
     private final IExpr rhs;

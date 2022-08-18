@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.configuration;
 
-import com.dat3m.dartagnan.configuration.OptionInterface;
 import com.google.common.reflect.ClassPath;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;

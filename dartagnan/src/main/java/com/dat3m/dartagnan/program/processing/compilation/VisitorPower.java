@@ -23,7 +23,6 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import java.util.List;
 
@@ -33,7 +32,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.LEADING_SYNC;
 
-public class VisitorPower extends VisitorBase implements EventVisitor<List<Event>> {
+public class VisitorPower extends VisitorBase {
 
 	// The compilation schemes below follows the paper
 	// "Clarifying and Compiling C/C++ Concurrency: from C++11 to POWER"
