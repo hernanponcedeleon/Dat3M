@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.*;
-import com.dat3m.dartagnan.parsers.BoogieVisitor;
 import com.dat3m.dartagnan.parsers.program.boogie.Function;
 import com.dat3m.dartagnan.parsers.program.boogie.FunctionCall;
 import com.dat3m.dartagnan.parsers.program.boogie.PthreadPool;
@@ -53,7 +52,7 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedur
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LkmmProcedures.*;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.handleSvcompFunction;
 
-public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
+public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     private static final Logger logger = LogManager.getLogger(VisitorBoogie.class);
 	

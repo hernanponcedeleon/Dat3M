@@ -15,7 +15,7 @@ import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
 import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
 // TODO why is INonDet not a IConst?
-public class INonDet extends IExpr implements ExprInterface {
+public class INonDet extends IExpr {
 	
 	private final INonDetTypes type;
 	private final int precision;

@@ -9,7 +9,7 @@ import java.math.BigInteger;
 
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
-public class BNonDet extends BExpr implements ExprInterface {
+public class BNonDet extends BExpr {
 
 	private final int precision;
 	

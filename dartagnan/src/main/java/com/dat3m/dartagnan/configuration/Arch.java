@@ -2,8 +2,6 @@ package com.dat3m.dartagnan.configuration;
 
 import java.util.Arrays;
 
-import com.dat3m.dartagnan.configuration.OptionInterface;
-
 public enum Arch implements OptionInterface {
 	C11, ARM8, POWER, TSO, IMM, LKMM, RISCV;
 

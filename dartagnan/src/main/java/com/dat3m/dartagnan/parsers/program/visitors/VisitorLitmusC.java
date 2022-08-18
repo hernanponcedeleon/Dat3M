@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser;
 import com.dat3m.dartagnan.parsers.LitmusCParser.BasicTypeSpecifierContext;
 import com.dat3m.dartagnan.parsers.LitmusCParser.PointerTypeSpecifierContext;
-import com.dat3m.dartagnan.parsers.LitmusCVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
@@ -28,9 +27,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-public class VisitorLitmusC
-        extends LitmusCBaseVisitor<Object>
-        implements LitmusCVisitor<Object> {
+public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     private final ProgramBuilder programBuilder;
     private int currentThread;
