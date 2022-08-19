@@ -18,6 +18,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -60,13 +61,8 @@ public class RelCo extends Relation {
     }
 
     @Override
-    public void initializeEncoding(SolverContext ctx) {
-        super.initializeEncoding(ctx);
-        try {
-            task.getConfig().inject(this);
-        } catch(InvalidConfigurationException e) {
-            logger.warn(e.getMessage());
-        }
+    public void configure(Configuration config) throws InvalidConfigurationException {
+        config.inject(this);
     }
 
     @Override

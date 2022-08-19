@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 
 import java.util.EnumSet;
 
@@ -19,7 +18,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /*
 Represents a verification task.
  */
-@Options
 public class VerificationTask {
 
     // Data objects
@@ -36,8 +34,6 @@ public class VerificationTask {
         this.property = checkNotNull(property);
         this.witness = checkNotNull(witness);
         this.config = checkNotNull(config);
-
-        config.recursiveInject(this);
     }
 
     public static VerificationTaskBuilder builder() {

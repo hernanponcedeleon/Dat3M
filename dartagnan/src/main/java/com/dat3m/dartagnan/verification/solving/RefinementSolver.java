@@ -111,9 +111,11 @@ public class RefinementSolver extends ModelChecker {
         // We cut the rhs of differences to get a semi-positive model, if possible.
         // This call modifies the baseline model!
         Set<Relation> cutRelations = cutRelationDifferences(memoryModel, baselineModel);
-        performStaticProgramAnalyses(task, analysisContext, config);
+        memoryModel.configureAll(config);
+        baselineModel.configureAll(config); // Configure after cutting!
 
         Context baselineContext = Context.createCopyFrom(analysisContext);
+        performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
 
@@ -125,11 +127,6 @@ public class RefinementSolver extends ModelChecker {
         propertyEncoder.initializeEncoding(ctx);
         symmEncoder.initializeEncoding(ctx);
         baselineEncoder.initializeEncoding(ctx);
-
-        //FIXME: This is an ugly fix to inject the configuration into the RelCo-instance that does NOT get encoded.
-        // This is needed because the ExecutionModel will see the settings of the non-encoded instance
-        // which may not align with the encoded one.
-        memoryModel.getRelationRepository().getRelation(CO).initializeEncoding(ctx);
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula globalRefinement = bmgr.makeTrue();
