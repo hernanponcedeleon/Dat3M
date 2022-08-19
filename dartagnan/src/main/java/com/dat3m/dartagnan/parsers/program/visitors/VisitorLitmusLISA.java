@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusLISABaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusLISAParser;
-import com.dat3m.dartagnan.parsers.LitmusLISAVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
@@ -19,9 +18,7 @@ import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 
 import java.math.BigInteger;
 
-public class VisitorLitmusLISA
-        extends LitmusLISABaseVisitor<Object>
-        implements LitmusLISAVisitor<Object> {
+public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
     private final ProgramBuilder programBuilder;
     private int mainThread;

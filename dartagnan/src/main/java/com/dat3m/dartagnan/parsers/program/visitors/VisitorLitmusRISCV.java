@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusRISCVBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusRISCVParser;
-import com.dat3m.dartagnan.parsers.LitmusRISCVVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
@@ -20,9 +19,7 @@ import java.math.BigInteger;
 
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 
-public class VisitorLitmusRISCV
-        extends LitmusRISCVBaseVisitor<Object>
-        implements LitmusRISCVVisitor<Object> {
+public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     private final ProgramBuilder programBuilder;
     private int mainThread;

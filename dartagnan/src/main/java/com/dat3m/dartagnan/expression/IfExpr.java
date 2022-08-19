@@ -12,7 +12,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 
-public class IfExpr extends IExpr implements ExprInterface {
+public class IfExpr extends IExpr {
 
 	private final BExpr guard;
 	private final IExpr tbranch;

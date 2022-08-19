@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
-import com.dat3m.dartagnan.parsers.LitmusAssertionsVisitor;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -17,8 +16,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.google.common.base.Preconditions.checkState;
 
-public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<AbstractAssert>
-        implements LitmusAssertionsVisitor<AbstractAssert> {
+public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<AbstractAssert> {
 
     private final ProgramBuilder programBuilder;
 

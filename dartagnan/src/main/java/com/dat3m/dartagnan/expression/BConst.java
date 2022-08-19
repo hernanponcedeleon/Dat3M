@@ -7,7 +7,7 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-public class BConst extends BExpr implements ExprInterface {
+public class BConst extends BExpr {
 
 	public final static BConst TRUE = new BConst(true);
 	public final static BConst FALSE = new BConst(false);

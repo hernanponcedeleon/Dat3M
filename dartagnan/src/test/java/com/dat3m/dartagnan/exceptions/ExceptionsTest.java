@@ -29,7 +29,6 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
-import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.utils.TestHelper.createContext;
 
