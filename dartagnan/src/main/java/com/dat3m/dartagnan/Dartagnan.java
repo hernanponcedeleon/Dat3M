@@ -204,7 +204,7 @@ public class Dartagnan extends BaseOptions {
         	System.out.println("TIMEOUT");
         	System.exit(0);
         } catch (Exception e) {
-        	logger.error(e.getMessage());
+        	logger.error(e.getMessage(), e);
         	System.out.println("ERROR");
         	System.exit(1);
         }

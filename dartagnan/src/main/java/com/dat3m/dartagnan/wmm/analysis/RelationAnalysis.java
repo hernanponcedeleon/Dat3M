@@ -51,9 +51,6 @@ public class RelationAnalysis {
         }
 
         // ------------------------------------------------
-        for(String relName : Wmm.BASE_RELATIONS){
-            memoryModel.getRelationRepository().getRelation(relName).initializeRelationAnalysis(task, context);
-        }
         for (Relation rel : memoryModel.getRelations()) {
             rel.initializeRelationAnalysis(task, context);
         }
@@ -62,10 +59,9 @@ public class RelationAnalysis {
         }
 
         // ------------------------------------------------
-        for(String relName : Wmm.BASE_RELATIONS){
-            Relation baseRel = memoryModel.getRelationRepository().getRelation(relName);
-            baseRel.getMaxTupleSet();
-            baseRel.getMinTupleSet();
+        for (String baseRel : Wmm.BASE_RELATIONS) {
+            memoryModel.getRelationRepository().getRelation(baseRel).getMinTupleSet();
+            memoryModel.getRelationRepository().getRelation(baseRel).getMaxTupleSet();
         }
         for (RecursiveGroup recursiveGroup : memoryModel.getRecursiveGroups()) {
             recursiveGroup.initMaxTupleSets();
@@ -75,7 +71,5 @@ public class RelationAnalysis {
             ax.getRelation().getMaxTupleSet();
             ax.getRelation().getMinTupleSet();
         }
-
-
     }
 }

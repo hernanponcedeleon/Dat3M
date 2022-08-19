@@ -46,7 +46,8 @@ public class IncrementalSolver extends ModelChecker {
         Wmm memoryModel = task.getMemoryModel();
         Context analysisContext = Context.create();
         Configuration config = task.getConfig();
-        
+
+        memoryModel.configureAll(config);
         preprocessProgram(task, config);
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
