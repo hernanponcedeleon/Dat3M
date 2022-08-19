@@ -4,11 +4,10 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReaderData {
+public class AtomicFetchOp extends AtomicAbstract {
 
     private final IOpBin op;
 

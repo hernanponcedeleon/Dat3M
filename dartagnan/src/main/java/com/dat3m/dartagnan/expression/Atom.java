@@ -9,7 +9,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-public class Atom extends BExpr implements ExprInterface {
+public class Atom extends BExpr {
 	
 	private final ExprInterface lhs;
 	private final ExprInterface rhs;

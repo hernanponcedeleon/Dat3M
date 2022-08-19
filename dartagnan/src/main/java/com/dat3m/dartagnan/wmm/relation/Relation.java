@@ -13,6 +13,8 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -78,6 +80,7 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     //  data objects, static analysers (relation analysis) and encoders of said data objects.
     //  Once we split these aspects, we might get rid of these methods
 
+    public void configure(Configuration config) throws InvalidConfigurationException { }
     // Due to being an encoder
     public void initializeEncoding(SolverContext ctx) {
     	Preconditions.checkState(this.maxTupleSet != null && this.minTupleSet != null,

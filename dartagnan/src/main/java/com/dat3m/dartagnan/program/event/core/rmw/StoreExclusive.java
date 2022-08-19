@@ -5,11 +5,10 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Store;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class StoreExclusive extends Store implements RegWriter, RegReaderData {
+public class StoreExclusive extends Store implements RegWriter {
 
     private final Register register;
 

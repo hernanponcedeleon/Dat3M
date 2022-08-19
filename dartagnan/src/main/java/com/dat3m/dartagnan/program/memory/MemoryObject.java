@@ -17,7 +17,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 /**
  * Associated with an array of memory locations.
  */
-public class MemoryObject extends IConst implements ExprInterface, LastValueInterface {
+public class MemoryObject extends IConst {
 
     private final int index;
     private int size;

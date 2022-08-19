@@ -11,8 +11,6 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -22,7 +20,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.C11.extractLoadMo;
 import static com.dat3m.dartagnan.program.event.Tag.C11.extractStoreMo;
 
-class VisitorIMM extends VisitorBase implements EventVisitor<List<Event>> {
+class VisitorIMM extends VisitorBase {
 
 	protected VisitorIMM() {}
 

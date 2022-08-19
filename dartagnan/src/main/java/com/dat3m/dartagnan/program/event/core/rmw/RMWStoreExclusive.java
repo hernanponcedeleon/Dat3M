@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Store;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -14,7 +13,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
-public class RMWStoreExclusive extends Store implements RegReaderData {
+public class RMWStoreExclusive extends Store {
 
     protected transient BooleanFormula execVar;
 

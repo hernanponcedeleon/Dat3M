@@ -2,13 +2,11 @@ package com.dat3m.dartagnan.program.event.lang.catomic;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 
-public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReaderData {
+public class AtomicCmpXchg extends AtomicAbstract {
 
     private IExpr expectedAddr;
 

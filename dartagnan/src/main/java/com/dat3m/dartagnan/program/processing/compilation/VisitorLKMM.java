@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -26,7 +25,7 @@ import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
-public class VisitorLKMM extends VisitorBase implements EventVisitor<List<Event>> {
+public class VisitorLKMM extends VisitorBase {
 
 	protected VisitorLKMM() {}
 	

@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.parsers.LitmusX86BaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusX86Parser;
-import com.dat3m.dartagnan.parsers.LitmusX86Visitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
@@ -18,9 +17,7 @@ import java.math.BigInteger;
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.MFENCE;
 
-public class VisitorLitmusX86
-        extends LitmusX86BaseVisitor<Object>
-        implements LitmusX86Visitor<Object> {
+public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
 
     private final static ImmutableSet<String> fences = ImmutableSet.of(MFENCE);
 

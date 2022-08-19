@@ -26,7 +26,6 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import java.util.List;
 
@@ -35,7 +34,7 @@ import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 
-class VisitorArm8 extends VisitorBase implements EventVisitor<List<Event>> {
+class VisitorArm8 extends VisitorBase {
 
 	// If the source WMM does not allow OOTA behaviors (e.g. RC11)
 	// we need to strength the compilation following the paper

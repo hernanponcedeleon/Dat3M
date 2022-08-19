@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -33,6 +35,8 @@ public abstract class Axiom implements Dependent<Relation> {
         this.negated = negated;
         this.flag = flag;
     }
+
+    public void configure(Configuration config) throws InvalidConfigurationException { }
 
     public void initializeEncoding(SolverContext ctx) {
         Preconditions.checkState(this.task != null,

@@ -111,8 +111,10 @@ public class RefinementSolver extends ModelChecker {
         // We cut the rhs of differences to get a semi-positive model, if possible.
         // This call modifies the baseline model!
         Set<Relation> cutRelations = cutRelationDifferences(memoryModel, baselineModel);
-        performStaticProgramAnalyses(task, analysisContext, config);
+        memoryModel.configureAll(config);
+        baselineModel.configureAll(config); // Configure after cutting!
 
+        performStaticProgramAnalyses(task, analysisContext, config);
         Context baselineContext = Context.createCopyFrom(analysisContext);
         performStaticWmmAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
