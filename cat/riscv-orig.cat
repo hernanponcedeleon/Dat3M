@@ -1,5 +1,7 @@
 Partial
 
+(* This is the original RISC-V memory model *)
+
 (***************)
 (* Definitions *)
 (***************)
@@ -26,9 +28,8 @@ let fence =
   fence.tso
 
 
-//let po-loc-no-w = po-loc \ (po-loc?;[W];po-loc)
-//let rsw = rf^-1;rf
-let rdw = po-loc & (fre;rfe)
+let po-loc-no-w = po-loc \ (po-loc?;[W];po-loc)
+let rsw = rf^-1;rf
 let AcqRel = AcqRel|Sc (* Compat *)
 let AQ = (Acq|AcqRel)
 let RL = (Rel|AcqRel)
@@ -40,8 +41,7 @@ let RCsc = (Acq|Rel|AcqRel) & (AMO|X)
 
 (* Overlapping-Address Orderings *)
 let r1 = [M];po-loc;[W]
-//let r2 = ([R];po-loc-no-w;[R]) \ rsw
-let r2 = rdw
+let r2 = ([R];po-loc-no-w;[R]) \ rsw
 let r3 = [AMO|X];rfi;[R]
 (* Explicit Synchronization *)
 let r4 = fence
