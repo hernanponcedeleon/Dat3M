@@ -13,6 +13,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Queue;
 
 import static com.dat3m.dartagnan.program.event.Tag.Linux.RCU_LOCK;
 import static com.dat3m.dartagnan.program.event.Tag.Linux.RCU_UNLOCK;
@@ -30,19 +31,23 @@ public class RelCrit extends StaticRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            getMaxTupleSet();
+            computeTupleSets();
         }
         return minTupleSet;
     }
 
     @Override
     public TupleSet getMaxTupleSet(){
-        if(maxTupleSet != null) {
-            return maxTupleSet;
+        if(maxTupleSet == null) {
+            computeTupleSets();
         }
+        return maxTupleSet;
+    }
+
+    private void computeTupleSets() {
+        final ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
         maxTupleSet = new TupleSet();
         minTupleSet = new TupleSet();
-        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
         for (Thread thread : task.getProgram().getThreads()) {
             // assume order by cId
             // assume cId describes a topological sorting over the control flow
@@ -69,12 +74,11 @@ public class RelCrit extends StaticRelation {
                 }
             }
         }
-        return maxTupleSet;
     }
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples) {
-        ArrayDeque<Tuple> queue = new ArrayDeque<>(intersection(tuples, maxTupleSet));
+        Queue<Tuple> queue = new ArrayDeque<>(intersection(tuples, maxTupleSet));
         while (!queue.isEmpty()) {
             Tuple tuple = queue.remove();
             if (!encodeTupleSet.add(tuple)) {
@@ -118,7 +122,7 @@ public class RelCrit extends StaticRelation {
         return enc;
     }
 
-    private static boolean isOrdered(Event x, Event y, Event z) {
+    private boolean isOrdered(Event x, Event y, Event z) {
         return x.getCId() < y.getCId() && y.getCId() < z.getCId();
     }
 }
