@@ -163,18 +163,18 @@ public class RelRMW extends StaticRelation {
             }
             enc = bmgr.and(enc, bmgr.implication(store.exec(), storeExec));
         }
+
+        final AliasAnalysis alias = analysisContext.requires(AliasAnalysis.class);
         for(Tuple tuple : encodeTupleSet) {
             MemEvent load = (MemEvent) tuple.getFirst();
             MemEvent store = (MemEvent) tuple.getSecond();
+            BooleanFormula sameAddress = (alias.mustAlias(load, store) || store.is(Tag.MATCHADDRESS)) ? bmgr.makeTrue()
+                    : generalEqual(load.getMemAddressExpr(), store.getMemAddressExpr(), ctx);
             enc = bmgr.and(enc, bmgr.equivalence(
                     getSMTVar(tuple, ctx),
-                    minTupleSet.contains(tuple) ?
-                            getExecPair(tuple, ctx) :
+                    minTupleSet.contains(tuple) ? getExecPair(tuple, ctx) :
                             // Relation between exclusive load and store
-                            bmgr.and(
-                                    store.exec(),
-                                    exclPair(load, store, ctx),
-                                    generalEqual(load.getMemAddressExpr(), store.getMemAddressExpr(), ctx))));
+                            bmgr.and(store.exec(), exclPair(load, store, ctx), sameAddress)));
         }
         return bmgr.and(enc, bmgr.equivalence(Flag.ARM_UNPREDICTABLE_BEHAVIOUR.repr(ctx), unpredictable));
     }
