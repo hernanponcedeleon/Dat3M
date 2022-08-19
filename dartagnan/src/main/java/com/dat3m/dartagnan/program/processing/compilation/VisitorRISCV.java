@@ -35,7 +35,6 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
@@ -54,7 +53,7 @@ import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_ACQUIRE;
 import static com.dat3m.dartagnan.program.event.EventFactory.newExecutionStatusWithDependencyTracking;
 import java.util.List;
 
-class VisitorRISCV extends VisitorBase implements EventVisitor<List<Event>> {
+class VisitorRISCV extends VisitorBase {
 	// Some language memory models (e.g. RC11) are non-dependency tracking and might need a 
 	// strong version of no-OOTA, thus we need to strength the compilation. None of the usual paper
 	// "Repairing Sequential Consistency in C/C++11"

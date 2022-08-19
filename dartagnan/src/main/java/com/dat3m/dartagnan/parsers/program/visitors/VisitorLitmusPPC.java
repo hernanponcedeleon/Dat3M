@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusPPCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusPPCParser;
-import com.dat3m.dartagnan.parsers.LitmusPPCVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
@@ -23,9 +22,7 @@ import java.math.BigInteger;
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
-public class VisitorLitmusPPC
-        extends LitmusPPCBaseVisitor<Object>
-        implements LitmusPPCVisitor<Object> {
+public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     private final static ImmutableSet<String> fences = ImmutableSet.of(SYNC, LWSYNC, ISYNC);
 

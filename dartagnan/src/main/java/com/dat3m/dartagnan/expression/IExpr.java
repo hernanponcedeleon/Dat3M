@@ -6,7 +6,7 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
 
-public abstract class IExpr implements ExprInterface, Reducible {
+public abstract class IExpr implements Reducible {
 
     @Override
 	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {

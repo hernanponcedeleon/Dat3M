@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -20,7 +19,7 @@ import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 // This means we should have these events in our core language in some shape or form.
 // But before we can do so, we need to understand their semantics as addressed in issue #200
 // (https://github.com/hernanponcedeleon/Dat3M/issues/200)
-public abstract class RMWReadCond extends Load implements RegWriter, RegReaderData {
+public abstract class RMWReadCond extends Load implements RegReaderData {
 
     protected ExprInterface cmp;
     protected BooleanFormula formulaCond;

@@ -2,8 +2,6 @@ package com.dat3m.dartagnan.configuration;
 
 import java.util.Arrays;
 
-import com.dat3m.dartagnan.configuration.OptionInterface;
-
 public enum Alias implements OptionInterface {
 	// For comparison reasons, we might want to add a NONE method with may = true, must = false
 	FIELD_SENSITIVE, FIELD_INSENSITIVE;
