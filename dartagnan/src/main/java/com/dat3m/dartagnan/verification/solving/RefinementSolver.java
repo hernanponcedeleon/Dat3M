@@ -114,8 +114,8 @@ public class RefinementSolver extends ModelChecker {
         memoryModel.configureAll(config);
         baselineModel.configureAll(config); // Configure after cutting!
 
-        Context baselineContext = Context.createCopyFrom(analysisContext);
         performStaticProgramAnalyses(task, analysisContext, config);
+        Context baselineContext = Context.createCopyFrom(analysisContext);
         performStaticWmmAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
 
