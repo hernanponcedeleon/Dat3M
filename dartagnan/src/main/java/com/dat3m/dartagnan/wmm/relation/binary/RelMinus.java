@@ -29,11 +29,6 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public void initializeEncoding(SolverContext ctx){
-        super.initializeEncoding(ctx);
-    }
-
-    @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             minTupleSet = new TupleSet(Sets.difference(r1.getMinTupleSet(), r2.getMaxTupleSet()));
