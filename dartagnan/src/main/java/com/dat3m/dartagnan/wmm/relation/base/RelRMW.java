@@ -38,7 +38,6 @@ public class RelRMW extends StaticRelation {
 
     public RelRMW(){
         term = RMW;
-        forceDoEncode = true;
     }
 
     @Override
