@@ -55,10 +55,8 @@ public class RecursiveRelation extends Relation {
     }
 
     public void setConcreteRelation(Relation r1){
-        r1.isRecursive = true;
         r1.setName(name);
         this.r1 = r1;
-        this.isRecursive = true;
         this.term = r1.getTerm();
     }
 
@@ -113,16 +111,6 @@ public class RecursiveRelation extends Relation {
             doRecurse = false;
             r1.addEncodeTupleSet(encodeTupleSet);
         }
-    }
-
-    @Override
-    public int updateRecursiveGroupId(int parentId){
-        if(forceUpdateRecursiveGroupId){
-            forceUpdateRecursiveGroupId = false;
-            int r1Id = r1.updateRecursiveGroupId(parentId | recursiveGroupId);
-            recursiveGroupId |= r1Id & parentId;
-        }
-        return recursiveGroupId;
     }
 
     @Override

@@ -44,17 +44,6 @@ public abstract class BinaryRelation extends Relation {
     }
 
     @Override
-    public int updateRecursiveGroupId(int parentId){
-        if(recursiveGroupId == 0 || forceUpdateRecursiveGroupId){
-            forceUpdateRecursiveGroupId = false;
-            int r1Id = r1.updateRecursiveGroupId(parentId | recursiveGroupId);
-            int r2Id = r2.updateRecursiveGroupId(parentId | recursiveGroupId);
-            recursiveGroupId |= (r1Id | r2Id) & parentId;
-        }
-        return recursiveGroupId;
-    }
-
-    @Override
     public void addEncodeTupleSet(TupleSet tuples){ // Not valid for composition
         TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
         encodeTupleSet.addAll(activeSet);

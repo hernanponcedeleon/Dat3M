@@ -43,9 +43,6 @@ public class RelationAnalysis {
     private void run(VerificationTask task, Context context) {
         // Init data context so that each relation is able to compute its may/must sets.
         final Wmm memoryModel = task.getMemoryModel();
-        for (Axiom ax : memoryModel.getAxioms()) {
-            ax.getRelation().updateRecursiveGroupId(ax.getRelation().getRecursiveGroupId());
-        }
         for(RecursiveGroup recursiveGroup : memoryModel.getRecursiveGroups()){
             recursiveGroup.setDoRecurse();
         }

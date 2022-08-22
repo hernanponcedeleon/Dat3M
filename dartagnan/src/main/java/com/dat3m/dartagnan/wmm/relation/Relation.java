@@ -46,9 +46,6 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     protected TupleSet maxTupleSet = null;
     protected TupleSet encodeTupleSet = null;
 
-    protected int recursiveGroupId = 0;
-    protected boolean forceUpdateRecursiveGroupId = false;
-    protected boolean isRecursive = false;
     protected boolean forceDoEncode = false;
 
     public Relation() { }
@@ -61,19 +58,6 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     @Override
     public List<Relation> getDependencies() {
         return Collections.emptyList();
-    }
-
-    public int getRecursiveGroupId(){
-        return recursiveGroupId;
-    }
-
-    public void setRecursiveGroupId(int id){
-        forceUpdateRecursiveGroupId = true;
-        recursiveGroupId = id;
-    }
-
-    public int updateRecursiveGroupId(int parentId){
-        return recursiveGroupId;
     }
 
     // TODO: The following two methods are provided because currently Relations are treated as three things:

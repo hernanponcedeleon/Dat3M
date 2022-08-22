@@ -35,24 +35,6 @@ public abstract class UnaryRelation extends Relation {
     }
 
     @Override
-    public int updateRecursiveGroupId(int parentId){
-        if(recursiveGroupId == 0 || forceUpdateRecursiveGroupId){
-            forceUpdateRecursiveGroupId = false;
-            int r1Id = r1.updateRecursiveGroupId(parentId | recursiveGroupId);
-            recursiveGroupId |= r1Id & parentId;
-        }
-        return recursiveGroupId;
-    }
-
-    @Override
-    public void initializeEncoding(SolverContext ctx){
-        super.initializeEncoding(ctx);
-        if(recursiveGroupId > 0){
-            throw new UnsupportedOperationException("Recursion is not implemented for " + this.getClass().getName());
-        }
-    }
-
-    @Override
     public BooleanFormula encode(SolverContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         if(isEncoded){
