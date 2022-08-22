@@ -55,10 +55,8 @@ public class RecursiveRelation extends Relation {
     }
 
     public void setConcreteRelation(Relation r1){
-        r1.isRecursive = true;
         r1.setName(name);
         this.r1 = r1;
-        this.isRecursive = true;
         this.term = r1.getTerm();
     }
 
@@ -116,27 +114,8 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public int updateRecursiveGroupId(int parentId){
-        if(forceUpdateRecursiveGroupId){
-            forceUpdateRecursiveGroupId = false;
-            int r1Id = r1.updateRecursiveGroupId(parentId | recursiveGroupId);
-            recursiveGroupId |= r1Id & parentId;
-        }
-        return recursiveGroupId;
-    }
-
-    @Override
-    public BooleanFormula encode(SolverContext ctx) {
-        if(isEncoded){
-            return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
-        }
-        isEncoded = true;
-        return r1.encode(ctx);
-    }
-
-    @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
-        return r1.encodeApprox(ctx);
+        return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
     }
 
 }

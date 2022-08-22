@@ -1,12 +1,15 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
+import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -71,22 +74,9 @@ public class WmmEncoder implements Encoder {
 
     public BooleanFormula encodeFullMemoryModel(SolverContext ctx) {
         return ctx.getFormulaManager().getBooleanFormulaManager().and(
-                encodeRelations(ctx), encodeConsistency(ctx)
+                encodeRelations(ctx),
+                encodeConsistency(ctx)
         );
-    }
-
-    // This methods initializes all relations and encodes all base relations
-    // It does NOT encode the axioms nor any non-base relation yet!
-    public BooleanFormula encodeAnarchicSemantics(SolverContext ctx) {
-        checkInitialized();
-        logger.info("Encoding anarchic semantics");
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula enc = bmgr.makeTrue();
-        for(String relName : Wmm.BASE_RELATIONS){
-            enc = bmgr.and(enc, memoryModel.getRelationRepository().getRelation(relName).encode(ctx));
-        }
-
-        return enc;
     }
 
     // Initializes everything just like encodeAnarchicSemantics but also encodes all
@@ -95,27 +85,27 @@ public class WmmEncoder implements Encoder {
     public BooleanFormula encodeRelations(SolverContext ctx) {
         checkInitialized();
         logger.info("Encoding relations");
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula enc = encodeAnarchicSemantics(ctx);
-        for (Axiom ax : memoryModel.getAxioms()) {
-            enc = bmgr.and(enc, ax.getRelation().encode(ctx));
-        }
-        return enc;
+        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        final RelationRepository repo = memoryModel.getRelationRepository();
+        final DependencyGraph<Relation> depGraph = DependencyGraph.from(
+                Iterables.concat(
+                        Iterables.transform(Wmm.BASE_RELATIONS, repo::getRelation), // base relations
+                        Iterables.transform(memoryModel.getAxioms(), Axiom::getRelation) // axiom relations
+                )
+        );
+
+        return depGraph.getNodeContents().stream().map(rel -> rel.encode(ctx)).reduce(bmgr.makeTrue(), bmgr::and);
     }
 
     // Encodes all axioms. This should be called after <encodeRelations>
     public BooleanFormula encodeConsistency(SolverContext ctx) {
         checkInitialized();
         logger.info("Encoding consistency");
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula expr = bmgr.makeTrue();
-        for (Axiom ax : memoryModel.getAxioms()) {
-        	// Flagged axioms do not act as consistency filter
-        	if(ax.isFlagged()) {
-        		continue;
-        	}
-            expr = bmgr.and(expr, ax.consistent(ctx));
-        }
-        return expr;
+        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+
+        return memoryModel.getAxioms().stream()
+                .filter(ax -> !ax.isFlagged())
+                .map(ax -> ax.consistent(ctx))
+                .reduce(bmgr.makeTrue(), bmgr::and);
     }
 }

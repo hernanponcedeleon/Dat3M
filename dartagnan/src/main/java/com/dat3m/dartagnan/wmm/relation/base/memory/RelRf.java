@@ -33,7 +33,6 @@ public class RelRf extends Relation {
 
     public RelRf(){
         term = RF;
-        forceDoEncode = true;
     }
 
 

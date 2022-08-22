@@ -56,7 +56,7 @@ public class RelComposition extends BinaryRelation {
 
     @Override
     public TupleSet getMinTupleSetRecursive(){
-        if(recursiveGroupId > 0 && maxTupleSet != null){
+        if(maxTupleSet != null){
             ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             minTupleSet = r1.getMinTupleSetRecursive().postComposition(r2.getMinTupleSetRecursive(),
                     (t1, t2) -> exec.isImplied(t1.getFirst(), t1.getSecond())
@@ -69,7 +69,7 @@ public class RelComposition extends BinaryRelation {
 
     @Override
     public TupleSet getMaxTupleSetRecursive(){
-        if(recursiveGroupId > 0 && maxTupleSet != null){
+        if(maxTupleSet != null){
             ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             maxTupleSet = r1.getMaxTupleSetRecursive().postComposition(r2.getMaxTupleSetRecursive(),
                     (t1, t2) -> !exec.areMutuallyExclusive(t1.getFirst(), t2.getSecond()));
