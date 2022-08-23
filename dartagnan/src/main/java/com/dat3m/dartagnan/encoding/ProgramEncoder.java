@@ -154,7 +154,7 @@ public class ProgramEncoder implements Encoder {
             }
 
             if(!e.cf().equals(cfCond)) {
-            	enc = bmgr.and(enc, cfCond.equals(bmgr.makeTrue()) ? e.cf() : cfEncoder.apply(e.cf(), cfCond));
+            	enc = bmgr.and(enc, e.cf().equals(bmgr.makeTrue()) ? cfCond : cfEncoder.apply(e.cf(), cfCond));
             }
             if(!e.encodeExec(ctx).equals(bmgr.makeTrue())) {            	
                 enc = bmgr.and(enc, e.encodeExec(ctx));
