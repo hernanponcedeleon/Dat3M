@@ -153,7 +153,12 @@ public class ProgramEncoder implements Encoder {
                 }
             }
 
-            enc = bmgr.and(enc, cfEncoder.apply(e.cf(), cfCond), e.encodeExec(ctx));
+            if(!e.cf().equals(cfCond)) {
+            	enc = bmgr.and(enc, cfCond.equals(bmgr.makeTrue()) ? e.cf() : cfEncoder.apply(e.cf(), cfCond));
+            }
+            if(!e.encodeExec(ctx).equals(bmgr.makeTrue())) {            	
+                enc = bmgr.and(enc, e.encodeExec(ctx));
+            }
             pred = e;
         }
         return enc;
