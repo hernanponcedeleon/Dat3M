@@ -36,7 +36,7 @@
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-mathsat5</artifactId>
-          <version>5.6.6-sosy1</version>
+          <version>5.6.8</version>
           <classifier>libmathsat5j</classifier>
           <type>so</type>
         </dependency>
@@ -45,14 +45,14 @@
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-z3</artifactId>
-          <version>4.8.17</version>
+          <version>4.10.1</version>
           <type>so</type>
           <classifier>libz3</classifier>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-z3</artifactId>
-          <version>4.8.17</version>
+          <version>4.10.1</version>
           <type>so</type>
           <classifier>libz3java</classifier>
         </dependency>
@@ -61,21 +61,21 @@
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-boolector</artifactId>
-          <version>3.2.2-g0783aa84</version>
+          <version>3.2.2-g1a89c229</version>
           <type>so</type>
           <classifier>libboolector</classifier>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-boolector</artifactId>
-          <version>3.2.2-g0783aa84</version>
+          <version>3.2.2-g1a89c229</version>
           <type>so</type>
           <classifier>libminisat</classifier>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-boolector</artifactId>
-          <version>3.2.2-g0783aa84</version>
+          <version>3.2.2-g1a89c229</version>
           <type>so</type>
           <classifier>libpicosat</classifier>
         </dependency>
@@ -434,12 +434,12 @@
     <dependency>
       <groupId>org.sosy-lab</groupId>
       <artifactId>java-smt</artifactId>
-      <version>3.12.0</version>
+      <version>3.13.3</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>29.0-jre</version>
+      <version>31.1-jre</version>
     </dependency>
     <dependency>
       <groupId>org.antlr</groupId>
@@ -456,7 +456,7 @@
     <dependency>
       <groupId>org.sosy-lab</groupId>
       <artifactId>javasmt-solver-z3</artifactId>
-      <version>4.8.17</version>
+      <version>4.10.1</version>
       <type>jar</type>
       <classifier>com.microsoft.z3</classifier>
     </dependency>
