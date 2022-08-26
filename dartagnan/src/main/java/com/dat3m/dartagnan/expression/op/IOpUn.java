@@ -104,19 +104,19 @@ public enum IOpUn {
     			return e;
         	// ============ TRUNC ============    		
     		case TRUNC6432:
-    			return bvmgr.extract(bv, 31, 0, false);
+    			return bvmgr.extract(bv, 31, 0);
     		case TRUNC6416:
     		case TRUNC3216:
-    			return bvmgr.extract(bv, 15, 0, false);
+    			return bvmgr.extract(bv, 15, 0);
     		case TRUNC648:
     		case TRUNC328:
     		case TRUNC168:
-    			return bvmgr.extract(bv, 7, 0, false);
+    			return bvmgr.extract(bv, 7, 0);
     		case TRUNC641:
     		case TRUNC321:
     		case TRUNC161:
     		case TRUNC81:
-    			return bvmgr.extract(bv, 1, 0, false);
+    			return bvmgr.extract(bv, 1, 0);
         	// ============ ZEXT ============    		
     		case ZEXT18:
     			return bvmgr.extend(bv, 7, false);
