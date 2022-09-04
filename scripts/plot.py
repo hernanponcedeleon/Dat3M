@@ -20,8 +20,8 @@ mapping_method = dict([
 mapping_title = dict([
     ('TSO', 'TSO'),
     ('Power', 'Power'),
-    ('ARM8', 'ARM8'),
-    ('RISCV', 'RISCV'),
+    ('ARM8', 'ARMv8'),
+    ('RISCV', 'RISC-V'),
     ('Linux', 'LKMM'),
     ('C11', 'RC11'),
     ('IMM', 'IMM')
@@ -170,9 +170,9 @@ for a in arch:
     df['caat'] = pd.read_csv(mapping_files['caat-' + a]).iloc[:, 2]
     df['herd'] = pd.read_csv(mapping_files['herd-' + a]).iloc[:, 2]
 
-    total.loc[a + '\n (' + str(len(df.index)) + ')', mapping_method['two']] = df['two'].sum()
-    total.loc[a + '\n (' + str(len(df.index)) + ')', mapping_method['caat']] = df['caat'].sum()
-    total.loc[a + '\n (' + str(len(df.index)) + ')', mapping_method['herd']] = df['herd'].sum()
+    total.loc[mapping_title[a] + '\n (' + str(len(df.index)) + ')', mapping_method['two']] = df['two'].sum()
+    total.loc[mapping_title[a] + '\n (' + str(len(df.index)) + ')', mapping_method['caat']] = df['caat'].sum()
+    total.loc[mapping_title[a] + '\n (' + str(len(df.index)) + ')', mapping_method['herd']] = df['herd'].sum()
         
 #########################
 ### Accumulated times ###

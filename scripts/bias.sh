@@ -75,7 +75,7 @@ for TARGET in ${TARGETS[@]}; do
 
         ## Run Dartagnan with CAAT
         start=`python3 -c 'import time; print(int(time.time() * 1000))'`
-        OUTPUT=$(timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.0.0.jar cat/$CAT $DAT3M_OPTIONS --target=$TARGET --refinement.baseline=$BIAS $BENCHMARK)
+        OUTPUT=$(timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.1.0.jar cat/$CAT $DAT3M_OPTIONS --target=$TARGET --refinement.baseline=$BIAS $BENCHMARK)
         end=`python3 -c 'import time; print(int(time.time() * 1000))'`
         TIME=$((end-start))
         
@@ -97,7 +97,7 @@ for TARGET in ${TARGETS[@]}; do
     
     ## Run Dartagnan with eager encoding
     start=`python3 -c 'import time; print(int(time.time() * 1000))'`
-    OUTPUT=$(timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.0.0.jar cat/$CAT $DAT3M_OPTIONS --target=$TARGET --refinement.baseline=$BIAS $BENCHMARK --method=assume)
+    OUTPUT=$(timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.1.0.jar cat/$CAT $DAT3M_OPTIONS --target=$TARGET --refinement.baseline=$BIAS $BENCHMARK --method=assume)
     end=`python3 -c 'import time; print(int(time.time() * 1000))'`
     TIME=$((end-start))
     

@@ -60,7 +60,7 @@ for TARGET in ${TARGETS[@]}; do
         ## Run Dartagnan
         for BENCHMARK in ${BENCHMARKS[@]}; do
             start=`python3 -c 'import time; print(int(time.time() * 1000))'`
-            OUTPUT=$(timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.0.0.jar cat/$CAT --bound=2 --target=$TARGET --method=$METHOD $BPL_PATH$BENCHMARK.bpl)
+            OUTPUT=$(timeout $TIMEOUT java -Xmx2048m -jar dartagnan/target/dartagnan-3.1.0.jar cat/$CAT --bound=2 --target=$TARGET --method=$METHOD $BPL_PATH$BENCHMARK.bpl)
             end=`python3 -c 'import time; print(int(time.time() * 1000))'`
             TIME=$((end-start))
             
