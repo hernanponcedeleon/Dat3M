@@ -134,7 +134,7 @@ public class SVCOMPRunner extends BaseOptions {
 	    	cmd.add("java");
 	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
 	    	cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
-	    	cmd.addAll(Arrays.asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-3.0.0.jar"));
+	    	cmd.addAll(Arrays.asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-3.1.0.jar"));
 			cmd.add(fileModel.toString());
 			cmd.add(boogieName);
 			cmd.add(String.format("--%s=%s", PROPERTY, r.property.asStringOption()));

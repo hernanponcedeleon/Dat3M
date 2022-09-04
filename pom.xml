@@ -4,7 +4,7 @@
 
   <groupId>com.dat3m</groupId>
   <artifactId>dat3m</artifactId>
-  <version>3.0.0</version>
+  <version>3.1.0</version>
   <packaging>pom</packaging>
 
   <name>dat3m</name>

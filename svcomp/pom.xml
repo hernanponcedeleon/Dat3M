@@ -6,7 +6,7 @@
   <parent>
     <artifactId>dat3m</artifactId>
     <groupId>com.dat3m</groupId>
-    <version>3.0.0</version>
+    <version>3.1.0</version>
   </parent>
 
   <groupId>com.dat3m.svcomp</groupId>
@@ -27,7 +27,7 @@
     <dependency>
       <groupId>com.dat3m.dartagnan</groupId>
       <artifactId>dartagnan</artifactId>
-      <version>3.0.0</version>
+      <version>3.1.0</version>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>
