@@ -60,6 +60,7 @@ class VisitorTso extends VisitorBase {
 
         return eventSequence(
         		newLoad(resultRegister, e.getAddress(), e.getMo()),
+				//newAssume(resultRegister),
         		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}
@@ -103,6 +104,7 @@ class VisitorTso extends VisitorBase {
         Label casEnd = newLabel("CAS_end");
         CondJump gotoCasEnd = newGoto(casEnd);
         Store storeExpected = newStore(expectedAddr, regValue, null);
+		storeExpected.addFilters("nosideeffect");
 
         return eventSequence(
                 // Indentation shows the branching structure
