@@ -54,6 +54,31 @@ public class Wmm {
         return filters.computeIfAbsent(name, FilterBasic::get);
     }
 
+    /**
+     * Queries a relation by name in this model.
+     * @param name Uniquely identifies a relation in this model.
+     * @return The relation in this model named {@code name}, or {@code null} if no such exists.
+     */
+    public Relation getRelation(String name) {
+        return relationRepository.getRelation(name);
+    }
+
+    public Relation getRelation(Class<?> cls, Object... args) {
+        return relationRepository.getRelation(cls, args);
+    }
+
+    public void addRelation(Relation r) {
+        relationRepository.addRelation(r);
+    }
+
+    public void addAlias(String n, Relation r) {
+        relationRepository.addAlias(n, r);
+    }
+
+    public void updateRelation(Relation r) {
+        relationRepository.updateRelation(r);
+    }
+
     public RelationRepository getRelationRepository(){
         return relationRepository;
     }

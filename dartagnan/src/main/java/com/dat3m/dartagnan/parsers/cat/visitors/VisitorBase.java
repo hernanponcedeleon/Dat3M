@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
-import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -17,14 +16,12 @@ import java.util.Set;
 
 public class VisitorBase extends CatBaseVisitor<Object> {
 
-    RelationRepository relationRepository;
     VisitorRelation relationVisitor;
     VisitorFilter filterVisitor;
     Wmm wmm;
 
     public VisitorBase(){
         this.wmm = new Wmm();
-        relationRepository = wmm.getRelationRepository();
         filterVisitor = new VisitorFilter(this);
         relationVisitor = new VisitorRelation(this);
     }
@@ -59,10 +56,10 @@ public class VisitorBase extends CatBaseVisitor<Object> {
         Relation r = ctx.e.accept(relationVisitor);
         if(r != null){
         	if(RelationNameRepository.contains(r.getName()) || r.getIsNamed()) {
-        		relationRepository.addAlias(ctx.n.getText(), r);
+        		wmm.addAlias(ctx.n.getText(), r);
         	} else {
                 r.setName(ctx.n.getText());
-                relationRepository.updateRelation(r);
+                wmm.updateRelation(r);
         	}
         } else {
             FilterAbstract f = ctx.e.accept(filterVisitor);
@@ -81,7 +78,7 @@ public class VisitorBase extends CatBaseVisitor<Object> {
             recursiveGroup[i + 1] = new RecursiveRelation(ctx.letRecAndDefinition(i).n.getText());
         }
         for (RecursiveRelation r : recursiveGroup) {
-            wmm.getRelationRepository().addRelation(r);
+            wmm.addRelation(r);
         }
         recursiveGroup[0].setConcreteRelation(relation(ctx.e));
         for (int i = 0; i < size; i++) {

@@ -144,7 +144,7 @@ public class ExecutionGraph {
     }
 
     public RelationGraph getRelationGraphByName(String name) {
-        return getRelationGraph(verificationTask.getMemoryModel().getRelationRepository().getRelation(name));
+        return getRelationGraph(verificationTask.getMemoryModel().getRelation(name));
     }
 
     public Constraint getConstraint(Axiom axiom) {
