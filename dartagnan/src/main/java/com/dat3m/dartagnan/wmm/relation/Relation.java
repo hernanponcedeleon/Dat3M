@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 /**
@@ -164,12 +163,6 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
         return getName().equals(((Relation)obj).getName());
     }
 
-    public BooleanFormula encode(SolverContext ctx) {
-        return encodeApprox(ctx);
-    }
-
-    protected abstract BooleanFormula encodeApprox(SolverContext ctx);
-
     public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
         return !getMaxTupleSet().contains(edge) ?
         		ctx.getFormulaManager().getBooleanFormulaManager().makeFalse() :
@@ -178,15 +171,6 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
 
     public final BooleanFormula getSMTVar(Event e1, Event e2, SolverContext ctx) {
         return getSMTVar(new Tuple(e1, e2), ctx);
-    }
-
-    protected BooleanFormula getExecPair(Event e1, Event e2, SolverContext ctx) {
-        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
-        return execution(e1, e2, exec, ctx);
-    }
-
-    protected final BooleanFormula getExecPair(Tuple t, SolverContext ctx) {
-        return getExecPair(t.getFirst(), t.getSecond(), ctx);
     }
 
     protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {

@@ -56,6 +56,7 @@ public class PropertyEncoder implements Encoder {
 
     private final Program program;
     private final Wmm memoryModel;
+    private final Context analysisContext;
     private final ExecutionAnalysis exec;
     private final AliasAnalysis alias;
 
@@ -66,6 +67,7 @@ public class PropertyEncoder implements Encoder {
                 "The program must get compiled first before its properties can be encoded.");
         this.program = checkNotNull(program);
         this.memoryModel = checkNotNull(wmm);
+        this.analysisContext = checkNotNull(context);
         this.exec = context.requires(ExecutionAnalysis.class);
         this.alias = context.requires(AliasAnalysis.class);
         config.inject(this);
@@ -121,7 +123,6 @@ public class PropertyEncoder implements Encoder {
 
     public BooleanFormula encodeCATProperties(SolverContext ctx) {
         logger.info("Encoding CAT properties");
-
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula cat = bmgr.makeTrue();
         BooleanFormula one = bmgr.makeFalse();
@@ -130,8 +131,9 @@ public class PropertyEncoder implements Encoder {
     		if(!ax.isFlagged()) {
     			continue;
     		}
-			cat = bmgr.and(cat, bmgr.equivalence(CAT.getSMTVariable(ax, ctx), ax.consistent(ctx)));
-			one = bmgr.or(one, CAT.getSMTVariable(ax, ctx));
+            BooleanFormula v = CAT.getSMTVariable(ax, ctx);
+			cat = bmgr.and(cat, bmgr.equivalence(v, ax.consistent(ax.getRelation().getEncodeTupleSet(), analysisContext, ctx)));
+			one = bmgr.or(one, v);
     	}
 		// No need to use the SMT variable if the formula is trivially false
         return bmgr.isFalse(one) ? one : bmgr.and(one, cat);
