@@ -31,7 +31,6 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
 import com.dat3m.dartagnan.wmm.relation.unary.RelRangeIdentity;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
-import com.dat3m.dartagnan.wmm.relation.unary.RelTransRef;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
@@ -252,12 +251,6 @@ public class ExecutionGraph {
                 graph = new TransitiveGraph(innerGraph);
             } else if (relClass == RelRangeIdentity.class) {
                 graph = new RangeIdentityGraph(innerGraph);
-            } else if (relClass == RelTransRef.class) {
-                //FIXME: This is very, very sketchy and instead of doing this
-                // a WmmProcessor should run that transforms the wmm accordingly.
-                RelTrans relTrans = new RelTrans(innerRelation);
-                RelationGraph transGraph = getOrCreateGraphFromRelation(relTrans);
-                graph = new ReflexiveClosureGraph(transGraph);
             } else {
                 throw new UnsupportedOperationException(relClass.toString() + " has no associated graph yet.");
             }
