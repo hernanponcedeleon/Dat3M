@@ -33,8 +33,6 @@ import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 //TODO: Remove "Encoder" once we split data and operations appropriately
 public abstract class Relation implements Constraint, Encoder, Dependent<Relation> {
 
-    public static boolean PostFixApprox = false;
-
     protected String name;
     protected String term;
 
@@ -179,19 +177,19 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
     }
 
     // ========================== Utility methods =========================
-    
+
     public boolean isStaticRelation() {
     	return this instanceof StaticRelation;
     }
-    
+
     public boolean isUnaryRelation() {
     	return this instanceof UnaryRelation;
     }
-    
+
     public boolean isBinaryRelation() {
     	return this instanceof BinaryRelation;
     }
-    
+
     public boolean isRecursiveRelation() {
     	return this instanceof RecursiveRelation;
     }
@@ -199,11 +197,11 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
     public Relation getInner() {
         return (isUnaryRelation() || isRecursiveRelation()) ? getDependencies().get(0) : null;
     }
-    
+
     public Relation getFirst() {
     	return isBinaryRelation() ? getDependencies().get(0) : null;
     }
-    
+
     public Relation getSecond() {
     	return isBinaryRelation() ? getDependencies().get(1) : null;
     }
