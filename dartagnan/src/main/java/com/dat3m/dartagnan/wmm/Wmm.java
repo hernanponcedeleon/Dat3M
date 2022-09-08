@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -95,14 +94,5 @@ public class Wmm {
         for (Axiom ax : axioms) {
             ax.configure(config);
         }
-    }
-    
-    private DependencyGraph<Relation> relationDependencyGraph;
-    
-    public DependencyGraph<Relation> getRelationDependencyGraph() {
-        if (relationDependencyGraph == null) {
-            relationDependencyGraph = DependencyGraph.from(relationRepository.getRelations());
-        }
-        return relationDependencyGraph;
     }
 }
