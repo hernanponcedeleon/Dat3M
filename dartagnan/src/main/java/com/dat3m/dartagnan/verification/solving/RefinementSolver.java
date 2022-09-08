@@ -138,7 +138,7 @@ public class RefinementSolver extends ModelChecker {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula globalRefinement = bmgr.makeTrue();
 
-        WMMSolver solver = new WMMSolver(task, analysisContext, cutRelations);
+        WMMSolver solver = WMMSolver.fromConfig(task, analysisContext, cutRelations, config);
         Refiner refiner = new Refiner(memoryModel, analysisContext);
         CAATSolver.Status status = INCONSISTENT;
 

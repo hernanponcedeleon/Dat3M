@@ -12,6 +12,8 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -29,12 +31,16 @@ public class WMMSolver {
     private final CAATSolver solver;
     private final CoreReasoner reasoner;
 
-    public WMMSolver(VerificationTask task, Context analysisContext, Set<Relation> cutRelations) {
+    private WMMSolver(VerificationTask task, Context analysisContext, Set<Relation> cutRelations, ExecutionModel m) {
         analysisContext.requires(RelationAnalysis.class);
         this.executionGraph = new ExecutionGraph(task, cutRelations, true);
-        this.executionModel = new ExecutionModel(task);
+        this.executionModel = m;
         this.reasoner = new CoreReasoner(task, analysisContext, executionGraph);
         this.solver = CAATSolver.create();
+    }
+
+    public static WMMSolver fromConfig(VerificationTask task, Context analysisContext, Set<Relation> cutRelations, Configuration config) throws InvalidConfigurationException {
+        return new WMMSolver(task, analysisContext, cutRelations, ExecutionModel.fromConfig(task, config));
     }
 
     public ExecutionModel getExecution() {

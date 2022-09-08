@@ -164,7 +164,7 @@ public class Dartagnan extends BaseOptions {
                 t.interrupt();
 
             	if(result.equals(FAIL) && o.generateGraphviz()) {
-                	ExecutionModel m = new ExecutionModel(task);
+                	ExecutionModel m = ExecutionModel.fromConfig(task, config);
                 	m.initialize(prover.getModel(), ctx);
     				String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
     				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name);        		
