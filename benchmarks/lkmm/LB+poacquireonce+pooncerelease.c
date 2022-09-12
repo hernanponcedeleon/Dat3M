@@ -26,15 +26,11 @@ int main()
 {
 	pthread_t t1, t2;
 
-	if (pthread_create(&t1, NULL, thread_1, NULL))
-		abort();
-	if (pthread_create(&t2, NULL, thread_2, NULL))
-		abort();
+	pthread_create(&t1, NULL, thread_1, NULL);
+	pthread_create(&t2, NULL, thread_2, NULL);
 
-	if (pthread_join(t1, NULL))
-		abort();
-	if (pthread_join(t2, NULL))
-		abort();
+	pthread_join(t1, NULL);
+	pthread_join(t2, NULL);
 
 	assert(!(r0 == 1 && r1 == 1));
 
