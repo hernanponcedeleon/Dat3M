@@ -50,6 +50,8 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.handleStdFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.SVCOMPPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LkmmProcedures.*;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LlvmProcedures.LLVMPROCEDURES;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LlvmProcedures.handleLlvmFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.handleSvcompFunction;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> {
@@ -351,6 +353,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		}
 		if(LKMMPROCEDURES.stream().anyMatch(name::equals)) {
 			handleLkmmFunction(this, ctx);
+			return null;
+		}
+		if(LLVMPROCEDURES.stream().anyMatch(name::equals)) {
+			handleLlvmFunction(this, ctx);
 			return null;
 		}
 		if(name.contains("__VERIFIER_atomic_")) {

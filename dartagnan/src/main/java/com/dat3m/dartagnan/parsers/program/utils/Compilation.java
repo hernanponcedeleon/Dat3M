@@ -15,23 +15,56 @@ public class Compilation {
 	
 	private static final Logger logger = LogManager.getLogger(Compilation.class);
 	
-	public static void compileWithSmack(File file, String cflags) throws Exception {
-		String name = file.getName().contains("_tmp") ?
-				file.getName().substring(0, file.getName().lastIndexOf('_')) :
-				file.getName().substring(0, file.getName().lastIndexOf('.'));
+	public static void compileWithClang(File file, String cflags) throws Exception {
+		String name = file.getName().substring(0, file.getName().lastIndexOf('.'));		
+		ArrayList<String> cmd = new ArrayList<String>();
+    	cmd.addAll(asList("clang", "-S", "-I" + System.getenv("DAT3M_HOME") + "/include/clang", 
+    			"-emit-llvm", "-o", System.getenv("DAT3M_OUTPUT") + "/" + name + ".ll"));
+		// We use cflags when using the UI and fallback top CFLAGS otherwise
+		cflags = cflags.equals("") ? System.getenv().getOrDefault("CFLAGS", "") : cflags;
+    	// Needed to handle more than one flag in CFLAGS
+    	for(String option : cflags.split(" ")) {
+    		cmd.add(option);
+    	}
+    	cmd.add(file.getAbsolutePath());
+    	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+    	logger.info("Compiling with clang");
+    	logger.debug("Running " + String.join(" ", cmd));
+    	Process proc = processBuilder.start();
+    	proc.waitFor();
+    	if(proc.exitValue() == 1) {
+    		String errorString = CharStreams.toString(new InputStreamReader(proc.getErrorStream(), Charsets.UTF_8));
+			throw new Exception(errorString);
+    	}
+	}	
 
+	public static void applyAtomicReplacePass(File file) throws Exception {
+		String name = file.getName().substring(0, file.getName().lastIndexOf('.'));		
+		ArrayList<String> cmd = new ArrayList<String>();
+    	cmd.addAll(asList("opt", "-enable-new-pm=0", "-load=" + System.getenv("DAT3M_PASSES_HOME") + 
+			"/atomic-replace.so", "-atomic-replace", System.getenv("DAT3M_OUTPUT") + "/" + name + ".ll", 
+			"-S", "-o", System.getenv("DAT3M_OUTPUT") + "/" + name + "-opt.ll"));
+    	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+    	logger.info("Running LLVM passes");
+    	logger.debug("Running " + String.join(" ", cmd));
+    	Process proc = processBuilder.start();
+    	proc.waitFor();
+    	if(proc.exitValue() == 1) {
+    		String errorString = CharStreams.toString(new InputStreamReader(proc.getErrorStream(), Charsets.UTF_8));
+			throw new Exception(errorString);
+    	}
+	}
+
+	public static void compileWithSmack(File file, String cflags) throws Exception {
+		String name = file.getName().substring(0, file.getName().lastIndexOf('.'));
     	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.add("smack");
     	// Needed to handle more than one flag in SMACK_FLAGS
     	for(String option : System.getenv().getOrDefault("SMACK_FLAGS", "").split(" ")) {
     		cmd.add(option);
     	}
-    	// Here there is not need to iterate over CFLAG values
-    	cflags = cflags.equals("") ? System.getenv().getOrDefault("CFLAGS", "") : cflags; 
-        cmd.add("--clang-options=-I" + System.getenv("DAT3M_HOME") + "/include/smack -I" + 
-        								System.getenv("DAT3M_HOME") + "/include/clang " + cflags);
-    	cmd.addAll(asList("-bpl", System.getenv("DAT3M_OUTPUT") + "/" + name + ".bpl"));
-    	cmd.add(file.getAbsolutePath());
+    	cmd.addAll(asList("-bpl", System.getenv("DAT3M_OUTPUT") + "/" + name + ".bpl", 
+			System.getenv("DAT3M_OUTPUT") + "/" + name + "-opt.ll"));
     	
 		logger.info("Compiling with smack");
     	logger.debug("Running " + String.join(" ", cmd));
@@ -53,28 +86,4 @@ public class Compilation {
         	proc.waitFor();
     	}
 	}	
-
-	public static void compileWithClang(File file, String cflags) throws Exception {
-		ArrayList<String> cmd = new ArrayList<String>();
-    	cmd.addAll(asList("clang", "-S", "-I" + System.getenv("DAT3M_HOME") + "/include/clang", 
-    			"-o", System.getenv("DAT3M_OUTPUT") + "/test.s"));
-    	// Needed to handle more than one flag in CFLAGS
-    	cflags = cflags.equals("") ? System.getenv().getOrDefault("CFLAGS", "") : cflags;
-    	for(String option : cflags.split(" ")) {
-    		cmd.add(option);
-    	}
-    	cmd.add(file.getAbsolutePath());
-    	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
-    	logger.info("Compiling with clang");
-    	logger.debug("Running " + String.join(" ", cmd));
-    	Process proc = processBuilder.start();
-    	proc.waitFor();
-    	if(proc.exitValue() == 1) {
-    		String errorString = CharStreams.toString(new InputStreamReader(proc.getErrorStream(), Charsets.UTF_8));
-			throw new Exception(errorString);
-    	}
-    	File testFile = new File(System.getenv("DAT3M_OUTPUT") + "/test.s");
-    	testFile.delete();
-	}	
-
 }
