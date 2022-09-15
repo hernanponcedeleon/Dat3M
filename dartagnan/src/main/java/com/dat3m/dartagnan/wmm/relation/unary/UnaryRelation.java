@@ -1,12 +1,13 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
-import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.Definition;
+import com.dat3m.dartagnan.wmm.Relation;
 
 /**
  *
  * @author Florian Furbach
  */
-public abstract class UnaryRelation extends Relation {
+public abstract class UnaryRelation extends Definition {
 
     protected Relation r1;
 

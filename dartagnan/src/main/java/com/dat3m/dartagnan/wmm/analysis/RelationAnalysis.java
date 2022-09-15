@@ -23,8 +23,9 @@ import com.dat3m.dartagnan.program.filter.FilterUnion;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Definition;
+import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
@@ -235,7 +236,7 @@ public class RelationAnalysis {
         }
     }
 
-    private final class Initializer implements Relation.Visitor<Knowledge> {
+    private final class Initializer implements Definition.Visitor<Knowledge> {
         @Override
         public Knowledge visitDefinition(Relation r, List<? extends Relation> d) {
             return new Knowledge(new TupleSet(), new TupleSet());
@@ -656,7 +657,7 @@ public class RelationAnalysis {
         }
     }
 
-    private final class Propagator implements Relation.Visitor<Delta> {
+    private final class Propagator implements Definition.Visitor<Delta> {
         Relation source;
         Set<Tuple> may;
         Set<Tuple> must;

@@ -1,12 +1,13 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
-import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.Definition;
+import com.dat3m.dartagnan.wmm.Relation;
 
 /**
  *
  * @author Florian Furbach
  */
-public abstract class BinaryRelation extends Relation {
+public abstract class BinaryRelation extends Definition {
 
     protected Relation r1;
     protected Relation r2;

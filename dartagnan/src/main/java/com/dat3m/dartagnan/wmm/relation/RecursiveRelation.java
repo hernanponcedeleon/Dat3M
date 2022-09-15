@@ -1,12 +1,11 @@
 package com.dat3m.dartagnan.wmm.relation;
 
-/**
- *
- * @author Florian Furbach
- */
-public class RecursiveRelation extends Relation {
+import com.dat3m.dartagnan.wmm.Definition;
+import com.dat3m.dartagnan.wmm.Relation;
 
-    private Relation r1;
+public class RecursiveRelation extends Definition {
+
+    private Definition r1;
 
     public Relation getInner() {
         return r1;
@@ -21,7 +20,7 @@ public class RecursiveRelation extends Relation {
         return name;
     }
 
-    public void setConcreteRelation(Relation r1){
+    public void setConcreteRelation(Definition r1){
         r1.setName(name);
         this.r1 = r1;
         this.term = r1.getTerm();

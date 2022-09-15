@@ -4,10 +4,10 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
 import com.dat3m.dartagnan.parsers.CatParser;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
-import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 
 import java.lang.reflect.Constructor;
@@ -79,9 +79,9 @@ public class VisitorBase extends CatBaseVisitor<Object> {
         for (RecursiveRelation r : recursiveGroup) {
             wmm.addRelation(r);
         }
-        recursiveGroup[0].setConcreteRelation(relation(ctx.e));
+        recursiveGroup[0].setConcreteRelation(relation(ctx.e).getDefinition());
         for (int i = 0; i < size; i++) {
-            recursiveGroup[i + 1].setConcreteRelation(relation(ctx.letRecAndDefinition(i).e));
+            recursiveGroup[i + 1].setConcreteRelation(relation(ctx.letRecAndDefinition(i).e).getDefinition());
         }
         return null;
     }

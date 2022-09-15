@@ -1,70 +1,54 @@
-package com.dat3m.dartagnan.wmm.relation;
+package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
-import com.dat3m.dartagnan.utils.dependable.Dependent;
-import com.dat3m.dartagnan.wmm.Constraint;
-import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
-import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
-import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class Relation implements Constraint, Dependent<Relation> {
+public abstract class Definition extends Relation implements Constraint {
 
-    protected String name;
     protected String term;
 
-    public Relation() { }
-
-    public Relation(String name) {
-        this();
-        this.name = name;
+    public Definition() {
+        super(null);
     }
 
+    public Definition(String name) {
+        super(name);
+    }
+
+    @Override
+    public Definition getDefinition() {
+        return this;
+    }
+
+    @Override
     public <T> T accept(Visitor<? extends T> visitor) {
         return visitor.visitDefinition(this, List.of());
     }
 
     @Override
-    public List<Relation> getDependencies() {
-        List<Relation> relations = getConstrainedRelations();
-        // no copying required, as long as getConstrainedRelations() returns a new or unmodifiable list
-        return relations.subList(1, relations.size());
+    public BooleanFormula getSMTVar(Tuple edge, EncodingContext c) {
+        return c.edgeVariable(getName(), edge.getFirst(), edge.getSecond());
     }
 
-    public void configure(Configuration config) throws InvalidConfigurationException { }
-
-    public String getName() {
-        return name != null ? name : term;
-    }
-
-    public Relation setName(String name){
-        this.name = name;
-        return this;
-    }
-
-    public String getTerm(){
+    @Override
+    public String getTerm() {
         return term;
     }
 
-    public boolean getIsNamed(){
-        return name != null;
-    }
-
     /**
-     * @return Non-empty list of all relations directly participating in this definition.
+     * @return
+     * Non-empty list of all relations directly participating in this definition.
      * The first relation is always the defined relation,
      * while the roles of the others are implementation-dependent.
      */
     @Override
     public List<Relation> getConstrainedRelations() {
-        return accept(new Visitor<>() {
+        return accept(new Definition.Visitor<>() {
             @Override
             public List<Relation> visitDefinition(Relation rel, List<? extends Relation> dependencies) {
                 List<Relation> relations = new ArrayList<>(dependencies.size() + 1);
@@ -73,64 +57,6 @@ public abstract class Relation implements Constraint, Dependent<Relation> {
                 return relations;
             }
         });
-    }
-
-    @Override
-    public String toString(){
-        if(name != null){
-            return name + " := " + term;
-        }
-        return term;
-    }
-
-    @Override
-    public int hashCode(){
-        return getName().hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        } else if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-
-        return getName().equals(((Relation)obj).getName());
-    }
-
-    public BooleanFormula getSMTVar(Tuple edge, EncodingContext c) {
-        return c.edgeVariable(getName(), edge.getFirst(), edge.getSecond());
-    }
-
-    // ========================== Utility methods =========================
-
-    public boolean isStaticRelation() {
-    	return this instanceof StaticRelation;
-    }
-
-    public boolean isUnaryRelation() {
-    	return this instanceof UnaryRelation;
-    }
-
-    public boolean isBinaryRelation() {
-    	return this instanceof BinaryRelation;
-    }
-
-    public boolean isRecursiveRelation() {
-    	return this instanceof RecursiveRelation;
-    }
-
-    public Relation getInner() {
-        return (isUnaryRelation() || isRecursiveRelation()) ? getDependencies().get(0) : null;
-    }
-
-    public Relation getFirst() {
-    	return isBinaryRelation() ? getDependencies().get(0) : null;
-    }
-
-    public Relation getSecond() {
-    	return isBinaryRelation() ? getDependencies().get(1) : null;
     }
 
     public interface Visitor <T> {
