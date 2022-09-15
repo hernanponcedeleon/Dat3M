@@ -16,6 +16,11 @@ import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmRMW;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmXchg;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -244,6 +249,37 @@ public class EventFactory {
 
         public static Dat3mCAS newDat3mCAS(Register register, IExpr address, IExpr expected, IExpr value, String mo) {
             return new Dat3mCAS(register, address, expected, value, mo);
+        }
+    }
+    // =============================================================================================
+    // =========================================== LLVM ============================================
+    // =============================================================================================
+
+    public static class Llvm {
+        private Llvm() {}
+
+        public static LlvmLoad newLoad(Register register, IExpr address, String mo) {
+            return new LlvmLoad(register, address, mo);
+        }
+
+        public static LlvmStore newStore(IExpr address, ExprInterface value, String mo) {
+            return new LlvmStore(address, value, mo);
+        }
+
+        public static LlvmXchg newExchange(Register register, IExpr address, IExpr value, String mo) {
+            return new LlvmXchg(register, address, value, mo);
+        }
+
+        public static LlvmCmpXchg newCompareExchange(Register register, IExpr address, IExpr expectedAddr, IExpr desiredValue, String mo, boolean isStrong) {
+            return new LlvmCmpXchg(register, address, expectedAddr, desiredValue, mo, isStrong);
+        }
+
+        public static LlvmCmpXchg newCompareExchange(Register register, IExpr address, IExpr expectedAddr, IExpr desiredValue, String mo) {
+            return newCompareExchange(register, address, expectedAddr, desiredValue, mo, false);
+        }
+
+        public static LlvmRMW newRMW(Register register, IExpr address, IExpr value, IOpBin op, String mo) {
+            return new LlvmRMW(register, address, value, op, mo);
         }
     }
 

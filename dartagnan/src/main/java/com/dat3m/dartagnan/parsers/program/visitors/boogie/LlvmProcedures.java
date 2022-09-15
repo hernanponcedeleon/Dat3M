@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory.Atomic;
+import com.dat3m.dartagnan.program.event.EventFactory.Llvm;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import java.util.Arrays;
 import java.util.List;
@@ -18,6 +18,7 @@ public class LlvmProcedures {
 	public static List<String> LLVMPROCEDURES = Arrays.asList(
 			"my_load_atomic",
 			"my_store_atomic",
+			"my_atomicrmw_cmpxchg",
 			"my_atomicrmw_xchg",
 			"my_atomicrmw_add",
 			"my_atomicrmw_sub",
@@ -37,24 +38,59 @@ public class LlvmProcedures {
 		Object p3 = params.size() > 3 ? params.get(3).accept(visitor) : null;
 		
 		String mo;
-		IOpBin op;
 		
 		switch (name) {
 		case "my_load_atomic":
 			mo = C11.intToMo(((IConst) p1).getValueAsInt());
-			visitor.programBuilder.addChild(visitor.threadCount, Atomic.newLoad(reg, (IExpr) p0, mo))
+			visitor.programBuilder.addChild(visitor.threadCount, Llvm.newLoad(reg, (IExpr) p0, mo))
 	        	.setCLine(visitor.currentLine)
 	        	.setSourceCodeFile(visitor.sourceCodeFile);
 	        return;
 		case "my_store_atomic":
 			mo = C11.intToMo(((IConst) p2).getValueAsInt());
-			visitor.programBuilder.addChild(visitor.threadCount, Atomic.newStore((IExpr) p0, (ExprInterface) p1, mo))
+			visitor.programBuilder.addChild(visitor.threadCount, Llvm.newStore((IExpr) p0, (ExprInterface) p1, mo))
 				.setCLine(visitor.currentLine)
 				.setSourceCodeFile(visitor.sourceCodeFile);
 	        return;
+		case "my_atomicrmw_cmpxchg":
+			mo = C11.intToMo(((IConst) p3).getValueAsInt());
+			visitor.programBuilder.addChild(visitor.threadCount, Llvm.newCompareExchange(reg, (IExpr) p0, (IExpr) p1, (IExpr) p2, mo))
+	        	.setCLine(visitor.currentLine)
+	        	.setSourceCodeFile(visitor.sourceCodeFile);
+			return;		
 		case "my_atomicrmw_xchg":
 			mo = C11.intToMo(((IConst) p2).getValueAsInt());
-			visitor.programBuilder.addChild(visitor.threadCount, Atomic.newExchange(reg, (IExpr) p0, (IExpr) p1, mo))
+			visitor.programBuilder.addChild(visitor.threadCount, Llvm.newExchange(reg, (IExpr) p0, (IExpr) p1, mo))
+	        	.setCLine(visitor.currentLine)
+	        	.setSourceCodeFile(visitor.sourceCodeFile);
+			return;
+		case "my_atomicrmw_add":
+			mo = C11.intToMo(((IConst) p2).getValueAsInt());
+			visitor.programBuilder.addChild(visitor.threadCount, Llvm.newRMW(reg, (IExpr) p0, (IExpr) p1, IOpBin.PLUS, mo))
+	        	.setCLine(visitor.currentLine)
+	        	.setSourceCodeFile(visitor.sourceCodeFile);
+			return;
+		case "my_atomicrmw_sub":
+			mo = C11.intToMo(((IConst) p2).getValueAsInt());
+			visitor.programBuilder.addChild(visitor.threadCount, Llvm.newRMW(reg, (IExpr) p0, (IExpr) p1, IOpBin.MINUS, mo))
+	        	.setCLine(visitor.currentLine)
+	        	.setSourceCodeFile(visitor.sourceCodeFile);
+			return;
+		case "my_atomicrmw_and":
+			mo = C11.intToMo(((IConst) p2).getValueAsInt());
+			visitor.programBuilder.addChild(visitor.threadCount, Llvm.newRMW(reg, (IExpr) p0, (IExpr) p1, IOpBin.AND, mo))
+	        	.setCLine(visitor.currentLine)
+	        	.setSourceCodeFile(visitor.sourceCodeFile);
+			return;
+		case "my_atomicrmw_or":
+			mo = C11.intToMo(((IConst) p2).getValueAsInt());
+			visitor.programBuilder.addChild(visitor.threadCount, Llvm.newRMW(reg, (IExpr) p0, (IExpr) p1, IOpBin.OR, mo))
+	        	.setCLine(visitor.currentLine)
+	        	.setSourceCodeFile(visitor.sourceCodeFile);
+			return;
+		case "my_atomicrmw_xor":
+			mo = C11.intToMo(((IConst) p2).getValueAsInt());
+			visitor.programBuilder.addChild(visitor.threadCount, Llvm.newRMW(reg, (IExpr) p0, (IExpr) p1, IOpBin.XOR, mo))
 	        	.setCLine(visitor.currentLine)
 	        	.setSourceCodeFile(visitor.sourceCodeFile);
 			return;
