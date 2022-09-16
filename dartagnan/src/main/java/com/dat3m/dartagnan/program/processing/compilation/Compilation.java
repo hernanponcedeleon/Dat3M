@@ -85,8 +85,10 @@ public class Compilation implements ProgramProcessor {
         switch(target) {
         	case C11:
             	visitor = new VisitorC11(); break;
-        	case LKMM:
+            case LKMM:
         		visitor = new VisitorLKMM(); break;
+            case LLVM:
+        		visitor = new VisitorLLVM(); break;
             case TSO:
                 visitor = new VisitorTso(); break;
             case POWER:
