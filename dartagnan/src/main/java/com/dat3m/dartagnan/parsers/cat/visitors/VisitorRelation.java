@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.parsers.CatParser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
@@ -80,7 +79,7 @@ public class VisitorRelation extends CatBaseVisitor<Relation> {
     public Relation visitExprComplement(CatParser.ExprComplementContext ctx) {
         Relation r = ctx.e.accept(this);
         if(r != null){
-        	Relation allPairs = base.relationRepository.getRelation(RelCartesian.class, 
+        	Relation allPairs = base.relationRepository.getRelation(RelCartesian.class,
 					FilterBasic.get(Tag.VISIBLE), FilterBasic.get(Tag.VISIBLE));
             return base.relationRepository.getRelation(RelMinus.class, allPairs, r);
         }
@@ -98,42 +97,27 @@ public class VisitorRelation extends CatBaseVisitor<Relation> {
 
     @Override
     public Relation visitExprIdentity(CatParser.ExprIdentityContext ctx) {
-        boolean orig = base.recursiveDef;
-        base.recursiveDef = false;
         FilterAbstract filter = ctx.e.accept(base.filterVisitor);
-        Relation relation = base.relationRepository.getRelation(RelSetIdentity.class, filter);
-        base.recursiveDef = orig;
-        return relation;
+        return base.relationRepository.getRelation(RelSetIdentity.class, filter);
     }
 
     @Override
     public Relation visitExprCartesian(CatParser.ExprCartesianContext ctx) {
-        boolean orig = base.recursiveDef;
-        base.recursiveDef = false;
         FilterAbstract filter1 = ctx.e1.accept(base.filterVisitor);
         FilterAbstract filter2 = ctx.e2.accept(base.filterVisitor);
-        Relation relation = base.relationRepository.getRelation(RelCartesian.class, filter1, filter2);
-        base.recursiveDef = orig;
-        return relation;
+        return base.relationRepository.getRelation(RelCartesian.class, filter1, filter2);
     }
 
     @Override
     public Relation visitExprFencerel(CatParser.ExprFencerelContext ctx) {
-        boolean orig = base.recursiveDef;
-        base.recursiveDef = false;
         FilterAbstract filter = ctx.e.accept(base.filterVisitor);
         Relation relation = base.relationRepository.getRelation(RelFencerel.class, filter);
-        base.recursiveDef = orig;
         return relation;
     }
 
     @Override
     public Relation visitExprBasic(CatParser.ExprBasicContext ctx) {
-        Relation relation = base.relationRepository.getRelation(ctx.n.getText());
-        if(relation == null && base.recursiveDef){
-            relation = base.relationRepository.getRelation(RecursiveRelation.class, ctx.n.getText());
-        }
-        return relation;
+        return base.relationRepository.getRelation(ctx.n.getText());
     }
 
     private Relation visitBinaryRelation(CatParser.ExpressionContext e1, CatParser.ExpressionContext e2, Class<?> c){
