@@ -22,6 +22,10 @@ import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWOpAndTest;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWOpReturn;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWXchg;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmRMW;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmXchg;
 import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
@@ -97,6 +101,74 @@ class VisitorArm8 extends VisitorBase {
                 store,
                 newExecutionStatus(e.getResultRegister(), store)
         );
+	}
+
+
+    // =============================================================================================
+    // =========================================== LLVM ============================================
+    // =============================================================================================
+
+        @Override
+	public List<Event> visitLlvmLoad(LlvmLoad e) {
+                Load load = newLoad(e.getResultRegister(), e.getAddress(), ARMv8.extractLoadMoFromCMo(e.getMo()));
+        
+		return eventSequence(
+        		load
+                );
+	}
+
+        @Override
+	public List<Event> visitLlvmStore(LlvmStore e) {
+                Store store = newStore(e.getAddress(), e.getMemValue(), ARMv8.extractStoreMoFromCMo(e.getMo()));
+        
+		return eventSequence(
+        		store
+                );
+	}
+
+        @Override
+	public List<Event> visitLlvmXchg(LlvmXchg e) {
+		Register resultRegister = e.getResultRegister();
+		ExprInterface value = e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+                Load load = newRMWLoadExclusive(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
+                Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), true);
+                Label label = newLabel("FakeDep");
+                Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+                return eventSequence(
+                        load,
+                        fakeCtrlDep,
+                        label,
+                        store
+                );
+	}
+
+        @Override
+	public List<Event> visitLlvmRMW(LlvmRMW e) {
+		Register resultRegister = e.getResultRegister();
+		IOpBin op = e.getOp();
+		IExpr value = (IExpr) e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		
+                Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+                Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+
+                Load load = newRMWLoadExclusive(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
+                Store store = newRMWStoreExclusive(address, dummyReg, ARMv8.extractStoreMoFromCMo(mo), true);
+                Label label = newLabel("FakeDep");
+                Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+                return eventSequence(
+                        load,
+                        fakeCtrlDep,
+                        label,
+                        localOp,
+                        store
+                );
 	}
 
     // =============================================================================================

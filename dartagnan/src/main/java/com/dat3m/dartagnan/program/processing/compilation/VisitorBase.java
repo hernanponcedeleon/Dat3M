@@ -15,6 +15,9 @@ import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.AtomicAbstract;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmAbstract;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
 import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
@@ -156,4 +159,21 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
 		throw new IllegalArgumentException("Compilation for " + e.getClass().getName() + " is not supported by " + getClass().getName());
 	}
+
+	// LLVM Events
+	@Override
+	public List<Event> visitLlvmAbstract(LlvmAbstract e) {
+		throw new IllegalArgumentException("Compilation for " + e.getClass().getName() + " is not supported by " + getClass().getName());
+	}
+
+	@Override
+	public List<Event> visitLlvmLoad(LlvmLoad e) {
+		throw new IllegalArgumentException("Compilation for " + e.getClass().getName() + " is not supported by " + getClass().getName());
+	}
+
+	@Override
+	public List<Event> visitLlvmStore(LlvmStore e) {
+		throw new IllegalArgumentException("Compilation for " + e.getClass().getName() + " is not supported by " + getClass().getName());
+	}
+	
 }

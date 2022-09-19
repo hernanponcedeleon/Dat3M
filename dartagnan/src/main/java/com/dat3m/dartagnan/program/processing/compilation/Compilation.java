@@ -87,8 +87,6 @@ public class Compilation implements ProgramProcessor {
             	visitor = new VisitorC11(); break;
             case LKMM:
         		visitor = new VisitorLKMM(); break;
-            case LLVM:
-        		visitor = new VisitorLLVM(); break;
             case TSO:
                 visitor = new VisitorTso(); break;
             case POWER:
