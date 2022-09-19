@@ -54,7 +54,7 @@ public class LlvmProcedures {
 	        return;
 		case "my_atomicrmw_cmpxchg":
 			mo = C11.intToMo(((IConst) p3).getValueAsInt());
-			visitor.programBuilder.addChild(visitor.threadCount, Llvm.newCompareExchange(reg, (IExpr) p0, (IExpr) p1, (IExpr) p2, mo))
+			visitor.programBuilder.addChild(visitor.threadCount, Llvm.newCompareExchange(reg, (IExpr) p0, (IExpr) p1, (IExpr) p2, mo, true))
 	        	.setCLine(visitor.currentLine)
 	        	.setSourceCodeFile(visitor.sourceCodeFile);
 			return;		

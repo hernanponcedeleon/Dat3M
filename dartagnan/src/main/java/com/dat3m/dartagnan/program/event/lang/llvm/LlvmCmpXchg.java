@@ -8,11 +8,11 @@ import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 
 public class LlvmCmpXchg extends LlvmAbstract {
 
-    private IExpr expectedAddr;
+    private IExpr expectedValue;
 
-    public LlvmCmpXchg(Register register, IExpr address, IExpr expectedAddr, IExpr value, String mo, boolean strong) {
+    public LlvmCmpXchg(Register register, IExpr address, IExpr expectedValue, IExpr value, String mo, boolean strong) {
         super(address, register, value, mo);
-        this.expectedAddr = expectedAddr;
+        this.expectedValue = expectedValue;
         if(strong) {
         	addFilters(STRONG);
         }
@@ -20,23 +20,17 @@ public class LlvmCmpXchg extends LlvmAbstract {
 
     private LlvmCmpXchg(LlvmCmpXchg other){
         super(other);
-        this.expectedAddr = other.expectedAddr;
+        this.expectedValue = other.expectedValue;
     }
 
-    //TODO: Override getDataRegs???
-
-    public IExpr getExpectedAddr() {
-    	return expectedAddr;
-    }
-    
-    public void setExpectedAddr(IExpr expectedAddr) {
-    	this.expectedAddr = expectedAddr;
+    public ExprInterface getExpectedValue() {
+    	return expectedValue;
     }
     
     @Override
     public String toString() {
     	String tag = is(STRONG) ? "_strong" : "_weak";
-        return resultRegister + " = llvm_cmpxchg" + tag + "(*" + address + ", " + expectedAddr + ", " + value + (mo != null ? ", " + mo : "") + ")\t### LLVM";
+        return resultRegister + " = llvm_cmpxchg" + tag + "(*" + address + ", " + expectedValue + ", " + value + (mo != null ? ", " + mo : "") + ")\t### LLVM";
     }
 
     // Unrolling

@@ -22,6 +22,7 @@ import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWOpAndTest;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWOpReturn;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWXchg;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmRMW;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
@@ -170,6 +171,34 @@ class VisitorArm8 extends VisitorBase {
                         store
                 );
 	}
+
+        @Override
+	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
+                Register oldValueRegister = e.getThread().getRegister(e.getResultRegister() + "(0)");
+                Register resultRegister = e.getThread().getRegister(e.getResultRegister() + "(1)");
+
+                ExprInterface value = e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		ExprInterface expectedValue = e.getExpectedValue();
+
+                Local casCmpResult = newLocal(resultRegister, new Atom(oldValueRegister, EQ, expectedValue));
+                Label casEnd = newLabel("CAS_end");
+                CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
+
+                Load load = newRMWLoadExclusive(oldValueRegister, address, ARMv8.extractLoadMoFromCMo(mo));
+                Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), true);
+
+                return eventSequence(
+                        // Indentation shows the branching structure
+                        load,
+                        casCmpResult,
+                        branchOnCasCmpResult,
+                                store,
+                        casEnd
+                );
+	}
+
 
     // =============================================================================================
     // ============================================ C11 ============================================
