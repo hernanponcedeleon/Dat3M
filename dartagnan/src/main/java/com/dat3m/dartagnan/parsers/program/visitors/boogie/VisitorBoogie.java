@@ -666,6 +666,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		if(function == null) {
 			throw new ParsingException("Function " + name + " is not defined");
 		}
+		if(name.startsWith("$extractvalue")) {
+			String structName = ctx.expr(0).getText();
+			String idx = ctx.expr(1).getText();
+			logger.warn("Accessing strcuture " + structName + ". Please ensure its fields are properly initialised.");
+			return programBuilder.getOrCreateRegister(threadCount, String.format("%s:%s(%s)", currentScope.getID(), structName, idx), GlobalSettings.ARCH_PRECISION);
+		}
 		if(name.contains("$load.")) {
 			return ctx.expr(1).accept(this);
 		}
