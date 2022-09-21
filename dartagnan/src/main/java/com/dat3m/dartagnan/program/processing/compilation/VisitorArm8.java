@@ -23,6 +23,7 @@ import com.dat3m.dartagnan.program.event.lang.linux.RMWOpAndTest;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWOpReturn;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWXchg;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmFence;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmRMW;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
@@ -199,6 +200,19 @@ class VisitorArm8 extends VisitorBase {
                 );
 	}
 
+        @Override
+        public List<Event> visitLlvmFence(LlvmFence e) {
+		String mo = e.getMo();
+                Fence fence = mo.equals(C11.MO_RELEASE) || mo.equals(C11.MO_ACQUIRE_RELEASE) || mo.equals(C11.MO_SC) ? 
+                        AArch64.DMB.newISHBarrier() :
+                        mo.equals(C11.MO_ACQUIRE) ?
+                                AArch64.DSB.newISHLDBarrier() :
+                                null;
+
+                return eventSequence(
+                        fence
+                );
+	}
 
     // =============================================================================================
     // ============================================ C11 ============================================

@@ -23,7 +23,8 @@ public class LlvmProcedures {
 			"__llvm_atomic32_cmpxchg",
 			"__llvm_atomic64_cmpxchg",
 			"__llvm_atomic32_rmw",
-			"__llvm_atomic64_rmw");
+			"__llvm_atomic64_rmw",
+			"__llvm_atomic_fence");
 
 	public static void handleLlvmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
@@ -51,6 +52,12 @@ public class LlvmProcedures {
 			case "__llvm_atomic64_store":
 				mo = C11.intToMo(((IConst) p2).getValueAsInt());
 				visitor.programBuilder.addChild(visitor.threadCount, Llvm.newStore((IExpr) p0, (ExprInterface) p1, mo))
+					.setCLine(visitor.currentLine)
+					.setSourceCodeFile(visitor.sourceCodeFile);
+				return;
+			case "__llvm_atomic_fence":
+				mo = C11.intToMo(((IConst) p0).getValueAsInt());
+				visitor.programBuilder.addChild(visitor.threadCount, Llvm.newFence(mo))
 					.setCLine(visitor.currentLine)
 					.setSourceCodeFile(visitor.sourceCodeFile);
 	        	return;

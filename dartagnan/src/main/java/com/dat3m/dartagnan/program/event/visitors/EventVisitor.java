@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmAbstract;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmFence;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmRMW;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
@@ -111,6 +112,7 @@ public interface EventVisitor<T> {
 	default T visitLlvmLoad(LlvmLoad e) { return visitMemEvent(e); }
 	default T visitLlvmStore(LlvmStore e) { return visitMemEvent(e); }
 	default T visitLlvmXchg(LlvmXchg e) { return visitLlvmAbstract(e); }
+	default T visitLlvmFence(LlvmFence e) { return visitFence(e); }
 
 	// SVCOMP Events
 	default T visitBeginAtomic(BeginAtomic e) { return visitEvent(e); }

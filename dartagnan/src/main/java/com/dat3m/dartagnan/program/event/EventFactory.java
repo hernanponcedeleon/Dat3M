@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmFence;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmRMW;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
@@ -281,6 +282,11 @@ public class EventFactory {
         public static LlvmRMW newRMW(Register register, IExpr address, IExpr value, IOpBin op, String mo) {
             return new LlvmRMW(register, address, value, op, mo);
         }
+
+        public static LlvmFence newFence(String mo) {
+            return new LlvmFence(mo);
+        }
+
     }
 
     // =============================================================================================
