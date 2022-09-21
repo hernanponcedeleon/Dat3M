@@ -29,7 +29,8 @@ public class LlvmProcedures {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
 		List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 
-		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), GlobalSettings.ARCH_PRECISION);
+		String regName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
+		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName, GlobalSettings.ARCH_PRECISION);
 		
 		Object p0 = params.get(0).accept(visitor);
 		Object p1 = params.size() > 1 ? params.get(1).accept(visitor) : null;
@@ -55,6 +56,11 @@ public class LlvmProcedures {
 	        	return;
 			case "__llvm_atomic32_cmpxchg":
 			case "__llvm_atomic64_cmpxchg":
+				// LLVM CAS returns a structure
+				// We use registers for each structure member
+				// Such registers must be created at parsing time
+				visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(0)", GlobalSettings.ARCH_PRECISION);
+				visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(1)", GlobalSettings.ARCH_PRECISION);
 				mo = C11.intToMo(((IConst) p3).getValueAsInt());
 				visitor.programBuilder.addChild(visitor.threadCount, Llvm.newCompareExchange(reg, (IExpr) p0, (IExpr) p1, (IExpr) p2, mo, true))
 	        		.setCLine(visitor.currentLine)
