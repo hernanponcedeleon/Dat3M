@@ -15,11 +15,9 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -110,7 +108,6 @@ public class WmmEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         @Override
         public BooleanFormula visitDefinition(Relation rel, List<? extends Relation> dependencies) {
-            Preconditions.checkArgument(rel instanceof StaticRelation);
             BooleanFormula enc = bmgr.makeTrue();
             for (Tuple tuple : encodeSets.get(rel)) {
                 enc = bmgr.and(enc, bmgr.equivalence(edge(rel, tuple), execution(tuple)));
@@ -261,10 +258,6 @@ public class WmmEncoder implements Encoder {
                                 edge(r1, tuple.getInverse())));
             }
             return enc;
-        }
-        @Override
-        public BooleanFormula visitRecursive(Relation rel, Relation r1) {
-            return bmgr.makeTrue();
         }
         @Override
         public BooleanFormula visitFences(Relation rel, FilterAbstract fenceSet) {

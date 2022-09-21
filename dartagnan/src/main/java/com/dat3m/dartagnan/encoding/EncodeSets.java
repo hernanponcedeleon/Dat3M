@@ -99,11 +99,6 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
     }
 
     @Override
-    public Map<Relation, Stream<Tuple>> visitRecursive(Relation rel, Relation other) {
-        return Map.of(other, news.stream());
-    }
-
-    @Override
     public Map<Relation, Stream<Tuple>> visitTransitiveClosure(Relation rel, Relation r1) {
         HashSet<Tuple> factors = new HashSet<>();
         final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rel);

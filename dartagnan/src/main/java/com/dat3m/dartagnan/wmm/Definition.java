@@ -8,36 +8,32 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class Definition extends Relation implements Constraint {
+import static com.google.common.base.Preconditions.checkNotNull;
 
-    protected String term;
+public abstract class Definition implements Constraint {
 
-    public Definition() {
-        super(null);
+    protected final Relation definedRelation;
+    final String term;
+
+    protected Definition(Relation r) {
+        this(r, r.name);
     }
 
-    public Definition(String name) {
-        super(name);
+    protected Definition(Relation r, String t) {
+        definedRelation = checkNotNull(r);
+        term = t;
     }
 
-    @Override
-    public Definition getDefinition() {
-        return this;
+    public Relation getDefinedRelation() {
+        return definedRelation;
     }
 
-    @Override
     public <T> T accept(Visitor<? extends T> visitor) {
-        return visitor.visitDefinition(this, List.of());
+        return visitor.visitDefinition(definedRelation, List.of());
     }
 
-    @Override
     public BooleanFormula getSMTVar(Tuple edge, EncodingContext c) {
-        return c.edgeVariable(getName(), edge.getFirst(), edge.getSecond());
-    }
-
-    @Override
-    public String getTerm() {
-        return term;
+        return c.edgeVariable(definedRelation.name, edge.getFirst(), edge.getSecond());
     }
 
     /**
@@ -68,7 +64,6 @@ public abstract class Definition extends Relation implements Constraint {
         default T visitDomainIdentity(Relation rel, Relation operand) { return visitDefinition(rel, List.of(operand)); }
         default T visitRangeIdentity(Relation rel, Relation operand) { return visitDefinition(rel, List.of(operand)); }
         default T visitInverse(Relation rel, Relation operand) { return visitDefinition(rel, List.of(operand)); }
-        default T visitRecursive(Relation rel, Relation other) { return visitDefinition(rel, List.of(other)); }
         default T visitTransitiveClosure(Relation rel, Relation operand) { return visitDefinition(rel, List.of(operand)); }
         default T visitEmpty(Relation rel) { return visitDefinition(rel, List.of()); }
         default T visitIdentity(Relation id, FilterAbstract set) { return visitDefinition(id, List.of()); }

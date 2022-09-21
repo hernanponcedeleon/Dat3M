@@ -1,15 +1,16 @@
 package com.dat3m.dartagnan.wmm.relation.base.local;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.IDD;
+import com.dat3m.dartagnan.wmm.Definition;
+import com.dat3m.dartagnan.wmm.Relation;
 
-public class RelIdd extends BasicRegRelation {
+public class RelIdd extends Definition {
 
-    public RelIdd(){
-        term = IDD;
+    public RelIdd(Relation r0) {
+        super(r0);
     }
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitInternalDataDependency(this);
+        return v.visitInternalDataDependency(definedRelation);
     }
 }

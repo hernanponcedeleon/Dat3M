@@ -1,25 +1,19 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
+import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 
-public class RelRangeIdentity extends UnaryRelation {
+public class RelRangeIdentity extends Definition {
 
-    public static String makeTerm(Relation r1){
-        return "[range(" + r1.getName() + ")]";
-    }
+    private final Relation r1;
 
-    public RelRangeIdentity(Relation r1){
-        super(r1);
-        term = makeTerm(r1);
-    }
-
-    public RelRangeIdentity(Relation r1, String name) {
-        super(r1, name);
-        term = makeTerm(r1);
+    public RelRangeIdentity(Relation r0, Relation r1){
+        super(r0, "[range(" + r1.getName() + ")]");
+        this.r1 = r1;
     }
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitRangeIdentity(this, r1);
+        return v.visitRangeIdentity(definedRelation, r1);
     }
 }

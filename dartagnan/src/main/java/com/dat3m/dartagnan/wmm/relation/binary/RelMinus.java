@@ -1,29 +1,21 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
+import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 
-/**
- *
- * @author Florian Furbach
- */
-public class RelMinus extends BinaryRelation {
+public class RelMinus extends Definition {
 
-    public static String makeTerm(Relation r1, Relation r2){
-        return "(" + r1.getName() + "\\" + r2.getName() + ")";
-    }
+    public final Relation superset;
+    public final Relation complement;
 
-    public RelMinus(Relation r1, Relation r2) {
-        super(r1, r2);
-        term = makeTerm(r1, r2);
-    }
-
-    public RelMinus(Relation r1, Relation r2, String name) {
-        super(r1, r2, name);
-        term = makeTerm(r1, r2);
+    public RelMinus(Relation r0, Relation r1, Relation r2) {
+        super(r0, r1.getName() + " \\ " + r2.getName());
+        superset = r1;
+        complement = r2;
     }
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitDifference(this, r1, r2);
+        return v.visitDifference(definedRelation, superset, complement);
     }
 }

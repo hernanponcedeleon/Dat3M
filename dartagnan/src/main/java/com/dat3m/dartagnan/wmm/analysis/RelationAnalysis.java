@@ -829,10 +829,6 @@ public class RelationAnalysis {
             }
             return EMPTY;
         }
-        @Override
-        public Delta visitRecursive(Relation rel, Relation r1) {
-            return new Delta(may, must);
-        }
     }
 
     private static Set<Tuple> inverse(Set<Tuple> set) {

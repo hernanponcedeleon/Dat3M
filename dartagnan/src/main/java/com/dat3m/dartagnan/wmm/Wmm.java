@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.relation.base.RelCrit;
 import com.dat3m.dartagnan.wmm.relation.base.RelRMW;
@@ -22,30 +21,25 @@ import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelInt;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelPo;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelSetIdentity;
-import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
 import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
 import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
-import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.util.*;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
 
 public class Wmm {
 
     public final static ImmutableSet<String> BASE_RELATIONS = ImmutableSet.of(CO, RF, RMW);
 
-
+    private int count;
     private final List<Axiom> axioms = new ArrayList<>();
     private final Map<String, FilterAbstract> filters = new HashMap<>();
     private final Map<String, Relation> relationMap = new HashMap<>();
@@ -55,6 +49,7 @@ public class Wmm {
     }
 
     public void addAxiom(Axiom ax) {
+        checkArgument(relationMap.containsValue(ax.getRelation()));
         axioms.add(ax);
     }
 
@@ -63,13 +58,7 @@ public class Wmm {
     }
 
     public Set<Relation> getRelations() {
-        Set<Relation> set = new HashSet<>();
-        for (Map.Entry<String, Relation> entry : relationMap.entrySet()) {
-            if (!entry.getValue().getIsNamed() || entry.getValue().getName().equals(entry.getKey())) {
-                set.add(entry.getValue());
-            }
-        }
-        return set;
+        return Set.copyOf(relationMap.values());
     }
 
     /**
@@ -79,52 +68,51 @@ public class Wmm {
      */
     public Relation getRelation(String name) {
         Relation relation = relationMap.get(name);
-        if (relation == null) {
-            if (RelationNameRepository.contains(name)) {
-                relation = getBasicRelation(name).setName(name);
-                addRelation(relation);
-            }
+        if (relation != null) {
+            return relation;
         }
+        if (!RelationNameRepository.contains(name)) {
+            return null;
+        }
+        Definition definition = basicDefinition(name);
+        assert definition.definedRelation.definition == null;
+        definition.definedRelation.definition = definition;
+        return definition.definedRelation;
+    }
+
+    public void addAlias(String name, Relation relation) {
+        addName(name, relation);
+    }
+
+    public Relation newRelation() {
+        return newRelation("_" + count++);
+    }
+
+    public Relation newRelation(String name) {
+        Relation relation = new Relation(name);
+        addName(name, relation);
         return relation;
     }
 
-    public Relation getRelation(Class<?> cls, Object... args) {
-        Class<?>[] argClasses = getArgsForClass(cls);
-        try {
-            Method method = cls.getMethod("makeTerm", argClasses);
-            String term = (String) method.invoke(null, args);
-            Relation relation;
-            if (relationMap.containsKey(term)) {
-                relation = relationMap.get(term);
-            } else {
-                Constructor<?> constructor = cls.getConstructor(argClasses);
-                relation = (Relation) constructor.newInstance(args);
-                addRelation(relation);
-            }
-            return relation;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+    /**
+     * Inserts a definition to this model.
+     * <p>
+     * <b>NOTE</b>: This also adds the defined relation to this model, if not done already.
+     * @param definition Constraints a subset of relations.
+     * @return Relation inside this model, which is defined accordingly.  Usually the defined relation.
+     */
+    public Relation addDefinition(Definition definition) {
+        checkArgument(definition.getConstrainedRelations().stream().allMatch(relationMap::containsValue));
+        Relation find = relationMap.get(definition.term);
+        if (find != null) {
+            return find;
         }
-    }
-
-    public void addRelation(Relation relation) {
-        relationMap.put(relation.getTerm(), relation);
-        if (relation.getIsNamed()) {
-            relationMap.put(relation.getName(), relation);
-        }
-    }
-
-    public void addAlias(String alias, Relation relation) {
-        relationMap.put(alias, relation);
-    }
-
-    public void updateRelation(Relation relation) {
-        if (relation.getIsNamed()) {
-            String name = relation.getName();
-            checkState(!relationMap.containsKey(name), "Relation {} is already declared", name);
-            relationMap.put(name, relation);
-        }
+        Relation relation = definition.getDefinedRelation();
+        //TODO implement redefinition
+        checkArgument(relation.definition == null);
+        relation.definition = definition;
+        addName(definition.term, relation);
+        return relation;
     }
 
     public void addFilter(FilterAbstract filter) {
@@ -144,9 +132,7 @@ public class Wmm {
         }
 
         for (Relation relation : getRelations()) {
-            if (relation.getIsNamed()) {
-                sb.append(relation).append("\n");
-            }
+            sb.append(relation).append("\n");
         }
 
         for (Map.Entry<String, FilterAbstract> filter : filters.entrySet()) {
@@ -169,121 +155,114 @@ public class Wmm {
         }
     }
 
-    private Class<?>[] getArgsForClass(Class<?> cls){
-        if(BinaryRelation.class.isAssignableFrom(cls)){
-            return new Class<?>[]{Relation.class, Relation.class};
-        } else if(UnaryRelation.class.isAssignableFrom(cls)){
-            return new Class<?>[]{Relation.class};
-        } else if(RelCartesian.class.isAssignableFrom(cls)){
-            return new Class<?>[]{FilterAbstract.class, FilterAbstract.class};
-        } else if(RelFencerel.class.isAssignableFrom(cls) || RelSetIdentity.class.isAssignableFrom(cls)){
-            return new Class<?>[]{FilterAbstract.class};
-        } else if(RecursiveRelation.class.isAssignableFrom(cls)) {
-            return new Class<?>[]{String.class};
-        }
-
-        throw new UnsupportedOperationException("Method getArgsForClass is not implemented for " + cls.getName());
+    private void addName(String name, Relation relation) {
+        Relation old = relationMap.putIfAbsent(name, relation);
+        checkArgument(old == null, "already defined relation %s", name);
     }
 
-    private Relation getBasicRelation(String name) {
-        checkArgument(contains(name), "{} is not listed in RelationNameRepository.", name);
-        switch (name) {
+    private Definition basicDefinition(String name) {
+        Relation r = newRelation(name);
+        switch (r.name) {
             case POWITHLOCALEVENTS:
-                return new RelPo(true);
+                return new RelPo(r, FilterBasic.get(Tag.ANY));
             case PO:
-                return new RelPo();
+                return new RelPo(r, FilterBasic.get(Tag.VISIBLE));
             case LOC:
-                return new RelLoc();
+                return new RelLoc(r);
             case ID:
-                return new RelSetIdentity(FilterBasic.get(Tag.VISIBLE));
+                return new RelSetIdentity(r, FilterBasic.get(Tag.VISIBLE));
             case INT:
-                return new RelInt();
+                return new RelInt(r);
             case EXT:
-                return new RelExt();
+                return new RelExt(r);
             case CO:
-                return new RelCo();
+                return new RelCo(r);
             case RF:
-                return new RelRf();
+                return new RelRf(r);
             case RMW:
-                return new RelRMW();
+                return new RelRMW(r);
             case CASDEP:
-                return new RelCASDep();
+                return new RelCASDep(r);
             case CRIT:
-                return new RelCrit();
+                return new RelCrit(r);
             case IDD:
-                return new RelIdd();
+                return new RelIdd(r);
             case ADDRDIRECT:
-                return new RelAddrDirect();
+                return new RelAddrDirect(r);
             case CTRLDIRECT:
-                return new RelCtrlDirect();
+                return new RelCtrlDirect(r);
             case EMPTY:
-                return new RelEmpty();
+                return new RelEmpty(r);
             case RFINV:
-                return getRelation(RelInverse.class, getRelation(RF));
+                return new RelInverse(r, getRelation(RF));
             case FR:
-                return composition(getRelation(RFINV), getRelation(CO));
+                return composition(r, getRelation(RFINV), getRelation(CO));
             case MM:
-                return getRelation(RelCartesian.class, FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.MEMORY));
+                return new RelCartesian(r, FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.MEMORY));
             case MV:
-                return getRelation(RelCartesian.class, FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.VISIBLE));
+                return new RelCartesian(r, FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.VISIBLE));
             case IDDTRANS:
-                return getRelation(RelTrans.class, getRelation(IDD));
+                return new RelTrans(r, getRelation(IDD));
             case DATA:
-                return intersection(getRelation(IDDTRANS), getRelation(MM));
+                return intersection(r, getRelation(IDDTRANS), getRelation(MM));
             case ADDR: {
                 Relation addrdirect = getRelation(ADDRDIRECT);
-                return intersection(union(addrdirect, composition(getRelation(IDDTRANS), addrdirect)), getRelation(MM));
+                Relation comp = addDefinition(composition(newRelation(), getRelation(IDDTRANS), addrdirect));
+                Relation union = addDefinition(union(newRelation(), addrdirect, comp));
+                return intersection(r, union, getRelation(MM));
             }
-            case CTRL:
-                return intersection(composition(getRelation(IDDTRANS), getRelation(CTRLDIRECT)), getRelation(MV));
+            case CTRL: {
+                Relation comp = addDefinition(composition(newRelation(), getRelation(IDDTRANS), getRelation(CTRLDIRECT)));
+                return intersection(r, comp, getRelation(MV));
+            }
             case POLOC:
-                return intersection(getRelation(PO), getRelation(LOC));
+                return intersection(r, getRelation(PO), getRelation(LOC));
             case RFE:
-                return intersection(getRelation(RF), getRelation(EXT));
+                return intersection(r, getRelation(RF), getRelation(EXT));
             case RFI:
-                return intersection(getRelation(RF), getRelation(INT));
+                return intersection(r, getRelation(RF), getRelation(INT));
             case COE:
-                return intersection(getRelation(CO), getRelation(EXT));
+                return intersection(r, getRelation(CO), getRelation(EXT));
             case COI:
-                return intersection(getRelation(CO), getRelation(INT));
+                return intersection(r, getRelation(CO), getRelation(INT));
             case FRE:
-                return intersection(getRelation(FR), getRelation(EXT));
+                return intersection(r, getRelation(FR), getRelation(EXT));
             case FRI:
-                return intersection(getRelation(FR), getRelation(INT));
+                return intersection(r, getRelation(FR), getRelation(INT));
             case MFENCE:
-                return fence(MFENCE);
+                return fence(r, MFENCE);
             case ISH:
-                return fence(ISH);
+                return fence(r, ISH);
             case ISB:
-                return fence(ISB);
+                return fence(r, ISB);
             case SYNC:
-                return fence(SYNC);
+                return fence(r, SYNC);
             case ISYNC:
-                return fence(ISYNC);
+                return fence(r, ISYNC);
             case LWSYNC:
-                return fence(LWSYNC);
+                return fence(r, LWSYNC);
             case CTRLISYNC:
-                return intersection(getRelation(CTRL), getRelation(ISYNC));
+                return intersection(r, getRelation(CTRL), getRelation(ISYNC));
             case CTRLISB:
-                return intersection(getRelation(CTRL), getRelation(ISB));
+                return intersection(r, getRelation(CTRL), getRelation(ISB));
             default:
                 throw new RuntimeException(name + "is part of RelationNameRepository but it has no associated relation.");
         }
     }
 
-    private Relation union(Relation r1, Relation r2) {
-        return getRelation(RelUnion.class, r1, r2);
+    private Definition union(Relation r0, Relation r1, Relation r2) {
+        return new RelUnion(r0, r1, r2);
     }
 
-    private Relation intersection(Relation r1, Relation r2) {
-        return getRelation(RelIntersection.class, r1, r2);
+    private Definition intersection(Relation r0, Relation r1, Relation r2) {
+        return new RelIntersection(r0, r1, r2);
     }
 
-    private Relation composition(Relation r1, Relation r2) {
-        return getRelation(RelComposition.class, r1, r2);
+    private Definition composition(Relation r0, Relation r1, Relation r2) {
+        return new RelComposition(r0, r1, r2);
     }
 
-    private Relation fence(String name) {
-        return getRelation(RelFencerel.class, FilterBasic.get(name));
+    private Definition fence(Relation r0, String name) {
+        return new RelFencerel(r0, FilterBasic.get(name));
     }
 }

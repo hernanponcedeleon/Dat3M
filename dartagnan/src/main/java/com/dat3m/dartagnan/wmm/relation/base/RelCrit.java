@@ -1,17 +1,16 @@
 package com.dat3m.dartagnan.wmm.relation.base;
 
-import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
+import com.dat3m.dartagnan.wmm.Definition;
+import com.dat3m.dartagnan.wmm.Relation;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CRIT;
+public class RelCrit extends Definition {
 
-public class RelCrit extends StaticRelation {
-
-    public RelCrit(){
-        term = CRIT;
+    public RelCrit(Relation r0) {
+        super(r0);
     }
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitCriticalSections(this);
+        return v.visitCriticalSections(definedRelation);
     }
 }

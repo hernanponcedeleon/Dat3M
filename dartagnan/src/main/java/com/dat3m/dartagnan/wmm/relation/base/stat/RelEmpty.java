@@ -1,20 +1,17 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
+import com.dat3m.dartagnan.wmm.Definition;
+import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 
-public class RelEmpty extends StaticRelation {
+public class RelEmpty extends Definition {
 
-    public RelEmpty() {
-        term = RelationNameRepository.EMPTY;
-    }
-
-    public RelEmpty(String name) {
-        super(name);
-        term = name;
+    public RelEmpty(Relation r0) {
+        super(r0, RelationNameRepository.EMPTY);
     }
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitEmpty(this);
+        return v.visitEmpty(definedRelation);
     }
 }

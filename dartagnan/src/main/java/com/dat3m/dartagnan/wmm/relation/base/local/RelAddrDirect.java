@@ -1,15 +1,16 @@
 package com.dat3m.dartagnan.wmm.relation.base.local;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ADDRDIRECT;
+import com.dat3m.dartagnan.wmm.Definition;
+import com.dat3m.dartagnan.wmm.Relation;
 
-public class RelAddrDirect extends BasicRegRelation {
+public class RelAddrDirect extends Definition {
 
-    public RelAddrDirect(){
-        term = ADDRDIRECT;
+    public RelAddrDirect(Relation r0) {
+        super(r0);
     }
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitAddressDependency(this);
+        return v.visitAddressDependency(definedRelation);
     }
 }

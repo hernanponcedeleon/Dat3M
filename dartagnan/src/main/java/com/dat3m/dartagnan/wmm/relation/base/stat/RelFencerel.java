@@ -1,31 +1,22 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.wmm.Definition;
+import com.dat3m.dartagnan.wmm.Relation;
 
-public class RelFencerel extends StaticRelation {
+public class RelFencerel extends Definition {
 
-    protected FilterAbstract filter;
+    private final FilterAbstract filter;
 
-    public static String makeTerm(FilterAbstract filter){
-        return "fencerel(" + filter + ")";
+    public RelFencerel(Relation r0, FilterAbstract s1) {
+        super(r0, "fencerel(" + s1 + ")");
+        filter = s1;
     }
 
-    public RelFencerel(FilterAbstract filter) {
-        this.filter = filter;
-        term = makeTerm(filter);
-    }
-
-    public RelFencerel(FilterAbstract filter, String name) {
-        super(name);
-        this.filter = filter;
-        term = makeTerm(filter);
-    }
-
-    public String getFenceName() { return name != null ? name : filter.getName(); }
     public FilterAbstract getFilter() { return filter; }
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitFences(this, filter);
+        return v.visitFences(definedRelation, filter);
     }
 }

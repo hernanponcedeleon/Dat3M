@@ -70,7 +70,7 @@ public class CoreReasoner {
                         coreReason.add(new RelLiteral(rel.getName(), tuple, lit.isNegative()));
                     } else if (rel.getName().equals(LOC)) {
                         coreReason.add(new AddressLiteral(tuple, lit.isNegative()));
-                    } else if (rel instanceof RelFencerel) {
+                    } else if (rel.getDefinition() instanceof RelFencerel) {
                         // This is a special case since "fencerel(F) = po;[F];po".
                         // We should do this transformation directly on the Wmm to avoid this special reasoning
                         if (lit.isNegative()) {
