@@ -22,7 +22,7 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_C           = "C";
 
     public Program parse(File file) throws Exception {
-    	if(file.getPath().endsWith("c")) {
+    	if(file.getPath().endsWith("c") || file.getPath().endsWith("i") || file.getPath().endsWith("ll")) {
             compileWithClang(file, "");
             applyAtomicReplacePass(file);
             compileWithSmack(file, "");
