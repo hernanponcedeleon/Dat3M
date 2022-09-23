@@ -504,6 +504,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			} else {
 				pairingLabel = pairLabels.get(currentLabel);
 			}
+			// "assume false" simple terminates the thread
+			// pairingLabel is guaranteed to be "END_OF_T"
+			if(ctx.proposition().expr().getText().equals("false")) {
+				programBuilder.addChild(threadCount, EventFactory.newGoto(pairingLabel));
+			}
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
 			if(c != null) {
 				programBuilder.addChild(threadCount, EventFactory.newJumpUnless(c, pairingLabel));
@@ -669,7 +674,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		if(name.startsWith("$extractvalue")) {
 			String structName = ctx.expr(0).getText();
 			String idx = ctx.expr(1).getText();
-			logger.warn("Accessing strcuture " + structName + ". Please ensure its fields are properly initialised.");
+			logger.warn("Accessing structure " + structName + ". Please ensure field " + idx + " is properly initialised.");
 			return programBuilder.getOrCreateRegister(threadCount, String.format("%s:%s(%s)", currentScope.getID(), structName, idx), GlobalSettings.ARCH_PRECISION);
 		}
 		if(name.contains("$load.")) {
