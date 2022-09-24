@@ -27,7 +27,9 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 public class VisitorLKMM extends VisitorBase {
 
-	protected VisitorLKMM() {}
+	protected VisitorLKMM(boolean forceStart) {
+		super(forceStart);
+        }
 	
 	@Override
 	public List<Event> visitCreate(Create e) {
@@ -67,8 +69,9 @@ public class VisitorLKMM extends VisitorBase {
         Register resultRegister = e.getResultRegister();
 
         return eventSequence(
-        		newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE),
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()),
+        	newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE),
+                forceStart ? newAssume(resultRegister) : null,
+        	newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()),
             	EventFactory.Linux.newMemoryBarrier()
         );
 	}

@@ -45,7 +45,8 @@ public class VisitorPower extends VisitorBase {
 	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
 	private final boolean useRC11Scheme; 
 
-	protected VisitorPower(boolean useRC11Scheme, PowerScheme cToPowerScheme) {
+	protected VisitorPower(boolean forceStart, boolean useRC11Scheme, PowerScheme cToPowerScheme) {
+		super(forceStart);
 		this.useRC11Scheme = useRC11Scheme;
 		this.cToPowerScheme = cToPowerScheme;
 	}
@@ -98,6 +99,7 @@ public class VisitorPower extends VisitorBase {
                 fakeCtrlDep,
                 label,
                 Power.newISyncBarrier(),
+				forceStart ? newAssume(resultRegister) : null,
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}

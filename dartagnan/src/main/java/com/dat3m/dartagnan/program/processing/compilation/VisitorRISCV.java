@@ -15,39 +15,12 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
-import com.dat3m.dartagnan.program.event.lang.catomic.AtomicCmpXchg;
-import com.dat3m.dartagnan.program.event.lang.catomic.AtomicFetchOp;
-import com.dat3m.dartagnan.program.event.lang.catomic.AtomicLoad;
-import com.dat3m.dartagnan.program.event.lang.catomic.AtomicStore;
-import com.dat3m.dartagnan.program.event.lang.catomic.AtomicThreadFence;
-import com.dat3m.dartagnan.program.event.lang.catomic.AtomicXchg;
-import com.dat3m.dartagnan.program.event.lang.linux.LKMMFence;
-import com.dat3m.dartagnan.program.event.lang.linux.LKMMLoad;
-import com.dat3m.dartagnan.program.event.lang.linux.LKMMStore;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWAddUnless;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWCmpXchg;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOpAndTest;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOpReturn;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWXchg;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.lang.catomic.*;
+import com.dat3m.dartagnan.program.event.lang.linux.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
-import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
-import static com.dat3m.dartagnan.program.event.EventFactory.newFakeCtrlDep;
-import static com.dat3m.dartagnan.program.event.EventFactory.newGoto;
-import static com.dat3m.dartagnan.program.event.EventFactory.newJump;
-import static com.dat3m.dartagnan.program.event.EventFactory.newJumpUnless;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLabel;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLoad;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLocal;
-import static com.dat3m.dartagnan.program.event.EventFactory.newRMWLoadExclusive;
-import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStoreExclusive;
-import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
+import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_ACQUIRE;
 import static com.dat3m.dartagnan.program.event.EventFactory.newExecutionStatusWithDependencyTracking;
@@ -62,7 +35,8 @@ class VisitorRISCV extends VisitorBase {
 	// we use the same scheme as AMRv8
 	private final boolean useRC11Scheme; 
 
-	protected VisitorRISCV(boolean useRC11Scheme) {
+	protected VisitorRISCV(boolean forceStart, boolean useRC11Scheme) {
+		super(forceStart);
 		this.useRC11Scheme = useRC11Scheme;
 	}
 	
@@ -96,6 +70,7 @@ class VisitorRISCV extends VisitorBase {
         return eventSequence(
                 load,
                 RISCV.newRWRWFence(),
+				forceStart ? newAssume(resultRegister) : null,
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
         );
 	}

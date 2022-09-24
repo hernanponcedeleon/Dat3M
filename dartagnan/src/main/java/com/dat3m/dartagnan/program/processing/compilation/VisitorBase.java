@@ -30,7 +30,11 @@ import static com.dat3m.dartagnan.program.event.Tag.RMW;
 
 class VisitorBase implements EventVisitor<List<Event>> {
 
-	protected VisitorBase() {}
+	protected boolean forceStart;
+
+	protected VisitorBase(boolean forceStart) {
+		this.forceStart = forceStart;
+	}
 	
 	@Override
 	public List<Event> visitEvent(Event e) {

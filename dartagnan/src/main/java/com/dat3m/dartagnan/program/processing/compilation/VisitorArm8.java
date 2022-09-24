@@ -41,7 +41,8 @@ class VisitorArm8 extends VisitorBase {
 	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
 	private final boolean useRC11Scheme; 
 	
-	protected VisitorArm8(boolean useRC11Scheme) {
+	protected VisitorArm8(boolean forceStart, boolean useRC11Scheme) {
+		super(forceStart);
 		this.useRC11Scheme = useRC11Scheme;
 	}
 	
@@ -85,6 +86,7 @@ class VisitorArm8 extends VisitorBase {
         return eventSequence(
                 newLoad(resultRegister, e.getAddress(), e.getMo()),
                 AArch64.DMB.newISHBarrier(),
+                forceStart ? newAssume(resultRegister) : null,
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}

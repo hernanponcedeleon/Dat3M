@@ -21,7 +21,10 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 class VisitorTso extends VisitorBase {
 
-	protected VisitorTso() {}
+
+	protected VisitorTso(boolean forceStart) {
+                super(forceStart);
+        }
 
 	@Override
 	public List<Event> visitCreate(Create e) {
@@ -60,6 +63,7 @@ class VisitorTso extends VisitorBase {
 
         return eventSequence(
         		newLoad(resultRegister, e.getAddress(), e.getMo()),
+                        forceStart ? newAssume(resultRegister) : null,
         		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}

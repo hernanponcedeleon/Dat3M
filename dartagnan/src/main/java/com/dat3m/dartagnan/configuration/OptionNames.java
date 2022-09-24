@@ -10,7 +10,10 @@ public class OptionNames {
 	public static final String SOLVER = "solver";
 	public static final String TIMEOUT = "timeout";
 	public static final String VALIDATE = "validate";
-	
+
+	// Modeling Options
+	public static final String THREAD_CREATE_ALWAYS_SUCCEDS = "modeling.threadCreateAlwaysSucceds";
+
 	// Compilation Options
 	public static final String USE_RC11_TO_ARCH_SCHEME = "compilation.rc11ToArch";
 	public static final String C_TO_POWER_SCHEME = "compilation.cToPower";

@@ -22,7 +22,9 @@ import static com.dat3m.dartagnan.program.event.Tag.C11.extractStoreMo;
 
 class VisitorIMM extends VisitorBase {
 
-	protected VisitorIMM() {}
+	protected VisitorIMM(boolean forceStart) {
+		super(forceStart);
+	}
 
 	@Override
 	public List<Event> visitLoad(Load e) {
@@ -78,6 +80,7 @@ class VisitorIMM extends VisitorBase {
 
         return eventSequence(
         		newLoad(resultRegister, e.getAddress(), extractLoadMo(e.getMo())),
+				forceStart ? newAssume(resultRegister) : null,
         		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()),
         		newFence(Tag.C11.MO_SC)
         );
