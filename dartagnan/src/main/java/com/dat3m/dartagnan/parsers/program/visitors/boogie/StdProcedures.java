@@ -121,7 +121,6 @@ public class StdProcedures {
 		Register start = visitor.programBuilder.getRegister(visitor.threadCount,ptr);
 		MemoryObject object = visitor.programBuilder.newObject(ptr,size);
 		visitor.programBuilder.addChild(visitor.threadCount,EventFactory.newLocal(start,object));
-		visitor.allocationRegs.add(start);
 	}
 	
 	private static void __assert(VisitorBoogie visitor, Call_cmdContext ctx) {
