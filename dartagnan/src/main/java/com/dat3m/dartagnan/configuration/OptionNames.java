@@ -12,7 +12,7 @@ public class OptionNames {
 	public static final String VALIDATE = "validate";
 
 	// Modeling Options
-	public static final String THREAD_CREATE_ALWAYS_SUCCEDS = "modeling.threadCreateAlwaysSucceds";
+	public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";
 
 	// Compilation Options
 	public static final String USE_RC11_TO_ARCH_SCHEME = "compilation.rc11ToArch";

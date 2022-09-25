@@ -67,9 +67,11 @@ public class VisitorLKMM extends VisitorBase {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
+        Load load = newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
+        load.addFilters(Tag.STARTLOAD);
 
         return eventSequence(
-        	newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE),
+        	load,
                 forceStart ? newAssume(resultRegister) : null,
         	newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()),
             	EventFactory.Linux.newMemoryBarrier()

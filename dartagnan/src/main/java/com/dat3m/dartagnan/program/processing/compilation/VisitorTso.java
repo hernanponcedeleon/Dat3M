@@ -60,9 +60,11 @@ class VisitorTso extends VisitorBase {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
+        Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+        load.addFilters(Tag.STARTLOAD);
 
         return eventSequence(
-        		newLoad(resultRegister, e.getAddress(), e.getMo()),
+        		load,
                         forceStart ? newAssume(resultRegister) : null,
         		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );

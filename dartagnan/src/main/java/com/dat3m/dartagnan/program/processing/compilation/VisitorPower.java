@@ -91,7 +91,8 @@ public class VisitorPower extends VisitorBase {
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
-        Label label = newLabel("Jump_" + e.getOId());
+		load.addFilters(Tag.STARTLOAD);
+		Label label = newLabel("Jump_" + e.getOId());
         CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
         
 		return eventSequence(
