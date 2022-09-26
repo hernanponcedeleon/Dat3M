@@ -189,17 +189,17 @@ public class RelationRepository {
             case FRI:
                 return getRelation(RelIntersection.class, getRelation(FR), getRelation(INT)).setName(FRI);
             case MFENCE:
-                return getRelation(RelFencerel.class, MFENCE);
+                return getRelation(RelFencerel.class, FilterBasic.get(MFENCE));
             case ISH:
-                return getRelation(RelFencerel.class, ISH);
+                return getRelation(RelFencerel.class, FilterBasic.get(ISH));
             case ISB:
-                return getRelation(RelFencerel.class, ISB);
+                return getRelation(RelFencerel.class, FilterBasic.get(ISB));
             case SYNC:
-                return getRelation(RelFencerel.class, SYNC);
+                return getRelation(RelFencerel.class, FilterBasic.get(SYNC));
             case ISYNC:
-                return getRelation(RelFencerel.class, ISYNC);
+                return getRelation(RelFencerel.class, FilterBasic.get(ISYNC));
             case LWSYNC:
-                return getRelation(RelFencerel.class, LWSYNC);
+                return getRelation(RelFencerel.class, FilterBasic.get(LWSYNC));
             case CTRLISYNC:
                 return getRelation(RelIntersection.class, getRelation(CTRL), getRelation(ISYNC)).setName(CTRLISYNC);
             case CTRLISB:
