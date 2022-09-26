@@ -159,13 +159,10 @@ irreflexive rb as rcu
 (* Plain accesses and data races *)
 (*********************************)
 
-let barrier = fencerel(Barrier) | fencerel(Rmb) | fencerel(Wmb) | fencerel(Mb)
-	| fencerel(Sync-rcu) | fencerel(Sync-srcu)
-	| fencerel(Before-atomic) | fencerel(After-atomic)
-	| fencerel(Acquire) | fencerel(Release)
-	| fencerel(Rcu-lock) | fencerel(Rcu-unlock)
-	| fencerel(Srcu-lock) | fencerel(Srcu-unlock) 
-	| (po ; [Release]) | ([Acquire] ; po)
+let barrier = fencerel(Barrier | Rmb | Wmb | Mb | Sync-rcu | Sync-srcu |
+		Before-atomic | After-atomic | Acquire | Release |
+		Rcu-lock | Rcu-unlock | Srcu-lock | Srcu-unlock) |
+	(po ; [Release]) | ([Acquire] ; po)
 
 (* Warn about plain writes and marked accesses in the same region *)
 let mixed-accesses = ([Plain & W] ; (po-loc \ barrier) ; [Marked]) |
