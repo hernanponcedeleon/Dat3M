@@ -105,9 +105,9 @@ public class RelationRepository {
             return new Class<?>[]{Relation.class};
         } else if(RelCartesian.class.isAssignableFrom(cls)){
             return new Class<?>[]{FilterAbstract.class, FilterAbstract.class};
-        } else if(RelSetIdentity.class.isAssignableFrom(cls)){
+        } else if(RelFencerel.class.isAssignableFrom(cls) || RelSetIdentity.class.isAssignableFrom(cls)){
             return new Class<?>[]{FilterAbstract.class};
-        } else if(RelFencerel.class.isAssignableFrom(cls) || RecursiveRelation.class.isAssignableFrom(cls)) {
+        } else if(RecursiveRelation.class.isAssignableFrom(cls)) {
             return new Class<?>[]{String.class};
         }
 
