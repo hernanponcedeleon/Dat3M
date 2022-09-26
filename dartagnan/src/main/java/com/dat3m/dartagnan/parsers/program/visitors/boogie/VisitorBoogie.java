@@ -75,7 +75,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	
 	private final Map<String, Proc_declContext> procedures = new HashMap<>();
 	protected PthreadPool pool = new PthreadPool();
-	protected List<Register> allocationRegs = new ArrayList<>();
 	
 	private int nextScopeID = 0;
 	protected Scope currentScope = new Scope(nextScopeID, null);
@@ -436,15 +435,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	        		} catch (Exception e) {
 	        			// Nothing to be done
 	        		}
-	        		if(!allocationRegs.contains(value)) {
-	        			// These events are eventually compiled and we need to compare its mo, thus it cannot be null
-	        			programBuilder.addChild(threadCount, EventFactory.newLoad(register, (IExpr)value, ""))
-	        					.setCLine(currentLine)
-	        					.setSourceCodeFile(sourceCodeFile);
-	        		} else {
-	        			// These events are eventually compiled and we need to compare its mo, thus it cannot be null
-	        			programBuilder.addChild(threadCount, EventFactory.newLoad(register, (IExpr)value, ""));
-	        		}						        			
+	        		// These events are eventually compiled and we need to compare its mo, thus it cannot be null
+	        		programBuilder.addChild(threadCount, EventFactory.newLoad(register, (IExpr)value, ""))
+	        				.setCLine(currentLine)
+	        				.setSourceCodeFile(sourceCodeFile);
 		            continue;
 	        	}
 	        	value = value.visit(exprSimplifier);
