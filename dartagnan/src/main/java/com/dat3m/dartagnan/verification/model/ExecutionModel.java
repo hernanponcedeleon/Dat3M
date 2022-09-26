@@ -40,7 +40,6 @@ The ExecutionModel wraps a Model and extracts data from it in a more workable ma
 public class ExecutionModel {
 
     private final VerificationTask task;
-    private final RelCo co;
 
     // ============= Model specific  =============
     private Model model;
@@ -90,7 +89,6 @@ public class ExecutionModel {
 
     public ExecutionModel(VerificationTask task) {
         this.task = task;
-        co = (RelCo)task.getMemoryModel().getRelationRepository().getRelation(CO);
 
         eventList = new ArrayList<>(100);
         threadList = new ArrayList<>(getProgram().getThreads().size());

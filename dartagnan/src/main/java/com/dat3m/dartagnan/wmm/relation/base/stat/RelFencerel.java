@@ -34,6 +34,7 @@ public class RelFencerel extends StaticRelation {
     }
 
     public String getFenceName() { return name != null ? name : filter.getName(); }
+    public FilterAbstract getFilter() { return filter; }
 
     @Override
     public TupleSet getMinTupleSet(){
