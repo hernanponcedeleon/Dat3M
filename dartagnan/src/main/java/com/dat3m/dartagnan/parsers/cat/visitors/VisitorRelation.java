@@ -119,7 +119,12 @@ public class VisitorRelation extends CatBaseVisitor<Relation> {
 
     @Override
     public Relation visitExprFencerel(CatParser.ExprFencerelContext ctx) {
-        return base.relationRepository.getRelation(RelFencerel.class, ctx.n.getText());
+        boolean orig = base.recursiveDef;
+        base.recursiveDef = false;
+        FilterAbstract filter = ctx.e.accept(base.filterVisitor);
+        Relation relation = base.relationRepository.getRelation(RelFencerel.class, filter);
+        base.recursiveDef = orig;
+        return relation;
     }
 
     @Override

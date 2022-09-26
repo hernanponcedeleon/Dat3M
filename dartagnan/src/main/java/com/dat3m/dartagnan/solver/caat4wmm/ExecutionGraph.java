@@ -293,7 +293,7 @@ public class ExecutionGraph {
             } else if (relClass == RelInt.class) {
                 graph = new InternalGraph();
             } else if (relClass == RelFencerel.class) {
-                graph = new FenceGraph(((RelFencerel) rel).getFenceName());
+                graph = new FenceGraph(((RelFencerel) rel).getFilter());
             } else if (relClass == RelSetIdentity.class) {
                 SetPredicate set = getOrCreateSetFromFilter(((RelSetIdentity) rel).getFilter());
                 graph = new SetIdentityGraph(set);
