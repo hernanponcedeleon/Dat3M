@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.op.BOpBin;
+import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
@@ -62,11 +64,13 @@ class VisitorTso extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
         load.addFilters(Tag.STARTLOAD);
+        Register statusRegister = e.getThread().newRegister(resultRegister.getPrecision());
 
         return eventSequence(
         		load,
-                        forceStart ? newAssume(resultRegister) : null,
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
+                        forceStart ? newExecutionStatus(statusRegister, e.getMatcher()) : null,
+                        forceStart ? newAssume(new BExprBin(resultRegister, BOpBin.AND, new BExprUn(BOpUn.NOT, statusRegister))) : null,
+                        newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}
 

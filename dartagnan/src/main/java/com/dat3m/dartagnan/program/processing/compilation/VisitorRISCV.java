@@ -1,11 +1,13 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Atom;
+import com.dat3m.dartagnan.expression.BExprBin;
 import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
@@ -70,7 +72,6 @@ class VisitorRISCV extends VisitorBase {
         return eventSequence(
                 load,
                 RISCV.newRWRWFence(),
-				forceStart ? newAssume(resultRegister) : null,
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
         );
 	}
@@ -80,10 +81,13 @@ class VisitorRISCV extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
         load.addFilters(Tag.STARTLOAD);
+        Register statusRegister = e.getThread().newRegister(resultRegister.getPrecision());
 
         return eventSequence(
         		load,
                 RISCV.newRWRWFence(),
+                forceStart ? newExecutionStatus(statusRegister, e.getMatcher()) : null,
+                forceStart ? newAssume(new BExprBin(resultRegister, BOpBin.AND, new BExprUn(BOpUn.NOT, statusRegister))) : null,
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}

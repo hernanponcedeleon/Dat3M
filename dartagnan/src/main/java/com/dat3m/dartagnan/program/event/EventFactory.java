@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
+import com.dat3m.dartagnan.program.event.core.annotations.MatcherCreateStart;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
@@ -85,6 +86,10 @@ public class EventFactory {
 
     public static FunRet newFunctionReturn(String funName) {
         return new FunRet(funName);
+    }
+
+    public static MatcherCreateStart newMatcherCreateStart(String cc) {
+        return new MatcherCreateStart(cc);
     }
 
     public static Local newLocal(Register register, ExprInterface expr) {
@@ -190,8 +195,8 @@ public class EventFactory {
             return new Lock(name, address, reg);
         }
 
-        public static Start newStart(Register reg, MemoryObject address) {
-            return new Start(reg, address);
+        public static Start newStart(Register reg, MemoryObject address, Event matcher) {
+            return new Start(reg, address, matcher);
         }
 
         public static Unlock newUnlock(String name, IExpr address, Register reg) {
