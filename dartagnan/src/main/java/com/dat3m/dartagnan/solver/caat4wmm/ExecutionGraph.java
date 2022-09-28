@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.solver.caat.constraints.EmptinessConstraint;
 import com.dat3m.dartagnan.solver.caat.constraints.IrreflexivityConstraint;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.EmptyGraph;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.IdentityGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.*;
@@ -291,8 +290,6 @@ public class ExecutionGraph {
             } else if (relClass == RelSetIdentity.class) {
                 SetPredicate set = getOrCreateSetFromFilter(((RelSetIdentity) rel).getFilter());
                 graph = new SetIdentityGraph(set);
-            } else if (relClass == RelId.class) {
-                graph = new IdentityGraph();
             } else if (relClass == RelEmpty.class) {
                 graph = new EmptyGraph();
             } else {
