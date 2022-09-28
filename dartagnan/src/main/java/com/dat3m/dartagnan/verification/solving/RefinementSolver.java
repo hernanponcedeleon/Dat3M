@@ -121,7 +121,9 @@ public class RefinementSolver extends ModelChecker {
 
         ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
         PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, baselineModel, analysisContext, config);
-        SymmetryEncoder symmEncoder = SymmetryEncoder.fromConfig(baselineModel, analysisContext, config);
+        // We use the original memory model for symmetry breaking because we need axioms
+        // to compute the breaking order.
+        SymmetryEncoder symmEncoder = SymmetryEncoder.fromConfig(memoryModel, analysisContext, config);
         WmmEncoder baselineEncoder = WmmEncoder.fromConfig(baselineModel, baselineContext, config);
         programEncoder.initializeEncoding(ctx);
         propertyEncoder.initializeEncoding(ctx);
