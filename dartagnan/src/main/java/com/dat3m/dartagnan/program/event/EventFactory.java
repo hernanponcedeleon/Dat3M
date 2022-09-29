@@ -88,8 +88,8 @@ public class EventFactory {
         return new FunRet(funName);
     }
 
-    public static StringAnnotation newStringAnnotation(String cc) {
-        return new StringAnnotation(cc);
+    public static StringAnnotation newStringAnnotation(String annotation) {
+        return new StringAnnotation(annotation);
     }
 
     public static Local newLocal(Register register, ExprInterface expr) {
