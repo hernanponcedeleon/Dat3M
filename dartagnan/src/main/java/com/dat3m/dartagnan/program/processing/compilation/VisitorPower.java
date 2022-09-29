@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
@@ -10,20 +9,8 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.linux.LKMMFence;
-import com.dat3m.dartagnan.program.event.lang.linux.LKMMLoad;
-import com.dat3m.dartagnan.program.event.lang.linux.LKMMStore;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWAddUnless;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWCmpXchg;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOpAndTest;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOpReturn;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWXchg;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.lang.linux.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 
 import java.util.List;
 
@@ -90,20 +77,20 @@ public class VisitorPower extends VisitorBase {
 
 	@Override
 	public List<Event> visitStart(Start e) {
+		List<Event> optionalEvents = super.visitStart(e);
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
 		load.addFilters(Tag.STARTLOAD);
 		Label label = newLabel("Jump_" + e.getOId());
         CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-		Register statusRegister = e.getThread().newRegister(resultRegister.getPrecision());
-
+		
 		return eventSequence(
                 load,
                 fakeCtrlDep,
                 label,
                 Power.newISyncBarrier(),
-                forceStart ? newExecutionStatus(statusRegister, e.getCreationEvent()) : null,
-                forceStart ? newAssume(new BExprBin(resultRegister, BOpBin.OR, statusRegister)) : null,
+                optionalEvents.size() > 0 ? optionalEvents.get(0) : null,
+                optionalEvents.size() > 1 ? optionalEvents.get(1) : null,
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}

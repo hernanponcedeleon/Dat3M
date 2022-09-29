@@ -2,8 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.BOpBin;
-import com.dat3m.dartagnan.expression.op.BOpUn;
+
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
@@ -12,12 +11,8 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWReadCondCmp;
-import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWReadCondUnless;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -68,15 +63,15 @@ public class VisitorLKMM extends VisitorBase {
 
 	@Override
 	public List<Event> visitStart(Start e) {
+        List<Event> optionalEvents = super.visitStart(e);
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
         load.addFilters(Tag.STARTLOAD);
-        Register statusRegister = e.getThread().newRegister(resultRegister.getPrecision());
 
         return eventSequence(
         	load,
-                forceStart ? newExecutionStatus(statusRegister, e.getCreationEvent()) : null,
-                forceStart ? newAssume(new BExprBin(resultRegister, BOpBin.OR, statusRegister)) : null,
+                optionalEvents.size() > 0 ? optionalEvents.get(0) : null,
+                optionalEvents.size() > 1 ? optionalEvents.get(1) : null,
         	newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()),
             	EventFactory.Linux.newMemoryBarrier()
         );
