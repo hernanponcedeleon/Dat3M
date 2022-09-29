@@ -78,15 +78,15 @@ public class PthreadsProcedures {
 		visitor.pool.add(threadPtr, threadName, visitor.threadCount);
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
         String cc = String.format("%s(%s)_active", threadPtr, visitor.pool.getCreatorFromPtr(threadPtr));
-		Event matcher = EventFactory.newMatcherCreateStart(cc);
+		Event matcher = EventFactory.newStringAnnotation("// Spawning thread associated to " + cc);
 		visitor.programBuilder.addChild(visitor.threadCount, matcher);
 		visitor.pool.addMatcher(cc, matcher);
-		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, IValue.ZERO));
 		MemoryObject object = visitor.programBuilder.getOrNewObject(cc);
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(threadPtr, threadName, object))
 			.setCLine(visitor.currentLine)
 			.setSourceCodeFile(visitor.sourceCodeFile);
-	}
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, IValue.ZERO));
+		}
 	
 	private static void pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String namePtr = ctx.call_params().exprs().expr().get(0).getText();

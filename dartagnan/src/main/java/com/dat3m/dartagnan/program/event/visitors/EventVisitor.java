@@ -35,11 +35,6 @@ public interface EventVisitor<T> {
 	default T visitSkip(Skip e) { return visitEvent(e); }
 	default T visitStore(Store e) { return visitMemEvent(e); }
 
-	// Annotations
-	default T visitCodeAnnotation(CodeAnnotation e) { return visitEvent(e); }
-	default T visitFunCall(FunCall e) { return visitCodeAnnotation(e); }
-	default T visitFunRet(FunRet e) { return visitCodeAnnotation(e); }
-
 	// Pthread Events
 	default T visitCreate(Create e) { return visitStore(e); }
 	default T visitEnd(End e) { return visitStore(e); }
