@@ -102,8 +102,8 @@ public class VisitorPower extends VisitorBase {
                 fakeCtrlDep,
                 label,
                 Power.newISyncBarrier(),
-                forceStart ? newExecutionStatus(statusRegister, e.getMatcher()) : null,
-                forceStart ? newAssume(new BExprBin(resultRegister, BOpBin.AND, new BExprUn(BOpUn.NOT, statusRegister))) : null,
+                forceStart ? newExecutionStatus(statusRegister, e.getCreationEvent()) : null,
+                forceStart ? newAssume(new BExprBin(resultRegister, BOpBin.OR, statusRegister)) : null,
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}

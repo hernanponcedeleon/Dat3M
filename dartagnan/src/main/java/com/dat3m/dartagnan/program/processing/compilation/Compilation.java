@@ -56,7 +56,7 @@ public class Compilation implements ProgramProcessor {
     private PowerScheme cToPowerScheme = LEADING_SYNC;
 
     @Option(name = THREAD_CREATE_ALWAYS_SUCCEEDS,
-            description = "Calling pthread_create is guaranteed to success.",
+            description = "Calling pthread_create is guaranteed to succed.",
             secure = true,
             toUppercase = true)
     private boolean forceStart = false;

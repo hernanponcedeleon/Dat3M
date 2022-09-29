@@ -15,10 +15,11 @@ public class PthreadPool {
 	private final Map<Register, List<Integer>> mapPtrCreator = new HashMap<>();
 	private final Map<Integer, Register> mapIntPtr = new HashMap<>();
 	private final Map<Register, Register> mapRegPtr = new HashMap<>();
-	// We use this map to match a Start with its correponding Create
-	// This is needed during the compilation pass. At this point the Create
-	// was already compiled and thus we use an annotation event which
-	// remains after the compilation.
+	// This is needed during the compilation pass to match a Start 
+	// with its corresponding Create. Both events access the same address, 
+	// i.e. the communication channel (cc), which we only use for modeling 
+	// purposes. During the compilation of Start the Create was already 
+	// compiled and thus we use an annotation event which remains after the compilation."
 	private final Map<String, Event> mapCcMatcher = new HashMap<>();
 	
 	public void add(Register ptr, String name, int creator) {

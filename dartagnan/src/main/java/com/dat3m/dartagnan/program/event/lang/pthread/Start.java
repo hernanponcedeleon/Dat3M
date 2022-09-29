@@ -11,17 +11,17 @@ import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
 public class Start extends Load {
 
-    private final Event matcher;
+    private final Event creationEvent;
 
-	public Start(Register reg, MemoryObject address, Event matcher){
+	public Start(Register reg, MemoryObject address, Event creationEvent){
 		super(reg, address, MO_SC);
-        this.matcher = matcher;
+        this.creationEvent = creationEvent;
         addFilters(Tag.C11.PTHREAD);
     }
 
 	private Start(Start other){
 		super(other);
-        this.matcher = other.matcher;
+        this.creationEvent = other.creationEvent;
     }
 
     @Override
@@ -29,8 +29,8 @@ public class Start extends Load {
         return "start_thread()";
     }
 
-    public Event getMatcher() {
-        return matcher;
+    public Event getCreationEvent() {
+        return creationEvent;
     }
     
     // Unrolling

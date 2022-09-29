@@ -67,8 +67,8 @@ public class VisitorC11 extends VisitorBase {
 
         return eventSequence(
         		load,
-                        forceStart ? newExecutionStatus(statusRegister, e.getMatcher()) : null,
-                        forceStart ? newAssume(new BExprBin(resultRegister, BOpBin.AND, new BExprUn(BOpUn.NOT, statusRegister))) : null,
+                        forceStart ? newExecutionStatus(statusRegister, e.getCreationEvent()) : null,
+                        forceStart ? newAssume(new BExprBin(resultRegister, BOpBin.OR, statusRegister)) : null,
                         newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}
