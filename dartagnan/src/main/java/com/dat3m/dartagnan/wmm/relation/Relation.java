@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
@@ -19,19 +20,22 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
+import static java.util.stream.Collectors.toList;
 
 /**
  *
  * @author Florian Furbach
  */
 //TODO: Remove "Encoder" once we split data and operations appropriately
-public abstract class Relation implements Encoder, Dependent<Relation> {
+public abstract class Relation implements Constraint, Encoder, Dependent<Relation> {
 
     public static boolean PostFixApprox = false;
 
@@ -117,6 +121,16 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
 
     public boolean getIsNamed(){
         return name != null;
+    }
+
+    @Override
+    public Collection<? extends Relation> getConstrainedRelations() {
+        return accept(new Visitor<>() {
+            @Override
+            public Collection<? extends Relation> visitDefinition(Relation rel, List<? extends Relation> dependencies) {
+                return dependencies;
+            }
+        });
     }
 
     @Override
