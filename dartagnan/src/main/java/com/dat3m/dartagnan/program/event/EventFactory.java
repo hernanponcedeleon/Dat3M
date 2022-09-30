@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
+import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
@@ -20,9 +21,7 @@ import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
@@ -37,7 +36,28 @@ public class EventFactory {
     // =============================================================================================
 
     public static List<Event> eventSequence(Event... events) {
-        return Arrays.stream(events).filter(Objects::nonNull).collect(Collectors.toList());
+        return eventSequence(Arrays.asList(events));
+    }
+
+    public static List<Event> eventSequence(Collection<? extends Event> events) {
+        return events.stream().filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    public static List<Event> eventSequence(Object... events) {
+        List<Event> retVal = new ArrayList<>();
+        for (Object obj : events) {
+            if (obj == null) {
+                continue;
+            }
+            if (obj instanceof Event) {
+                retVal.add((Event) obj);
+            } else if (obj instanceof Collection<?>) {
+                retVal.addAll((Collection<? extends Event>)obj );
+            } else {
+                throw new IllegalArgumentException("Cannot parse " + obj.getClass() + " as event.");
+            }
+        }
+        return retVal;
     }
 
 
@@ -85,6 +105,10 @@ public class EventFactory {
 
     public static FunRet newFunctionReturn(String funName) {
         return new FunRet(funName);
+    }
+
+    public static StringAnnotation newStringAnnotation(String annotation) {
+        return new StringAnnotation(annotation);
     }
 
     public static Local newLocal(Register register, ExprInterface expr) {
@@ -190,8 +214,8 @@ public class EventFactory {
             return new Lock(name, address, reg);
         }
 
-        public static Start newStart(Register reg, MemoryObject address) {
-            return new Start(reg, address);
+        public static Start newStart(Register reg, MemoryObject address, Event creationEvent) {
+            return new Start(reg, address, creationEvent);
         }
 
         public static Unlock newUnlock(String name, IExpr address, Register reg) {

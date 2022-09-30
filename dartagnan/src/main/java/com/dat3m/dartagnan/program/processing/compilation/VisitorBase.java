@@ -1,23 +1,16 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
-import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
-import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
+import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.rmw.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.AtomicAbstract;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
@@ -30,7 +23,11 @@ import static com.dat3m.dartagnan.program.event.Tag.RMW;
 
 class VisitorBase implements EventVisitor<List<Event>> {
 
-	protected VisitorBase() {}
+	protected boolean forceStart;
+
+	protected VisitorBase(boolean forceStart) {
+		this.forceStart = forceStart;
+	}
 	
 	@Override
 	public List<Event> visitEvent(Event e) {
@@ -43,6 +40,17 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		return visitEvent(e);
 	};
 
+	@Override
+	public List<Event> visitStart(Start e) {
+        Register resultRegister = e.getResultRegister();
+        Register statusRegister = e.getThread().newRegister(resultRegister.getPrecision());
+
+        return eventSequence(
+                forceStart ? newExecutionStatus(statusRegister, e.getCreationEvent()) : null,
+                forceStart ? newAssume(new BExprBin(resultRegister, BOpBin.OR, statusRegister)) : null
+        );
+	}
+	
 	@Override
 	public List<Event> visitInitLock(InitLock e) {
 		return eventSequence(

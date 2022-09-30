@@ -55,6 +55,12 @@ public class Compilation implements ProgramProcessor {
             toUppercase = true)
     private PowerScheme cToPowerScheme = LEADING_SYNC;
 
+    @Option(name = THREAD_CREATE_ALWAYS_SUCCEEDS,
+            description = "Calling pthread_create is guaranteed to succeed.",
+            secure = true,
+            toUppercase = true)
+    private boolean forceStart = false;
+
     // =====================================================================
 
     private Compilation() { }
@@ -84,19 +90,19 @@ public class Compilation implements ProgramProcessor {
         EventVisitor<List<Event>> visitor;
         switch(target) {
         	case C11:
-            	visitor = new VisitorC11(); break;
+            	visitor = new VisitorC11(forceStart); break;
         	case LKMM:
-        		visitor = new VisitorLKMM(); break;
+        		visitor = new VisitorLKMM(forceStart); break;
             case TSO:
-                visitor = new VisitorTso(); break;
+                visitor = new VisitorTso(forceStart); break;
             case POWER:
-                visitor = new VisitorPower(useRC11Scheme, cToPowerScheme); break;
+                visitor = new VisitorPower(forceStart, useRC11Scheme, cToPowerScheme); break;
             case ARM8:
-                visitor = new VisitorArm8(useRC11Scheme); break;
+                visitor = new VisitorArm8(forceStart, useRC11Scheme); break;
             case IMM:
-                visitor = new VisitorIMM(); break;
+                visitor = new VisitorIMM(forceStart); break;
             case RISCV:
-                visitor = new VisitorRISCV(useRC11Scheme); break;
+                visitor = new VisitorRISCV(forceStart, useRC11Scheme); break;
             default:
                 throw new UnsupportedOperationException(String.format("Compilation to %s is not supported.", target));
         }

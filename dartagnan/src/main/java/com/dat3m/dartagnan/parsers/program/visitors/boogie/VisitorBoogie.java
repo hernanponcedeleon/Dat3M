@@ -240,9 +240,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             programBuilder.initThread(name, threadCount);
             if(threadCount != 1) {
                 // Used to allow execution of threads after they have been created (pthread_create)
-                MemoryObject object = programBuilder.getOrNewObject(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
+                String cc = String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount)));
+				MemoryObject object = programBuilder.getOrNewObject(cc);
                 Register reg = programBuilder.getOrCreateRegister(threadCount, null, ARCH_PRECISION);
-                programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, object));
+                programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, object, pool.getMatcher(cc)));
             }
     	}
 

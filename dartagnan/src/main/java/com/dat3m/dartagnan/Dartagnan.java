@@ -1,11 +1,16 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -26,9 +31,11 @@ import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverException;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
@@ -165,6 +172,7 @@ public class Dartagnan extends BaseOptions {
             	boolean safetyViolationFound = false;
             	if((result == FAIL && !p.getAss().getInvert()) || 
             			(result == PASS && p.getAss().getInvert())) {
+					printWarningIfThreadStartFailed(p, prover);
             		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(ctx)))) {
             			safetyViolationFound = true;
             			System.out.println("Safety violation found");
@@ -209,4 +217,16 @@ public class Dartagnan extends BaseOptions {
         	System.exit(1);
         }
     }
+
+	private static void printWarningIfThreadStartFailed(Program p, ProverEnvironment prover) throws SolverException {
+		for(Event e : p.getCache().getEvents(FilterBasic.get(Tag.STARTLOAD))) {
+			if(BigInteger.ZERO.equals(prover.getModel().evaluate(((Load)e).getMemValueExpr()))) {
+				// This msg should be displayed even if the logging is off
+				System.out.println(String.format(
+						"[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true",
+						e.getThread().getId(), OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS));
+				break;
+			}
+		}
+	}
 }

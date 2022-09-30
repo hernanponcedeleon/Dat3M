@@ -37,8 +37,6 @@ public interface EventVisitor<T> {
 
 	// Annotations
 	default T visitCodeAnnotation(CodeAnnotation e) { return visitEvent(e); }
-	default T visitFunCall(FunCall e) { return visitCodeAnnotation(e); }
-	default T visitFunRet(FunRet e) { return visitCodeAnnotation(e); }
 
 	// Pthread Events
 	default T visitCreate(Create e) { return visitStore(e); }

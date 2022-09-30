@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -22,7 +23,9 @@ import static com.dat3m.dartagnan.program.event.Tag.C11.extractStoreMo;
 
 class VisitorIMM extends VisitorBase {
 
-	protected VisitorIMM() {}
+	protected VisitorIMM(boolean forceStart) {
+		super(forceStart);
+	}
 
 	@Override
 	public List<Event> visitLoad(Load e) {
@@ -75,9 +78,12 @@ class VisitorIMM extends VisitorBase {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
+        Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+        load.addFilters(Tag.STARTLOAD);
 
         return eventSequence(
-        		newLoad(resultRegister, e.getAddress(), extractLoadMo(e.getMo())),
+        		load,
+				super.visitStart(e),
         		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()),
         		newFence(Tag.C11.MO_SC)
         );
