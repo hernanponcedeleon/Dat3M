@@ -4,13 +4,16 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory.Power;
+import com.dat3m.dartagnan.program.event.EventFactory.*;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.Create;
+import com.dat3m.dartagnan.program.event.lang.pthread.End;
+import com.dat3m.dartagnan.program.event.lang.pthread.Join;
+import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 
 import java.util.List;
 
@@ -24,7 +27,7 @@ public class VisitorPower extends VisitorBase {
 
 	// The compilation schemes below follows the paper
 	// "Clarifying and Compiling C/C++ Concurrency: from C++11 to POWER"
-	// The paper does not defines the mappings for RMW but we derive them
+	// The paper does not define the mappings for RMW, but we derive them
 	// using the same pattern as for Load/Store	
 	private final PowerScheme cToPowerScheme;
 	// Some language memory models (e.g. RC11) are non-dependency tracking and might need a 
@@ -77,7 +80,6 @@ public class VisitorPower extends VisitorBase {
 
 	@Override
 	public List<Event> visitStart(Start e) {
-		List<Event> optionalEvents = super.visitStart(e);
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
 		load.addFilters(Tag.STARTLOAD);
@@ -89,8 +91,7 @@ public class VisitorPower extends VisitorBase {
                 fakeCtrlDep,
                 label,
                 Power.newISyncBarrier(),
-                optionalEvents.size() > 0 ? optionalEvents.get(0) : null,
-                optionalEvents.size() > 1 ? optionalEvents.get(1) : null,
+				super.visitStart(e),
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}

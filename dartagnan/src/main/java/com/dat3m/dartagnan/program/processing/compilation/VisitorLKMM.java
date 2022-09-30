@@ -2,17 +2,19 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
-
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWReadCondCmp;
+import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWReadCondUnless;
+import com.dat3m.dartagnan.program.event.lang.pthread.Create;
+import com.dat3m.dartagnan.program.event.lang.pthread.End;
+import com.dat3m.dartagnan.program.event.lang.pthread.Join;
+import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -30,12 +32,11 @@ public class VisitorLKMM extends VisitorBase {
 	
 	@Override
 	public List<Event> visitCreate(Create e) {
-
         Store store = newStore(e.getAddress(), e.getMemValue(), Tag.Linux.MO_RELEASE);
         store.addFilters(C11.PTHREAD);
 
         return eventSequence(
-        		EventFactory.Linux.newMemoryBarrier(),
+        		Linux.newMemoryBarrier(),
                 store
         );
 	}
@@ -43,7 +44,7 @@ public class VisitorLKMM extends VisitorBase {
 	@Override
 	public List<Event> visitEnd(End e) {
         return eventSequence(
-        		EventFactory.Linux.newMemoryBarrier(),
+        		Linux.newMemoryBarrier(),
                 newStore(e.getAddress(), IValue.ZERO, Tag.Linux.MO_RELEASE)
         );
 	}
@@ -57,23 +58,21 @@ public class VisitorLKMM extends VisitorBase {
         return eventSequence(
         		load,
         		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit()),
-        		EventFactory.Linux.newMemoryBarrier()
+        		Linux.newMemoryBarrier()
         );
 	}
 
 	@Override
 	public List<Event> visitStart(Start e) {
-        List<Event> optionalEvents = super.visitStart(e);
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
         load.addFilters(Tag.STARTLOAD);
 
         return eventSequence(
-        	load,
-                optionalEvents.size() > 0 ? optionalEvents.get(0) : null,
-                optionalEvents.size() > 1 ? optionalEvents.get(1) : null,
-        	newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()),
-            	EventFactory.Linux.newMemoryBarrier()
+        		load,
+				super.visitStart(e),
+        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()),
+            	Linux.newMemoryBarrier()
         );
 	}
 

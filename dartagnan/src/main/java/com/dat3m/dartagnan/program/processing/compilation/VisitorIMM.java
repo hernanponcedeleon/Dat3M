@@ -7,7 +7,11 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.Create;
+import com.dat3m.dartagnan.program.event.lang.pthread.End;
+import com.dat3m.dartagnan.program.event.lang.pthread.Join;
+import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -73,15 +77,13 @@ class VisitorIMM extends VisitorBase {
 
 	@Override
 	public List<Event> visitStart(Start e) {
-		List<Event> optionalEvents = super.visitStart(e);
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
         load.addFilters(Tag.STARTLOAD);
 
         return eventSequence(
         		load,
-                optionalEvents.size() > 0 ? optionalEvents.get(0) : null,
-                optionalEvents.size() > 1 ? optionalEvents.get(1) : null,
+				super.visitStart(e),
         		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()),
         		newFence(Tag.C11.MO_SC)
         );

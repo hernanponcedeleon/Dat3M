@@ -1,25 +1,29 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory.RISCV;
-import com.dat3m.dartagnan.program.event.Tag.C11;
+import com.dat3m.dartagnan.program.event.EventFactory.*;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.rmw.*;
+import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.Create;
+import com.dat3m.dartagnan.program.event.lang.pthread.End;
+import com.dat3m.dartagnan.program.event.lang.pthread.Join;
+import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+
+import java.util.List;
+
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_ACQUIRE;
-import static com.dat3m.dartagnan.program.event.EventFactory.newExecutionStatusWithDependencyTracking;
-import java.util.List;
+import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 
 class VisitorRISCV extends VisitorBase {
 	// Some language memory models (e.g. RC11) are non-dependency tracking and might need a 
@@ -71,7 +75,6 @@ class VisitorRISCV extends VisitorBase {
 
 	@Override
 	public List<Event> visitStart(Start e) {
-		List<Event> optionalEvents = super.visitStart(e);
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
         load.addFilters(Tag.STARTLOAD);
@@ -79,8 +82,7 @@ class VisitorRISCV extends VisitorBase {
         return eventSequence(
         		load,
                 RISCV.newRWRWFence(),
-                optionalEvents.size() > 0 ? optionalEvents.get(0) : null,
-                optionalEvents.size() > 1 ? optionalEvents.get(1) : null,
+				super.visitStart(e),
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}

@@ -21,9 +21,7 @@ import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
@@ -38,7 +36,28 @@ public class EventFactory {
     // =============================================================================================
 
     public static List<Event> eventSequence(Event... events) {
-        return Arrays.stream(events).filter(Objects::nonNull).collect(Collectors.toList());
+        return eventSequence(Arrays.asList(events));
+    }
+
+    public static List<Event> eventSequence(Collection<? extends Event> events) {
+        return events.stream().filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    public static List<Event> eventSequence(Object... events) {
+        List<Event> retVal = new ArrayList<>();
+        for (Object obj : events) {
+            if (obj == null) {
+                continue;
+            }
+            if (obj instanceof Event) {
+                retVal.add((Event) obj);
+            } else if (obj instanceof Collection<?>) {
+                retVal.addAll((Collection<? extends Event>)obj );
+            } else {
+                throw new IllegalArgumentException("Cannot parse " + obj.getClass() + " as event.");
+            }
+        }
+        return retVal;
     }
 
 
