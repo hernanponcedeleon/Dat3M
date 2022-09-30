@@ -44,7 +44,7 @@ public class SymmetryEncoder implements Encoder {
             description = "The relation on which symmetry breaking should happen." +
             "Empty, if symmetry shall not be encoded.",
             secure = true)
-    private String symmBreakRelName = RelationNameRepository.RF;
+    private String symmBreakRelName = RelationNameRepository.CO;
 
     @Option(name = BREAK_SYMMETRY_BY_SYNC_DEGREE,
             description = "Orders the relation edges to break on based on their synchronization strength.",
