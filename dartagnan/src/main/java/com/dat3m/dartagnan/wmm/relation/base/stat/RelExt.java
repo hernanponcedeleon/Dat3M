@@ -18,6 +18,11 @@ public class RelExt extends StaticRelation {
     }
 
     @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitExternal(this);
+    }
+
+    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();

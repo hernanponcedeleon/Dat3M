@@ -65,6 +65,11 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitRecursive(this, r1);
+    }
+
+    @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             minTupleSet = new TupleSet();

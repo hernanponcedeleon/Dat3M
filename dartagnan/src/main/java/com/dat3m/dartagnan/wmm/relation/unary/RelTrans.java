@@ -34,6 +34,11 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitTransitiveClosure(this, r1);
+    }
+
+    @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             //TODO: Make sure this is correct and efficient
