@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
-import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -41,7 +40,7 @@ public class WmmEncoder implements Encoder {
     @Override
     public void initializeEncoding(SolverContext ctx) {
         for(String relName : Wmm.BASE_RELATIONS) {
-            memoryModel.getRelationRepository().getRelation(relName);
+            memoryModel.getRelation(relName);
         }
 
         for(RecursiveGroup recursiveGroup : memoryModel.getRecursiveGroups()){
@@ -86,10 +85,9 @@ public class WmmEncoder implements Encoder {
         checkInitialized();
         logger.info("Encoding relations");
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        final RelationRepository repo = memoryModel.getRelationRepository();
         final DependencyGraph<Relation> depGraph = DependencyGraph.from(
                 Iterables.concat(
-                        Iterables.transform(Wmm.BASE_RELATIONS, repo::getRelation), // base relations
+                        Iterables.transform(Wmm.BASE_RELATIONS, memoryModel::getRelation), // base relations
                         Iterables.transform(memoryModel.getAxioms(), Axiom::getRelation) // axiom relations
                 )
         );

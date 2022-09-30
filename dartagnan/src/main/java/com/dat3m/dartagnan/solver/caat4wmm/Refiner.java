@@ -134,7 +134,7 @@ public class Refiner {
             enc = generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), context);
         } else if (literal instanceof RelLiteral) {
             RelLiteral lit = (RelLiteral) literal;
-            Relation rel = memoryModel.getRelationRepository().getRelation(lit.getName());
+            Relation rel = memoryModel.getRelation(lit.getName());
             enc = rel.getSMTVar(
                     perm.apply(lit.getData().getFirst()),
                     perm.apply(lit.getData().getSecond()),
