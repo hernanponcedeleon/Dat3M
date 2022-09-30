@@ -214,8 +214,8 @@ public class EventFactory {
             return new Lock(name, address, reg);
         }
 
-        public static Start newStart(Register reg, MemoryObject address, Event matcher) {
-            return new Start(reg, address, matcher);
+        public static Start newStart(Register reg, MemoryObject address, Event creationEvent) {
+            return new Start(reg, address, creationEvent);
         }
 
         public static Unlock newUnlock(String name, IExpr address, Register reg) {
