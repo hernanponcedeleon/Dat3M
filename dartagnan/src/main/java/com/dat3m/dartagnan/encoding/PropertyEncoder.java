@@ -164,8 +164,8 @@ public class PropertyEncoder implements Encoder {
         }
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        RelRf rf = (RelRf) memoryModel.getRelationRepository().getRelation(RelationNameRepository.RF);
-        RelCo co = (RelCo) memoryModel.getRelationRepository().getRelation(RelationNameRepository.CO);
+        RelRf rf = (RelRf) memoryModel.getRelation(RelationNameRepository.RF);
+        RelCo co = (RelCo) memoryModel.getRelation(RelationNameRepository.CO);
         // Compute "stuckness": A thread is stuck if it reaches a spinloop bound event
         // while reading from a co-maximal write.
         Map<Thread, BooleanFormula> isStuckMap = new HashMap<>();

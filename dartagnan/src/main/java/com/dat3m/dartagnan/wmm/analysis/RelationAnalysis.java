@@ -57,8 +57,8 @@ public class RelationAnalysis {
 
         // ------------------------------------------------
         for (String baseRel : Wmm.BASE_RELATIONS) {
-            memoryModel.getRelationRepository().getRelation(baseRel).getMinTupleSet();
-            memoryModel.getRelationRepository().getRelation(baseRel).getMaxTupleSet();
+            memoryModel.getRelation(baseRel).getMinTupleSet();
+            memoryModel.getRelation(baseRel).getMaxTupleSet();
         }
         for (RecursiveGroup recursiveGroup : memoryModel.getRecursiveGroups()) {
             recursiveGroup.initMaxTupleSets();

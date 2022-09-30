@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.IdentityGr
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.*;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -107,7 +108,7 @@ public class ExecutionGraph {
         }
 
         if (!createOnlyAxiomRelevantGraphs) {
-            for (Relation rel : memoryModel.getRelationDependencyGraph().getNodeContents()) {
+            for (Relation rel : DependencyGraph.from(memoryModel.getRelations()).getNodeContents()) {
                 if (!EXCLUDED_RELS.contains(rel.getName())) {
                     RelationGraph graph = getOrCreateGraphFromRelation(rel);
                     graphs.add(graph);
@@ -143,7 +144,7 @@ public class ExecutionGraph {
     }
 
     public RelationGraph getRelationGraphByName(String name) {
-        return getRelationGraph(verificationTask.getMemoryModel().getRelationRepository().getRelation(name));
+        return getRelationGraph(verificationTask.getMemoryModel().getRelation(name));
     }
 
     public Constraint getConstraint(Axiom axiom) {
