@@ -47,7 +47,7 @@ public class RMWStoreCond extends RMWStore {
     @Override
     public BooleanFormula encodeExec(EncodingContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		return bmgr.equivalence(ctx.execution(this), bmgr.and(ctx.controlFlow(this), ((RMWReadCond)loadEvent).getCond()));
+		return bmgr.equivalence(ctx.execution(this), bmgr.and(ctx.controlFlow(this), ((RMWReadCond)loadEvent).getCond(ctx)));
     }
 
     // Unrolling

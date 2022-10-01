@@ -1,11 +1,12 @@
 package com.dat3m.dartagnan.program.event.lang.linux.cond;
 
+import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.BooleanFormula;
 
 public class RMWReadCondUnless extends RMWReadCond {
 
@@ -14,9 +15,8 @@ public class RMWReadCondUnless extends RMWReadCond {
     }
 
     @Override
-    public void initializeEncoding(SolverContext ctx) {
-        super.initializeEncoding(ctx);
-        this.formulaCond = ctx.getFormulaManager().getBooleanFormulaManager().not(formulaCond);
+    public BooleanFormula getCond(Encoder encoder) {
+        return encoder.getFormulaManager().getBooleanFormulaManager().not(super.getCond(encoder));
     }
 
     @Override
