@@ -10,33 +10,17 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
-
-import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 
 public class RMWStoreCond extends RMWStore {
-
-    protected transient BooleanFormula execVar;
 
     public RMWStoreCond(RMWReadCond loadEvent, IExpr address, ExprInterface value, String mo) {
         super(loadEvent, address, value, mo);
     }
 
     @Override
-    public BooleanFormula exec() {
-        return execVar;
-    }
-
-    @Override
     public boolean cfImpliesExec() {
         return false;
-    }
-
-    @Override
-    public void initializeEncoding(SolverContext ctx) {
-        super.initializeEncoding(ctx);
-        execVar = ctx.getFormulaManager().makeVariable(BooleanType, "exec(" + repr() + ")");
     }
 
     @Override

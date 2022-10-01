@@ -8,14 +8,10 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
-
-import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 public class FenceCond extends Fence {
 
     private final RMWReadCond loadEvent;
-    protected transient BooleanFormula execVar;
 
     public FenceCond (RMWReadCond loadEvent, String name){
         super(name);
@@ -23,19 +19,8 @@ public class FenceCond extends Fence {
     }
 
     @Override
-    public BooleanFormula exec() {
-        return execVar;
-    }
-
-    @Override
     public boolean cfImpliesExec() {
         return false;
-    }
-
-    @Override
-    public void initializeEncoding(SolverContext ctx) {
-        super.initializeEncoding(ctx);
-        execVar = ctx.getFormulaManager().makeVariable(BooleanType, "exec(" + repr() + ")");
     }
 
     @Override

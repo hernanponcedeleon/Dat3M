@@ -266,7 +266,7 @@ public class ExecutionModel {
             int atomicBegin = -1;
             int localId = 0;
             do {
-                if (!e.wasExecuted(model)) {
+                if (!Boolean.TRUE.equals(model.evaluate(encodingContext.execution(e)))) {
                     e = e.getSuccessor();
                     continue;
                 }

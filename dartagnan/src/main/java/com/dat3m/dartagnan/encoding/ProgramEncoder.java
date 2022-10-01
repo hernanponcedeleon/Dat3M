@@ -21,7 +21,6 @@ import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.*;
-import java.util.function.BiFunction;
 
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -34,17 +33,6 @@ public class ProgramEncoder implements Encoder {
 
     // =========================== Configurables ===========================
 
-    @Option(name = ALLOW_PARTIAL_EXECUTIONS,
-            description = "Allows to terminate executions on the first found violation. " +
-                    "This is not allowed on Litmus tests due to their different assertion condition.",
-            secure = true)
-    private boolean shouldAllowPartialExecutions = false;
-
-    @Option(name = MERGE_CF_VARS,
-            description = "Merges control flow variables of events with identical control-flow behaviour.",
-            secure = true)
-    private boolean shouldMergeCFVars = true;
-
     @Option(name = INITIALIZE_REGISTERS,
             description = "Assume thread-local variables start off containing zero.",
             secure = true)
@@ -53,7 +41,6 @@ public class ProgramEncoder implements Encoder {
     // =====================================================================
 
     private final EncodingContext context;
-    private final BranchEquivalence eq;
     private final ExecutionAnalysis exec;
     private final Dependency dep;
     private boolean isInitialized = false;
@@ -61,7 +48,7 @@ public class ProgramEncoder implements Encoder {
     private ProgramEncoder(EncodingContext c) {
         Preconditions.checkArgument(c.task().getProgram().isCompiled(), "The program must be compiled before encoding.");
         context = c;
-        this.eq = c.analysisContext().requires(BranchEquivalence.class);
+        c.analysisContext().requires(BranchEquivalence.class);
         this.exec = c.analysisContext().requires(ExecutionAnalysis.class);
         this.dep = c.analysisContext().requires(Dependency.class);
     }
@@ -69,8 +56,6 @@ public class ProgramEncoder implements Encoder {
     public static ProgramEncoder of(EncodingContext context) throws InvalidConfigurationException {
         ProgramEncoder encoder = new ProgramEncoder(context);
         context.task().getConfig().inject(encoder);
-        logger.info("{}: {}", ALLOW_PARTIAL_EXECUTIONS, encoder.shouldAllowPartialExecutions);
-        logger.info("{}: {}", MERGE_CF_VARS, encoder.shouldMergeCFVars);
         logger.info("{}: {}", INITIALIZE_REGISTERS, encoder.initializeRegisters);
         return encoder;
     }
@@ -78,19 +63,7 @@ public class ProgramEncoder implements Encoder {
     // ============================== Initialization ==============================
 
     public void initializeEncoding(SolverContext ctx) {
-        for(Event e : context.task().getProgram().getEvents()){
-            initEvent(e, ctx);
-        }
         isInitialized = true;
-    }
-
-    private void initEvent(Event e, SolverContext ctx){
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-
-        boolean mergeVars = shouldMergeCFVars && !shouldAllowPartialExecutions;
-        String repr = mergeVars ? eq.getRepresentative(e).repr() : e.repr();
-        e.setCfVar(bmgr.makeVariable("cf(" + repr + ")"));
-        e.initializeEncoding(ctx);
     }
 
     private void checkInitialized() {
@@ -126,8 +99,6 @@ public class ProgramEncoder implements Encoder {
         SolverContext ctx = context.solverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
-        BiFunction<BooleanFormula, BooleanFormula, BooleanFormula> cfEncoder = shouldAllowPartialExecutions ?
-                bmgr::implication : bmgr::equivalence;
         Map<Label, Set<Event>> labelJumpMap = new HashMap<>();
 
         Event pred = null;
@@ -151,7 +122,7 @@ public class ProgramEncoder implements Encoder {
                 }
             }
 
-            enc = bmgr.and(enc, cfEncoder.apply(context.controlFlow(e), cfCond), e.encodeExec(context));
+            enc = bmgr.and(enc, bmgr.equivalence(context.controlFlow(e), cfCond), e.encodeExec(context));
             pred = e;
         }
         return enc;

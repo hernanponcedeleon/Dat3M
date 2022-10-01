@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.core.CondJump;
@@ -19,6 +20,7 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.IDL_TO_SAT;
+import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqualZero;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
@@ -33,6 +35,7 @@ public final class EncodingContext {
 
     private final VerificationTask verificationTask;
     private final Context analysisContext;
+    private final BranchEquivalence branchEquivalence;
     private final ExecutionAnalysis executionAnalysis;
     private final AliasAnalysis aliasAnalysis;
     private final SolverContext solverContext;
@@ -45,12 +48,18 @@ public final class EncodingContext {
             secure = true)
     boolean useSATEncoding = false;
 
+    @Option(name = MERGE_CF_VARS,
+            description = "Merges control flow variables of events with identical control-flow behaviour.",
+            secure = true)
+    private boolean shouldMergeCFVars = true;
+
     private EncodingContext(VerificationTask t, Context a, SolverContext s) {
         verificationTask = checkNotNull(t);
-        analysisContext = a;
+        analysisContext = checkNotNull(a);
+        branchEquivalence = a.requires(BranchEquivalence.class);
         executionAnalysis = a.requires(ExecutionAnalysis.class);
         aliasAnalysis = a.requires(AliasAnalysis.class);
-        solverContext = s;
+        solverContext = checkNotNull(s);
         formulaManager = s.getFormulaManager();
         booleanFormulaManager = formulaManager.getBooleanFormulaManager();
     }
@@ -59,6 +68,7 @@ public final class EncodingContext {
         EncodingContext context = new EncodingContext(task, analysisContext, solverContext);
         task.getConfig().inject(context);
         logger.info("{}: {}", IDL_TO_SAT, context.useSATEncoding);
+        logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
         return context;
     }
 
@@ -74,6 +84,7 @@ public final class EncodingContext {
         return analysisContext;
     }
 
+    @Deprecated
     public SolverContext solverContext() {
         return solverContext;
     }
@@ -83,7 +94,8 @@ public final class EncodingContext {
     }
 
     public BooleanFormula controlFlow(Event event) {
-        return event.cf();
+        Event representative = shouldMergeCFVars ? branchEquivalence.getRepresentative(event) : event;
+        return booleanFormulaManager.makeVariable("cf " + representative.getCId());
     }
 
     public BooleanFormula jumpCondition(Event event) {
@@ -91,7 +103,7 @@ public final class EncodingContext {
     }
 
     public BooleanFormula execution(Event event) {
-        return event.exec();
+        return event.cfImpliesExec() ? controlFlow(event) : booleanFormulaManager.makeVariable("exec " + event.getCId());
     }
 
     /**
