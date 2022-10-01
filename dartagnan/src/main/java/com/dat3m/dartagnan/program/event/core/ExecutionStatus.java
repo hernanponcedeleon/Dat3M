@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
@@ -18,7 +17,6 @@ public class ExecutionStatus extends Event implements RegWriter {
 
     private final Register register;
     private final Event event;
-    private Formula regResultExpr;
     private final boolean trackDep;
 
     public ExecutionStatus(Register register, Event event, boolean trackDep){
@@ -29,19 +27,8 @@ public class ExecutionStatus extends Event implements RegWriter {
     }
 
     @Override
-    public void initializeEncoding(SolverContext ctx) {
-        super.initializeEncoding(ctx);
-        regResultExpr = register.toIntFormulaResult(this, ctx);
-    }
-
-    @Override
     public Register getResultRegister(){
         return register;
-    }
-
-    @Override
-    public Formula getResultRegisterExpr(){
-        return regResultExpr;
     }
 
     public Event getStatusEvent(){

@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.verification.Context;
@@ -133,15 +134,15 @@ public final class EncodingContext {
     }
 
     public Formula address(MemEvent event) {
-        return ((MemEvent) event).getMemAddressExpr();
+        return ((MemEvent) event).getAddress().toIntFormula(event, solverContext);
     }
 
     public Formula value(MemEvent event) {
-        return ((MemEvent) event).getMemValueExpr();
+        return event instanceof Load ? result(event) : ((MemEvent) event).getMemValue().toIntFormula(event, solverContext);
     }
 
     public Formula result(RegWriter event) {
-        return ((RegWriter) event).getResultRegisterExpr();
+        return ((RegWriter) event).getResultRegister().toIntFormulaResult(event, solverContext);
     }
 
     public NumeralFormula.IntegerFormula clockVariable(String name, Event event) {

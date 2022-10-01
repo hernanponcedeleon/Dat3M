@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux.cond;
 
-import com.dat3m.dartagnan.encoding.Encoder;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -26,8 +26,8 @@ public abstract class RMWReadCond extends Load implements RegReaderData {
         addFilters(Tag.RMW, Tag.REG_READER);
     }
 
-    public BooleanFormula getCond(Encoder encoder) {
-    	return encoder.equal(encoder.value(this), cmp.toIntFormula(this, encoder.solverContext()));
+    public BooleanFormula getCond(EncodingContext ctx) {
+    	return ctx.equal(ctx.value(this), cmp.toIntFormula(this, ctx.solverContext()));
     }
 
     @Override

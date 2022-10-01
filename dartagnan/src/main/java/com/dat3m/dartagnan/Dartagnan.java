@@ -2,6 +2,7 @@ package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
@@ -176,7 +177,7 @@ public class Dartagnan extends BaseOptions {
             	boolean safetyViolationFound = false;
             	if((result == FAIL && !p.getAss().getInvert()) || 
             			(result == PASS && p.getAss().getInvert())) {
-					printWarningIfThreadStartFailed(p, prover);
+					printWarningIfThreadStartFailed(p, modelChecker.encoding(), prover);
             		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(ctx)))) {
             			safetyViolationFound = true;
             			System.out.println("Safety violation found");
@@ -224,9 +225,9 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-	private static void printWarningIfThreadStartFailed(Program p, ProverEnvironment prover) throws SolverException {
+	private static void printWarningIfThreadStartFailed(Program p, EncodingContext encoder, ProverEnvironment prover) throws SolverException {
 		for(Event e : p.getCache().getEvents(FilterBasic.get(Tag.STARTLOAD))) {
-			if(BigInteger.ZERO.equals(prover.getModel().evaluate(((Load)e).getMemValueExpr()))) {
+			if(BigInteger.ZERO.equals(prover.getModel().evaluate(encoder.value((Load) e)))) {
 				// This msg should be displayed even if the logging is off
 				System.out.println(String.format(
 						"[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true",

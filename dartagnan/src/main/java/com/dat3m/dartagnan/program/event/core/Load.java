@@ -7,9 +7,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 public class Load extends MemEvent implements RegWriter {
 
     protected final Register resultRegister;
@@ -26,19 +23,8 @@ public class Load extends MemEvent implements RegWriter {
     }
 
     @Override
-    public void initializeEncoding(SolverContext ctx) {
-        super.initializeEncoding(ctx);
-        memValueExpr = resultRegister.toIntFormulaResult(this, ctx);
-    }
-
-    @Override
     public Register getResultRegister(){
         return resultRegister;
-    }
-
-    @Override
-    public Formula getResultRegisterExpr(){
-        return memValueExpr;
     }
 
     @Override

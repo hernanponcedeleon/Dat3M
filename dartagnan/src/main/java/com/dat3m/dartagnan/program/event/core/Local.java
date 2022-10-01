@@ -15,8 +15,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	
 	protected final Register register;
 	protected ExprInterface expr;
-	private Formula regResultExpr;
-	
+
 	public Local(Register register, ExprInterface expr) {
 		this.register = register;
 		this.expr = expr;
@@ -27,13 +26,6 @@ public class Local extends Event implements RegWriter, RegReaderData {
 		super(other);
 		this.register = other.register;
 		this.expr = other.expr;
-		this.regResultExpr = other.regResultExpr;
-	}
-
-	@Override
-	public void initializeEncoding(SolverContext ctx) {
-		super.initializeEncoding(ctx);
-		regResultExpr = register.toIntFormulaResult(this, ctx);
 	}
 
 	public ExprInterface getExpr(){
@@ -47,11 +39,6 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	@Override
 	public Register getResultRegister(){
 		return register;
-	}
-
-	@Override
-	public Formula getResultRegisterExpr(){
-		return regResultExpr;
 	}
 
 	@Override
