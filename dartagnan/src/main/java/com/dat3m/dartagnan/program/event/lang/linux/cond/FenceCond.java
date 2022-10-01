@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux.cond;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Fence;
@@ -43,9 +44,9 @@ public class FenceCond extends Fence {
     }
 
     @Override
-    public BooleanFormula encodeExec(SolverContext ctx){
+    public BooleanFormula encodeExec(EncodingContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		return bmgr.equivalence(execVar, bmgr.and(cfVar, loadEvent.getCond()));
+		return bmgr.equivalence(ctx.execution(this), bmgr.and(ctx.controlFlow(this), loadEvent.getCond()));
     }
 
     // Unrolling

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.Register;
@@ -12,8 +13,6 @@ import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
-
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 
 public class ExecutionStatus extends Event implements RegWriter {
 
@@ -59,17 +58,18 @@ public class ExecutionStatus extends Event implements RegWriter {
     }
 
     @Override
-    public BooleanFormula encodeExec(SolverContext ctx){
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    public BooleanFormula encodeExec(EncodingContext context) {
+        SolverContext ctx = context.solverContext();
+        BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
 
         int precision = register.getPrecision();
 		BooleanFormula enc = bmgr.and(
-				bmgr.implication(event.exec(),
-						generalEqual(regResultExpr, new IValue(BigInteger.ZERO, precision).toIntFormula(this, ctx), ctx)),
-				bmgr.implication(bmgr.not(event.exec()),
-						generalEqual(regResultExpr, new IValue(BigInteger.ONE, precision).toIntFormula(this, ctx), ctx))
+				bmgr.implication(context.execution(event),
+						context.equalZero(context.result(this))),
+				bmgr.implication(bmgr.not(context.execution(event)),
+						context.equal(context.result(this), new IValue(BigInteger.ONE, precision).toIntFormula(this, ctx)))
         );
-        return bmgr.and(super.encodeExec(ctx), enc);
+        return bmgr.and(super.encodeExec(context), enc);
     }
 
     // Unrolling

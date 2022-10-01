@@ -151,7 +151,7 @@ public class ProgramEncoder implements Encoder {
                 }
             }
 
-            enc = bmgr.and(enc, cfEncoder.apply(context.controlFlow(e), cfCond), e.encodeExec(ctx));
+            enc = bmgr.and(enc, cfEncoder.apply(context.controlFlow(e), cfCond), e.encodeExec(context));
             pred = e;
         }
         return enc;

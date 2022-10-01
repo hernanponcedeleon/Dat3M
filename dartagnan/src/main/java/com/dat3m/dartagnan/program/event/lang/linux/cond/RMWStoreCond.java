@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux.cond;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -44,9 +45,9 @@ public class RMWStoreCond extends RMWStore {
     }
 
     @Override
-    public BooleanFormula encodeExec(SolverContext ctx){
+    public BooleanFormula encodeExec(EncodingContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		return bmgr.equivalence(execVar, bmgr.and(cfVar, ((RMWReadCond)loadEvent).getCond()));
+		return bmgr.equivalence(ctx.execution(this), bmgr.and(ctx.controlFlow(this), ((RMWReadCond)loadEvent).getCond()));
     }
 
     // Unrolling

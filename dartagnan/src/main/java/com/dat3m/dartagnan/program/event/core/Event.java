@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.Encoder;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -234,7 +235,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		return true;
 	}
 
-	public BooleanFormula encodeExec(SolverContext ctx){
+	public BooleanFormula encodeExec(EncodingContext ctx) {
 		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
 	}
 

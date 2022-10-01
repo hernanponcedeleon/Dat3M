@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.core.rmw;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -48,8 +49,8 @@ public class RMWStoreExclusive extends Store {
     }
 
     @Override
-    public BooleanFormula encodeExec(SolverContext ctx){
-    	return ctx.getFormulaManager().getBooleanFormulaManager().implication(execVar, cfVar);
+    public BooleanFormula encodeExec(EncodingContext ctx) {
+    	return ctx.getFormulaManager().getBooleanFormulaManager().implication(ctx.execution(this), ctx.controlFlow(this));
     }
 
     // Unrolling
