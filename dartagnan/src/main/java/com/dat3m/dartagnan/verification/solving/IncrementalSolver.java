@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.encoding.PropertyEncoder;
 import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -18,8 +17,7 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.*;
 
 public class IncrementalSolver extends ModelChecker {
 
@@ -35,13 +33,14 @@ public class IncrementalSolver extends ModelChecker {
         task = t;
     }
 
-    public static Result run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    public static IncrementalSolver of(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
     		throws InterruptedException, SolverException, InvalidConfigurationException {
-        return new IncrementalSolver(ctx, prover, task).run();
+        IncrementalSolver s = new IncrementalSolver(ctx, prover, task);
+        s.run();
+        return s;
     }
 
-    private Result run() throws InterruptedException, SolverException, InvalidConfigurationException {
-        Result res = Result.UNKNOWN;
+    private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
         Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
         Context analysisContext = Context.create();
@@ -65,7 +64,8 @@ public class IncrementalSolver extends ModelChecker {
         BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
         if(ctx.getFormulaManager().getBooleanFormulaManager().isFalse(propertyEncoding)) {
             logger.info("Verification finished: property trivially holds");
-       		return PASS;        	
+       	    res = PASS;
+            return;
         }
 
         logger.info("Starting encoding using " + ctx.getVersion());
@@ -84,7 +84,7 @@ public class IncrementalSolver extends ModelChecker {
         	prover.pop();
 			prover.addConstraint(propertyEncoder.encodeBoundEventExec(ctx));
             logger.info("Starting second solver.check()");
-            res = prover.isUnsat()? PASS : Result.UNKNOWN;
+            res = prover.isUnsat()? PASS : UNKNOWN;
         } else {
         	res = FAIL;
         }
@@ -99,6 +99,5 @@ public class IncrementalSolver extends ModelChecker {
 
         res = task.getProgram().getAss().getInvert() ? res.invert() : res;
         logger.info("Verification finished with result " + res);
-        return res;
     }
 }

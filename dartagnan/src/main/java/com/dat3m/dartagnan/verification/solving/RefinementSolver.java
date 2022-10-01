@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
@@ -94,15 +93,16 @@ public class RefinementSolver extends ModelChecker {
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
     //TODO (2): Add possibility for Refinement to handle CAT-properties (it ignores them for now).
-    public static Result run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    public static RefinementSolver of(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
         RefinementSolver solver = new RefinementSolver(ctx, prover, task);
         task.getConfig().inject(solver);
         logger.info("{}: {}", BASELINE, solver.baselines);
-        return solver.run();
+        solver.run();
+        return solver;
     }
 
-    private Result run() throws InterruptedException, SolverException, InvalidConfigurationException {
+    private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
 
         Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
@@ -145,7 +145,8 @@ public class RefinementSolver extends ModelChecker {
         BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
         if(bmgr.isFalse(propertyEncoding)) {
             logger.info("Verification finished: property trivially holds");
-       		return PASS;        	
+            res = PASS;
+       	    return;
         }
 
         logger.info("Starting encoding using " + ctx.getVersion());
@@ -251,11 +252,10 @@ public class RefinementSolver extends ModelChecker {
 
         if (status == INCONCLUSIVE) {
             // CAATSolver got no result (should not be able to happen), so we cannot proceed further.
-            return UNKNOWN;
+            res = UNKNOWN;
+            return;
         }
 
-
-        Result veriResult;
         long boundCheckTime = 0;
         if (prover.isUnsat()) {
             // ------- CHECK BOUNDS -------
@@ -267,10 +267,10 @@ public class RefinementSolver extends ModelChecker {
             // TODO: We actually need to perform a second refinement to check for bound reachability
             //  This is needed for the seqlock.c benchmarks!
             prover.addConstraint(globalRefinement);
-            veriResult = !prover.isUnsat() ? UNKNOWN : PASS;
+            res = !prover.isUnsat() ? UNKNOWN : PASS;
             boundCheckTime = System.currentTimeMillis() - lastTime;
         } else {
-            veriResult = FAIL;
+            res = FAIL;
         }
 
         if (logger.isInfoEnabled()) {
@@ -286,9 +286,8 @@ public class RefinementSolver extends ModelChecker {
     		logger.debug(smtStatistics.toString());
         }
 
-        veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;
-        logger.info("Verification finished with result " + veriResult);
-        return veriResult;
+        res = program.getAss().getInvert() ? res.invert() : res;
+        logger.info("Verification finished with result " + res);
     }
     // ======================= Helper Methods ======================
 

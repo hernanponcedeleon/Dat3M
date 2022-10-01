@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
+import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -28,6 +29,12 @@ import java.util.List;
 import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 
 public abstract class ModelChecker {
+
+    protected Result res = Result.UNKNOWN;
+
+    public final Result result() {
+        return res;
+    }
 
     /**
      * Performs all modifications to a parsed program.

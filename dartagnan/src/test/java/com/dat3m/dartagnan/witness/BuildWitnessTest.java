@@ -41,7 +41,8 @@ public class BuildWitnessTest {
     	try (SolverContext ctx = TestHelper.createContext();
     			ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
     	{
-    		Result res = IncrementalSolver.run(ctx, prover, task);
+			IncrementalSolver modelChecker = IncrementalSolver.of(ctx, prover, task);
+    		Result res = modelChecker.result();
     		WitnessBuilder witnessBuilder = new WitnessBuilder(task, ctx, prover, res);
     		config.inject(witnessBuilder);
 			WitnessGraph graph = witnessBuilder.build();

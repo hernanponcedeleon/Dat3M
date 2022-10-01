@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.encoding.PropertyEncoder;
 import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -18,8 +17,7 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.*;
 
 public class TwoSolvers extends ModelChecker {
 
@@ -36,14 +34,15 @@ public class TwoSolvers extends ModelChecker {
         task = t;
     }
 
-    public static Result run(SolverContext ctx, ProverEnvironment prover1, ProverEnvironment prover2, VerificationTask task)
+    public static TwoSolvers of(SolverContext ctx, ProverEnvironment prover1, ProverEnvironment prover2, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
-        return new TwoSolvers(ctx, prover1, prover2, task).run();
+        TwoSolvers s = new TwoSolvers(ctx, prover1, prover2, task);
+        s.run();
+        return s;
     }
 
-    private Result run() throws InterruptedException, SolverException, InvalidConfigurationException {
-    	Result res = Result.UNKNOWN;
-        Program program = task.getProgram();
+    private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
+    	Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
         Context analysisContext = Context.create();
         Configuration config = task.getConfig();
@@ -66,7 +65,8 @@ public class TwoSolvers extends ModelChecker {
         BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
         if(ctx.getFormulaManager().getBooleanFormulaManager().isFalse(propertyEncoding)) {
             logger.info("Verification finished: property trivially holds");
-       		return PASS;        	
+            res = PASS;
+       	    return;
         }
 
         logger.info("Starting encoding using " + ctx.getVersion());
@@ -94,7 +94,7 @@ public class TwoSolvers extends ModelChecker {
         if(prover1.isUnsat()) {
 			prover2.addConstraint(propertyEncoder.encodeBoundEventExec(ctx));
             logger.info("Starting second solver.check()");
-            res = prover2.isUnsat() ? PASS : Result.UNKNOWN;
+            res = prover2.isUnsat() ? PASS : UNKNOWN;
         } else {
         	res = FAIL;
         }
@@ -109,6 +109,5 @@ public class TwoSolvers extends ModelChecker {
 
         res = task.getProgram().getAss().getInvert() ? res.invert() : res;
         logger.info("Verification finished with result " + res);
-        return res;
     }
 }

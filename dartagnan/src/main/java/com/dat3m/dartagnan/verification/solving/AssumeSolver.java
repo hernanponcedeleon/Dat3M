@@ -33,13 +33,14 @@ public class AssumeSolver extends ModelChecker {
         task = t;
     }
 
-    public static Result run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    public static AssumeSolver of(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
-        return new AssumeSolver(ctx, prover, task).run();
+        AssumeSolver s = new AssumeSolver(ctx, prover, task);
+        s.run();
+        return s;
     }
 
-    private Result run() throws InterruptedException, SolverException, InvalidConfigurationException {
-        Result res = Result.UNKNOWN;
+    private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
         Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
         Context analysisContext = Context.create();
@@ -63,7 +64,8 @@ public class AssumeSolver extends ModelChecker {
         BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
         if(ctx.getFormulaManager().getBooleanFormulaManager().isFalse(propertyEncoding)) {
             logger.info("Verification finished: property trivially holds");
-       		return PASS;        	
+            res = PASS;
+            return;
         }
 
         logger.info("Starting encoding using " + ctx.getVersion());
@@ -85,7 +87,7 @@ public class AssumeSolver extends ModelChecker {
             logger.info("Starting second solver.check()");
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
         } else {
-        	res = FAIL;
+            res = FAIL;
         }
     
         if(logger.isDebugEnabled()) {        	
@@ -97,7 +99,6 @@ public class AssumeSolver extends ModelChecker {
         }
 
         res = program.getAss().getInvert() ? res.invert() : res;
-        logger.info("Verification finished with result " + res);        
-        return res;
+        logger.info("Verification finished with result " + res);
     }
 }

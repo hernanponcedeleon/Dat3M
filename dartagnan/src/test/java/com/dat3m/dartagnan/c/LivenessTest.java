@@ -147,6 +147,7 @@ public class LivenessTest extends AbstractCTest {
     @Test
 	@CSVLogger.FileName("csv/refinement")
 	public void testRefinement() throws Exception {
-		assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
+		RefinementSolver s = RefinementSolver.of(contextProvider.get(), proverProvider.get(), taskProvider.get());
+		assertEquals(expected, s.result());
 	}
 }

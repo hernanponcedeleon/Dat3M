@@ -133,36 +133,39 @@ public class Dartagnan extends BaseOptions {
                     o.getSolver());
                  ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
             {
-                Result result = UNKNOWN;
+                ModelChecker modelChecker;
                 if(properties.contains(RACES)) {
                 	if(properties.size() > 1) {
                     	System.out.println("Data race detection cannot be combined with other properties");
                     	System.exit(1);
                 	}
-                	result = DataRaceSolver.run(ctx, prover, task);
+                	modelChecker = DataRaceSolver.of(ctx, prover, task);
                 } else {
                 	// Property is either LIVENESS and/or REACHABILITY
                 	switch (o.getMethod()) {
                 		case TWO:
                 			try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-                				result = TwoSolvers.run(ctx, prover, prover2, task);
+                				modelChecker = TwoSolvers.of(ctx, prover, prover2, task);
                 			}
                 			break;
                 		case INCREMENTAL:
-                			result = IncrementalSolver.run(ctx, prover, task);
+							modelChecker = IncrementalSolver.of(ctx, prover, task);
                 			break;
                 		case ASSUME:
-                			result = AssumeSolver.run(ctx, prover, task);
+							modelChecker = AssumeSolver.of(ctx, prover, task);
                 			break;
                 		case CAAT:
-							result = RefinementSolver.run(ctx, prover, task);
+							modelChecker = RefinementSolver.of(ctx, prover, task);
                 			break;
+						default:
+							throw new InvalidConfigurationException("unsupported method " + o.getMethod());
                 	}
                 }
 
                 // Verification ended, we can interrupt the timeout Thread
                 t.interrupt();
 
+				Result result = modelChecker.result();
             	if(result.equals(FAIL) && o.generateGraphviz()) {
                 	ExecutionModel m = ExecutionModel.fromConfig(task, config);
                 	m.initialize(prover.getModel(), ctx);
