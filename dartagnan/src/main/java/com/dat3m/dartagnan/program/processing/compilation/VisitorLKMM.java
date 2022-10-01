@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -27,16 +26,17 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 public class VisitorLKMM extends VisitorBase {
 
-	protected VisitorLKMM() {}
+	protected VisitorLKMM(boolean forceStart) {
+		super(forceStart);
+        }
 	
 	@Override
 	public List<Event> visitCreate(Create e) {
-
         Store store = newStore(e.getAddress(), e.getMemValue(), Tag.Linux.MO_RELEASE);
         store.addFilters(C11.PTHREAD);
 
         return eventSequence(
-        		EventFactory.Linux.newMemoryBarrier(),
+        		Linux.newMemoryBarrier(),
                 store
         );
 	}
@@ -44,7 +44,7 @@ public class VisitorLKMM extends VisitorBase {
 	@Override
 	public List<Event> visitEnd(End e) {
         return eventSequence(
-        		EventFactory.Linux.newMemoryBarrier(),
+        		Linux.newMemoryBarrier(),
                 newStore(e.getAddress(), IValue.ZERO, Tag.Linux.MO_RELEASE)
         );
 	}
@@ -58,18 +58,21 @@ public class VisitorLKMM extends VisitorBase {
         return eventSequence(
         		load,
         		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit()),
-        		EventFactory.Linux.newMemoryBarrier()
+        		Linux.newMemoryBarrier()
         );
 	}
 
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
+        Load load = newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
+        load.addFilters(Tag.STARTLOAD);
 
         return eventSequence(
-        		newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE),
+        		load,
+				super.visitStart(e),
         		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()),
-            	EventFactory.Linux.newMemoryBarrier()
+            	Linux.newMemoryBarrier()
         );
 	}
 

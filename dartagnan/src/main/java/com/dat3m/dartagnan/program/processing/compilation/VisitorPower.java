@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory.Power;
+import com.dat3m.dartagnan.program.event.EventFactory.*;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -25,7 +25,7 @@ public class VisitorPower extends VisitorBase {
 
 	// The compilation schemes below follows the paper
 	// "Clarifying and Compiling C/C++ Concurrency: from C++11 to POWER"
-	// The paper does not defines the mappings for RMW but we derive them
+	// The paper does not define the mappings for RMW, but we derive them
 	// using the same pattern as for Load/Store	
 	private final PowerScheme cToPowerScheme;
 	// Some language memory models (e.g. RC11) are non-dependency tracking and might need a 
@@ -34,7 +34,8 @@ public class VisitorPower extends VisitorBase {
 	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
 	private final boolean useRC11Scheme; 
 
-	protected VisitorPower(boolean useRC11Scheme, PowerScheme cToPowerScheme) {
+	protected VisitorPower(boolean forceStart, boolean useRC11Scheme, PowerScheme cToPowerScheme) {
+		super(forceStart);
 		this.useRC11Scheme = useRC11Scheme;
 		this.cToPowerScheme = cToPowerScheme;
 	}
@@ -79,14 +80,16 @@ public class VisitorPower extends VisitorBase {
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
-        Label label = newLabel("Jump_" + e.getOId());
+		load.addFilters(Tag.STARTLOAD);
+		Label label = newLabel("Jump_" + e.getOId());
         CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-        
+		
 		return eventSequence(
                 load,
                 fakeCtrlDep,
                 label,
                 Power.newISyncBarrier(),
+				super.visitStart(e),
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}

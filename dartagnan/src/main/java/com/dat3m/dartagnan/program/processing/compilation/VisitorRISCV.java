@@ -1,17 +1,12 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.BExprUn;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory.RISCV;
-import com.dat3m.dartagnan.program.event.Tag.C11;
+import com.dat3m.dartagnan.program.event.EventFactory.*;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
@@ -19,23 +14,14 @@ import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
+
+import java.util.List;
+
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
-import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
-import static com.dat3m.dartagnan.program.event.EventFactory.newFakeCtrlDep;
-import static com.dat3m.dartagnan.program.event.EventFactory.newGoto;
-import static com.dat3m.dartagnan.program.event.EventFactory.newJump;
-import static com.dat3m.dartagnan.program.event.EventFactory.newJumpUnless;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLabel;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLoad;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLocal;
-import static com.dat3m.dartagnan.program.event.EventFactory.newRMWLoadExclusive;
-import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStoreExclusive;
-import static com.dat3m.dartagnan.program.event.EventFactory.newStore;
-import static com.dat3m.dartagnan.program.event.Tag.STRONG;
+import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_ACQUIRE;
-import static com.dat3m.dartagnan.program.event.EventFactory.newExecutionStatusWithDependencyTracking;
-import java.util.List;
+import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 
 class VisitorRISCV extends VisitorBase {
 	// Some language memory models (e.g. RC11) are non-dependency tracking and might need a 
@@ -46,7 +32,8 @@ class VisitorRISCV extends VisitorBase {
 	// we use the same scheme as AMRv8
 	private final boolean useRC11Scheme; 
 
-	protected VisitorRISCV(boolean useRC11Scheme) {
+	protected VisitorRISCV(boolean forceStart, boolean useRC11Scheme) {
+		super(forceStart);
 		this.useRC11Scheme = useRC11Scheme;
 	}
 	
@@ -87,9 +74,13 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
+        Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+        load.addFilters(Tag.STARTLOAD);
+
         return eventSequence(
-                newLoad(resultRegister, e.getAddress(), e.getMo()),
+        		load,
                 RISCV.newRWRWFence(),
+				super.visitStart(e),
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}

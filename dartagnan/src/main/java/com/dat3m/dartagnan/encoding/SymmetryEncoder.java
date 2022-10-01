@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
-import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -44,7 +43,7 @@ public class SymmetryEncoder implements Encoder {
             description = "The relation on which symmetry breaking should happen." +
             "Empty, if symmetry shall not be encoded.",
             secure = true)
-    private String symmBreakRelName = RelationNameRepository.RF;
+    private String symmBreakRelName = "";
 
     @Option(name = BREAK_SYMMETRY_BY_SYNC_DEGREE,
             description = "Orders the relation edges to break on based on their synchronization strength.",
@@ -58,18 +57,18 @@ public class SymmetryEncoder implements Encoder {
         this.symm = context.requires(ThreadSymmetry.class);
         config.inject(this);
 
-        RelationRepository repo = memoryModel.getRelationRepository();
         if (symmBreakRelName.isEmpty()) {
             logger.info("Symmetry breaking disabled.");
             this.rel = null;
-        } else if (!repo.containsRelation(symmBreakRelName)) {
-            logger.warn("The wmm has no relation named {} to break symmetry on." +
-                    " Symmetry breaking was disabled.", symmBreakRelName);
-            this.rel = null;
         } else {
-            this.rel = repo.getRelation(symmBreakRelName);
-            logger.info("Breaking symmetry on relation: " + symmBreakRelName);
-            logger.info("Breaking by sync degree: " + breakBySyncDegree);
+            this.rel = memoryModel.getRelation(symmBreakRelName);
+            if (this.rel == null) {
+                logger.warn("The wmm has no relation named {} to break symmetry on." +
+                        " Symmetry breaking was disabled.", symmBreakRelName);
+            } else {
+                logger.info("Breaking symmetry on relation: " + symmBreakRelName);
+                logger.info("Breaking by sync degree: " + breakBySyncDegree);
+            }
         }
     }
 
@@ -113,7 +112,8 @@ public class SymmetryEncoder implements Encoder {
         for (Tuple t : rel.getMaxTupleSet()) {
             Event a = t.getFirst();
             Event b = t.getSecond();
-            if (!a.is(Tag.C11.PTHREAD) && !b.is(Tag.C11.PTHREAD) && a.getThread() == t1) {
+            if (!a.is(Tag.C11.PTHREAD) && !b.is(Tag.C11.PTHREAD)
+                    && a.getThread() == t1 && symmClass.contains(b.getThread())) {
                 r1Tuples.add(t);
             }
         }

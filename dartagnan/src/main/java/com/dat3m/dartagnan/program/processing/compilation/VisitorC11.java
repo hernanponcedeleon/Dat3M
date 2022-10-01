@@ -22,7 +22,9 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 public class VisitorC11 extends VisitorBase {
 
-	protected VisitorC11() {}
+	protected VisitorC11(boolean forceStart) {
+		super(forceStart);
+        }
 	
 	@Override
 	public List<Event> visitCreate(Create e) {
@@ -57,10 +59,13 @@ public class VisitorC11 extends VisitorBase {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
+        Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
+        load.addFilters(Tag.STARTLOAD);
 
         return eventSequence(
-        		newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE),
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
+        		load,
+				super.visitStart(e),
+				newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}
 

@@ -4,34 +4,17 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory.*;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.EventFactory.AArch64;
 import com.dat3m.dartagnan.program.event.Tag.ARMv8;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.linux.LKMMFence;
-import com.dat3m.dartagnan.program.event.lang.linux.LKMMLoad;
-import com.dat3m.dartagnan.program.event.lang.linux.LKMMStore;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWAddUnless;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWCmpXchg;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOpAndTest;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOpReturn;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWXchg;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmFence;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmRMW;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmXchg;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.lang.linux.*;
+import com.dat3m.dartagnan.program.event.lang.llvm.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 
 import java.util.List;
 
@@ -47,7 +30,8 @@ class VisitorArm8 extends VisitorBase {
 	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
 	private final boolean useRC11Scheme; 
 	
-	protected VisitorArm8(boolean useRC11Scheme) {
+	protected VisitorArm8(boolean forceStart, boolean useRC11Scheme) {
+		super(forceStart);
 		this.useRC11Scheme = useRC11Scheme;
 	}
 	
@@ -88,9 +72,13 @@ class VisitorArm8 extends VisitorBase {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
+        Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+        load.addFilters(Tag.STARTLOAD);
+
         return eventSequence(
-                newLoad(resultRegister, e.getAddress(), e.getMo()),
-                AArch64.DMB.newISHBarrier(),
+				load,
+				AArch64.DMB.newISHBarrier(),
+                super.visitStart(e),
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}

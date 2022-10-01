@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.core.Event;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,6 +15,12 @@ public class PthreadPool {
 	private final Map<Register, List<Integer>> mapPtrCreator = new HashMap<>();
 	private final Map<Integer, Register> mapIntPtr = new HashMap<>();
 	private final Map<Register, Register> mapRegPtr = new HashMap<>();
+	// This is needed during the compilation pass to match a Start 
+	// with its corresponding Create. Both events access the same address, 
+	// i.e. the communication channel (cc), which we only use for modeling 
+	// purposes. During the compilation of Start the Create was already 
+	// compiled and thus we use an annotation event which remains after the compilation."
+	private final Map<String, Event> mapCcMatcher = new HashMap<>();
 	
 	public void add(Register ptr, String name, int creator) {
 		threads.add(ptr);
@@ -52,4 +59,13 @@ public class PthreadPool {
 	public Register next() {
 		return threads.remove(0);
 	}
+
+	public void addMatcher(String cc, Event e) {
+		mapCcMatcher.put(cc, e);
+	}
+
+	public Event getMatcher(String cc) {
+		return mapCcMatcher.get(cc);
+	}
+
 }
