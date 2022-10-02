@@ -5011,3 +5011,10 @@ litmus/LKMM/luc/WeakFence/C-wrc+fencembonceonce+fencermbonceonce+Once.litmus,0
 litmus/LKMM/luc/WeakFence/C-rwc+fencermbonceonce+fencembonceonce+Once.litmus,1
 litmus/LKMM/luc/WeakFence/C-wrw+2w+fencembonceonce+fencewmbonceonce+Once.litmus,1
 litmus/LKMM/luc/WeakFence/C-mp+fencewmbonceonce+fencermbonceonce.litmus,0
+litmus/LKMM/lkml/Atomic-RMW+mb__after_atomic-is-stronger-than-acquire.litmus,0
+litmus/LKMM/lkml/RCU+sync+read.litmus,0
+litmus/LKMM/lkml/RM-broken.litmus,0
+litmus/LKMM/lkml/RM-fixed.litmus,0
+litmus/LKMM/lkml/DCL-broken.litmus,1
+litmus/LKMM/lkml/DCL-fixed.litmus,0
+litmus/LKMM/manual/extra/C-MP+fencewmbonceonce+addronceonce-[fronceonce-rf]onceonce.litmus,0
