@@ -121,6 +121,7 @@ public class Dartagnan extends BaseOptions {
 			}});
 
     	try {
+			long startTime = System.currentTimeMillis();
             t.start();
             Configuration solverConfig = Configuration.builder()
                     .setOption(PHANTOM_REFERENCES, valueOf(o.usePhantomReferences()))
@@ -195,6 +196,8 @@ public class Dartagnan extends BaseOptions {
                 } else {
                     System.out.println(result);                	
                 }
+				long endTime = System.currentTimeMillis();
+				System.out.println("Total verification time(ms): " +  (endTime - startTime));
 
 				try {
 					WitnessBuilder w = new WitnessBuilder(task, ctx, prover, result);
