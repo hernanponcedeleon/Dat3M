@@ -241,9 +241,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             if(threadCount != 1) {
                 // Used to allow execution of threads after they have been created (pthread_create)
                 String cc = String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount)));
-				MemoryObject object = programBuilder.getOrNewObject(cc);
+				// MemoryObject object = programBuilder.getOrNewObject(cc);
                 Register reg = programBuilder.getOrCreateRegister(threadCount, null, ARCH_PRECISION);
-                programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, object, pool.getMatcher(cc)));
+                programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, pool.getPtrFromInt(threadCount), pool.getMatcher(pool.getPtrFromInt(threadCount))));
             }
     	}
 
@@ -288,8 +288,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     	if(create) {
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
-                MemoryObject object = programBuilder.getOrNewObject(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
-                programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(object));
+                // MemoryObject object = programBuilder.getOrNewObject(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
+                programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(pool.getPtrFromInt(threadCount)));
          	}
     	}
     }

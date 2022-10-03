@@ -9,11 +9,13 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
+import com.dat3m.dartagnan.expression.IExpr;
+
 public class Start extends Load {
 
     private final Event creationEvent;
 
-	public Start(Register reg, MemoryObject address, Event creationEvent){
+	public Start(Register reg, IExpr address, Event creationEvent){
 		super(reg, address, MO_SC);
         this.creationEvent = creationEvent;
         addFilters(Tag.C11.PTHREAD);

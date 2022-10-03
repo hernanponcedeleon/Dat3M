@@ -52,7 +52,7 @@ public class VisitorLKMM extends VisitorBase {
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
+	Local load = newLocal(resultRegister, e.getExpr());
         load.addFilters(C11.PTHREAD);
         
         return eventSequence(

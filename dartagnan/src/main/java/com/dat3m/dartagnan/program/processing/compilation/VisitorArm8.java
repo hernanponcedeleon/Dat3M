@@ -61,7 +61,7 @@ class VisitorArm8 extends VisitorBase {
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+	Local load = newLocal(resultRegister, e.getExpr());
         load.addFilters(C11.PTHREAD);
 
         return eventSequence(

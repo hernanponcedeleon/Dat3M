@@ -47,7 +47,7 @@ public class VisitorC11 extends VisitorBase {
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
+	Local load = newLocal(resultRegister, e.getExpr());
         load.addFilters(C11.PTHREAD);
         
         return eventSequence(

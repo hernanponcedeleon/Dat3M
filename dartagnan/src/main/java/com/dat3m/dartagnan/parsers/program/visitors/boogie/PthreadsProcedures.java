@@ -69,20 +69,21 @@ public class PthreadsProcedures {
 	private static void pthread_create(VisitorBoogie visitor, Call_cmdContext ctx) {
 		visitor.currentThread++;
 		visitor.threadCallingValues.put(visitor.currentThread, new ArrayList<>());
+		Register pointer = (Register)ctx.call_params().exprs().expr(0).accept(visitor);
 		String namePtr = ctx.call_params().exprs().expr().get(0).getText();
 		// This names are global so we don't use currentScope.getID(), but per thread.
 		Register threadPtr = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, namePtr, ARCH_PRECISION);
 		String threadName = ctx.call_params().exprs().expr().get(2).getText();
 		ExprInterface callingValue = (ExprInterface)ctx.call_params().exprs().expr().get(3).accept(visitor);
 		visitor.threadCallingValues.get(visitor.currentThread).add(callingValue);
-		visitor.pool.add(threadPtr, threadName, visitor.threadCount);
+		visitor.pool.add(pointer, threadName, visitor.threadCount);
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
-        String cc = String.format("%s(%s)_active", threadPtr, visitor.pool.getCreatorFromPtr(threadPtr));
-		Event matcher = EventFactory.newStringAnnotation("// Spawning thread associated to " + cc);
+        // String cc = String.format("%s(%s)_active", threadPtr, visitor.pool.getCreatorFromPtr(threadPtr));
+		Event matcher = EventFactory.newStringAnnotation("// Spawning thread associated to " + pointer);
 		visitor.programBuilder.addChild(visitor.threadCount, matcher);
-		visitor.pool.addMatcher(cc, matcher);
-		MemoryObject object = visitor.programBuilder.getOrNewObject(cc);
-		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(threadPtr, threadName, object))
+		visitor.pool.addMatcher(pointer, matcher);
+		// MemoryObject object = visitor.programBuilder.getOrNewObject(cc);
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(pointer, threadName))
 			.setCLine(visitor.currentLine)
 			.setSourceCodeFile(visitor.sourceCodeFile);
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, IValue.ZERO));
@@ -95,9 +96,10 @@ public class PthreadsProcedures {
 		if(visitor.pool.getPtrFromReg(callReg) == null) {
         	throw new UnsupportedOperationException("pthread_join cannot be handled");
 		}
-        MemoryObject object = visitor.programBuilder.getOrNewObject(String.format("%s(%s)_active", visitor.pool.getPtrFromReg(callReg), visitor.pool.getCreatorFromPtr(visitor.pool.getPtrFromReg(callReg))));
-        Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, ARCH_PRECISION);
-        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(visitor.pool.getPtrFromReg(callReg), reg, object));
+		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
+		IExpr expr = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
+        // MemoryObject object = visitor.programBuilder.getOrNewObject(String.format("%s(%s)_active", visitor.pool.getPtrFromReg(callReg), visitor.pool.getCreatorFromPtr(visitor.pool.getPtrFromReg(callReg))));
+        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(reg, expr));
 	}
 
 	private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {

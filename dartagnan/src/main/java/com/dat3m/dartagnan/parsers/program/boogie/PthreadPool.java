@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 
@@ -20,7 +21,7 @@ public class PthreadPool {
 	// i.e. the communication channel (cc), which we only use for modeling 
 	// purposes. During the compilation of Start the Create was already 
 	// compiled and thus we use an annotation event which remains after the compilation."
-	private final Map<String, Event> mapCcMatcher = new HashMap<>();
+	private final Map<IExpr, Event> mapCcMatcher = new HashMap<>();
 	
 	public void add(Register ptr, String name, int creator) {
 		threads.add(ptr);
@@ -60,11 +61,11 @@ public class PthreadPool {
 		return threads.remove(0);
 	}
 
-	public void addMatcher(String cc, Event e) {
+	public void addMatcher(IExpr cc, Event e) {
 		mapCcMatcher.put(cc, e);
 	}
 
-	public Event getMatcher(String cc) {
+	public Event getMatcher(IExpr cc) {
 		return mapCcMatcher.get(cc);
 	}
 

@@ -65,7 +65,7 @@ class VisitorIMM extends VisitorBase {
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), extractLoadMo(e.getMo()));
+		Local load = newLocal(resultRegister, e.getExpr());
         load.addFilters(C11.PTHREAD);
         
         return eventSequence(

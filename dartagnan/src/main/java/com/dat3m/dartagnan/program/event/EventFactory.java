@@ -194,11 +194,11 @@ public class EventFactory {
     public static class Pthread {
         private Pthread() {}
 
-        public static Create newCreate(Register pthread_t, String routine, MemoryObject address) {
-            return new Create(pthread_t, routine, address);
+        public static Create newCreate(IExpr address, String routine) {
+            return new Create(address, routine);
         }
 
-        public static End newEnd(MemoryObject address){
+        public static End newEnd(IExpr address){
             return new End(address);
         }
 
@@ -206,15 +206,15 @@ public class EventFactory {
             return new InitLock(name, address, value);
         }
 
-        public static Join newJoin(Register pthread_t, Register reg, MemoryObject address) {
-            return new Join(pthread_t, reg, address);
+        public static Join newJoin(Register reg, IExpr expr) {
+            return new Join(reg, expr);
         }
 
         public static Lock newLock(String name, IExpr address, Register reg) {
             return new Lock(name, address, reg);
         }
 
-        public static Start newStart(Register reg, MemoryObject address, Event creationEvent) {
+        public static Start newStart(Register reg, IExpr address, Event creationEvent) {
             return new Start(reg, address, creationEvent);
         }
 
