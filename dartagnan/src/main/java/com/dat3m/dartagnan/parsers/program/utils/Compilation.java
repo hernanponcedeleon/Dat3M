@@ -28,7 +28,7 @@ public class Compilation {
 		String name = file.getName().substring(0, file.getName().lastIndexOf('.'));		
 		ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("clang", "-Xclang", "-disable-O0-optnone", "-S", "-I" + System.getenv("DAT3M_HOME") + "/include/clang", 
-    			"-emit-llvm", "-o", System.getenv("DAT3M_OUTPUT") + "/" + name + ".ll"));
+    			"-emit-llvm", "-g", "-gcolumn-info", "-o", System.getenv("DAT3M_OUTPUT") + "/" + name + ".ll"));
 		// We use cflags when using the UI and fallback top CFLAGS otherwise
 		cflags = cflags.equals("") ? System.getenv().getOrDefault("CFLAGS", "") : cflags;
     	// Needed to handle more than one flag in CFLAGS
