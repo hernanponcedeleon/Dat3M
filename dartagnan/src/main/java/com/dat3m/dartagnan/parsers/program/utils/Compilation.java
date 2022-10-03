@@ -8,6 +8,8 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static java.util.Arrays.asList;
 
@@ -15,10 +17,17 @@ public class Compilation {
 	
 	private static final Logger logger = LogManager.getLogger(Compilation.class);
 	
+	private static List<String> optPasses = Arrays.asList( 
+		"-mem2reg",
+		"-indvars",
+		"-loop-unroll",
+		"-simplifycfg",
+		"-gvn");
+
 	public static void compileWithClang(File file, String cflags) throws Exception {
 		String name = file.getName().substring(0, file.getName().lastIndexOf('.'));		
 		ArrayList<String> cmd = new ArrayList<String>();
-    	cmd.addAll(asList("clang", "-S", "-I" + System.getenv("DAT3M_HOME") + "/include/clang", 
+    	cmd.addAll(asList("clang", "-Xclang", "-disable-O0-optnone", "-S", "-I" + System.getenv("DAT3M_HOME") + "/include/clang", 
     			"-emit-llvm", "-o", System.getenv("DAT3M_OUTPUT") + "/" + name + ".ll"));
 		// We use cflags when using the UI and fallback top CFLAGS otherwise
 		cflags = cflags.equals("") ? System.getenv().getOrDefault("CFLAGS", "") : cflags;
@@ -38,11 +47,13 @@ public class Compilation {
     	}
 	}	
 
-	public static void applyAtomicReplacePass(File file) throws Exception {
+	public static void applyLlvmPasses(File file) throws Exception {
 		String name = file.getName().substring(0, file.getName().lastIndexOf('.'));		
 		ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("opt", "-enable-new-pm=0", "-load=" + System.getenv("DAT3M_PASSES_HOME") + 
-			"/atomic-replace.so", "-atomic-replace", System.getenv("DAT3M_OUTPUT") + "/" + name + ".ll", 
+			"/atomic-replace.so", "-atomic-replace"));
+		cmd.addAll(optPasses);
+		cmd.addAll(asList(System.getenv("DAT3M_OUTPUT") + "/" + name + ".ll", 
 			"-S", "-o", System.getenv("DAT3M_OUTPUT") + "/" + name + "-opt.ll"));
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
     	logger.info("Running LLVM passes");
