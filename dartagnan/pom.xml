@@ -434,7 +434,7 @@
     <dependency>
       <groupId>org.sosy-lab</groupId>
       <artifactId>java-smt</artifactId>
-      <version>3.13.3</version>
+      <version>3.14.2</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
