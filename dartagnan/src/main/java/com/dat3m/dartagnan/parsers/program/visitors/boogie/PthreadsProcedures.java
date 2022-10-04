@@ -78,12 +78,13 @@ public class PthreadsProcedures {
 		visitor.threadCallingValues.get(visitor.currentThread).add(callingValue);
 		visitor.pool.add(pointer, threadName, visitor.threadCount);
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
-        // String cc = String.format("%s(%s)_active", threadPtr, visitor.pool.getCreatorFromPtr(threadPtr));
+        String cc = String.format("%s_active", pointer);
 		Event matcher = EventFactory.newStringAnnotation("// Spawning thread associated to " + pointer);
 		visitor.programBuilder.addChild(visitor.threadCount, matcher);
 		visitor.pool.addMatcher(pointer, matcher);
-		// MemoryObject object = visitor.programBuilder.getOrNewObject(cc);
-		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(pointer, threadName))
+		MemoryObject object = visitor.programBuilder.getOrNewObject(cc);
+		visitor.allocationRegisters.put(pointer, object);
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(object, threadName))
 			.setCLine(visitor.currentLine)
 			.setSourceCodeFile(visitor.sourceCodeFile);
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, IValue.ZERO));
