@@ -6,7 +6,7 @@
 #include <assert.h>
 
 typedef struct {
-    int value;
+    atomic_int value;
     atomic_int next;
 } SafeStackItem;
 
@@ -67,8 +67,8 @@ void *thread3(void *arg)
         }
 
     }
-    array[elem].value = idx;
-    assert (array[elem].value == idx);
+    atomic_store_explicit(&array[elem].value, idx, memory_order_relaxed);
+    assert (atomic_load_explicit(&array[elem].value, memory_order_relaxed) == idx);
     push(elem);
 
     while (1) {
@@ -76,8 +76,8 @@ void *thread3(void *arg)
         if (elem >= 0)
              break;
     }
-    array[elem].value = idx;
-    assert (array[elem].value == idx);
+    atomic_store_explicit(&array[elem].value, idx, memory_order_relaxed);
+    assert (atomic_load_explicit(&array[elem].value, memory_order_relaxed) == idx);
     return NULL;
 }
 

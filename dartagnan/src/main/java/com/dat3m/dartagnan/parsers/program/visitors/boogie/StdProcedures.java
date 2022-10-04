@@ -55,7 +55,11 @@ public class StdProcedures {
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, tid));
 			return;
 		}
-		if(name.equals("__assert_rtn") || name.equals("assert_.i32") || name.equals("__assert_fail")) {
+		if(name.equals("__assert_fail")) {
+			__assert_fail(visitor);
+			return;
+		}
+		if(name.equals("__assert_rtn") || name.equals("assert_.i32")) {
 			__assert(visitor, ctx);
 			return;
 		}
@@ -126,6 +130,10 @@ public class StdProcedures {
 	private static void __assert(VisitorBoogie visitor, Call_cmdContext ctx) {
 		IExpr expr = (IExpr)ctx.call_params().exprs().accept(visitor);
     	visitor.addAssertion(expr);
+	}
+
+	private static void __assert_fail(VisitorBoogie visitor) {
+    	visitor.addAssertion(IValue.ZERO);
 	}
 
 }

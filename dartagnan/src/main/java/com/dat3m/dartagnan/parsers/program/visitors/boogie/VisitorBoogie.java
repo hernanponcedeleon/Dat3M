@@ -50,6 +50,8 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.handleStdFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.SVCOMPPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LkmmProcedures.*;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LlvmProcedures.LLVMPROCEDURES;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LlvmProcedures.handleLlvmFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.handleSvcompFunction;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> {
@@ -353,6 +355,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			handleLkmmFunction(this, ctx);
 			return null;
 		}
+		if(LLVMPROCEDURES.stream().anyMatch(name::equals)) {
+			handleLlvmFunction(this, ctx);
+			return null;
+		}
 		if(name.contains("__VERIFIER_atomic_")) {
 			atomicMode = ctx;
 			if(GlobalSettings.ATOMIC_AS_LOCK) {
@@ -492,6 +498,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 				pairingLabel = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 			} else {
 				pairingLabel = pairLabels.get(currentLabel);
+			}
+			// "assume false" simple terminates the thread
+			// pairingLabel is guaranteed to be "END_OF_T"
+			if(ctx.proposition().expr().getText().equals("false")) {
+				programBuilder.addChild(threadCount, EventFactory.newGoto(pairingLabel));
 			}
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
 			if(c != null) {
@@ -654,6 +665,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		Function function = functions.get(name);
 		if(function == null) {
 			throw new ParsingException("Function " + name + " is not defined");
+		}
+		if(name.startsWith("$extractvalue")) {
+			String structName = ctx.expr(0).getText();
+			String idx = ctx.expr(1).getText();
+			logger.warn("Accessing structure " + structName + ". Please ensure field " + idx + " is properly initialised.");
+			return programBuilder.getOrCreateRegister(threadCount, String.format("%s:%s(%s)", currentScope.getID(), structName, idx), GlobalSettings.ARCH_PRECISION);
 		}
 		if(name.contains("$load.")) {
 			return ctx.expr(1).accept(this);

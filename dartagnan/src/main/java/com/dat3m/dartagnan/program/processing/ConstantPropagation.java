@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.catomic.AtomicCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.catomic.AtomicLoad;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -259,6 +260,12 @@ public class ConstantPropagation implements ProgramProcessor {
     	
     	@Override
     	public Event visitRMW(RMW e) {
+    		setAddress(e);
+    		return e;
+    	};
+    	
+    	@Override
+    	public Event visitLlvmLoad(LlvmLoad e) {
     		setAddress(e);
     		return e;
     	};

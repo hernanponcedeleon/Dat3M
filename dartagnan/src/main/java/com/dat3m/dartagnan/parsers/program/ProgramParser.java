@@ -8,6 +8,7 @@ import org.antlr.v4.runtime.CharStreams;
 
 import java.io.*;
 
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.applyLlvmPasses;
 import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
 import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithSmack;
 
@@ -21,8 +22,9 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_C           = "C";
 
     public Program parse(File file) throws Exception {
-    	if(file.getPath().endsWith("c")) {
+    	if(file.getPath().endsWith("c") || file.getPath().endsWith("i") || file.getPath().endsWith("ll")) {
             compileWithClang(file, "");
+            applyLlvmPasses(file);
             compileWithSmack(file, "");
             String name = file.getName().substring(0, file.getName().lastIndexOf('.'));
             return new ProgramParser().parse(new File(System.getenv("DAT3M_OUTPUT") + "/" + name + ".bpl"));    		

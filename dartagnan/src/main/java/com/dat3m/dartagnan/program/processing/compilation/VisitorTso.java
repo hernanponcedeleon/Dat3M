@@ -8,10 +8,8 @@ import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.lang.llvm.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 
 import java.util.List;
 
@@ -89,7 +87,90 @@ class VisitorTso extends VisitorBase {
         );
 	}
 
-	@Override
+    // =============================================================================================
+    // =========================================== LLVM ============================================
+    // =============================================================================================
+
+    @Override
+    public List<Event> visitLlvmLoad(LlvmLoad e) {
+            Load load = newLoad(e.getResultRegister(), e.getAddress(), null);
+
+            return eventSequence(
+                            load);
+    }
+
+    @Override
+    public List<Event> visitLlvmStore(LlvmStore e) {
+            Store store = newStore(e.getAddress(), e.getMemValue(), null);
+            Fence optionalMFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
+
+            return eventSequence(
+                            store,
+                            optionalMFence);
+    }
+
+    @Override
+    public List<Event> visitLlvmXchg(LlvmXchg e) {
+            IExpr address = e.getAddress();
+            Load load = newRMWLoad(e.getResultRegister(), address, null);
+
+            return eventSequence(
+                            load,
+                            newRMWStore(load, address, e.getMemValue(), null));
+    }
+
+    @Override
+    public List<Event> visitLlvmRMW(LlvmRMW e) {
+            Register resultRegister = e.getResultRegister();
+            IExpr address = e.getAddress();
+
+            Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+            Load load = newRMWLoad(resultRegister, address, null);
+
+            return eventSequence(
+                            load,
+                            newLocal(dummyReg, new IExprBin(resultRegister, e.getOp(), (IExpr) e.getMemValue())),
+                            newRMWStore(load, address, dummyReg, null));
+    }
+
+    @Override
+    public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
+            Register oldValueRegister = e.getThread().getRegister(e.getResultRegister() + "(0)");
+            Register resultRegister = e.getThread().getRegister(e.getResultRegister() + "(1)");
+
+            ExprInterface value = e.getMemValue();
+            IExpr address = e.getAddress();
+            ExprInterface expectedValue = e.getExpectedValue();
+
+            Local casCmpResult = newLocal(resultRegister, new Atom(oldValueRegister, EQ, expectedValue));
+            Label casEnd = newLabel("CAS_end");
+            CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
+
+            Load load = newRMWLoad(oldValueRegister, address, null);
+            Store store = newRMWStore(load, address, value, null);
+
+            return eventSequence(
+                            // Indentation shows the branching structure
+                            load,
+                            casCmpResult,
+                            branchOnCasCmpResult,
+                                store,
+                            casEnd);
+    }
+
+    @Override
+    public List<Event> visitLlvmFence(LlvmFence e) {
+            Fence optionalFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
+
+            return eventSequence(
+                            optionalFence);
+    }
+
+    // =============================================================================================
+    // ============================================ C11 ============================================
+    // =============================================================================================
+	
+        @Override
 	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
