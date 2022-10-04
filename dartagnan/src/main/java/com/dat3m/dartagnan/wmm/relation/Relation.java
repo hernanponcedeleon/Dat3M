@@ -21,10 +21,8 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
@@ -62,7 +60,7 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
 
     @Override
     public List<Relation> getDependencies() {
-        return Collections.emptyList();
+        return getConstrainedRelations().stream().filter(r->!equals(r)).collect(toList());
     }
 
     // TODO: The following two methods are provided because currently Relations are treated as three things:
