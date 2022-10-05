@@ -20,7 +20,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -60,7 +60,9 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
 
     @Override
     public List<Relation> getDependencies() {
-        return getConstrainedRelations().stream().filter(r->!equals(r)).collect(toList());
+        List<Relation> relations = getConstrainedRelations();
+        // no copying required, as long as getConstrainedRelations() returns a new or unmodifiable list
+        return relations.subList(1, relations.size());
     }
 
     // TODO: The following two methods are provided because currently Relations are treated as three things:
@@ -121,12 +123,20 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
         return name != null;
     }
 
+    /**
+     * @return Non-empty list of all relations directly participating in this definition.
+     * The first relation is always the defined relation,
+     * while the roles of the others are implementation-dependent.
+     */
     @Override
-    public Collection<? extends Relation> getConstrainedRelations() {
+    public List<Relation> getConstrainedRelations() {
         return accept(new Visitor<>() {
             @Override
-            public Collection<? extends Relation> visitDefinition(Relation rel, List<? extends Relation> dependencies) {
-                return dependencies;
+            public List<Relation> visitDefinition(Relation rel, List<? extends Relation> dependencies) {
+                List<Relation> relations = new ArrayList<>(dependencies.size() + 1);
+                relations.add(rel);
+                relations.addAll(dependencies);
+                return relations;
             }
         });
     }
