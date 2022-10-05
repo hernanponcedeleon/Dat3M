@@ -29,6 +29,11 @@ public class RelIntersection extends BinaryRelation {
     }
 
     @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitIntersection(this, r1, r2);
+    }
+
+    @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             minTupleSet = new TupleSet(Sets.intersection(r1.getMinTupleSet(), r2.getMinTupleSet()));

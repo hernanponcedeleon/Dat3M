@@ -60,6 +60,11 @@ public class RelCo extends Relation {
     }
 
     @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitMemoryOrder(this);
+    }
+
+    @Override
     public void configure(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
     }

@@ -20,7 +20,6 @@ import com.dat3m.dartagnan.wmm.relation.base.stat.RelCtrlDirect;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelEmpty;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelExt;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelId;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelInt;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelPo;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelSetIdentity;
@@ -207,7 +206,7 @@ public class Wmm {
             case LOC:
                 return new RelLoc();
             case ID:
-                return new RelId();
+                return new RelSetIdentity(FilterBasic.get(Tag.VISIBLE));
             case INT:
                 return new RelInt();
             case EXT:

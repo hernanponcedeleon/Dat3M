@@ -34,6 +34,11 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitComposition(this, r1, r2);
+    }
+
+    @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
