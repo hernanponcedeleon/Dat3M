@@ -27,6 +27,11 @@ public class RelRangeIdentity extends UnaryRelation {
     }
 
     @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitRangeIdentity(this, r1);
+    }
+
+    @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);

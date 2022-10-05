@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
-import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
@@ -19,7 +19,7 @@ import java.util.Objects;
  *
  * @author Florian Furbach
  */
-public abstract class Axiom implements Dependent<Relation> {
+public abstract class Axiom implements Constraint {
 
     protected final Relation rel;
     protected final boolean negated;
@@ -49,7 +49,7 @@ public abstract class Axiom implements Dependent<Relation> {
     }
 
     @Override
-    public List<Relation> getDependencies() {
+    public List<? extends Relation> getConstrainedRelations() {
         return Collections.singletonList(rel);
     }
 

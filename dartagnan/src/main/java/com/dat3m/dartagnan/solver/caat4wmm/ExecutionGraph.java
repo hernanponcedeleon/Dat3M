@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.solver.caat.constraints.EmptinessConstraint;
 import com.dat3m.dartagnan.solver.caat.constraints.IrreflexivityConstraint;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.EmptyGraph;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.IdentityGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.*;
@@ -31,7 +30,6 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
 import com.dat3m.dartagnan.wmm.relation.unary.RelRangeIdentity;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
-import com.dat3m.dartagnan.wmm.relation.unary.RelTransRef;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
@@ -252,12 +250,6 @@ public class ExecutionGraph {
                 graph = new TransitiveGraph(innerGraph);
             } else if (relClass == RelRangeIdentity.class) {
                 graph = new RangeIdentityGraph(innerGraph);
-            } else if (relClass == RelTransRef.class) {
-                //FIXME: This is very, very sketchy and instead of doing this
-                // a WmmProcessor should run that transforms the wmm accordingly.
-                RelTrans relTrans = new RelTrans(innerRelation);
-                RelationGraph transGraph = getOrCreateGraphFromRelation(relTrans);
-                graph = new ReflexiveClosureGraph(transGraph);
             } else {
                 throw new UnsupportedOperationException(relClass.toString() + " has no associated graph yet.");
             }
@@ -298,8 +290,6 @@ public class ExecutionGraph {
             } else if (relClass == RelSetIdentity.class) {
                 SetPredicate set = getOrCreateSetFromFilter(((RelSetIdentity) rel).getFilter());
                 graph = new SetIdentityGraph(set);
-            } else if (relClass == RelId.class) {
-                graph = new IdentityGraph();
             } else if (relClass == RelEmpty.class) {
                 graph = new EmptyGraph();
             } else {

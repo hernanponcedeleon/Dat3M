@@ -4,9 +4,6 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.Sets;
 
-import java.util.Arrays;
-import java.util.List;
-
 /**
  *
  * @author Florian Furbach
@@ -33,11 +30,6 @@ public abstract class BinaryRelation extends Relation {
 
     public Relation getSecond() {
         return r2;
-    }
-
-    @Override
-    public List<Relation> getDependencies() {
-        return Arrays.asList(r1 ,r2);
     }
 
     @Override

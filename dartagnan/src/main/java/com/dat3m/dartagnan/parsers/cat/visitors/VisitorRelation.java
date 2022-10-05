@@ -62,7 +62,11 @@ public class VisitorRelation extends CatBaseVisitor<Relation> {
 
     @Override
     public Relation visitExprTransRef(CatParser.ExprTransRefContext ctx) {
-        return visitUnaryRelation(ctx.e, RelTransRef.class);
+        Relation r = ctx.e.accept(this);
+        if(r != null){
+            return base.wmm.getRelation(RelTrans.class, base.wmm.getRelation(RelUnion.class, base.wmm.getRelation(ID), r));
+        }
+        return null;
     }
 
     @Override
