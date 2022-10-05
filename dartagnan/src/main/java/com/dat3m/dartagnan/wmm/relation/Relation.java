@@ -26,7 +26,6 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
-import static java.util.stream.Collectors.toList;
 
 /**
  *
