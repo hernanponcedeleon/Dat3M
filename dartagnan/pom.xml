@@ -110,6 +110,50 @@
           <classifier>libcvc4parser</classifier>
         </dependency>
         
+        <!-- CVC5 dependencies (Linux) -->
+        <dependency>
+          <groupId>org.sosy-lab</groupId>
+          <artifactId>javasmt-solver-cvc5</artifactId>
+          <version>1.0.1-g8c2b8db17</version>
+          <type>jar</type>
+          <classifier>cvc5</classifier>
+        </dependency>
+        <dependency>
+          <groupId>org.sosy-lab</groupId> 
+          <artifactId>javasmt-solver-cvc5</artifactId>
+          <version>1.0.1-g8c2b8db17</version>
+          <type>so</type>
+          <classifier>libcvc5</classifier>
+        </dependency>
+        <dependency>
+          <groupId>org.sosy-lab</groupId>
+         <artifactId>javasmt-solver-cvc5</artifactId>
+         <version>1.0.1-g8c2b8db17</version>
+          <type>so</type>
+         <classifier>libcvc5jni</classifier>
+        </dependency>
+        <dependency>
+          <groupId>org.sosy-lab</groupId>
+          <artifactId>javasmt-solver-cvc5</artifactId>
+          <version>1.0.1-g8c2b8db17</version>
+          <type>so</type>
+          <classifier>libcvc5parser</classifier>
+        </dependency>
+        <dependency>
+          <groupId>org.sosy-lab</groupId>
+          <artifactId>javasmt-solver-cvc5</artifactId>
+          <version>1.0.1-g8c2b8db17</version>
+         <type>so</type>
+         <classifier>libpoly</classifier>
+       </dependency>
+       <dependency>
+          <groupId>org.sosy-lab</groupId>
+          <artifactId>javasmt-solver-cvc5</artifactId>
+          <version>1.0.1-g8c2b8db17</version>
+          <type>so</type>
+          <classifier>libpolyxx</classifier>
+        </dependency>
+
         <!-- Yices2 has two dependencies (on Linux) -->
 	    <dependency>
 	      <groupId>org.sosy-lab</groupId>
@@ -223,6 +267,44 @@
                   <destFileName>libcvc4parser.so</destFileName>
                 </artifactItem>
 
+              <!-- CVC5 has six dependencies (on Linux),
+                   and renaming the JAR file is not required -->
+              <artifactItem>
+                <groupId>org.sosy-lab</groupId>
+                <artifactId>javasmt-solver-cvc5</artifactId>
+                <type>so</type>
+                <classifier>libcvc5</classifier>
+                <destFileName>libcvc5.so</destFileName>
+              </artifactItem>
+              <artifactItem>
+                <groupId>org.sosy-lab</groupId>
+                <artifactId>javasmt-solver-cvc5</artifactId>
+                <type>so</type>
+                <classifier>libcvc5jni</classifier>
+                <destFileName>libcvc5jni.so</destFileName>
+              </artifactItem>
+              <artifactItem>
+                <groupId>org.sosy-lab</groupId>
+                <artifactId>javasmt-solver-cvc5</artifactId>
+                <type>so</type>
+                <classifier>libcvc5parser</classifier>
+                <destFileName>libcvc5parser.so</destFileName>
+              </artifactItem>
+              <artifactItem>
+                <groupId>org.sosy-lab</groupId>
+                <artifactId>javasmt-solver-cvc5</artifactId>
+                <type>so</type>
+                <classifier>libpoly</classifier>
+                <destFileName>libpoly.so</destFileName>
+              </artifactItem>
+              <artifactItem>
+                <groupId>org.sosy-lab</groupId>
+                <artifactId>javasmt-solver-cvc5</artifactId>
+                <type>so</type>
+                <classifier>libpolyxx</classifier>
+                <destFileName>libpolyxx.so</destFileName>
+              </artifactItem>
+
                 <!-- Yices2 dependencies (Linux) -->
                 <artifactItem>
                   <groupId>org.sosy-lab</groupId>
@@ -251,14 +333,14 @@
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-z3</artifactId>
-          <version>4.8.17</version>
+          <version>4.10.1</version>
           <type>dylib</type>
           <classifier>libz3</classifier>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-z3</artifactId>
-          <version>4.8.17</version>
+          <version>4.10.1</version>
           <type>dylib</type>
           <classifier>libz3java</classifier>
         </dependency>
@@ -323,21 +405,21 @@
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-mathsat5</artifactId>
-          <version>5.6.6-sosy1</version>
+          <version>5.6.8</version>
           <classifier>mathsat5j</classifier>
           <type>dll</type>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-mathsat5</artifactId>
-          <version>5.6.6-sosy1</version>
+          <version>5.6.8</version>
           <classifier>mathsat</classifier>
           <type>dll</type>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-mathsat5</artifactId>
-          <version>5.6.6-sosy1</version>
+          <version>5.6.8</version>
           <classifier>mpir</classifier>
           <type>dll</type>
         </dependency>
@@ -345,14 +427,14 @@
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-z3</artifactId>
-          <version>4.8.17</version>
+          <version>4.10.1</version>
           <type>dll</type>
           <classifier>libz3</classifier>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-z3</artifactId>
-          <version>4.8.17</version>
+          <version>4.10.1</version>
           <type>dll</type>
           <classifier>libz3java</classifier>
         </dependency>
@@ -434,7 +516,7 @@
     <dependency>
       <groupId>org.sosy-lab</groupId>
       <artifactId>java-smt</artifactId>
-      <version>3.13.3</version>
+      <version>3.14.2</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>

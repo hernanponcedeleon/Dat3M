@@ -6,9 +6,6 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.Collections;
-import java.util.List;
-
 /**
  *
  * @author Florian Furbach
@@ -20,11 +17,6 @@ public class RecursiveRelation extends Relation {
 
     public Relation getInner() {
         return r1;
-    }
-
-    @Override
-    public List<Relation> getDependencies() {
-        return Collections.singletonList(r1);
     }
 
     public RecursiveRelation(String name) {
@@ -62,6 +54,11 @@ public class RecursiveRelation extends Relation {
 
     public void setDoRecurse(){
         doRecurse = true;
+    }
+
+    @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitRecursive(this, r1);
     }
 
     @Override

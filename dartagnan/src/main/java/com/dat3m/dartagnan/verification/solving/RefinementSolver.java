@@ -35,7 +35,6 @@ import com.dat3m.dartagnan.wmm.relation.unary.RelDomainIdentity;
 import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
 import com.dat3m.dartagnan.wmm.relation.unary.RelRangeIdentity;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
-import com.dat3m.dartagnan.wmm.relation.unary.RelTransRef;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -354,8 +353,6 @@ public class RefinementSolver extends ModelChecker {
             return new RelDomainIdentity(first);
         } else if (r instanceof RelRangeIdentity) {
             return new RelRangeIdentity(first);
-        } else if (r instanceof RelTransRef) {
-            return new RelTransRef(first);
         } else if (r instanceof RelTrans) {
             return new RelTrans(first);
         } else if (r instanceof RelSetIdentity) {
