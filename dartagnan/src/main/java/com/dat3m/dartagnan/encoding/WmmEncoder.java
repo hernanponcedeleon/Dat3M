@@ -46,7 +46,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.IDL_TO_SAT;
-import static com.dat3m.dartagnan.configuration.OptionNames.POST_FIXPOINT;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
@@ -67,12 +66,6 @@ public class WmmEncoder implements Encoder {
             description = "Use SAT-based encoding for totality and acyclicity.",
             secure = true)
     private boolean useSATEncoding = false;
-
-    @Option(
-            name = POST_FIXPOINT,
-            description = "Allow relationship variables to be assigned true without reason.",
-            secure = true)
-    private boolean postFixApprox = false;
 
     // =====================================================================
 
@@ -202,11 +195,7 @@ public class WmmEncoder implements Encoder {
                 for (Relation relation : r) {
                     opt.add(edge(relation, tuple));
                 }
-                if (postFixApprox) {
-                    enc = bmgr.and(enc, bmgr.implication(bmgr.or(opt), edge));
-                } else {
-                    enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.or(opt)));
-                }
+                enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.or(opt)));
             }
             return enc;
         }
@@ -240,11 +229,7 @@ public class WmmEncoder implements Encoder {
                 }
                 BooleanFormula opt1 = edge(r1, tuple);
                 BooleanFormula opt2 = bmgr.not(edge(r2, tuple));
-                if (postFixApprox) {
-                    enc = bmgr.and(enc, bmgr.implication(bmgr.and(opt1, opt2), edge));
-                } else {
-                    enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.and(opt1, opt2)));
-                }
+                enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.and(opt1, opt2)));
             }
             return enc;
         }
@@ -307,11 +292,7 @@ public class WmmEncoder implements Encoder {
             for (Tuple tuple : rel.getEncodeTupleSet()) {
                 BooleanFormula edge = edge(rel, tuple);
                 if (minSet.contains(tuple)) {
-                    if (postFixApprox) {
-                        enc = bmgr.and(enc, bmgr.implication(execution(tuple), edge));
-                    } else {
-                        enc = bmgr.and(enc, bmgr.equivalence(edge, execution(tuple)));
-                    }
+                    enc = bmgr.and(enc, bmgr.equivalence(edge, execution(tuple)));
                     continue;
                 }
                 BooleanFormula orClause = bmgr.makeFalse();
@@ -327,11 +308,7 @@ public class WmmEncoder implements Encoder {
                         orClause = bmgr.or(orClause, bmgr.and(tVar, edge(rel, new Tuple(e3, e2))));
                     }
                 }
-                if (postFixApprox) {
-                    enc = bmgr.and(enc, bmgr.implication(orClause, edge));
-                } else {
-                    enc = bmgr.and(enc, bmgr.equivalence(edge, orClause));
-                }
+                enc = bmgr.and(enc, bmgr.equivalence(edge, orClause));
             }
             return enc;
         }

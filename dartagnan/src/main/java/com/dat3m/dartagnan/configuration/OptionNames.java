@@ -26,7 +26,6 @@ public class OptionNames {
 	public static final String PRECISION = "encoding.precision";
 	public static final String BREAK_SYMMETRY_ON_RELATION = "encoding.symmetry.breakOnRelation";
 	public static final String BREAK_SYMMETRY_BY_SYNC_DEGREE = "encoding.symmetry.orderBySyncDegree";
-	public static final String POST_FIXPOINT = "encoding.wmm.postFixApproximate";
 	public static final String IDL_TO_SAT = "encoding.wmm.idl2sat";
 	
 	// Program Processing Options
