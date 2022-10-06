@@ -326,6 +326,10 @@ public class WmmEncoder implements Encoder {
             return enc;
         }
         @Override
+        public BooleanFormula visitRecursive(Relation rel, Relation r1) {
+            return bmgr.makeTrue();
+        }
+        @Override
         public BooleanFormula visitFences(Relation rel, FilterAbstract fenceSet) {
             BooleanFormula enc = bmgr.makeTrue();
             List<Event> fences = program.getCache().getEvents(fenceSet);
