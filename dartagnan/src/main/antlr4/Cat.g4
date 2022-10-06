@@ -39,10 +39,10 @@ expression
     |   e = expression (POW)? INV                                       # exprInverse
     |   e = expression OPT                                              # exprOptional
     |   NOT e = expression                                              # exprComplement
+    |   e1 = expression AMP e2 = expression                             # exprIntersection
+    |   e1 = expression BSLASH e2 = expression                          # exprMinus
     |   e1 = expression SEMI e2 = expression                            # exprComposition
     |   e1 = expression BAR e2 = expression                             # exprUnion
-    |   e1 = expression BSLASH e2 = expression                          # exprMinus
-    |   e1 = expression AMP e2 = expression                             # exprIntersection
     |   LBRAC DOMAIN LPAR e = expression RPAR RBRAC                     # exprDomainIdentity
     |   LBRAC RANGE LPAR e = expression RPAR RBRAC                      # exprRangeIdentity
     |   (TOID LPAR e = expression RPAR | LBRAC e = expression RBRAC)    # exprIdentity
