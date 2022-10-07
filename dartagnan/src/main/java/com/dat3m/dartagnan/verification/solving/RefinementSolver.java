@@ -329,6 +329,9 @@ public class RefinementSolver extends ModelChecker {
             return namedCopy;
         }
         Relation copy = rel.accept(new RelationCopier(m));
+        if (copy == null) {
+            throw new UnsupportedOperationException("copying relation " + rel);
+        }
         if (rel.getIsNamed()) {
             copy.setName(rel.getName());
             m.updateRelation(copy);
