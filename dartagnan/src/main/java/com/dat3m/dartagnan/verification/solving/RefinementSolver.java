@@ -332,9 +332,8 @@ public class RefinementSolver extends ModelChecker {
         Relation copy = copy(rel, first, second);
         if (rel.getIsNamed()) {
             copy.setName(rel.getName());
-            m.updateRelation(copy);
         }
-
+        m.addRelation(copy);
         return copy;
     }
 
