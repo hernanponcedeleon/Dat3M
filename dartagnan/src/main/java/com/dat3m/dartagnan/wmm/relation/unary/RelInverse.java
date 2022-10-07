@@ -1,12 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.Sets;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -60,19 +56,5 @@ public class RelInverse extends UnaryRelation {
         if(!activeSet.isEmpty()){
             r1.addEncodeTupleSet(activeSet.inverse());
         }
-    }
-
-    @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
-
-
-		TupleSet minSet = getMinTupleSet();
-        for(Tuple tuple : encodeTupleSet){
-        	BooleanFormula opt = minSet.contains(tuple) ? getExecPair(tuple, ctx) : r1.getSMTVar(tuple.getInverse(), ctx);
-            enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), opt));
-        }
-        return enc;
     }
 }

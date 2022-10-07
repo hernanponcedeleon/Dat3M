@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.encoding.PropertyEncoder;
 import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
@@ -128,7 +129,7 @@ public class RefinementSolver extends ModelChecker {
         // We use the original memory model for symmetry breaking because we need axioms
         // to compute the breaking order.
         SymmetryEncoder symmEncoder = SymmetryEncoder.fromConfig(memoryModel, analysisContext, config);
-        WmmEncoder baselineEncoder = WmmEncoder.fromConfig(baselineModel, baselineContext, config);
+        WmmEncoder baselineEncoder = WmmEncoder.fromConfig(program, baselineModel, baselineContext, config);
         programEncoder.initializeEncoding(ctx);
         propertyEncoder.initializeEncoding(ctx);
         symmEncoder.initializeEncoding(ctx);
@@ -137,7 +138,7 @@ public class RefinementSolver extends ModelChecker {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula globalRefinement = bmgr.makeTrue();
 
-        WMMSolver solver = new WMMSolver(task, analysisContext, cutRelations);
+        WMMSolver solver = WMMSolver.fromConfig(task, analysisContext, cutRelations, config);
         Refiner refiner = new Refiner(memoryModel, analysisContext);
         CAATSolver.Status status = INCONSISTENT;
 
@@ -327,9 +328,7 @@ public class RefinementSolver extends ModelChecker {
         if (namedCopy != null) {
             return namedCopy;
         }
-        Relation first = rel.getFirst() == null ? null : getCopyOfRelation(rel.getFirst(), m);
-        Relation second = rel.getSecond() == null ? null : getCopyOfRelation(rel.getSecond(), m);
-        Relation copy = copy(rel, first, second);
+        Relation copy = rel.accept(new RelationCopier(m));
         if (rel.getIsNamed()) {
             copy.setName(rel.getName());
         }
@@ -337,31 +336,21 @@ public class RefinementSolver extends ModelChecker {
         return copy;
     }
 
-    private static Relation copy(Relation r, Relation first, Relation second) {
-        if (r instanceof RelUnion) {
-            return new RelUnion(first, second);
-        } else if (r instanceof RelIntersection) {
-            return new RelIntersection(first, second);
-        } else if (r instanceof RelMinus) {
-            return new RelMinus(first, second);
-        } else if (r instanceof RelComposition) {
-            return new RelComposition(first, second);
-        } else if (r instanceof RelInverse) {
-            return new RelInverse(first);
-        } else if (r instanceof RelDomainIdentity) {
-            return new RelDomainIdentity(first);
-        } else if (r instanceof RelRangeIdentity) {
-            return new RelRangeIdentity(first);
-        } else if (r instanceof RelTrans) {
-            return new RelTrans(first);
-        } else if (r instanceof RelSetIdentity) {
-            return new RelSetIdentity(((RelSetIdentity) r).getFilter());
-        } else if (r instanceof RelCartesian) {
-            return new RelCartesian(((RelCartesian) r).getFirstFilter(), ((RelCartesian) r).getSecondFilter());
-        } else if (r instanceof RelFencerel) {
-            return new RelFencerel(((RelFencerel) r).getFilter());
-        }
-        throw new UnsupportedOperationException("copying relation " + r);
+    private static final class RelationCopier implements Relation.Visitor<Relation> {
+        final Wmm targetModel;
+        RelationCopier(Wmm m) { targetModel = m; }
+        @Override public Relation visitUnion(Relation rel, Relation... r) { return new RelUnion(copy(r[0]), copy(r[1])); }
+        @Override public Relation visitIntersection(Relation rel, Relation... r) { return new RelIntersection(copy(r[0]), copy(r[1])); }
+        @Override public Relation visitDifference(Relation rel, Relation r1, Relation r2) { return new RelMinus(copy(r1), copy(r2)); }
+        @Override public Relation visitComposition(Relation rel, Relation r1, Relation r2) { return new RelComposition(copy(r1), copy(r2)); }
+        @Override public Relation visitInverse(Relation rel, Relation r1) { return new RelInverse(copy(r1)); }
+        @Override public Relation visitDomainIdentity(Relation rel, Relation r1) { return new RelDomainIdentity(copy(r1)); }
+        @Override public Relation visitRangeIdentity(Relation rel, Relation r1) { return new RelRangeIdentity(copy(r1)); }
+        @Override public Relation visitTransitiveClosure(Relation rel, Relation r1) { return new RelTrans(copy(r1)); }
+        @Override public Relation visitIdentity(Relation rel, FilterAbstract filter) { return new RelSetIdentity(filter); }
+        @Override public Relation visitProduct(Relation rel, FilterAbstract f1, FilterAbstract f2) { return new RelCartesian(f1, f2); }
+        @Override public Relation visitFences(Relation rel, FilterAbstract type) { return new RelFencerel(type); }
+        private Relation copy(Relation r) { return getCopyOfRelation(r, targetModel); }
     }
 
     // -------------------- Printing -----------------------------

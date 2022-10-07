@@ -54,7 +54,7 @@ public class DataRaceSolver extends ModelChecker {
 
 		ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
 		PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, memoryModel,analysisContext, config);
-		WmmEncoder wmmEncoder = WmmEncoder.fromConfig(memoryModel, analysisContext, config);
+		WmmEncoder wmmEncoder = WmmEncoder.fromConfig(program, memoryModel, analysisContext, config);
 		SymmetryEncoder symmetryEncoder = SymmetryEncoder.fromConfig(memoryModel, analysisContext, config);
 
 		programEncoder.initializeEncoding(ctx);

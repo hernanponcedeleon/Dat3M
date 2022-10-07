@@ -1,12 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 //TODO(TH): RelCrit, RelRMW and RelFencerel are NOT strongly static like the other static relations
 // It might be reasonable to group them into weakly static relations (or alternatively the other one's into
@@ -34,17 +30,5 @@ public abstract class StaticRelation extends Relation {
             minTupleSet = getMaxTupleSet();
         }
         return minTupleSet;
-    }
-
-    @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
-
-        for(Tuple tuple : encodeTupleSet) {
-        	BooleanFormula rel = this.getSMTVar(tuple, ctx);
-            enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(getExecPair(tuple, ctx))));
-        }
-        return enc;
     }
 }
