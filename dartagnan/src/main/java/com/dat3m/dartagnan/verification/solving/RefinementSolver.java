@@ -1,10 +1,7 @@
 package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.configuration.Baseline;
-import com.dat3m.dartagnan.encoding.ProgramEncoder;
-import com.dat3m.dartagnan.encoding.PropertyEncoder;
-import com.dat3m.dartagnan.encoding.SymmetryEncoder;
-import com.dat3m.dartagnan.encoding.WmmEncoder;
+import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
@@ -124,12 +121,13 @@ public class RefinementSolver extends ModelChecker {
         performStaticWmmAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
 
-        ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
-        PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, baselineModel, analysisContext, config);
+        context = EncodingContext.of(task, analysisContext, ctx);
+        ProgramEncoder programEncoder = ProgramEncoder.of(context);
+        PropertyEncoder propertyEncoder = PropertyEncoder.of(baselineModel, context);
         // We use the original memory model for symmetry breaking because we need axioms
         // to compute the breaking order.
-        SymmetryEncoder symmEncoder = SymmetryEncoder.fromConfig(memoryModel, analysisContext, config);
-        WmmEncoder baselineEncoder = WmmEncoder.fromConfig(program, baselineModel, baselineContext, config);
+        SymmetryEncoder symmEncoder = SymmetryEncoder.of(context);
+        WmmEncoder baselineEncoder = WmmEncoder.of(baselineModel, baselineContext, context);
         programEncoder.initializeEncoding(ctx);
         propertyEncoder.initializeEncoding(ctx);
         symmEncoder.initializeEncoding(ctx);
@@ -138,11 +136,11 @@ public class RefinementSolver extends ModelChecker {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula globalRefinement = bmgr.makeTrue();
 
-        WMMSolver solver = WMMSolver.fromConfig(task, analysisContext, cutRelations, config);
+        WMMSolver solver = WMMSolver.of(context, cutRelations);
         Refiner refiner = new Refiner(memoryModel, analysisContext);
         CAATSolver.Status status = INCONSISTENT;
 
-        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
+        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification();
         if(bmgr.isFalse(propertyEncoding)) {
             logger.info("Verification finished: property trivially holds");
             res = PASS;
@@ -150,9 +148,9 @@ public class RefinementSolver extends ModelChecker {
         }
 
         logger.info("Starting encoding using " + ctx.getVersion());
-        prover.addConstraint(programEncoder.encodeFullProgram(ctx));
-        prover.addConstraint(baselineEncoder.encodeFullMemoryModel(ctx));
-        prover.addConstraint(symmEncoder.encodeFullSymmetry(ctx));
+        prover.addConstraint(programEncoder.encodeFullProgram());
+        prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
+        prover.addConstraint(symmEncoder.encodeFullSymmetry());
 
         prover.push();
         prover.addConstraint(propertyEncoding);
@@ -187,7 +185,7 @@ public class RefinementSolver extends ModelChecker {
             curTime = System.currentTimeMillis();
             WMMSolver.Result solverResult;
             try (Model model = prover.getModel()) {
-                solverResult = solver.check(model, ctx);
+                solverResult = solver.check(model);
             } catch (SolverException e) {
                 logger.error(e);
                 throw e;
@@ -201,7 +199,7 @@ public class RefinementSolver extends ModelChecker {
             if (status == INCONSISTENT) {
                 long refineTime = System.currentTimeMillis();
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
-                BooleanFormula refinement = refiner.refine(reasons, ctx);
+                BooleanFormula refinement = refiner.refine(reasons, context);
                 prover.addConstraint(refinement);
                 globalRefinement = bmgr.and(globalRefinement, refinement); // Track overall refinement progress
                 totalRefiningTime += (System.currentTimeMillis() - refineTime);
@@ -262,7 +260,7 @@ public class RefinementSolver extends ModelChecker {
             lastTime = System.currentTimeMillis();
             prover.pop();
             // Add bound check
-            prover.addConstraint(propertyEncoder.encodeBoundEventExec(ctx));
+            prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             // Add back the constraints found during Refinement
             // TODO: We actually need to perform a second refinement to check for bound reachability
             //  This is needed for the seqlock.c benchmarks!

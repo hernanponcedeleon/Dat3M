@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.utils.symmetry;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
@@ -9,14 +10,12 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
-import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,6 +74,7 @@ public class CoSymmetryBreaking {
 
     private static final Logger logger = LogManager.getLogger(CoSymmetryBreaking.class);
 
+    private final EncodingContext context;
     private final VerificationTask task;
     private final ThreadSymmetry symm;
     private final AliasAnalysis alias;
@@ -89,10 +89,11 @@ public class CoSymmetryBreaking {
         boolean hasMustEdges; // True if the coherences of the first write in <writes> can be broken via must-edges.
     }
 
-    public CoSymmetryBreaking(VerificationTask task, Context analysisContext) {
-        this.task = Preconditions.checkNotNull(task);
-        this.symm = analysisContext.requires(ThreadSymmetry.class);
-        this.alias = analysisContext.requires(AliasAnalysis.class);
+    public CoSymmetryBreaking(EncodingContext context) {
+        this.context = context;
+        this.task = context.task();
+        this.symm = context.analysisContext().requires(ThreadSymmetry.class);
+        this.alias = context.analysisContext().requires(AliasAnalysis.class);
         this.co = task.getMemoryModel().getRelation(RelationNameRepository.CO);
         infoMap = new HashMap<>();
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
@@ -180,17 +181,18 @@ public class CoSymmetryBreaking {
         return mustEdges;
     }
 
-    public BooleanFormula encode(SolverContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    public BooleanFormula encode() {
+        BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
-            enc = bmgr.and(enc, encode(symmClass, ctx));
+            enc = bmgr.and(enc, encode(symmClass));
         }
         return enc;
     }
 
-    public BooleanFormula encode(EquivalenceClass<Thread> symmClass, SolverContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    public BooleanFormula encode(EquivalenceClass<Thread> symmClass) {
+        SolverContext ctx = context.solverContext();
+        BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         if (symmClass.getEquivalence() != symm) {
             return enc;
@@ -235,7 +237,7 @@ public class CoSymmetryBreaking {
 
             final String id = "_" + rep.getId() + "_" + i;
             // NOTE: We want to have r1 >= r2 but lexLeader encodes r1 <= r2, so we swap r1 and r2.
-            enc = bmgr.and(enc, SymmetryEncoder.encodeLexLeader(id, r2, r1, ctx));
+            enc = bmgr.and(enc, SymmetryEncoder.encodeLexLeader(id, r2, r1, context));
 
             t1 = t2;
             r1Tuples = r2Tuples;

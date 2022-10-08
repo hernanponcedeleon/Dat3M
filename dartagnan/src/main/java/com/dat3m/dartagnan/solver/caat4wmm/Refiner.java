@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.solver.caat4wmm;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -48,7 +49,7 @@ public class Refiner {
 
     // This method computes a refinement clause from a set of violations.
     // Furthermore, it computes symmetric violations if symmetry learning is enabled.
-    public BooleanFormula refine(DNF<CoreLiteral> coreReasons, SolverContext context) {
+    public BooleanFormula refine(DNF<CoreLiteral> coreReasons, EncodingContext context) {
         //TODO: A specialized algorithm that computes the orbit under permutation may be better,
         // since most violations involve only few threads and hence the orbit is far smaller than the full
         // set of permutations.
@@ -121,8 +122,9 @@ public class Refiner {
 
     // Changes a reasoning <literal> based on a given permutation <perm> and translates the result
     // into a BooleanFormula for Refinement.
-    private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm, SolverContext context) {
-        BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+    private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm, EncodingContext encoder) {
+        SolverContext context = encoder.solverContext();
+        BooleanFormulaManager bmgr = encoder.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc;
         if (literal instanceof ExecLiteral) {
             ExecLiteral lit = (ExecLiteral) literal;

@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.asserts.AssertTrue;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -31,9 +32,14 @@ import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 public abstract class ModelChecker {
 
     protected Result res = Result.UNKNOWN;
+    protected EncodingContext context;
 
     public final Result result() {
         return res;
+    }
+
+    public EncodingContext encoding() {
+        return context;
     }
 
     /**

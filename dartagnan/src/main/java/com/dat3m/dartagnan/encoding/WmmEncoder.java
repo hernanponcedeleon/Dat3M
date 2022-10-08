@@ -27,7 +27,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -69,6 +68,7 @@ public class WmmEncoder implements Encoder {
 
     // =====================================================================
 
+    private final EncodingContext context;
     private final Program program;
     private final Wmm memoryModel;
     private final Context analysisContext;
@@ -76,16 +76,17 @@ public class WmmEncoder implements Encoder {
 
     // =====================================================================
 
-    private WmmEncoder(Program p, Wmm m, Context context) {
-        program = checkNotNull(p);
+    private WmmEncoder(Wmm m, Context a, EncodingContext c) {
+        context = c;
+        program = c.task().getProgram();
         memoryModel = checkNotNull(m);
-        analysisContext = context;
-        context.requires(RelationAnalysis.class);
+        analysisContext = checkNotNull(a);
+        a.requires(RelationAnalysis.class);
     }
 
-    public static WmmEncoder fromConfig(Program program, Wmm memoryModel, Context context, Configuration config) throws InvalidConfigurationException {
-        WmmEncoder encoder = new WmmEncoder(program, memoryModel, context);
-        config.inject(encoder);
+    public static WmmEncoder of(Wmm memoryModel, Context analysisContext, EncodingContext context) throws InvalidConfigurationException {
+        WmmEncoder encoder = new WmmEncoder(memoryModel, analysisContext, context);
+        context.task().getConfig().inject(encoder);
         return encoder;
     }
 
@@ -123,17 +124,17 @@ public class WmmEncoder implements Encoder {
         Preconditions.checkState(isInitialized, "initializeEncoding must get called before encoding.");
     }
 
-    public BooleanFormula encodeFullMemoryModel(SolverContext ctx) {
-        return ctx.getFormulaManager().getBooleanFormulaManager().and(
-                encodeRelations(ctx),
-                encodeConsistency(ctx)
+    public BooleanFormula encodeFullMemoryModel() {
+        return context.getFormulaManager().getBooleanFormulaManager().and(
+                encodeRelations(),
+                encodeConsistency()
         );
     }
 
     // Initializes everything just like encodeAnarchicSemantics but also encodes all
     // relations that are needed for the axioms (but does NOT encode the axioms themselves yet)
     // NOTE: It avoids encoding relations that do NOT affect the axioms, i.e. unused relations
-    public BooleanFormula encodeRelations(SolverContext ctx) {
+    public BooleanFormula encodeRelations() {
         checkInitialized();
         logger.info("Encoding relations");
         final DependencyGraph<Relation> depGraph = DependencyGraph.from(
@@ -142,7 +143,7 @@ public class WmmEncoder implements Encoder {
                         Iterables.transform(memoryModel.getAxioms(), Axiom::getRelation) // axiom relations
                 )
         );
-        RelationEncoder v = new RelationEncoder(ctx);
+        RelationEncoder v = new RelationEncoder();
         BooleanFormula enc = v.bmgr.makeTrue();
         for (Relation rel : depGraph.getNodeContents()) {
             enc = v.bmgr.and(enc, rel.accept(v));
@@ -151,13 +152,13 @@ public class WmmEncoder implements Encoder {
     }
 
     // Encodes all axioms. This should be called after <encodeRelations>
-    public BooleanFormula encodeConsistency(SolverContext ctx) {
+    public BooleanFormula encodeConsistency() {
         checkInitialized();
         logger.info("Encoding consistency");
-        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        final BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         return memoryModel.getAxioms().stream()
                 .filter(ax -> !ax.isFlagged())
-                .map(ax -> ax.consistent(ax.getRelation().getEncodeTupleSet(), analysisContext, ctx))
+                .map(ax -> ax.consistent(ax.getRelation().getEncodeTupleSet(), analysisContext, context.solverContext()))
                 .reduce(bmgr.makeTrue(), bmgr::and);
     }
 
@@ -167,10 +168,10 @@ public class WmmEncoder implements Encoder {
         final SolverContext ctx;
         final BooleanFormulaManager bmgr;
         final IntegerFormulaManager imgr;
-        public RelationEncoder(SolverContext c) {
-            ctx = c;
-            bmgr = c.getFormulaManager().getBooleanFormulaManager();
-            imgr = c.getFormulaManager().getIntegerFormulaManager();
+        public RelationEncoder() {
+            ctx = context.solverContext();
+            bmgr = context.getFormulaManager().getBooleanFormulaManager();
+            imgr = context.getFormulaManager().getIntegerFormulaManager();
         }
         @Override
         public BooleanFormula visitDefinition(Relation rel, List<? extends Relation> dependencies) {
@@ -415,7 +416,7 @@ public class WmmEncoder implements Encoder {
                                 // Relation between exclusive load and store
                                 bmgr.and(store.exec(), exclPair(load, store), sameAddress)));
             }
-            return bmgr.and(enc, bmgr.equivalence(Flag.ARM_UNPREDICTABLE_BEHAVIOUR.repr(ctx), unpredictable));
+            return bmgr.and(enc, bmgr.equivalence(Flag.ARM_UNPREDICTABLE_BEHAVIOUR.repr(context.getFormulaManager()), unpredictable));
         }
         @Override
         public BooleanFormula visitSameAddress(Relation loc) {

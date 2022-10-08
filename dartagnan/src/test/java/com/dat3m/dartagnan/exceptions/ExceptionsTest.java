@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.*;
@@ -24,6 +25,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -81,7 +83,9 @@ public class ExceptionsTest {
                 .withConfig(config)
                 .build(p, cat, Property.getDefault());
 		// The program must be compiled before being able to construct an Encoder for it
-    	ProgramEncoder.fromConfig(task.getProgram(), Context.create(), config);
+        try (SolverContext ctx = SolverContextFactory.createSolverContext(SolverContextFactory.Solvers.Z3)) {
+        	ProgramEncoder.of(EncodingContext.of(task, Context.create(), ctx));
+        }
     }
 
     @Test(expected = IllegalArgumentException.class)

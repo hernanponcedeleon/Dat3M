@@ -167,8 +167,8 @@ public class Dartagnan extends BaseOptions {
 
 				Result result = modelChecker.result();
             	if(result.equals(FAIL) && o.generateGraphviz()) {
-                	ExecutionModel m = ExecutionModel.fromConfig(task, config);
-                	m.initialize(prover.getModel(), ctx);
+                	ExecutionModel m = ExecutionModel.fromConfig(modelChecker.encoding());
+                	m.initialize(prover.getModel());
     				String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
     				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name);        		
             	}
@@ -203,7 +203,7 @@ public class Dartagnan extends BaseOptions {
 				System.out.println("Total verification time(ms): " +  (endTime - startTime));
 
 				try {
-					WitnessBuilder w = new WitnessBuilder(task, ctx, prover, result);
+					WitnessBuilder w = WitnessBuilder.of(modelChecker.encoding(), prover, result);
 	                // We only write witnesses for REACHABILITY (if the path to the original C file was given) 
 					// and if we are not doing witness validation
 	                if (properties.contains(REACHABILITY) && w.canBeBuilt() && !o.runValidator()) {

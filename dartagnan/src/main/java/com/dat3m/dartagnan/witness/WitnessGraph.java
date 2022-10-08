@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.witness;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -76,9 +77,11 @@ public class WitnessGraph extends ElemWithAttributes {
 		return str.toString();
 	}
 	
-	public BooleanFormula encode(Program program, SolverContext ctx) {
-		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+	public BooleanFormula encode(EncodingContext context) {
+		Program program = context.task().getProgram();
+		SolverContext ctx = context.solverContext();
+		BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+		IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
 		
 		BooleanFormula enc = bmgr.makeTrue();
 		List<Event> previous = new ArrayList<>();

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.verification.model;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -19,7 +20,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -45,7 +45,7 @@ The ExecutionModel wraps a Model and extracts data from it in a more workable ma
 @Options
 public class ExecutionModel {
 
-    private final VerificationTask task;
+    private final EncodingContext encodingContext;
 
     // ============= Model specific  =============
     private Model model;
@@ -101,8 +101,8 @@ public class ExecutionModel {
 
     //========================== Construction =========================
 
-    private ExecutionModel(VerificationTask task) {
-        this.task = task;
+    private ExecutionModel(EncodingContext c) {
+        this.encodingContext = Preconditions.checkNotNull(c);
 
         eventList = new ArrayList<>(100);
         threadList = new ArrayList<>(getProgram().getThreads().size());
@@ -123,9 +123,9 @@ public class ExecutionModel {
         createViews();
     }
 
-    public static ExecutionModel fromConfig(VerificationTask task, Configuration config) throws InvalidConfigurationException {
-        ExecutionModel m = new ExecutionModel(task);
-        config.inject(m);
+    public static ExecutionModel fromConfig(EncodingContext context) throws InvalidConfigurationException {
+        ExecutionModel m = new ExecutionModel(context);
+        context.task().getConfig().inject(m);
         return m;
     }
 
@@ -150,15 +150,15 @@ public class ExecutionModel {
 
     // General data
     public VerificationTask getTask() {
-    	return task;
+    	return encodingContext.task();
     }
     
     public Wmm getMemoryModel() {
-        return task.getMemoryModel();
+        return encodingContext.task().getMemoryModel();
     }
 
     public Program getProgram() {
-        return task.getProgram();
+        return encodingContext.task().getProgram();
     }
 
     // Model specific data
@@ -223,21 +223,21 @@ public class ExecutionModel {
     //========================== Initialization =========================
 
 
-    public void initialize(Model model, SolverContext ctx) {
-        initialize(model, ctx, true);
+    public void initialize(Model model) {
+        initialize(model, true);
     }
 
-    public void initialize(Model model, SolverContext ctx, boolean extractCoherences) {
-        initialize(model, ctx, FilterBasic.get(Tag.VISIBLE), extractCoherences);
+    public void initialize(Model model, boolean extractCoherences) {
+        initialize(model, FilterBasic.get(Tag.VISIBLE), extractCoherences);
     }
 
-    public void initialize(Model model, SolverContext ctx, FilterAbstract eventFilter, boolean extractCoherences) {
+    public void initialize(Model model, FilterAbstract eventFilter, boolean extractCoherences) {
         // We populate here, instead of on construction,
         // to reuse allocated data structures (since these data structures already adapted
         // their capacity in previous iterations and thus we should have less overhead in future populations)
         // However, for all intents and purposes, this serves as a constructor.
         this.model = model;
-        this.context = ctx;
+        this.context = encodingContext.solverContext();
         this.eventFilter = eventFilter;
         this.extractCoherences = extractCoherences;
         extractEventsFromModel();
@@ -497,7 +497,7 @@ public class ExecutionModel {
     }
 
     private void extractCoherences() {
-        final Relation co = task.getMemoryModel().getRelation(CO);
+        final Relation co = encodingContext.task().getMemoryModel().getRelation(CO);
 
         for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
             final BigInteger addr = addrWrites.getKey();

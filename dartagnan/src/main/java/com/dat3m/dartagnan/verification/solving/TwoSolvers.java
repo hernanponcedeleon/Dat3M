@@ -1,9 +1,6 @@
 package com.dat3m.dartagnan.verification.solving;
 
-import com.dat3m.dartagnan.encoding.ProgramEncoder;
-import com.dat3m.dartagnan.encoding.PropertyEncoder;
-import com.dat3m.dartagnan.encoding.SymmetryEncoder;
-import com.dat3m.dartagnan.encoding.WmmEncoder;
+import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -52,17 +49,18 @@ public class TwoSolvers extends ModelChecker {
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
 
-        ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
-        PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, memoryModel,analysisContext, config);
-        WmmEncoder wmmEncoder = WmmEncoder.fromConfig(program, memoryModel, analysisContext, config);
-        SymmetryEncoder symmetryEncoder = SymmetryEncoder.fromConfig(memoryModel, analysisContext, config);
+        context = EncodingContext.of(task, analysisContext, ctx);
+        ProgramEncoder programEncoder = ProgramEncoder.of(context);
+        PropertyEncoder propertyEncoder = PropertyEncoder.of(memoryModel, context);
+        WmmEncoder wmmEncoder = WmmEncoder.of(memoryModel, analysisContext, context);
+        SymmetryEncoder symmetryEncoder = SymmetryEncoder.of(context);
 
         programEncoder.initializeEncoding(ctx);
         propertyEncoder.initializeEncoding(ctx);
         wmmEncoder.initializeEncoding(ctx);
         symmetryEncoder.initializeEncoding(ctx);
 
-        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
+        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification();
         if(ctx.getFormulaManager().getBooleanFormulaManager().isFalse(propertyEncoding)) {
             logger.info("Verification finished: property trivially holds");
             res = PASS;
@@ -70,21 +68,21 @@ public class TwoSolvers extends ModelChecker {
         }
 
         logger.info("Starting encoding using " + ctx.getVersion());
-        BooleanFormula encodeProg = programEncoder.encodeFullProgram(ctx);
+        BooleanFormula encodeProg = programEncoder.encodeFullProgram();
         prover1.addConstraint(encodeProg);
         prover2.addConstraint(encodeProg);
         
-        BooleanFormula encodeWmm = wmmEncoder.encodeFullMemoryModel(ctx);
+        BooleanFormula encodeWmm = wmmEncoder.encodeFullMemoryModel();
 		prover1.addConstraint(encodeWmm);
         prover2.addConstraint(encodeWmm);
        	
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
-        BooleanFormula encodeWitness = task.getWitness().encode(task.getProgram(), ctx);
+        BooleanFormula encodeWitness = task.getWitness().encode(context);
 		prover1.addConstraint(encodeWitness);
         prover2.addConstraint(encodeWitness);
 
-        BooleanFormula encodeSymm = symmetryEncoder.encodeFullSymmetry(ctx);
+        BooleanFormula encodeSymm = symmetryEncoder.encodeFullSymmetry();
         prover1.addConstraint(encodeSymm);
         prover2.addConstraint(encodeSymm);
 
@@ -92,7 +90,7 @@ public class TwoSolvers extends ModelChecker {
 
         logger.info("Starting first solver.check()");
         if(prover1.isUnsat()) {
-			prover2.addConstraint(propertyEncoder.encodeBoundEventExec(ctx));
+			prover2.addConstraint(propertyEncoder.encodeBoundEventExec());
             logger.info("Starting second solver.check()");
             res = prover2.isUnsat() ? PASS : UNKNOWN;
         } else {

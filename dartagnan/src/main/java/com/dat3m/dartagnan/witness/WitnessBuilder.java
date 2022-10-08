@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.witness;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -12,7 +13,6 @@ import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -38,13 +38,13 @@ import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.*;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.valueOf;
 
 @Options
 public class WitnessBuilder {
 	
-	private final VerificationTask task;
-	private final SolverContext ctx;
+	private final EncodingContext context;
 	private final ProverEnvironment prover;
 	private final String type;
 
@@ -62,25 +62,27 @@ public class WitnessBuilder {
 
 	private final Map<Event, Integer> eventThreadMap = new HashMap<>();
 	
-	public WitnessBuilder(VerificationTask task, SolverContext ctx, ProverEnvironment prover, Result result)
-		throws InvalidConfigurationException {
-		this.task = task;
-		this.ctx = ctx;
-		this.prover = prover;
-		this.type = result.equals(FAIL) ? "violation" : "correctness";
-
-		task.getConfig().inject(this);
+	private WitnessBuilder(EncodingContext c, ProverEnvironment p, Result r) {
+		context = checkNotNull(c);
+		prover = checkNotNull(p);
+		type = r.equals(FAIL) ? "violation" : "correctness";
 	}
-	
+
+	public static WitnessBuilder of(EncodingContext context, ProverEnvironment prover, Result result) throws InvalidConfigurationException {
+		WitnessBuilder b = new WitnessBuilder(context, prover, result);
+		context.task().getConfig().inject(b);
+		return b;
+	}
+
 	public WitnessGraph build() {
-		for(Thread t : task.getProgram().getThreads()) {
+		for(Thread t : context.task().getProgram().getThreads()) {
 			for(Event e : t.getEntry().getSuccessors()) {
 				eventThreadMap.put(e, t.getId() - 1);
 			}
 		}
 
 		WitnessGraph graph = new WitnessGraph();
-		graph.addAttribute(UNROLLBOUND.toString(), valueOf(task.getProgram().getUnrollingBound()));
+		graph.addAttribute(UNROLLBOUND.toString(), valueOf(context.task().getProgram().getUnrollingBound()));
 		graph.addAttribute(WITNESSTYPE.toString(), type + "_witness");
 		graph.addAttribute(SOURCECODELANG.toString(), "C");
 		graph.addAttribute(PRODUCER.toString(), "Dartagnan");
@@ -115,8 +117,9 @@ public class WitnessBuilder {
 			return graph;
 		}
 
+		SolverContext ctx = context.solverContext();
 		try (Model model = prover.getModel()) {
-			List<Event> execution = reOrderBasedOnAtomicity(task.getProgram(), getSCExecutionOrder(model));
+			List<Event> execution = reOrderBasedOnAtomicity(context.task().getProgram(), getSCExecutionOrder(model));
 
 			for (int i = 0; i < execution.size(); i++) {
 				Event e = execution.get(i);
@@ -168,16 +171,16 @@ public class WitnessBuilder {
 		List<Event> execEvents = new ArrayList<>();
 		// TODO: we recently added many cline to many events and this might affect the witness generation.
 		Predicate<Event> executedCEvents = e -> e.wasExecuted(model) &&  e.getCLine() > - 1;
-		execEvents.addAll(task.getProgram().getCache().getEvents(FilterBasic.get(Tag.INIT)).stream().filter(executedCEvents).collect(Collectors.toList()));
-		execEvents.addAll(task.getProgram().getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));
-		
+		execEvents.addAll(context.task().getProgram().getCache().getEvents(FilterBasic.get(Tag.INIT)).stream().filter(executedCEvents).collect(Collectors.toList()));
+		execEvents.addAll(context.task().getProgram().getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));
+
 		Map<Integer, List<Event>> map = new HashMap<>();
         for(Event e : execEvents) {
 			// TODO improve this: these events correspond to return statements
 			if(e instanceof MemEvent && ((MemEvent)e).getMemValue() instanceof BConst && !((BConst)((MemEvent)e).getMemValue()).getValue()) {
 				continue;
 			}
-        	BigInteger var = model.evaluate(intVar("hb", e, ctx));
+        	BigInteger var = model.evaluate(intVar("hb", e, context.solverContext()));
         	if(var != null) {
         		map.computeIfAbsent(var.intValue(), x -> new ArrayList<>()).add(e);
         	}

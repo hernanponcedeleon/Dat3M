@@ -43,7 +43,7 @@ public class BuildWitnessTest {
     	{
 			IncrementalSolver modelChecker = IncrementalSolver.of(ctx, prover, task);
     		Result res = modelChecker.result();
-    		WitnessBuilder witnessBuilder = new WitnessBuilder(task, ctx, prover, res);
+    		WitnessBuilder witnessBuilder = WitnessBuilder.of(modelChecker.encoding(), prover, res);
     		config.inject(witnessBuilder);
 			WitnessGraph graph = witnessBuilder.build();
     		File witnessFile = new File(System.getenv("DAT3M_OUTPUT") + "/lazy01-for-witness.graphml");
@@ -56,7 +56,7 @@ public class BuildWitnessTest {
 			// Delete the file
 			witnessFile.delete();
     		// Create encoding
-    		BooleanFormula enc = graph.encode(p, ctx);
+    		BooleanFormula enc = graph.encode(modelChecker.encoding());
     		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
     		// Check the formula is not trivial
 			assertFalse(bmgr.isFalse(enc));
