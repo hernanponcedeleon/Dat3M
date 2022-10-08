@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.Configuration;
@@ -14,6 +15,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  *
@@ -80,7 +82,7 @@ public abstract class Axiom implements Constraint {
 
     public abstract TupleSet getEncodeTupleSet();
 
-    public abstract BooleanFormula consistent(SolverContext ctx);
+    public abstract BooleanFormula consistent(Set<Tuple> toBeEncoded, Context analysisContext, SolverContext ctx);
 
     @Override
     public int hashCode() {

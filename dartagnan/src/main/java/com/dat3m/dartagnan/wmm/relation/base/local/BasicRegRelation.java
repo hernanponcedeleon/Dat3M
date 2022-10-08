@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.relation.base.local;
 
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.Dependency;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
@@ -18,6 +19,7 @@ import java.util.Set;
 import static com.dat3m.dartagnan.configuration.Arch.RISCV;
 
 import static com.dat3m.dartagnan.encoding.ProgramEncoder.dependencyEdgeVariable;
+import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 
 abstract class BasicRegRelation extends StaticRelation {
 
@@ -83,14 +85,9 @@ abstract class BasicRegRelation extends StaticRelation {
     public BooleanFormula getSMTVar(Tuple t, SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         return minTupleSet.contains(t) ?
-        		getExecPair(t, ctx) :
+        		execution(t.getFirst(), t.getSecond(), analysisContext.get(ExecutionAnalysis.class), ctx) :
         		maxTupleSet.contains(t) ?
                         dependencyEdgeVariable(t.getFirst(), t.getSecond(), bmgr) :
         				bmgr.makeFalse();
-    }
-
-    @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
-        return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
     }
 }

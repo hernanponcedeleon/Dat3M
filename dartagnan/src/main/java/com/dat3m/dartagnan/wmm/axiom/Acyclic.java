@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -154,35 +155,35 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-	public BooleanFormula consistent(SolverContext ctx) {
+	public BooleanFormula consistent(Set<Tuple> toBeEncoded, Context analysisContext, SolverContext ctx) {
         BooleanFormula enc;
         if(negated) {
-            enc = inconsistentSAT(ctx); // There is no IDL-based encoding for inconsistency
+            enc = inconsistentSAT(toBeEncoded, analysisContext, ctx); // There is no IDL-based encoding for inconsistency
         } else {
-            enc = useSATEncoding ? consistentSAT(ctx) : consistentIDL(ctx);
-        }        
+            enc = useSATEncoding ? consistentSAT(toBeEncoded, analysisContext, ctx) : consistentIDL(toBeEncoded, analysisContext, ctx);
+        }
         return enc;
     }
 
-    private BooleanFormula inconsistentSAT(SolverContext ctx) {
-        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();;
+    private BooleanFormula inconsistentSAT(Set<Tuple> toBeEncoded, Context analysisContext, SolverContext ctx) {
+        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final Relation rel = this.rel;
-        final TupleSet encodeSet = rel.getEncodeTupleSet();
-
         BooleanFormula enc = bmgr.makeTrue();
         BooleanFormula eventsInCycle = bmgr.makeFalse();
+        Map<Event, BooleanFormula> inMap = new HashMap<>();
+        Map<Event, BooleanFormula> outMap = new HashMap<>();
+        for(Tuple t : toBeEncoded) {
+            BooleanFormula cycleVar = getSMTCycleVar(t, ctx);
+            inMap.merge(t.getSecond(), cycleVar, bmgr::or);
+            outMap.merge(t.getFirst(), cycleVar, bmgr::or);
+        }
         // We use Boolean variables which guess the edges and nodes constituting the cycle.
-        for(Event e : encodeSet.stream().map(Tuple::getFirst).collect(Collectors.toSet())){
+        for (Event e : toBeEncoded.stream().map(Tuple::getFirst).collect(Collectors.toSet())) {
             eventsInCycle = bmgr.or(eventsInCycle, cycleVar(rel.getName(), e, ctx));
-
-            BooleanFormula in = encodeSet.getBySecond(e).stream().map(t -> getSMTCycleVar(t, ctx)).reduce(bmgr.makeFalse(), bmgr::or);
-            BooleanFormula out = encodeSet.getByFirst(e).stream().map(t -> getSMTCycleVar(t, ctx)).reduce(bmgr.makeFalse(), bmgr::or);
-
             // We ensure that for every event in the cycle, there should be at least one incoming
             // edge and at least one outgoing edge that are also in the cycle.
-            enc = bmgr.and(enc, bmgr.implication(cycleVar(rel.getName(), e, ctx), bmgr.and(in , out)));
-
-            for(Tuple tuple : rel.getEncodeTupleSet()){
+            enc = bmgr.and(enc, bmgr.implication(cycleVar(rel.getName(), e, ctx), bmgr.and(inMap.get(e), outMap.get(e))));
+            for (Tuple tuple : toBeEncoded) {
                 Event e1 = tuple.getFirst();
                 Event e2 = tuple.getSecond();
                 // If an edge is guessed to be in a cycle, the edge must belong to relation,
@@ -196,15 +197,14 @@ public class Acyclic extends Axiom {
         return enc;
     }
 
-    private BooleanFormula consistentIDL(SolverContext ctx) {
+    private BooleanFormula consistentIDL(Set<Tuple> toBeEncoded, Context analysisContext, SolverContext ctx) {
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
         final Relation rel = this.rel;
-        final Set<Tuple> edgesToEncode = rel.getEncodeTupleSet();
         final String clockVarName = rel.getName();
 
         BooleanFormula enc = bmgr.makeTrue();
-        for(Tuple tuple : edgesToEncode ){
+        for (Tuple tuple : toBeEncoded) {
             enc = bmgr.and(enc, bmgr.implication(rel.getSMTVar(tuple, ctx),
                     imgr.lessThan(
                             Utils.intVar(clockVarName, tuple.getFirst(), ctx),
@@ -214,19 +214,18 @@ public class Acyclic extends Axiom {
         return enc;
     }
 
-    private BooleanFormula consistentSAT(SolverContext ctx) {
+    private BooleanFormula consistentSAT(Set<Tuple> toBeEncoded, Context analysisContext, SolverContext ctx) {
         // We use a vertex-elimination graph based encoding.
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
         final Relation rel = this.rel;
-        final Set<Tuple> edgeSet = rel.getEncodeTupleSet();
 
         // Build original graph G
         Map<Event, Set<Tuple>> inEdges = new HashMap<>();
         Map<Event, Set<Tuple>> outEdges = new HashMap<>();
         Set<Event> nodes = new HashSet<>();
         Set<Event> selfloops = new HashSet<>();         // Special treatment for self-loops
-        for (final Tuple t : edgeSet) {
+        for (final Tuple t : toBeEncoded) {
             final Event e1 = t.getFirst();
             final Event e2 = t.getSecond();
             if (t.isLoop()) {
@@ -293,7 +292,7 @@ public class Acyclic extends Axiom {
         final Set<Tuple> minSet = rel.getMinTupleSet();
         BooleanFormula enc = bmgr.makeTrue();
         // Basic lifting
-        for (Tuple t : edgeSet) {
+        for (Tuple t : toBeEncoded) {
             BooleanFormula cond = minSet.contains(t) ? execution(t.getFirst(), t.getSecond(), exec, ctx) : rel.getSMTVar(t, ctx);
             enc = bmgr.and(enc, bmgr.implication(cond, getSMTCycleVar(t, ctx)));
         }
