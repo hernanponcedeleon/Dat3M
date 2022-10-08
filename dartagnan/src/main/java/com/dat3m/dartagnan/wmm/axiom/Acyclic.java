@@ -1,39 +1,26 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
 import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.IDL_TO_SAT;
 import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
 import static com.dat3m.dartagnan.wmm.utils.Utils.cycleVar;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
-/**
- *
- * @author Florian Furbach
- */
-@Options
 public class Acyclic extends Axiom {
 
 	private static final Logger logger = LogManager.getLogger(Acyclic.class);
@@ -44,17 +31,6 @@ public class Acyclic extends Axiom {
 
     public Acyclic(Relation rel) {
         super(rel, false, false);
-    }
-
-    @Option(
-            name=IDL_TO_SAT,
-            description = "Use SAT-based encoding for totality and acyclicity.",
-            secure = true)
-    private boolean useSATEncoding = false;
-
-    @Override
-    public void configure(Configuration config) throws InvalidConfigurationException {
-        config.inject(this);
     }
 
     @Override
@@ -155,18 +131,20 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-	public BooleanFormula consistent(Set<Tuple> toBeEncoded, Context analysisContext, SolverContext ctx) {
+	public BooleanFormula consistent(Set<Tuple> toBeEncoded, EncodingContext context) {
         BooleanFormula enc;
         if(negated) {
-            enc = inconsistentSAT(toBeEncoded, analysisContext, ctx); // There is no IDL-based encoding for inconsistency
+            enc = inconsistentSAT(toBeEncoded, context); // There is no IDL-based encoding for inconsistency
         } else {
-            enc = useSATEncoding ? consistentSAT(toBeEncoded, analysisContext, ctx) : consistentIDL(toBeEncoded, analysisContext, ctx);
+            enc = context.usesSATEncoding() ? consistentSAT(toBeEncoded, context) : consistentIDL(toBeEncoded, context);
         }
         return enc;
     }
 
-    private BooleanFormula inconsistentSAT(Set<Tuple> toBeEncoded, Context analysisContext, SolverContext ctx) {
-        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    private BooleanFormula inconsistentSAT(Set<Tuple> toBeEncoded, EncodingContext context) {
+        final SolverContext ctx = context.solverContext();
+        final FormulaManager fmgr = context.getFormulaManager();
+        final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         final Relation rel = this.rel;
         BooleanFormula enc = bmgr.makeTrue();
         BooleanFormula eventsInCycle = bmgr.makeFalse();
@@ -197,9 +175,10 @@ public class Acyclic extends Axiom {
         return enc;
     }
 
-    private BooleanFormula consistentIDL(Set<Tuple> toBeEncoded, Context analysisContext, SolverContext ctx) {
-        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        final IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+    private BooleanFormula consistentIDL(Set<Tuple> toBeEncoded, EncodingContext context) {
+        final SolverContext ctx = context.solverContext();
+        final BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+        final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
         final Relation rel = this.rel;
         final String clockVarName = rel.getName();
 
@@ -214,9 +193,11 @@ public class Acyclic extends Axiom {
         return enc;
     }
 
-    private BooleanFormula consistentSAT(Set<Tuple> toBeEncoded, Context analysisContext, SolverContext ctx) {
+    private BooleanFormula consistentSAT(Set<Tuple> toBeEncoded, EncodingContext context) {
         // We use a vertex-elimination graph based encoding.
-        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        final SolverContext ctx = context.solverContext();
+        final FormulaManager fmgr = ctx.getFormulaManager();
+        final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         final ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
         final Relation rel = this.rel;
 

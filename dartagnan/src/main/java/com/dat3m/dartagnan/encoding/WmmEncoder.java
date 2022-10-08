@@ -28,7 +28,6 @@ import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -44,7 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.IDL_TO_SAT;
 import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
@@ -57,16 +55,6 @@ import static java.util.stream.Collectors.toList;
 public class WmmEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(WmmEncoder.class);
-
-    // =========================== Configurables ===========================
-
-    @Option(
-            name=IDL_TO_SAT,
-            description = "Use SAT-based encoding for totality and acyclicity.",
-            secure = true)
-    private boolean useSATEncoding = false;
-
-    // =====================================================================
 
     private final EncodingContext context;
     private final Program program;
@@ -158,7 +146,7 @@ public class WmmEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         return memoryModel.getAxioms().stream()
                 .filter(ax -> !ax.isFlagged())
-                .map(ax -> ax.consistent(ax.getRelation().getEncodeTupleSet(), analysisContext, context.solverContext()))
+                .map(ax -> ax.consistent(ax.getRelation().getEncodeTupleSet(), context))
                 .reduce(bmgr.makeTrue(), bmgr::and);
     }
 
@@ -458,7 +446,7 @@ public class WmmEncoder implements Encoder {
         }
         @Override
         public BooleanFormula visitMemoryOrder(Relation co) {
-            return useSATEncoding ? encodeSAT(co) : encodeIDL(co);
+            return context.useSATEncoding ? encodeSAT(co) : encodeIDL(co);
         }
         private BooleanFormula pairingCond(Event load, Event store, TupleSet maySet) {
             BooleanFormula pairingCond = bmgr.and(load.exec(), store.cf());

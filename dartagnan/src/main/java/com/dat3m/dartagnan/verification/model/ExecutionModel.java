@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
@@ -31,7 +30,6 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.IDL_TO_SAT;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static com.dat3m.dartagnan.wmm.utils.Utils.coClockVar;
@@ -90,16 +88,6 @@ public class ExecutionModel {
     private Map<EventData, Set<EventData>> ctrlDepMapView;
 
     private Map<BigInteger, List<EventData>> coherenceMapView;
-
-    // =========================== Configurables ===========================
-
-    @Option(
-            name=IDL_TO_SAT,
-            description = "Use SAT-based encoding for totality and acyclicity.",
-            secure = true)
-    private boolean useSATEncoding = false;
-
-    //========================== Construction =========================
 
     private ExecutionModel(EncodingContext c) {
         this.encodingContext = Preconditions.checkNotNull(c);
@@ -504,7 +492,7 @@ public class ExecutionModel {
             final Set<EventData> writes = addrWrites.getValue();
 
             List<EventData> coSortedWrites;
-            if (useSATEncoding) {
+            if (encodingContext.usesSATEncoding()) {
                 // --- Extracting co from SAT-based encoding ---
                 Map<EventData, List<EventData>> coEdges = new HashMap<>();
                 for (EventData w1 : writes) {

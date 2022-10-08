@@ -51,7 +51,6 @@ public class PropertyEncoder implements Encoder {
     private final EncodingContext context;
     private final Program program;
     private final Wmm memoryModel;
-    private final Context analysisContext;
     private final ExecutionAnalysis exec;
     private final AliasAnalysis alias;
 
@@ -64,7 +63,6 @@ public class PropertyEncoder implements Encoder {
         this.program = c.task().getProgram();
         this.memoryModel = checkNotNull(wmm);
         Context context = c.analysisContext();
-        this.analysisContext = context;
         this.exec = context.requires(ExecutionAnalysis.class);
         this.alias = context.requires(AliasAnalysis.class);
     }
@@ -131,7 +129,7 @@ public class PropertyEncoder implements Encoder {
     			continue;
     		}
             BooleanFormula v = CAT.getSMTVariable(ax, ctx);
-			cat = bmgr.and(cat, bmgr.equivalence(v, ax.consistent(ax.getRelation().getEncodeTupleSet(), analysisContext, ctx)));
+			cat = bmgr.and(cat, bmgr.equivalence(v, ax.consistent(ax.getRelation().getEncodeTupleSet(), context)));
 			one = bmgr.or(one, v);
     	}
 		// No need to use the SMT variable if the formula is trivially false
