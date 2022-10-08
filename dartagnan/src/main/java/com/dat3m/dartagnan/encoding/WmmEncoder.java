@@ -417,7 +417,8 @@ public class WmmEncoder implements Encoder {
                 BooleanFormula edge = edge(rf, tuple);
                 // The boogie file might have a different type (Ints vs BVs) that the imposed by ARCH_PRECISION
                 // In such cases we perform the transformation
-                BooleanFormula sameAddress = context.sameAddress(w, r);
+                //FIXME litmus/C11/manual/imm-E3.5.litmus fails if mustAlias is checked here
+                BooleanFormula sameAddress = context.equal(context.address(w), context.address(r));
                 BooleanFormula sameValue = context.equal(context.value(w), context.value(r));
                 edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(edge);
                 enc = bmgr.and(enc, bmgr.implication(edge, bmgr.and(execution(tuple), sameAddress, sameValue)));
