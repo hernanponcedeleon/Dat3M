@@ -233,7 +233,7 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeFilter() {
     	return context.task().getProgram().getAssFilter() != null ?
-                context.task().getProgram().getAssFilter().encode(context.solverContext()) :
+                context.task().getProgram().getAssFilter().encode(context) :
     			context.getFormulaManager().getBooleanFormulaManager().makeTrue();
     }
     

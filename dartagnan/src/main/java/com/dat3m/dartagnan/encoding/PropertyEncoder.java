@@ -106,7 +106,7 @@ public class PropertyEncoder implements Encoder {
         logger.info("Encoding assertions");
         SolverContext ctx = context.solverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula assertionEncoding = program.getAss().encode(ctx);
+        BooleanFormula assertionEncoding = program.getAss().encode(context);
         // We use the SMT variable to extract from the model if the property was violated
 		BooleanFormula enc = bmgr.equivalence(REACHABILITY.getSMTVariable(ctx), assertionEncoding);
 		// No need to use the SMT variable if the formula is trivially false 

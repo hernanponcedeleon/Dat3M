@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.asserts;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.program.Register;
 
@@ -19,7 +19,7 @@ public class AssertCompositeAnd extends AbstractAssert {
     }
 
     @Override
-    public BooleanFormula encode(SolverContext ctx) {
+    public BooleanFormula encode(EncodingContext ctx) {
         return ctx.getFormulaManager().getBooleanFormulaManager().and(a1.encode(ctx), a2.encode(ctx));
     }
 
