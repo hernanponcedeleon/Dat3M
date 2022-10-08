@@ -21,8 +21,6 @@ import org.sosy_lab.java_smt.api.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.IDL_TO_SAT;
 import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqualZero;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -134,11 +132,28 @@ public final class EncodingContext {
     }
 
     public BooleanFormula equal(Formula left, Formula right) {
-        return generalEqual(left, right, solverContext);
+        checkArgument(left instanceof NumeralFormula.IntegerFormula || left instanceof BitvectorFormula,
+                "generalEqual inputs must be IntegerFormula or BitvectorFormula");
+        if (left instanceof NumeralFormula.IntegerFormula && right instanceof NumeralFormula.IntegerFormula) {
+            return formulaManager.getIntegerFormulaManager().equal((NumeralFormula.IntegerFormula) left, (NumeralFormula.IntegerFormula) right);
+        }
+        if (left instanceof BitvectorFormula && right instanceof BitvectorFormula) {
+            return formulaManager.getBitvectorFormulaManager().equal((BitvectorFormula) left, (BitvectorFormula) right);
+        }
+        // Fallback
+        return formulaManager.getIntegerFormulaManager().equal(convertToIntegerFormula(left), convertToIntegerFormula(right));
     }
 
     public BooleanFormula equalZero(Formula formula) {
-        return generalEqualZero(formula, solverContext);
+        checkArgument(formula instanceof NumeralFormula.IntegerFormula || formula instanceof BitvectorFormula,
+                "generalEqualZero input must be IntegerFormula or BitvectorFormula");
+        if (formula instanceof NumeralFormula.IntegerFormula) {
+            IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
+            return imgr.equal((NumeralFormula.IntegerFormula) formula, imgr.makeNumber(0));
+        } else {
+            BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
+            return bvmgr.equal((BitvectorFormula) formula, bvmgr.makeBitvector(bvmgr.getLength((BitvectorFormula) formula), 0));
+        }
     }
 
     public BooleanFormula sameAddress(MemEvent first, MemEvent second) {
@@ -185,5 +200,11 @@ public final class EncodingContext {
 
     public BooleanFormula edge(Relation relation, Event first, Event second) {
         return edge(relation, new Tuple(first, second));
+    }
+
+    private NumeralFormula.IntegerFormula convertToIntegerFormula(Formula f) {
+        return f instanceof BitvectorFormula ?
+                formulaManager.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula) f, false) :
+                (NumeralFormula.IntegerFormula) f;
     }
 }
