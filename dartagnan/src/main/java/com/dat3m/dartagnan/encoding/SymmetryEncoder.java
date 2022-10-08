@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -125,8 +124,8 @@ public class SymmetryEncoder implements Encoder {
             Function<Event, Event> p = symm.createTransposition(t1, t2);
             List<Tuple> r2Tuples = r1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
 
-            List<BooleanFormula> r1 = Lists.transform(r1Tuples, t -> rel.getSMTVar(t, ctx));
-            List<BooleanFormula> r2 = Lists.transform(r2Tuples, t -> rel.getSMTVar(t, ctx));
+            List<BooleanFormula> r1 = r1Tuples.stream().map(t -> context.edge(rel, t)).collect(Collectors.toList());
+            List<BooleanFormula> r2 = r2Tuples.stream().map(t -> context.edge(rel, t)).collect(Collectors.toList());
             final String id = "_" + rep.getId() + "_" + i;
             enc = bmgr.and(enc, encodeLexLeader(id, r2, r1, context)); // r1 >= r2
 

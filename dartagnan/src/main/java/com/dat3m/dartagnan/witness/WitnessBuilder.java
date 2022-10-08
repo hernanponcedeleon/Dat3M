@@ -37,7 +37,6 @@ import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.*;
-import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.valueOf;
 
@@ -180,7 +179,7 @@ public class WitnessBuilder {
 			if(e instanceof MemEvent && ((MemEvent)e).getMemValue() instanceof BConst && !((BConst)((MemEvent)e).getMemValue()).getValue()) {
 				continue;
 			}
-        	BigInteger var = model.evaluate(intVar("hb", e, context.solverContext()));
+        	BigInteger var = model.evaluate(context.clockVariable("hb", e));
         	if(var != null) {
         		map.computeIfAbsent(var.intValue(), x -> new ArrayList<>()).add(e);
         	}

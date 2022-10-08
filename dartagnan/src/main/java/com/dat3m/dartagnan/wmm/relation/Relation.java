@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.encoding.Encoder;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.Context;
@@ -23,8 +23,6 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 /**
  *
@@ -161,14 +159,8 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
         return getName().equals(((Relation)obj).getName());
     }
 
-    public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
-        return !getMaxTupleSet().contains(edge) ?
-        		ctx.getFormulaManager().getBooleanFormulaManager().makeFalse() :
-                edge(getName(), edge.getFirst(), edge.getSecond(), ctx);
-    }
-
-    public final BooleanFormula getSMTVar(Event e1, Event e2, SolverContext ctx) {
-        return getSMTVar(new Tuple(e1, e2), ctx);
+    public BooleanFormula getSMTVar(Tuple edge, EncodingContext c) {
+        return c.edgeVariable(getName(), edge.getFirst(), edge.getSecond());
     }
 
     protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {

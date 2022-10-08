@@ -11,7 +11,6 @@ import com.google.common.io.Files;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -19,11 +18,9 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMFILE;
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 public class WitnessGraph extends ElemWithAttributes {
 
@@ -79,7 +76,6 @@ public class WitnessGraph extends ElemWithAttributes {
 	
 	public BooleanFormula encode(EncodingContext context) {
 		Program program = context.task().getProgram();
-		SolverContext ctx = context.solverContext();
 		BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
 		IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
 		
@@ -91,7 +87,7 @@ public class WitnessGraph extends ElemWithAttributes {
 					.collect(Collectors.toList());
 			if(!previous.isEmpty() && !events.isEmpty()) {
 				enc = bmgr.and(enc, bmgr.or(Lists.cartesianProduct(previous, events).stream()
-						.map(p -> edge("hb", p.get(0), p.get(1), ctx))
+						.map(p -> context.edgeVariable("hb", p.get(0), p.get(1)))
 						.toArray(BooleanFormula[]::new)));
 			}
 			if(!events.isEmpty()) {
@@ -102,7 +98,7 @@ public class WitnessGraph extends ElemWithAttributes {
 				if(program.getCache().getEvents(FilterBasic.get(READ)).stream().anyMatch(e -> e.getUId() == id)) {
 					Load load = (Load)program.getCache().getEvents(FilterBasic.get(READ)).stream().filter(e -> e.getUId() == id).findFirst().get();
 					BigInteger value = new BigInteger(edge.getAttributed(LOADEDVALUE.toString()));
-					enc = bmgr.and(enc, generalEqual(load.getResultRegisterExpr(), imgr.makeNumber(value), ctx));					
+					enc = bmgr.and(enc, context.equal(context.result(load), imgr.makeNumber(value)));
 				}
 			}
 			if(edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(STOREDVALUE.toString())) {
@@ -110,7 +106,7 @@ public class WitnessGraph extends ElemWithAttributes {
 				if(program.getCache().getEvents(FilterBasic.get(WRITE)).stream().anyMatch(e -> e.getUId() == id)) {
 					Store store = (Store)program.getCache().getEvents(FilterBasic.get(WRITE)).stream().filter(e -> e.getUId() == id).findFirst().get();
 					BigInteger value = new BigInteger(edge.getAttributed(STOREDVALUE.toString()));
-					enc = bmgr.and(enc, generalEqual(store.getMemValueExpr(), imgr.makeNumber(value), ctx));
+					enc = bmgr.and(enc, context.equal(context.value(store), imgr.makeNumber(value)));
 				}
 			}
 		}

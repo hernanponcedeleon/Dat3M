@@ -29,7 +29,7 @@ public class Empty extends Axiom {
     	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
         for (Tuple tuple : toBeEncoded) {
-            enc = bmgr.and(enc, bmgr.not(rel.getSMTVar(tuple, ctx.solverContext())));
+            enc = bmgr.and(enc, bmgr.not(ctx.edge(rel, tuple)));
         }
         return negated ? bmgr.not(enc) : enc;
     }

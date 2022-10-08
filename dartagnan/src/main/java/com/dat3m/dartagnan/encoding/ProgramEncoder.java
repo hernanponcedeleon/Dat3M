@@ -25,8 +25,6 @@ import java.util.function.BiFunction;
 
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqualZero;
 import static com.google.common.collect.Lists.reverse;
 
 @Options
@@ -136,7 +134,7 @@ public class ProgramEncoder implements Encoder {
         for(Event e : thread.getEntry().getSuccessors()) {
 
             // Immediate control flow
-            BooleanFormula cfCond = pred == null ? bmgr.makeTrue() : pred.cf();
+            BooleanFormula cfCond = pred == null ? bmgr.makeTrue() : context.controlFlow(pred);
             if (pred instanceof CondJump) {
                 CondJump jump = (CondJump) pred;
                 cfCond = bmgr.and(cfCond, bmgr.not(jump.getGuard().toBoolFormula(jump, ctx)));
@@ -149,11 +147,11 @@ public class ProgramEncoder implements Encoder {
             if (e instanceof Label) {
                 for (Event jump : labelJumpMap.getOrDefault(e, Collections.emptySet())) {
                     CondJump j = (CondJump)jump;
-                    cfCond = bmgr.or(cfCond, bmgr.and(j.cf(), j.getGuard().toBoolFormula(j, ctx)));
+                    cfCond = bmgr.or(cfCond, bmgr.and(context.controlFlow(j), context.jumpCondition(j)));
                 }
             }
 
-            enc = bmgr.and(enc, cfEncoder.apply(e.cf(), cfCond), e.encodeExec(ctx));
+            enc = bmgr.and(enc, cfEncoder.apply(context.controlFlow(e), cfCond), e.encodeExec(ctx));
             pred = e;
         }
         return enc;
@@ -187,35 +185,6 @@ public class ProgramEncoder implements Encoder {
     }
 
     /**
-     * Simple formula proposing the execution of two events.
-     * Does not test for mutual exclusion.
-     * @param first
-     * Some event of a program to be encoded.
-     * @param second
-     * Another event of the same program.
-     * @param exec
-     * Analysis performed on the associated program.
-     * @param ctx
-     * Builder of expressions and formulas.
-     * @return
-     * Proposition that both {@code first} and {@code second} are included in the modelled execution.
-     */
-    public static BooleanFormula execution(Event first, Event second, ExecutionAnalysis exec, SolverContext ctx) {
-        boolean b = first.getCId() < second.getCId();
-        Event x = b ? first : second;
-        Event y = b ? second : first;
-        if(x.exec()==y.exec() || exec.isImplied(x,y)) {
-            return x.exec();
-        }
-        if(exec.isImplied(y,x)) {
-            return y.exec();
-        }
-        return ctx.getFormulaManager().getBooleanFormulaManager().and(x.exec(),y.exec());
-    }
-
-    /**
-     * @param ctx
-     * Builder of expressions and formulas.
      * @return
      * Describes that for each pair of events, if the reader uses the result of the writer,
      * then the value the reader gets from the register is exactly the value that the writer computed.
@@ -245,17 +214,17 @@ public class ProgramEncoder implements Encoder {
                             assert state.may.size() == 1;
                             edge = bmgr.makeTrue();
                         } else {
-                            edge = bmgr.and(writer.exec(), reader.cf());
+                            edge = bmgr.and(context.execution(writer), context.controlFlow(reader));
                         }
                     } else {
-                        edge = dependencyEdgeVariable(writer, reader, bmgr);
-                        enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.and(writer.exec(), reader.cf(), bmgr.not(overwrite))));
+                        edge = context.dependency(writer, reader);
+                        enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.and(context.execution(writer), context.controlFlow(reader), bmgr.not(overwrite))));
                     }
-                    enc = bmgr.and(enc, bmgr.implication(edge, generalEqual(value, ((RegWriter) writer).getResultRegisterExpr(), ctx)));
-                    overwrite = bmgr.or(overwrite, writer.exec());
+                    enc = bmgr.and(enc, bmgr.implication(edge, context.equal(value, context.result((RegWriter) writer))));
+                    overwrite = bmgr.or(overwrite, context.execution(writer));
                 }
                 if(initializeRegisters && !state.initialized) {
-                    enc = bmgr.and(enc, bmgr.or(overwrite, bmgr.not(reader.cf()), generalEqualZero(value, ctx)));
+                    enc = bmgr.and(enc, bmgr.or(overwrite, bmgr.not(context.controlFlow(reader)), context.equalZero(value)));
                 }
             }
         }
@@ -287,29 +256,25 @@ public class ProgramEncoder implements Encoder {
             Dependency.State state = e.getValue();
             List<Event> writers = state.may;
             if(initializeRegisters && !state.initialized) {
-                BooleanFormula clause = generalEqualZero(value, ctx);
+                BooleanFormula clause = context.equalZero(value);
                 for(Event w : writers) {
-                    clause = bmgr.or(clause, w.exec());
+                    clause = bmgr.or(clause, context.execution(w));
                 }
                 enc = bmgr.and(enc, clause);
             }
             for(int i = 0; i < writers.size(); i++) {
                 Event writer = writers.get(i);
                 BooleanFormula clause = bmgr.or(
-                        generalEqual(value, ((RegWriter) writer).getResultRegisterExpr(), ctx),
-                        bmgr.not(writer.exec()));
+                        context.equal(value, context.result((RegWriter) writer)),
+                        bmgr.not(context.execution(writer)));
                 for(Event w : writers.subList(i + 1, writers.size())) {
                     if(!exec.areMutuallyExclusive(writer, w)) {
-                        clause = bmgr.or(clause, w.exec());
+                        clause = bmgr.or(clause, context.execution(w));
                     }
                 }
                 enc = bmgr.and(enc, clause);
             }
         }
         return enc;
-    }
-
-    public static BooleanFormula dependencyEdgeVariable(Event writer, Event reader, BooleanFormulaManager bmgr) {
-        return bmgr.makeVariable("idd " + writer.getCId() + " " + reader.getCId());
     }
 }

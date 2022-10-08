@@ -16,12 +16,10 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 import java.util.function.Function;
@@ -191,7 +189,6 @@ public class CoSymmetryBreaking {
     }
 
     public BooleanFormula encode(EquivalenceClass<Thread> symmClass) {
-        SolverContext ctx = context.solverContext();
         BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         if (symmClass.getEquivalence() != symm) {
@@ -219,9 +216,11 @@ public class CoSymmetryBreaking {
         // Starting row
         List<BooleanFormula> r1 = new ArrayList<>(r1Tuples.size() + 1);
         if (info.hasMustEdges) {
-            r1.add(info.writes.get(0).exec());
+            r1.add(context.execution(info.writes.get(0)));
         }
-        r1.addAll(Lists.transform(r1Tuples, t -> co.getSMTVar(t, ctx)));
+        for (Tuple t : r1Tuples) {
+            r1.add(context.edge(co, t));
+        }
 
         // Construct symmetric rows
         Thread rep = symmClass.getRepresentative();
@@ -231,9 +230,11 @@ public class CoSymmetryBreaking {
             List<Tuple> r2Tuples = r1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
             List<BooleanFormula> r2 = new ArrayList<>(r2Tuples.size() + 1);
             if (info.hasMustEdges) {
-                r2.add(symm.map(info.writes.get(0), t2).exec());
+                r2.add(context.execution(symm.map(info.writes.get(0), t2)));
             }
-            r2.addAll(Lists.transform(r2Tuples, t -> co.getSMTVar(t, ctx)));
+            for (Tuple t : r2Tuples) {
+                r2.add(context.edge(co, t));
+            }
 
             final String id = "_" + rep.getId() + "_" + i;
             // NOTE: We want to have r1 >= r2 but lexLeader encodes r1 <= r2, so we swap r1 and r2.

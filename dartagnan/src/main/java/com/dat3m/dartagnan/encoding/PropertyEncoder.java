@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -32,14 +31,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.analysis.RelationAnalysis.findTransitivelyImpliedCo;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
-import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 import static com.google.common.base.Preconditions.*;
 
 
@@ -103,7 +99,7 @@ public class PropertyEncoder implements Encoder {
         logger.info("Encoding bound events execution");
         BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         return program.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.BOUND), FilterBasic.get(Tag.SPINLOOP)))
-                .stream().map(Event::exec).reduce(bmgr.makeFalse(), bmgr::or);
+                .stream().map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
     }
 
     public BooleanFormula encodeAssertions() {
@@ -195,11 +191,11 @@ public class PropertyEncoder implements Encoder {
                 for (Load load : pair.loads) {
                     BooleanFormula coMaximalLoad = bmgr.makeFalse();
                     for (Tuple rfEdge : rf.getMaxTupleSet().getBySecond(load)) {
-                        coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(rf.getSMTVar(rfEdge, ctx), lastCoVar(rfEdge.getFirst(), ctx)));
+                        coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(context.edge(rf, rfEdge), lastCoVar(rfEdge.getFirst())));
                     }
                     allCoMaximalLoad = bmgr.and(allCoMaximalLoad, coMaximalLoad);
                 }
-                isStuck  = bmgr.or(isStuck, bmgr.and(pair.bound.exec(), allCoMaximalLoad));
+                isStuck  = bmgr.or(isStuck, bmgr.and(context.execution(pair.bound), allCoMaximalLoad));
             }
             isStuckMap.put(t, isStuck);
         }
@@ -209,11 +205,11 @@ public class PropertyEncoder implements Encoder {
         BooleanFormula atLeastOneStuck = bmgr.makeFalse();
         for (Thread t : program.getThreads()) {
             BooleanFormula isStuck = isStuckMap.getOrDefault(t, bmgr.makeFalse());
-            BooleanFormula isDone = t.getCache().getEvents(FilterBasic.get(Tag.EARLYTERMINATION)).stream()
-                    .map(e -> bmgr.not(e.exec())).reduce(bmgr.makeTrue(), bmgr::and);
+            BooleanFormula pending = t.getCache().getEvents(FilterBasic.get(Tag.EARLYTERMINATION)).stream()
+                    .map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
 
             atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
-            allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, isDone));
+            allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, bmgr.not(pending)));
         }
 
         BooleanFormula livenessViolation = bmgr.and(allStuckOrDone, atLeastOneStuck);
@@ -224,9 +220,9 @@ public class PropertyEncoder implements Encoder {
     }
 
     public BooleanFormula encodeDataRaces() {
-        final String hb = "hb";
+        final Relation hb = memoryModel.getRelation("hb");
         checkState(memoryModel.getAxioms().stream().anyMatch(ax ->
-                        ax.isAcyclicity() && ax.getRelation().getName().equals(hb)),
+                        ax.isAcyclicity() && ax.getRelation().equals(hb)),
                 "The provided WMM needs an 'acyclic(hb)' axiom to encode data races.");
         logger.info("Encoding data-races");
         SolverContext ctx = context.solverContext();
@@ -247,10 +243,10 @@ public class PropertyEncoder implements Encoder {
                             continue;
                         }
                         if(w.canRace() && m.canRace() && alias.mayAlias(w, m)) {
-                            BooleanFormula conflict = bmgr.and(m.exec(), w.exec(), edge(hb, m, w, ctx),
-                                    generalEqual(w.getMemAddressExpr(), m.getMemAddressExpr(), ctx),
-                                    imgr.equal(intVar(hb, w, ctx),
-                                            imgr.add(intVar(hb, m, ctx), imgr.makeNumber(BigInteger.ONE))));
+                            BooleanFormula conflict = bmgr.and(context.execution(m, w), context.edge(hb, m, w),
+                                    context.sameAddress(w, m),
+                                    imgr.equal(context.clockVariable("hb", w),
+                                            imgr.add(context.clockVariable("hb", m), imgr.makeNumber(BigInteger.ONE))));
                             enc = bmgr.or(enc, conflict);
                         }
                     }
@@ -283,10 +279,10 @@ public class PropertyEncoder implements Encoder {
         for (Event writeEvent : writes) {
             MemEvent w1 = (MemEvent) writeEvent;
             if (dominatedWrites.contains(w1)) {
-                enc = bmgr.and(enc, bmgr.equivalence(lastCoVar(w1, ctx), bmgr.makeFalse()));
+                enc = bmgr.and(enc, bmgr.not(lastCoVar(w1)));
                 continue;
             }
-            BooleanFormula isLast = w1.exec();
+            BooleanFormula isLast = context.execution(w1);
             // ---- Find all possibly overwriting writes ----
             for (Tuple t : maxSet.getByFirst(w1)) {
                 if (transCo.contains(t)) {
@@ -295,10 +291,10 @@ public class PropertyEncoder implements Encoder {
                     continue;
                 }
                 Event w2 = t.getSecond();
-                BooleanFormula isAfter = minSet.contains(t) ? bmgr.not(w2.exec()) : bmgr.not(co.getSMTVar(t, ctx));
+                BooleanFormula isAfter = bmgr.not(minSet.contains(t) ? context.execution(w2) : context.edge(co, t));
                 isLast = bmgr.and(isLast, isAfter);
             }
-            BooleanFormula lastCoExpr = lastCoVar(w1, ctx);
+            BooleanFormula lastCoExpr = lastCoVar(w1);
             enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, isLast));
             if (doEncodeFinalAddressValues) {
                 // ---- Encode final values of addresses ----
@@ -307,13 +303,9 @@ public class PropertyEncoder implements Encoder {
                     if (!alias.mayAlias(w1, init)) {
                         continue;
                     }
-                    IExpr address = init.getAddress();
-                    Formula a1 = w1.getMemAddressExpr();
-                    Formula a2 = address.toIntFormula(init, ctx);
-                    BooleanFormula sameAddress = alias.mustAlias(init, w1) ? bmgr.makeTrue() : generalEqual(a1, a2, ctx);
-                    Formula v1 = w1.getMemValueExpr();
+                    BooleanFormula sameAddress = context.sameAddress(init, w1);
                     Formula v2 = init.getBase().getLastMemValueExpr(ctx, init.getOffset());
-                    BooleanFormula sameValue = generalEqual(v1, v2, ctx);
+                    BooleanFormula sameValue = context.equal(context.value(w1), v2);
                     enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
             }
@@ -321,7 +313,7 @@ public class PropertyEncoder implements Encoder {
         return enc;
     }
 
-    private BooleanFormula lastCoVar(Event write, SolverContext ctx) {
-        return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable("co_last(" + write.repr() + ")");
+    private BooleanFormula lastCoVar(Event write) {
+        return context.getFormulaManager().getBooleanFormulaManager().makeVariable("co_last(" + write.repr() + ")");
     }
 }

@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
-import static com.dat3m.dartagnan.wmm.utils.Utils.coClockVar;
 
 /*
 The ExecutionModel wraps a Model and extracts data from it in a more workable manner.
@@ -153,8 +152,8 @@ public class ExecutionModel {
     public Model getModel() {
         return model;
     }
-    public SolverContext getContext() {
-        return context;
+    public EncodingContext getContext() {
+        return encodingContext;
     }
     public FilterAbstract getEventFilter() {
     	return eventFilter;
@@ -340,7 +339,7 @@ public class ExecutionModel {
             }
 
             if (data.isRead()) {
-                data.setValue(new BigInteger(model.evaluate(((RegWriter)e).getResultRegisterExpr()).toString()));
+                data.setValue(new BigInteger(model.evaluate(encodingContext.result((RegWriter) e)).toString()));
                 addressReadsMap.get(address).add(data);
             } else if (data.isWrite()) {
                 data.setValue(((MemEvent)e).getMemValue().getIntValue(e, model, context));
@@ -468,7 +467,7 @@ public class ExecutionModel {
         	BigInteger address = addressedReads.getKey();
             for (EventData read : addressedReads.getValue()) {
                 for (EventData write : addressWritesMap.get(address)) {
-                    BooleanFormula rfExpr = rf.getSMTVar(write.getEvent(), read.getEvent(), context);
+                    BooleanFormula rfExpr = encodingContext.edge(rf, write.getEvent(), read.getEvent());
                     // The null check is important: Currently there are cases where no rf-edge between
                     // init writes and loads get encoded (in case of arrays/structs). This is usually no problem,
                     // since in a well-initialized program, the init write should not be readable anyway.
@@ -498,7 +497,7 @@ public class ExecutionModel {
                 for (EventData w1 : writes) {
                     coEdges.put(w1, new ArrayList<>());
                     for (EventData w2 : writes) {
-                        if (Boolean.TRUE.equals(model.evaluate(co.getSMTVar(w1.getEvent(), w2.getEvent(), context)))) {
+                        if (Boolean.TRUE.equals(model.evaluate(encodingContext.edge(co, w1.getEvent(), w2.getEvent())))) {
                             coEdges.get(w1).add(w2);
                         }
                     }
@@ -509,7 +508,7 @@ public class ExecutionModel {
                 // --- Extracting co from IDL-based encoding using clock variables ---
                 Map<EventData, BigInteger> writeClockMap = new HashMap<>(writes.size() * 4 / 3, 0.75f);
                 for (EventData w : writes) {
-                    writeClockMap.put(w, model.evaluate(coClockVar(w.getEvent(), context)));
+                    writeClockMap.put(w, model.evaluate(encodingContext.memoryOrderClock(w.getEvent())));
                 }
                 coSortedWrites = writes.stream().sorted(Comparator.comparing(writeClockMap::get)).collect(Collectors.toList());
             }

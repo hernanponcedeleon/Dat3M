@@ -17,13 +17,11 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_SYMMETRY_LEARNING;
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /*
@@ -123,24 +121,22 @@ public class Refiner {
     // Changes a reasoning <literal> based on a given permutation <perm> and translates the result
     // into a BooleanFormula for Refinement.
     private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm, EncodingContext encoder) {
-        SolverContext context = encoder.solverContext();
         BooleanFormulaManager bmgr = encoder.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc;
         if (literal instanceof ExecLiteral) {
             ExecLiteral lit = (ExecLiteral) literal;
-            enc = perm.apply(lit.getData()).exec();
+            enc = encoder.execution(perm.apply(lit.getData()));
         } else if (literal instanceof AddressLiteral) {
             AddressLiteral loc = (AddressLiteral) literal;
             MemEvent e1 = (MemEvent) perm.apply(loc.getFirst());
             MemEvent e2 = (MemEvent) perm.apply(loc.getSecond());
-            enc = generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), context);
+            enc = encoder.sameAddress(e1, e2);
         } else if (literal instanceof RelLiteral) {
             RelLiteral lit = (RelLiteral) literal;
             Relation rel = memoryModel.getRelation(lit.getName());
-            enc = rel.getSMTVar(
+            enc = encoder.edge(rel,
                     perm.apply(lit.getData().getFirst()),
-                    perm.apply(lit.getData().getSecond()),
-                    context);
+                    perm.apply(lit.getData().getSecond()));
         } else {
             throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
         }
