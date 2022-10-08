@@ -19,6 +19,9 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.dat3m.dartagnan.configuration.OptionNames.IDL_TO_SAT;
 import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
@@ -33,7 +36,6 @@ public final class EncodingContext {
 
     private final VerificationTask verificationTask;
     private final Context analysisContext;
-    private final BranchEquivalence branchEquivalence;
     private final ExecutionAnalysis executionAnalysis;
     private final AliasAnalysis aliasAnalysis;
     private final SolverContext solverContext;
@@ -51,10 +53,16 @@ public final class EncodingContext {
             secure = true)
     private boolean shouldMergeCFVars = true;
 
+    private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
+    private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
+    private final Map<Event, Formula> addresses = new HashMap<>();
+    private final Map<Event, Formula> values = new HashMap<>();
+    private final Map<Event, Formula> results = new HashMap<>();
+
     private EncodingContext(VerificationTask t, Context a, SolverContext s) {
         verificationTask = checkNotNull(t);
         analysisContext = checkNotNull(a);
-        branchEquivalence = a.requires(BranchEquivalence.class);
+        a.requires(BranchEquivalence.class);
         executionAnalysis = a.requires(ExecutionAnalysis.class);
         aliasAnalysis = a.requires(AliasAnalysis.class);
         solverContext = checkNotNull(s);
@@ -67,6 +75,7 @@ public final class EncodingContext {
         task.getConfig().inject(context);
         logger.info("{}: {}", IDL_TO_SAT, context.useSATEncoding);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
+        context.initialize();
         return context;
     }
 
@@ -92,8 +101,7 @@ public final class EncodingContext {
     }
 
     public BooleanFormula controlFlow(Event event) {
-        Event representative = shouldMergeCFVars ? branchEquivalence.getRepresentative(event) : event;
-        return booleanFormulaManager.makeVariable("cf " + representative.getCId());
+        return controlFlowVariables.get(event);
     }
 
     public BooleanFormula jumpCondition(Event event) {
@@ -101,7 +109,7 @@ public final class EncodingContext {
     }
 
     public BooleanFormula execution(Event event) {
-        return event.cfImpliesExec() ? controlFlow(event) : booleanFormulaManager.makeVariable("exec " + event.getCId());
+        return (event.cfImpliesExec() ? controlFlowVariables : executionVariables).get(event);
     }
 
     /**
@@ -161,15 +169,15 @@ public final class EncodingContext {
     }
 
     public Formula address(MemEvent event) {
-        return ((MemEvent) event).getAddress().toIntFormula(event, solverContext);
+        return addresses.get(event);
     }
 
     public Formula value(MemEvent event) {
-        return event instanceof Load ? result(event) : ((MemEvent) event).getMemValue().toIntFormula(event, solverContext);
+        return values.get(event);
     }
 
     public Formula result(RegWriter event) {
-        return ((RegWriter) event).getResultRegister().toIntFormulaResult(event, solverContext);
+        return results.get(event);
     }
 
     public NumeralFormula.IntegerFormula clockVariable(String name, Event event) {
@@ -200,6 +208,34 @@ public final class EncodingContext {
 
     public BooleanFormula edge(Relation relation, Event first, Event second) {
         return edge(relation, new Tuple(first, second));
+    }
+
+    private void initialize() {
+        if (shouldMergeCFVars) {
+            for (BranchEquivalence.Class cls : analysisContext.get(BranchEquivalence.class).getAllEquivalenceClasses()) {
+                BooleanFormula v = booleanFormulaManager.makeVariable("cf " + cls.getRepresentative().getCId());
+                for (Event e : cls) {
+                    controlFlowVariables.put(e, v);
+                }
+            }
+        } else {
+            for (Event e : verificationTask.getProgram().getEvents()) {
+                controlFlowVariables.put(e, booleanFormulaManager.makeVariable("cf " + e.getCId()));
+            }
+        }
+        for (Event e : verificationTask.getProgram().getEvents()) {
+            if (!e.cfImpliesExec()) {
+                executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getCId()));
+            }
+            Formula r = e instanceof RegWriter ? ((RegWriter) e).getResultRegister().toIntFormulaResult(e, solverContext) : null;
+            if (e instanceof MemEvent) {
+                addresses.put(e, ((MemEvent) e).getAddress().toIntFormula(e, solverContext));
+                values.put(e, e instanceof Load ? r : ((MemEvent) e).getMemValue().toIntFormula(e, solverContext));
+            }
+            if (r != null) {
+                results.put(e, r);
+            }
+        }
     }
 
     private NumeralFormula.IntegerFormula convertToIntegerFormula(Formula f) {
