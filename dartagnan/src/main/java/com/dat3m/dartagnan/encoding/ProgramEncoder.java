@@ -43,7 +43,6 @@ public class ProgramEncoder implements Encoder {
     private final EncodingContext context;
     private final ExecutionAnalysis exec;
     private final Dependency dep;
-    private boolean isInitialized = false;
 
     private ProgramEncoder(EncodingContext c) {
         Preconditions.checkArgument(c.task().getProgram().isCompiled(), "The program must be compiled before encoding.");
@@ -63,11 +62,6 @@ public class ProgramEncoder implements Encoder {
     // ============================== Initialization ==============================
 
     public void initializeEncoding(SolverContext ctx) {
-        isInitialized = true;
-    }
-
-    private void checkInitialized() {
-        Preconditions.checkState(isInitialized, "initializeEncoding must get called before encoding.");
     }
 
     // ============================== Encoding ==============================
@@ -82,7 +76,6 @@ public class ProgramEncoder implements Encoder {
     }
 
     public BooleanFormula encodeControlFlow() {
-        checkInitialized();
         logger.info("Encoding program control flow");
 
         BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
@@ -95,7 +88,6 @@ public class ProgramEncoder implements Encoder {
     }
 
     private BooleanFormula encodeThreadCF(Thread thread) {
-        checkInitialized();
         SolverContext ctx = context.solverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
@@ -130,7 +122,6 @@ public class ProgramEncoder implements Encoder {
 
     // Assigns each Address a fixed memory address.
     public BooleanFormula encodeMemory() {
-        checkInitialized();
         SolverContext ctx = context.solverContext();
         logger.info("Encoding fixed memory");
 
@@ -209,7 +200,6 @@ public class ProgramEncoder implements Encoder {
     }
     
     public BooleanFormula encodeFinalRegisterValues() {
-        checkInitialized();
         SolverContext ctx = context.solverContext();
         logger.info("Encoding final register values");
 
