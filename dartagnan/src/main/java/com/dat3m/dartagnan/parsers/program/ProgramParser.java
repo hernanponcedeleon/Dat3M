@@ -53,23 +53,28 @@ public class ProgramParser {
         switch (format) {
         	case "c":
         	case "i":
-				File CFile = path.equals("") ?
+        	case "ll":
+				File parsedFile = path.equals("") ?
 						// This is for the case where the user fully typed the program instead of loading it
 						File.createTempFile("dat3m", ".c") :
 						// This is for the case where the user loaded the program 						
 						new File(path, "dat3m.c");
-				CFile.deleteOnExit();
-        		String name = CFile.getName().substring(0, CFile.getName().lastIndexOf('.'));
-                try (FileWriter writer = new FileWriter(CFile)) {
+                try (FileWriter writer = new FileWriter(parsedFile)) {
                     writer.write(raw);
                 }
-                compileWithClang(CFile, cflags);
-	            compileWithSmack(CFile, cflags);
-	            File BplFile = new File(System.getenv("DAT3M_OUTPUT") + "/" + name + ".bpl");
-	            BplFile.deleteOnExit();
-	            Program p = new ProgramParser().parse(BplFile);
-	            CFile.delete();
-	            BplFile.delete();
+                File compiledFile = null;
+                if(needsClang(parsedFile)) {
+                    compiledFile = compileWithClang(parsedFile, cflags);
+                }
+                File optimisedFile = applyLlvmPasses(compiledFile != null ? compiledFile : parsedFile);
+	            File bplFile = compileWithSmack(optimisedFile, cflags);
+	            Program p = new ProgramParser().parse(bplFile);
+                parsedFile.delete();
+                if(compiledFile != null) {
+                    compiledFile.delete();
+                }
+                optimisedFile.delete();
+                bplFile.delete();
 	            return p;
             case "bpl":
                 return new ParserBoogie().parse(CharStreams.fromString(raw));
