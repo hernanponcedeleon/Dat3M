@@ -22,13 +22,14 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_C           = "C";
 
     public Program parse(File file) throws Exception {
-    	if(file.getPath().endsWith("c") || file.getPath().endsWith("i") || file.getPath().endsWith("ll")) {
-            compileWithClang(file, "");
-            applyLlvmPasses(file);
-            compileWithSmack(file, "");
-            String name = file.getName().substring(0, file.getName().lastIndexOf('.'));
-            return new ProgramParser().parse(new File(System.getenv("DAT3M_OUTPUT") + "/" + name + ".bpl"));    		
-    	}
+        if(needsSmack(file)) {
+            if(needsClang(file)) {
+                file = compileWithClang(file, "");
+            }
+            file = applyLlvmPasses(file);
+            file = compileWithSmack(file, "");
+            return new ProgramParser().parse(file);    		
+        }
 
         Program program;
         try (FileInputStream stream = new FileInputStream(file)) {
@@ -38,6 +39,14 @@ public class ProgramParser {
         }
         program.setName(file.getName());
         return program;
+    }
+
+    private boolean needsClang(File f) {
+        return f.getPath().endsWith(".c") || f.getPath().endsWith(".i");
+    }
+
+    private boolean needsSmack(File f) {
+        return needsClang(f) || f.getPath().endsWith(".ll");
     }
 
     public Program parse(String raw, String path, String format, String cflags) throws Exception {
