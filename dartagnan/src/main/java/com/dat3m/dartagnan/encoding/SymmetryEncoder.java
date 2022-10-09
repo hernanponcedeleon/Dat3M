@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -9,7 +10,6 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -37,11 +37,14 @@ public class SymmetryEncoder implements Encoder {
 
     private final Wmm memoryModel;
     private final ThreadSymmetry symm;
+    private final BranchEquivalence branchEq;
     private final Relation rel;
+    private final boolean breakOnControlFlow;
 
     @Option(name = BREAK_SYMMETRY_ON_RELATION,
             description = "The relation on which symmetry breaking should happen." +
-            "Empty, if symmetry shall not be encoded.",
+            "Empty, if symmetry shall not be encoded." +
+            "Special value \"_cf\" allows for breaking on control flow rather than relations.",
             secure = true)
     private String symmBreakRelName = "";
 
@@ -55,13 +58,20 @@ public class SymmetryEncoder implements Encoder {
     private SymmetryEncoder(Wmm memoryModel, Context context, Configuration config) throws InvalidConfigurationException {
         this.memoryModel = Preconditions.checkNotNull(memoryModel);
         this.symm = context.requires(ThreadSymmetry.class);
+        this.branchEq = context.requires(BranchEquivalence.class);
         config.inject(this);
 
         if (symmBreakRelName.isEmpty()) {
             logger.info("Symmetry breaking disabled.");
             this.rel = null;
+            this.breakOnControlFlow = false;
+        } else if (symmBreakRelName.equals("_cf")) {
+            logger.info("Breaking symmetry on control flow.");
+            this.rel = null;
+            this.breakOnControlFlow = true;
         } else {
             this.rel = memoryModel.getRelation(symmBreakRelName);
+            this.breakOnControlFlow = false;
             if (this.rel == null) {
                 logger.warn("The wmm has no relation named {} to break symmetry on." +
                         " Symmetry breaking was disabled.", symmBreakRelName);
@@ -82,12 +92,15 @@ public class SymmetryEncoder implements Encoder {
     public BooleanFormula encodeFullSymmetry(SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
-        if (rel == null) {
+        if (rel == null && !breakOnControlFlow) {
             return enc;
         }
 
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
-            enc = bmgr.and(enc, encodeSymmetryClass(symmClass, ctx));
+            enc = bmgr.and(enc, breakOnControlFlow ?
+                    encodeCfSymmetryClass(symmClass, ctx) :
+                    encodeSymmetryClass(symmClass, ctx)
+            );
         }
         return enc;
     }
@@ -132,6 +145,49 @@ public class SymmetryEncoder implements Encoder {
 
             t1 = t2;
             r1Tuples = r2Tuples;
+        }
+
+        return enc;
+    }
+
+    public BooleanFormula encodeCfSymmetryClass(EquivalenceClass<Thread> symmClass, SolverContext ctx) {
+        Preconditions.checkArgument(symmClass.getEquivalence() == symm,
+                "Symmetry class belongs to unexpected symmetry relation.");
+        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        final Thread rep = symmClass.getRepresentative();
+        final List<Thread> symmThreads = new ArrayList<>(symmClass);
+        symmThreads.sort(Comparator.comparingInt(Thread::getId));
+
+
+        // ===== Construct row =====
+        //IMPORTANT: Each thread writes to its own special location for the purpose of starting/terminating threads
+        // These need to get skipped.
+        Thread t1 = symmThreads.get(0);
+        List<Event> r1BranchRoots = new ArrayList<>();
+        for (BranchEquivalence.Class c : branchEq.getAllEquivalenceClasses()) {
+            if (c == branchEq.getInitialClass() || c == branchEq.getUnreachableClass()) {
+                continue;
+            }
+            if (c.getRepresentative().getThread().equals(t1)) {
+                r1BranchRoots.add(c.getRepresentative());
+            }
+        }
+        r1BranchRoots.sort(Comparator.naturalOrder());
+
+        // Construct symmetric rows
+        BooleanFormula enc = bmgr.makeTrue();
+        for (int i = 1; i < symmThreads.size(); i++) {
+            Thread t2 = symmThreads.get(i);
+            Function<Event, Event> perm = symm.createTransposition(t1, t2);
+            List<Event> r2BranchRoots = r1BranchRoots.stream().map(perm).collect(Collectors.toList());
+
+            List<BooleanFormula> r1 = Lists.transform(r1BranchRoots, Event::exec);
+            List<BooleanFormula> r2 = Lists.transform(r2BranchRoots, Event::exec);
+            final String id = "_" + rep.getId() + "_" + i;
+            enc = bmgr.and(enc, encodeLexLeader(id, r2, r1, ctx)); // r1 >= r2
+
+            t1 = t2;
+            r1BranchRoots = r2BranchRoots;
         }
 
         return enc;
