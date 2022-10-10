@@ -140,23 +140,23 @@ public class Dartagnan extends BaseOptions {
                     	System.out.println("Data race detection cannot be combined with other properties");
                     	System.exit(1);
                 	}
-                	modelChecker = DataRaceSolver.of(ctx, prover, task);
+                	modelChecker = DataRaceSolver.run(ctx, prover, task);
                 } else {
                 	// Property is either LIVENESS and/or REACHABILITY
                 	switch (o.getMethod()) {
                 		case TWO:
                 			try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-                				modelChecker = TwoSolvers.of(ctx, prover, prover2, task);
+                				modelChecker = TwoSolvers.run(ctx, prover, prover2, task);
                 			}
                 			break;
                 		case INCREMENTAL:
-							modelChecker = IncrementalSolver.of(ctx, prover, task);
+							modelChecker = IncrementalSolver.run(ctx, prover, task);
                 			break;
                 		case ASSUME:
-							modelChecker = AssumeSolver.of(ctx, prover, task);
+							modelChecker = AssumeSolver.run(ctx, prover, task);
                 			break;
                 		case CAAT:
-							modelChecker = RefinementSolver.of(ctx, prover, task);
+							modelChecker = RefinementSolver.run(ctx, prover, task);
                 			break;
 						default:
 							throw new InvalidConfigurationException("unsupported method " + o.getMethod());
@@ -168,7 +168,7 @@ public class Dartagnan extends BaseOptions {
 
 				Result result = modelChecker.result();
             	if(result.equals(FAIL) && o.generateGraphviz()) {
-                	ExecutionModel m = ExecutionModel.fromConfig(modelChecker.encoding());
+                	ExecutionModel m = ExecutionModel.withContext(modelChecker.encoding());
                 	m.initialize(prover.getModel());
     				String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
     				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name);        		

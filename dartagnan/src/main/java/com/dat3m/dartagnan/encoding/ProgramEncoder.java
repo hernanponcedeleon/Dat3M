@@ -52,7 +52,7 @@ public class ProgramEncoder implements Encoder {
         this.dep = c.analysisContext().requires(Dependency.class);
     }
 
-    public static ProgramEncoder of(EncodingContext context) throws InvalidConfigurationException {
+    public static ProgramEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
         ProgramEncoder encoder = new ProgramEncoder(context);
         context.task().getConfig().inject(encoder);
         logger.info("{}: {}", INITIALIZE_REGISTERS, encoder.initializeRegisters);

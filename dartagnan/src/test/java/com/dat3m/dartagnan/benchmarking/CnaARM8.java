@@ -54,14 +54,14 @@ public class CnaARM8 extends AbstractCTest {
 	@Test
 	@CSVLogger.FileName("csv/assume")
 	public void testAssume() throws Exception {
-        AssumeSolver s = AssumeSolver.of(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
 		assertEquals(expected, s.result());
 	}
 
 	@Test
 	@CSVLogger.FileName("csv/refinement")
 	public void testRefinement() throws Exception {
-        RefinementSolver s = RefinementSolver.of(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.result());
 	}
 }

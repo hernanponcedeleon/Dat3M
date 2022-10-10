@@ -90,7 +90,7 @@ public class RefinementSolver extends ModelChecker {
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
     //TODO (2): Add possibility for Refinement to handle CAT-properties (it ignores them for now).
-    public static RefinementSolver of(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    public static RefinementSolver run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
         RefinementSolver solver = new RefinementSolver(ctx, prover, task);
         task.getConfig().inject(solver);
@@ -122,7 +122,7 @@ public class RefinementSolver extends ModelChecker {
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
 
         context = EncodingContext.of(baselineTask, baselineContext, ctx);
-        ProgramEncoder programEncoder = ProgramEncoder.of(context);
+        ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         // We use the original memory model for symmetry breaking because we need axioms
         // to compute the breaking order.

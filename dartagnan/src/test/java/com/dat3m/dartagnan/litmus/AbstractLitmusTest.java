@@ -142,14 +142,14 @@ public abstract class AbstractLitmusTest {
     @Test
     @CSVLogger.FileName("csv/two-solvers")
     public void test() throws Exception {
-        TwoSolvers s = TwoSolvers.of(contextProvider.get(), proverProvider.get(), prover2Provider.get(), taskProvider.get());
+        TwoSolvers s = TwoSolvers.run(contextProvider.get(), proverProvider.get(), prover2Provider.get(), taskProvider.get());
     	assertEquals(expected, s.result());
     }
 
     //@Test
     @CSVLogger.FileName("csv/refinement")
     public void testRefinement() throws Exception {
-        RefinementSolver s = RefinementSolver.of(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.result());
     }
 }

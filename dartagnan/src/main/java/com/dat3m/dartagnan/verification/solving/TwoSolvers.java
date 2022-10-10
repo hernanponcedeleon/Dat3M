@@ -31,7 +31,7 @@ public class TwoSolvers extends ModelChecker {
         task = t;
     }
 
-    public static TwoSolvers of(SolverContext ctx, ProverEnvironment prover1, ProverEnvironment prover2, VerificationTask task)
+    public static TwoSolvers run(SolverContext ctx, ProverEnvironment prover1, ProverEnvironment prover2, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
         TwoSolvers s = new TwoSolvers(ctx, prover1, prover2, task);
         s.run();
@@ -50,7 +50,7 @@ public class TwoSolvers extends ModelChecker {
         performStaticWmmAnalyses(task, analysisContext, config);
 
         context = EncodingContext.of(task, analysisContext, ctx);
-        ProgramEncoder programEncoder = ProgramEncoder.of(context);
+        ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);

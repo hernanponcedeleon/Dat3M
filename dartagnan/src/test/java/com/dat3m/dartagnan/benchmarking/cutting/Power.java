@@ -52,7 +52,7 @@ public class Power extends AbstractDartagnanTest {
 	@Test
 	@CSVLogger.FileName("csv/cutting")
 	public void testRefinement() throws Exception {
-        RefinementSolver s = RefinementSolver.of(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.result());
 	}
 }

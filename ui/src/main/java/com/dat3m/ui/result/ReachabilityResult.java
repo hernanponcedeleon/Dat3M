@@ -85,18 +85,18 @@ public class ReachabilityResult {
 
                     switch (options.getMethod()) {
                         case INCREMENTAL:
-                            modelChecker = IncrementalSolver.of(ctx, prover, task);
+                            modelChecker = IncrementalSolver.run(ctx, prover, task);
                             break;
                         case ASSUME:
-                            modelChecker = AssumeSolver.of(ctx, prover, task);
+                            modelChecker = AssumeSolver.run(ctx, prover, task);
                             break;
                         case TWO:
                             try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-                                modelChecker = TwoSolvers.of(ctx, prover, prover2, task);
+                                modelChecker = TwoSolvers.run(ctx, prover, prover2, task);
                             }
                             break;
                         case CAAT:
-                            modelChecker = RefinementSolver.of(ctx, prover, task);
+                            modelChecker = RefinementSolver.run(ctx, prover, task);
                             break;
                         default:
                             throw new IllegalArgumentException("method " + options.getMethod());

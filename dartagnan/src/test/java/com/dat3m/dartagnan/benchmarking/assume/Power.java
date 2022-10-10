@@ -44,7 +44,7 @@ public class Power extends AbstractDartagnanTest {
 	@Test
 	@CSVLogger.FileName("csv/assume")
 	public void testAssume() throws Exception {
-		AssumeSolver s = AssumeSolver.of(contextProvider.get(), proverProvider.get(), taskProvider.get());
+		AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
 		assertEquals(expected, s.result());
 	}
 

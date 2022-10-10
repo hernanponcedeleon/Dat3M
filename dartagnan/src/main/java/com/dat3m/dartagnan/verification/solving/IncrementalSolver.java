@@ -30,7 +30,7 @@ public class IncrementalSolver extends ModelChecker {
         task = t;
     }
 
-    public static IncrementalSolver of(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    public static IncrementalSolver run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
     		throws InterruptedException, SolverException, InvalidConfigurationException {
         IncrementalSolver s = new IncrementalSolver(ctx, prover, task);
         s.run();
@@ -49,7 +49,7 @@ public class IncrementalSolver extends ModelChecker {
         performStaticWmmAnalyses(task, analysisContext, config);
 
         context = EncodingContext.of(task, analysisContext, ctx);
-        ProgramEncoder programEncoder = ProgramEncoder.of(context);
+        ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);

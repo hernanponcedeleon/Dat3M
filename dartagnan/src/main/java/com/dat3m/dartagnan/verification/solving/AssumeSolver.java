@@ -30,7 +30,7 @@ public class AssumeSolver extends ModelChecker {
         task = t;
     }
 
-    public static AssumeSolver of(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    public static AssumeSolver run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
         AssumeSolver s = new AssumeSolver(ctx, prover, task);
         s.run();
@@ -49,7 +49,7 @@ public class AssumeSolver extends ModelChecker {
         performStaticWmmAnalyses(task, analysisContext, config);
 
         context = EncodingContext.of(task, analysisContext, ctx);
-        ProgramEncoder programEncoder = ProgramEncoder.of(context);
+        ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);

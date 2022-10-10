@@ -32,7 +32,7 @@ public class DataRaceSolver extends ModelChecker {
 		task = t;
 	}
 
-	public static DataRaceSolver of(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+	public static DataRaceSolver run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
 			throws InterruptedException, SolverException, InvalidConfigurationException {
 		DataRaceSolver s = new DataRaceSolver(ctx, prover, task);
 		s.run();
@@ -51,7 +51,7 @@ public class DataRaceSolver extends ModelChecker {
 		performStaticWmmAnalyses(task, analysisContext, config);
 
 		context = EncodingContext.of(task, analysisContext, ctx);
-		ProgramEncoder programEncoder = ProgramEncoder.of(context);
+		ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
 		PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
 		WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
 		SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);

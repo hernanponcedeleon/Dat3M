@@ -39,7 +39,7 @@ public class WMMSolver {
     }
 
     public static WMMSolver withContext(EncodingContext context, Set<Relation> cutRelations, VerificationTask task, Context analysisContext) throws InvalidConfigurationException {
-        return new WMMSolver(task, analysisContext, cutRelations, ExecutionModel.fromConfig(context));
+        return new WMMSolver(task, analysisContext, cutRelations, ExecutionModel.withContext(context));
     }
 
     public ExecutionModel getExecution() {

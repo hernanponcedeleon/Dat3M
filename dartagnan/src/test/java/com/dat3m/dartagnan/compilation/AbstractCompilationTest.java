@@ -135,9 +135,9 @@ public abstract class AbstractCompilationTest {
     	Result expected = getCompilationBreakers().contains(path) ? Result.FAIL : Result.PASS;
     	
     	if(task1Provider.get().getProgram().getCache().getEvents(FilterUnion.get(rcu, lock)).isEmpty()) {
-            IncrementalSolver s1 = IncrementalSolver.of(context1Provider.get(), prover1Provider.get(), task1Provider.get());
+            IncrementalSolver s1 = IncrementalSolver.run(context1Provider.get(), prover1Provider.get(), task1Provider.get());
         	if(s1.result().equals(Result.PASS)) {
-                IncrementalSolver s2 = IncrementalSolver.of(context2Provider.get(), prover2Provider.get(), task2Provider.get());
+                IncrementalSolver s2 = IncrementalSolver.run(context2Provider.get(), prover2Provider.get(), task2Provider.get());
         		assertEquals(expected, s2.result());
         	}
     	}
