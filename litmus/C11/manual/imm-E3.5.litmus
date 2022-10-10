@@ -17,4 +17,4 @@ P1 (atomic_int* x, atomic_int* y) {
     atomic_store_explicit(x, 1, memory_order_release);
 }
 
-not exists (0:r0=1 /\ 1:r0=1)
+exists (0:r0=1 /\ 1:r0=1)
