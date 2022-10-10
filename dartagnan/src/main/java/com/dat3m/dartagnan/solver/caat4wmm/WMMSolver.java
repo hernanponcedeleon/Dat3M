@@ -38,8 +38,8 @@ public class WMMSolver {
         this.solver = CAATSolver.create();
     }
 
-    public static WMMSolver of(EncodingContext context, Set<Relation> cutRelations) throws InvalidConfigurationException {
-        return new WMMSolver(context.task(), context.analysisContext(), cutRelations, ExecutionModel.fromConfig(context));
+    public static WMMSolver withContext(EncodingContext context, Set<Relation> cutRelations, VerificationTask task, Context analysisContext) throws InvalidConfigurationException {
+        return new WMMSolver(task, analysisContext, cutRelations, ExecutionModel.fromConfig(context));
     }
 
     public ExecutionModel getExecution() {

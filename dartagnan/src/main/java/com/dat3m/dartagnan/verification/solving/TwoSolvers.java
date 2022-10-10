@@ -51,9 +51,9 @@ public class TwoSolvers extends ModelChecker {
 
         context = EncodingContext.of(task, analysisContext, ctx);
         ProgramEncoder programEncoder = ProgramEncoder.of(context);
-        PropertyEncoder propertyEncoder = PropertyEncoder.of(memoryModel, context);
-        WmmEncoder wmmEncoder = WmmEncoder.of(memoryModel, analysisContext, context);
-        SymmetryEncoder symmetryEncoder = SymmetryEncoder.of(context);
+        PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
+        WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
+        SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);
 
         programEncoder.initializeEncoding(ctx);
         propertyEncoder.initializeEncoding(ctx);

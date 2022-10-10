@@ -121,13 +121,13 @@ public class RefinementSolver extends ModelChecker {
         performStaticWmmAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
 
-        context = EncodingContext.of(task, analysisContext, ctx);
+        context = EncodingContext.of(baselineTask, baselineContext, ctx);
         ProgramEncoder programEncoder = ProgramEncoder.of(context);
-        PropertyEncoder propertyEncoder = PropertyEncoder.of(baselineModel, context);
+        PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         // We use the original memory model for symmetry breaking because we need axioms
         // to compute the breaking order.
-        SymmetryEncoder symmEncoder = SymmetryEncoder.of(context);
-        WmmEncoder baselineEncoder = WmmEncoder.of(baselineModel, baselineContext, context);
+        SymmetryEncoder symmEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);
+        WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
         programEncoder.initializeEncoding(ctx);
         propertyEncoder.initializeEncoding(ctx);
         symmEncoder.initializeEncoding(ctx);
@@ -136,7 +136,7 @@ public class RefinementSolver extends ModelChecker {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula globalRefinement = bmgr.makeTrue();
 
-        WMMSolver solver = WMMSolver.of(context, cutRelations);
+        WMMSolver solver = WMMSolver.withContext(context, cutRelations, task, analysisContext);
         Refiner refiner = new Refiner(memoryModel, analysisContext);
         CAATSolver.Status status = INCONSISTENT;
 

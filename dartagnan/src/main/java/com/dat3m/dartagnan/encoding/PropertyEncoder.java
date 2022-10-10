@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
-import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -52,19 +51,18 @@ public class PropertyEncoder implements Encoder {
 
     // =====================================================================
 
-    private PropertyEncoder(Wmm wmm, EncodingContext c) {
+    private PropertyEncoder(EncodingContext c) {
         checkArgument(c.task().getProgram().isCompiled(),
                 "The program must get compiled first before its properties can be encoded.");
         context = c;
-        this.program = c.task().getProgram();
-        this.memoryModel = checkNotNull(wmm);
-        Context context = c.analysisContext();
-        this.exec = context.requires(ExecutionAnalysis.class);
-        this.alias = context.requires(AliasAnalysis.class);
+        program = c.task().getProgram();
+        memoryModel = c.task().getMemoryModel();
+        exec = c.analysisContext().requires(ExecutionAnalysis.class);
+        alias = c.analysisContext().requires(AliasAnalysis.class);
     }
 
-    public static PropertyEncoder of(Wmm memoryModel, EncodingContext context) throws InvalidConfigurationException {
-        PropertyEncoder encoder = new PropertyEncoder(memoryModel, context);
+    public static PropertyEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
+        PropertyEncoder encoder = new PropertyEncoder(context);
         context.task().getConfig().inject(encoder);
         return encoder;
     }

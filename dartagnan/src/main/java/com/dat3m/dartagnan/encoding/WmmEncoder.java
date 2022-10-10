@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterIntersection;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
@@ -43,7 +42,6 @@ import java.util.Set;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.stream.Collectors.toList;
 
@@ -53,29 +51,24 @@ public class WmmEncoder implements Encoder {
     private static final Logger logger = LogManager.getLogger(WmmEncoder.class);
 
     private final EncodingContext context;
-    private final Program program;
-    private final Wmm memoryModel;
-    private final Context analysisContext;
     private boolean isInitialized = false;
 
     // =====================================================================
 
-    private WmmEncoder(Wmm m, Context a, EncodingContext c) {
+    private WmmEncoder(EncodingContext c) {
         context = c;
-        program = c.task().getProgram();
-        memoryModel = checkNotNull(m);
-        analysisContext = checkNotNull(a);
-        a.requires(RelationAnalysis.class);
+        c.analysisContext().requires(RelationAnalysis.class);
     }
 
-    public static WmmEncoder of(Wmm memoryModel, Context analysisContext, EncodingContext context) throws InvalidConfigurationException {
-        WmmEncoder encoder = new WmmEncoder(memoryModel, analysisContext, context);
+    public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
+        WmmEncoder encoder = new WmmEncoder(context);
         context.task().getConfig().inject(encoder);
         return encoder;
     }
 
     @Override
     public void initializeEncoding(SolverContext ctx) {
+        Wmm memoryModel = context.task().getMemoryModel();
         for(String relName : Wmm.BASE_RELATIONS) {
             memoryModel.getRelation(relName);
         }
@@ -121,6 +114,7 @@ public class WmmEncoder implements Encoder {
     public BooleanFormula encodeRelations() {
         checkInitialized();
         logger.info("Encoding relations");
+        Wmm memoryModel = context.task().getMemoryModel();
         final DependencyGraph<Relation> depGraph = DependencyGraph.from(
                 Iterables.concat(
                         Iterables.transform(Wmm.BASE_RELATIONS, memoryModel::getRelation), // base relations
@@ -139,6 +133,7 @@ public class WmmEncoder implements Encoder {
     public BooleanFormula encodeConsistency() {
         checkInitialized();
         logger.info("Encoding consistency");
+        Wmm memoryModel = context.task().getMemoryModel();
         final BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         return memoryModel.getAxioms().stream()
                 .filter(ax -> !ax.isFlagged())
@@ -147,10 +142,8 @@ public class WmmEncoder implements Encoder {
     }
 
     private final class RelationEncoder implements Relation.Visitor<BooleanFormula> {
-        final BooleanFormulaManager bmgr;
-        public RelationEncoder() {
-            bmgr = context.getFormulaManager().getBooleanFormulaManager();
-        }
+        final Program program = context.task().getProgram();
+        final BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         @Override
         public BooleanFormula visitDefinition(Relation rel, List<? extends Relation> dependencies) {
             Preconditions.checkArgument(rel instanceof StaticRelation);
@@ -476,7 +469,7 @@ public class WmmEncoder implements Encoder {
         }
         private BooleanFormula encodeIDL(Relation co) {
             IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
-            ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
+            ExecutionAnalysis exec = context.analysisContext().get(ExecutionAnalysis.class);
             List<MemEvent> allWrites = program.getCache().getEvents(FilterBasic.get(WRITE)).stream()
                     .map(MemEvent.class::cast)
                     .sorted(Comparator.comparingInt(Event::getCId))

@@ -5,7 +5,9 @@ import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -32,7 +34,7 @@ public class SymmetryEncoder implements Encoder {
     private static final Logger logger = LogManager.getLogger(SymmetryEncoder.class);
 
     private final EncodingContext context;
-    private final Wmm memoryModel;
+    private final List<Axiom> axioms;
     private final ThreadSymmetry symm;
     private final Relation rel;
 
@@ -49,10 +51,11 @@ public class SymmetryEncoder implements Encoder {
 
     // =====================================================================
 
-    private SymmetryEncoder(EncodingContext c) {
+    private SymmetryEncoder(EncodingContext c, Wmm m, Context a) {
         context = c;
-        memoryModel = c.task().getMemoryModel();
+        axioms = List.copyOf(m.getAxioms());
         symm = c.analysisContext().get(ThreadSymmetry.class);
+        a.requires(RelationAnalysis.class);
         if (symmBreakRelName.isEmpty()) {
             logger.info("Symmetry breaking disabled.");
             this.rel = null;
@@ -68,8 +71,8 @@ public class SymmetryEncoder implements Encoder {
         }
     }
 
-    public static SymmetryEncoder of(EncodingContext context) throws InvalidConfigurationException {
-        SymmetryEncoder encoder = new SymmetryEncoder(context);
+    public static SymmetryEncoder withContext(EncodingContext context, Wmm memoryModel, Context analysisContext) throws InvalidConfigurationException {
+        SymmetryEncoder encoder = new SymmetryEncoder(context, memoryModel, analysisContext);
         context.task().getConfig().inject(encoder);
         return encoder;
     }
@@ -156,7 +159,6 @@ public class SymmetryEncoder implements Encoder {
         Map<Event, Integer> combInDegree = new HashMap<>(inEvents.size());
         Map<Event, Integer> combOutDegree = new HashMap<>(outEvents.size());
 
-        List<Axiom> axioms = memoryModel.getAxioms();
         for (Event e : inEvents) {
             int syncDeg = axioms.stream()
                     .mapToInt(ax -> ax.getRelation().getMinTupleSet().getBySecond(e).size() + 1).max().orElse(0);
