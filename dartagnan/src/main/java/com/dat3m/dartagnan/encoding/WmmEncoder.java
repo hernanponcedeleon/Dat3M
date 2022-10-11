@@ -52,6 +52,7 @@ public class WmmEncoder implements Encoder {
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
         WmmEncoder encoder = new WmmEncoder(context);
         encoder.initializeEncodeSets();
+        encoder.initializeEncodeSets();
         return encoder;
     }
 
