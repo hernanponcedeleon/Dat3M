@@ -54,7 +54,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	@Override
 	public BooleanFormula encodeExec(EncodingContext context) {
 		SolverContext ctx = context.solverContext();
-		BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 		
 		BooleanFormula enc = super.encodeExec(context);
 		if(expr instanceof INonDet) {

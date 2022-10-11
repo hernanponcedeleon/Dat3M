@@ -170,7 +170,7 @@ public class Acyclic extends Axiom {
     }
 
     private BooleanFormula consistentIDL(Set<Tuple> toBeEncoded, EncodingContext context) {
-        final BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
         final Relation rel = this.rel;
         final String clockVarName = rel.getName();

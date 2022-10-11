@@ -28,7 +28,7 @@ public class ForceEncodeAxiom extends Axiom {
 
     @Override
     public BooleanFormula consistent(Set<Tuple> toBeEncoded, EncodingContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
 		return negated ? bmgr.makeFalse() : bmgr.makeTrue();
     }
 

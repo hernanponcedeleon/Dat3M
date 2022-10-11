@@ -180,7 +180,7 @@ public class CoSymmetryBreaking {
     }
 
     public BooleanFormula encode() {
-        BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
             enc = bmgr.and(enc, encode(symmClass));
@@ -189,7 +189,7 @@ public class CoSymmetryBreaking {
     }
 
     public BooleanFormula encode(EquivalenceClass<Thread> symmClass) {
-        BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         if (symmClass.getEquivalence() != symm) {
             return enc;

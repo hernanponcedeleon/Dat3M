@@ -20,7 +20,7 @@ public class AssertCompositeOr extends AbstractAssert {
 
     @Override
     public BooleanFormula encode(EncodingContext ctx) {
-        return ctx.getFormulaManager().getBooleanFormulaManager().or(a1.encode(ctx), a2.encode(ctx));
+        return ctx.getBooleanFormulaManager().or(a1.encode(ctx), a2.encode(ctx));
     }
 
     @Override

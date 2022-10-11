@@ -18,7 +18,7 @@ public class AssertInline extends AbstractAssert {
 
     @Override
     public BooleanFormula encode(EncodingContext ctx) {
-		return ctx.getFormulaManager().getBooleanFormulaManager().and(ctx.execution(e), ctx.equalZero(ctx.result(e)));
+		return ctx.getBooleanFormulaManager().and(ctx.execution(e), ctx.equalZero(ctx.result(e)));
     }
 
     @Override

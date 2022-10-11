@@ -81,7 +81,7 @@ public class SymmetryEncoder implements Encoder {
     public void initializeEncoding(SolverContext context) { }
 
     public BooleanFormula encodeFullSymmetry() {
-        BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         if (rel == null) {
             return enc;
@@ -189,7 +189,7 @@ public class SymmetryEncoder implements Encoder {
     */
     public static BooleanFormula encodeLexLeader(String uniqueIdent, List<BooleanFormula> r1, List<BooleanFormula> r2, EncodingContext context) {
         Preconditions.checkArgument(r1.size() == r2.size());
-        BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         // Return TRUE if there is nothing to encode
         if(r1.isEmpty()) {
         	return bmgr.makeTrue();

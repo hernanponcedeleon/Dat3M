@@ -52,7 +52,7 @@ public class Refiner {
         // since most violations involve only few threads and hence the orbit is far smaller than the full
         // set of permutations.
         HashSet<BooleanFormula> addedFormulas = new HashSet<>(); // To avoid adding duplicates
-        BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula refinement = bmgr.makeTrue();
         // For each symmetry permutation, we will create refinement clauses
         for (Function<Event, Event> perm : symmPermutations) {
@@ -121,7 +121,7 @@ public class Refiner {
     // Changes a reasoning <literal> based on a given permutation <perm> and translates the result
     // into a BooleanFormula for Refinement.
     private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm, EncodingContext encoder) {
-        BooleanFormulaManager bmgr = encoder.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = encoder.getBooleanFormulaManager();
         BooleanFormula enc;
         if (literal instanceof ExecLiteral) {
             ExecLiteral lit = (ExecLiteral) literal;

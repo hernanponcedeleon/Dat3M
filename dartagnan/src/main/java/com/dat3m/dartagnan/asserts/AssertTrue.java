@@ -13,7 +13,7 @@ public class AssertTrue extends AbstractAssert {
     @Override
     public BooleanFormula encode(EncodingContext ctx) {
     	// We want the verification to succeed so it should be UNSAT
-        return ctx.getFormulaManager().getBooleanFormulaManager().makeFalse();
+        return ctx.getBooleanFormulaManager().makeFalse();
     }
 
     @Override

@@ -16,7 +16,7 @@ public class RMWReadCondUnless extends RMWReadCond {
 
     @Override
     public BooleanFormula getCond(EncodingContext ctx) {
-        return ctx.getFormulaManager().getBooleanFormulaManager().not(super.getCond(ctx));
+        return ctx.getBooleanFormulaManager().not(super.getCond(ctx));
     }
 
     @Override

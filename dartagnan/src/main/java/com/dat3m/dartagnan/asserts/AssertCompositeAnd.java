@@ -20,7 +20,7 @@ public class AssertCompositeAnd extends AbstractAssert {
 
     @Override
     public BooleanFormula encode(EncodingContext ctx) {
-        return ctx.getFormulaManager().getBooleanFormulaManager().and(a1.encode(ctx), a2.encode(ctx));
+        return ctx.getBooleanFormulaManager().and(a1.encode(ctx), a2.encode(ctx));
     }
 
     @Override

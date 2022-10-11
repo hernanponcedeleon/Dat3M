@@ -67,7 +67,7 @@ public class ProgramEncoder implements Encoder {
     // ============================== Encoding ==============================
 
     public BooleanFormula encodeFullProgram() {
-        return context.getFormulaManager().getBooleanFormulaManager().and(
+        return context.getBooleanFormulaManager().and(
                 encodeMemory(),
                 encodeControlFlow(),
                 encodeFinalRegisterValues(),
@@ -78,7 +78,7 @@ public class ProgramEncoder implements Encoder {
     public BooleanFormula encodeControlFlow() {
         logger.info("Encoding program control flow");
 
-        BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         
         BooleanFormula enc = bmgr.makeTrue();
         for(Thread t : context.task().getProgram().getThreads()){
@@ -196,7 +196,7 @@ public class ProgramEncoder implements Encoder {
     public BooleanFormula encodeFilter() {
     	return context.task().getProgram().getAssFilter() != null ?
                 context.task().getProgram().getAssFilter().encode(context) :
-    			context.getFormulaManager().getBooleanFormulaManager().makeTrue();
+    			context.getBooleanFormulaManager().makeTrue();
     }
     
     public BooleanFormula encodeFinalRegisterValues() {

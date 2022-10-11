@@ -23,7 +23,7 @@ public class AssertNot extends AbstractAssert {
 
     @Override
     public BooleanFormula encode(EncodingContext ctx) {
-    	return ctx.getFormulaManager().getBooleanFormulaManager().not(child.encode(ctx));
+    	return ctx.getBooleanFormulaManager().not(child.encode(ctx));
     }
 
     @Override

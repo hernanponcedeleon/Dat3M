@@ -102,7 +102,7 @@ public class WmmEncoder implements Encoder {
     }
 
     public BooleanFormula encodeFullMemoryModel() {
-        return context.getFormulaManager().getBooleanFormulaManager().and(
+        return context.getBooleanFormulaManager().and(
                 encodeRelations(),
                 encodeConsistency()
         );
@@ -134,7 +134,7 @@ public class WmmEncoder implements Encoder {
         checkInitialized();
         logger.info("Encoding consistency");
         Wmm memoryModel = context.task().getMemoryModel();
-        final BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return memoryModel.getAxioms().stream()
                 .filter(ax -> !ax.isFlagged())
                 .map(ax -> ax.consistent(ax.getRelation().getEncodeTupleSet(), context))
@@ -143,7 +143,7 @@ public class WmmEncoder implements Encoder {
 
     private final class RelationEncoder implements Relation.Visitor<BooleanFormula> {
         final Program program = context.task().getProgram();
-        final BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         @Override
         public BooleanFormula visitDefinition(Relation rel, List<? extends Relation> dependencies) {
             Preconditions.checkArgument(rel instanceof StaticRelation);

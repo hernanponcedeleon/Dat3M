@@ -30,7 +30,7 @@ public class FenceCond extends Fence {
 
     @Override
     public BooleanFormula encodeExec(EncodingContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
 		return bmgr.equivalence(ctx.execution(this), bmgr.and(ctx.controlFlow(this), loadEvent.getCond(ctx)));
     }
 

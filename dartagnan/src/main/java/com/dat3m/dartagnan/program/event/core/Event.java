@@ -226,6 +226,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	}
 
 	public BooleanFormula encodeExec(EncodingContext ctx) {
-		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
+		return ctx.getBooleanFormulaManager().makeTrue();
 	}
 }

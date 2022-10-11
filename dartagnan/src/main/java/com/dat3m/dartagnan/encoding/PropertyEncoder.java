@@ -72,7 +72,7 @@ public class PropertyEncoder implements Encoder {
 
     public BooleanFormula encodeSpecification() {
         EnumSet<Property> property = context.task().getProperty();
-    	BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+    	BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
     	// We have a default property therefore this false will always be overwritten
     	BooleanFormula enc = bmgr.makeFalse();
     	if(property.contains(REACHABILITY)) {
@@ -95,7 +95,7 @@ public class PropertyEncoder implements Encoder {
 
     public BooleanFormula encodeBoundEventExec() {
         logger.info("Encoding bound events execution");
-        BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return program.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.BOUND), FilterBasic.get(Tag.SPINLOOP)))
                 .stream().map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
     }
@@ -312,6 +312,6 @@ public class PropertyEncoder implements Encoder {
     }
 
     private BooleanFormula lastCoVar(Event write) {
-        return context.getFormulaManager().getBooleanFormulaManager().makeVariable("co_last(" + write.repr() + ")");
+        return context.getBooleanFormulaManager().makeVariable("co_last(" + write.repr() + ")");
     }
 }

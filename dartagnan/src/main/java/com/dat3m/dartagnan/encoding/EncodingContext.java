@@ -100,6 +100,10 @@ public final class EncodingContext {
         return formulaManager;
     }
 
+    public BooleanFormulaManager getBooleanFormulaManager() {
+        return booleanFormulaManager;
+    }
+
     public BooleanFormula controlFlow(Event event) {
         return controlFlowVariables.get(event);
     }

@@ -26,7 +26,7 @@ public class Empty extends Axiom {
 
     @Override
     public BooleanFormula consistent(Set<Tuple> toBeEncoded, EncodingContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    	BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
         for (Tuple tuple : toBeEncoded) {
             enc = bmgr.and(enc, bmgr.not(ctx.edge(rel, tuple)));

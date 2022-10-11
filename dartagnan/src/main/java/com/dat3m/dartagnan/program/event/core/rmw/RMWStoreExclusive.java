@@ -35,7 +35,7 @@ public class RMWStoreExclusive extends Store {
 
     @Override
     public BooleanFormula encodeExec(EncodingContext ctx) {
-    	return ctx.getFormulaManager().getBooleanFormulaManager().implication(ctx.execution(this), ctx.controlFlow(this));
+    	return ctx.getBooleanFormulaManager().implication(ctx.execution(this), ctx.controlFlow(this));
     }
 
     // Unrolling
