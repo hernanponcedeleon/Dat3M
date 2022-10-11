@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -39,7 +38,6 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
 
     protected TupleSet minTupleSet = null;
     protected TupleSet maxTupleSet = null;
-    protected TupleSet encodeTupleSet = null;
 
     public Relation() { }
 
@@ -68,7 +66,6 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
     public void initializeEncoding(SolverContext ctx) {
     	Preconditions.checkState(this.maxTupleSet != null && this.minTupleSet != null,
     			String.format("No available relation data to encode %s. Perform RelationAnalysis before encoding.", this));
-        this.encodeTupleSet = new TupleSet();
     }
 
     // TODO: We misuse <task> as data object and analysis information object.
@@ -90,14 +87,6 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
 
     public TupleSet getMaxTupleSetRecursive(){
         return getMaxTupleSet();
-    }
-
-    public TupleSet getEncodeTupleSet(){
-        return encodeTupleSet;
-    }
-
-    public void addEncodeTupleSet(TupleSet tuples){
-        encodeTupleSet.addAll(Sets.intersection(tuples, maxTupleSet));
     }
 
     public String getName() {

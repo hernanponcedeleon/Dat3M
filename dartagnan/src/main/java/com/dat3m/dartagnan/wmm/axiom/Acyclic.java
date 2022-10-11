@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -34,7 +35,7 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-    public TupleSet getEncodeTupleSet(){
+    protected Set<Tuple> getEncodeTupleSet(Context analysisContext) {
         logger.info("Computing encodeTupleSet for " + this);
         // ====== Construct [Event -> Successor] mapping ======
         Map<Event, Collection<Event>> succMap = new HashMap<>();
@@ -126,7 +127,8 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-	public BooleanFormula consistent(Set<Tuple> toBeEncoded, EncodingContext context) {
+	public BooleanFormula consistent(EncodingContext context) {
+        Set<Tuple> toBeEncoded = getEncodeTupleSet(context.getAnalysisContext());
         BooleanFormula enc;
         if(negated) {
             enc = inconsistentSAT(toBeEncoded, context); // There is no IDL-based encoding for inconsistency

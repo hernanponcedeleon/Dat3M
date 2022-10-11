@@ -1,14 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Sets;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  *
@@ -78,35 +72,5 @@ public class RelComposition extends BinaryRelation {
             return maxTupleSet;
         }
         return getMaxTupleSet();
-    }
-
-    @Override
-    public void addEncodeTupleSet(TupleSet tuples){
-        Set<Tuple> activeSet = new HashSet<>(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
-        encodeTupleSet.addAll(activeSet);
-        activeSet.removeAll(getMinTupleSet());
-
-        if(!activeSet.isEmpty()){
-            TupleSet r1Set = new TupleSet();
-            TupleSet r2Set = new TupleSet();
-
-            TupleSet r1Max = r1.getMaxTupleSet();
-            TupleSet r2Max = r2.getMaxTupleSet();
-            for (Tuple t : activeSet) {
-                Event e1 = t.getFirst();
-                Event e3 = t.getSecond();
-                for (Tuple t1 : r1Max.getByFirst(e1)) {
-                    Event e2 = t1.getSecond();
-                    Tuple t2 = new Tuple(e2, e3);
-                    if (r2Max.contains(t2)) {
-                        r1Set.add(t1);
-                        r2Set.add(t2);
-                    }
-                }
-            }
-
-            r1.addEncodeTupleSet(r1Set);
-            r2.addEncodeTupleSet(r2Set);
-        }
     }
 }

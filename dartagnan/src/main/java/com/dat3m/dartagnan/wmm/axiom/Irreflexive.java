@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -24,18 +25,18 @@ public class Irreflexive extends Axiom {
     }
 
     @Override
-    public TupleSet getEncodeTupleSet(){
+    protected Set<Tuple> getEncodeTupleSet(Context analysisContext) {
         TupleSet set = new TupleSet();
         rel.getMaxTupleSet().stream().filter(Tuple::isLoop).forEach(set::add);
         return set;
     }
 
     @Override
-    public BooleanFormula consistent(Set<Tuple> toBeEncoded, EncodingContext ctx) {
+    public BooleanFormula consistent(EncodingContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
         final EncodingContext.EdgeEncoder edge = ctx.edge(rel);
-        for (Tuple tuple : toBeEncoded) {
+        for (Tuple tuple : rel.getMaxTupleSet()) {
             if(tuple.isLoop()){
                 enc = bmgr.and(enc, bmgr.not(edge.encode(tuple)));
             }

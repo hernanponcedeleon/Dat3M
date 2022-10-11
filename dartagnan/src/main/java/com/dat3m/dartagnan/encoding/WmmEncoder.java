@@ -21,7 +21,6 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -32,12 +31,8 @@ import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
@@ -51,6 +46,7 @@ public class WmmEncoder implements Encoder {
     private static final Logger logger = LogManager.getLogger(WmmEncoder.class);
 
     private final EncodingContext context;
+    final Map<Relation, Set<Tuple>> encodeSets = new HashMap<>();
     private boolean isInitialized = false;
 
     // =====================================================================
@@ -63,6 +59,7 @@ public class WmmEncoder implements Encoder {
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
         WmmEncoder encoder = new WmmEncoder(context);
         context.getTask().getConfig().inject(encoder);
+        encoder.initializeEncodeSets();
         return encoder;
     }
 
@@ -79,19 +76,6 @@ public class WmmEncoder implements Encoder {
 
         for(Relation relation : memoryModel.getRelations()){
             relation.initializeEncoding(ctx);
-        }
-
-        for (Axiom axiom : memoryModel.getAxioms()) {
-            axiom.initializeEncoding(ctx);
-        }
-
-        // ====================== Compute encoding information =================
-        for (Axiom ax : memoryModel.getAxioms()) {
-            ax.getRelation().addEncodeTupleSet(ax.getEncodeTupleSet());
-        }
-
-        for (RecursiveGroup recursiveGroup : Lists.reverse(memoryModel.getRecursiveGroups())) {
-            recursiveGroup.updateEncodeTupleSets();
         }
 
         isInitialized = true;
@@ -137,7 +121,7 @@ public class WmmEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return memoryModel.getAxioms().stream()
                 .filter(ax -> !ax.isFlagged())
-                .map(ax -> ax.consistent(ax.getRelation().getEncodeTupleSet(), context))
+                .map(ax -> ax.consistent(context))
                 .reduce(bmgr.makeTrue(), bmgr::and);
     }
 
@@ -148,7 +132,7 @@ public class WmmEncoder implements Encoder {
         public BooleanFormula visitDefinition(Relation rel, List<? extends Relation> dependencies) {
             Preconditions.checkArgument(rel instanceof StaticRelation);
             BooleanFormula enc = bmgr.makeTrue();
-            for (Tuple tuple : rel.getEncodeTupleSet()) {
+            for (Tuple tuple : encodeSets.get(rel)) {
                 enc = bmgr.and(enc, bmgr.equivalence(edge(rel, tuple), execution(tuple)));
             }
             return enc;
@@ -157,7 +141,7 @@ public class WmmEncoder implements Encoder {
         public BooleanFormula visitUnion(Relation rel, Relation... r) {
             BooleanFormula enc = bmgr.makeTrue();
             TupleSet min = rel.getMinTupleSet();
-            for (Tuple tuple : rel.getEncodeTupleSet()) {
+            for (Tuple tuple : encodeSets.get(rel)) {
                 BooleanFormula edge = edge(rel, tuple);
                 if (min.contains(tuple)) {
                     enc = bmgr.and(enc, bmgr.equivalence(edge, execution(tuple)));
@@ -175,7 +159,7 @@ public class WmmEncoder implements Encoder {
         public BooleanFormula visitIntersection(Relation rel, Relation... r) {
             BooleanFormula enc = bmgr.makeTrue();
             TupleSet min = rel.getMinTupleSet();
-            for (Tuple tuple : rel.getEncodeTupleSet()) {
+            for (Tuple tuple : encodeSets.get(rel)) {
                 BooleanFormula edge = edge(rel, tuple);
                 if (min.contains(tuple)) {
                     enc = bmgr.and(enc, bmgr.equivalence(edge, execution(tuple)));
@@ -193,7 +177,7 @@ public class WmmEncoder implements Encoder {
         public BooleanFormula visitDifference(Relation rel, Relation r1, Relation r2) {
             BooleanFormula enc = bmgr.makeTrue();
             TupleSet min = rel.getMinTupleSet();
-            for (Tuple tuple : rel.getEncodeTupleSet()) {
+            for (Tuple tuple : encodeSets.get(rel)) {
                 BooleanFormula edge = edge(rel, tuple);
                 if (min.contains(tuple)) {
                     enc = bmgr.and(enc, bmgr.equivalence(edge, execution(tuple)));
@@ -208,10 +192,10 @@ public class WmmEncoder implements Encoder {
         @Override
         public BooleanFormula visitComposition(Relation rel, Relation r1, Relation r2) {
             BooleanFormula enc = bmgr.makeTrue();
-            TupleSet r1Set = r1.getEncodeTupleSet();
-            TupleSet r2Set = r2.getEncodeTupleSet();
+            TupleSet r1Set = r1.getMaxTupleSet();
+            TupleSet r2Set = r2.getMaxTupleSet();
             TupleSet minSet = rel.getMinTupleSet();
-            for (Tuple tuple : rel.getEncodeTupleSet()) {
+            for (Tuple tuple : encodeSets.get(rel)) {
                 BooleanFormula expr = bmgr.makeFalse();
                 if (minSet.contains(tuple)) {
                     expr = execution(tuple);
@@ -230,7 +214,7 @@ public class WmmEncoder implements Encoder {
         @Override
         public BooleanFormula visitDomainIdentity(Relation rel, Relation r1) {
             BooleanFormula enc = bmgr.makeTrue();
-            for (Tuple tuple : rel.getEncodeTupleSet()) {
+            for (Tuple tuple : encodeSets.get(rel)) {
                 Event e = tuple.getFirst();
                 BooleanFormula opt = bmgr.makeFalse();
                 //TODO: Optimize using minSets (but no CAT uses this anyway)
@@ -245,7 +229,7 @@ public class WmmEncoder implements Encoder {
         public BooleanFormula visitRangeIdentity(Relation rel, Relation r1) {
             BooleanFormula enc = bmgr.makeTrue();
             //TODO: Optimize using minSets (but no CAT uses this anyway)
-            for (Tuple tuple : rel.getEncodeTupleSet()) {
+            for (Tuple tuple : encodeSets.get(rel)) {
                 Event e = tuple.getFirst();
                 BooleanFormula opt = bmgr.makeFalse();
                 for (Tuple t : r1.getMaxTupleSet().getBySecond(e)) {
@@ -261,7 +245,7 @@ public class WmmEncoder implements Encoder {
             TupleSet maySet = rel.getMaxTupleSet();
             TupleSet minSet = rel.getMinTupleSet();
             TupleSet r1Max = r1.getMaxTupleSet();
-            for (Tuple tuple : rel.getEncodeTupleSet()) {
+            for (Tuple tuple : encodeSets.get(rel)) {
                 BooleanFormula edge = edge(rel, tuple);
                 if (minSet.contains(tuple)) {
                     enc = bmgr.and(enc, bmgr.equivalence(edge, execution(tuple)));
@@ -288,7 +272,7 @@ public class WmmEncoder implements Encoder {
         public BooleanFormula visitInverse(Relation rel, Relation r1) {
             BooleanFormula enc = bmgr.makeTrue();
             TupleSet minSet = rel.getMinTupleSet();
-            for (Tuple tuple : rel.getEncodeTupleSet()) {
+            for (Tuple tuple : encodeSets.get(rel)) {
                 enc = bmgr.and(enc, bmgr.equivalence(
                         edge(rel, tuple),
                         minSet.contains(tuple) ?
@@ -305,7 +289,7 @@ public class WmmEncoder implements Encoder {
         public BooleanFormula visitFences(Relation rel, FilterAbstract fenceSet) {
             BooleanFormula enc = bmgr.makeTrue();
             List<Event> fences = program.getCache().getEvents(fenceSet);
-            for (Tuple tuple : rel.getEncodeTupleSet()) {
+            for (Tuple tuple : encodeSets.get(rel)) {
                 Event e1 = tuple.getFirst();
                 Event e2 = tuple.getSecond();
                 BooleanFormula orClause;
@@ -326,7 +310,7 @@ public class WmmEncoder implements Encoder {
         public BooleanFormula visitCriticalSections(Relation rscs) {
             BooleanFormula enc = bmgr.makeTrue();
             TupleSet maySet = rscs.getMaxTupleSet();
-            for (Tuple tuple : rscs.getEncodeTupleSet()) {
+            for (Tuple tuple : encodeSets.get(rscs)) {
                 Event lock = tuple.getFirst();
                 Event unlock = tuple.getSecond();
                 BooleanFormula relation = execution(tuple);
@@ -376,7 +360,7 @@ public class WmmEncoder implements Encoder {
                 }
                 enc = bmgr.and(enc, bmgr.implication(context.execution(store), storeExec));
             }
-            for (Tuple tuple : rmw.getEncodeTupleSet()) {
+            for (Tuple tuple : encodeSets.get(rmw)) {
                 MemEvent load = (MemEvent) tuple.getFirst();
                 MemEvent store = (MemEvent) tuple.getSecond();
                 BooleanFormula sameAddress = store.is(Tag.MATCHADDRESS) ? bmgr.makeTrue() : context.sameAddress(load, store);
@@ -391,7 +375,7 @@ public class WmmEncoder implements Encoder {
         @Override
         public BooleanFormula visitSameAddress(Relation loc) {
             BooleanFormula enc = bmgr.makeTrue();
-            for (Tuple tuple : loc.getEncodeTupleSet()) {
+            for (Tuple tuple : encodeSets.get(loc)) {
                 BooleanFormula rel = edge(loc, tuple);
                 enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(
                         execution(tuple),
@@ -562,6 +546,33 @@ public class WmmEncoder implements Encoder {
         }
         private BooleanFormula execution(Tuple tuple) {
             return context.execution(tuple.getFirst(), tuple.getSecond());
+        }
+    }
+
+    private void initializeEncodeSets() {
+        for (Relation r : context.getTask().getMemoryModel().getRelations()) {
+            encodeSets.put(r, new HashSet<>());
+        }
+        EncodeSets v = new EncodeSets();
+        Map<Relation, List<Stream<Tuple>>> queue = new HashMap<>();
+        for (Axiom a : context.getTask().getMemoryModel().getAxioms()) {
+            for (Map.Entry<Relation, Set<Tuple>> e : a.getEncodeTupleSets(context.getTask(), context.getAnalysisContext()).entrySet()) {
+                queue.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue().stream());
+            }
+        }
+        while (!queue.isEmpty()) {
+            Relation r = queue.keySet().iterator().next();
+            Set<Tuple> s = encodeSets.get(r);
+            List<Tuple> c = new ArrayList<>();
+            for (Stream<Tuple> news : queue.remove(r)) {
+                news.filter(s::add).forEach(c::add);
+            }
+            if (!c.isEmpty()) {
+                v.news = c;
+                for (Map.Entry<Relation, Stream<Tuple>> e : r.accept(v).entrySet()) {
+                    queue.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
+                }
+            }
         }
     }
 }

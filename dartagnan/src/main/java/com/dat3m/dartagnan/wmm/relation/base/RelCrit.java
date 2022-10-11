@@ -8,15 +8,12 @@ import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
-import java.util.ArrayDeque;
 import java.util.List;
-import java.util.Queue;
 
 import static com.dat3m.dartagnan.program.event.Tag.Linux.RCU_LOCK;
 import static com.dat3m.dartagnan.program.event.Tag.Linux.RCU_UNLOCK;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CRIT;
 import static com.google.common.collect.Lists.reverse;
-import static com.google.common.collect.Sets.intersection;
 import static java.util.stream.Stream.concat;
 
 public class RelCrit extends StaticRelation {
@@ -76,32 +73,5 @@ public class RelCrit extends StaticRelation {
                 }
             }
         }
-    }
-
-    @Override
-    public void addEncodeTupleSet(TupleSet tuples) {
-        Queue<Tuple> queue = new ArrayDeque<>(intersection(tuples, maxTupleSet));
-        while (!queue.isEmpty()) {
-            Tuple tuple = queue.remove();
-            if (!encodeTupleSet.add(tuple)) {
-                continue;
-            }
-            Event lock = tuple.getFirst();
-            Event unlock = tuple.getSecond();
-            for (Tuple t : maxTupleSet.getBySecond(unlock)) {
-                if (isOrdered(lock, t.getFirst(), unlock)) {
-                    queue.add(t);
-                }
-            }
-            for (Tuple t : maxTupleSet.getByFirst(lock)) {
-                if (isOrdered(lock, t.getSecond(), unlock)) {
-                    queue.add(t);
-                }
-            }
-        }
-    }
-
-    private boolean isOrdered(Event x, Event y, Event z) {
-        return x.getCId() < y.getCId() && y.getCId() < z.getCId();
     }
 }

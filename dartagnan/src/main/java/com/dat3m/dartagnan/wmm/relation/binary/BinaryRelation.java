@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Sets;
 
 /**
  *
@@ -31,17 +29,4 @@ public abstract class BinaryRelation extends Relation {
     public Relation getSecond() {
         return r2;
     }
-
-    @Override
-    public void addEncodeTupleSet(TupleSet tuples){ // Not valid for composition
-        TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
-        encodeTupleSet.addAll(activeSet);
-        activeSet.removeAll(getMinTupleSet());
-
-        if(!activeSet.isEmpty()){
-            r1.addEncodeTupleSet(activeSet);
-            r2.addEncodeTupleSet(activeSet);
-        }
-    }
-
 }

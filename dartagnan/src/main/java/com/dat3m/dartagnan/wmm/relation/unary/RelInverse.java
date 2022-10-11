@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Sets;
 
 /**
  *
@@ -45,16 +44,5 @@ public class RelInverse extends UnaryRelation {
             maxTupleSet = r1.getMaxTupleSet().inverse();
         }
         return maxTupleSet;
-    }
-
-    @Override
-    public void addEncodeTupleSet(TupleSet tuples){
-        TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
-        encodeTupleSet.addAll(activeSet);
-        activeSet.removeAll(getMinTupleSet());
-
-        if(!activeSet.isEmpty()){
-            r1.addEncodeTupleSet(activeSet.inverse());
-        }
     }
 }

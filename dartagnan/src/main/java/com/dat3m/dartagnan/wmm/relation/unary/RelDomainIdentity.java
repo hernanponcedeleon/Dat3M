@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Sets;
 
 public class RelDomainIdentity extends UnaryRelation {
 
@@ -46,22 +45,5 @@ public class RelDomainIdentity extends UnaryRelation {
             maxTupleSet = r1.getMaxTupleSet().mapped(t -> new Tuple(t.getFirst(), t.getFirst()));
         }
         return maxTupleSet;
-    }
-
-    @Override
-    public void addEncodeTupleSet(TupleSet tuples){
-        TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
-        encodeTupleSet.addAll(activeSet);
-        activeSet.removeAll(getMinTupleSet());
-
-        //TODO: Optimize using minSets (but no CAT uses this anyway)
-        if(!activeSet.isEmpty()){
-            TupleSet r1Set = new TupleSet();
-            for(Tuple tuple : activeSet){
-                r1Set.addAll(r1.getMaxTupleSet().getByFirst(tuple.getFirst()));
-
-            }
-            r1.addEncodeTupleSet(r1Set);
-        }
     }
 }

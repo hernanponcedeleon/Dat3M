@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Sets;
 
 import java.util.Map;
 import java.util.Set;
@@ -69,43 +68,5 @@ public class RelTrans extends UnaryRelation {
             removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
-    }
-
-    @Override
-    public void addEncodeTupleSet(TupleSet tuples){
-        final TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
-        final TupleSet fullActiveSet = getFullEncodeTupleSet(activeSet);
-        if(encodeTupleSet.addAll(fullActiveSet)){
-            fullActiveSet.removeAll(getMinTupleSet());
-            r1.addEncodeTupleSet(fullActiveSet);
-        }
-    }
-
-    private TupleSet getFullEncodeTupleSet(TupleSet tuples){
-        TupleSet processNow = new TupleSet(Sets.intersection(tuples, getMaxTupleSet()));
-        TupleSet result = new TupleSet();
-
-        while(!processNow.isEmpty()) {
-            TupleSet processNext = new TupleSet();
-            result.addAll(processNow);
-
-            for (Tuple tuple : processNow) {
-                Event e1 = tuple.getFirst();
-                Event e2 = tuple.getSecond();
-                for (Tuple t : r1.getMaxTupleSet().getByFirst(e1)) {
-                    Event e3 = t.getSecond();
-                    if (e3.getCId() != e1.getCId() && e3.getCId() != e2.getCId() &&
-                            maxTupleSet.contains(new Tuple(e3, e2))) {
-                        result.add(new Tuple(e1, e3));
-                        processNext.add(new Tuple(e3, e2));
-                    }
-                }
-
-            }
-            processNext.removeAll(result);
-            processNow = processNext;
-        }
-
-        return result;
     }
 }

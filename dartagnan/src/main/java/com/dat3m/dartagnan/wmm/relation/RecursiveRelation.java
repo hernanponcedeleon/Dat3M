@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.wmm.relation;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -25,15 +24,6 @@ public class RecursiveRelation extends Relation {
 
     public static String makeTerm(String name){
         return name;
-    }
-
-    @Override
-    public void initializeEncoding(SolverContext ctx){
-        if(doRecurse){
-            doRecurse = false;
-            super.initializeEncoding(ctx);
-            r1.initializeEncoding(ctx);
-        }
     }
 
     @Override
@@ -94,18 +84,5 @@ public class RecursiveRelation extends Relation {
             return maxTupleSet;
         }
         return getMaxTupleSet();
-    }
-
-    @Override
-    public void addEncodeTupleSet(TupleSet tuples){
-        if(encodeTupleSet != tuples){
-            encodeTupleSet.addAll(tuples);
-            //TODO: This encodeTupleSet is never used except to stop this recursion
-            // Can it get larger than r1's encodeTupleSet???
-        }
-        if(doRecurse){
-            doRecurse = false;
-            r1.addEncodeTupleSet(encodeTupleSet);
-        }
     }
 }

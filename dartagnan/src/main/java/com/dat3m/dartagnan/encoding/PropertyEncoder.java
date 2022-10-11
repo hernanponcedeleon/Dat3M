@@ -23,7 +23,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -123,7 +127,7 @@ public class PropertyEncoder implements Encoder {
     			continue;
     		}
             BooleanFormula v = CAT.getSMTVariable(ax, ctx);
-			cat = bmgr.and(cat, bmgr.equivalence(v, ax.consistent(ax.getRelation().getEncodeTupleSet(), context)));
+			cat = bmgr.and(cat, bmgr.equivalence(v, ax.consistent(context)));
 			one = bmgr.or(one, v);
     	}
 		// No need to use the SMT variable if the formula is trivially false
