@@ -38,7 +38,7 @@ public abstract class ModelChecker {
         return res;
     }
 
-    public EncodingContext encoding() {
+    public EncodingContext encodingContext() {
         return context;
     }
 
