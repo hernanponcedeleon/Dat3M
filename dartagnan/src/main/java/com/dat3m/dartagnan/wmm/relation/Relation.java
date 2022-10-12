@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.encoding.Encoder;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.Context;
@@ -24,17 +24,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
-
 /**
  *
  * @author Florian Furbach
  */
 //TODO: Remove "Encoder" once we split data and operations appropriately
 public abstract class Relation implements Constraint, Encoder, Dependent<Relation> {
-
-    public static boolean PostFixApprox = false;
 
     protected String name;
     protected String term;
@@ -164,29 +159,8 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
         return getName().equals(((Relation)obj).getName());
     }
 
-    public BooleanFormula encode(SolverContext ctx) {
-        return encodeApprox(ctx);
-    }
-
-    protected abstract BooleanFormula encodeApprox(SolverContext ctx);
-
-    public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
-        return !getMaxTupleSet().contains(edge) ?
-        		ctx.getFormulaManager().getBooleanFormulaManager().makeFalse() :
-                edge(getName(), edge.getFirst(), edge.getSecond(), ctx);
-    }
-
-    public final BooleanFormula getSMTVar(Event e1, Event e2, SolverContext ctx) {
-        return getSMTVar(new Tuple(e1, e2), ctx);
-    }
-
-    protected BooleanFormula getExecPair(Event e1, Event e2, SolverContext ctx) {
-        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
-        return execution(e1, e2, exec, ctx);
-    }
-
-    protected final BooleanFormula getExecPair(Tuple t, SolverContext ctx) {
-        return getExecPair(t.getFirst(), t.getSecond(), ctx);
+    public BooleanFormula getSMTVar(Tuple edge, EncodingContext c) {
+        return c.edgeVariable(getName(), edge.getFirst(), edge.getSecond());
     }
 
     protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {
@@ -195,19 +169,19 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
     }
 
     // ========================== Utility methods =========================
-    
+
     public boolean isStaticRelation() {
     	return this instanceof StaticRelation;
     }
-    
+
     public boolean isUnaryRelation() {
     	return this instanceof UnaryRelation;
     }
-    
+
     public boolean isBinaryRelation() {
     	return this instanceof BinaryRelation;
     }
-    
+
     public boolean isRecursiveRelation() {
     	return this instanceof RecursiveRelation;
     }
@@ -215,17 +189,17 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
     public Relation getInner() {
         return (isUnaryRelation() || isRecursiveRelation()) ? getDependencies().get(0) : null;
     }
-    
+
     public Relation getFirst() {
     	return isBinaryRelation() ? getDependencies().get(0) : null;
     }
-    
+
     public Relation getSecond() {
     	return isBinaryRelation() ? getDependencies().get(1) : null;
     }
 
     public interface Visitor <T> {
-        default T visitDefinition(Relation rel, List<? extends Relation> dependencies) { return null; }
+        default T visitDefinition(Relation rel, List<? extends Relation> dependencies) { throw new UnsupportedOperationException("applying" + getClass().getSimpleName() + " to relation " + rel); }
         default T visitUnion(Relation rel, Relation... operands) { return visitDefinition(rel, List.of(operands)); }
         default T visitIntersection(Relation rel, Relation... operands) { return visitDefinition(rel, List.of(operands)); }
         default T visitDifference(Relation rel, Relation superset, Relation complement) { return visitDefinition(rel, List.of(superset, complement)); }

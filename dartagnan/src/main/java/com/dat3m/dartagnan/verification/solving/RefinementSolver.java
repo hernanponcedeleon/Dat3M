@@ -1,17 +1,14 @@
 package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.configuration.Baseline;
-import com.dat3m.dartagnan.encoding.ProgramEncoder;
-import com.dat3m.dartagnan.encoding.PropertyEncoder;
-import com.dat3m.dartagnan.encoding.SymmetryEncoder;
-import com.dat3m.dartagnan.encoding.WmmEncoder;
+import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
@@ -93,15 +90,16 @@ public class RefinementSolver extends ModelChecker {
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
     //TODO (2): Add possibility for Refinement to handle CAT-properties (it ignores them for now).
-    public static Result run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    public static RefinementSolver run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
         RefinementSolver solver = new RefinementSolver(ctx, prover, task);
         task.getConfig().inject(solver);
         logger.info("{}: {}", BASELINE, solver.baselines);
-        return solver.run();
+        solver.run();
+        return solver;
     }
 
-    private Result run() throws InterruptedException, SolverException, InvalidConfigurationException {
+    private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
 
         Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
@@ -123,12 +121,13 @@ public class RefinementSolver extends ModelChecker {
         performStaticWmmAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
 
-        ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
-        PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, baselineModel, analysisContext, config);
+        context = EncodingContext.of(baselineTask, baselineContext, ctx);
+        ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
+        PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         // We use the original memory model for symmetry breaking because we need axioms
         // to compute the breaking order.
-        SymmetryEncoder symmEncoder = SymmetryEncoder.fromConfig(memoryModel, analysisContext, config);
-        WmmEncoder baselineEncoder = WmmEncoder.fromConfig(baselineModel, baselineContext, config);
+        SymmetryEncoder symmEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);
+        WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
         programEncoder.initializeEncoding(ctx);
         propertyEncoder.initializeEncoding(ctx);
         symmEncoder.initializeEncoding(ctx);
@@ -137,20 +136,21 @@ public class RefinementSolver extends ModelChecker {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula globalRefinement = bmgr.makeTrue();
 
-        WMMSolver solver = new WMMSolver(task, analysisContext, cutRelations);
+        WMMSolver solver = WMMSolver.withContext(context, cutRelations, task, analysisContext);
         Refiner refiner = new Refiner(memoryModel, analysisContext);
         CAATSolver.Status status = INCONSISTENT;
 
-        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
+        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification();
         if(bmgr.isFalse(propertyEncoding)) {
             logger.info("Verification finished: property trivially holds");
-       		return PASS;        	
+            res = PASS;
+       	    return;
         }
 
         logger.info("Starting encoding using " + ctx.getVersion());
-        prover.addConstraint(programEncoder.encodeFullProgram(ctx));
-        prover.addConstraint(baselineEncoder.encodeFullMemoryModel(ctx));
-        prover.addConstraint(symmEncoder.encodeFullSymmetry(ctx));
+        prover.addConstraint(programEncoder.encodeFullProgram());
+        prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
+        prover.addConstraint(symmEncoder.encodeFullSymmetry());
 
         prover.push();
         prover.addConstraint(propertyEncoding);
@@ -185,7 +185,7 @@ public class RefinementSolver extends ModelChecker {
             curTime = System.currentTimeMillis();
             WMMSolver.Result solverResult;
             try (Model model = prover.getModel()) {
-                solverResult = solver.check(model, ctx);
+                solverResult = solver.check(model);
             } catch (SolverException e) {
                 logger.error(e);
                 throw e;
@@ -199,7 +199,7 @@ public class RefinementSolver extends ModelChecker {
             if (status == INCONSISTENT) {
                 long refineTime = System.currentTimeMillis();
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
-                BooleanFormula refinement = refiner.refine(reasons, ctx);
+                BooleanFormula refinement = refiner.refine(reasons, context);
                 prover.addConstraint(refinement);
                 globalRefinement = bmgr.and(globalRefinement, refinement); // Track overall refinement progress
                 totalRefiningTime += (System.currentTimeMillis() - refineTime);
@@ -250,26 +250,25 @@ public class RefinementSolver extends ModelChecker {
 
         if (status == INCONCLUSIVE) {
             // CAATSolver got no result (should not be able to happen), so we cannot proceed further.
-            return UNKNOWN;
+            res = UNKNOWN;
+            return;
         }
 
-
-        Result veriResult;
         long boundCheckTime = 0;
         if (prover.isUnsat()) {
             // ------- CHECK BOUNDS -------
             lastTime = System.currentTimeMillis();
             prover.pop();
             // Add bound check
-            prover.addConstraint(propertyEncoder.encodeBoundEventExec(ctx));
+            prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             // Add back the constraints found during Refinement
             // TODO: We actually need to perform a second refinement to check for bound reachability
             //  This is needed for the seqlock.c benchmarks!
             prover.addConstraint(globalRefinement);
-            veriResult = !prover.isUnsat() ? UNKNOWN : PASS;
+            res = !prover.isUnsat() ? UNKNOWN : PASS;
             boundCheckTime = System.currentTimeMillis() - lastTime;
         } else {
-            veriResult = FAIL;
+            res = FAIL;
         }
 
         if (logger.isInfoEnabled()) {
@@ -285,9 +284,8 @@ public class RefinementSolver extends ModelChecker {
     		logger.debug(smtStatistics.toString());
         }
 
-        veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;
-        logger.info("Verification finished with result " + veriResult);
-        return veriResult;
+        res = program.getAss().getInvert() ? res.invert() : res;
+        logger.info("Verification finished with result " + res);
     }
     // ======================= Helper Methods ======================
 
@@ -327,42 +325,29 @@ public class RefinementSolver extends ModelChecker {
         if (namedCopy != null) {
             return namedCopy;
         }
-        Relation first = rel.getFirst() == null ? null : getCopyOfRelation(rel.getFirst(), m);
-        Relation second = rel.getSecond() == null ? null : getCopyOfRelation(rel.getSecond(), m);
-        Relation copy = copy(rel, first, second);
+        Relation copy = rel.accept(new RelationCopier(m));
         if (rel.getIsNamed()) {
             copy.setName(rel.getName());
-            m.updateRelation(copy);
         }
-
+        m.addRelation(copy);
         return copy;
     }
 
-    private static Relation copy(Relation r, Relation first, Relation second) {
-        if (r instanceof RelUnion) {
-            return new RelUnion(first, second);
-        } else if (r instanceof RelIntersection) {
-            return new RelIntersection(first, second);
-        } else if (r instanceof RelMinus) {
-            return new RelMinus(first, second);
-        } else if (r instanceof RelComposition) {
-            return new RelComposition(first, second);
-        } else if (r instanceof RelInverse) {
-            return new RelInverse(first);
-        } else if (r instanceof RelDomainIdentity) {
-            return new RelDomainIdentity(first);
-        } else if (r instanceof RelRangeIdentity) {
-            return new RelRangeIdentity(first);
-        } else if (r instanceof RelTrans) {
-            return new RelTrans(first);
-        } else if (r instanceof RelSetIdentity) {
-            return new RelSetIdentity(((RelSetIdentity) r).getFilter());
-        } else if (r instanceof RelCartesian) {
-            return new RelCartesian(((RelCartesian) r).getFirstFilter(), ((RelCartesian) r).getSecondFilter());
-        } else if (r instanceof RelFencerel) {
-            return new RelFencerel(((RelFencerel) r).getFilter());
-        }
-        throw new UnsupportedOperationException("copying relation " + r);
+    private static final class RelationCopier implements Relation.Visitor<Relation> {
+        final Wmm targetModel;
+        RelationCopier(Wmm m) { targetModel = m; }
+        @Override public Relation visitUnion(Relation rel, Relation... r) { return new RelUnion(copy(r[0]), copy(r[1])); }
+        @Override public Relation visitIntersection(Relation rel, Relation... r) { return new RelIntersection(copy(r[0]), copy(r[1])); }
+        @Override public Relation visitDifference(Relation rel, Relation r1, Relation r2) { return new RelMinus(copy(r1), copy(r2)); }
+        @Override public Relation visitComposition(Relation rel, Relation r1, Relation r2) { return new RelComposition(copy(r1), copy(r2)); }
+        @Override public Relation visitInverse(Relation rel, Relation r1) { return new RelInverse(copy(r1)); }
+        @Override public Relation visitDomainIdentity(Relation rel, Relation r1) { return new RelDomainIdentity(copy(r1)); }
+        @Override public Relation visitRangeIdentity(Relation rel, Relation r1) { return new RelRangeIdentity(copy(r1)); }
+        @Override public Relation visitTransitiveClosure(Relation rel, Relation r1) { return new RelTrans(copy(r1)); }
+        @Override public Relation visitIdentity(Relation rel, FilterAbstract filter) { return new RelSetIdentity(filter); }
+        @Override public Relation visitProduct(Relation rel, FilterAbstract f1, FilterAbstract f2) { return new RelCartesian(f1, f2); }
+        @Override public Relation visitFences(Relation rel, FilterAbstract type) { return new RelFencerel(type); }
+        private Relation copy(Relation r) { return getCopyOfRelation(r, targetModel); }
     }
 
     // -------------------- Printing -----------------------------
