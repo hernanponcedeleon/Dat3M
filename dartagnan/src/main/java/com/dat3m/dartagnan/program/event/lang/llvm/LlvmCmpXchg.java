@@ -3,8 +3,12 @@ package com.dat3m.dartagnan.program.event.lang.llvm;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.google.common.collect.ImmutableSet;
 
 import static com.dat3m.dartagnan.program.event.Tag.STRONG;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class LlvmCmpXchg extends LlvmAbstract {
 
@@ -27,6 +31,14 @@ public class LlvmCmpXchg extends LlvmAbstract {
     	return expectedValue;
     }
     
+    @Override
+    public ImmutableSet<Register> getDataRegs() {
+        Set<Register> registers = new HashSet<>();
+        registers.addAll(value.getRegs());
+        registers.addAll(expectedValue.getRegs());
+        return ImmutableSet.copyOf(registers);
+    }
+
     @Override
     public String toString() {
     	String tag = is(STRONG) ? "_strong" : "_weak";
