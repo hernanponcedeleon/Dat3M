@@ -46,7 +46,6 @@ public class WmmEncoder implements Encoder {
 
     private final EncodingContext context;
     final Map<Relation, Set<Tuple>> encodeSets = new HashMap<>();
-    private boolean isInitialized = false;
 
     // =====================================================================
 
@@ -64,15 +63,6 @@ public class WmmEncoder implements Encoder {
 
     @Override
     public void initializeEncoding(SolverContext ctx) {
-        Wmm memoryModel = context.getTask().getMemoryModel();
-        for(String relName : Wmm.BASE_RELATIONS) {
-            memoryModel.getRelation(relName);
-        }
-        isInitialized = true;
-    }
-
-    private void checkInitialized() {
-        Preconditions.checkState(isInitialized, "initializeEncoding must get called before encoding.");
     }
 
     public BooleanFormula encodeFullMemoryModel() {
@@ -86,7 +76,6 @@ public class WmmEncoder implements Encoder {
     // relations that are needed for the axioms (but does NOT encode the axioms themselves yet)
     // NOTE: It avoids encoding relations that do NOT affect the axioms, i.e. unused relations
     public BooleanFormula encodeRelations() {
-        checkInitialized();
         logger.info("Encoding relations");
         Wmm memoryModel = context.getTask().getMemoryModel();
         final DependencyGraph<Relation> depGraph = DependencyGraph.from(
@@ -105,7 +94,6 @@ public class WmmEncoder implements Encoder {
 
     // Encodes all axioms. This should be called after <encodeRelations>
     public BooleanFormula encodeConsistency() {
-        checkInitialized();
         logger.info("Encoding consistency");
         Wmm memoryModel = context.getTask().getMemoryModel();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
