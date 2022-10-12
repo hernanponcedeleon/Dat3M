@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.Register;
@@ -10,14 +11,11 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
-
 public class Local extends Event implements RegWriter, RegReaderData {
 	
 	protected final Register register;
 	protected ExprInterface expr;
-	private Formula regResultExpr;
-	
+
 	public Local(Register register, ExprInterface expr) {
 		this.register = register;
 		this.expr = expr;
@@ -28,13 +26,6 @@ public class Local extends Event implements RegWriter, RegReaderData {
 		super(other);
 		this.register = other.register;
 		this.expr = other.expr;
-		this.regResultExpr = other.regResultExpr;
-	}
-
-	@Override
-	public void initializeEncoding(SolverContext ctx) {
-		super.initializeEncoding(ctx);
-		regResultExpr = register.toIntFormulaResult(this, ctx);
 	}
 
 	public ExprInterface getExpr(){
@@ -51,11 +42,6 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
 	@Override
-	public Formula getResultRegisterExpr(){
-		return regResultExpr;
-	}
-
-	@Override
 	public ImmutableSet<Register> getDataRegs(){
 		return expr.getRegs();
 	}
@@ -66,15 +52,16 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
 	@Override
-	public BooleanFormula encodeExec(SolverContext ctx){
-		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+	public BooleanFormula encodeExec(EncodingContext context) {
+		SolverContext ctx = context.getSolverContext();
+		BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 		
-		BooleanFormula enc = super.encodeExec(ctx);
+		BooleanFormula enc = super.encodeExec(context);
 		if(expr instanceof INonDet) {
 			enc = bmgr.and(enc, ((INonDet)expr).encodeBounds(expr.toIntFormula(this, ctx) instanceof BitvectorFormula, ctx));
 		}
 
-		return bmgr.and(enc, generalEqual(regResultExpr, expr.toIntFormula(this, ctx), ctx));
+		return bmgr.and(enc, context.equal(context.result(this), expr.toIntFormula(this, ctx)));
 	}
 
 	// Unrolling

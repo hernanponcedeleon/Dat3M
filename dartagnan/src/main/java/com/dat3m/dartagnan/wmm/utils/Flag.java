@@ -1,9 +1,7 @@
 package com.dat3m.dartagnan.wmm.utils;
 
-import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
-
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.FormulaManager;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -14,8 +12,8 @@ public enum  Flag {
     // TODO: Add linux when implemented
     public static ImmutableSet<Flag> all = ImmutableSet.of(ARM_UNPREDICTABLE_BEHAVIOUR);
 
-    public BooleanFormula repr(SolverContext ctx){
-    	return ctx.getFormulaManager().makeVariable(BooleanType, code());
+    public BooleanFormula repr(FormulaManager m){
+    	return m.getBooleanFormulaManager().makeVariable(code());
     }
 
     @Override

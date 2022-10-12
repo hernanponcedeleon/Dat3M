@@ -5,16 +5,11 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 public abstract class MemEvent extends Event {
 
     protected IExpr address;
     protected String mo;
-
-    protected Formula memAddressExpr;
-    protected Formula memValueExpr;
 
     public MemEvent(IExpr address, String mo){
         this.address = address;
@@ -27,25 +22,7 @@ public abstract class MemEvent extends Event {
     protected MemEvent(MemEvent other){
         super(other);
         this.address = other.address;
-        this.memAddressExpr = other.memAddressExpr;
-        this.memValueExpr = other.memValueExpr;
         this.mo = other.mo;
-    }
-
-    @Override
-    public void initializeEncoding(SolverContext ctx) {
-        super.initializeEncoding(ctx);
-        memAddressExpr = address.toIntFormula(this, ctx);
-    }
-
-    public Formula getMemAddressExpr(){
-    	Preconditions.checkState(memAddressExpr != null);
-    	return memAddressExpr;
-    }
-
-    public Formula getMemValueExpr(){
-    	Preconditions.checkState(memValueExpr != null);
-    	return memValueExpr;
     }
 
     public IExpr getAddress(){
