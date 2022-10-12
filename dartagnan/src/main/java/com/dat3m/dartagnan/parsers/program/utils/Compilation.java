@@ -58,7 +58,7 @@ public class Compilation {
 
 		ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("opt", "-enable-new-pm=0", "-load=" + System.getenv("DAT3M_PASSES_HOME") + 
-			"/atomic-replace.so", "-atomic-replace"));
+			"/libatomic-replace.so", "-atomic-replace"));
 		cmd.addAll(optPasses);
 		cmd.addAll(asList(file.getAbsolutePath(), "-S", "-o", output));
     	
