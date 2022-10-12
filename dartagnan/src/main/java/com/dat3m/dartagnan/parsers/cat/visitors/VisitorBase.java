@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Set;
 
 public class VisitorBase extends CatBaseVisitor<Object> {
 
@@ -84,7 +83,6 @@ public class VisitorBase extends CatBaseVisitor<Object> {
         for (int i = 0; i < size; i++) {
             recursiveGroup[i + 1].setConcreteRelation(relation(ctx.letRecAndDefinition(i).e));
         }
-        wmm.addRecursiveGroup(Set.of(recursiveGroup));
         return null;
     }
 

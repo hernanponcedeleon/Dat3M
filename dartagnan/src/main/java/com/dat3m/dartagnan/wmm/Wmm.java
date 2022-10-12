@@ -30,7 +30,6 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
-import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -51,7 +50,6 @@ public class Wmm {
     private final List<Axiom> axioms = new ArrayList<>();
     private final Map<String, FilterAbstract> filters = new HashMap<>();
     private final Map<String, Relation> relationMap = new HashMap<>();
-    private final List<RecursiveGroup> recursiveGroups = new ArrayList<>();
 
     public Wmm() {
         BASE_RELATIONS.forEach(this::getRelation);
@@ -130,10 +128,6 @@ public class Wmm {
         }
     }
 
-    public List<RecursiveGroup> getRecursiveGroups() {
-        return recursiveGroups;
-    }
-
     public void addFilter(FilterAbstract filter) {
         filters.put(filter.getName(), filter);
     }
@@ -142,11 +136,7 @@ public class Wmm {
         return filters.computeIfAbsent(name, FilterBasic::get);
     }
 
-    public void addRecursiveGroup(Set<RecursiveRelation> recursiveGroup) {
-        recursiveGroups.add(new RecursiveGroup(recursiveGroup));
-    }
-
-
+    @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
 

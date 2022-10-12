@@ -1,11 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation;
 
-import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
@@ -14,23 +11,14 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- *
- * @author Florian Furbach
- */
-//TODO: Remove "Encoder" once we split data and operations appropriately
-public abstract class Relation implements Constraint, Encoder, Dependent<Relation> {
+public abstract class Relation implements Constraint, Dependent<Relation> {
 
     protected String name;
     protected String term;
-
-    protected VerificationTask task;
-    protected Context analysisContext;
 
     public Relation() { }
 
@@ -50,21 +38,7 @@ public abstract class Relation implements Constraint, Encoder, Dependent<Relatio
         return relations.subList(1, relations.size());
     }
 
-    // TODO: The following two methods are provided because currently Relations are treated as three things:
-    //  data objects, static analysers (relation analysis) and encoders of said data objects.
-    //  Once we split these aspects, we might get rid of these methods
-
     public void configure(Configuration config) throws InvalidConfigurationException { }
-    // Due to being an encoder
-    public void initializeEncoding(SolverContext ctx) {
-    }
-
-    // TODO: We misuse <task> as data object and analysis information object.
-    // Due to partaking in relation analysis
-    public void initializeRelationAnalysis(VerificationTask task, Context context) {
-        this.task = task;
-        this.analysisContext = context;
-    }
 
     public String getName() {
         return name != null ? name : term;

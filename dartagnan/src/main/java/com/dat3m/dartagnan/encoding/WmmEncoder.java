@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Flag;
-import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
@@ -69,15 +68,6 @@ public class WmmEncoder implements Encoder {
         for(String relName : Wmm.BASE_RELATIONS) {
             memoryModel.getRelation(relName);
         }
-
-        for(RecursiveGroup recursiveGroup : memoryModel.getRecursiveGroups()){
-            recursiveGroup.setDoRecurse();
-        }
-
-        for(Relation relation : memoryModel.getRelations()){
-            relation.initializeEncoding(ctx);
-        }
-
         isInitialized = true;
     }
 
