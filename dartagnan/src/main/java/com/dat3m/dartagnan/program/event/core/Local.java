@@ -53,7 +53,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 
 	@Override
 	public BooleanFormula encodeExec(EncodingContext context) {
-		SolverContext ctx = context.solverContext();
+		SolverContext ctx = context.getSolverContext();
 		BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 		
 		BooleanFormula enc = super.encodeExec(context);

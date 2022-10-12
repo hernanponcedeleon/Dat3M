@@ -106,27 +106,27 @@ public abstract class AbstractSvCompTest {
     @CSVLogger.FileName("csv/two-solvers")
     public void testTwoSolvers() throws Exception {
         TwoSolvers s = TwoSolvers.run(contextProvider.get(), proverProvider.get(), prover2Provider.get(), taskProvider.get());
-        assertEquals(expectedResultProvider.get(), s.result());
+        assertEquals(expectedResultProvider.get(), s.getResult());
     }
 
     //@Test
     @CSVLogger.FileName("csv/assume")
     public void testAssume() throws Exception {
         AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expectedResultProvider.get(), s.result());
+        assertEquals(expectedResultProvider.get(), s.getResult());
     }
 
     @Test
     @CSVLogger.FileName("csv/incremental")
     public void testIncremental() throws Exception {
         IncrementalSolver s = IncrementalSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expectedResultProvider.get(), s.result());
+        assertEquals(expectedResultProvider.get(), s.getResult());
     }
 
     //@Test
     @CSVLogger.FileName("csv/refinement")
     public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expectedResultProvider.get(), s.result());
+        assertEquals(expectedResultProvider.get(), s.getResult());
     }
 }

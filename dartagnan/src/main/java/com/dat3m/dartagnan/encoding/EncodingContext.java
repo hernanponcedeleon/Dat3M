@@ -83,16 +83,16 @@ public final class EncodingContext {
         return useSATEncoding;
     }
 
-    public VerificationTask task() {
+    public VerificationTask getTask() {
         return verificationTask;
     }
 
-    public Context analysisContext() {
+    public Context getAnalysisContext() {
         return analysisContext;
     }
 
     @Deprecated
-    public SolverContext solverContext() {
+    public SolverContext getSolverContext() {
         return solverContext;
     }
 
@@ -108,8 +108,8 @@ public final class EncodingContext {
         return controlFlowVariables.get(event);
     }
 
-    public BooleanFormula jumpCondition(Event event) {
-        return ((CondJump) event).getGuard().toBoolFormula(event, solverContext);
+    public BooleanFormula jumpCondition(CondJump event) {
+        return event.getGuard().toBoolFormula(event, solverContext);
     }
 
     public BooleanFormula execution(Event event) {

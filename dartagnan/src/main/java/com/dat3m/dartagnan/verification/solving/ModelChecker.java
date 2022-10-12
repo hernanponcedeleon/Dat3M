@@ -34,11 +34,11 @@ public abstract class ModelChecker {
     protected Result res = Result.UNKNOWN;
     protected EncodingContext context;
 
-    public final Result result() {
+    public final Result getResult() {
         return res;
     }
 
-    public EncodingContext encodingContext() {
+    public EncodingContext getEncodingContext() {
         return context;
     }
 

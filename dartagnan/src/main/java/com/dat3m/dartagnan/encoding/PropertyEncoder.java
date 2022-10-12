@@ -52,18 +52,18 @@ public class PropertyEncoder implements Encoder {
     // =====================================================================
 
     private PropertyEncoder(EncodingContext c) {
-        checkArgument(c.task().getProgram().isCompiled(),
+        checkArgument(c.getTask().getProgram().isCompiled(),
                 "The program must get compiled first before its properties can be encoded.");
         context = c;
-        program = c.task().getProgram();
-        memoryModel = c.task().getMemoryModel();
-        exec = c.analysisContext().requires(ExecutionAnalysis.class);
-        alias = c.analysisContext().requires(AliasAnalysis.class);
+        program = c.getTask().getProgram();
+        memoryModel = c.getTask().getMemoryModel();
+        exec = c.getAnalysisContext().requires(ExecutionAnalysis.class);
+        alias = c.getAnalysisContext().requires(AliasAnalysis.class);
     }
 
     public static PropertyEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
         PropertyEncoder encoder = new PropertyEncoder(context);
-        context.task().getConfig().inject(encoder);
+        context.getTask().getConfig().inject(encoder);
         return encoder;
     }
 
@@ -71,7 +71,7 @@ public class PropertyEncoder implements Encoder {
     public void initializeEncoding(SolverContext context) { }
 
     public BooleanFormula encodeSpecification() {
-        EnumSet<Property> property = context.task().getProperty();
+        EnumSet<Property> property = context.getTask().getProperty();
     	BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
     	// We have a default property therefore this false will always be overwritten
     	BooleanFormula enc = bmgr.makeFalse();
@@ -102,7 +102,7 @@ public class PropertyEncoder implements Encoder {
 
     public BooleanFormula encodeAssertions() {
         logger.info("Encoding assertions");
-        SolverContext ctx = context.solverContext();
+        SolverContext ctx = context.getSolverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assertionEncoding = program.getAss().encode(context);
         // We use the SMT variable to extract from the model if the property was violated
@@ -113,7 +113,7 @@ public class PropertyEncoder implements Encoder {
 
     public BooleanFormula encodeCATProperties() {
         logger.info("Encoding CAT properties");
-        SolverContext ctx = context.solverContext();
+        SolverContext ctx = context.getSolverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula cat = bmgr.makeTrue();
         BooleanFormula one = bmgr.makeFalse();
@@ -171,7 +171,7 @@ public class PropertyEncoder implements Encoder {
             }
         }
 
-        SolverContext ctx = context.solverContext();
+        SolverContext ctx = context.getSolverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Relation rf = memoryModel.getRelation(RelationNameRepository.RF);
         // Compute "stuckness": A thread is stuck if it reaches a spinloop bound event
@@ -223,7 +223,7 @@ public class PropertyEncoder implements Encoder {
                         ax.isAcyclicity() && ax.getRelation().equals(hb)),
                 "The provided WMM needs an 'acyclic(hb)' axiom to encode data races.");
         logger.info("Encoding data-races");
-        SolverContext ctx = context.solverContext();
+        SolverContext ctx = context.getSolverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
 
@@ -259,7 +259,7 @@ public class PropertyEncoder implements Encoder {
 
     private BooleanFormula encodeLastCoConstraints() {
         final Relation co = memoryModel.getRelation(CO);
-        SolverContext ctx = context.solverContext();
+        SolverContext ctx = context.getSolverContext();
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final TupleSet minSet = co.getMinTupleSet();
         final TupleSet maxSet = co.getMaxTupleSet();

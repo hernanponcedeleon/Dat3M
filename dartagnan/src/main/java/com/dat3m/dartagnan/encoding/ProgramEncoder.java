@@ -45,16 +45,16 @@ public class ProgramEncoder implements Encoder {
     private final Dependency dep;
 
     private ProgramEncoder(EncodingContext c) {
-        Preconditions.checkArgument(c.task().getProgram().isCompiled(), "The program must be compiled before encoding.");
+        Preconditions.checkArgument(c.getTask().getProgram().isCompiled(), "The program must be compiled before encoding.");
         context = c;
-        c.analysisContext().requires(BranchEquivalence.class);
-        this.exec = c.analysisContext().requires(ExecutionAnalysis.class);
-        this.dep = c.analysisContext().requires(Dependency.class);
+        c.getAnalysisContext().requires(BranchEquivalence.class);
+        this.exec = c.getAnalysisContext().requires(ExecutionAnalysis.class);
+        this.dep = c.getAnalysisContext().requires(Dependency.class);
     }
 
     public static ProgramEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
         ProgramEncoder encoder = new ProgramEncoder(context);
-        context.task().getConfig().inject(encoder);
+        context.getTask().getConfig().inject(encoder);
         logger.info("{}: {}", INITIALIZE_REGISTERS, encoder.initializeRegisters);
         return encoder;
     }
@@ -81,14 +81,14 @@ public class ProgramEncoder implements Encoder {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         
         BooleanFormula enc = bmgr.makeTrue();
-        for(Thread t : context.task().getProgram().getThreads()){
+        for(Thread t : context.getTask().getProgram().getThreads()){
             enc = bmgr.and(enc, encodeThreadCF(t));
         }
         return enc;
     }
 
     private BooleanFormula encodeThreadCF(Thread thread) {
-        SolverContext ctx = context.solverContext();
+        SolverContext ctx = context.getSolverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         Map<Label, Set<Event>> labelJumpMap = new HashMap<>();
@@ -122,10 +122,10 @@ public class ProgramEncoder implements Encoder {
 
     // Assigns each Address a fixed memory address.
     public BooleanFormula encodeMemory() {
-        SolverContext ctx = context.solverContext();
+        SolverContext ctx = context.getSolverContext();
         logger.info("Encoding fixed memory");
 
-        Memory memory = context.task().getProgram().getMemory();
+        Memory memory = context.getTask().getProgram().getMemory();
         FormulaManager fmgr = ctx.getFormulaManager();
         
         BooleanFormula[] addrExprs;
@@ -155,7 +155,7 @@ public class ProgramEncoder implements Encoder {
      */
     public BooleanFormula encodeDependencies() {
         logger.info("Encoding dependencies");
-        SolverContext ctx = context.solverContext();
+        SolverContext ctx = context.getSolverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         for(Map.Entry<Event,Map<Register,Dependency.State>> e : dep.getAll()) {
@@ -194,19 +194,19 @@ public class ProgramEncoder implements Encoder {
     }
 
     public BooleanFormula encodeFilter() {
-    	return context.task().getProgram().getAssFilter() != null ?
-                context.task().getProgram().getAssFilter().encode(context) :
+    	return context.getTask().getProgram().getAssFilter() != null ?
+                context.getTask().getProgram().getAssFilter().encode(context) :
     			context.getBooleanFormulaManager().makeTrue();
     }
     
     public BooleanFormula encodeFinalRegisterValues() {
-        SolverContext ctx = context.solverContext();
+        SolverContext ctx = context.getSolverContext();
         logger.info("Encoding final register values");
 
         FormulaManager fmgr = ctx.getFormulaManager();
         BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 
-        if (context.task().getProgram().getFormat() == Program.SourceLanguage.BOOGIE) {
+        if (context.getTask().getProgram().getFormat() == Program.SourceLanguage.BOOGIE) {
             // Boogie does not have assertions over final register values, so we do not need to encode them.
             return bmgr.makeTrue();
         }

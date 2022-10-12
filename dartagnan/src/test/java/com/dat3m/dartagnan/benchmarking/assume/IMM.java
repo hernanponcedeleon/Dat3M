@@ -53,7 +53,7 @@ public class IMM extends AbstractDartagnanTest {
 	@CSVLogger.FileName("csv/assume")
 	public void testAssume() throws Exception {
 		AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-		assertEquals(expected, s.result());
+		assertEquals(expected, s.getResult());
 	}
 
 }

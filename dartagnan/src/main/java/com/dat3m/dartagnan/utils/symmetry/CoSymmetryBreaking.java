@@ -89,9 +89,9 @@ public class CoSymmetryBreaking {
 
     public CoSymmetryBreaking(EncodingContext context) {
         this.context = context;
-        this.task = context.task();
-        this.symm = context.analysisContext().requires(ThreadSymmetry.class);
-        this.alias = context.analysisContext().requires(AliasAnalysis.class);
+        this.task = context.getTask();
+        this.symm = context.getAnalysisContext().requires(ThreadSymmetry.class);
+        this.alias = context.getAnalysisContext().requires(AliasAnalysis.class);
         this.co = task.getMemoryModel().getRelation(RelationNameRepository.CO);
         infoMap = new HashMap<>();
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {

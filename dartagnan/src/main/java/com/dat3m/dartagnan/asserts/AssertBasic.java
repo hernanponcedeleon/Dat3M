@@ -24,7 +24,7 @@ public class AssertBasic extends AbstractAssert {
 
     @Override
     public BooleanFormula encode(EncodingContext context) {
-        SolverContext ctx = context.solverContext();
+        SolverContext ctx = context.getSolverContext();
         return op.encode(e1.getLastValueExpr(ctx), e2.getLastValueExpr(ctx), ctx);
     }
 

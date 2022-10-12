@@ -69,19 +69,19 @@ public class WitnessBuilder {
 
 	public static WitnessBuilder of(EncodingContext context, ProverEnvironment prover, Result result) throws InvalidConfigurationException {
 		WitnessBuilder b = new WitnessBuilder(context, prover, result);
-		context.task().getConfig().inject(b);
+		context.getTask().getConfig().inject(b);
 		return b;
 	}
 
 	public WitnessGraph build() {
-		for(Thread t : context.task().getProgram().getThreads()) {
+		for(Thread t : context.getTask().getProgram().getThreads()) {
 			for(Event e : t.getEntry().getSuccessors()) {
 				eventThreadMap.put(e, t.getId() - 1);
 			}
 		}
 
 		WitnessGraph graph = new WitnessGraph();
-		graph.addAttribute(UNROLLBOUND.toString(), valueOf(context.task().getProgram().getUnrollingBound()));
+		graph.addAttribute(UNROLLBOUND.toString(), valueOf(context.getTask().getProgram().getUnrollingBound()));
 		graph.addAttribute(WITNESSTYPE.toString(), type + "_witness");
 		graph.addAttribute(SOURCECODELANG.toString(), "C");
 		graph.addAttribute(PRODUCER.toString(), "Dartagnan");
@@ -116,9 +116,9 @@ public class WitnessBuilder {
 			return graph;
 		}
 
-		SolverContext ctx = context.solverContext();
+		SolverContext ctx = context.getSolverContext();
 		try (Model model = prover.getModel()) {
-			List<Event> execution = reOrderBasedOnAtomicity(context.task().getProgram(), getSCExecutionOrder(model));
+			List<Event> execution = reOrderBasedOnAtomicity(context.getTask().getProgram(), getSCExecutionOrder(model));
 
 			for (int i = 0; i < execution.size(); i++) {
 				Event e = execution.get(i);
@@ -170,8 +170,8 @@ public class WitnessBuilder {
 		List<Event> execEvents = new ArrayList<>();
 		// TODO: we recently added many cline to many events and this might affect the witness generation.
 		Predicate<Event> executedCEvents = e -> Boolean.TRUE.equals(model.evaluate(context.execution(e))) &&  e.getCLine() > - 1;
-		execEvents.addAll(context.task().getProgram().getCache().getEvents(FilterBasic.get(Tag.INIT)).stream().filter(executedCEvents).collect(Collectors.toList()));
-		execEvents.addAll(context.task().getProgram().getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));
+		execEvents.addAll(context.getTask().getProgram().getCache().getEvents(FilterBasic.get(Tag.INIT)).stream().filter(executedCEvents).collect(Collectors.toList()));
+		execEvents.addAll(context.getTask().getProgram().getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));
 		Map<Integer, List<Event>> map = new HashMap<>();
         for(Event e : execEvents) {
 			// TODO improve this: these events correspond to return statements

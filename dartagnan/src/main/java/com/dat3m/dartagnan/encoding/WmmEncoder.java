@@ -57,18 +57,18 @@ public class WmmEncoder implements Encoder {
 
     private WmmEncoder(EncodingContext c) {
         context = c;
-        c.analysisContext().requires(RelationAnalysis.class);
+        c.getAnalysisContext().requires(RelationAnalysis.class);
     }
 
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
         WmmEncoder encoder = new WmmEncoder(context);
-        context.task().getConfig().inject(encoder);
+        context.getTask().getConfig().inject(encoder);
         return encoder;
     }
 
     @Override
     public void initializeEncoding(SolverContext ctx) {
-        Wmm memoryModel = context.task().getMemoryModel();
+        Wmm memoryModel = context.getTask().getMemoryModel();
         for(String relName : Wmm.BASE_RELATIONS) {
             memoryModel.getRelation(relName);
         }
@@ -114,7 +114,7 @@ public class WmmEncoder implements Encoder {
     public BooleanFormula encodeRelations() {
         checkInitialized();
         logger.info("Encoding relations");
-        Wmm memoryModel = context.task().getMemoryModel();
+        Wmm memoryModel = context.getTask().getMemoryModel();
         final DependencyGraph<Relation> depGraph = DependencyGraph.from(
                 Iterables.concat(
                         Iterables.transform(Wmm.BASE_RELATIONS, memoryModel::getRelation), // base relations
@@ -133,7 +133,7 @@ public class WmmEncoder implements Encoder {
     public BooleanFormula encodeConsistency() {
         checkInitialized();
         logger.info("Encoding consistency");
-        Wmm memoryModel = context.task().getMemoryModel();
+        Wmm memoryModel = context.getTask().getMemoryModel();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return memoryModel.getAxioms().stream()
                 .filter(ax -> !ax.isFlagged())
@@ -142,7 +142,7 @@ public class WmmEncoder implements Encoder {
     }
 
     private final class RelationEncoder implements Relation.Visitor<BooleanFormula> {
-        final Program program = context.task().getProgram();
+        final Program program = context.getTask().getProgram();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         @Override
         public BooleanFormula visitDefinition(Relation rel, List<? extends Relation> dependencies) {
@@ -466,7 +466,7 @@ public class WmmEncoder implements Encoder {
         }
         private BooleanFormula encodeIDL(Relation co) {
             IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
-            ExecutionAnalysis exec = context.analysisContext().get(ExecutionAnalysis.class);
+            ExecutionAnalysis exec = context.getAnalysisContext().get(ExecutionAnalysis.class);
             List<MemEvent> allWrites = program.getCache().getEvents(FilterBasic.get(WRITE)).stream()
                     .map(MemEvent.class::cast)
                     .sorted(Comparator.comparingInt(Event::getCId))

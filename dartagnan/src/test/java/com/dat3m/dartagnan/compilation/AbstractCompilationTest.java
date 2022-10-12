@@ -136,9 +136,9 @@ public abstract class AbstractCompilationTest {
     	
     	if(task1Provider.get().getProgram().getCache().getEvents(FilterUnion.get(rcu, lock)).isEmpty()) {
             IncrementalSolver s1 = IncrementalSolver.run(context1Provider.get(), prover1Provider.get(), task1Provider.get());
-        	if(s1.result().equals(Result.PASS)) {
+        	if(s1.getResult().equals(Result.PASS)) {
                 IncrementalSolver s2 = IncrementalSolver.run(context2Provider.get(), prover2Provider.get(), task2Provider.get());
-        		assertEquals(expected, s2.result());
+        		assertEquals(expected, s2.getResult());
         	}
     	}
     }

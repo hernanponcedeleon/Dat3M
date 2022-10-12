@@ -112,7 +112,7 @@ public class ExecutionModel {
 
     public static ExecutionModel withContext(EncodingContext context) throws InvalidConfigurationException {
         ExecutionModel m = new ExecutionModel(context);
-        context.task().getConfig().inject(m);
+        context.getTask().getConfig().inject(m);
         return m;
     }
 
@@ -137,15 +137,15 @@ public class ExecutionModel {
 
     // General data
     public VerificationTask getTask() {
-    	return encodingContext.task();
+    	return encodingContext.getTask();
     }
     
     public Wmm getMemoryModel() {
-        return encodingContext.task().getMemoryModel();
+        return encodingContext.getTask().getMemoryModel();
     }
 
     public Program getProgram() {
-        return encodingContext.task().getProgram();
+        return encodingContext.getTask().getProgram();
     }
 
     // Model specific data
@@ -224,7 +224,7 @@ public class ExecutionModel {
         // their capacity in previous iterations and thus we should have less overhead in future populations)
         // However, for all intents and purposes, this serves as a constructor.
         this.model = model;
-        this.context = encodingContext.solverContext();
+        this.context = encodingContext.getSolverContext();
         this.eventFilter = eventFilter;
         this.extractCoherences = extractCoherences;
         extractEventsFromModel();
@@ -484,7 +484,7 @@ public class ExecutionModel {
     }
 
     private void extractCoherences() {
-        final Relation co = encodingContext.task().getMemoryModel().getRelation(CO);
+        final Relation co = encodingContext.getTask().getMemoryModel().getRelation(CO);
 
         for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
             final BigInteger addr = addrWrites.getKey();

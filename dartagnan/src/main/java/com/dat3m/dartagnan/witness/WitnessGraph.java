@@ -75,7 +75,7 @@ public class WitnessGraph extends ElemWithAttributes {
 	}
 	
 	public BooleanFormula encode(EncodingContext context) {
-		Program program = context.task().getProgram();
+		Program program = context.getTask().getProgram();
 		BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 		IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
 		

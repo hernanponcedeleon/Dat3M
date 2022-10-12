@@ -54,13 +54,13 @@ public class SymmetryEncoder implements Encoder {
     private SymmetryEncoder(EncodingContext c, Wmm m, Context a) {
         context = c;
         axioms = List.copyOf(m.getAxioms());
-        symm = c.analysisContext().get(ThreadSymmetry.class);
+        symm = c.getAnalysisContext().get(ThreadSymmetry.class);
         a.requires(RelationAnalysis.class);
         if (symmBreakRelName.isEmpty()) {
             logger.info("Symmetry breaking disabled.");
             this.rel = null;
         } else {
-            this.rel = c.task().getMemoryModel().getRelation(symmBreakRelName);
+            this.rel = c.getTask().getMemoryModel().getRelation(symmBreakRelName);
             if (this.rel == null) {
                 logger.warn("The wmm has no relation named {} to break symmetry on." +
                         " Symmetry breaking was disabled.", symmBreakRelName);
@@ -73,7 +73,7 @@ public class SymmetryEncoder implements Encoder {
 
     public static SymmetryEncoder withContext(EncodingContext context, Wmm memoryModel, Context analysisContext) throws InvalidConfigurationException {
         SymmetryEncoder encoder = new SymmetryEncoder(context, memoryModel, analysisContext);
-        context.task().getConfig().inject(encoder);
+        context.getTask().getConfig().inject(encoder);
         return encoder;
     }
 
@@ -94,7 +94,7 @@ public class SymmetryEncoder implements Encoder {
     }
 
     public BooleanFormula encodeSymmetryClass(EquivalenceClass<Thread> symmClass) {
-        SolverContext ctx = context.solverContext();
+        SolverContext ctx = context.getSolverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         if (rel == null || symmClass.getEquivalence() != symm) {

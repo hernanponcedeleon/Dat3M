@@ -103,7 +103,7 @@ public class ReachabilityResult {
                     }
                     // Verification ended, we can interrupt the timeout Thread
                     t.interrupt();
-                    buildVerdict(program, modelChecker.result(), prover, ctx);
+                    buildVerdict(program, modelChecker.getResult(), prover, ctx);
                 }
             } catch (InterruptedException e){
             	verdict = "TIMEOUT";
