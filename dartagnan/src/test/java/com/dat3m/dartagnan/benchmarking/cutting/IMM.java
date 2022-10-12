@@ -52,6 +52,7 @@ public class IMM extends AbstractDartagnanTest {
 	@Test
 	@CSVLogger.FileName("csv/cutting")
 	public void testRefinement() throws Exception {
-		assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
+		RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+		assertEquals(expected, s.getResult());
 	}
 }

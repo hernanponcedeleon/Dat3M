@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.core.rmw;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -9,13 +10,9 @@ import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
-
-import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
 public class RMWStoreExclusive extends Store {
-
-    protected transient BooleanFormula execVar;
 
     public RMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean strong){
         super(address, value, mo);
@@ -26,19 +23,8 @@ public class RMWStoreExclusive extends Store {
     }
 
     @Override
-    public BooleanFormula exec() {
-        return execVar;
-    }
-
-    @Override
     public boolean cfImpliesExec() {
         return is(Tag.STRONG); // Strong RMWs always succeed
-    }
-
-    @Override
-    public void initializeEncoding(SolverContext ctx) {
-        super.initializeEncoding(ctx);
-        execVar = is(Tag.STRONG) ? cfVar : ctx.getFormulaManager().makeVariable(BooleanType, "exec(" + repr() + ")");
     }
 
     @Override
@@ -48,8 +34,8 @@ public class RMWStoreExclusive extends Store {
     }
 
     @Override
-    public BooleanFormula encodeExec(SolverContext ctx){
-    	return ctx.getFormulaManager().getBooleanFormulaManager().implication(execVar, cfVar);
+    public BooleanFormula encodeExec(EncodingContext ctx) {
+    	return ctx.getBooleanFormulaManager().implication(ctx.execution(this), ctx.controlFlow(this));
     }
 
     // Unrolling

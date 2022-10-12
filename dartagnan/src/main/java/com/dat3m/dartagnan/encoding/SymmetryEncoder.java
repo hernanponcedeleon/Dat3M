@@ -7,15 +7,13 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -35,7 +33,8 @@ public class SymmetryEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(SymmetryEncoder.class);
 
-    private final Wmm memoryModel;
+    private final EncodingContext context;
+    private final List<Axiom> axioms;
     private final ThreadSymmetry symm;
     private final Relation rel;
 
@@ -52,16 +51,16 @@ public class SymmetryEncoder implements Encoder {
 
     // =====================================================================
 
-    private SymmetryEncoder(Wmm memoryModel, Context context, Configuration config) throws InvalidConfigurationException {
-        this.memoryModel = Preconditions.checkNotNull(memoryModel);
-        this.symm = context.requires(ThreadSymmetry.class);
-        config.inject(this);
-
+    private SymmetryEncoder(EncodingContext c, Wmm m, Context a) {
+        context = c;
+        axioms = List.copyOf(m.getAxioms());
+        symm = c.getAnalysisContext().get(ThreadSymmetry.class);
+        a.requires(RelationAnalysis.class);
         if (symmBreakRelName.isEmpty()) {
             logger.info("Symmetry breaking disabled.");
             this.rel = null;
         } else {
-            this.rel = memoryModel.getRelation(symmBreakRelName);
+            this.rel = c.getTask().getMemoryModel().getRelation(symmBreakRelName);
             if (this.rel == null) {
                 logger.warn("The wmm has no relation named {} to break symmetry on." +
                         " Symmetry breaking was disabled.", symmBreakRelName);
@@ -72,27 +71,30 @@ public class SymmetryEncoder implements Encoder {
         }
     }
 
-    public static SymmetryEncoder fromConfig(Wmm memoryModel, Context context, Configuration config) throws InvalidConfigurationException {
-        return new SymmetryEncoder(memoryModel, context, config);
+    public static SymmetryEncoder withContext(EncodingContext context, Wmm memoryModel, Context analysisContext) throws InvalidConfigurationException {
+        SymmetryEncoder encoder = new SymmetryEncoder(context, memoryModel, analysisContext);
+        context.getTask().getConfig().inject(encoder);
+        return encoder;
     }
 
     @Override
     public void initializeEncoding(SolverContext context) { }
 
-    public BooleanFormula encodeFullSymmetry(SolverContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    public BooleanFormula encodeFullSymmetry() {
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         if (rel == null) {
             return enc;
         }
 
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
-            enc = bmgr.and(enc, encodeSymmetryClass(symmClass, ctx));
+            enc = bmgr.and(enc, encodeSymmetryClass(symmClass));
         }
         return enc;
     }
 
-    public BooleanFormula encodeSymmetryClass(EquivalenceClass<Thread> symmClass, SolverContext ctx) {
+    public BooleanFormula encodeSymmetryClass(EquivalenceClass<Thread> symmClass) {
+        SolverContext ctx = context.getSolverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         if (rel == null || symmClass.getEquivalence() != symm) {
@@ -125,10 +127,10 @@ public class SymmetryEncoder implements Encoder {
             Function<Event, Event> p = symm.createTransposition(t1, t2);
             List<Tuple> r2Tuples = r1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
 
-            List<BooleanFormula> r1 = Lists.transform(r1Tuples, t -> rel.getSMTVar(t, ctx));
-            List<BooleanFormula> r2 = Lists.transform(r2Tuples, t -> rel.getSMTVar(t, ctx));
+            List<BooleanFormula> r1 = r1Tuples.stream().map(t -> context.edge(rel, t)).collect(Collectors.toList());
+            List<BooleanFormula> r2 = r2Tuples.stream().map(t -> context.edge(rel, t)).collect(Collectors.toList());
             final String id = "_" + rep.getId() + "_" + i;
-            enc = bmgr.and(enc, encodeLexLeader(id, r2, r1, ctx)); // r1 >= r2
+            enc = bmgr.and(enc, encodeLexLeader(id, r2, r1, context)); // r1 >= r2
 
             t1 = t2;
             r1Tuples = r2Tuples;
@@ -157,7 +159,6 @@ public class SymmetryEncoder implements Encoder {
         Map<Event, Integer> combInDegree = new HashMap<>(inEvents.size());
         Map<Event, Integer> combOutDegree = new HashMap<>(outEvents.size());
 
-        List<Axiom> axioms = memoryModel.getAxioms();
         for (Event e : inEvents) {
             int syncDeg = axioms.stream()
                     .mapToInt(ax -> ax.getRelation().getMinTupleSet().getBySecond(e).size() + 1).max().orElse(0);
@@ -186,15 +187,13 @@ public class SymmetryEncoder implements Encoder {
         NOTE: Creates extra variables named "yi_<uniqueIdent>" which can cause conflicts if
               <uniqueIdent> is not uniquely used.
     */
-    public static BooleanFormula encodeLexLeader(String uniqueIdent, List<BooleanFormula> r1, List<BooleanFormula> r2, SolverContext ctx) {
+    public static BooleanFormula encodeLexLeader(String uniqueIdent, List<BooleanFormula> r1, List<BooleanFormula> r2, EncodingContext context) {
         Preconditions.checkArgument(r1.size() == r2.size());
-
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         // Return TRUE if there is nothing to encode
         if(r1.isEmpty()) {
-        	return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
+        	return bmgr.makeTrue();
         }
-        
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final int size = r1.size();
         final String suffix = "_" + uniqueIdent;
 

@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.asserts.AssertTrue;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -16,6 +17,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
+import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -28,6 +30,17 @@ import java.util.List;
 import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 
 public abstract class ModelChecker {
+
+    protected Result res = Result.UNKNOWN;
+    protected EncodingContext context;
+
+    public final Result getResult() {
+        return res;
+    }
+
+    public EncodingContext getEncodingContext() {
+        return context;
+    }
 
     /**
      * Performs all modifications to a parsed program.

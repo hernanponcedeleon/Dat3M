@@ -2,6 +2,7 @@ package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
@@ -133,39 +134,42 @@ public class Dartagnan extends BaseOptions {
                     o.getSolver());
                  ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
             {
-                Result result = UNKNOWN;
+                ModelChecker modelChecker;
                 if(properties.contains(RACES)) {
                 	if(properties.size() > 1) {
                     	System.out.println("Data race detection cannot be combined with other properties");
                     	System.exit(1);
                 	}
-                	result = DataRaceSolver.run(ctx, prover, task);
+                	modelChecker = DataRaceSolver.run(ctx, prover, task);
                 } else {
                 	// Property is either LIVENESS and/or REACHABILITY
                 	switch (o.getMethod()) {
                 		case TWO:
                 			try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-                				result = TwoSolvers.run(ctx, prover, prover2, task);
+                				modelChecker = TwoSolvers.run(ctx, prover, prover2, task);
                 			}
                 			break;
                 		case INCREMENTAL:
-                			result = IncrementalSolver.run(ctx, prover, task);
+							modelChecker = IncrementalSolver.run(ctx, prover, task);
                 			break;
                 		case ASSUME:
-                			result = AssumeSolver.run(ctx, prover, task);
+							modelChecker = AssumeSolver.run(ctx, prover, task);
                 			break;
                 		case CAAT:
-							result = RefinementSolver.run(ctx, prover, task);
+							modelChecker = RefinementSolver.run(ctx, prover, task);
                 			break;
+						default:
+							throw new InvalidConfigurationException("unsupported method " + o.getMethod());
                 	}
                 }
 
                 // Verification ended, we can interrupt the timeout Thread
                 t.interrupt();
 
+				Result result = modelChecker.getResult();
             	if(result.equals(FAIL) && o.generateGraphviz()) {
-                	ExecutionModel m = ExecutionModel.fromConfig(task, config);
-                	m.initialize(prover.getModel(), ctx);
+                	ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
+                	m.initialize(prover.getModel());
     				String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
     				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name);        		
             	}
@@ -173,7 +177,7 @@ public class Dartagnan extends BaseOptions {
             	boolean safetyViolationFound = false;
             	if((result == FAIL && !p.getAss().getInvert()) || 
             			(result == PASS && p.getAss().getInvert())) {
-					printWarningIfThreadStartFailed(p, prover);
+					printWarningIfThreadStartFailed(p, modelChecker.getEncodingContext(), prover);
             		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(ctx)))) {
             			safetyViolationFound = true;
             			System.out.println("Safety violation found");
@@ -200,7 +204,7 @@ public class Dartagnan extends BaseOptions {
 				System.out.println("Total verification time(ms): " +  (endTime - startTime));
 
 				try {
-					WitnessBuilder w = new WitnessBuilder(task, ctx, prover, result);
+					WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, result);
 	                // We only write witnesses for REACHABILITY (if the path to the original C file was given) 
 					// and if we are not doing witness validation
 	                if (properties.contains(REACHABILITY) && w.canBeBuilt() && !o.runValidator()) {
@@ -221,9 +225,9 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-	private static void printWarningIfThreadStartFailed(Program p, ProverEnvironment prover) throws SolverException {
+	private static void printWarningIfThreadStartFailed(Program p, EncodingContext encoder, ProverEnvironment prover) throws SolverException {
 		for(Event e : p.getCache().getEvents(FilterBasic.get(Tag.STARTLOAD))) {
-			if(BigInteger.ZERO.equals(prover.getModel().evaluate(((Load)e).getMemValueExpr()))) {
+			if(BigInteger.ZERO.equals(prover.getModel().evaluate(encoder.value((Load) e)))) {
 				// This msg should be displayed even if the logging is off
 				System.out.println(String.format(
 						"[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true",
