@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -8,7 +9,6 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 public class Assume extends Event implements RegReaderData {
 
@@ -42,10 +42,10 @@ public class Assume extends Event implements RegReaderData {
 	}
 
 	@Override
-	public BooleanFormula encodeExec(SolverContext ctx){
-		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+	public BooleanFormula encodeExec(EncodingContext ctx) {
+		BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
 		BooleanFormula enc = super.encodeExec(ctx);
-		enc = bmgr.and(enc, bmgr.implication(exec(), expr.toBoolFormula(this, ctx)));
+		enc = bmgr.and(enc, bmgr.implication(ctx.execution(this), expr.toBoolFormula(this, ctx.getSolverContext())));
 		return enc;
 	}
 

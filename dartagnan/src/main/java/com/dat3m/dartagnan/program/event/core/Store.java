@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 public class Store extends MemEvent implements RegReaderData {
 
@@ -22,12 +21,6 @@ public class Store extends MemEvent implements RegReaderData {
     protected Store(Store other){
         super(other);
         this.value = other.value;
-    }
-
-    @Override
-    public void initializeEncoding(SolverContext ctx) {
-        super.initializeEncoding(ctx);
-        memValueExpr = value.toIntFormula(this, ctx);
     }
 
     @Override

@@ -4,7 +4,9 @@ C imm-E3.5
  * Bridging the Gap between Programming Languages and Hardware Weak Memory Models
  *)
 
-{}
+{
+    atomic_int y[2] = {0, 0};
+}
 
 P0 (atomic_int* x, atomic_int* y) {
     int r0 = atomic_load_explicit(x, memory_order_relaxed);

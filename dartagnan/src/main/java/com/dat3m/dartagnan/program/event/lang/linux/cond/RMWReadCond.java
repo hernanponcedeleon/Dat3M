@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux.cond;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -8,12 +9,8 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
-
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 
 //TODO: This event and all its dependents (the whole cond-package) are events that do not get compiled anymore.
 // This means we should have these events in our core language in some shape or form.
@@ -22,7 +19,6 @@ import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 public abstract class RMWReadCond extends Load implements RegReaderData {
 
     protected ExprInterface cmp;
-    protected BooleanFormula formulaCond;
 
     RMWReadCond(Register reg, ExprInterface cmp, IExpr address, String atomic) {
         super(reg, address, atomic);
@@ -30,15 +26,8 @@ public abstract class RMWReadCond extends Load implements RegReaderData {
         addFilters(Tag.RMW, Tag.REG_READER);
     }
 
-    @Override
-    public void initializeEncoding(SolverContext ctx) {
-        super.initializeEncoding(ctx);
-        formulaCond = generalEqual(memValueExpr, cmp.toIntFormula(this, ctx), ctx);
-    }
-
-    public BooleanFormula getCond(){
-    	Preconditions.checkState(formulaCond != null, "formulaCond is requested before it has been initialised in " + this.getClass().getName());
-    	return formulaCond;
+    public BooleanFormula getCond(EncodingContext ctx) {
+    	return ctx.equal(ctx.value(this), cmp.toIntFormula(this, ctx.getSolverContext()));
     }
 
     @Override
