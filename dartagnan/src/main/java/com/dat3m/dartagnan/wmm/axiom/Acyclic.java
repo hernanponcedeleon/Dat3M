@@ -303,10 +303,10 @@ public class Acyclic extends Axiom {
     }
 
     private BooleanFormula cycleVar(Event event, FormulaManager m) {
-        return m.getBooleanFormulaManager().makeVariable(String.format("cycle %s %d", m.escape(getName()), event.getCId()));
+        return m.getBooleanFormulaManager().makeVariable(String.format("cycle %s %d", m.escape(getNameOrTerm()), event.getCId()));
     }
 
     private BooleanFormula getSMTCycleVar(Tuple edge, FormulaManager m) {
-        return m.getBooleanFormulaManager().makeVariable(String.format("cycle %s %d %d", m.escape(getName()), edge.getFirst().getCId(), edge.getSecond().getCId()));
+        return m.getBooleanFormulaManager().makeVariable(String.format("cycle %s %d %d", m.escape(getNameOrTerm()), edge.getFirst().getCId(), edge.getSecond().getCId()));
     }
 }

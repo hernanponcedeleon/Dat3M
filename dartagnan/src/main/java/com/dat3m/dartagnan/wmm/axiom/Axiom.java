@@ -71,11 +71,15 @@ public abstract class Axiom implements Constraint {
     }
 
     public String getName() {
-        return name != null ? name : rel.getName();
+        return name;
     }
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getNameOrTerm() {
+        return name != null ? name : toString();
     }
 
     @Override
