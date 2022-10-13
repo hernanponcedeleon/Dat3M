@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -28,7 +29,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_BY_SYNC_DEGREE;
-import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_ON_RELATION;
+import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_ON;
 
 @Options
 public class SymmetryEncoder implements Encoder {
@@ -40,76 +41,75 @@ public class SymmetryEncoder implements Encoder {
     private final ThreadSymmetry symm;
     private final Relation rel;
 
-    @Option(name = BREAK_SYMMETRY_ON_RELATION,
-            description = "The relation which should be used to break symmetry." +
-            "Empty, if symmetry shall not be encoded." +
-            "Special value \"_cf\" allows for breaking on control flow rather than relations.",
+    @Option(name = BREAK_SYMMETRY_ON,
+            description = "The target to break symmetry on. Allowed options are:\n" +
+                    "- A relation name to break symmetry on.\n" +
+                    "- The special value \"_cf\" to break symmetry on the control flow.\n" +
+                    "- The empty string to disable symmetry breaking.",
             secure = true)
-    private String symmBreakRelName = "";
+    private String symmBreakTarget = "";
 
     @Option(name = BREAK_SYMMETRY_BY_SYNC_DEGREE,
-            description = "Orders the relation edges to break on based on their synchronization strength.",
+            description = "Orders the relation edges to break on based on their synchronization strength." +
+            "Only has impact if breaking symmetry on relations rather than control flow.",
             secure = true)
     private boolean breakBySyncDegree = true;
 
     // =====================================================================
 
-    private SymmetryEncoder(EncodingContext c, Wmm m, Context a) {
+    private SymmetryEncoder(EncodingContext c, Wmm m, Context a, Configuration config) throws InvalidConfigurationException {
         context = c;
         axioms = List.copyOf(m.getAxioms());
         symm = c.getAnalysisContext().requires(ThreadSymmetry.class);
         a.requires(RelationAnalysis.class);
+        config.inject(this);
 
-        if (symmBreakRelName.isEmpty()) {
+        if (symmBreakTarget.isEmpty()) {
             logger.info("Symmetry breaking disabled.");
             this.rel = null;
-        } else if (symmBreakRelName.equals("_cf")) {
+        } else if (symmBreakTarget.equals("_cf")) {
             logger.info("Breaking symmetry on control flow.");
             a.requires(BranchEquivalence.class);
             this.rel = new CfRelation();
             this.breakBySyncDegree = false; // We cannot break by sync degree here
         } else {
-            this.rel = c.getTask().getMemoryModel().getRelation(symmBreakRelName);
+            this.rel = c.getTask().getMemoryModel().getRelation(symmBreakTarget);
             if (this.rel == null) {
                 logger.warn("The wmm has no relation named {} to break symmetry on." +
-                        " Symmetry breaking was disabled.", symmBreakRelName);
+                        " Symmetry breaking was disabled.", symmBreakTarget);
             } else {
-                logger.info("Breaking symmetry on relation: " + symmBreakRelName);
+                logger.info("Breaking symmetry on relation: " + symmBreakTarget);
                 logger.info("Breaking by sync degree: " + breakBySyncDegree);
             }
         }
     }
 
     public static SymmetryEncoder withContext(EncodingContext context, Wmm memoryModel, Context analysisContext) throws InvalidConfigurationException {
-        SymmetryEncoder encoder = new SymmetryEncoder(context, memoryModel, analysisContext);
-        context.getTask().getConfig().inject(encoder);
-        return encoder;
+        return new SymmetryEncoder(context, memoryModel, analysisContext, context.getTask().getConfig());
     }
 
     @Override
     public void initializeEncoding(SolverContext context) { }
 
-    public BooleanFormula encodeFullSymmetry() {
+    public BooleanFormula encodeFullSymmetryBreaking() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        BooleanFormula enc = bmgr.makeTrue();
-        if (rel == null) {
-            return enc;
+        if (rel != null) {
+            return symm.getNonTrivialClasses().stream()
+                    .map(symmClass -> encodeSymmetryBreakingOnClass(rel, symmClass))
+                    .reduce(bmgr.makeTrue(), bmgr::and);
         }
-        for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
-            enc = bmgr.and(enc,  encodeSymmetryClass(rel, symmClass));
-        }
-        return enc;
+        return bmgr.makeTrue();
     }
 
-    private BooleanFormula encodeSymmetryClass(Relation rel, EquivalenceClass<Thread> symmClass) {
+    private BooleanFormula encodeSymmetryBreakingOnClass(Relation rel, EquivalenceClass<Thread> symmClass) {
         Preconditions.checkArgument(symmClass.getEquivalence() == symm,
                 "Symmetry class belongs to unexpected symmetry relation.");
-        Preconditions.checkState(rel != null, "Relation to break symmetry on is NULL");
+        Preconditions.checkNotNull(rel);
+
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final Thread rep = symmClass.getRepresentative();
         final List<Thread> symmThreads = new ArrayList<>(symmClass);
         symmThreads.sort(Comparator.comparingInt(Thread::getId));
-
 
         // ===== Construct row =====
         //IMPORTANT: Each thread writes to its own special location for the purpose of starting/terminating threads
