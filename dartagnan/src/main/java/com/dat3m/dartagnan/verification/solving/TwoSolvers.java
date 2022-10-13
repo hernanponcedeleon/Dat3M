@@ -82,7 +82,7 @@ public class TwoSolvers extends ModelChecker {
 		prover1.addConstraint(encodeWitness);
         prover2.addConstraint(encodeWitness);
 
-        BooleanFormula encodeSymm = symmetryEncoder.encodeFullSymmetry();
+        BooleanFormula encodeSymm = symmetryEncoder.encodeFullSymmetryBreaking();
         prover1.addConstraint(encodeSymm);
         prover2.addConstraint(encodeSymm);
 
