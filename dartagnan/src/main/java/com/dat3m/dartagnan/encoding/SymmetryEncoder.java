@@ -42,7 +42,7 @@ public class SymmetryEncoder implements Encoder {
     private final boolean breakOnControlFlow;
 
     @Option(name = BREAK_SYMMETRY_ON_RELATION,
-            description = "The relation on which symmetry breaking should happen." +
+            description = "The relation which should be used to break symmetry." +
             "Empty, if symmetry shall not be encoded." +
             "Special value \"_cf\" allows for breaking on control flow rather than relations.",
             secure = true)
@@ -59,8 +59,8 @@ public class SymmetryEncoder implements Encoder {
         context = c;
         axioms = List.copyOf(m.getAxioms());
         symm = c.getAnalysisContext().get(ThreadSymmetry.class);
+        branchEq = a.requires(BranchEquivalence.class);
         a.requires(RelationAnalysis.class);
-        this.branchEq = a.requires(BranchEquivalence.class);
 
         if (symmBreakRelName.isEmpty()) {
             logger.info("Symmetry breaking disabled.");
@@ -93,7 +93,7 @@ public class SymmetryEncoder implements Encoder {
     public void initializeEncoding(SolverContext context) { }
 
     public BooleanFormula encodeFullSymmetry() {
-        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         if (rel == null && !breakOnControlFlow) {
             return enc;
@@ -102,62 +102,18 @@ public class SymmetryEncoder implements Encoder {
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
             enc = bmgr.and(enc, breakOnControlFlow ?
                     encodeCfSymmetryClass(symmClass) :
-                    encodeSymmetryClass(symmClass)
+                    encodeRelSymmetryClass(symmClass)
             );
         }
         return enc;
     }
 
-    public BooleanFormula encodeSymmetryClass(EquivalenceClass<Thread> symmClass) {
-        SolverContext ctx = context.getSolverContext();
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula enc = bmgr.makeTrue();
-        if (rel == null || symmClass.getEquivalence() != symm) {
-            return enc;
-        }
-
-        Thread rep = symmClass.getRepresentative();
-        List<Thread> symmThreads = new ArrayList<>(symmClass);
-        symmThreads.sort(Comparator.comparingInt(Thread::getId));
-
-
-        // ===== Construct row =====
-        //IMPORTANT: Each thread writes to its own special location for the purpose of starting/terminating threads
-        // These need to get skipped.
-        Thread t1 = symmThreads.get(0);
-        List<Tuple> r1Tuples = new ArrayList<>();
-        for (Tuple t : rel.getMaxTupleSet()) {
-            Event a = t.getFirst();
-            Event b = t.getSecond();
-            if (!a.is(Tag.C11.PTHREAD) && !b.is(Tag.C11.PTHREAD)
-                    && a.getThread() == t1 && symmClass.contains(b.getThread())) {
-                r1Tuples.add(t);
-            }
-        }
-        sort(r1Tuples);
-
-        // Construct symmetric rows
-        for (int i = 1; i < symmThreads.size(); i++) {
-            Thread t2 = symmThreads.get(i);
-            Function<Event, Event> p = symm.createTransposition(t1, t2);
-            List<Tuple> r2Tuples = r1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
-
-            List<BooleanFormula> r1 = r1Tuples.stream().map(t -> context.edge(rel, t)).collect(Collectors.toList());
-            List<BooleanFormula> r2 = r2Tuples.stream().map(t -> context.edge(rel, t)).collect(Collectors.toList());
-            final String id = "_" + rep.getId() + "_" + i;
-            enc = bmgr.and(enc, encodeLexLeader(id, r2, r1, context)); // r1 >= r2
-
-            t1 = t2;
-            r1Tuples = r2Tuples;
-        }
-
-        return enc;
-    }
-
-    public BooleanFormula encodeCfSymmetryClass(EquivalenceClass<Thread> symmClass, SolverContext ctx) {
+    private BooleanFormula encodeRelSymmetryClass(EquivalenceClass<Thread> symmClass) {
         Preconditions.checkArgument(symmClass.getEquivalence() == symm,
                 "Symmetry class belongs to unexpected symmetry relation.");
-        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        Preconditions.checkState(rel != null, "Relation to break symmetry on is NULL");
+        final Relation rel = this.rel;
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final Thread rep = symmClass.getRepresentative();
         final List<Thread> symmThreads = new ArrayList<>(symmClass);
         symmThreads.sort(Comparator.comparingInt(Thread::getId));
@@ -167,31 +123,72 @@ public class SymmetryEncoder implements Encoder {
         //IMPORTANT: Each thread writes to its own special location for the purpose of starting/terminating threads
         // These need to get skipped.
         Thread t1 = symmThreads.get(0);
-        List<Event> r1BranchRoots = new ArrayList<>();
+        List<Tuple> t1Tuples = new ArrayList<>();
+        for (Tuple t : rel.getMaxTupleSet()) {
+            Event a = t.getFirst();
+            Event b = t.getSecond();
+            if (!a.is(Tag.C11.PTHREAD) && !b.is(Tag.C11.PTHREAD)
+                    && a.getThread() == t1 && symmClass.contains(b.getThread())) {
+                t1Tuples.add(t);
+            }
+        }
+        sort(t1Tuples);
+
+        // Construct symmetric rows
+        BooleanFormula enc = bmgr.makeTrue();
+        for (int i = 1; i < symmThreads.size(); i++) {
+            Thread t2 = symmThreads.get(i);
+            Function<Event, Event> p = symm.createTransposition(t1, t2);
+            List<Tuple> t2Tuples = t1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
+
+            List<BooleanFormula> r1 = t1Tuples.stream().map(t -> context.edge(rel, t)).collect(Collectors.toList());
+            List<BooleanFormula> r2 = t2Tuples.stream().map(t -> context.edge(rel, t)).collect(Collectors.toList());
+            final String id = "_" + rep.getId() + "_" + i;
+            enc = bmgr.and(enc, encodeLexLeader(id, r2, r1, context)); // r1 >= r2
+
+            t1 = t2;
+            t1Tuples = t2Tuples;
+        }
+
+        return enc;
+    }
+
+    private BooleanFormula encodeCfSymmetryClass(EquivalenceClass<Thread> symmClass) {
+        Preconditions.checkArgument(symmClass.getEquivalence() == symm,
+                "Symmetry class belongs to unexpected symmetry relation.");
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final Thread rep = symmClass.getRepresentative();
+        final List<Thread> symmThreads = new ArrayList<>(symmClass);
+        symmThreads.sort(Comparator.comparingInt(Thread::getId));
+
+
+        // ===== Construct row =====
+        Thread t1 = symmThreads.get(0);
+        List<Event> t1BranchRoots = new ArrayList<>();
         for (BranchEquivalence.Class c : branchEq.getAllEquivalenceClasses()) {
             if (c == branchEq.getInitialClass() || c == branchEq.getUnreachableClass()) {
                 continue;
             }
             if (c.getRepresentative().getThread().equals(t1)) {
-                r1BranchRoots.add(c.getRepresentative());
+                t1BranchRoots.add(c.getRepresentative());
             }
         }
-        r1BranchRoots.sort(Comparator.naturalOrder());
+        t1BranchRoots.sort(Comparator.naturalOrder());
 
         // Construct symmetric rows
         BooleanFormula enc = bmgr.makeTrue();
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
             Function<Event, Event> perm = symm.createTransposition(t1, t2);
-            List<Event> r2BranchRoots = r1BranchRoots.stream().map(perm).collect(Collectors.toList());
+            List<Event> t2BranchRoots = t1BranchRoots.stream().map(perm).collect(Collectors.toList());
 
-            List<BooleanFormula> r1 = Lists.transform(r1BranchRoots, Event::exec);
-            List<BooleanFormula> r2 = Lists.transform(r2BranchRoots, Event::exec);
+            List<BooleanFormula> r1 = t1BranchRoots.stream().map(context::execution).collect(Collectors.toList());
+            List<BooleanFormula> r2 = t2BranchRoots.stream().map(context::execution).collect(Collectors.toList());
             final String id = "_" + rep.getId() + "_" + i;
-            enc = bmgr.and(enc, encodeLexLeader(id, r2, r1, ctx)); // r1 >= r2
+            enc = bmgr.and(enc, encodeLexLeader(id, r2, r1, context)); // r1 >= r2
 
             t1 = t2;
-            r1BranchRoots = r2BranchRoots;
+            t1BranchRoots = t2BranchRoots;
         }
 
         return enc;
