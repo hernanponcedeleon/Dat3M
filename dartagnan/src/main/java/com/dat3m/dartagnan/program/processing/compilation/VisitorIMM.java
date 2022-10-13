@@ -7,10 +7,8 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.lang.llvm.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 
 import java.util.Collections;
 import java.util.List;
@@ -88,6 +86,10 @@ class VisitorIMM extends VisitorBase {
         		newFence(Tag.C11.MO_SC)
         );
 	}
+
+	// =============================================================================================
+    // =========================================== C11 =============================================
+    // =============================================================================================
 
 	@Override
 	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
@@ -219,4 +221,96 @@ class VisitorIMM extends VisitorBase {
                 casEnd
         );
 	}
+
+    // =============================================================================================
+    // =========================================== LLVM ============================================
+    // =============================================================================================
+
+	@Override
+	public List<Event> visitLlvmLoad(LlvmLoad e) {
+		return eventSequence(
+				newLoad(e.getResultRegister(), e.getAddress(), C11.extractLoadMo(e.getMo())));
+	}
+
+	@Override
+	public List<Event> visitLlvmStore(LlvmStore e) {
+		return eventSequence(
+				newStore(e.getAddress(), e.getMemValue(), C11.extractStoreMo(e.getMo())));
+	}
+
+	@Override
+	public List<Event> visitLlvmXchg(LlvmXchg e) {
+		Register resultRegister = e.getResultRegister();
+		ExprInterface value = e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+		Load load = newRMWLoadExclusive(resultRegister, address, C11.extractLoadMo(mo));
+		Store store = newRMWStoreExclusive(address, value, C11.extractStoreMo(mo), true);
+		Label label = newLabel("FakeDep");
+		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+		return eventSequence(
+				load,
+				fakeCtrlDep,
+				label,
+				store);
+	}
+
+	@Override
+	public List<Event> visitLlvmRMW(LlvmRMW e) {
+		Register resultRegister = e.getResultRegister();
+		IOpBin op = e.getOp();
+		IExpr value = (IExpr) e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+		Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+		Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+
+		Load load = newRMWLoadExclusive(resultRegister, address, C11.extractLoadMo(mo));
+		Store store = newRMWStoreExclusive(address, dummyReg, C11.extractStoreMo(mo), true);
+		Label label = newLabel("FakeDep");
+		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+		return eventSequence(
+				load,
+				fakeCtrlDep,
+				label,
+				localOp,
+				store);
+	}
+
+	@Override
+	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
+		Register oldValueRegister = e.getThread().getRegister(e.getResultRegister() + "(0)");
+		Register resultRegister = e.getThread().getRegister(e.getResultRegister() + "(1)");
+
+		ExprInterface value = e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		ExprInterface expectedValue = e.getExpectedValue();
+
+		Local casCmpResult = newLocal(resultRegister, new Atom(oldValueRegister, EQ, expectedValue));
+		Label casEnd = newLabel("CAS_end");
+		CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
+
+		Load load = newRMWLoadExclusive(oldValueRegister, address, C11.extractLoadMo(mo));
+		Store store = newRMWStoreExclusive(address, value, C11.extractStoreMo(mo), true);
+
+		return eventSequence(
+				// Indentation shows the branching structure
+				load,
+				casCmpResult,
+				branchOnCasCmpResult,
+					store,
+				casEnd);
+	}
+
+	@Override
+	public List<Event> visitLlvmFence(LlvmFence e) {
+		return eventSequence(
+				newFence(e.getMo()));
+	}
+
 }
