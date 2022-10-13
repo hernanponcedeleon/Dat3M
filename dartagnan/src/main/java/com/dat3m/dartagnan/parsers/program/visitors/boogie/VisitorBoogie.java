@@ -433,17 +433,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
 	        	if(ctx.getText().contains("$load.") || value instanceof MemoryObject) {
-	        		try {
-		    			// This names are global so we don't use currentScope.getID(), but per thread.
-		    			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText(), ARCH_PRECISION);
-		    			String tmp = ctx.def_body().exprs().expr(0).getText();
-		    			tmp = tmp.substring(tmp.indexOf(",") + 1, tmp.indexOf(")"));
-		    			// This names are global so we don't use currentScope.getID(), but per thread.
-		    			Register ptr = programBuilder.getOrCreateRegister(threadCount, tmp, ARCH_PRECISION);
-	        			pool.addRegPtr(reg, ptr);	        				        			
-	        		} catch (Exception e) {
-	        			// Nothing to be done
-	        		}
+
 					if(allocationRegisters.containsKey(value)) {
 		        		// These events are eventually compiled and we need to compare its mo, thus it cannot be null
 		        		programBuilder.addChild(threadCount, EventFactory.newLoad(register, allocationRegisters.get(value), ""))

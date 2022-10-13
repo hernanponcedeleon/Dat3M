@@ -45,14 +45,6 @@ public class PthreadPool {
 		return mapIntPtr.get(i);
 	}
 
-	public void addRegPtr(Register reg, Register ptr) {
-		mapRegPtr.put(reg, ptr);
-	}
-	
-	public Register getPtrFromReg(Register reg) {
-		return mapRegPtr.get(reg);
-	}
-	
 	public boolean canCreate() {
 		return !threads.isEmpty();
 	}
