@@ -78,6 +78,10 @@ public abstract class Axiom implements Constraint {
         this.name = name;
     }
 
+    public String getNameOrTerm() {
+        return name != null ? name : toString();
+    }
+
     @Override
     public abstract String toString();
 
