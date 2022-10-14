@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.cat.visitors;
+package com.dat3m.dartagnan.parsers.cat;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
@@ -21,14 +21,14 @@ import java.util.Map;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ID;
 
-public class VisitorBase extends CatBaseVisitor<Object> {
+class VisitorBase extends CatBaseVisitor<Object> {
 
     private final Wmm wmm;
     private final Map<String, Object> namespace = new HashMap<>();
     private Relation current;
     private String alias;
 
-    public VisitorBase() {
+    VisitorBase() {
         this.wmm = new Wmm();
     }
 
