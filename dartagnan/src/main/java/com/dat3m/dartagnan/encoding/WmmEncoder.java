@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -424,7 +423,6 @@ public class WmmEncoder implements Encoder {
         }
         private BooleanFormula encodeIDL(Relation co) {
             IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
-            ExecutionAnalysis exec = context.getAnalysisContext().get(ExecutionAnalysis.class);
             List<MemEvent> allWrites = program.getCache().getEvents(FilterBasic.get(WRITE)).stream()
                     .map(MemEvent.class::cast)
                     .sorted(Comparator.comparingInt(Event::getCId))
