@@ -150,6 +150,7 @@ public class Acyclic extends Axiom {
             outMap.merge(t.getFirst(), cycleVar, bmgr::or);
         }
         // We use Boolean variables which guess the edges and nodes constituting the cycle.
+        final EncodingContext.EdgeEncoder edge = context.edge(rel);
         for (Event e : toBeEncoded.stream().map(Tuple::getFirst).collect(Collectors.toSet())) {
             eventsInCycle = bmgr.or(eventsInCycle, cycleVar(e, fmgr));
             // We ensure that for every event in the cycle, there should be at least one incoming
@@ -161,7 +162,7 @@ public class Acyclic extends Axiom {
                 // If an edge is guessed to be in a cycle, the edge must belong to relation,
                 // and both events must also be guessed to be on the cycle.
                 enc = bmgr.and(enc, bmgr.implication(getSMTCycleVar(tuple, fmgr),
-                        bmgr.and(context.edge(rel, tuple), cycleVar(e1, fmgr), cycleVar(e2, fmgr))));
+                        bmgr.and(edge.encode(tuple), cycleVar(e1, fmgr), cycleVar(e2, fmgr))));
             }
         }
         // A cycle exists if there is an event in the cycle.
@@ -176,8 +177,9 @@ public class Acyclic extends Axiom {
         final String clockVarName = rel.getName();
 
         BooleanFormula enc = bmgr.makeTrue();
+        final EncodingContext.EdgeEncoder edge = context.edge(rel);
         for (Tuple tuple : toBeEncoded) {
-            enc = bmgr.and(enc, bmgr.implication(context.edge(rel, tuple),
+            enc = bmgr.and(enc, bmgr.implication(edge.encode(tuple),
                     imgr.lessThan(
                             context.clockVariable(clockVarName, tuple.getFirst()),
                             context.clockVariable(clockVarName, tuple.getSecond()))));
@@ -264,9 +266,10 @@ public class Acyclic extends Axiom {
         // --- Create encoding ---
         final Set<Tuple> minSet = rel.getMinTupleSet();
         BooleanFormula enc = bmgr.makeTrue();
+        final EncodingContext.EdgeEncoder edge = context.edge(rel);
         // Basic lifting
         for (Tuple t : toBeEncoded) {
-            BooleanFormula cond = minSet.contains(t) ? context.execution(t.getFirst(), t.getSecond()) : context.edge(rel, t);
+            BooleanFormula cond = minSet.contains(t) ? context.execution(t.getFirst(), t.getSecond()) : edge.encode(t);
             enc = bmgr.and(enc, bmgr.implication(cond, getSMTCycleVar(t, fmgr)));
         }
 
@@ -286,7 +289,7 @@ public class Acyclic extends Axiom {
         //  --- Encode inconsistent assignments ---
         // Handle self-loops
         for (Event e : selfloops) {
-            enc = bmgr.and(enc, bmgr.not(context.edge(rel, new Tuple(e, e))));
+            enc = bmgr.and(enc, bmgr.not(edge.encode(new Tuple(e, e))));
         }
         // Handle remaining cycles
         for (int i = 0; i < varOrderings.size(); i++) {

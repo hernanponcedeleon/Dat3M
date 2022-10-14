@@ -202,6 +202,7 @@ public class CoSymmetryBreaking {
             return enc;
         }
         List<Thread> symmThreads = info.threads;
+        EncodingContext.EdgeEncoder edge = context.edge(co);
 
         // ============= Construct rows =============
         Thread t1 = symmThreads.get(0);
@@ -219,7 +220,7 @@ public class CoSymmetryBreaking {
             r1.add(context.execution(info.writes.get(0)));
         }
         for (Tuple t : r1Tuples) {
-            r1.add(context.edge(co, t));
+            r1.add(edge.encode(t));
         }
 
         // Construct symmetric rows
@@ -233,7 +234,7 @@ public class CoSymmetryBreaking {
                 r2.add(context.execution(symm.map(info.writes.get(0), t2)));
             }
             for (Tuple t : r2Tuples) {
-                r2.add(context.edge(co, t));
+                r2.add(edge.encode(t));
             }
 
             final String id = "_" + rep.getId() + "_" + i;

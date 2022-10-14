@@ -174,6 +174,7 @@ public class PropertyEncoder implements Encoder {
         SolverContext ctx = context.getSolverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Relation rf = memoryModel.getRelation(RelationNameRepository.RF);
+        final EncodingContext.EdgeEncoder edge = context.edge(rf);
         // Compute "stuckness": A thread is stuck if it reaches a spinloop bound event
         // while reading from a co-maximal write.
         Map<Thread, BooleanFormula> isStuckMap = new HashMap<>();
@@ -189,7 +190,7 @@ public class PropertyEncoder implements Encoder {
                 for (Load load : pair.loads) {
                     BooleanFormula coMaximalLoad = bmgr.makeFalse();
                     for (Tuple rfEdge : rf.getMaxTupleSet().getBySecond(load)) {
-                        coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(context.edge(rf, rfEdge), lastCoVar(rfEdge.getFirst())));
+                        coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(edge.encode(rfEdge), lastCoVar(rfEdge.getFirst())));
                     }
                     allCoMaximalLoad = bmgr.and(allCoMaximalLoad, coMaximalLoad);
                 }
@@ -218,9 +219,10 @@ public class PropertyEncoder implements Encoder {
     }
 
     public BooleanFormula encodeDataRaces() {
-        final Relation hb = memoryModel.getRelation("hb");
+        final Relation hbRelation = memoryModel.getRelation("hb");
+        final EncodingContext.EdgeEncoder hb = context.edge(hbRelation);
         checkState(memoryModel.getAxioms().stream().anyMatch(ax ->
-                        ax.isAcyclicity() && ax.getRelation().equals(hb)),
+                        ax.isAcyclicity() && ax.getRelation().equals(hbRelation)),
                 "The provided WMM needs an 'acyclic(hb)' axiom to encode data races.");
         logger.info("Encoding data-races");
         SolverContext ctx = context.getSolverContext();
@@ -241,7 +243,7 @@ public class PropertyEncoder implements Encoder {
                             continue;
                         }
                         if(w.canRace() && m.canRace() && alias.mayAlias(w, m)) {
-                            BooleanFormula conflict = bmgr.and(context.execution(m, w), context.edge(hb, m, w),
+                            BooleanFormula conflict = bmgr.and(context.execution(m, w), hb.encode(m, w),
                                     context.sameAddress(w, m),
                                     imgr.equal(context.clockVariable("hb", w),
                                             imgr.add(context.clockVariable("hb", m), imgr.makeNumber(BigInteger.ONE))));
@@ -261,6 +263,7 @@ public class PropertyEncoder implements Encoder {
         final Relation co = memoryModel.getRelation(CO);
         SolverContext ctx = context.getSolverContext();
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        final EncodingContext.EdgeEncoder edge = context.edge(co);
         final TupleSet minSet = co.getMinTupleSet();
         final TupleSet maxSet = co.getMaxTupleSet();
         final List<Event> initEvents = program.getCache().getEvents(FilterBasic.get(INIT));
@@ -289,7 +292,7 @@ public class PropertyEncoder implements Encoder {
                     continue;
                 }
                 Event w2 = t.getSecond();
-                BooleanFormula isAfter = bmgr.not(minSet.contains(t) ? context.execution(w2) : context.edge(co, t));
+                BooleanFormula isAfter = bmgr.not(minSet.contains(t) ? context.execution(w2) : edge.encode(t));
                 isLast = bmgr.and(isLast, isAfter);
             }
             BooleanFormula lastCoExpr = lastCoVar(w1);

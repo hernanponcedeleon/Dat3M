@@ -34,9 +34,10 @@ public class Irreflexive extends Axiom {
     public BooleanFormula consistent(Set<Tuple> toBeEncoded, EncodingContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
+        final EncodingContext.EdgeEncoder edge = ctx.edge(rel);
         for (Tuple tuple : toBeEncoded) {
             if(tuple.isLoop()){
-                enc = bmgr.and(enc, bmgr.not(ctx.edge(rel, tuple)));
+                enc = bmgr.and(enc, bmgr.not(edge.encode(tuple)));
             }
         }
         return negated ? bmgr.not(enc) : enc;

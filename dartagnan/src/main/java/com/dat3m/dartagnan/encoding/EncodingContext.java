@@ -200,18 +200,34 @@ public final class EncodingContext {
         return booleanFormulaManager.makeVariable(formulaManager.escape(name) + " " + first.getCId() + " " + second.getCId());
     }
 
+    @FunctionalInterface
+    public interface EdgeEncoder {
+
+        BooleanFormula encode(Tuple tuple);
+
+        default BooleanFormula encode(Event first, Event second) {
+            return encode(new Tuple(first, second));
+        }
+    }
+
+    public EdgeEncoder edge(Relation relation) {
+        return tuple -> {
+            if (!relation.getMaxTupleSet().contains(tuple)) {
+                return booleanFormulaManager.makeFalse();
+            }
+            if (relation.getMinTupleSet().contains(tuple)) {
+                return execution(tuple.getFirst(), tuple.getSecond());
+            }
+            return relation.getSMTVar(tuple, this);
+        };
+    }
+
     public BooleanFormula edge(Relation relation, Tuple tuple) {
-        if (!relation.getMaxTupleSet().contains(tuple)) {
-            return booleanFormulaManager.makeFalse();
-        }
-        if (relation.getMinTupleSet().contains(tuple)) {
-            return execution(tuple.getFirst(), tuple.getSecond());
-        }
-        return relation.getSMTVar(tuple, this);
+        return edge(relation).encode(tuple);
     }
 
     public BooleanFormula edge(Relation relation, Event first, Event second) {
-        return edge(relation, new Tuple(first, second));
+        return edge(relation).encode(first, second);
     }
 
     private void initialize() {

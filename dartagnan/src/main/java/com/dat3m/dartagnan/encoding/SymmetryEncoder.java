@@ -128,13 +128,14 @@ public class SymmetryEncoder implements Encoder {
 
         // Construct symmetric rows
         BooleanFormula enc = bmgr.makeTrue();
+        final EncodingContext.EdgeEncoder edge = context.edge(rel);
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
             Function<Event, Event> p = symm.createTransposition(t1, t2);
             List<Tuple> t2Tuples = t1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
 
-            List<BooleanFormula> r1 = t1Tuples.stream().map(t -> context.edge(rel, t)).collect(Collectors.toList());
-            List<BooleanFormula> r2 = t2Tuples.stream().map(t -> context.edge(rel, t)).collect(Collectors.toList());
+            List<BooleanFormula> r1 = t1Tuples.stream().map(edge::encode).collect(Collectors.toList());
+            List<BooleanFormula> r2 = t2Tuples.stream().map(edge::encode).collect(Collectors.toList());
             final String id = "_" + rep.getId() + "_" + i;
             enc = bmgr.and(enc, encodeLexLeader(id, r2, r1, context)); // r1 >= r2
 
