@@ -39,7 +39,6 @@ public class SymmetryEncoder implements Encoder {
     private final EncodingContext context;
     private final List<Axiom> axioms;
     private final ThreadSymmetry symm;
-    private final Relation rel;
 
     @Option(name = BREAK_SYMMETRY_ON,
             description = "The target to break symmetry on. Allowed options are:\n" +
@@ -66,21 +65,13 @@ public class SymmetryEncoder implements Encoder {
 
         if (symmBreakTarget.isEmpty()) {
             logger.info("Symmetry breaking disabled.");
-            this.rel = null;
         } else if (symmBreakTarget.equals("_cf")) {
             logger.info("Breaking symmetry on control flow.");
             a.requires(BranchEquivalence.class);
-            this.rel = new CfRelation();
             this.breakBySyncDegree = false; // We cannot break by sync degree here
         } else {
-            this.rel = c.getTask().getMemoryModel().getRelation(symmBreakTarget);
-            if (this.rel == null) {
-                logger.warn("The wmm has no relation named {} to break symmetry on." +
-                        " Symmetry breaking was disabled.", symmBreakTarget);
-            } else {
-                logger.info("Breaking symmetry on relation: " + symmBreakTarget);
-                logger.info("Breaking by sync degree: " + breakBySyncDegree);
-            }
+            logger.info("Breaking symmetry on relation: " + symmBreakTarget);
+            logger.info("Breaking by sync degree: " + breakBySyncDegree);
         }
     }
 
@@ -93,18 +84,33 @@ public class SymmetryEncoder implements Encoder {
 
     public BooleanFormula encodeFullSymmetryBreaking() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        if (rel != null) {
-            return symm.getNonTrivialClasses().stream()
-                    .map(symmClass -> encodeSymmetryBreakingOnClass(rel, symmClass))
-                    .reduce(bmgr.makeTrue(), bmgr::and);
+        final Set<Tuple> maySet;
+        final EncodingContext.EdgeEncoder edgeEncoder;
+        switch(symmBreakTarget) {
+            case "":
+                return bmgr.makeTrue();
+            case "_cf":
+                maySet = cfSet();
+                edgeEncoder = t -> context.execution(t.getFirst(), t.getSecond());
+                break;
+            default:
+                Relation rel = context.getTask().getMemoryModel().getRelation(symmBreakTarget);
+                if (rel == null) {
+                    logger.warn("The wmm has no relation named {} to break symmetry on." +
+                            " Symmetry breaking was disabled.", symmBreakTarget);
+                    return bmgr.makeTrue();
+                }
+                maySet = rel.getMaxTupleSet();
+                edgeEncoder = context.edge(rel);
         }
-        return bmgr.makeTrue();
+        return symm.getNonTrivialClasses().stream()
+                .map(symmClass -> encodeSymmetryBreakingOnClass(maySet, edgeEncoder, symmClass))
+                .reduce(bmgr.makeTrue(), bmgr::and);
     }
 
-    private BooleanFormula encodeSymmetryBreakingOnClass(Relation rel, EquivalenceClass<Thread> symmClass) {
+    private BooleanFormula encodeSymmetryBreakingOnClass(Set<Tuple> maySet, EncodingContext.EdgeEncoder edge, EquivalenceClass<Thread> symmClass) {
         Preconditions.checkArgument(symmClass.getEquivalence() == symm,
                 "Symmetry class belongs to unexpected symmetry relation.");
-        Preconditions.checkNotNull(rel);
 
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final Thread rep = symmClass.getRepresentative();
@@ -116,7 +122,7 @@ public class SymmetryEncoder implements Encoder {
         // These need to get skipped.
         Thread t1 = symmThreads.get(0);
         List<Tuple> t1Tuples = new ArrayList<>();
-        for (Tuple t : rel.getMaxTupleSet()) {
+        for (Tuple t : maySet) {
             Event a = t.getFirst();
             Event b = t.getSecond();
             if (!a.is(Tag.C11.PTHREAD) && !b.is(Tag.C11.PTHREAD)
@@ -128,7 +134,6 @@ public class SymmetryEncoder implements Encoder {
 
         // Construct symmetric rows
         BooleanFormula enc = bmgr.makeTrue();
-        final EncodingContext.EdgeEncoder edge = context.edge(rel);
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
             Function<Event, Event> p = symm.createTransposition(t1, t2);
@@ -235,24 +240,12 @@ public class SymmetryEncoder implements Encoder {
         return enc;
     }
 
-
-
-    // ========================================
-    // We use a dummy relation to break on control flow rather than a typical relation.
-    // This relation contains a self-loop for each event that represents a control-flow branch.
-    private class CfRelation extends Relation {
-
-        @Override
-        public TupleSet getMinTupleSet() { return getMaxTupleSet(); }
-
-        @Override
-        public TupleSet getMaxTupleSet() {
-            final BranchEquivalence branchEq = context.getAnalysisContext().requires(BranchEquivalence.class);
-            return branchEq.getAllEquivalenceClasses().stream()
-                    .filter(c -> c != branchEq.getInitialClass() && c != branchEq.getUnreachableClass())
-                    .map(EquivalenceClass::getRepresentative)
-                    .map(rep -> new Tuple(rep, rep))
-                    .collect(Collectors.toCollection(TupleSet::new));
-        }
+    private Set<Tuple> cfSet() {
+        final BranchEquivalence branchEq = context.getAnalysisContext().requires(BranchEquivalence.class);
+        return branchEq.getAllEquivalenceClasses().stream()
+                .filter(c -> c != branchEq.getInitialClass() && c != branchEq.getUnreachableClass())
+                .map(EquivalenceClass::getRepresentative)
+                .map(rep -> new Tuple(rep, rep))
+                .collect(Collectors.toCollection(TupleSet::new));
     }
 }
