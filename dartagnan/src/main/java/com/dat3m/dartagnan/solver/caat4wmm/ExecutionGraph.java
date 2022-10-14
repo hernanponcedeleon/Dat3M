@@ -20,18 +20,14 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
-import com.dat3m.dartagnan.wmm.relation.base.RelRMW;
-import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
-import com.dat3m.dartagnan.wmm.relation.base.memory.RelLoc;
-import com.dat3m.dartagnan.wmm.relation.base.memory.RelRf;
-import com.dat3m.dartagnan.wmm.relation.base.stat.*;
-import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
-import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
-import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
-import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
-import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
-import com.dat3m.dartagnan.wmm.relation.unary.RelRangeIdentity;
-import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
+import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.definition.Composition;
+import com.dat3m.dartagnan.wmm.definition.Intersection;
+import com.dat3m.dartagnan.wmm.definition.Difference;
+import com.dat3m.dartagnan.wmm.definition.Union;
+import com.dat3m.dartagnan.wmm.definition.Inverse;
+import com.dat3m.dartagnan.wmm.definition.RangeIdentity;
+import com.dat3m.dartagnan.wmm.definition.TransitiveClosure;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
@@ -260,45 +256,45 @@ public class ExecutionGraph {
             }
         } else if (cutRelations.contains(rel)) {
             graph = new DynamicDefaultWMMGraph(rel.getName());
-        } else if (relClass == RelRf.class) {
+        } else if (relClass == ReadFrom.class) {
             graph = new ReadFromGraph();
-        } else if (relClass == RelLoc.class) {
+        } else if (relClass == SameAddress.class) {
             graph = new LocationGraph();
-        } else if (relClass == RelPo.class) {
+        } else if (relClass == ProgramOrder.class) {
             graph = new ProgramOrderGraph();
-        } else if (relClass == RelCo.class) {
+        } else if (relClass == MemoryOrder.class) {
             graph = new CoherenceGraph();
-        } else if (relClass == RelInverse.class) {
+        } else if (relClass == Inverse.class) {
             graph = new InverseGraph(graphs[0]);
-        } else if (relClass == RelTrans.class) {
+        } else if (relClass == TransitiveClosure.class) {
             graph = new TransitiveGraph(graphs[0]);
-        } else if (relClass == RelRangeIdentity.class) {
+        } else if (relClass == RangeIdentity.class) {
             graph = new RangeIdentityGraph(graphs[0]);
-        } else if (relClass == RelUnion.class) {
+        } else if (relClass == Union.class) {
             graph = new UnionGraph(graphs);
-        } else if (relClass == RelIntersection.class) {
+        } else if (relClass == Intersection.class) {
             graph = new IntersectionGraph(graphs);
-        } else if (relClass == RelComposition.class) {
+        } else if (relClass == Composition.class) {
             graph = new CompositionGraph(graphs[0], graphs[1]);
-        } else if (relClass == RelMinus.class) {
+        } else if (relClass == Difference.class) {
             graph = new DifferenceGraph(graphs[0], graphs[1]);
-        } else if (relClass == RelCartesian.class) {
-            RelCartesian cartRel = (RelCartesian)rel.getDefinition();
+        } else if (relClass == CartesianProduct.class) {
+            CartesianProduct cartRel = (CartesianProduct)rel.getDefinition();
             SetPredicate lhs = getOrCreateSetFromFilter(cartRel.getFirstFilter());
             SetPredicate rhs = getOrCreateSetFromFilter(cartRel.getSecondFilter());
             graph = new CartesianGraph(lhs, rhs);
-        } else if (relClass == RelRMW.class) {
+        } else if (relClass == ReadModifyWrites.class) {
             graph = new RMWGraph();
-        } else if (relClass == RelExt.class) {
+        } else if (relClass == DifferentThreads.class) {
             graph = new ExternalGraph();
-        } else if (relClass == RelInt.class) {
+        } else if (relClass == SameThread.class) {
             graph = new InternalGraph();
-        } else if (relClass == RelFencerel.class) {
-            graph = new FenceGraph(((RelFencerel) rel.getDefinition()).getFilter());
-        } else if (relClass == RelSetIdentity.class) {
-            SetPredicate set = getOrCreateSetFromFilter(((RelSetIdentity) rel.getDefinition()).getFilter());
+        } else if (relClass == Fences.class) {
+            graph = new FenceGraph(((Fences) rel.getDefinition()).getFilter());
+        } else if (relClass == Identity.class) {
+            SetPredicate set = getOrCreateSetFromFilter(((Identity) rel.getDefinition()).getFilter());
             graph = new SetIdentityGraph(set);
-        } else if (relClass == RelEmpty.class) {
+        } else if (relClass == Empty.class) {
             graph = new EmptyGraph();
         } else {
             // This is a fallback for all unimplemented static graphs

@@ -1,11 +1,11 @@
-package com.dat3m.dartagnan.wmm.relation.base;
+package com.dat3m.dartagnan.wmm.definition;
 
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 
-public class RelCrit extends Definition {
+public class CriticalSections extends Definition {
 
-    public RelCrit(Relation r0) {
+    public CriticalSections(Relation r0) {
         super(r0);
     }
 

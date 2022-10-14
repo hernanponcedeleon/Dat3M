@@ -1,13 +1,13 @@
-package com.dat3m.dartagnan.wmm.relation.base.stat;
+package com.dat3m.dartagnan.wmm.definition;
 
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.EXT;
 
-public class RelExt extends Definition {
+public class DifferentThreads extends Definition {
 
-    public RelExt(Relation r0) {
+    public DifferentThreads(Relation r0) {
         super(r0, EXT);
     }
 

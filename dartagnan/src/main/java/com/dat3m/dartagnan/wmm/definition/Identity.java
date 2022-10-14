@@ -1,15 +1,15 @@
-package com.dat3m.dartagnan.wmm.relation.base.stat;
+package com.dat3m.dartagnan.wmm.definition;
 
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 
 //TODO: This relation may contain non-visible events. Is this reasonable?
-public class RelSetIdentity extends Definition {
+public class Identity extends Definition {
 
     private final FilterAbstract filter;
 
-    public RelSetIdentity(Relation r0, FilterAbstract s1) {
+    public Identity(Relation r0, FilterAbstract s1) {
         super(r0, "[" + s1 + "]");
         filter = s1;
     }

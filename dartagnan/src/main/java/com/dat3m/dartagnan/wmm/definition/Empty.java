@@ -1,12 +1,12 @@
-package com.dat3m.dartagnan.wmm.relation.base.stat;
+package com.dat3m.dartagnan.wmm.definition;
 
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 
-public class RelEmpty extends Definition {
+public class Empty extends Definition {
 
-    public RelEmpty(Relation r0) {
+    public Empty(Relation r0) {
         super(r0, RelationNameRepository.EMPTY);
     }
 

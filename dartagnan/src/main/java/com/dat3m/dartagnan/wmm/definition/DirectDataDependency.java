@@ -1,11 +1,11 @@
-package com.dat3m.dartagnan.wmm.relation.base.local;
+package com.dat3m.dartagnan.wmm.definition;
 
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 
-public class RelIdd extends Definition {
+public class DirectDataDependency extends Definition {
 
-    public RelIdd(Relation r0) {
+    public DirectDataDependency(Relation r0) {
         super(r0);
     }
 

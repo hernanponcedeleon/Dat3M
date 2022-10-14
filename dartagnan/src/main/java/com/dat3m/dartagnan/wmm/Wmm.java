@@ -5,27 +5,7 @@ import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
-import com.dat3m.dartagnan.wmm.relation.base.RelCrit;
-import com.dat3m.dartagnan.wmm.relation.base.RelRMW;
-import com.dat3m.dartagnan.wmm.relation.base.local.RelAddrDirect;
-import com.dat3m.dartagnan.wmm.relation.base.local.RelCASDep;
-import com.dat3m.dartagnan.wmm.relation.base.local.RelIdd;
-import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
-import com.dat3m.dartagnan.wmm.relation.base.memory.RelLoc;
-import com.dat3m.dartagnan.wmm.relation.base.memory.RelRf;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelCtrlDirect;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelEmpty;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelExt;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelInt;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelPo;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelSetIdentity;
-import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
-import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
-import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
-import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
-import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
+import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -164,45 +144,45 @@ public class Wmm {
         Relation r = newRelation(name);
         switch (r.name) {
             case POWITHLOCALEVENTS:
-                return new RelPo(r, FilterBasic.get(Tag.ANY));
+                return new ProgramOrder(r, FilterBasic.get(Tag.ANY));
             case PO:
-                return new RelPo(r, FilterBasic.get(Tag.VISIBLE));
+                return new ProgramOrder(r, FilterBasic.get(Tag.VISIBLE));
             case LOC:
-                return new RelLoc(r);
+                return new SameAddress(r);
             case ID:
-                return new RelSetIdentity(r, FilterBasic.get(Tag.VISIBLE));
+                return new Identity(r, FilterBasic.get(Tag.VISIBLE));
             case INT:
-                return new RelInt(r);
+                return new SameThread(r);
             case EXT:
-                return new RelExt(r);
+                return new DifferentThreads(r);
             case CO:
-                return new RelCo(r);
+                return new MemoryOrder(r);
             case RF:
-                return new RelRf(r);
+                return new ReadFrom(r);
             case RMW:
-                return new RelRMW(r);
+                return new ReadModifyWrites(r);
             case CASDEP:
-                return new RelCASDep(r);
+                return new CompareAndSwapDependency(r);
             case CRIT:
-                return new RelCrit(r);
+                return new CriticalSections(r);
             case IDD:
-                return new RelIdd(r);
+                return new DirectDataDependency(r);
             case ADDRDIRECT:
-                return new RelAddrDirect(r);
+                return new DirectAddressDependency(r);
             case CTRLDIRECT:
-                return new RelCtrlDirect(r);
+                return new DirectControlDependency(r);
             case EMPTY:
-                return new RelEmpty(r);
+                return new Empty(r);
             case RFINV:
-                return new RelInverse(r, getRelation(RF));
+                return new Inverse(r, getRelation(RF));
             case FR:
                 return composition(r, getRelation(RFINV), getRelation(CO));
             case MM:
-                return new RelCartesian(r, FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.MEMORY));
+                return new CartesianProduct(r, FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.MEMORY));
             case MV:
-                return new RelCartesian(r, FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.VISIBLE));
+                return new CartesianProduct(r, FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.VISIBLE));
             case IDDTRANS:
-                return new RelTrans(r, getRelation(IDD));
+                return new TransitiveClosure(r, getRelation(IDD));
             case DATA:
                 return intersection(r, getRelation(IDDTRANS), getRelation(MM));
             case ADDR: {
@@ -251,18 +231,18 @@ public class Wmm {
     }
 
     private Definition union(Relation r0, Relation r1, Relation r2) {
-        return new RelUnion(r0, r1, r2);
+        return new Union(r0, r1, r2);
     }
 
     private Definition intersection(Relation r0, Relation r1, Relation r2) {
-        return new RelIntersection(r0, r1, r2);
+        return new Intersection(r0, r1, r2);
     }
 
     private Definition composition(Relation r0, Relation r1, Relation r2) {
-        return new RelComposition(r0, r1, r2);
+        return new Composition(r0, r1, r2);
     }
 
     private Definition fence(Relation r0, String name) {
-        return new RelFencerel(r0, FilterBasic.get(name));
+        return new Fences(r0, FilterBasic.get(name));
     }
 }

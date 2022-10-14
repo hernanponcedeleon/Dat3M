@@ -1,13 +1,13 @@
-package com.dat3m.dartagnan.wmm.relation.unary;
+package com.dat3m.dartagnan.wmm.definition;
 
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 
-public class RelTrans extends Definition {
+public class TransitiveClosure extends Definition {
 
     private final Relation r1;
 
-    public RelTrans(Relation r0, Relation r1) {
+    public TransitiveClosure(Relation r0, Relation r1) {
         super(r0, r1.getName() + "^+");
         this.r1 = r1;
     }

@@ -1,11 +1,11 @@
-package com.dat3m.dartagnan.wmm.relation.base.local;
+package com.dat3m.dartagnan.wmm.definition;
 
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 
-public class RelCASDep extends Definition {
+public class CompareAndSwapDependency extends Definition {
 
-    public RelCASDep(Relation r0) {
+    public CompareAndSwapDependency(Relation r0) {
         super(r0);
     }
 

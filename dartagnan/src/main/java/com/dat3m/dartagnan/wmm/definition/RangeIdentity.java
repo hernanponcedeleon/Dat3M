@@ -1,13 +1,13 @@
-package com.dat3m.dartagnan.wmm.relation.unary;
+package com.dat3m.dartagnan.wmm.definition;
 
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 
-public class RelRangeIdentity extends Definition {
+public class RangeIdentity extends Definition {
 
     private final Relation r1;
 
-    public RelRangeIdentity(Relation r0, Relation r1){
+    public RangeIdentity(Relation r0, Relation r1){
         super(r0, "[range(" + r1.getName() + ")]");
         this.r1 = r1;
     }

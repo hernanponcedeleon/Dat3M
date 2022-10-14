@@ -16,7 +16,7 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
+import com.dat3m.dartagnan.wmm.definition.Fences;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 import java.util.ArrayList;
@@ -70,7 +70,7 @@ public class CoreReasoner {
                         coreReason.add(new RelLiteral(rel.getName(), tuple, lit.isNegative()));
                     } else if (rel.getName().equals(LOC)) {
                         coreReason.add(new AddressLiteral(tuple, lit.isNegative()));
-                    } else if (rel.getDefinition() instanceof RelFencerel) {
+                    } else if (rel.getDefinition() instanceof Fences) {
                         // This is a special case since "fencerel(F) = po;[F];po".
                         // We should do this transformation directly on the Wmm to avoid this special reasoning
                         if (lit.isNegative()) {

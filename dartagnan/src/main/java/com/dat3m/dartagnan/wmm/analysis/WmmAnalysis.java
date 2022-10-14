@@ -5,11 +5,11 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
-import com.dat3m.dartagnan.wmm.relation.unary.RelDomainIdentity;
-import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
-import com.dat3m.dartagnan.wmm.relation.unary.RelRangeIdentity;
-import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
+import com.dat3m.dartagnan.wmm.definition.Difference;
+import com.dat3m.dartagnan.wmm.definition.DomainIdentity;
+import com.dat3m.dartagnan.wmm.definition.Inverse;
+import com.dat3m.dartagnan.wmm.definition.RangeIdentity;
+import com.dat3m.dartagnan.wmm.definition.TransitiveClosure;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -63,12 +63,12 @@ public class WmmAnalysis {
         for (Set<DependencyGraph<Relation>.Node> scc : depGraph.getSCCs()) {
             for (DependencyGraph<Relation>.Node node : scc) {
                 final Definition d = node.getContent().getDefinition();
-                if ((d instanceof RelInverse || d instanceof RelDomainIdentity || d instanceof RelRangeIdentity || d instanceof RelTrans) && scc.size() > 1) {
+                if ((d instanceof Inverse || d instanceof DomainIdentity || d instanceof RangeIdentity || d instanceof TransitiveClosure) && scc.size() > 1) {
                     // Unary relations are not implemented in recursions right now
                     throw new UnsupportedOperationException(String.format(
                             "Unary relation %s not supported in recursive definitions.", node.getContent()
                     ));
-                } else if (d instanceof RelMinus && scc.contains(depGraph.get(((RelMinus) d).complement))) {
+                } else if (d instanceof Difference && scc.contains(depGraph.get(((Difference) d).complement))) {
                     // Non-monotonic recursion gives ill-defined memory models.
                     throw new MalformedMemoryModelException(String.format(
                             "Non-monotonic recursion is not supported: %s", node.getContent()

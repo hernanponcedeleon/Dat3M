@@ -21,17 +21,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.axiom.Empty;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelSetIdentity;
-import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
-import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
-import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
-import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
-import com.dat3m.dartagnan.wmm.relation.unary.RelDomainIdentity;
-import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
-import com.dat3m.dartagnan.wmm.relation.unary.RelRangeIdentity;
-import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
+import com.dat3m.dartagnan.wmm.definition.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -298,9 +288,9 @@ public class RefinementSolver extends ModelChecker {
         targetWmm.getAxioms().stream().filter(ax -> !ax.isFlagged())
                 .forEach(ax -> collectDependencies(ax.getRelation(), cutCandidates));
         for (Relation rel : cutCandidates) {
-            if (rel.getDefinition() instanceof RelMinus) {
-                Relation sec = ((RelMinus) rel.getDefinition()).complement;
-                if (!sec.getDependencies().isEmpty() || sec.getDefinition() instanceof RelSetIdentity || sec.getDefinition() instanceof RelCartesian) {
+            if (rel.getDefinition() instanceof Difference) {
+                Relation sec = ((Difference) rel.getDefinition()).complement;
+                if (!sec.getDependencies().isEmpty() || sec.getDefinition() instanceof Identity || sec.getDefinition() instanceof CartesianProduct) {
                     // NOTE: The check for RelSetIdentity/RelCartesian is needed because they appear non-derived
                     // in our Wmm but for CAAT they are derived from unary predicates!
                     logger.info("Found difference {}. Cutting rhs relation {}", rel, sec);
@@ -334,17 +324,17 @@ public class RefinementSolver extends ModelChecker {
             targetModel = m;
             relation = r;
         }
-        @Override public Definition visitUnion(Relation r, Relation... o) { return new RelUnion(relation, copy(o)); }
-        @Override public Definition visitIntersection(Relation r, Relation... o) { return new RelIntersection(relation, copy(o)); }
-        @Override public Definition visitDifference(Relation r, Relation r1, Relation r2) { return new RelMinus(relation, copy(r1), copy(r2)); }
-        @Override public Definition visitComposition(Relation r, Relation r1, Relation r2) { return new RelComposition(relation, copy(r1), copy(r2)); }
-        @Override public Definition visitInverse(Relation r, Relation r1) { return new RelInverse(relation, copy(r1)); }
-        @Override public Definition visitDomainIdentity(Relation r, Relation r1) { return new RelDomainIdentity(relation, copy(r1)); }
-        @Override public Definition visitRangeIdentity(Relation r, Relation r1) { return new RelRangeIdentity(relation, copy(r1)); }
-        @Override public Definition visitTransitiveClosure(Relation r, Relation r1) { return new RelTrans(relation, copy(r1)); }
-        @Override public Definition visitIdentity(Relation r, FilterAbstract filter) { return new RelSetIdentity(relation, filter); }
-        @Override public Definition visitProduct(Relation r, FilterAbstract f1, FilterAbstract f2) { return new RelCartesian(relation, f1, f2); }
-        @Override public Definition visitFences(Relation r, FilterAbstract type) { return new RelFencerel(relation, type); }
+        @Override public Definition visitUnion(Relation r, Relation... o) { return new Union(relation, copy(o)); }
+        @Override public Definition visitIntersection(Relation r, Relation... o) { return new Intersection(relation, copy(o)); }
+        @Override public Definition visitDifference(Relation r, Relation r1, Relation r2) { return new Difference(relation, copy(r1), copy(r2)); }
+        @Override public Definition visitComposition(Relation r, Relation r1, Relation r2) { return new Composition(relation, copy(r1), copy(r2)); }
+        @Override public Definition visitInverse(Relation r, Relation r1) { return new Inverse(relation, copy(r1)); }
+        @Override public Definition visitDomainIdentity(Relation r, Relation r1) { return new DomainIdentity(relation, copy(r1)); }
+        @Override public Definition visitRangeIdentity(Relation r, Relation r1) { return new RangeIdentity(relation, copy(r1)); }
+        @Override public Definition visitTransitiveClosure(Relation r, Relation r1) { return new TransitiveClosure(relation, copy(r1)); }
+        @Override public Definition visitIdentity(Relation r, FilterAbstract filter) { return new Identity(relation, filter); }
+        @Override public Definition visitProduct(Relation r, FilterAbstract f1, FilterAbstract f2) { return new CartesianProduct(relation, f1, f2); }
+        @Override public Definition visitFences(Relation r, FilterAbstract type) { return new Fences(relation, type); }
         private Relation copy(Relation r) { return getCopyOfRelation(r, targetModel); }
         private Relation[] copy(Relation[] r) {
             Relation[] a = new Relation[r.length];
@@ -444,9 +434,9 @@ public class RefinementSolver extends ModelChecker {
             Relation poloc = baseline.getRelation(POLOC);
             Relation co = baseline.getRelation(CO);
             Relation fr = baseline.getRelation(FR);
-            Relation porf = baseline.addDefinition(new RelUnion(baseline.newRelation(), poloc, rf));
-            Relation porfco = baseline.addDefinition(new RelUnion(baseline.newRelation(), porf, co));
-            Relation porfcofr = baseline.addDefinition(new RelUnion(baseline.newRelation(), porfco, fr));
+            Relation porf = baseline.addDefinition(new Union(baseline.newRelation(), poloc, rf));
+            Relation porfco = baseline.addDefinition(new Union(baseline.newRelation(), porf, co));
+            Relation porfcofr = baseline.addDefinition(new Union(baseline.newRelation(), porfco, fr));
             baseline.addAxiom(new Acyclic(porfcofr));
         }
         if(baselines.contains(Baseline.NO_OOTA)) {
@@ -454,9 +444,9 @@ public class RefinementSolver extends ModelChecker {
             Relation data = baseline.getRelation(DATA);
             Relation ctrl = baseline.getRelation(CTRL);
             Relation addr = baseline.getRelation(ADDR);
-            Relation dep = baseline.addDefinition(new RelUnion(baseline.newRelation(), data, addr));
-            Relation dep2 = baseline.addDefinition(new RelUnion(baseline.newRelation(), ctrl, dep));
-            Relation hb = baseline.addDefinition(new RelUnion(baseline.newRelation(), dep2, rf));
+            Relation dep = baseline.addDefinition(new Union(baseline.newRelation(), data, addr));
+            Relation dep2 = baseline.addDefinition(new Union(baseline.newRelation(), ctrl, dep));
+            Relation hb = baseline.addDefinition(new Union(baseline.newRelation(), dep2, rf));
             baseline.addAxiom(new Acyclic(hb));
         }
         if(baselines.contains(Baseline.ATOMIC_RMW)) {
@@ -464,8 +454,8 @@ public class RefinementSolver extends ModelChecker {
             Relation rmw = baseline.getRelation(RMW);
             Relation coe = baseline.getRelation(COE);
             Relation fre = baseline.getRelation(FRE);
-            Relation frecoe = baseline.addDefinition(new RelComposition(baseline.newRelation(), fre, coe));
-            Relation rmwANDfrecoe = baseline.addDefinition(new RelIntersection(baseline.newRelation(), rmw, frecoe));
+            Relation frecoe = baseline.addDefinition(new Composition(baseline.newRelation(), fre, coe));
+            Relation rmwANDfrecoe = baseline.addDefinition(new Intersection(baseline.newRelation(), rmw, frecoe));
             baseline.addAxiom(new Empty(rmwANDfrecoe));
         }
         return baseline;
