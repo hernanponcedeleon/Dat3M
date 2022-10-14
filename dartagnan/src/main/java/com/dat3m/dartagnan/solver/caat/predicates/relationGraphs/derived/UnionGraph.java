@@ -8,25 +8,21 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.MaterializedGra
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 // A materialized Union Graph.
 // This seems to be more efficient than the virtualized UnionGraph we used before.
 public class UnionGraph extends MaterializedGraph {
 
-    private final RelationGraph first;
-    private final RelationGraph second;
+    private final RelationGraph[] operands;
 
     @Override
     public List<RelationGraph> getDependencies() {
-        return Arrays.asList(first, second);
+        return Arrays.asList(operands);
     }
 
-    public RelationGraph getFirst() { return first; }
-    public RelationGraph getSecond() { return second; }
-
-    public UnionGraph(RelationGraph first, RelationGraph second) {
-        this.first = first;
-        this.second = second;
+    public UnionGraph(RelationGraph... o) {
+        operands = o;
     }
 
     private Edge derive(Edge e) {
@@ -36,18 +32,17 @@ public class UnionGraph extends MaterializedGraph {
     @Override
     public void repopulate() {
         //TODO: Maybe try to minimize the derivation length initially
-        for (Edge e : first.edges()) {
-            simpleGraph.add(derive(e));
-        }
-        for (Edge e : second.edges()) {
-            simpleGraph.add(derive(e));
+        for (RelationGraph o : operands) {
+            for (Edge e : o.edges()) {
+                simpleGraph.add(derive(e));
+            }
         }
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public Collection<Edge> forwardPropagate(CAATPredicate changedSource, Collection<? extends Derivable> added) {
-        if (changedSource == first || changedSource == second) {
+        if (Stream.of(operands).anyMatch(g -> changedSource == g)) {
             ArrayList<Edge> newlyAdded = new ArrayList<>();
             Collection<Edge> addedEdges = (Collection<Edge>)added;
             for (Edge e : addedEdges) {

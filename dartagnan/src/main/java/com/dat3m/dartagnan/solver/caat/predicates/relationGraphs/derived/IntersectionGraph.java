@@ -9,48 +9,33 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.MaterializedGra
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 
 import java.util.*;
+import java.util.stream.Stream;
+
+import static java.util.Comparator.comparingInt;
 
 // A materialized Intersection Graph.
 // This seems to be more efficient than the virtualized IntersectionGraph we used before.
 public class IntersectionGraph extends MaterializedGraph {
 
-    private final RelationGraph first;
-    private final RelationGraph second;
+    private final RelationGraph[] operands;
 
     @Override
     public List<RelationGraph> getDependencies() {
-        return Arrays.asList(first, second);
+        return Arrays.asList(operands);
     }
 
-    public RelationGraph getFirst() { return first; }
-    public RelationGraph getSecond() { return second; }
-
-    public IntersectionGraph(RelationGraph first, RelationGraph second) {
-        this.first = first;
-        this.second = second;
-    }
-
-    // Note: The derived edge has the timestamp of edge <a>
-    private Edge derive(Edge a, Edge b) {
-        return a.with(Math.max(a.getTime(), b.getTime()),
-                Math.max(a.getDerivationLength(), b.getDerivationLength()) + 1);
+    public IntersectionGraph(RelationGraph... o) {
+        operands = o;
     }
 
     @Override
     public void repopulate() {
-        if (first.getEstimatedSize() < second.getEstimatedSize()) {
-            for (Edge e1 : first.edges()) {
-                Edge e2 = second.get(e1);
-                if (e2 != null) {
-                    simpleGraph.add(derive(e1, e2));
-                }
-            }
-        } else {
-            for (Edge e2 : second.edges()) {
-                Edge e1 = first.get(e2);
-                if (e1 != null) {
-                    simpleGraph.add(derive(e1, e2));
-                }
+        RelationGraph first = Stream.of(operands).min(comparingInt(RelationGraph::getEstimatedSize)).orElseThrow();
+        RelationGraph[] others = Stream.of(operands).filter(x -> first != x).toArray(RelationGraph[]::new);
+        for (Edge e1 : first.edges()) {
+            Edge e = derive(e1, others);
+            if (e != null) {
+                simpleGraph.add(e);
             }
         }
     }
@@ -58,14 +43,13 @@ public class IntersectionGraph extends MaterializedGraph {
     @Override
     @SuppressWarnings("unchecked")
     public Collection<Edge> forwardPropagate(CAATPredicate changedSource, Collection<? extends Derivable> added) {
-        if (changedSource == first || changedSource == second) {
-            RelationGraph other = (changedSource == first) ? second : first;
+        if (Stream.of(operands).anyMatch(g -> changedSource == g)) {
+            RelationGraph[] others = Stream.of(operands).filter(g -> g != changedSource).toArray(RelationGraph[]::new);
             Collection<Edge> addedEdges = (Collection<Edge>)added;
             List<Edge> newlyAdded = new ArrayList<>();
             for (Edge e1 : addedEdges) {
-                Edge e2 = other.get(e1);
-                if (e2 != null) {
-                    Edge e = derive(e1, e2);
+                Edge e = derive(e1, others);
+                if (e != null) {
                     simpleGraph.add(e);
                     newlyAdded.add(e);
                 }
@@ -83,4 +67,18 @@ public class IntersectionGraph extends MaterializedGraph {
         return visitor.visitGraphIntersection(this, data, context);
     }
 
+    // Note: The derived edge has the timestamp of edge
+    private Edge derive(Edge edge, RelationGraph[] operands) {
+        int time = edge.getTime();
+        int length = edge.getDerivationLength();
+        for (RelationGraph g : operands) {
+            Edge e = g.get(edge);
+            if (e == null) {
+                return null;
+            }
+            time = Math.max(time, e.getTime());
+            length = Math.max(length, e.getDerivationLength());
+        }
+        return edge.with(time, length);
+    }
 }

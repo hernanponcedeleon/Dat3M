@@ -334,8 +334,8 @@ public class RefinementSolver extends ModelChecker {
             targetModel = m;
             relation = r;
         }
-        @Override public Definition visitUnion(Relation r, Relation... o) { return new RelUnion(relation, copy(o[0]), copy(o[1])); }
-        @Override public Definition visitIntersection(Relation r, Relation... o) { return new RelIntersection(relation, copy(o[0]), copy(o[1])); }
+        @Override public Definition visitUnion(Relation r, Relation... o) { return new RelUnion(relation, copy(o)); }
+        @Override public Definition visitIntersection(Relation r, Relation... o) { return new RelIntersection(relation, copy(o)); }
         @Override public Definition visitDifference(Relation r, Relation r1, Relation r2) { return new RelMinus(relation, copy(r1), copy(r2)); }
         @Override public Definition visitComposition(Relation r, Relation r1, Relation r2) { return new RelComposition(relation, copy(r1), copy(r2)); }
         @Override public Definition visitInverse(Relation r, Relation r1) { return new RelInverse(relation, copy(r1)); }
@@ -346,6 +346,13 @@ public class RefinementSolver extends ModelChecker {
         @Override public Definition visitProduct(Relation r, FilterAbstract f1, FilterAbstract f2) { return new RelCartesian(relation, f1, f2); }
         @Override public Definition visitFences(Relation r, FilterAbstract type) { return new RelFencerel(relation, type); }
         private Relation copy(Relation r) { return getCopyOfRelation(r, targetModel); }
+        private Relation[] copy(Relation[] r) {
+            Relation[] a = new Relation[r.length];
+            for (int i = 0; i < r.length; i++) {
+                a[i] = copy(r[i]);
+            }
+            return a;
+        }
     }
 
     // -------------------- Printing -----------------------------

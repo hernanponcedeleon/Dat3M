@@ -3,19 +3,20 @@ package com.dat3m.dartagnan.wmm.relation.binary;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 public class RelUnion extends Definition {
 
-    private final Relation r1;
-    private final Relation r2;
+    private final Relation[] operands;
 
-    public RelUnion(Relation r0, Relation r1, Relation r2) {
-        super(r0, r1.getName() + " | " + r2.getName());
-        this.r1 = r1;
-        this.r2 = r2;
+    public RelUnion(Relation r0, Relation... o) {
+        super(r0, Stream.of(o).map(Relation::getName).collect(Collectors.joining(" | ")));
+        operands = o;
     }
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitUnion(definedRelation, r1, r2);
+        return v.visitUnion(definedRelation, operands);
     }
 }

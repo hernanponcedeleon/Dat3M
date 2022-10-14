@@ -275,9 +275,9 @@ public class ExecutionGraph {
         } else if (relClass == RelRangeIdentity.class) {
             graph = new RangeIdentityGraph(graphs[0]);
         } else if (relClass == RelUnion.class) {
-            graph = new UnionGraph(graphs[0], graphs[1]);
+            graph = new UnionGraph(graphs);
         } else if (relClass == RelIntersection.class) {
-            graph = new IntersectionGraph(graphs[0], graphs[1]);
+            graph = new IntersectionGraph(graphs);
         } else if (relClass == RelComposition.class) {
             graph = new CompositionGraph(graphs[0], graphs[1]);
         } else if (relClass == RelMinus.class) {
