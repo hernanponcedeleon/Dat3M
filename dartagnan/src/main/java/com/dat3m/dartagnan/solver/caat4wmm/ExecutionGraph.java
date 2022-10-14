@@ -221,7 +221,7 @@ public class ExecutionGraph {
                     throw new UnsupportedOperationException(rel.getName() + " is marked as special relation but has associated graph.");
             }
         } else if (cutRelations.contains(rel)) {
-            graph = new DynamicDefaultWMMGraph(rel);
+            graph = new DynamicDefaultWMMGraph(rel.getName());
         } else if (relClass == RelRf.class) {
             graph = new ReadFromGraph();
         } else if (relClass == RelLoc.class) {

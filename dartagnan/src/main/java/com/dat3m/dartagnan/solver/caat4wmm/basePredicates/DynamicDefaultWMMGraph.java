@@ -15,10 +15,10 @@ import java.util.Optional;
 
 // A default implementation for any encoded relation, e.g. base relations or non-base but cut relations.
 public class DynamicDefaultWMMGraph extends MaterializedWMMGraph {
-    private final Relation relation;
+    private final String name;
 
-    public DynamicDefaultWMMGraph(Relation rel) {
-        this.relation = rel;
+    public DynamicDefaultWMMGraph(String n) {
+        name = n;
     }
 
     @Override
@@ -32,15 +32,17 @@ public class DynamicDefaultWMMGraph extends MaterializedWMMGraph {
         // still in use. The caller should make sure that the underlying model is still alive right now.
         Model m = model.getModel();
         EncodingContext ctx = model.getContext();
+        Relation relation = ctx.getTask().getMemoryModel().getRelation(name);
+        EncodingContext.EdgeEncoder edge = ctx.edge(relation);
 
         if (relation.getMaxTupleSet().size() < domain.size() * domain.size()) {
             relation.getMaxTupleSet()
-                    .stream().map(t -> this.getEdgeFromTuple(t, m, ctx)).filter(Objects::nonNull)
+                    .stream().map(t -> this.getEdgeFromTuple(t, m, edge)).filter(Objects::nonNull)
                     .forEach(simpleGraph::add);
         } else {
             for (EventData e1 : model.getEventList()) {
                 for (EventData e2 : model.getEventList()) {
-                    Edge e = getEdgeFromEventData(e1, e2, m, ctx);
+                    Edge e = getEdgeFromEventData(e1, e2, m, edge);
                     if (e != null) {
                         simpleGraph.add(e);
                     }
@@ -49,14 +51,14 @@ public class DynamicDefaultWMMGraph extends MaterializedWMMGraph {
         }
     }
 
-    private Edge getEdgeFromEventData(EventData e1, EventData e2, Model m, EncodingContext ctx) {
-        return m.evaluate(ctx.edge(relation, e1.getEvent(), e2.getEvent())) == Boolean.TRUE
+    private Edge getEdgeFromEventData(EventData e1, EventData e2, Model m, EncodingContext.EdgeEncoder edge) {
+        return m.evaluate(edge.encode(e1.getEvent(), e2.getEvent())) == Boolean.TRUE
                 ? new Edge(e1.getId(), e2.getId()) : null;
     }
 
-    private Edge getEdgeFromTuple(Tuple t, Model m, EncodingContext ctx) {
+    private Edge getEdgeFromTuple(Tuple t, Model m, EncodingContext.EdgeEncoder edge) {
         Optional<EventData> e1 = model.getData(t.getFirst());
         Optional<EventData> e2 = model.getData(t.getSecond());
-        return e1.isPresent() && e2.isPresent() ? getEdgeFromEventData(e1.get(), e2.get(), m, ctx) : null;
+        return e1.isPresent() && e2.isPresent() ? getEdgeFromEventData(e1.get(), e2.get(), m, edge) : null;
     }
 }
