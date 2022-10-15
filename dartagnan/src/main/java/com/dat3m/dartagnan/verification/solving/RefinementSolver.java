@@ -99,6 +99,7 @@ public class RefinementSolver extends ModelChecker {
                 .withConfig(task.getConfig()).build(program, baselineModel, task.getProperty());
 
         preprocessProgram(task, config);
+        preprocessMemoryModel(task);
         // We cut the rhs of differences to get a semi-positive model, if possible.
         // This call modifies the baseline model!
         Set<Relation> cutRelations = cutRelationDifferences(memoryModel, baselineModel);

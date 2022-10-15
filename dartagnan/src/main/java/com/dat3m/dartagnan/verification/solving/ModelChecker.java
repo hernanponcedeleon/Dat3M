@@ -57,6 +57,9 @@ public abstract class ModelChecker {
             updateAssertions(program);
         }
     }
+    public static void preprocessMemoryModel(VerificationTask task) throws InvalidConfigurationException {
+        task.getMemoryModel().simplify();
+    }
 
     /**
      * Performs all static program analyses.

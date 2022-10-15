@@ -46,6 +46,7 @@ public class TwoSolvers extends ModelChecker {
 
         memoryModel.configureAll(config);
     	preprocessProgram(task, config);
+        preprocessMemoryModel(task);
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
 

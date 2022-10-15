@@ -162,6 +162,10 @@ public class Wmm {
         }
     }
 
+    public void simplify() {
+        simplifyUnions();
+    }
+
     @Override
     public String toString() {
         Stream<String> a = axioms.stream().map(Axiom::toString);
@@ -175,6 +179,35 @@ public class Wmm {
     private void addName(String name, Relation relation) {
         Relation old = relationMap.putIfAbsent(name, relation);
         checkArgument(old == null, "already defined relation %s", name);
+    }
+
+    private void simplifyUnions() {
+        Set<Relation> relations = Set.copyOf(relationMap.values());
+        for (Relation r : relations) {
+            if (r.named || !(r.definition instanceof Union) ||
+                    axioms.stream().anyMatch(a -> a.getRelation().equals(r))) {
+                continue;
+            }
+            List<Relation> parents = relations.stream()
+                    .filter(x -> x.getDependencies().contains(r))
+                    .collect(Collectors.toList());
+            Relation p = parents.size() == 1 ? parents.get(0) : null;
+            if (p != null && p.definition instanceof Union) {
+                Relation[] o = Stream.of(r, p)
+                        .flatMap(x -> x.getDependencies().stream())
+                        .filter(x -> !r.equals(x))
+                        .distinct()
+                        .toArray(Relation[]::new);
+                removeDefinition(p);
+                Relation alternative = addDefinition(new Union(p, o));
+                if (alternative != p) {
+                    substitute(p, alternative);
+                    deleteRelation(p);
+                }
+                removeDefinition(r);
+                deleteRelation(r);
+            }
+        }
     }
 
     private Definition basicDefinition(String name) {
