@@ -32,7 +32,7 @@ public class Acyclic extends Axiom {
 
     @Override
     public String toString() {
-        return (negated ? "~" : "") + "acyclic " + rel.getName();
+        return (negated ? "~" : "") + "acyclic " + rel.getNameOrTerm();
     }
 
     @Override

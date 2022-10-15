@@ -48,6 +48,6 @@ public enum Property implements OptionInterface {
 
 	public BooleanFormula getSMTVariable(Axiom ax, SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return bmgr.makeVariable("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getName()));
+        return bmgr.makeVariable("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getNameOrTerm()));
 	}
 }

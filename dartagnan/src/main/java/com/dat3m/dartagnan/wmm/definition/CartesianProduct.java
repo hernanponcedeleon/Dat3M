@@ -17,7 +17,7 @@ public class CartesianProduct extends Definition {
     }
 
     public CartesianProduct(Relation r0, FilterAbstract s1, FilterAbstract s2) {
-        super(r0, "(" + s1 + "*" + s2 + ")");
+        super(r0, s1 + "*" + s2);
         filter1 = s1;
         filter2 = s2;
     }

@@ -35,6 +35,6 @@ public class ForceEncodeAxiom extends Axiom {
 
     @Override
     public String toString() {
-        return "forceEncode " + (negated ? "~" : "") + rel.getName();
+        return "forceEncode " + (negated ? "~" : "") + rel.getNameOrTerm();
     }
 }

@@ -55,6 +55,11 @@ public abstract class Definition implements Constraint {
         });
     }
 
+    @Override
+    public String toString() {
+        return definedRelation.name + " := " + getTerm();
+    }
+
     public interface Visitor <T> {
         default T visitDefinition(Relation rel, List<? extends Relation> dependencies) { throw new UnsupportedOperationException("applying" + getClass().getSimpleName() + " to relation " + rel); }
         default T visitUnion(Relation rel, Relation... operands) { return visitDefinition(rel, List.of(operands)); }
@@ -81,5 +86,15 @@ public abstract class Definition implements Constraint {
         default T visitMemoryOrder(Relation co) { return visitDefinition(co, List.of()); }
         default T visitSameAddress(Relation loc) { return visitDefinition(loc, List.of()); }
         default T visitReadFrom(Relation rf) { return visitDefinition(rf, List.of()); }
+    }
+
+    String getTerm() {
+        return getTerm(20);
+    }
+
+    private String getTerm(int depth) {
+        List<Relation> l = getConstrainedRelations();
+        Object[] o = l.subList(1, l.size()).stream().map(x -> depth == 0 || x.named ? x.name : "(" + x.definition.getTerm(depth - 1) + ")").toArray();
+        return String.format(term, o);
     }
 }

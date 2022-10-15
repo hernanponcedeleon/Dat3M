@@ -12,11 +12,13 @@ import java.util.List;
 public final class Relation implements Dependent<Relation> {
 
     final String name;
+    final boolean named;
     Definition definition;
     private boolean isRecursive;
 
-    public Relation(String name) {
-        this.name = name;
+    Relation(String n, boolean b) {
+        name = n;
+        named = b;
     }
 
     public Definition getDefinition() {
@@ -59,8 +61,12 @@ public final class Relation implements Dependent<Relation> {
         return name;
     }
 
+    public String getNameOrTerm() {
+        return named ? name : definition.getTerm();
+    }
+
     @Override
-    public String toString(){
-        return definition == null ? name : name + " := " + definition.term;
+    public String toString() {
+        return name + " (" + (definition == null ? "undefined" : definition.getTerm()) + ")";
     }
 }

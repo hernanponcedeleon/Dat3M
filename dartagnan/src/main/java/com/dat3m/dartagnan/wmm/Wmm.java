@@ -11,6 +11,8 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -65,11 +67,14 @@ public class Wmm {
     }
 
     public Relation newRelation() {
-        return newRelation("_" + count++);
+        String name = "_" + count++;
+        Relation relation = new Relation(name, false);
+        addName(name, relation);
+        return relation;
     }
 
     public Relation newRelation(String name) {
-        Relation relation = new Relation(name);
+        Relation relation = new Relation(name, true);
         addName(name, relation);
         return relation;
     }
@@ -83,7 +88,10 @@ public class Wmm {
      */
     public Relation addDefinition(Definition definition) {
         checkArgument(definition.getConstrainedRelations().stream().allMatch(relationMap::containsValue));
-        Relation find = relationMap.get(definition.term);
+        List<Relation> l = definition.getConstrainedRelations();
+        Object[] o = l.subList(1, l.size()).stream().map(x -> x.name).toArray();
+        String term = String.format(definition.term, o);
+        Relation find = relationMap.get(term);
         if (find != null) {
             return find;
         }
@@ -91,7 +99,7 @@ public class Wmm {
         //TODO implement redefinition
         checkArgument(relation.definition == null);
         relation.definition = definition;
-        addName(definition.term, relation);
+        addName(term, relation);
         return relation;
     }
 
@@ -103,26 +111,6 @@ public class Wmm {
         return filters.computeIfAbsent(name, FilterBasic::get);
     }
 
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-
-        for (Axiom axiom : axioms) {
-            sb.append(axiom).append("\n");
-        }
-
-        for (Relation relation : getRelations()) {
-            sb.append(relation).append("\n");
-        }
-
-        for (Map.Entry<String, FilterAbstract> filter : filters.entrySet()) {
-            sb.append(filter.getValue()).append("\n");
-        }
-
-        return sb.toString();
-    }
-
-
     // ====================== Utility Methods ====================
 
     public void configureAll(Configuration config) throws InvalidConfigurationException {
@@ -133,6 +121,16 @@ public class Wmm {
         for (Axiom ax : axioms) {
             ax.configure(config);
         }
+    }
+
+    @Override
+    public String toString() {
+        Stream<String> a = axioms.stream().map(Axiom::toString);
+        Stream<String> r = relationMap.values().stream().distinct()
+                .filter(x -> x.named && x.definition != null && !x.definition.getTerm().equals(x.name))
+                .map(x -> x.definition.toString());
+        Stream<String> s = filters.values().stream().map(FilterAbstract::toString);
+        return Stream.of(a, r, s).flatMap(Stream::sorted).collect(Collectors.joining("\n"));
     }
 
     private void addName(String name, Relation relation) {
