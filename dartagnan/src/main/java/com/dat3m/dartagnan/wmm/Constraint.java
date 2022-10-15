@@ -21,4 +21,6 @@ public interface Constraint {
     default BooleanFormula consistent(EncodingContext context) {
         return context.getBooleanFormulaManager().makeTrue();
     }
+
+    Constraint substitute(Relation pattern, Relation replacement);
 }

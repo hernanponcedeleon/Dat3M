@@ -18,4 +18,11 @@ public class DomainIdentity extends Definition {
     public <T> T accept(Visitor<? extends T> v) {
         return v.visitDomainIdentity(definedRelation, r1);
     }
+
+    @Override
+    public DomainIdentity substitute(Relation p, Relation r) {
+        boolean match = definedRelation.equals(p);
+        Relation r0 = match ? r : definedRelation;
+        return match || r1.equals(p) ? new DomainIdentity(r0, r1.equals(p) ? r : r1) : this;
+    }
 }

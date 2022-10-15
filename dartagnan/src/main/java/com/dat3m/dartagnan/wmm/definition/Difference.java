@@ -20,4 +20,13 @@ public class Difference extends Definition {
     public <T> T accept(Visitor<? extends T> v) {
         return v.visitDifference(definedRelation, superset, complement);
     }
+
+    @Override
+    public Difference substitute(Relation p, Relation r) {
+        boolean match = definedRelation.equals(p);
+        Relation r0 = match ? r : definedRelation;
+        return match || superset.equals(p) || complement.equals(p) ?
+                new Difference(r0, superset.equals(p) ? r : superset, complement.equals(p) ? r : complement) :
+                this;
+    }
 }
