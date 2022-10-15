@@ -38,6 +38,11 @@ public class Empty extends Axiom {
     }
 
     @Override
+    public Empty substitute(Relation p, Relation r) {
+        return rel.equals(p) ? new Empty(r, negated, flag) : this;
+    }
+
+    @Override
     public String toString() {
         return (negated ? "~" : "") + "empty " + rel.getNameOrTerm();
     }

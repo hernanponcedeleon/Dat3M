@@ -44,6 +44,11 @@ public class Irreflexive extends Axiom {
     }
 
     @Override
+    public Irreflexive substitute(Relation p, Relation r) {
+        return rel.equals(p) ? new Irreflexive(r) : this;
+    }
+
+    @Override
     public String toString() {
         return (negated ? "~" : "") + "irreflexive " + rel.getNameOrTerm();
     }

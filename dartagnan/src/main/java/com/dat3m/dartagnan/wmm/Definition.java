@@ -60,6 +60,11 @@ public abstract class Definition implements Constraint {
     }
 
     @Override
+    public Definition substitute(Relation pattern, Relation replacement) {
+        return this;
+    }
+
+    @Override
     public String toString() {
         String term = getTerm();
         return definedRelation.getName().map(s -> s + " := " + term).orElse(term);

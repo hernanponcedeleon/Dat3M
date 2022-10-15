@@ -20,4 +20,13 @@ public class Composition extends Definition {
     public <T> T accept(Visitor<? extends T> v) {
         return v.visitComposition(definedRelation, front, back);
     }
+
+    @Override
+    public Composition substitute(Relation p, Relation r) {
+        boolean match = definedRelation.equals(p);
+        Relation r0 = match ? r : definedRelation;
+        return match || front.equals(p) || back.equals(p) ?
+                new Composition(r0, front.equals(p) ? r : front, back.equals(p) ? r : back) :
+                this;
+    }
 }
