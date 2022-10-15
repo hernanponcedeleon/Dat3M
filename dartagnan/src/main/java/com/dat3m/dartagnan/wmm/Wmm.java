@@ -7,6 +7,8 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.collect.ImmutableSet;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -18,6 +20,8 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class Wmm {
+
+    private static final Logger logger = LogManager.getLogger(Wmm.class);
 
     public final static ImmutableSet<String> BASE_RELATIONS = ImmutableSet.of(CO, RF, RMW);
 
@@ -79,6 +83,17 @@ public class Wmm {
         return relation;
     }
 
+    public void deleteRelation(Relation relation) {
+        checkArgument(relation.definition == null,
+                "relation %s is still defined", relation);
+        checkArgument(axioms.stream().noneMatch(a -> a.getRelation().equals(relation)),
+                "relation %s is constrained by some axiom", relation);
+        checkArgument(relationMap.values().stream().noneMatch(r -> r.getDependencies().contains(relation)),
+                "relation %s is constrained by some definition", relation);
+        logger.debug("delete relation {}", relation.name);
+        relationMap.values().remove(relation);
+    }
+
     /**
      * Inserts a definition to this model.
      * <p>
@@ -88,19 +103,43 @@ public class Wmm {
      */
     public Relation addDefinition(Definition definition) {
         checkArgument(definition.getConstrainedRelations().stream().allMatch(relationMap::containsValue));
-        List<Relation> l = definition.getConstrainedRelations();
-        Object[] o = l.subList(1, l.size()).stream().map(x -> x.name).toArray();
-        String term = String.format(definition.term, o);
+        logger.debug("add definition {}", definition);
+        String term = term(definition);
         Relation find = relationMap.get(term);
         if (find != null) {
             return find;
         }
         Relation relation = definition.getDefinedRelation();
-        //TODO implement redefinition
         checkArgument(relation.definition == null);
         relation.definition = definition;
         addName(term, relation);
         return relation;
+    }
+
+    public void removeDefinition(Relation definedRelation) {
+        checkArgument(definedRelation.definition != null,
+                "relation %s already undefined", definedRelation.name);
+        logger.debug("remove definition {}", definedRelation.definition);
+        relationMap.remove(term(definedRelation.definition));
+        definedRelation.definition = null;
+    }
+
+    public void substitute(Relation pattern, Relation replacement) {
+        checkArgument(pattern.definition == null,
+                "replaced relation %s is still defined, first call removeDefinition", pattern);
+        logger.debug("substitute relation {} with relation {}", pattern, replacement);
+        axioms.replaceAll(axiom -> axiom.substitute(pattern, replacement));
+        for (Relation r : relationMap.values()) {
+            if(r.definition == null) {
+                continue;
+            }
+            Definition d = r.definition.substitute(pattern, replacement);
+            if (d != r.definition) {
+                removeDefinition(r);
+                addDefinition(d);
+            }
+        }
+        relationMap.replaceAll((k, v) -> v.equals(pattern) ? replacement : v);
     }
 
     public void addFilter(FilterAbstract filter) {
@@ -242,5 +281,11 @@ public class Wmm {
 
     private Definition fence(Relation r0, String name) {
         return new Fences(r0, FilterBasic.get(name));
+    }
+
+    private String term(Definition definition) {
+        List<Relation> l = definition.getConstrainedRelations();
+        Object[] o = l.subList(1, l.size()).stream().map(x -> x.name).toArray();
+        return String.format(definition.term, o);
     }
 }
