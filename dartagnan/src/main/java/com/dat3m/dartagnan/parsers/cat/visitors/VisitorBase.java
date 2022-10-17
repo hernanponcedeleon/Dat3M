@@ -61,7 +61,10 @@ public class VisitorBase extends CatBaseVisitor<Object> {
         Object o = ctx.e.accept(this);
         namespace.put(n, o);
         if (o instanceof Relation) {
-            wmm.addAlias(n, (Relation) o);
+            Relation r = wmm.addName(n, (Relation) o);
+            if (r != o) {
+                namespace.replaceAll((k, v) -> v.equals(o) ? r : v);
+            }
         } else {
             assert o instanceof FilterAbstract;
             FilterAbstract f = (FilterAbstract) o;

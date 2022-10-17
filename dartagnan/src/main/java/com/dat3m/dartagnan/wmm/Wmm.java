@@ -66,20 +66,27 @@ public class Wmm {
         return definition.definedRelation;
     }
 
-    public void addAlias(String name, Relation relation) {
-        addName(name, relation);
+    public Relation addName(String name, Relation relation) {
+        if (relation.named) {
+            addAlias(name, relation);
+            return relation;
+        }
+        Relation r = newRelation(name);
+        substitute(relation, r);
+        deleteRelation(relation);
+        return r;
     }
 
     public Relation newRelation() {
         String name = "_" + count++;
         Relation relation = new Relation(name, false);
-        addName(name, relation);
+        addAlias(name, relation);
         return relation;
     }
 
     public Relation newRelation(String name) {
         Relation relation = new Relation(name, true);
-        addName(name, relation);
+        addAlias(name, relation);
         return relation;
     }
 
@@ -112,7 +119,7 @@ public class Wmm {
         Relation relation = definition.getDefinedRelation();
         checkArgument(relation.definition == null);
         relation.definition = definition;
-        addName(term, relation);
+        addAlias(term, relation);
         return relation;
     }
 
@@ -174,7 +181,7 @@ public class Wmm {
         return Stream.of(a, r, s).flatMap(Stream::sorted).collect(Collectors.joining("\n"));
     }
 
-    private void addName(String name, Relation relation) {
+    private void addAlias(String name, Relation relation) {
         Relation old = relationMap.putIfAbsent(name, relation);
         checkArgument(old == null, "already defined relation %s", name);
     }
