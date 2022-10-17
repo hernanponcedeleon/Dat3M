@@ -20,13 +20,13 @@ import java.util.Map;
 
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ID;
-import static java.util.Objects.requireNonNullElseGet;
 
 public class VisitorBase extends CatBaseVisitor<Object> {
 
     private final Wmm wmm;
     private final Map<String, Object> namespace = new HashMap<>();
     private Relation current;
+    private String alias;
 
     public VisitorBase() {
         this.wmm = new Wmm();
@@ -58,15 +58,10 @@ public class VisitorBase extends CatBaseVisitor<Object> {
     @Override
     public Void visitLetDefinition(LetDefinitionContext ctx) {
         String n = ctx.n.getText();
+        alias = ctx.n.getText();
         Object o = ctx.e.accept(this);
         namespace.put(n, o);
-        if (o instanceof Relation) {
-            Relation r = wmm.addName(n, (Relation) o);
-            if (r != o) {
-                namespace.replaceAll((k, v) -> v.equals(o) ? r : v);
-            }
-        } else {
-            assert o instanceof FilterAbstract;
+        if (o instanceof FilterAbstract) {
             FilterAbstract f = (FilterAbstract) o;
             f.setName(n);
             wmm.addFilter(f);
@@ -105,75 +100,86 @@ public class VisitorBase extends CatBaseVisitor<Object> {
 
     @Override
     public Object visitExprBasic(ExprBasicContext ctx) {
-        checkNoCurrent(ctx);
         String n = ctx.n.getText();
         Object o = namespace.get(n);
         if (o != null) {
+            addCurrentName(o);
             return o;
         }
         Relation r = wmm.getRelation(n);
         if (r != null) {
             namespace.put(n, r);
+            addCurrentName(r);
             return r;
         }
         FilterBasic f = FilterBasic.get(n);
         namespace.put(n, f);
+        addCurrentName(f);
         return f;
     }
 
     @Override
     public Object visitExprIntersection(ExprIntersectionContext c) {
+        checkNoCurrentOrNoAlias(c);
         Relation r = current();
+        String a = alias();
         Object o1 = c.e1.accept(this);
         Object o2 = c.e2.accept(this);
         if (o1 instanceof Relation) {
-            Relation r0 = requireNonNullElseGet(r, wmm::newRelation);
+            Relation r0 = r != null ? r : newRelation(a);
             return wmm.addDefinition(new Intersection(r0, (Relation) o1, relation(o2, c)));
         }
-        return FilterIntersection.get(set(o1, c), set(o2, c));
+        return withAlias(a, FilterIntersection.get(set(o1, c), set(o2, c)));
     }
 
     @Override
     public Object visitExprMinus(ExprMinusContext c) {
         checkNoCurrent(c);
+        String a = alias();
         Object o1 = c.e1.accept(this);
         Object o2 = c.e2.accept(this);
         if (o1 instanceof Relation) {
-            Relation r0 = wmm.newRelation();
+            Relation r0 = newRelation(a);
             return wmm.addDefinition(new Difference(r0, (Relation) o1, relation(o2, c)));
         }
-        return FilterMinus.get(set(o1, c), set(o2, c));
+        return withAlias(a, FilterMinus.get(set(o1, c), set(o2, c)));
     }
 
     @Override
     public Object visitExprUnion(ExprUnionContext c) {
+        checkNoCurrentOrNoAlias(c);
         Relation r = current();
+        String a = alias();
         Object o1 = c.e1.accept(this);
         Object o2 = c.e2.accept(this);
         if (o1 instanceof Relation) {
-            Relation r0 = requireNonNullElseGet(r, wmm::newRelation);
+            Relation r0 = r != null ? r : newRelation(a);
             return wmm.addDefinition(new Union(r0, (Relation) o1, relation(o2, c)));
         }
-        return FilterUnion.get(set(o1, c), set(o2, c));
+        return withAlias(a, FilterUnion.get(set(o1, c), set(o2, c)));
     }
 
     @Override
     public Object visitExprComplement(ExprComplementContext c) {
         checkNoCurrent(c);
+        String a = alias();
         Object o1 = c.e.accept(this);
         FilterBasic visible = FilterBasic.get(VISIBLE);
         if (o1 instanceof Relation) {
-            Relation r0 = wmm.newRelation();
+            Relation r0 = newRelation(a);
             Relation all = wmm.newRelation();
             Relation r1 = wmm.addDefinition(new CartesianProduct(all, visible, visible));
             return wmm.addDefinition(new Difference(r0, r1, (Relation) o1));
         }
-        return FilterMinus.get(visible, set(o1, c));
+        return withAlias(a, FilterMinus.get(visible, set(o1, c)));
     }
 
     @Override
     public Relation visitExprComposition(ExprCompositionContext c) {
-        Relation r0 = requireNonNullElseGet(current(), wmm::newRelation);
+        checkNoCurrentOrNoAlias(c);
+        Relation r = current();
+        String a = alias();
+        Relation r0 = r != null ? r : newRelation(a);
         Relation r1 = relation(c.e1);
         Relation r2 = relation(c.e2);
         return wmm.addDefinition(new Composition(r0, r1, r2));
@@ -182,7 +188,7 @@ public class VisitorBase extends CatBaseVisitor<Object> {
     @Override
     public Relation visitExprInverse(ExprInverseContext c) {
         checkNoCurrent(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = newRelation(alias());
         Relation r1 = relation(c.e);
         return wmm.addDefinition(new Inverse(r0, r1));
     }
@@ -190,7 +196,7 @@ public class VisitorBase extends CatBaseVisitor<Object> {
     @Override
     public Relation visitExprTransitive(ExprTransitiveContext c) {
         checkNoCurrent(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = newRelation(alias());
         Relation r1 = relation(c.e);
         return wmm.addDefinition(new TransitiveClosure(r0, r1));
     }
@@ -198,7 +204,7 @@ public class VisitorBase extends CatBaseVisitor<Object> {
     @Override
     public Relation visitExprTransRef(ExprTransRefContext c) {
         checkNoCurrent(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = newRelation(alias());
         Relation r1 = wmm.newRelation();
         Relation r2 = wmm.getRelation(ID);
         Relation r3 = relation(c.e);
@@ -208,7 +214,7 @@ public class VisitorBase extends CatBaseVisitor<Object> {
     @Override
     public Relation visitExprDomainIdentity(ExprDomainIdentityContext c) {
         checkNoCurrent(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = newRelation(alias());
         Relation r1 = relation(c.e);
         return wmm.addDefinition(new DomainIdentity(r0, r1));
     }
@@ -216,7 +222,7 @@ public class VisitorBase extends CatBaseVisitor<Object> {
     @Override
     public Relation visitExprRangeIdentity(ExprRangeIdentityContext c) {
         checkNoCurrent(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = newRelation(alias());
         Relation r1 = relation(c.e);
         return wmm.addDefinition(new RangeIdentity(r0, r1));
     }
@@ -224,7 +230,7 @@ public class VisitorBase extends CatBaseVisitor<Object> {
     @Override
     public Relation visitExprOptional(ExprOptionalContext c) {
         checkNoCurrent(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = newRelation(alias());
         Relation r1 = relation(c.e);
         return wmm.addDefinition(new Union(r0, wmm.getRelation(ID), r1));
     }
@@ -232,7 +238,7 @@ public class VisitorBase extends CatBaseVisitor<Object> {
     @Override
     public Relation visitExprIdentity(ExprIdentityContext c) {
         checkNoCurrent(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = newRelation(alias());
         FilterAbstract s1 = set(c.e);
         return wmm.addDefinition(new Identity(r0, s1));
     }
@@ -240,7 +246,7 @@ public class VisitorBase extends CatBaseVisitor<Object> {
     @Override
     public Relation visitExprCartesian(ExprCartesianContext c) {
         checkNoCurrent(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = newRelation(alias());
         FilterAbstract s1 = set(c.e1);
         FilterAbstract s2 = set(c.e2);
         return wmm.addDefinition(new CartesianProduct(r0, s1, s2));
@@ -249,20 +255,59 @@ public class VisitorBase extends CatBaseVisitor<Object> {
     @Override
     public Relation visitExprFencerel(ExprFencerelContext ctx) {
         checkNoCurrent(ctx);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = newRelation(alias());
         FilterAbstract s1 = set(ctx.e);
         return wmm.addDefinition(new Fences(r0, s1));
     }
 
-    private void checkNoCurrent(ExpressionContext t) {
+    private void addCurrentName(Object o) {
+        if (alias == null) {
+            return;
+        }
+        if (o instanceof Relation) {
+            wmm.addAlias(alias, (Relation) o);
+        }
+        namespace.put(alias, o);
+        alias = null;
+    }
+
+    private void checkNoCurrent(ExpressionContext c) {
         if(current != null) {
-            throw new ParsingException("unexpected expression in recursive context: " + t.getText());
+            throw new ParsingException("unexpected recursive context at expression: " + c.getText());
         }
     }
 
     private Relation current() {
         Relation r = current;
         current = null;
+        return r;
+    }
+
+    private void checkNoCurrentOrNoAlias(ExpressionContext c) {
+        if (current != null && alias != null) {
+            throw new ParsingException("unexpected context at expression: " + c.getText());
+        }
+    }
+
+    private String alias() {
+        String a = alias;
+        alias = null;
+        return a;
+    }
+
+    private FilterAbstract withAlias(String a, FilterAbstract o) {
+        if (a != null) {
+            namespace.put(a, o);
+        }
+        return o;
+    }
+
+    private Relation newRelation(String a) {
+        if (a == null) {
+            return wmm.newRelation();
+        }
+        Relation r = wmm.newRelation(a);
+        namespace.put(a, r);
         return r;
     }
 
