@@ -21,10 +21,4 @@ public class Inverse extends Definition {
         return v.visitInverse(definedRelation, r1);
     }
 
-    @Override
-    public Inverse substitute(Relation p, Relation r) {
-        boolean match = definedRelation.equals(p);
-        Relation r0 = match ? r : definedRelation;
-        return match || r1.equals(p) ? new Inverse(r0, r1.equals(p) ? r : r1) : this;
-    }
 }

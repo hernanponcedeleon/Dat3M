@@ -19,4 +19,5 @@ public class Fences extends Definition {
     public <T> T accept(Visitor<? extends T> v) {
         return v.visitFences(definedRelation, filter);
     }
+
 }

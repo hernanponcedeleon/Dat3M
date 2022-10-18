@@ -13,4 +13,5 @@ public class SameAddress extends Definition {
     public <T> T accept(Visitor<? extends T> v) {
         return v.visitSameAddress(definedRelation);
     }
+
 }

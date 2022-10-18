@@ -19,10 +19,4 @@ public class TransitiveClosure extends Definition {
         return v.visitTransitiveClosure(definedRelation, r1);
     }
 
-    @Override
-    public TransitiveClosure substitute(Relation p, Relation r) {
-        boolean match = definedRelation.equals(p);
-        Relation r0 = match ? r : definedRelation;
-        return match || r1.equals(p) ? new TransitiveClosure(r0, r1.equals(p) ? r : r1) : this;
-    }
 }

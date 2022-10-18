@@ -13,4 +13,5 @@ public class ReadFrom extends Definition {
     public <T> T accept(Visitor<? extends T> v) {
         return v.visitReadFrom(definedRelation);
     }
+
 }

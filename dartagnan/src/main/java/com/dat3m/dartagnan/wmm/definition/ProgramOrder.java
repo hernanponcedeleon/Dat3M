@@ -17,4 +17,5 @@ public class ProgramOrder extends Definition {
     public <T> T accept(Visitor<? extends T> v) {
         return v.visitProgramOrder(definedRelation, filter);
     }
+
 }

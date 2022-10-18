@@ -18,11 +18,4 @@ public class RangeIdentity extends Definition {
     public <T> T accept(Visitor<? extends T> v) {
         return v.visitRangeIdentity(definedRelation, r1);
     }
-
-    @Override
-    public RangeIdentity substitute(Relation p, Relation r) {
-        boolean match = definedRelation.equals(p);
-        Relation r0 = match ? r : definedRelation;
-        return match || r1.equals(p) ? new RangeIdentity(r0, r1.equals(p) ? r : r1) : this;
-    }
 }

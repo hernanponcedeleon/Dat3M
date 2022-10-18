@@ -124,22 +124,6 @@ public class Wmm {
         definedRelation.definition = null;
     }
 
-    public void substitute(Relation pattern, Relation replacement) {
-        logger.debug("substitute relation {} with relation {}", pattern, replacement);
-        axioms.replaceAll(axiom -> axiom.substitute(pattern, replacement));
-        for (Relation r : Set.copyOf(relationMap.values())) {
-            if(r.definition == null) {
-                continue;
-            }
-            Definition d = r.definition.substitute(pattern, replacement);
-            if (d != r.definition) {
-                removeDefinition(r);
-                addDefinition(d);
-            }
-        }
-        relationMap.replaceAll((k, v) -> v.equals(pattern) ? replacement : v);
-    }
-
     public void addFilter(FilterAbstract filter) {
         filters.put(filter.getName(), filter);
     }
@@ -199,8 +183,7 @@ public class Wmm {
                 removeDefinition(p);
                 Relation alternative = addDefinition(new Union(p, o));
                 if (alternative != p) {
-                    substitute(p, alternative);
-                    deleteRelation(p);
+                    logger.warn("relation {} becomes duplicate of {}", p, alternative);
                 }
                 removeDefinition(r);
                 deleteRelation(r);

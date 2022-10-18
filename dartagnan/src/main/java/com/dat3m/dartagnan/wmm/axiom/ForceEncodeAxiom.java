@@ -34,11 +34,6 @@ public class ForceEncodeAxiom extends Axiom {
     }
 
     @Override
-    public ForceEncodeAxiom substitute(Relation p, Relation r) {
-        return rel.equals(p) ? new ForceEncodeAxiom(r, negated, flag) : this;
-    }
-
-    @Override
     public String toString() {
         return "forceEncode " + (negated ? "~" : "") + rel.getNameOrTerm();
     }
