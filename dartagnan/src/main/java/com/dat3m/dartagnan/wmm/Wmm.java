@@ -13,6 +13,7 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -145,7 +146,8 @@ public class Wmm {
     }
 
     public void simplify() {
-        simplifyUnions();
+        simplifyAssociatives(Union.class, Union::new);
+        simplifyAssociatives(Intersection.class, Intersection::new);
     }
 
     @Override
@@ -163,10 +165,10 @@ public class Wmm {
         checkArgument(old == null, "already defined relation %s", name);
     }
 
-    private void simplifyUnions() {
+    private void simplifyAssociatives(Class<? extends Definition> cls, BiFunction<Relation, Relation[], Definition> constructor) {
         Set<Relation> relations = Set.copyOf(relationMap.values());
         for (Relation r : relations) {
-            if (r.named || !(r.definition instanceof Union) ||
+            if (r.named || !cls.isInstance(r.definition) ||
                     axioms.stream().anyMatch(a -> a.getRelation().equals(r))) {
                 continue;
             }
@@ -174,14 +176,14 @@ public class Wmm {
                     .filter(x -> x.getDependencies().contains(r))
                     .collect(Collectors.toList());
             Relation p = parents.size() == 1 ? parents.get(0) : null;
-            if (p != null && p.definition instanceof Union) {
+            if (p != null && cls.isInstance(p.definition)) {
                 Relation[] o = Stream.of(r, p)
                         .flatMap(x -> x.getDependencies().stream())
                         .filter(x -> !r.equals(x))
                         .distinct()
                         .toArray(Relation[]::new);
                 removeDefinition(p);
-                Relation alternative = addDefinition(new Union(p, o));
+                Relation alternative = addDefinition(constructor.apply(p, o));
                 if (alternative != p) {
                     logger.warn("relation {} becomes duplicate of {}", p, alternative);
                 }
