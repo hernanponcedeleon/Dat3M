@@ -143,11 +143,6 @@ public class Acyclic extends Axiom {
         return enc;
     }
 
-    @Override
-    public Acyclic substitute(Relation p, Relation r) {
-        return rel.equals(p) ? new Acyclic(r, negated, flag) : this;
-    }
-
     private BooleanFormula inconsistentSAT(Set<Tuple> toBeEncoded, EncodingContext context) {
         final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();

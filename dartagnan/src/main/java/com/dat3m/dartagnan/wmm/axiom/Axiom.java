@@ -73,11 +73,6 @@ public abstract class Axiom implements Constraint {
     }
 
     @Override
-    public Axiom substitute(Relation pattern, Relation replacement) {
-        return this;
-    }
-
-    @Override
     public abstract String toString();
 
     @Override
