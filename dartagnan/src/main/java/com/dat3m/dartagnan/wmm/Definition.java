@@ -94,7 +94,12 @@ public abstract class Definition implements Constraint {
 
     private String getTerm(int depth) {
         List<Relation> l = getConstrainedRelations();
-        Object[] o = l.subList(1, l.size()).stream().map(x -> depth == 0 || x.named ? x.name : "(" + x.definition.getTerm(depth - 1) + ")").toArray();
+        int s = l.size() - 1;
+        Object[] o = new Object[s];
+        for (int i = 0; i < s; i++) {
+            Relation r = l.get(i + 1);
+            o[i] = depth == 0 || r.named ? r.name : "(" + r.definition.getTerm(depth - 1) + ")";
+        }
         return String.format(term, o);
     }
 }
