@@ -29,14 +29,14 @@ public class Wmm {
     private int count;
     private final List<Axiom> axioms = new ArrayList<>();
     private final Map<String, FilterAbstract> filters = new HashMap<>();
-    private final Map<String, Relation> relationMap = new HashMap<>();
+    private final Set<Relation> relations = new HashSet<>();
 
     public Wmm() {
         BASE_RELATIONS.forEach(this::getRelation);
     }
 
     public void addAxiom(Axiom ax) {
-        checkArgument(relationMap.containsValue(ax.getRelation()));
+        checkArgument(relations.contains(ax.getRelation()));
         axioms.add(ax);
     }
 
@@ -45,7 +45,7 @@ public class Wmm {
     }
 
     public Set<Relation> getRelations() {
-        return Set.copyOf(relationMap.values());
+        return Set.copyOf(relations);
     }
 
     /**
@@ -54,9 +54,10 @@ public class Wmm {
      * @return The relation in this model named {@code name}, or {@code null} if no such exists.
      */
     public Relation getRelation(String name) {
-        Relation relation = relationMap.get(name);
-        if (relation != null) {
-            return relation;
+        for (Relation r : relations) {
+            if (r.named && r.name.equals(name) || r.aliases.contains(name)) {
+                return r;
+            }
         }
         if (!RelationNameRepository.contains(name)) {
             return null;
@@ -68,19 +69,23 @@ public class Wmm {
     }
 
     public void addAlias(String name, Relation relation) {
-        addName(name, relation);
+        checkArgument(relations.stream().noneMatch(r -> r.hasName(name)),
+                "name %s is already used, aliasing not possible", name);
+        relation.aliases.add(name);
     }
 
     public Relation newRelation() {
         String name = "_" + count++;
         Relation relation = new Relation(name, false);
-        addName(name, relation);
+        relations.add(relation);
         return relation;
     }
 
     public Relation newRelation(String name) {
+        checkArgument(relations.stream().noneMatch(r -> r.hasName(name)),
+                "name %s is already used, creation not possible", name);
         Relation relation = new Relation(name, true);
-        addName(name, relation);
+        relations.add(relation);
         return relation;
     }
 
@@ -89,10 +94,10 @@ public class Wmm {
                 "relation %s is still defined", relation);
         checkArgument(axioms.stream().noneMatch(a -> a.getRelation().equals(relation)),
                 "relation %s is constrained by some axiom", relation);
-        checkArgument(relationMap.values().stream().noneMatch(r -> r.getDependencies().contains(relation)),
+        checkArgument(relations.stream().noneMatch(r -> r.getDependencies().contains(relation)),
                 "relation %s is constrained by some definition", relation);
         logger.debug("delete relation {}", relation.name);
-        relationMap.values().remove(relation);
+        relations.remove(relation);
     }
 
     /**
@@ -103,7 +108,7 @@ public class Wmm {
      * @return Relation inside this model, which is defined accordingly.  Usually the defined relation.
      */
     public Relation addDefinition(Definition definition) {
-        checkArgument(definition.getConstrainedRelations().stream().allMatch(relationMap::containsValue));
+        checkArgument(relations.containsAll(definition.getConstrainedRelations()));
         logger.debug("add definition {}", definition);
         Relation relation = definition.getDefinedRelation();
         checkArgument(relation.definition == null);
@@ -146,21 +151,15 @@ public class Wmm {
     @Override
     public String toString() {
         Stream<String> a = axioms.stream().map(Axiom::toString);
-        Stream<String> r = relationMap.values().stream().distinct()
+        Stream<String> r = relations.stream()
                 .filter(x -> x.named && x.definition != null && !x.definition.getTerm().equals(x.name))
                 .map(x -> x.definition.toString());
         Stream<String> s = filters.values().stream().map(FilterAbstract::toString);
         return Stream.of(a, r, s).flatMap(Stream::sorted).collect(Collectors.joining("\n"));
     }
 
-    private void addName(String name, Relation relation) {
-        Relation old = relationMap.putIfAbsent(name, relation);
-        checkArgument(old == null, "already defined relation %s", name);
-    }
-
     private void simplifyAssociatives(Class<? extends Definition> cls, BiFunction<Relation, Relation[], Definition> constructor) {
-        Set<Relation> relations = Set.copyOf(relationMap.values());
-        for (Relation r : relations) {
+        for (Relation r : List.copyOf(relations)) {
             if (r.named || !cls.isInstance(r.definition) ||
                     axioms.stream().anyMatch(a -> a.getRelation().equals(r))) {
                 continue;

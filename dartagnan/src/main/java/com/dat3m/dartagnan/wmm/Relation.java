@@ -7,6 +7,7 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class Relation implements Dependent<Relation> {
@@ -15,6 +16,7 @@ public final class Relation implements Dependent<Relation> {
     final boolean named;
     Definition definition;
     private boolean isRecursive;
+    final List<String> aliases = new ArrayList<>();
 
     Relation(String n, boolean b) {
         name = n;
@@ -68,6 +70,10 @@ public final class Relation implements Dependent<Relation> {
     @Override
     public String toString() {
         return name + " (" + getTerm() + ")";
+    }
+
+    boolean hasName(String n) {
+        return named && name.equals(n) || aliases.contains(n);
     }
 
     private String getTerm() {
