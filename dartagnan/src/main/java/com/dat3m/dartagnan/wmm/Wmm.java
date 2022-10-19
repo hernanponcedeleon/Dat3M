@@ -105,15 +105,9 @@ public class Wmm {
     public Relation addDefinition(Definition definition) {
         checkArgument(definition.getConstrainedRelations().stream().allMatch(relationMap::containsValue));
         logger.debug("add definition {}", definition);
-        String term = term(definition);
-        Relation find = relationMap.get(term);
-        if (find != null) {
-            return find;
-        }
         Relation relation = definition.getDefinedRelation();
         checkArgument(relation.definition == null);
         relation.definition = definition;
-        addName(term, relation);
         return relation;
     }
 
@@ -121,7 +115,6 @@ public class Wmm {
         checkArgument(definedRelation.definition != null,
                 "relation %s already undefined", definedRelation.name);
         logger.debug("remove definition {}", definedRelation.definition);
-        relationMap.remove(term(definedRelation.definition));
         definedRelation.definition = null;
     }
 
@@ -297,11 +290,5 @@ public class Wmm {
 
     private Definition fence(Relation r0, String name) {
         return new Fences(r0, FilterBasic.get(name));
-    }
-
-    private String term(Definition definition) {
-        List<Relation> l = definition.getConstrainedRelations();
-        Object[] o = l.subList(1, l.size()).stream().map(x -> x.name).toArray();
-        return String.format(definition.term, o);
     }
 }
