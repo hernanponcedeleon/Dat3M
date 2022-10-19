@@ -62,11 +62,15 @@ public final class Relation implements Dependent<Relation> {
     }
 
     public String getNameOrTerm() {
-        return named ? name : definition.getTerm();
+        return named ? name : getTerm();
     }
 
     @Override
     public String toString() {
-        return name + " (" + (definition == null ? "undefined" : definition.getTerm()) + ")";
+        return name + " (" + getTerm() + ")";
+    }
+
+    private String getTerm() {
+        return definition == null ? "undefined" : definition.getTerm();
     }
 }
