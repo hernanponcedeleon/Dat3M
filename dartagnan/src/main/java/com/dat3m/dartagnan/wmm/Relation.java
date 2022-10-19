@@ -73,7 +73,7 @@ public final class Relation implements Dependent<Relation> {
     }
 
     boolean hasName(String n) {
-        return named && name.equals(n) || aliases.contains(n);
+        return name.equals(n) || aliases.contains(n);
     }
 
     private String getTerm() {

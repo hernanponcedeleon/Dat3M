@@ -55,7 +55,7 @@ public class Wmm {
      */
     public Relation getRelation(String name) {
         for (Relation r : relations) {
-            if (r.named && r.name.equals(name) || r.aliases.contains(name)) {
+            if (r.hasName(name)) {
                 return r;
             }
         }
