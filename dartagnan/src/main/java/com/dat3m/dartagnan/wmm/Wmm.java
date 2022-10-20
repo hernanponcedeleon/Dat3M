@@ -75,13 +75,15 @@ public class Wmm {
     }
 
     public Relation newRelation() {
-        String name = "_" + count++;
+        String name = "#" + count++;
         Relation relation = new Relation(name, false);
         relations.add(relation);
         return relation;
     }
 
     public Relation newRelation(String name) {
+        checkArgument(!name.startsWith("#"),
+                "invalid relation name %s", name);
         checkArgument(relations.stream().noneMatch(r -> r.hasName(name)),
                 "name %s is already used, creation not possible", name);
         Relation relation = new Relation(name, true);
