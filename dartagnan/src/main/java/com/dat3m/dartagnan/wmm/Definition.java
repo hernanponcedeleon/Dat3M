@@ -16,12 +16,12 @@ public abstract class Definition implements Constraint {
     final String term;
 
     protected Definition(Relation r) {
-        this(r, r.name);
+        this(r, r.getName());
     }
 
     protected Definition(Relation r, String t) {
         definedRelation = checkNotNull(r);
-        term = t;
+        term = checkNotNull(t);
     }
 
     public Relation getDefinedRelation() {
@@ -33,7 +33,7 @@ public abstract class Definition implements Constraint {
     }
 
     public BooleanFormula getSMTVar(Tuple edge, EncodingContext c) {
-        return c.edgeVariable(definedRelation.name, edge.getFirst(), edge.getSecond());
+        return c.edgeVariable(definedRelation.getNameOrTerm(), edge.getFirst(), edge.getSecond());
     }
 
     /**
@@ -57,7 +57,8 @@ public abstract class Definition implements Constraint {
 
     @Override
     public String toString() {
-        return definedRelation.name + " := " + getTerm();
+        String term = getTerm();
+        return definedRelation.names.isEmpty() ? term : definedRelation.getName() + " := " + term;
     }
 
     public interface Visitor <T> {
@@ -98,7 +99,7 @@ public abstract class Definition implements Constraint {
         Object[] o = new Object[s];
         for (int i = 0; i < s; i++) {
             Relation r = l.get(i + 1);
-            o[i] = depth == 0 || r.named ? r.name : "(" + r.definition.getTerm(depth - 1) + ")";
+            o[i] = depth == 0 ? r.definition.getTerm(depth - 1) : r.getName() != null ? r.getName() : "(" + r.definition.getTerm(depth - 1) + ")";
         }
         return String.format(term, o);
     }

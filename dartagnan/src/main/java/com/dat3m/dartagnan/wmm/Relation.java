@@ -10,17 +10,15 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.google.common.base.Preconditions.checkState;
+
 public final class Relation implements Dependent<Relation> {
 
-    final String name;
-    final boolean named;
     Definition definition;
     private boolean isRecursive;
-    final List<String> aliases = new ArrayList<>();
+    final List<String> names = new ArrayList<>();
 
-    Relation(String n, boolean b) {
-        name = n;
-        named = b;
+    Relation() {
     }
 
     public Definition getDefinition() {
@@ -32,6 +30,7 @@ public final class Relation implements Dependent<Relation> {
     }
 
     public void setRecursive() {
+        checkState(!names.isEmpty(), "unnamed recursive relation %s", this);
         isRecursive = true;
     }
 
@@ -43,7 +42,7 @@ public final class Relation implements Dependent<Relation> {
 
     public BooleanFormula getSMTVar(Tuple tuple, EncodingContext context) {
         return definition == null ?
-                context.edgeVariable(name, tuple.getFirst(), tuple.getSecond()) :
+                context.edgeVariable(getNameOrTerm(), tuple.getFirst(), tuple.getSecond()) :
                 definition.getSMTVar(tuple, context);
     }
 
@@ -60,20 +59,20 @@ public final class Relation implements Dependent<Relation> {
     public void configure(Configuration config) throws InvalidConfigurationException { }
 
     public String getName() {
-        return name;
+        return names.isEmpty() ? null : names.get(0);
     }
 
     public String getNameOrTerm() {
-        return named ? name : getTerm();
+        return names.isEmpty() ? getTerm() : names.get(0);
     }
 
     @Override
     public String toString() {
-        return name + " (" + getTerm() + ")";
+        return names + " := " + getTerm();
     }
 
     boolean hasName(String n) {
-        return name.equals(n) || aliases.contains(n);
+        return names.contains(n);
     }
 
     private String getTerm() {

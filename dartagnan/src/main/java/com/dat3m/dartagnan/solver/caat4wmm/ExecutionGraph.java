@@ -105,7 +105,7 @@ public class ExecutionGraph {
                     Relation relation = node.getContent();
                     if (relation.isRecursive()) {
                         RecursiveGraph graph = new RecursiveGraph();
-                        graph.setName(relation.getName() + "_rec");
+                        graph.setName(relation.getNameOrTerm() + "_rec");
                         graphs.add(graph);
                         relationGraphMap.put(relation, graph);
                     }
@@ -131,7 +131,7 @@ public class ExecutionGraph {
 
         if (!createOnlyAxiomRelevantGraphs) {
             for (Relation rel : DependencyGraph.from(memoryModel.getRelations()).getNodeContents()) {
-                if (!EXCLUDED_RELS.contains(rel.getName())) {
+                if (!EXCLUDED_RELS.contains(rel.getNameOrTerm())) {
                     RelationGraph graph = getOrCreateGraphFromRelation(rel);
                     graphs.add(graph);
                 }
@@ -237,8 +237,9 @@ public class ExecutionGraph {
         }
 
         // ===== Filter special relations ======
-        if (SPECIAL_RELS.contains(rel.getName())) {
-            switch (rel.getName()) {
+        String name = rel.getNameOrTerm();
+        if (SPECIAL_RELS.contains(name)) {
+            switch (name) {
                 case CTRL:
                     graph = new CtrlDepGraph();
                     break;
@@ -252,10 +253,10 @@ public class ExecutionGraph {
                     graph = new RcuGraph();
                     break;
                 default:
-                    throw new UnsupportedOperationException(rel.getName() + " is marked as special relation but has associated graph.");
+                    throw new UnsupportedOperationException(name + " is marked as special relation but has associated graph.");
             }
         } else if (cutRelations.contains(rel)) {
-            graph = new DynamicDefaultWMMGraph(rel.getName());
+            graph = new DynamicDefaultWMMGraph(name);
         } else if (relClass == ReadFrom.class) {
             graph = new ReadFromGraph();
         } else if (relClass == SameAddress.class) {
@@ -301,7 +302,7 @@ public class ExecutionGraph {
             graph = new StaticDefaultWMMGraph(rel, ra);
         }
 
-        graph.setName(rel.getName());
+        graph.setName(name);
         return graph;
     }
 

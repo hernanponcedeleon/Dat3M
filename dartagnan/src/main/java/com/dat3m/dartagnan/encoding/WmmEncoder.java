@@ -311,7 +311,7 @@ public class WmmEncoder implements Encoder {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rmw);
             for (Event store : program.getCache().getEvents(
                     FilterIntersection.get(FilterBasic.get(Tag.WRITE), FilterBasic.get(Tag.EXCL)))) {
-                checkState(store instanceof MemEvent, "non-memory event participating in '" + rmw.getName() + "'");
+                checkState(store instanceof MemEvent, "non-memory event participating in '" + rmw.getNameOrTerm() + "'");
                 BooleanFormula storeExec = bmgr.makeFalse();
                 for (Tuple t : k.getMaySet().getBySecond(store)) {
                     MemEvent load = (MemEvent) t.getFirst();

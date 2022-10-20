@@ -26,7 +26,6 @@ public class Wmm {
 
     public final static ImmutableSet<String> BASE_RELATIONS = ImmutableSet.of(CO, RF, RMW);
 
-    private int count;
     private final List<Axiom> axioms = new ArrayList<>();
     private final Map<String, FilterAbstract> filters = new HashMap<>();
     private final Set<Relation> relations = new HashSet<>();
@@ -71,22 +70,20 @@ public class Wmm {
     public void addAlias(String name, Relation relation) {
         checkArgument(relations.stream().noneMatch(r -> r.hasName(name)),
                 "name %s is already used, aliasing not possible", name);
-        relation.aliases.add(name);
+        relation.names.add(name);
     }
 
     public Relation newRelation() {
-        String name = "#" + count++;
-        Relation relation = new Relation(name, false);
+        Relation relation = new Relation();
         relations.add(relation);
         return relation;
     }
 
     public Relation newRelation(String name) {
-        checkArgument(!name.startsWith("#"),
-                "invalid relation name %s", name);
         checkArgument(relations.stream().noneMatch(r -> r.hasName(name)),
                 "name %s is already used, creation not possible", name);
-        Relation relation = new Relation(name, true);
+        Relation relation = new Relation();
+        relation.names.add(name);
         relations.add(relation);
         return relation;
     }
@@ -98,7 +95,7 @@ public class Wmm {
                 "relation %s is constrained by some axiom", relation);
         checkArgument(relations.stream().noneMatch(r -> r.getDependencies().contains(relation)),
                 "relation %s is constrained by some definition", relation);
-        logger.debug("delete relation {}", relation.name);
+        logger.debug("delete relation {}", relation);
         relations.remove(relation);
     }
 
@@ -120,7 +117,7 @@ public class Wmm {
 
     public void removeDefinition(Relation definedRelation) {
         checkArgument(definedRelation.definition != null,
-                "relation %s already undefined", definedRelation.name);
+                "relation %s already undefined", definedRelation);
         logger.debug("remove definition {}", definedRelation.definition);
         definedRelation.definition = null;
     }
@@ -154,7 +151,7 @@ public class Wmm {
     public String toString() {
         Stream<String> a = axioms.stream().map(Axiom::toString);
         Stream<String> r = relations.stream()
-                .filter(x -> x.named && x.definition != null && !x.definition.getTerm().equals(x.name))
+                .filter(x -> !x.names.isEmpty() && x.definition != null && !x.hasName(x.definition.getTerm()))
                 .map(x -> x.definition.toString());
         Stream<String> s = filters.values().stream().map(FilterAbstract::toString);
         return Stream.of(a, r, s).flatMap(Stream::sorted).collect(Collectors.joining("\n"));
@@ -162,7 +159,7 @@ public class Wmm {
 
     private void simplifyAssociatives(Class<? extends Definition> cls, BiFunction<Relation, Relation[], Definition> constructor) {
         for (Relation r : List.copyOf(relations)) {
-            if (r.named || !cls.isInstance(r.definition) ||
+            if (!r.names.isEmpty() || !cls.isInstance(r.definition) ||
                     axioms.stream().anyMatch(a -> a.getRelation().equals(r))) {
                 continue;
             }
@@ -189,7 +186,7 @@ public class Wmm {
 
     private Definition basicDefinition(String name) {
         Relation r = newRelation(name);
-        switch (r.name) {
+        switch (name) {
             case POWITHLOCALEVENTS:
                 return new ProgramOrder(r, FilterBasic.get(Tag.ANY));
             case PO:

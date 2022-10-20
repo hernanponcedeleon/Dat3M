@@ -178,7 +178,7 @@ public class Acyclic extends Axiom {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
         final Relation rel = this.rel;
-        final String clockVarName = rel.getName();
+        final String clockVarName = rel.getNameOrTerm();
 
         BooleanFormula enc = bmgr.makeTrue();
         final EncodingContext.EdgeEncoder edge = context.edge(rel);
