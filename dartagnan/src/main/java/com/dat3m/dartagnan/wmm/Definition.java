@@ -36,6 +36,10 @@ public abstract class Definition implements Constraint {
         return c.edgeVariable(definedRelation.getNameOrTerm(), edge.getFirst(), edge.getSecond());
     }
 
+    public String getTerm() {
+        return getTerm(20);
+    }
+
     /**
      * @return
      * Non-empty list of all relations directly participating in this definition.
@@ -87,10 +91,6 @@ public abstract class Definition implements Constraint {
         default T visitMemoryOrder(Relation co) { return visitDefinition(co, List.of()); }
         default T visitSameAddress(Relation loc) { return visitDefinition(loc, List.of()); }
         default T visitReadFrom(Relation rf) { return visitDefinition(rf, List.of()); }
-    }
-
-    String getTerm() {
-        return getTerm(20);
     }
 
     private String getTerm(int depth) {

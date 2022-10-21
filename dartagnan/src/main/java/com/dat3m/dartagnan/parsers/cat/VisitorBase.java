@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterIntersection;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
 import com.dat3m.dartagnan.program.filter.FilterUnion;
+import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
@@ -20,6 +21,7 @@ import java.util.Map;
 
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ID;
+import static com.google.common.base.Verify.verify;
 
 class VisitorBase extends CatBaseVisitor<Object> {
 
@@ -27,6 +29,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
     private final Map<String, Object> namespace = new HashMap<>();
     private Relation current;
     private String alias;
+    private final Map<String, Relation> termMap = new HashMap<>();
 
     VisitorBase() {
         this.wmm = new Wmm();
@@ -127,7 +130,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         Object o2 = c.e2.accept(this);
         if (o1 instanceof Relation) {
             Relation r0 = r != null ? r : newRelation(a);
-            return wmm.addDefinition(new Intersection(r0, (Relation) o1, relation(o2, c)));
+            return addDefinition(new Intersection(r0, (Relation) o1, relation(o2, c)));
         }
         return withAlias(a, FilterIntersection.get(set(o1, c), set(o2, c)));
     }
@@ -140,7 +143,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         Object o2 = c.e2.accept(this);
         if (o1 instanceof Relation) {
             Relation r0 = newRelation(a);
-            return wmm.addDefinition(new Difference(r0, (Relation) o1, relation(o2, c)));
+            return addDefinition(new Difference(r0, (Relation) o1, relation(o2, c)));
         }
         return withAlias(a, FilterMinus.get(set(o1, c), set(o2, c)));
     }
@@ -154,7 +157,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         Object o2 = c.e2.accept(this);
         if (o1 instanceof Relation) {
             Relation r0 = r != null ? r : newRelation(a);
-            return wmm.addDefinition(new Union(r0, (Relation) o1, relation(o2, c)));
+            return addDefinition(new Union(r0, (Relation) o1, relation(o2, c)));
         }
         return withAlias(a, FilterUnion.get(set(o1, c), set(o2, c)));
     }
@@ -169,7 +172,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
             Relation r0 = newRelation(a);
             Relation all = wmm.newRelation();
             Relation r1 = wmm.addDefinition(new CartesianProduct(all, visible, visible));
-            return wmm.addDefinition(new Difference(r0, r1, (Relation) o1));
+            return addDefinition(new Difference(r0, r1, (Relation) o1));
         }
         return withAlias(a, FilterMinus.get(visible, set(o1, c)));
     }
@@ -182,7 +185,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         Relation r0 = r != null ? r : newRelation(a);
         Relation r1 = relation(c.e1);
         Relation r2 = relation(c.e2);
-        return wmm.addDefinition(new Composition(r0, r1, r2));
+        return addDefinition(new Composition(r0, r1, r2));
     }
 
     @Override
@@ -190,7 +193,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         checkNoCurrent(c);
         Relation r0 = newRelation(alias());
         Relation r1 = relation(c.e);
-        return wmm.addDefinition(new Inverse(r0, r1));
+        return addDefinition(new Inverse(r0, r1));
     }
 
     @Override
@@ -198,7 +201,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         checkNoCurrent(c);
         Relation r0 = newRelation(alias());
         Relation r1 = relation(c.e);
-        return wmm.addDefinition(new TransitiveClosure(r0, r1));
+        return addDefinition(new TransitiveClosure(r0, r1));
     }
 
     @Override
@@ -208,7 +211,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         Relation r1 = wmm.newRelation();
         Relation r2 = wmm.getRelation(ID);
         Relation r3 = relation(c.e);
-        return wmm.addDefinition(new TransitiveClosure(r0, wmm.addDefinition(new Union(r1, r2, r3))));
+        return addDefinition(new TransitiveClosure(r0, addDefinition(new Union(r1, r2, r3))));
     }
 
     @Override
@@ -216,7 +219,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         checkNoCurrent(c);
         Relation r0 = newRelation(alias());
         Relation r1 = relation(c.e);
-        return wmm.addDefinition(new DomainIdentity(r0, r1));
+        return addDefinition(new DomainIdentity(r0, r1));
     }
 
     @Override
@@ -224,7 +227,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         checkNoCurrent(c);
         Relation r0 = newRelation(alias());
         Relation r1 = relation(c.e);
-        return wmm.addDefinition(new RangeIdentity(r0, r1));
+        return addDefinition(new RangeIdentity(r0, r1));
     }
 
     @Override
@@ -232,7 +235,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         checkNoCurrent(c);
         Relation r0 = newRelation(alias());
         Relation r1 = relation(c.e);
-        return wmm.addDefinition(new Union(r0, wmm.getRelation(ID), r1));
+        return addDefinition(new Union(r0, wmm.getRelation(ID), r1));
     }
 
     @Override
@@ -240,7 +243,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         checkNoCurrent(c);
         Relation r0 = newRelation(alias());
         FilterAbstract s1 = set(c.e);
-        return wmm.addDefinition(new Identity(r0, s1));
+        return addDefinition(new Identity(r0, s1));
     }
 
     @Override
@@ -249,7 +252,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         Relation r0 = newRelation(alias());
         FilterAbstract s1 = set(c.e1);
         FilterAbstract s2 = set(c.e2);
-        return wmm.addDefinition(new CartesianProduct(r0, s1, s2));
+        return addDefinition(new CartesianProduct(r0, s1, s2));
     }
 
     @Override
@@ -257,7 +260,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         checkNoCurrent(ctx);
         Relation r0 = newRelation(alias());
         FilterAbstract s1 = set(ctx.e);
-        return wmm.addDefinition(new Fences(r0, s1));
+        return addDefinition(new Fences(r0, s1));
     }
 
     private void addCurrentName(Object o) {
@@ -308,6 +311,25 @@ class VisitorBase extends CatBaseVisitor<Object> {
         }
         Relation r = wmm.newRelation(a);
         namespace.put(a, r);
+        return r;
+    }
+
+    private Relation addDefinition(Definition d) {
+        final String t = d.getTerm();
+        final Relation r = termMap.get(t);
+        Relation o = d.getDefinedRelation();
+        if (r == null) {
+            termMap.put(t, o);
+            return wmm.addDefinition(d);
+        }
+        String n = o.getName();
+        wmm.deleteRelation(o);
+        if (n != null) {
+            Object v = namespace.put(n, r);
+            verify(v == o);
+            wmm.addAlias(n, r);
+        }
+        verify(!namespace.containsValue(o));
         return r;
     }
 
