@@ -148,7 +148,13 @@ public class SVCOMPRunner extends BaseOptions {
 				BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 				proc.waitFor();
 				while(read.ready()) {
-					output = read.readLine();
+					String next = read.readLine();
+					// This is now the last line in the console.
+					// We avoid updating the output
+					if(next.contains("Total verification time(ms):")) {
+						break;
+					}
+					output = next;
 					System.out.println(output);
 				}
 				if(proc.exitValue() == 1) {
