@@ -231,10 +231,6 @@ public class ExecutionGraph {
         RelationGraph graph;
         Class<?> relClass = rel.getDefinition().getClass();
         List<Relation> dependencies = rel.getDependencies();
-        RelationGraph[] graphs = new RelationGraph[dependencies.size()];
-        for (int i = 0; i < graphs.length; i++) {
-            graphs[i] = getOrCreateGraphFromRelation(dependencies.get(i));
-        }
 
         // ===== Filter special relations ======
         String name = rel.getNameOrTerm();
@@ -265,20 +261,23 @@ public class ExecutionGraph {
             graph = new ProgramOrderGraph();
         } else if (relClass == MemoryOrder.class) {
             graph = new CoherenceGraph();
-        } else if (relClass == Inverse.class) {
-            graph = new InverseGraph(graphs[0]);
-        } else if (relClass == TransitiveClosure.class) {
-            graph = new TransitiveGraph(graphs[0]);
-        } else if (relClass == RangeIdentity.class) {
-            graph = new RangeIdentityGraph(graphs[0]);
-        } else if (relClass == Union.class) {
-            graph = new UnionGraph(graphs);
-        } else if (relClass == Intersection.class) {
-            graph = new IntersectionGraph(graphs);
-        } else if (relClass == Composition.class) {
-            graph = new CompositionGraph(graphs[0], graphs[1]);
-        } else if (relClass == Difference.class) {
-            graph = new DifferenceGraph(graphs[0], graphs[1]);
+        } else if (relClass == Inverse.class || relClass == TransitiveClosure.class || relClass == RangeIdentity.class) {
+            RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
+            graph = relClass == Inverse.class ? new InverseGraph(g) :
+                    relClass == TransitiveClosure.class ? new TransitiveGraph(g) :
+                            new RangeIdentityGraph(g);
+        } else if (relClass == Union.class || relClass == Intersection.class) {
+            RelationGraph[] graphs = new RelationGraph[dependencies.size()];
+            for (int i = 0; i < graphs.length; i++) {
+                graphs[i] = getOrCreateGraphFromRelation(dependencies.get(i));
+            }
+            graph = relClass == Union.class ? new UnionGraph(graphs) :
+                    new IntersectionGraph(graphs);
+        } else if (relClass == Composition.class || relClass == Difference.class) {
+            RelationGraph g1 = getOrCreateGraphFromRelation(dependencies.get(0));
+            RelationGraph g2 = getOrCreateGraphFromRelation(dependencies.get(1));
+            graph = relClass == Composition.class ? new CompositionGraph(g1, g2) :
+                    new DifferenceGraph(g1, g2);
         } else if (relClass == CartesianProduct.class) {
             CartesianProduct cartRel = (CartesianProduct)rel.getDefinition();
             SetPredicate lhs = getOrCreateSetFromFilter(cartRel.getFirstFilter());
