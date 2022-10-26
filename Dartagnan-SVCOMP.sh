@@ -33,6 +33,7 @@ else
     fi
 
     export DAT3M_HOME=$(pwd)
+    export DAT3M_OUTPUT=$DAT3M_HOME/output
     export CFLAGS=$cflags
     export SMACK_FLAGS=$smackflags
 
