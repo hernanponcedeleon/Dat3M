@@ -39,6 +39,9 @@ public class OptionNames {
 	public static final String ALWAYS_SPLIT_ON_JUMPS = "program.analysis.cf.alwaysSplitOnJump";
 	public static final String MERGE_BRANCHES = "program.analysis.cf.mergeBranches";
 
+	// Memory Model Options
+	public static final String ENABLE_MUST_SETS = "wmm.analysis.mustSets";
+
 	// Refinement Options
 	public static final String BASELINE = "refinement.baseline";
 	
