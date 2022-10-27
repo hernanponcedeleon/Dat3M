@@ -27,7 +27,6 @@ import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -207,29 +206,33 @@ public class RelationAnalysis {
     }
 
     public static final class Knowledge {
-        private final TupleSet may;
-        private final TupleSet must;
-        private Knowledge(TupleSet maySet, TupleSet mustSet) {
+        private final Set<Tuple> may;
+        private final Set<Tuple> must;
+        private Knowledge(Set<Tuple> maySet, Set<Tuple> mustSet) {
             may = checkNotNull(maySet);
             must = checkNotNull(mustSet);
         }
-        public TupleSet getMaySet() {
+        public Set<Tuple> getMaySet() {
             return may;
         }
         public Set<Tuple> getMayIn(Event second) {
-            return may.getBySecond(second);
+            checkNotNull(second);
+            return may.stream().filter(t -> t.getSecond().equals(second)).collect(toSet());
         }
         public Set<Tuple> getMayOut(Event first) {
-            return may.getByFirst(first);
+            checkNotNull(first);
+            return may.stream().filter(t -> t.getFirst().equals(first)).collect(toSet());
         }
-        public TupleSet getMustSet() {
+        public Set<Tuple> getMustSet() {
             return must;
         }
         public Set<Tuple> getMustIn(Event second) {
-            return must.getBySecond(second);
+            checkNotNull(second);
+            return must.stream().filter(t -> t.getSecond().equals(second)).collect(toSet());
         }
         public Set<Tuple> getMustOut(Event first) {
-            return must.getByFirst(first);
+            checkNotNull(first);
+            return must.stream().filter(t -> t.getFirst().equals(first)).collect(toSet());
         }
         private Delta joinSet(List<Delta> l) {
             verify(!l.isEmpty(), "empty update");
@@ -264,11 +267,11 @@ public class RelationAnalysis {
     private final class Initializer implements Definition.Visitor<Knowledge> {
         @Override
         public Knowledge visitDefinition(Relation r, List<? extends Relation> d) {
-            return new Knowledge(new TupleSet(), new TupleSet());
+            return new Knowledge(new HashSet<>(), new HashSet<>());
         }
         @Override
         public Knowledge visitProduct(Relation rel, FilterAbstract domain, FilterAbstract range) {
-            TupleSet must = new TupleSet();
+            Set<Tuple> must = new HashSet<>();
             List<Event> l1 = program.getCache().getEvents(domain);
             List<Event> l2 = program.getCache().getEvents(range);
             for (Event e1 : l1) {
@@ -278,19 +281,19 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, new TupleSet(must));
+            return new Knowledge(must, new HashSet<>(must));
         }
         @Override
         public Knowledge visitIdentity(Relation rel, FilterAbstract set) {
-            TupleSet must = new TupleSet();
+            Set<Tuple> must = new HashSet<>();
             for (Event e : program.getCache().getEvents(set)) {
                 must.add(new Tuple(e, e));
             }
-            return new Knowledge(must, new TupleSet(must));
+            return new Knowledge(must, new HashSet<>(must));
         }
         @Override
         public Knowledge visitExternal(Relation rel) {
-            TupleSet must = new TupleSet();
+            Set<Tuple> must = new HashSet<>();
             List<Thread> threads = program.getThreads();
             for (int i = 0; i < threads.size(); i++) {
                 Thread t1 = threads.get(i);
@@ -304,11 +307,11 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, new TupleSet(must));
+            return new Knowledge(must, new HashSet<>(must));
         }
         @Override
         public Knowledge visitInternal(Relation rel) {
-            TupleSet must = new TupleSet();
+            Set<Tuple> must = new HashSet<>();
             for (Thread t : program.getThreads()) {
                 List<Event> events = t.getCache().getEvents(FilterBasic.get(VISIBLE));
                 for (Event e1 : events) {
@@ -319,11 +322,11 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, new TupleSet(must));
+            return new Knowledge(must, new HashSet<>(must));
         }
         @Override
         public Knowledge visitProgramOrder(Relation rel, FilterAbstract type) {
-            TupleSet must = new TupleSet();
+            Set<Tuple> must = new HashSet<>();
             for (Thread t : program.getThreads()) {
                 List<Event> events = t.getCache().getEvents(type);
                 for (int i = 0; i < events.size(); i++) {
@@ -334,13 +337,13 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, new TupleSet(must));
+            return new Knowledge(must, new HashSet<>(must));
         }
         @Override
         public Knowledge visitControl(Relation rel) {
             //TODO: We can restrict the codomain to visible events as the only usage of this Relation is in
             // ctrl := idd^+;ctrlDirect & (R*V)
-            TupleSet must = new TupleSet();
+            Set<Tuple> must = new HashSet<>();
             // NOTE: If's (under Linux) have different notion of ctrl dependency than conditional jumps!
             for (Thread thread : program.getThreads()) {
                 for (Event e1 : thread.getCache().getEvents(FilterBasic.get(CMP))) {
@@ -364,7 +367,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, new TupleSet(must));
+            return new Knowledge(must, new HashSet<>(must));
         }
         @Override
         public Knowledge visitAddressDependency(Relation rel) {
@@ -376,8 +379,8 @@ public class RelationAnalysis {
         }
         @Override
         public Knowledge visitFences(Relation rel, FilterAbstract fence) {
-            TupleSet may = new TupleSet();
-            TupleSet must = new TupleSet();
+            Set<Tuple> may = new HashSet<>();
+            Set<Tuple> must = new HashSet<>();
             for (Event f : program.getCache().getEvents(fence)) {
                 List<Event> memEvents = f.getThread().getCache().getEvents(FilterBasic.get(MEMORY));
                 int numEventsBeforeFence = (int) memEvents.stream()
@@ -401,17 +404,17 @@ public class RelationAnalysis {
         }
         @Override
         public Knowledge visitCompareAndSwapDependency(Relation rel) {
-            TupleSet must = new TupleSet();
+            Set<Tuple> must = new HashSet<>();
             for (Event e : program.getCache().getEvents(FilterBasic.get(IMM.CASDEPORIGIN))) {
                 // The target of a CASDep is always the successor of the origin
                 must.add(new Tuple(e, e.getSuccessor()));
             }
-            return new Knowledge(must, new TupleSet(must));
+            return new Knowledge(must, new HashSet<>(must));
         }
         @Override
         public Knowledge visitCriticalSections(Relation rel) {
-            TupleSet may = new TupleSet();
-            TupleSet must = new TupleSet();
+            Set<Tuple> may = new HashSet<>();
+            Set<Tuple> must = new HashSet<>();
             //assume locks and unlocks are distinct
             Map<Event, Set<Event>> mayMap = new HashMap<>();
             Map<Event, Set<Event>> mustMap = new HashMap<>();
@@ -452,7 +455,7 @@ public class RelationAnalysis {
         public Knowledge visitReadModifyWrites(Relation rel) {
             //NOTE: Changes to the semantics of this method may need to be reflected in RMWGraph for Refinement!
             // ----- Compute minTupleSet -----
-            TupleSet must = new TupleSet();
+            Set<Tuple> must = new HashSet<>();
             // RMWLoad -> RMWStore
             for (Event store : program.getCache().getEvents(
                     FilterIntersection.get(FilterBasic.get(RMW), FilterBasic.get(WRITE)))) {
@@ -481,7 +484,7 @@ public class RelationAnalysis {
                 }
             }
             // ----- Compute maxTupleSet -----
-            TupleSet may = new TupleSet(must);
+            Set<Tuple> may = new HashSet<>(must);
             // LoadExcl -> StoreExcl
             for (Thread thread : program.getThreads()) {
                 List<Event> events = thread.getCache().getEvents(FilterBasic.get(EXCL));
@@ -521,7 +524,7 @@ public class RelationAnalysis {
         public Knowledge visitMemoryOrder(Relation rel) {
             logger.trace("Computing maxTupleSet for memory order");
             final List<Event> nonInitWrites = program.getCache().getEvents(FilterMinus.get(FilterBasic.get(WRITE), FilterBasic.get(INIT)));
-            TupleSet may = new TupleSet();
+            Set<Tuple> may = new HashSet<>();
             for (Event w1 : program.getCache().getEvents(FilterBasic.get(WRITE))) {
                 for (Event w2 : nonInitWrites) {
                     if (w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)
@@ -530,7 +533,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            TupleSet must = new TupleSet();
+            Set<Tuple> must = new HashSet<>();
             if (wmmAnalysis.isLocallyConsistent()) {
                 may.removeIf(Tuple::isBackward);
                 for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
@@ -547,7 +550,7 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitReadFrom(Relation rel) {
             logger.trace("Computing maxTupleSet for read-from");
-            TupleSet may = new TupleSet();
+            Set<Tuple> may = new HashSet<>();
             List<Event> loadEvents = program.getCache().getEvents(FilterBasic.get(READ));
             List<Event> storeEvents = program.getCache().getEvents(FilterBasic.get(WRITE));
             for (Event e1 : storeEvents) {
@@ -637,11 +640,11 @@ public class RelationAnalysis {
                 logger.debug("Atomic block optimization eliminated {} reads", sizeBefore - may.size());
             }
             logger.debug("maxTupleSet size for read-from: {}", may.size());
-            return new Knowledge(may, new TupleSet());
+            return new Knowledge(may, new HashSet<>());
         }
         @Override
         public Knowledge visitSameAddress(Relation rel) {
-            TupleSet may = new TupleSet();
+            Set<Tuple> may = new HashSet<>();
             Collection<Event> events = program.getCache().getEvents(FilterBasic.get(MEMORY));
             for (Event e1 : events) {
                 for (Event e2 : events) {
@@ -650,7 +653,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            TupleSet must = new TupleSet();
+            Set<Tuple> must = new HashSet<>();
             for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
                 if (alias.mustAlias((MemEvent) t.getFirst(), (MemEvent) t.getSecond())) {
                     must.add(t);
@@ -659,8 +662,8 @@ public class RelationAnalysis {
             return new Knowledge(may, must);
         }
         private Knowledge visitDependency(List<Event> events, Function<Event, Set<Register>> registers) {
-            TupleSet may = new TupleSet();
-            TupleSet must = new TupleSet();
+            Set<Tuple> may = new HashSet<>();
+            Set<Tuple> must = new HashSet<>();
             // We need to track ExecutionStatus events separately, because they induce data-dependencies
             // without reading from a register.
             Set<ExecutionStatus> execStatusRegWriter = new HashSet<>();

@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -52,7 +51,7 @@ public class Acyclic extends Axiom {
 
         // ====== Compute SCCs ======
         DependencyGraph<Event> depGraph = DependencyGraph.from(succMap.keySet(), succMap);
-        TupleSet result = new TupleSet();
+        final Set<Tuple> result = new HashSet<>();
         for (Set<DependencyGraph<Event>.Node> scc : depGraph.getSCCs()) {
             for (DependencyGraph<Event>.Node node1 : scc) {
                 for (DependencyGraph<Event>.Node node2 : scc) {
@@ -72,7 +71,7 @@ public class Acyclic extends Axiom {
         return result;
     }
 
-    private void reduceWithMinSets(TupleSet encodeSet, ExecutionAnalysis exec, RelationAnalysis ra) {
+    private void reduceWithMinSets(Set<Tuple> encodeSet, ExecutionAnalysis exec, RelationAnalysis ra) {
         /*
             ASSUMPTION: MinSet is acyclic!
             IDEA:

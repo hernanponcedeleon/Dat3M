@@ -6,14 +6,8 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Definition.Visitor;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 // Collections of relationships in a verification task that need to be constrained in an SMT-based verification.
@@ -59,8 +53,8 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
         if (news.isEmpty()) {
             return Map.of();
         }
-        TupleSet set1 = new TupleSet();
-        TupleSet set2 = new TupleSet();
+        final Set<Tuple> set1 = new HashSet<>();
+        final Set<Tuple> set2 = new HashSet<>();
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
         final RelationAnalysis.Knowledge k2 = ra.getKnowledge(r2);
         for (Tuple t : news) {

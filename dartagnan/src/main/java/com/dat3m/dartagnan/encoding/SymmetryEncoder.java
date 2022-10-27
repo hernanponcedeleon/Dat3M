@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -247,6 +246,6 @@ public class SymmetryEncoder implements Encoder {
                 .filter(c -> c != branchEq.getInitialClass() && c != branchEq.getUnreachableClass())
                 .map(EquivalenceClass::getRepresentative)
                 .map(rep -> new Tuple(rep, rep))
-                .collect(Collectors.toCollection(TupleSet::new));
+                .collect(Collectors.toSet());
     }
 }
