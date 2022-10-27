@@ -91,33 +91,36 @@ public class Acyclic extends Axiom {
                       and b is implied by either a or c.
                     - It is possible to reduce must(rel) but that may give a less precise result.
          */
-        final TupleSet minSet = ra.getKnowledge(rel).getMustSet();
+        final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
 
         // (1) Approximate transitive closure of minSet (only gets computed when crossEdges are available)
-        List<Tuple> crossEdges = minSet.stream()
+        List<Tuple> crossEdges = k.getMustSet().stream()
                 .filter(t -> t.isCrossThread() && !t.getFirst().is(Tag.INIT))
                 .collect(Collectors.toList());
-        TupleSet transMinSet = crossEdges.isEmpty() ? minSet : new TupleSet(minSet);
+        Map<Event, Set<Event>> transMinSet = new HashMap<>();
+        for (Tuple t : k.getMustSet()) {
+            transMinSet.computeIfAbsent(t.getSecond(), x -> new HashSet<>()).add(t.getFirst());
+        }
         for (Tuple crossEdge : crossEdges) {
             Event e1 = crossEdge.getFirst();
             Event e2 = crossEdge.getSecond();
 
             List<Event> ingoing = new ArrayList<>();
             ingoing.add(e1); // ingoing events + self
-            minSet.getBySecond(e1).stream().map(Tuple::getFirst)
+            k.getMustIn(e1).stream().map(Tuple::getFirst)
                     .filter(e -> exec.isImplied(e, e1))
                     .forEach(ingoing::add);
 
 
             List<Event> outgoing = new ArrayList<>();
             outgoing.add(e2); // outgoing edges + self
-            minSet.getByFirst(e2).stream().map(Tuple::getSecond)
+            k.getMustOut(e2).stream().map(Tuple::getSecond)
                     .filter(e -> exec.isImplied(e, e2))
                     .forEach(outgoing::add);
 
             for (Event in : ingoing) {
                 for (Event out : outgoing) {
-                    transMinSet.add(new Tuple(in, out));
+                    transMinSet.computeIfAbsent(out, x -> new HashSet<>()).add(in);
                 }
             }
         }
@@ -125,10 +128,33 @@ public class Acyclic extends Axiom {
         // (2) Approximate reduction of transitive must-set: red(must(r)+).
         // Note: We reduce the transitive closure which may have more edges
         // that can be used to perform reduction
-        TupleSet reduct = TupleSet.approximateTransitiveMustReduction(exec, transMinSet);
+        // Approximative must-transitive reduction of minSet:
+        Set<Tuple> reduct = new HashSet<>();
+        DependencyGraph<Event> depGraph = DependencyGraph.from(transMinSet.keySet(), e -> transMinSet.getOrDefault(e, Set.of()));
+        for (DependencyGraph<Event>.Node start : depGraph.getNodes()) {
+            Event e1 = start.getContent();
+            List<DependencyGraph<Event>.Node> deps = start.getDependents();
+            for (int i = deps.size() - 1; i >= 0; i--) {
+                DependencyGraph<Event>.Node end = deps.get(i);
+                Event e3 = end.getContent();
+                boolean redundant = false;
+                for (DependencyGraph<Event>.Node mid : deps.subList(0, i)) {
+                    Event e2 = mid.getContent();
+                    if (exec.isImplied(e1, e2) || exec.isImplied(e3, e2)) {
+                        if (transMinSet.getOrDefault(e3, Set.of()).contains(e2)) {
+                            redundant = true;
+                            break;
+                        }
+                    }
+                }
+                if (!redundant) {
+                    reduct.add(new Tuple(e1, e3));
+                }
+            }
+        }
 
         // Remove (must(r)+ \ red(must(r)+)
-        encodeSet.removeIf(t -> transMinSet.contains(t) && !reduct.contains(t));
+        encodeSet.removeIf(t -> transMinSet.getOrDefault(t.getSecond(), Set.of()).contains(t.getFirst()) && !reduct.contains(t));
     }
 
     @Override

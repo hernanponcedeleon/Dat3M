@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -126,8 +125,8 @@ public class CoSymmetryBreaking {
         for (Store w : writes) {
             int syncDeg = 0;
             for (Axiom ax : axioms) {
-                final TupleSet minSet = ra.getKnowledge(ax.getRelation()).getMustSet();
-                syncDeg = Math.max(syncDeg, (1 + minSet.getBySecond(w).size()) * (1 + minSet.getByFirst(w).size()));
+                final RelationAnalysis.Knowledge k = ra.getKnowledge(ax.getRelation());
+                syncDeg = Math.max(syncDeg, (1 + k.getMustIn(w).size()) * (1 + k.getMustOut(w).size()));
             }
             syncDegreeMap.put(w, syncDeg);
         }

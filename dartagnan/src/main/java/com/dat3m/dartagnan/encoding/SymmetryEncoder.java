@@ -173,12 +173,12 @@ public class SymmetryEncoder implements Encoder {
         final Map<Event, Integer> combOutDegree = new HashMap<>(outEvents.size());
         for (Event e : inEvents) {
             int syncDeg = axioms.stream()
-                    .mapToInt(ax -> ra.getKnowledge(ax.getRelation()).getMustSet().getBySecond(e).size() + 1).max().orElse(0);
+                    .mapToInt(ax -> ra.getKnowledge(ax.getRelation()).getMustIn(e).size() + 1).max().orElse(0);
             combInDegree.put(e, syncDeg);
         }
         for (Event e : outEvents) {
             int syncDec = axioms.stream()
-                    .mapToInt(ax -> ra.getKnowledge(ax.getRelation()).getMustSet().getByFirst(e).size() + 1).max().orElse(0);
+                    .mapToInt(ax -> ra.getKnowledge(ax.getRelation()).getMustOut(e).size() + 1).max().orElse(0);
             combOutDegree.put(e, syncDec);
         }
 

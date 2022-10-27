@@ -65,7 +65,7 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
         final RelationAnalysis.Knowledge k2 = ra.getKnowledge(r2);
         for (Tuple t : news) {
             Event e = t.getSecond();
-            for (Tuple t1 : k1.getMaySet().getByFirst(t.getFirst())) {
+            for (Tuple t1 : k1.getMayOut(t.getFirst())) {
                 Tuple t2 = new Tuple(t1.getSecond(), e);
                 if (k2.getMaySet().contains(t2)) {
                     if (!k1.getMustSet().contains(t1)) {
@@ -83,13 +83,13 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
     @Override
     public Map<Relation, Stream<Tuple>> visitDomainIdentity(Relation rel, Relation r1) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
-        return Map.of(r1, news.stream().flatMap(t -> k1.getMaySet().getByFirst(t.getFirst()).stream().filter(t1 -> !k1.getMustSet().contains(t1))));
+        return Map.of(r1, news.stream().flatMap(t -> k1.getMayOut(t.getFirst()).stream().filter(t1 -> !k1.getMustSet().contains(t1))));
     }
 
     @Override
     public Map<Relation, Stream<Tuple>> visitRangeIdentity(Relation rel, Relation r1) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
-        return Map.of(r1, news.stream().flatMap(t -> k1.getMaySet().getBySecond(t.getSecond()).stream().filter(t1 -> !k1.getMustSet().contains(t1))));
+        return Map.of(r1, news.stream().flatMap(t -> k1.getMayIn(t.getSecond()).stream().filter(t1 -> !k1.getMustSet().contains(t1))));
     }
 
     @Override
@@ -104,7 +104,7 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
         final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rel);
         for (Tuple t : news) {
             Event e = t.getSecond();
-            for (Tuple t1 : k0.getMaySet().getByFirst(t.getFirst())) {
+            for (Tuple t1 : k0.getMayOut(t.getFirst())) {
                 Tuple t2 = new Tuple(t1.getSecond(), e);
                 if (k0.getMaySet().contains(t2)) {
                     if (!k0.getMustSet().contains(t1)) {
@@ -126,13 +126,13 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
         for (Tuple tuple : news) {
             Event lock = tuple.getFirst();
             Event unlock = tuple.getSecond();
-            for (Tuple t : k0.getMaySet().getBySecond(unlock)) {
+            for (Tuple t : k0.getMayIn(unlock)) {
                 Event e = t.getFirst();
                 if (lock.getGlobalId() < e.getGlobalId() && e.getGlobalId() < unlock.getGlobalId()) {
                     queue.add(t);
                 }
             }
-            for (Tuple t : k0.getMaySet().getByFirst(lock)) {
+            for (Tuple t : k0.getMayOut(lock)) {
                 Event e = t.getSecond();
                 if (lock.getGlobalId() < e.getGlobalId() && e.getGlobalId() < unlock.getGlobalId()) {
                     queue.add(t);

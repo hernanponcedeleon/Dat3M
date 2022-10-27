@@ -141,9 +141,9 @@ public class RelationAnalysis {
         for (final Tuple t : k.getMaySet()) {
             final MemEvent x = (MemEvent) t.getFirst();
             final MemEvent z = (MemEvent) t.getSecond();
-            final boolean hasIntermediary = k.getMustSet().getByFirst(x).stream().map(Tuple::getSecond)
+            final boolean hasIntermediary = k.getMustOut(x).stream().map(Tuple::getSecond)
                     .anyMatch(y -> y != x && y != z && (exec.isImplied(x, y) || exec.isImplied(z, y)) && !k.getMaySet().contains(new Tuple(z, y))) ||
-                    k.getMustSet().getBySecond(z).stream().map(Tuple::getFirst)
+                    k.getMustIn(z).stream().map(Tuple::getFirst)
                             .anyMatch(y -> y != x && y != z && (exec.isImplied(x, y) || exec.isImplied(z, y)) && !k.getMaySet().contains(new Tuple(y, x)));
             if (hasIntermediary) {
                 transCo.add(t);
@@ -216,8 +216,20 @@ public class RelationAnalysis {
         public TupleSet getMaySet() {
             return may;
         }
+        public Set<Tuple> getMayIn(Event second) {
+            return may.getBySecond(second);
+        }
+        public Set<Tuple> getMayOut(Event first) {
+            return may.getByFirst(first);
+        }
         public TupleSet getMustSet() {
             return must;
+        }
+        public Set<Tuple> getMustIn(Event second) {
+            return must.getBySecond(second);
+        }
+        public Set<Tuple> getMustOut(Event first) {
+            return must.getByFirst(first);
         }
         private Delta joinSet(List<Delta> l) {
             verify(!l.isEmpty(), "empty update");
@@ -400,6 +412,9 @@ public class RelationAnalysis {
         public Knowledge visitCriticalSections(Relation rel) {
             TupleSet may = new TupleSet();
             TupleSet must = new TupleSet();
+            //assume locks and unlocks are distinct
+            Map<Event, Set<Event>> mayMap = new HashMap<>();
+            Map<Event, Set<Event>> mustMap = new HashMap<>();
             for (Thread thread : program.getThreads()) {
                 // assume order by cId
                 // assume cId describes a topological sorting over the control flow
@@ -409,20 +424,24 @@ public class RelationAnalysis {
                     for (Event lock : locks) {
                         if (unlock.getGlobalId() < lock.getGlobalId() ||
                                 exec.areMutuallyExclusive(lock, unlock) ||
-                                Stream.concat(must.getByFirst(lock).stream().map(Tuple::getSecond),
-                                                must.getBySecond(unlock).stream().map(Tuple::getFirst))
+                                Stream.concat(mustMap.getOrDefault(lock, Set.of()).stream(),
+                                                mustMap.getOrDefault(unlock, Set.of()).stream())
                                         .anyMatch(e -> exec.isImplied(lock, e) || exec.isImplied(unlock, e))) {
                             continue;
                         }
                         boolean noIntermediary = enableMustSets &&
-                                may.getBySecond(unlock).stream()
-                                        .allMatch(t -> exec.areMutuallyExclusive(lock, t.getFirst())) &&
-                                may.getByFirst(lock).stream()
-                                        .allMatch(t -> exec.areMutuallyExclusive(t.getSecond(), unlock));
+                                mayMap.getOrDefault(unlock, Set.of()).stream()
+                                        .allMatch(e -> exec.areMutuallyExclusive(lock, e)) &&
+                                mayMap.getOrDefault(lock, Set.of()).stream()
+                                        .allMatch(e -> exec.areMutuallyExclusive(e, unlock));
                         Tuple tuple = new Tuple(lock, unlock);
                         may.add(tuple);
+                        mayMap.computeIfAbsent(lock, x -> new HashSet<>()).add(unlock);
+                        mayMap.computeIfAbsent(unlock, x -> new HashSet<>()).add(lock);
                         if (noIntermediary) {
                             must.add(tuple);
+                            mustMap.computeIfAbsent(lock, x -> new HashSet<>()).add(unlock);
+                            mustMap.computeIfAbsent(unlock, x -> new HashSet<>()).add(lock);
                         }
                     }
                 }
@@ -543,11 +562,15 @@ public class RelationAnalysis {
                 may.removeIf(Tuple::isBackward);
                 // Remove past reads
                 Set<Tuple> deletedTuples = new HashSet<>();
+                Map<Event, List<Event>> writesByRead = new HashMap<>();
+                for (Tuple t : may) {
+                    writesByRead.computeIfAbsent(t.getSecond(), x -> new ArrayList<>()).add(t.getFirst());
+                }
                 for (Event r : program.getCache().getEvents(FilterBasic.get(READ))) {
                     MemEvent read = (MemEvent) r;
                     // The set of same-thread writes as well as init writes that could be read from (all before the read)
                     // sorted by order (init events first)
-                    List<MemEvent> possibleWrites = may.getBySecond(read).stream().map(Tuple::getFirst)
+                    List<MemEvent> possibleWrites = writesByRead.get(read).stream()
                             .filter(e -> (e.getThread() == read.getThread() || e.is(INIT)))
                             .map(x -> (MemEvent) x)
                             .sorted((o1, o2) -> o1.is(INIT) == o2.is(INIT) ? (o1.getGlobalId() - o2.getGlobalId()) : o1.is(INIT) ? -1 : 1)

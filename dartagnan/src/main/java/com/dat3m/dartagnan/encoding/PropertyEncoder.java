@@ -185,7 +185,7 @@ public class PropertyEncoder implements Encoder {
                 BooleanFormula allCoMaximalLoad = bmgr.makeTrue();
                 for (Load load : pair.loads) {
                     BooleanFormula coMaximalLoad = bmgr.makeFalse();
-                    for (Tuple rfEdge : ra.getKnowledge(rf).getMaySet().getBySecond(load)) {
+                    for (Tuple rfEdge : ra.getKnowledge(rf).getMayIn(load)) {
                         coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(edge.encode(rfEdge), lastCoVar(rfEdge.getFirst())));
                     }
                     allCoMaximalLoad = bmgr.and(allCoMaximalLoad, bmgr.implication(context.execution(load), coMaximalLoad));
@@ -280,7 +280,7 @@ public class PropertyEncoder implements Encoder {
             }
             BooleanFormula isLast = context.execution(w1);
             // ---- Find all possibly overwriting writes ----
-            for (Tuple t : knowledge.getMaySet().getByFirst(w1)) {
+            for (Tuple t : knowledge.getMayOut(w1)) {
                 if (transCo.contains(t)) {
                     // We can skip the co-edge (w1,w2), because there will be an intermediate write w3
                     // that already witnesses that w1 is not last.
