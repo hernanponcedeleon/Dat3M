@@ -66,7 +66,7 @@ public abstract class Definition implements Constraint {
     }
 
     public interface Visitor <T> {
-        default T visitDefinition(Relation rel, List<? extends Relation> dependencies) { throw new UnsupportedOperationException("applying" + getClass().getSimpleName() + " to relation " + rel); }
+        default T visitDefinition(Relation rel, List<? extends Relation> dependencies) { throw new UnsupportedOperationException("applying " + getClass().getSimpleName() + " to relation " + rel); }
         default T visitUnion(Relation rel, Relation... operands) { return visitDefinition(rel, List.of(operands)); }
         default T visitIntersection(Relation rel, Relation... operands) { return visitDefinition(rel, List.of(operands)); }
         default T visitDifference(Relation rel, Relation superset, Relation complement) { return visitDefinition(rel, List.of(superset, complement)); }

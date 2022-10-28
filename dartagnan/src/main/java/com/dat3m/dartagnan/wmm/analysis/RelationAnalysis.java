@@ -23,9 +23,11 @@ import com.dat3m.dartagnan.program.filter.FilterUnion;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,26 +36,20 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Arch.RISCV;
+import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_EXTENDED_RELATION_ANALYSIS;
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_MUST_SETS;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.Lists.reverse;
 import static com.google.common.collect.Sets.difference;
+import static com.google.common.collect.Sets.intersection;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.IntStream.iterate;
@@ -66,6 +62,7 @@ public class RelationAnalysis {
     private static final Delta EMPTY = new Delta(Set.of(), Set.of());
 
     private final Program program;
+    private final Context analysisContext;
     private final ExecutionAnalysis exec;
     private final AliasAnalysis alias;
     private final Dependency dep;
@@ -77,8 +74,14 @@ public class RelationAnalysis {
             secure = true)
     private boolean enableMustSets = true;
 
+    @Option(name = ENABLE_EXTENDED_RELATION_ANALYSIS,
+            description = "Marks relationships as trivially false, if they alone would violate a consistency property of the target memory model.",
+            secure = true)
+    private boolean enableExtended = true;
+
     private RelationAnalysis(VerificationTask task, Context context, Configuration config) {
         program = task.getProgram();
+        analysisContext = context;
         exec = context.requires(ExecutionAnalysis.class);
         alias = context.requires(AliasAnalysis.class);
         dep = context.requires(Dependency.class);
@@ -102,6 +105,12 @@ public class RelationAnalysis {
     public static RelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
         RelationAnalysis a = new RelationAnalysis(task, context, config);
         task.getConfig().inject(a);
+        logger.info("{}: {}", ENABLE_MUST_SETS, a.enableMustSets);
+        logger.info("{}: {}", ENABLE_EXTENDED_RELATION_ANALYSIS, a.enableExtended);
+        if (a.enableExtended && !a.enableMustSets) {
+            logger.warn("{} implies {}", ENABLE_EXTENDED_RELATION_ANALYSIS, ENABLE_MUST_SETS);
+            a.enableMustSets = true;
+        }
         a.run(task.getMemoryModel());
         return a;
     }
@@ -137,13 +146,13 @@ public class RelationAnalysis {
     public Set<Tuple> findTransitivelyImpliedCo(Relation co) {
         final RelationAnalysis.Knowledge k = getKnowledge(co);
         Set<Tuple> transCo = new HashSet<>();
-        for (final Tuple t : k.getMaySet()) {
+        for (final Tuple t : k.may) {
             final MemEvent x = (MemEvent) t.getFirst();
             final MemEvent z = (MemEvent) t.getSecond();
             final boolean hasIntermediary = k.getMustOut(x).stream().map(Tuple::getSecond)
-                    .anyMatch(y -> y != x && y != z && (exec.isImplied(x, y) || exec.isImplied(z, y)) && !k.getMaySet().contains(new Tuple(z, y))) ||
+                    .anyMatch(y -> y != x && y != z && (exec.isImplied(x, y) || exec.isImplied(z, y)) && !k.may.contains(new Tuple(z, y))) ||
                     k.getMustIn(z).stream().map(Tuple::getFirst)
-                            .anyMatch(y -> y != x && y != z && (exec.isImplied(x, y) || exec.isImplied(z, y)) && !k.getMaySet().contains(new Tuple(y, x)));
+                            .anyMatch(y -> y != x && y != z && (exec.isImplied(x, y) || exec.isImplied(z, y)) && !k.may.contains(new Tuple(y, x)));
             if (hasIntermediary) {
                 transCo.add(t);
             }
@@ -152,10 +161,10 @@ public class RelationAnalysis {
     }
 
     private void run(Wmm memoryModel) {
-        Map<Relation, List<Relation>> dependents = new HashMap<>();
+        Map<Relation, List<Definition>> dependents = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
             for (Relation d : r.getDependencies()) {
-                dependents.computeIfAbsent(d, k -> new ArrayList<>()).add(r);
+                dependents.computeIfAbsent(d, k -> new ArrayList<>()).add(r.getDefinition());
             }
         }
         // ------------------------------------------------
@@ -192,8 +201,9 @@ public class RelationAnalysis {
                 propagator.source = relation;
                 propagator.may = delta.may;
                 propagator.must = delta.must;
-                for (Relation r : dependents.getOrDefault(relation, List.of())) {
-                    Delta d = r.getDefinition().accept(propagator);
+                for (Definition c : dependents.getOrDefault(relation, List.of())) {
+                    Relation r = c.getDefinedRelation();
+                    Delta d = c.accept(propagator);
                     verify(enableMustSets || d.must.isEmpty(),
                             "although disabled, computed a non-empty must set for relation %s", r);
                     (stratum.contains(r) ? qLocal : qGlobal)
@@ -203,14 +213,19 @@ public class RelationAnalysis {
             }
         }
         verify(qGlobal.isEmpty(), "knowledge buildup propagated downwards");
+        if (enableExtended) {
+            runExtended(memoryModel);
+        }
     }
 
     public static final class Knowledge {
         private final Set<Tuple> may;
         private final Set<Tuple> must;
+        private final Set<Tuple> disabled;
         private Knowledge(Set<Tuple> maySet, Set<Tuple> mustSet) {
             may = checkNotNull(maySet);
             must = checkNotNull(mustSet);
+            disabled = new HashSet<>();
         }
         public Set<Tuple> getMaySet() {
             return may;
@@ -234,6 +249,9 @@ public class RelationAnalysis {
             checkNotNull(first);
             return must.stream().filter(t -> t.getFirst().equals(first)).collect(toSet());
         }
+        public Set<Tuple> getDisabledSet() {
+            return disabled;
+        }
         private Delta joinSet(List<Delta> l) {
             verify(!l.isEmpty(), "empty update");
             // NOTE optimization due to initial deltas carrying references to knowledge sets
@@ -253,14 +271,91 @@ public class RelationAnalysis {
             }
             return new Delta(maySet, mustSet);
         }
+        private ExtendedDelta join(List<ExtendedDelta> l) {
+            verify(!l.isEmpty(), "empty update in extended analysis");
+            Set<Tuple> disableSet = new HashSet<>();
+            Set<Tuple> enableSet = new HashSet<>();
+            for (ExtendedDelta d : l) {
+                for (Tuple t : Set.copyOf(d.disabled)) {
+                    if (may.remove(t) && disabled.add(t)) {
+                        disableSet.add(t);
+                    }
+                }
+                for (Tuple t : Set.copyOf(d.enabled)) {
+                    if (must.add(t)) {
+                        enableSet.add(t);
+                    }
+                }
+            }
+            return new ExtendedDelta(disableSet, enableSet);
+        }
     }
 
-    private static final class Delta {
-        final Set<Tuple> may;
-        final Set<Tuple> must;
+    private void runExtended(Wmm memoryModel) {
+        Map<Relation, List<Constraint>> dependents = new HashMap<>();
+        for (Relation r : memoryModel.getRelations()) {
+            Definition d = r.getDefinition();
+            if (d == null) {
+                continue;
+            }
+            for (Relation x : d.getConstrainedRelations()) {
+                dependents.computeIfAbsent(x, k -> new ArrayList<>()).add(d);
+            }
+        }
+        Map<Relation, List<ExtendedDelta>> q = new LinkedHashMap<>();
+        for (Axiom a : memoryModel.getAxioms()) {
+            if (a.isFlagged()) {
+                continue;
+            }
+            dependents.computeIfAbsent(a.getRelation(), k ->new ArrayList<>()).add(a);
+            for (Map.Entry<Relation, ExtendedDelta> e :
+                    a.computeInitialKnowledgeClosure(knowledgeMap, analysisContext).entrySet()) {
+                q.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
+            }
+        }
+        ExtendedPropagator propagator = new ExtendedPropagator();
+        // repeat until convergence
+        while (!q.isEmpty()) {
+            Relation relation = q.keySet().iterator().next();
+            ExtendedDelta delta = knowledgeMap.get(relation).join(q.remove(relation));
+            if (delta.disabled.isEmpty() && delta.enabled.isEmpty()) {
+                continue;
+            }
+            propagator.origin = relation;
+            Set<Tuple> disabled = propagator.disabled = delta.disabled;
+            Set<Tuple> enabled = propagator.enabled = delta.enabled;
+            for (Constraint c : dependents.getOrDefault(relation, List.of())) {
+                for (Map.Entry<Relation, ExtendedDelta> e :
+                        c.computeIncrementalKnowledgeClosure(
+                                relation, disabled, enabled, knowledgeMap, analysisContext).entrySet()) {
+                    q.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
+                }
+                if (!(c instanceof Definition)) {
+                    continue;
+                }
+                for (Map.Entry<Relation, ExtendedDelta> e : ((Definition) c).accept(propagator).entrySet()) {
+                    q.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
+                }
+            }
+        }
+    }
+
+    public static final class Delta {
+        public final Set<Tuple> may;
+        public final Set<Tuple> must;
         Delta(Set<Tuple> maySet, Set<Tuple> mustSet) {
             may = maySet;
             must = mustSet;
+        }
+    }
+
+    //FIXME should be visible only to implementations of Constraint
+    public static final class ExtendedDelta {
+        final Set<Tuple> disabled;
+        final Set<Tuple> enabled;
+        public ExtendedDelta(Set<Tuple> d, Set<Tuple> e) {
+            disabled = d;
+            enabled = e;
         }
     }
 
@@ -699,10 +794,10 @@ public class RelationAnalysis {
         }
     }
 
-    private final class Propagator implements Definition.Visitor<Delta> {
-        Relation source;
-        Set<Tuple> may;
-        Set<Tuple> must;
+    public final class Propagator implements Definition.Visitor<Delta> {
+        public Relation source;
+        public Set<Tuple> may;
+        public Set<Tuple> must;
         @Override
         public Delta visitUnion(Relation rel, Relation... operands) {
             if (Arrays.asList(operands).contains(source)) {
@@ -877,6 +972,340 @@ public class RelationAnalysis {
                 return new Delta(maySet, mustSet);
             }
             return EMPTY;
+        }
+    }
+
+    private final class ExtendedPropagator implements Definition.Visitor<Map<Relation, ExtendedDelta>> {
+        Relation origin;
+        Set<Tuple> disabled;
+        Set<Tuple> enabled;
+
+        @Override
+        public Map<Relation, ExtendedDelta> visitDefinition(Relation rel, List<? extends Relation> dependencies) {
+            return Map.of();
+        }
+
+        @Override
+        public Map<Relation, ExtendedDelta> visitUnion(Relation rel, Relation... operands) {
+            Map<Relation, ExtendedDelta> map = new HashMap<>();
+            if (origin.equals(rel)) {
+                for (Relation o : operands) {
+                    map.put(o, new ExtendedDelta(disabled, Set.of()));
+                }
+            }
+            if (List.of(operands).contains(origin)) {
+                Set<Tuple> d = new HashSet<>();
+                for (Tuple t : disabled) {
+                    if (Arrays.stream(operands).noneMatch(o -> knowledgeMap.get(o).may.contains(t))) {
+                        d.add(t);
+                    }
+                }
+                map.put(rel, new ExtendedDelta(d, enabled));
+            }
+            return map;
+        }
+
+        @Override
+        public Map<Relation, ExtendedDelta> visitIntersection(Relation rel, Relation... operands) {
+            Map<Relation, ExtendedDelta> map = new HashMap<>();
+            if (origin.equals(rel)) {
+                for (Relation o : operands) {
+                    map.putIfAbsent(o, new ExtendedDelta(new HashSet<>(), enabled));
+                }
+                for (Tuple t : disabled) {
+                    Relation[] r = Arrays.stream(operands)
+                            .filter(o -> !knowledgeMap.get(o).must.contains(t))
+                            .limit(2)
+                            .toArray(Relation[]::new);
+                    if (r.length == 1) {
+                        map.get(r[0]).disabled.add(t);
+                    }
+                }
+            }
+            if (List.of(operands).contains(origin)) {
+                Set<Tuple> e = new HashSet<>();
+                for (Tuple t : enabled) {
+                    if (Arrays.stream(operands).allMatch(o -> knowledgeMap.get(o).must.contains(t))) {
+                        e.add(t);
+                    }
+                }
+                map.put(rel, new ExtendedDelta(disabled, e));
+            }
+            return map;
+        }
+
+        @Override
+        public Map<Relation, ExtendedDelta> visitDifference(Relation r0, Relation r1, Relation r2) {
+            Map<Relation, ExtendedDelta> map = new HashMap<>();
+            if (origin.equals(r0)) {
+                map.put(r1, new ExtendedDelta(difference(disabled, knowledgeMap.get(r2).may), enabled));
+                //map.put(r2, new ExtendedDelta(Set.of(), intersection(disabled, knowledgeMap.get(r1).getMustSet())));
+            }
+            if (origin.equals(r1)) {
+                map.put(r0, new ExtendedDelta(disabled, difference(enabled, knowledgeMap.get(r2).may)));
+            }
+            if (origin.equals(r2)) {
+                Knowledge k1 = knowledgeMap.get(r1);
+                map.put(r0, new ExtendedDelta(intersection(enabled, k1.may), intersection(disabled, k1.must)));
+                map.put(r1, new ExtendedDelta(difference(disabled, knowledgeMap.get(r0).may), Set.of()));
+            }
+            return map;
+        }
+
+        @Override
+        public Map<Relation, ExtendedDelta> visitComposition(Relation r0, Relation r1, Relation r2) {
+            Set<Tuple> d0 = new HashSet<>();
+            Set<Tuple> e0 = new HashSet<>();
+            Set<Tuple> d1 = new HashSet<>();
+            Set<Tuple> d2 = new HashSet<>();
+            Knowledge k0 = knowledgeMap.get(r0);
+            Knowledge k1 = knowledgeMap.get(r1);
+            Knowledge k2 = knowledgeMap.get(r2);
+            if (origin.equals(r0)) {
+                for (Tuple xz : disabled) {
+                    Event x = xz.getFirst();
+                    Event z = xz.getSecond();
+                    boolean implies = exec.isImplied(x, z);
+                    boolean implied = exec.isImplied(z, x);
+                    for (Tuple xy : k1.getMustOut(x)) {
+                        Event y = xy.getSecond();
+                        if (implied || exec.isImplied(y, x)) {
+                            Tuple yz = new Tuple(y, z);
+                            if (k2.may.contains(yz)) {
+                                d2.add(yz);
+                            }
+                        }
+                    }
+                    for (Tuple yz : k2.getMustIn(z)) {
+                        Event y = yz.getFirst();
+                        if (implies || exec.isImplied(y, z)) {
+                            Tuple xy = new Tuple(x, y);
+                            if (k1.may.contains(xy)) {
+                                d1.add(xy);
+                            }
+                        }
+                    }
+                }
+            }
+            if (origin.equals(r1)) {
+                for (Tuple xy : disabled) {
+                    Event x = xy.getFirst();
+                    Event y = xy.getSecond();
+                    for (Tuple yz : k2.getMayOut(y)) {
+                        Event z = yz.getSecond();
+                        if (!exec.areMutuallyExclusive(x, z)
+                                && k1.getMayOut(x).stream().noneMatch(t -> k2.may.contains(new Tuple(t.getSecond(), z)))) {
+                            d0.add(new Tuple(x, z));
+                        }
+                    }
+                }
+                for (Tuple xy : enabled) {
+                    Event x = xy.getFirst();
+                    Event y = xy.getSecond();
+                    boolean implies = exec.isImplied(x, y);
+                    for (Tuple yz : k2.getMayOut(y)) {
+                        Event z = yz.getSecond();
+                        if (exec.areMutuallyExclusive(x, z)) {
+                            continue;
+                        }
+                        Tuple xz = new Tuple(x, z);
+                        if ((implies || exec.isImplied(z, y))) {
+                            e0.add(xz);
+                        }
+                        if (!k0.may.contains(xz)) {
+                            d2.add(yz);
+                        }
+                    }
+                }
+            }
+            if (origin.equals(r2)) {
+                for (Tuple xy : disabled) {
+                    Event x = xy.getFirst();
+                    Event y = xy.getSecond();
+                    for (Tuple wx : k1.getMayIn(x)) {
+                        Event w = wx.getFirst();
+                        if (!exec.areMutuallyExclusive(w, y)
+                                && k1.getMayOut(w).stream().noneMatch(t -> k2.may.contains(new Tuple(t.getSecond(), y)))) {
+                            d0.add(new Tuple(w, y));
+                        }
+                    }
+                }
+                for (Tuple xy : enabled) {
+                    Event x = xy.getFirst();
+                    Event y = xy.getSecond();
+                    boolean implied = exec.isImplied(y, x);
+                    for (Tuple wx : k1.getMayIn(x)) {
+                        Event w = wx.getFirst();
+                        if (exec.areMutuallyExclusive(w, y)) {
+                            continue;
+                        }
+                        Tuple wy = new Tuple(w, y);
+                        if ((implied || exec.isImplied(w, x))) {
+                            e0.add(wy);
+                        }
+                        if (!k0.may.contains(wy)) {
+                            d1.add(wx);
+                        }
+                    }
+                }
+            }
+            Map<Relation, ExtendedDelta> map = new HashMap<>();
+            map.put(r0, new ExtendedDelta(d0, e0));
+            map.computeIfAbsent(r1, k -> new ExtendedDelta(d1, new HashSet<>())).disabled.addAll(d1);
+            map.computeIfAbsent(r2, k -> new ExtendedDelta(d2, new HashSet<>())).disabled.addAll(d2);
+            return map;
+        }
+
+        @Override
+        public Map<Relation, ExtendedDelta> visitInverse(Relation r0, Relation r1) {
+            if (origin.equals(r0)) {
+                return Map.of(r1, new ExtendedDelta(inverse(disabled), Set.of()));
+            }
+            if (origin.equals(r1)) {
+                return Map.of(r0, new ExtendedDelta(inverse(disabled), inverse(enabled)));
+            }
+            return Map.of();
+        }
+
+        @Override
+        public Map<Relation, ExtendedDelta> visitTransitiveClosure(Relation r0, Relation r1) {
+            Set<Tuple> d0 = new HashSet<>();
+            Set<Tuple> e0 = new HashSet<>();
+            Set<Tuple> d1 = new HashSet<>();
+            Knowledge k0 = knowledgeMap.get(r0);
+            Knowledge k1 = knowledgeMap.get(r1);
+            if (origin.equals(r1)) {
+                for (Collection<Tuple> next = disabled; !next.isEmpty();) {
+                    Collection<Tuple> current = next;
+                    next = new ArrayList<>();
+                    for (Tuple xy : current) {
+                        Event x = xy.getFirst();
+                        Event y = xy.getSecond();
+                        for (Tuple yz : k0.getMustOut(y)) {
+                            Event z = yz.getSecond();
+                            if ((exec.isImplied(x, z) || exec.isImplied(y, z)) && !exec.areMutuallyExclusive(x, z)
+                                    && k1.getMayOut(x).stream().noneMatch(t -> k0.may.contains(new Tuple(t.getSecond(), z)))) {
+                                Tuple xz = new Tuple(x, z);
+                                if (d0.add(xz)) {
+                                    next.add(xz);
+                                }
+                            }
+                        }
+                        for (Tuple wx : k0.getMustIn(x)) {
+                            Event w = wx.getFirst();
+                            if ((exec.isImplied(x, w) || exec.isImplied(y, w)) && !exec.areMutuallyExclusive(w, y)
+                                    && k1.getMayOut(w).stream().noneMatch(t -> k0.may.contains(new Tuple(t.getSecond(), y)))) {
+                                Tuple wy = new Tuple(w, y);
+                                if (d0.add(wy)) {
+                                    next.add(wy);
+                                }
+                            }
+                        }
+                    }
+                }
+                for (Collection<Tuple> next = enabled; !next.isEmpty();) {
+                    Collection<Tuple> current = next;
+                    next = new ArrayList<>();
+                    for (Tuple xy : current) {
+                        Event x = xy.getFirst();
+                        Event y = xy.getSecond();
+                        boolean implied = exec.isImplied(y, x);
+                        boolean implies = exec.isImplied(x, y);
+                        for (Tuple yz : k0.getMustOut(y)) {
+                            Event z = yz.getSecond();
+                            if ((implied || exec.isImplied(z, x)) && !exec.areMutuallyExclusive(x, z)) {
+                                Tuple xz = new Tuple(x, z);
+                                if (e0.add(xz)) {
+                                    next.add(xz);
+                                }
+                            }
+                        }
+                        for (Tuple wx : k0.getMustIn(x)) {
+                            Event w = wx.getFirst();
+                            if ((implies || exec.isImplied(w, y)) && !exec.areMutuallyExclusive(w, y)) {
+                                Tuple wy = new Tuple(w, y);
+                                if (e0.add(wy)) {
+                                    next.add(wy);
+                                }
+                            }
+                        }
+                        for (Tuple xz : k0.disabled) {
+                            Event z = xz.getSecond();
+                            if (xz.getFirst().equals(x) && (implied || exec.isImplied(z, x)) && !exec.areMutuallyExclusive(y, z)) {
+                                Tuple yz = new Tuple(y, z);
+                                if (k0.may.contains(yz)) {
+                                    d0.add(yz);
+                                }
+                            }
+                        }
+                        for (Tuple wy : k0.disabled) {
+                            Event w = wy.getFirst();
+                            if (wy.getSecond().equals(y) && (implies || exec.isImplied(w, y)) && !exec.areMutuallyExclusive(w, x)) {
+                                Tuple wx = new Tuple(w, x);
+                                if (k0.may.contains(wx)) {
+                                    d0.add(wx);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            //NOTE sometimes enabled
+            if (origin.equals(r0) || !d0.isEmpty()) {
+                Collection<Tuple> next = d0.isEmpty() ? disabled : new HashSet<>(d0);
+                if (!d0.isEmpty()) {
+                    next.addAll(disabled);
+                }
+                while (!next.isEmpty()) {
+                    Collection<Tuple> current = next;
+                    next = new ArrayList<>();
+                    for (Tuple xz : current) {
+                        if (k1.may.contains(xz)) {
+                            d1.add(xz);
+                        }
+                        Event x = xz.getFirst();
+                        Event z = xz.getSecond();
+                        boolean implied = exec.isImplied(z, x);
+                        for (Tuple xy : k1.getMustOut(x)) {
+                            Event y = xy.getSecond();
+                            if (implied || exec.isImplied(y, x)) {
+                                Tuple yz = new Tuple(y, z);
+                                if (k0.may.contains(yz) && d0.add(yz)) {
+                                    next.add(yz);
+                                }
+                            }
+                        }
+                        boolean implies = exec.isImplied(x, z);
+                        for (Tuple yz : k0.getMustIn(z)) {
+                            Event y = yz.getFirst();
+                            if (implies || exec.isImplied(y, z)) {
+                                Tuple xy = new Tuple(x, y);
+                                if (k0.may.contains(xy) && d0.add(xy)) {
+                                    next.add(xy);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return Map.of(
+                    r0, new ExtendedDelta(d0, e0),
+                    r1, new ExtendedDelta(d1, Set.of()));
+        }
+
+        @Override
+        public Map<Relation, ExtendedDelta> visitMemoryOrder(Relation co) {
+            if (disabled.isEmpty()) {
+                return Map.of();
+            }
+            //TODO use transitivity
+            Set<Tuple> e = new HashSet<>();
+            for (Tuple xy : disabled) {
+                if (alias.mustAlias((MemEvent) xy.getFirst(), (MemEvent) xy.getSecond())) {
+                    e.add(xy.getInverse());
+                }
+            }
+            return Map.of(co, new ExtendedDelta(Set.of(), e));
         }
     }
 

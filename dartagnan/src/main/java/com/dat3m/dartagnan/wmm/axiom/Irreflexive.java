@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
+import java.util.Map;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
@@ -24,6 +25,15 @@ public class Irreflexive extends Axiom {
 
     public Irreflexive(Relation rel) {
         super(rel, false, false);
+    }
+
+    @Override
+    public Map<Relation, RelationAnalysis.ExtendedDelta> computeInitialKnowledgeClosure(
+            Map<Relation, RelationAnalysis.Knowledge> knowledgeMap,
+            Context analysisContext) {
+        RelationAnalysis.Knowledge k = knowledgeMap.get(rel);
+        Set<Tuple> d = k.getMaySet().stream().filter(Tuple::isLoop).collect(toSet());
+        return Map.of(rel, new RelationAnalysis.ExtendedDelta(d, Set.of()));
     }
 
     @Override

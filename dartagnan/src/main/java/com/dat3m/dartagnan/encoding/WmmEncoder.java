@@ -33,6 +33,8 @@ import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Verify.verify;
+import static com.google.common.collect.Sets.difference;
+import static com.google.common.collect.Sets.intersection;
 import static java.lang.Boolean.TRUE;
 import static java.util.stream.Collectors.toList;
 
@@ -591,6 +593,26 @@ public class WmmEncoder implements Encoder {
             for (Map.Entry<Relation, Set<Tuple>> e : a.getEncodeTupleSets(context.getTask(), context.getAnalysisContext()).entrySet()) {
                 queue.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue().stream());
             }
+        }
+        RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
+        RelationAnalysis.Propagator p = ra.new Propagator();
+        for (Relation r : context.getTask().getMemoryModel().getRelations()) {
+            Set<Tuple> may = new HashSet<>();
+            Set<Tuple> must = new HashSet<>();
+            if (r.getDependencies().isEmpty()) {
+                continue;
+            }
+            for (Relation c : r.getDependencies()) {
+                p.source = c;
+                p.may = ra.getKnowledge(p.source).getMaySet();
+                p.must = ra.getKnowledge(p.source).getMustSet();
+                RelationAnalysis.Delta s = r.getDefinition().accept(p);
+                may.addAll(s.may);
+                must.addAll(s.must);
+            }
+            may.removeAll(ra.getKnowledge(r).getMaySet());
+            Set<Tuple> must2 = difference(ra.getKnowledge(r).getMustSet(), must);
+            queue.computeIfAbsent(r, k -> new ArrayList<>()).add(Stream.concat(may.stream(), must2.stream()));
         }
         while (!queue.isEmpty()) {
             Relation r = queue.keySet().iterator().next();

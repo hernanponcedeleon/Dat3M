@@ -41,6 +41,7 @@ public class OptionNames {
 
 	// Memory Model Options
 	public static final String ENABLE_MUST_SETS = "wmm.analysis.mustSets";
+	public static final String ENABLE_EXTENDED_RELATION_ANALYSIS = "wmm.analysis.extendedRelationAnalysis";
 
 	// Refinement Options
 	public static final String BASELINE = "refinement.baseline";
