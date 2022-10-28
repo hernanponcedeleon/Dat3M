@@ -23,7 +23,7 @@ else
     cflags="-DSVCOMP -DCUSTOM_VERIFIER_ASSERT -fno-vectorize -fno-slp-vectorize"
     smackflags="-q -t --no-memory-splitting"
     
-    svcompflags="--method=assume"
+    svcompflags="--method=assume --program.processing.constantPropagation=false"
     if ! grep -q "pthread" $programpath; then
         cflags+=" -O3"
         smackflags+=" --integer-encoding bit-vector"
