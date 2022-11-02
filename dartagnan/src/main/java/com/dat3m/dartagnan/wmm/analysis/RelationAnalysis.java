@@ -42,8 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Arch.RISCV;
-import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_EXTENDED_RELATION_ANALYSIS;
-import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_MUST_SETS;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Verify.verify;
@@ -61,13 +60,18 @@ public class RelationAnalysis {
 
     private static final Delta EMPTY = new Delta(Set.of(), Set.of());
 
-    private final Program program;
+    private final VerificationTask task;
     private final Context analysisContext;
     private final ExecutionAnalysis exec;
     private final AliasAnalysis alias;
     private final Dependency dep;
     private final WmmAnalysis wmmAnalysis;
     private final Map<Relation, Knowledge> knowledgeMap = new HashMap<>();
+
+    @Option(name = ENABLE_RELATION_ANALYSIS,
+            description = "Derived relations of the memory model ",
+            secure = true)
+    private boolean enable = true;
 
     @Option(name = ENABLE_MUST_SETS,
             description = "Tracks relationships of the memory model, which exist in all execution that execute the two participating events.",
@@ -79,8 +83,8 @@ public class RelationAnalysis {
             secure = true)
     private boolean enableExtended = true;
 
-    private RelationAnalysis(VerificationTask task, Context context, Configuration config) {
-        program = task.getProgram();
+    private RelationAnalysis(VerificationTask t, Context context, Configuration config) {
+        task = checkNotNull(t);
         analysisContext = context;
         exec = context.requires(ExecutionAnalysis.class);
         alias = context.requires(AliasAnalysis.class);
@@ -105,13 +109,21 @@ public class RelationAnalysis {
     public static RelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
         RelationAnalysis a = new RelationAnalysis(task, context, config);
         task.getConfig().inject(a);
+        logger.info("{}: {}", ENABLE_RELATION_ANALYSIS, a.enable);
         logger.info("{}: {}", ENABLE_MUST_SETS, a.enableMustSets);
         logger.info("{}: {}", ENABLE_EXTENDED_RELATION_ANALYSIS, a.enableExtended);
-        if (a.enableExtended && !a.enableMustSets) {
-            logger.warn("{} implies {}", ENABLE_EXTENDED_RELATION_ANALYSIS, ENABLE_MUST_SETS);
-            a.enableMustSets = true;
+        if (a.enableMustSets && !a.enable) {
+            logger.warn("{} implies {}", ENABLE_MUST_SETS, ENABLE_RELATION_ANALYSIS);
+            a.enable = true;
         }
-        a.run(task.getMemoryModel());
+        if (a.enableExtended && !a.enable) {
+            logger.warn("{} implies {}", ENABLE_EXTENDED_RELATION_ANALYSIS, ENABLE_RELATION_ANALYSIS);
+            a.enable = true;
+        }
+        a.run();
+        if (a.enableExtended) {
+            a.runExtended();
+        }
         return a;
     }
 
@@ -160,7 +172,8 @@ public class RelationAnalysis {
         return transCo;
     }
 
-    private void run(Wmm memoryModel) {
+    private void run() {
+        Wmm memoryModel = task.getMemoryModel();
         Map<Relation, List<Definition>> dependents = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
             for (Relation d : r.getDependencies()) {
@@ -213,19 +226,14 @@ public class RelationAnalysis {
             }
         }
         verify(qGlobal.isEmpty(), "knowledge buildup propagated downwards");
-        if (enableExtended) {
-            runExtended(memoryModel);
-        }
     }
 
     public static final class Knowledge {
         private final Set<Tuple> may;
         private final Set<Tuple> must;
-        private final Set<Tuple> disabled;
         private Knowledge(Set<Tuple> maySet, Set<Tuple> mustSet) {
             may = checkNotNull(maySet);
             must = checkNotNull(mustSet);
-            disabled = new HashSet<>();
         }
         public Set<Tuple> getMaySet() {
             return may;
@@ -248,9 +256,6 @@ public class RelationAnalysis {
         public Set<Tuple> getMustOut(Event first) {
             checkNotNull(first);
             return must.stream().filter(t -> t.getFirst().equals(first)).collect(toSet());
-        }
-        public Set<Tuple> getDisabledSet() {
-            return disabled;
         }
         private Delta joinSet(List<Delta> l) {
             verify(!l.isEmpty(), "empty update");
@@ -277,7 +282,7 @@ public class RelationAnalysis {
             Set<Tuple> enableSet = new HashSet<>();
             for (ExtendedDelta d : l) {
                 for (Tuple t : Set.copyOf(d.disabled)) {
-                    if (may.remove(t) && disabled.add(t)) {
+                    if (may.remove(t)) {
                         disableSet.add(t);
                     }
                 }
@@ -291,7 +296,8 @@ public class RelationAnalysis {
         }
     }
 
-    private void runExtended(Wmm memoryModel) {
+    private void runExtended() {
+        Wmm memoryModel = task.getMemoryModel();
         Map<Relation, List<Constraint>> dependents = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
             Definition d = r.getDefinition();
@@ -360,9 +366,25 @@ public class RelationAnalysis {
     }
 
     private final class Initializer implements Definition.Visitor<Knowledge> {
+        final Program program = task.getProgram();
+        final Knowledge defaultKnowledge;
+        Initializer() {
+            if (enable) {
+                defaultKnowledge = null;
+            } else {
+                Set<Tuple> may = new HashSet<>();
+                List<Event> events = program.getCache().getEvents(FilterBasic.get(VISIBLE));
+                for (Event x : events) {
+                    for (Event y : events) {
+                        may.add(new Tuple(x, y));
+                    }
+                }
+                defaultKnowledge = new Knowledge(may, Set.of());
+            }
+        }
         @Override
         public Knowledge visitDefinition(Relation r, List<? extends Relation> d) {
-            return new Knowledge(new HashSet<>(), new HashSet<>());
+            return defaultKnowledge != null ? defaultKnowledge : new Knowledge(new HashSet<>(), new HashSet<>());
         }
         @Override
         public Knowledge visitProduct(Relation rel, FilterAbstract domain, FilterAbstract range) {
@@ -1229,22 +1251,16 @@ public class RelationAnalysis {
                                 }
                             }
                         }
-                        for (Tuple xz : k0.disabled) {
-                            Event z = xz.getSecond();
-                            if (xz.getFirst().equals(x) && (implied || exec.isImplied(z, x)) && !exec.areMutuallyExclusive(y, z)) {
-                                Tuple yz = new Tuple(y, z);
-                                if (k0.may.contains(yz)) {
-                                    d0.add(yz);
-                                }
+                        for (Tuple yz : k0.getMayOut(y)) {
+                            Event z = yz.getSecond();
+                            if ((implied || exec.isImplied(z, x)) && !k0.may.contains(new Tuple(x, z))) {
+                                d0.add(yz);
                             }
                         }
-                        for (Tuple wy : k0.disabled) {
-                            Event w = wy.getFirst();
-                            if (wy.getSecond().equals(y) && (implies || exec.isImplied(w, y)) && !exec.areMutuallyExclusive(w, x)) {
-                                Tuple wx = new Tuple(w, x);
-                                if (k0.may.contains(wx)) {
-                                    d0.add(wx);
-                                }
+                        for (Tuple wx : k0.getMayIn(x)) {
+                            Event w = wx.getFirst();
+                            if ((implies || exec.isImplied(w, y)) && !k0.may.contains(new Tuple(w, y))) {
+                                d0.add(wx);
                             }
                         }
                     }
