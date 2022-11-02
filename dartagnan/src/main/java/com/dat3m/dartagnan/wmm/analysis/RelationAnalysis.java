@@ -120,10 +120,20 @@ public class RelationAnalysis {
             logger.warn("{} implies {}", ENABLE_EXTENDED_RELATION_ANALYSIS, ENABLE_RELATION_ANALYSIS);
             a.enable = true;
         }
+        long t0 = System.currentTimeMillis();
         a.run();
+        long t1 = System.currentTimeMillis();
+        logger.info("Finished regular analysis in {}ms", t1 - t0);
         if (a.enableExtended) {
+            long mayCount = a.countMaySet();
+            long mustCount = a.countMustSet();
             a.runExtended();
+            logger.info("Finished extended analysis in {}ms", System.currentTimeMillis() - t1);
+            logger.info("Count of may-tuples removed: {}", mayCount - a.countMaySet());
+            logger.info("Count of must-tuples added: {}", a.countMustSet() - mustCount);
         }
+        logger.info("Number of may-tuples: {}", a.countMaySet());
+        logger.info("Number of must-tuples: {}", a.countMustSet());
         return a;
     }
 
@@ -256,6 +266,10 @@ public class RelationAnalysis {
         public Set<Tuple> getMustOut(Event first) {
             checkNotNull(first);
             return must.stream().filter(t -> t.getFirst().equals(first)).collect(toSet());
+        }
+        @Override
+        public String toString() {
+            return "(may:" + may.size() + ", must:" + must.size() + ")";
         }
         private Delta joinSet(List<Delta> l) {
             verify(!l.isEmpty(), "empty update");
@@ -1351,5 +1365,13 @@ public class RelationAnalysis {
         for (Tuple t : set) {
             map.computeIfAbsent(t.getFirst(), x -> new ArrayList<>()).add(t.getSecond());
         }
+    }
+
+    private long countMaySet() {
+        return knowledgeMap.values().stream().mapToLong(k -> k.may.size()).sum();
+    }
+
+    private long countMustSet() {
+        return knowledgeMap.values().stream().mapToLong(k -> k.must.size()).sum();
     }
 }

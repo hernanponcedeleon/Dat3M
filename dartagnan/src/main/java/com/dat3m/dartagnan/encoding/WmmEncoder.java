@@ -66,11 +66,14 @@ public class WmmEncoder implements Encoder {
         WmmEncoder encoder = new WmmEncoder(context);
         context.getTask().getConfig().inject(encoder);
         logger.info("{}: {}", ENABLE_ACTIVE_SETS, encoder.enableActiveSets);
+        long t0 = System.currentTimeMillis();
         if (encoder.enableActiveSets) {
             encoder.initializeEncodeSets();
         } else {
             encoder.initializeAlternative();
         }
+        logger.info("Finished active sets in {}ms", System.currentTimeMillis() - t0);
+        logger.info("Number of encoded tuples: {}", encoder.encodeSets.values().stream().mapToLong(Set::size).sum());
         return encoder;
     }
 
