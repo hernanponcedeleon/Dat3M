@@ -67,6 +67,7 @@ public class RelationAnalysis {
     private final Dependency dep;
     private final WmmAnalysis wmmAnalysis;
     private final Map<Relation, Knowledge> knowledgeMap = new HashMap<>();
+    private final Set<Tuple> mutex = new HashSet<>();
 
     @Option(name = ENABLE_RELATION_ANALYSIS,
             description = "Derived relations of the memory model ",
@@ -134,6 +135,9 @@ public class RelationAnalysis {
         }
         logger.info("Number of may-tuples: {}", a.countMaySet());
         logger.info("Number of must-tuples: {}", a.countMustSet());
+        if (!a.mutex.isEmpty()) {
+            logger.warn("Number of mutually-exclusive tuples: {}", a.mutex.size());
+        }
         return a;
     }
 
@@ -145,6 +149,14 @@ public class RelationAnalysis {
      */
     public Knowledge getKnowledge(Relation relation) {
         return knowledgeMap.get(relation);
+    }
+
+    /**
+     * Iterates those event pairs that, if both executed, violate some axiom of the memory model.
+     */
+    public Set<Tuple> getMutuallyExclusiveTuples() {
+        //TODO return undirected pairs
+        return Set.copyOf(mutex);
     }
 
     /*
@@ -337,10 +349,13 @@ public class RelationAnalysis {
         // repeat until convergence
         while (!q.isEmpty()) {
             Relation relation = q.keySet().iterator().next();
-            ExtendedDelta delta = knowledgeMap.get(relation).join(q.remove(relation));
+            Knowledge knowledge = knowledgeMap.get(relation);
+            ExtendedDelta delta = knowledge.join(q.remove(relation));
             if (delta.disabled.isEmpty() && delta.enabled.isEmpty()) {
                 continue;
             }
+            mutex.addAll(difference(delta.enabled, knowledge.may));
+            mutex.addAll(intersection(delta.disabled, knowledge.must));
             propagator.origin = relation;
             Set<Tuple> disabled = propagator.disabled = delta.disabled;
             Set<Tuple> enabled = propagator.enabled = delta.enabled;

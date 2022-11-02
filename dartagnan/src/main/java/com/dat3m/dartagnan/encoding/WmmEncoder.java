@@ -113,10 +113,17 @@ public class WmmEncoder implements Encoder {
         logger.info("Encoding consistency");
         Wmm memoryModel = context.getTask().getMemoryModel();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        return memoryModel.getAxioms().stream()
-                .filter(ax -> !ax.isFlagged())
-                .map(ax -> ax.consistent(context))
-                .reduce(bmgr.makeTrue(), bmgr::and);
+        RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
+        List<BooleanFormula> enc = new ArrayList<>();
+        for (Axiom a : memoryModel.getAxioms()) {
+            if (!a.isFlagged()) {
+                enc.add(a.consistent(context));
+            }
+        }
+        for (Tuple t : ra.getMutuallyExclusiveTuples()) {
+            enc.add(bmgr.not(context.execution(t.getFirst(), t.getSecond())));
+        }
+        return bmgr.and(enc);
     }
 
     public Set<Tuple> getTuples(Relation relation, Model model) {
