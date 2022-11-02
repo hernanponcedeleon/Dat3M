@@ -19,7 +19,8 @@ public class OptionNames {
 	public static final String C_TO_POWER_SCHEME = "compilation.cToPower";
 	
 	// Encoding Options
-	public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";
+	public static final String ENABLE_ACTIVE_SETS = "encoding.activeSets";
+	public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";//TODO also influences RA
 	public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
 	public static final String INITIALIZE_REGISTERS = "encoding.initializeRegisters";
 	public static final String PRECISION = "encoding.precision";

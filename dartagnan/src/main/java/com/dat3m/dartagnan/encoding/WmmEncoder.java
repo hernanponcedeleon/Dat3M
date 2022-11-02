@@ -23,27 +23,37 @@ import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.Sets.difference;
-import static com.google.common.collect.Sets.intersection;
 import static java.lang.Boolean.TRUE;
 import static java.util.stream.Collectors.toList;
 
+@Options
 public class WmmEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(WmmEncoder.class);
 
     private final EncodingContext context;
     final Map<Relation, Set<Tuple>> encodeSets = new HashMap<>();
+
+    // =====================================================================
+
+    @Option(name = ENABLE_ACTIVE_SETS,
+            description = "Filters relationships relevant to the task before encoding.",
+            secure = true)
+    private boolean enableActiveSets = true;
 
     // =====================================================================
 
@@ -54,8 +64,13 @@ public class WmmEncoder implements Encoder {
 
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
         WmmEncoder encoder = new WmmEncoder(context);
-        encoder.initializeEncodeSets();
-        encoder.initializeEncodeSets();
+        context.getTask().getConfig().inject(encoder);
+        logger.info("{}: {}", ENABLE_ACTIVE_SETS, encoder.enableActiveSets);
+        if (encoder.enableActiveSets) {
+            encoder.initializeEncodeSets();
+        } else {
+            encoder.initializeAlternative();
+        }
         return encoder;
     }
 
@@ -580,6 +595,13 @@ public class WmmEncoder implements Encoder {
         }
         private BooleanFormula execution(Tuple tuple) {
             return context.execution(tuple.getFirst(), tuple.getSecond());
+        }
+    }
+
+    private void initializeAlternative() {
+        RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
+        for (Relation r : context.getTask().getMemoryModel().getRelations()) {
+            encodeSets.put(r, ra.getKnowledge(r).getMaySet());
         }
     }
 
