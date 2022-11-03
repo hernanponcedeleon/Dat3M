@@ -1250,7 +1250,7 @@ public class RelationAnalysis {
                             if ((exec.isImplied(x, z) || exec.isImplied(y, z)) && !exec.areMutuallyExclusive(x, z)
                                     && mayOut1.getOrDefault(x, List.of()).stream().noneMatch(e -> k0.containsMay(new Tuple(e, z)))) {
                                 Tuple xz = new Tuple(x, z);
-                                if (d0.add(xz)) {
+                                if (!k1.containsMay(xz) && d0.add(xz)) {
                                     next.add(xz);
                                 }
                             }
@@ -1259,7 +1259,7 @@ public class RelationAnalysis {
                             if ((exec.isImplied(x, w) || exec.isImplied(y, w)) && !exec.areMutuallyExclusive(w, y)
                                     && mayOut1.getOrDefault(w, List.of()).stream().noneMatch(e -> k0.containsMay(new Tuple(e, y)))) {
                                 Tuple wy = new Tuple(w, y);
-                                if (d0.add(wy)) {
+                                if (!k1.containsMay(wy) && d0.add(wy)) {
                                     next.add(wy);
                                 }
                             }
