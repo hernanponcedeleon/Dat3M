@@ -53,7 +53,10 @@ public class Acyclic extends Axiom {
             }
         }
         for (Tuple t : k.getMustSet()) {
-            d.add(t.getInverse());
+            Tuple inverse = t.getInverse();
+            if (k.containsMay(inverse)) {
+                d.add(inverse);
+            }
         }
         Map<Event, List<Event>> mustOut = new HashMap<>();
         for (Tuple t : k.getMustSet()) {

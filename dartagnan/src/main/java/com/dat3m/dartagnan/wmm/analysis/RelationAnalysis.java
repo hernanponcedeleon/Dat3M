@@ -1162,16 +1162,18 @@ public class RelationAnalysis {
                     Event x = xy.getFirst();
                     Event y = xy.getSecond();
                     boolean implied = exec.isImplied(y, x);
+                    boolean implies = exec.isImplied(x, y);
                     for (Event z : mayOut2.getOrDefault(y, List.of())) {
                         if (exec.areMutuallyExclusive(x, z)) {
                             continue;
                         }
                         Tuple xz = new Tuple(x, z);
-                        if ((implied || exec.isImplied(z, x))) {
+                        Tuple yz = new Tuple(y, z);
+                        if ((implies || exec.isImplied(z, y)) && k2.containsMust(yz)) {
                             e0.add(xz);
                         }
-                        if (!k0.containsMay(xz)) {
-                            d2.add(new Tuple(y, z));
+                        if ((implied || exec.isImplied(z, x)) && !k0.containsMay(xz)) {
+                            d2.add(yz);
                         }
                     }
                 }
@@ -1191,17 +1193,19 @@ public class RelationAnalysis {
                 for (Tuple xy : enabled) {
                     Event x = xy.getFirst();
                     Event y = xy.getSecond();
+                    boolean implied = exec.isImplied(y, x);
                     boolean implies = exec.isImplied(x, y);
                     for (Event w : mayIn1.getOrDefault(x, List.of())) {
                         if (exec.areMutuallyExclusive(w, y)) {
                             continue;
                         }
+                        Tuple wx = new Tuple(w, x);
                         Tuple wy = new Tuple(w, y);
-                        if ((implies || exec.isImplied(w, y))) {
+                        if ((implied || exec.isImplied(w, x)) && k1.containsMust(wx)) {
                             e0.add(wy);
                         }
-                        if (!k0.containsMay(wy)) {
-                            d1.add(new Tuple(w, x));
+                        if ((implies || exec.isImplied(w, y)) && !k0.containsMay(wy)) {
+                            d1.add(wx);
                         }
                     }
                 }
@@ -1233,115 +1237,98 @@ public class RelationAnalysis {
             Knowledge k1 = knowledgeMap.get(r1);
             Map<Event, List<Event>> mustIn0 = loopless(mapReverse(k0.must));
             if (origin.equals(r1)) {
-                Map<Event, List<Event>> mayIn0 = enabled.isEmpty() ? Map.of() : loopless(mapReverse(k0.may));
                 Map<Event, List<Event>> mayOut0 = enabled.isEmpty() ? Map.of() : loopless(map(k0.may));
                 Map<Event, List<Event>> mayOut1 = disabled.isEmpty() ? Map.of() : loopless(map(k1.may));
-                Map<Event, List<Event>> mustOut0 = loopless(map(k0.must));
-                for (Collection<Tuple> next = disabled; !next.isEmpty();) {
-                    Collection<Tuple> current = next;
-                    next = new ArrayList<>();
-                    for (Tuple xy : current) {
-                        if (xy.isLoop()) {
-                            continue;
-                        }
-                        Event x = xy.getFirst();
-                        Event y = xy.getSecond();
-                        for (Event z : mustOut0.getOrDefault(y, List.of())) {
-                            if ((exec.isImplied(x, z) || exec.isImplied(y, z)) && !exec.areMutuallyExclusive(x, z)
-                                    && mayOut1.getOrDefault(x, List.of()).stream().noneMatch(e -> k0.containsMay(new Tuple(e, z)))) {
-                                Tuple xz = new Tuple(x, z);
-                                if (!k1.containsMay(xz) && d0.add(xz)) {
-                                    next.add(xz);
-                                }
-                            }
-                        }
-                        for (Event w : mustIn0.getOrDefault(x, List.of())) {
-                            if ((exec.isImplied(x, w) || exec.isImplied(y, w)) && !exec.areMutuallyExclusive(w, y)
-                                    && mayOut1.getOrDefault(w, List.of()).stream().noneMatch(e -> k0.containsMay(new Tuple(e, y)))) {
-                                Tuple wy = new Tuple(w, y);
-                                if (!k1.containsMay(wy) && d0.add(wy)) {
-                                    next.add(wy);
-                                }
-                            }
+                for (Tuple xy : disabled) {
+                    Event x = xy.getFirst();
+                    Event y = xy.getSecond();
+                    if (k0.containsMay(xy)
+                            && mayOut1.getOrDefault(x, List.of()).stream().noneMatch(e -> k0.containsMay(new Tuple(e, y)))) {
+                        d0.add(xy);
+                    }
+                    if (xy.isLoop()) {
+                        continue;
+                    }
+                    for (Event z : mayOut0.getOrDefault(y, List.of())) {
+                        Tuple xz = new Tuple(x, z);
+                        if (k0.containsMay(xz)
+                                && mayOut1.getOrDefault(x, List.of()).stream().noneMatch(e -> k0.containsMay(new Tuple(e, z)))) {
+                            d0.add(xz);
                         }
                     }
                 }
-                for (Collection<Tuple> next = enabled; !next.isEmpty();) {
-                    Collection<Tuple> current = next;
-                    next = new ArrayList<>();
-                    for (Tuple xy : current) {
-                        if (xy.isLoop()) {
+                e0.addAll(enabled);
+                for (Tuple xy : enabled) {
+                    if (xy.isLoop()) {
+                        continue;
+                    }
+                    Event x = xy.getFirst();
+                    Event y = xy.getSecond();
+                    boolean implied = exec.isImplied(y, x);
+                    boolean implies = exec.isImplied(x, y);
+                    for (Event z : mayOut0.getOrDefault(y, List.of())) {
+                        if (exec.areMutuallyExclusive(x, z)) {
                             continue;
                         }
-                        Event x = xy.getFirst();
-                        Event y = xy.getSecond();
-                        boolean implied = exec.isImplied(y, x);
-                        boolean implies = exec.isImplied(x, y);
-                        for (Event z : mustOut0.getOrDefault(y, List.of())) {
-                            if ((implied || exec.isImplied(z, x)) && !exec.areMutuallyExclusive(x, z)) {
-                                Tuple xz = new Tuple(x, z);
-                                if (e0.add(xz)) {
-                                    next.add(xz);
-                                }
-                            }
+                        Tuple xz = new Tuple(x, z);
+                        Tuple yz = new Tuple(y, z);
+                        if ((implies || exec.isImplied(z, y)) && k0.containsMust(yz)) {
+                            e0.add(xz);
                         }
-                        for (Event w : mustIn0.getOrDefault(x, List.of())) {
-                            if ((implies || exec.isImplied(w, y)) && !exec.areMutuallyExclusive(w, y)) {
-                                Tuple wy = new Tuple(w, y);
-                                if (e0.add(wy)) {
-                                    next.add(wy);
-                                }
-                            }
-                        }
-                        for (Event z : mayOut0.getOrDefault(y, List.of())) {
-                            if ((implied || exec.isImplied(z, x)) && !k0.containsMay(new Tuple(x, z))) {
-                                d0.add(new Tuple(y, z));
-                            }
-                        }
-                        for (Event w : mayIn0.getOrDefault(x, List.of())) {
-                            if ((implies || exec.isImplied(w, y)) && !k0.containsMay(new Tuple(w, y))) {
-                                d0.add(new Tuple(w, x));
-                            }
+                        if ((implied || exec.isImplied(z, x)) && !k0.containsMay(xz)) {
+                            d0.add(yz);
                         }
                     }
                 }
             }
-            //NOTE sometimes enabled
-            if (origin.equals(r0) || !d0.isEmpty()) {
-                Collection<Tuple> next = d0.isEmpty() ? disabled : new HashSet<>(d0);
-                if (!d0.isEmpty()) {
-                    next.addAll(disabled);
+            if (origin.equals(r0)) {
+                Map<Event, List<Event>> mayIn1 = loopless(mapReverse(k1.may));
+                Map<Event, List<Event>> mustOut1 = loopless(map(k1.must));
+                d1.addAll(intersection(disabled, k1.may));
+                for (Tuple xz : disabled) {
+                    if (xz.isLoop()) {
+                        continue;
+                    }
+                    Event x = xz.getFirst();
+                    Event z = xz.getSecond();
+                    boolean implied = exec.isImplied(z, x);
+                    boolean implies = exec.isImplied(x, z);
+                    for (Event y : mustOut1.getOrDefault(x, List.of())) {
+                        if (implied || exec.isImplied(y, x)) {
+                            Tuple yz = new Tuple(y, z);
+                            if (k0.containsMay(yz)) {
+                                d0.add(yz);
+                            }
+                        }
+                    }
+                    for (Event y : mustIn0.getOrDefault(z, List.of())) {
+                        if (implies || exec.isImplied(y, z)) {
+                            Tuple xy = new Tuple(x, y);
+                            if (k1.containsMay(xy)) {
+                                d1.add(xy);
+                            }
+                        }
+                    }
                 }
-                Map<Event, List<Event>> mustOut1 = next.isEmpty() ? Map.of() : loopless(map(k1.must));
-                while (!next.isEmpty()) {
-                    Collection<Tuple> current = next;
-                    next = new ArrayList<>();
-                    for (Tuple xz : current) {
-                        if (xz.isLoop()) {
+                for (Tuple yz : enabled) {
+                    if (yz.isLoop()) {
+                        continue;
+                    }
+                    Event y = yz.getFirst();
+                    Event z = yz.getSecond();
+                    boolean implied = exec.isImplied(z, y);
+                    boolean implies = exec.isImplied(y, z);
+                    for (Event x : mayIn1.getOrDefault(y, List.of())) {
+                        if (exec.areMutuallyExclusive(x, z)) {
                             continue;
                         }
-                        if (k1.containsMay(xz)) {
-                            d1.add(xz);
+                        Tuple xy = new Tuple(x, y);
+                        Tuple xz = new Tuple(x, z);
+                        if ((implied || exec.isImplied(x, y)) && k1.containsMust(xy)) {
+                            e0.add(xz);
                         }
-                        Event x = xz.getFirst();
-                        Event z = xz.getSecond();
-                        boolean implied = exec.isImplied(z, x);
-                        for (Event y : mustOut1.getOrDefault(x, List.of())) {
-                            if (implied || exec.isImplied(y, x)) {
-                                Tuple yz = new Tuple(y, z);
-                                if (k0.containsMay(yz) && d0.add(yz)) {
-                                    next.add(yz);
-                                }
-                            }
-                        }
-                        boolean implies = exec.isImplied(x, z);
-                        for (Event y : mustIn0.getOrDefault(z, List.of())) {
-                            if (implies || exec.isImplied(y, z)) {
-                                Tuple xy = new Tuple(x, y);
-                                if (k0.containsMay(xy) && d0.add(xy)) {
-                                    next.add(xy);
-                                }
-                            }
+                        if ((implies || exec.isImplied(x, z)) && !k0.containsMay(xz)) {
+                            d1.add(xy);
                         }
                     }
                 }
