@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.utils.dependable.Dependent;
+import com.dat3m.dartagnan.wmm.definition.*;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -8,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkState;
 
 public final class Relation implements Dependent<Relation> {
@@ -50,6 +52,12 @@ public final class Relation implements Dependent<Relation> {
 
     public String getNameOrTerm() {
         return names.isEmpty() ? getDefinition().getTerm() : names.get(0);
+    }
+
+    public boolean isInternal() {
+        return hasName(ADDRDIRECT) || hasName(CTRLDIRECT) || hasName(IDD) || hasName(IDDTRANS) ||
+                definition instanceof Composition && getDependencies().get(0).hasName(IDDTRANS) ||
+                definition instanceof Union && getDependencies().get(0).hasName(ADDRDIRECT);
     }
 
     @Override

@@ -73,7 +73,16 @@ public class WmmEncoder implements Encoder {
             encoder.initializeAlternative();
         }
         logger.info("Finished active sets in {}ms", System.currentTimeMillis() - t0);
-        logger.info("Number of encoded tuples: {}", encoder.encodeSets.values().stream().mapToLong(Set::size).sum());
+        RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
+        logger.info("Number of unknown tuples: {}", context.getTask().getMemoryModel().getRelations().stream()
+                .filter(r -> !r.isInternal())
+                .map(ra::getKnowledge)
+                .mapToLong(k -> difference(k.getMaySet(), k.getMustSet()).size())
+                .sum());
+        logger.info("Number of encoded tuples: {}", encoder.encodeSets.entrySet().stream()
+                .filter(e -> !e.getKey().isInternal())
+                .mapToLong(e -> e.getValue().size())
+                .sum());
         return encoder;
     }
 
