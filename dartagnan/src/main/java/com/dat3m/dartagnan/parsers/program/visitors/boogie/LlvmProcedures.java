@@ -1,13 +1,17 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.IfExpr;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.EventFactory.Llvm;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import java.util.Arrays;
@@ -16,6 +20,7 @@ import java.util.List;
 public class LlvmProcedures {
 
 	public static List<String> LLVMPROCEDURES = Arrays.asList(
+			// Atomic operations
 			"__llvm_atomic32_load",
 			"__llvm_atomic64_load",
 			"__llvm_atomic32_store",
@@ -24,7 +29,10 @@ public class LlvmProcedures {
 			"__llvm_atomic64_cmpxchg",
 			"__llvm_atomic32_rmw",
 			"__llvm_atomic64_rmw",
-			"__llvm_atomic_fence");
+			"__llvm_atomic_fence",
+			// Intrinsics 
+			"llvm.smax.i32"
+			);
 
 	public static void handleLlvmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
@@ -40,6 +48,11 @@ public class LlvmProcedures {
 		
 		String mo;
 		
+		// For intrinsics
+		IExpr i1;
+		IExpr i2;
+		Atom cond;
+
 		switch (name) {
 			case "__llvm_atomic32_load":
 			case "__llvm_atomic64_load":
@@ -101,12 +114,30 @@ public class LlvmProcedures {
 					default:
                 	    throw new UnsupportedOperationException("Operation " + params.get(3).getText() + " is not recognized.");
 				}
-			visitor.programBuilder.addChild(visitor.threadCount, Llvm.newRMW(reg, (IExpr) p0, (IExpr) p1, op, mo))
-				.setCLine(visitor.currentLine)
-				.setSourceCodeFile(visitor.sourceCodeFile);
-			return;
-		default:
-			throw new UnsupportedOperationException(name + " procedure is not part of LKMMPROCEDURES");
+				visitor.programBuilder.addChild(visitor.threadCount, Llvm.newRMW(reg, (IExpr) p0, (IExpr) p1, op, mo))
+					.setCLine(visitor.currentLine)
+					.setSourceCodeFile(visitor.sourceCodeFile);
+				return;
+			case "llvm.smax.i32":
+			case "llvm.smax.i64":
+				i1 = (IExpr)p0;
+				i2 = (IExpr)p1;
+				cond = new Atom(i1, COpBin.GTE, i2);
+				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, new IfExpr(cond, i1, i2)))
+					.setCLine(visitor.currentLine)
+					.setSourceCodeFile(visitor.sourceCodeFile);
+				return;
+			case "llvm.smin.i32":
+			case "llvm.smin.i64":
+				i1 = (IExpr)p0;
+				i2 = (IExpr)p1;
+				cond = new Atom(i1, COpBin.GTE, i2);
+				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, new IfExpr(cond, i2, i1)))
+					.setCLine(visitor.currentLine)
+					.setSourceCodeFile(visitor.sourceCodeFile);
+				return;
+			default:
+			throw new UnsupportedOperationException(name + " procedure is not part of LLVMPROCEDURES");
 		}
 	}
 }
