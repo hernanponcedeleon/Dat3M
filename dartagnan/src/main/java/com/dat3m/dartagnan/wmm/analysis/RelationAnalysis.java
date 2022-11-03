@@ -1235,10 +1235,10 @@ public class RelationAnalysis {
             Set<Tuple> d1 = new HashSet<>();
             Knowledge k0 = knowledgeMap.get(r0);
             Knowledge k1 = knowledgeMap.get(r1);
-            Map<Event, List<Event>> mustIn0 = loopless(mapReverse(k0.must));
+            Map<Event, List<Event>> mustIn0 = mapReverse(k0.must);
             if (origin.equals(r1)) {
-                Map<Event, List<Event>> mayOut0 = enabled.isEmpty() ? Map.of() : loopless(map(k0.may));
-                Map<Event, List<Event>> mayOut1 = disabled.isEmpty() ? Map.of() : loopless(map(k1.may));
+                Map<Event, List<Event>> mayOut0 = enabled.isEmpty() ? Map.of() : map(k0.may);
+                Map<Event, List<Event>> mayOut1 = disabled.isEmpty() ? Map.of() : map(k1.may);
                 for (Tuple xy : disabled) {
                     Event x = xy.getFirst();
                     Event y = xy.getSecond();
@@ -1282,8 +1282,9 @@ public class RelationAnalysis {
                 }
             }
             if (origin.equals(r0)) {
-                Map<Event, List<Event>> mayIn1 = loopless(mapReverse(k1.may));
-                Map<Event, List<Event>> mustOut1 = loopless(map(k1.must));
+                Map<Event, List<Event>> mayIn0 = mapReverse(k0.may);
+                Map<Event, List<Event>> mayIn1 = mapReverse(k1.may);
+                Map<Event, List<Event>> mustOut1 = map(k1.must);
                 d1.addAll(intersection(disabled, k1.may));
                 for (Tuple xz : disabled) {
                     if (xz.isLoop()) {
@@ -1373,13 +1374,6 @@ public class RelationAnalysis {
     private static Map<Event, List<Event>> map(Set<Tuple> set) {
         Map<Event, List<Event>> map = new HashMap<>();
         update(map, set);
-        return map;
-    }
-
-    private static Map<Event, List<Event>> loopless(Map<Event, List<Event>> map) {
-        for (Map.Entry<Event, List<Event>> e : map.entrySet()) {
-            e.getValue().remove(e.getKey());
-        }
         return map;
     }
 
