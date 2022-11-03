@@ -287,7 +287,7 @@ public class PropertyEncoder implements Encoder {
                     continue;
                 }
                 Event w2 = t.getSecond();
-                BooleanFormula isAfter = bmgr.not(knowledge.getMustSet().contains(t) ? context.execution(w2) : edge.encode(t));
+                BooleanFormula isAfter = bmgr.not(knowledge.containsMust(t) ? context.execution(w2) : edge.encode(t));
                 isLast = bmgr.and(isLast, isAfter);
             }
             BooleanFormula lastCoExpr = lastCoVar(w1);

@@ -217,10 +217,10 @@ public final class EncodingContext {
         RelationAnalysis.Knowledge k = relationAnalysis.getKnowledge(relation);
         EdgeEncoder variable = relation.getDefinition().getEdgeVariableEncoder(this);
         return tuple -> {
-            if (!k.getMaySet().contains(tuple)) {
+            if (!k.containsMay(tuple)) {
                 return booleanFormulaManager.makeFalse();
             }
-            if (k.getMustSet().contains(tuple)) {
+            if (k.containsMust(tuple)) {
                 return execution(tuple.getFirst(), tuple.getSecond());
             }
             return variable.encode(tuple);

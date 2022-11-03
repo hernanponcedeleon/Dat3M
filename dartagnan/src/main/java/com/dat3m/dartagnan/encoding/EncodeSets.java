@@ -61,11 +61,11 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
             Event e = t.getSecond();
             for (Tuple t1 : k1.getMayOut(t.getFirst())) {
                 Tuple t2 = new Tuple(t1.getSecond(), e);
-                if (k2.getMaySet().contains(t2)) {
-                    if (!k1.getMustSet().contains(t1)) {
+                if (k2.containsMay(t2)) {
+                    if (!k1.containsMust(t1)) {
                         set1.add(t1);
                     }
-                    if (!k2.getMustSet().contains(t2)) {
+                    if (!k2.containsMust(t2)) {
                         set2.add(t2);
                     }
                 }
@@ -77,19 +77,19 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
     @Override
     public Map<Relation, Stream<Tuple>> visitDomainIdentity(Relation rel, Relation r1) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
-        return Map.of(r1, news.stream().flatMap(t -> k1.getMayOut(t.getFirst()).stream().filter(t1 -> !k1.getMustSet().contains(t1))));
+        return Map.of(r1, news.stream().flatMap(t -> k1.getMayOut(t.getFirst()).stream().filter(t1 -> !k1.containsMust(t1))));
     }
 
     @Override
     public Map<Relation, Stream<Tuple>> visitRangeIdentity(Relation rel, Relation r1) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
-        return Map.of(r1, news.stream().flatMap(t -> k1.getMayIn(t.getSecond()).stream().filter(t1 -> !k1.getMustSet().contains(t1))));
+        return Map.of(r1, news.stream().flatMap(t -> k1.getMayIn(t.getSecond()).stream().filter(t1 -> !k1.containsMust(t1))));
     }
 
     @Override
     public Map<Relation, Stream<Tuple>> visitInverse(Relation rel, Relation r1) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
-        return Map.of(r1, news.stream().map(Tuple::getInverse).filter(t -> k1.getMaySet().contains(t) && !k1.getMustSet().contains(t)));
+        return Map.of(r1, news.stream().map(Tuple::getInverse).filter(t -> k1.containsMay(t) && !k1.containsMust(t)));
     }
 
     @Override
@@ -100,11 +100,11 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
             Event e = t.getSecond();
             for (Tuple t1 : k0.getMayOut(t.getFirst())) {
                 Tuple t2 = new Tuple(t1.getSecond(), e);
-                if (k0.getMaySet().contains(t2)) {
-                    if (!k0.getMustSet().contains(t1)) {
+                if (k0.containsMay(t2)) {
+                    if (!k0.containsMust(t1)) {
                         factors.add(t1);
                     }
-                    if (!k0.getMustSet().contains(t2)) {
+                    if (!k0.containsMust(t2)) {
                         factors.add(t2);
                     }
                 }
@@ -138,7 +138,7 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
 
     private Stream<Tuple> filterUnknowns(Collection<Tuple> news, Relation relation) {
         final RelationAnalysis.Knowledge k = ra.getKnowledge(relation);
-        return news.stream().filter(t -> k.getMaySet().contains(t) && !k.getMustSet().contains(t));
+        return news.stream().filter(t -> k.containsMay(t) && !k.containsMust(t));
     }
 
     private static Map<Relation, Stream<Tuple>> map(Relation r1, Stream<Tuple> s1, Relation r2, Stream<Tuple> s2) {

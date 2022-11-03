@@ -62,10 +62,10 @@ public class CoreReasoner {
                 Tuple tuple = new Tuple(e1, e2);
                 Relation rel = termMap.get(lit.getName());
 
-                if (lit.isPositive() && ra.getKnowledge(rel).getMustSet().contains(tuple)) {
+                if (lit.isPositive() && ra.getKnowledge(rel).containsMust(tuple)) {
                     // Statically present edges
                     addExecReason(tuple, coreReason);
-                } else if (lit.isNegative() && !ra.getKnowledge(rel).getMaySet().contains(tuple)) {
+                } else if (lit.isNegative() && !ra.getKnowledge(rel).containsMay(tuple)) {
                     // Statically absent edges
                 } else {
                     String name = rel.getNameOrTerm();

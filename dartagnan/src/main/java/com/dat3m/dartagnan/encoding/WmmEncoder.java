@@ -160,7 +160,7 @@ public class WmmEncoder implements Encoder {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
             for (Tuple tuple : encodeSets.get(rel)) {
                 BooleanFormula edge = edge(rel, tuple);
-                if (k.getMustSet().contains(tuple)) {
+                if (k.containsMust(tuple)) {
                     enc = bmgr.and(enc, bmgr.equivalence(edge, execution(tuple)));
                     continue;
                 }
@@ -178,7 +178,7 @@ public class WmmEncoder implements Encoder {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
             for (Tuple tuple : encodeSets.get(rel)) {
                 BooleanFormula edge = edge(rel, tuple);
-                if (k.getMustSet().contains(tuple)) {
+                if (k.containsMust(tuple)) {
                     enc = bmgr.and(enc, bmgr.equivalence(edge, execution(tuple)));
                     continue;
                 }
@@ -196,7 +196,7 @@ public class WmmEncoder implements Encoder {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
             for (Tuple tuple : encodeSets.get(rel)) {
                 BooleanFormula edge = edge(rel, tuple);
-                if (k.getMustSet().contains(tuple)) {
+                if (k.containsMust(tuple)) {
                     enc = bmgr.and(enc, bmgr.equivalence(edge, execution(tuple)));
                     continue;
                 }
@@ -216,7 +216,7 @@ public class WmmEncoder implements Encoder {
             final Set<Tuple> a2 = Sets.union(encodeSets.get(r2), k2.getMustSet());
             for (Tuple tuple : encodeSets.get(rel)) {
                 BooleanFormula expr = bmgr.makeFalse();
-                if (k.getMustSet().contains(tuple)) {
+                if (k.containsMust(tuple)) {
                     expr = execution(tuple);
                 } else {
                     Event x = tuple.getFirst();
@@ -224,7 +224,7 @@ public class WmmEncoder implements Encoder {
                     for (Tuple t1 : k1.getMayOut(x)) {
                         Event y = t1.getSecond();
                         Tuple t2 = new Tuple(y, z);
-                        if (k2.getMaySet().contains(t2)) {
+                        if (k2.containsMay(t2)) {
                             verify(a1.contains(t1) && a2.contains(t2),
                                     "Failed to properly propagate active sets across composition at triple: (%s, %s, %s).", x, y, z);
                             expr = bmgr.or(expr, bmgr.and(edge(r1, t1), edge(r2, t2)));
@@ -272,20 +272,20 @@ public class WmmEncoder implements Encoder {
             final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
             for (Tuple tuple : encodeSets.get(rel)) {
                 BooleanFormula edge = edge(rel, tuple);
-                if (k.getMustSet().contains(tuple)) {
+                if (k.containsMust(tuple)) {
                     enc = bmgr.and(enc, bmgr.equivalence(edge, execution(tuple)));
                     continue;
                 }
                 BooleanFormula orClause = bmgr.makeFalse();
                 Event e1 = tuple.getFirst();
                 Event e2 = tuple.getSecond();
-                if (k1.getMaySet().contains(tuple)) {
+                if (k1.containsMay(tuple)) {
                     orClause = bmgr.or(orClause, edge(r1, tuple));
                 }
                 for (Tuple t : k1.getMayOut(e1)) {
                     Event e3 = t.getSecond();
-                    if (e3.getGlobalId() != e1.getGlobalId() && e3.getGlobalId() != e2.getGlobalId() && k.getMaySet().contains(new Tuple(e3, e2))) {
-                        BooleanFormula tVar = k.getMustSet().contains(t) ? edge(rel, t) : edge(r1, t);
+                    if (e3.getGlobalId() != e1.getGlobalId() && e3.getGlobalId() != e2.getGlobalId() && k.containsMay(new Tuple(e3, e2))) {
+                        BooleanFormula tVar = k.containsMust(t) ? edge(rel, t) : edge(r1, t);
                         orClause = bmgr.or(orClause, bmgr.and(tVar, edge(rel, new Tuple(e3, e2))));
                     }
                 }
@@ -300,7 +300,7 @@ public class WmmEncoder implements Encoder {
             for (Tuple tuple : encodeSets.get(rel)) {
                 enc = bmgr.and(enc, bmgr.equivalence(
                         edge(rel, tuple),
-                        k.getMustSet().contains(tuple) ?
+                        k.containsMust(tuple) ?
                                 execution(tuple) :
                                 edge(r1, tuple.getInverse())));
             }
@@ -315,7 +315,7 @@ public class WmmEncoder implements Encoder {
                 Event e1 = tuple.getFirst();
                 Event e2 = tuple.getSecond();
                 BooleanFormula orClause;
-                if (k.getMustSet().contains(tuple)) {
+                if (k.containsMust(tuple)) {
                     orClause = bmgr.makeTrue();
                 } else {
                     orClause = fences.stream()
@@ -419,7 +419,7 @@ public class WmmEncoder implements Encoder {
                 BooleanFormula sameAddress = store.is(Tag.MATCHADDRESS) ? bmgr.makeTrue() : context.sameAddress(load, store);
                 enc = bmgr.and(enc, bmgr.equivalence(
                         edge(rmw, tuple),
-                        k.getMustSet().contains(tuple) ? execution(tuple) :
+                        k.containsMust(tuple) ? execution(tuple) :
                                 // Relation between exclusive load and store
                                 bmgr.and(context.execution(store), exclPair(load, store), sameAddress)));
             }
@@ -528,8 +528,8 @@ public class WmmEncoder implements Encoder {
                 MemEvent w1 = allWrites.get(i);
                 for (MemEvent w2 : allWrites.subList(i + 1, allWrites.size())) {
                     Tuple t = new Tuple(w1, w2);
-                    boolean forwardPossible = k.getMaySet().contains(t);
-                    boolean backwardPossible = k.getMaySet().contains(t.getInverse());
+                    boolean forwardPossible = k.containsMay(t);
+                    boolean backwardPossible = k.containsMay(t.getInverse());
                     if (!forwardPossible && !backwardPossible) {
                         continue;
                     }
@@ -565,8 +565,8 @@ public class WmmEncoder implements Encoder {
                 for (MemEvent w2 : allWrites.subList(i + 1, allWrites.size())) {
                     Tuple t = new Tuple(w1, w2);
                     Tuple tInv = t.getInverse();
-                    boolean forwardPossible = k.getMaySet().contains(t);
-                    boolean backwardPossible = k.getMaySet().contains(tInv);
+                    boolean forwardPossible = k.containsMay(t);
+                    boolean backwardPossible = k.containsMay(tInv);
                     if (!forwardPossible && !backwardPossible) {
                         continue;
                     }
@@ -579,18 +579,20 @@ public class WmmEncoder implements Encoder {
                             bmgr.equivalence(pairingCond, bmgr.or(coF, coB)),
                             bmgr.or(bmgr.not(coF), bmgr.not(coB))
                     );
-                    if (!k.getMustSet().contains(t) && !k.getMustSet().contains(tInv)) {
+                    if (!k.containsMust(t) && !k.containsMust(tInv)) {
                         for (MemEvent w3 : allWrites) {
                             Tuple t1 = new Tuple(w1, w3);
                             Tuple t2 = new Tuple(w3, w2);
-                            if (forwardPossible && k.getMaySet().contains(t1) && k.getMaySet().contains(t2)) {
+                            if (forwardPossible && k.containsMay(t1) && k.containsMay(t2)) {
                                 BooleanFormula co1 = edge(co, t1);
                                 BooleanFormula co2 = edge(co, t2);
                                 enc = bmgr.and(enc, bmgr.implication(bmgr.and(co1, co2), coF));
                             }
-                            if (backwardPossible && k.getMaySet().contains(t1.getInverse()) && k.getMaySet().contains(t2.getInverse())) {
-                                BooleanFormula co1 = edge(co, t2.getInverse());
-                                BooleanFormula co2 = edge(co, t1.getInverse());
+                            Tuple inverse1 = t1.getInverse();
+                            Tuple inverse2 = t2.getInverse();
+                            if (backwardPossible && k.containsMay(inverse1) && k.containsMay(inverse2)) {
+                                BooleanFormula co1 = edge(co, inverse1);
+                                BooleanFormula co2 = edge(co, inverse2);
                                 enc = bmgr.and(enc, bmgr.implication(bmgr.and(co1, co2), coB));
                             }
                         }

@@ -74,7 +74,7 @@ public class Acyclic extends Axiom {
                 for (Event z : mustOut.getOrDefault(y, List.of())) {
                     if ((implied || exec.isImplied(z, y)) && !exec.areMutuallyExclusive(x, z)) {
                         Tuple zx = new Tuple(z, x);
-                        if (k.getMaySet().contains(zx) && d.add(zx)) {
+                        if (k.containsMay(zx) && d.add(zx)) {
                             next.add(new Tuple(x, z));
                         }
                     }
@@ -100,8 +100,8 @@ public class Acyclic extends Axiom {
         Set<Tuple> d = new HashSet<>();
         for (Tuple t : enabled) {
             Tuple inverse = t.getInverse();
-            if (k.getMaySet().contains(inverse)) {
-                d.add(t.getInverse());
+            if (k.containsMay(inverse)) {
+                d.add(inverse);
             }
         }
         Map<Event, List<Event>> mustIn = new HashMap<>();
@@ -126,7 +126,7 @@ public class Acyclic extends Axiom {
                 for (Event w : mustIn.getOrDefault(x, List.of())) {
                     if ((implied || exec.isImplied(w, x)) && !exec.areMutuallyExclusive(w, y)) {
                         Tuple yw = new Tuple(y, w);
-                        if (k.getMaySet().contains(yw) && d.add(yw)) {
+                        if (k.containsMay(yw) && d.add(yw)) {
                             next.add(new Tuple(w, y));
                         }
                     }
@@ -134,7 +134,7 @@ public class Acyclic extends Axiom {
                 for (Event z : mustOut.getOrDefault(y, List.of())) {
                     if ((implies || exec.isImplied(z, y)) && !exec.areMutuallyExclusive(x, z)) {
                         Tuple zx = new Tuple(z, x);
-                        if (k.getMaySet().contains(zx) && d.add(zx)) {
+                        if (k.containsMay(zx) && d.add(zx)) {
                             next.add(new Tuple(x, z));
                         }
                     }
@@ -164,7 +164,7 @@ public class Acyclic extends Axiom {
             for (DependencyGraph<Event>.Node node1 : scc) {
                 for (DependencyGraph<Event>.Node node2 : scc) {
                     Tuple t = new Tuple(node1.getContent(), node2.getContent());
-                    if (k.getMaySet().contains(t)) {
+                    if (k.containsMay(t)) {
                         result.add(t);
                     }
                 }
