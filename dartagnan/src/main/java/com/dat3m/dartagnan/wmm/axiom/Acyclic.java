@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -12,6 +11,10 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
@@ -20,11 +23,20 @@ import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
+import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_ENCODE_SETS;
 import static com.google.common.base.Preconditions.checkArgument;
 
+@Options
 public class Acyclic extends Axiom {
 
 	private static final Logger logger = LogManager.getLogger(Acyclic.class);
+
+    @Option(name = REDUCE_ACYCLICITY_ENCODE_SETS,
+            description = "Omit adding transitively implied relationships to the encode set of an acyclic relation." +
+                    " This option is only relevant if \"" + ENABLE_ACTIVE_SETS + "\" is set.",
+            secure = true)
+    private boolean reduceAcyclicityEncoding = true;
 
     public Acyclic(Relation rel, boolean negated, boolean flag) {
         super(rel, negated, flag);
@@ -32,6 +44,11 @@ public class Acyclic extends Axiom {
 
     public Acyclic(Relation rel) {
         super(rel, false, false);
+    }
+
+    @Override
+    public void configure(Configuration config) throws InvalidConfigurationException {
+        config.inject(this);
     }
 
     @Override
@@ -175,7 +192,7 @@ public class Acyclic extends Axiom {
         }
 
         logger.info("encodeTupleSet size " + result.size());
-        if (GlobalSettings.REDUCE_ACYCLICITY_ENCODE_SETS) {
+        if (reduceAcyclicityEncoding) {
             reduceWithMinSets(result, exec, ra);
             logger.info("reduced encodeTupleSet size " + result.size());
         }
