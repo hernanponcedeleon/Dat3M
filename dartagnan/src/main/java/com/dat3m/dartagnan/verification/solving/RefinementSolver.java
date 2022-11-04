@@ -134,6 +134,7 @@ public class RefinementSolver extends ModelChecker {
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
         prover.addConstraint(symmEncoder.encodeFullSymmetryBreaking());
+        prover.addConstraint(context.encodeExecutionPairs());
 
         prover.push();
         prover.addConstraint(propertyEncoder.encodeSpecification());

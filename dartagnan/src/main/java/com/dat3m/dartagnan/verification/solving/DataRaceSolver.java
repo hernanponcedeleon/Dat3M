@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
@@ -63,9 +64,11 @@ public class DataRaceSolver extends ModelChecker {
 		logger.info("Starting encoding using " + ctx.getVersion());
 		prover.addConstraint(programEncoder.encodeFullProgram());
 		prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
+		BooleanFormula dataRaces = propertyEncoder.encodeDataRaces();
+		prover.addConstraint(context.encodeExecutionPairs());
 		prover.push();
 
-		prover.addConstraint(propertyEncoder.encodeDataRaces());
+		prover.addConstraint(dataRaces);
 
 		logger.info("Starting first solver.check()");
 		if(prover.isUnsat()) {

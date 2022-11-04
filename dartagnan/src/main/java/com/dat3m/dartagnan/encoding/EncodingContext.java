@@ -20,7 +20,9 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.IDL_TO_SAT;
@@ -37,6 +39,7 @@ public final class EncodingContext {
 
     private final VerificationTask verificationTask;
     private final Context analysisContext;
+    private final BranchEquivalence branchEquivalence;
     private final ExecutionAnalysis executionAnalysis;
     private final AliasAnalysis aliasAnalysis;
     private final RelationAnalysis relationAnalysis;
@@ -60,11 +63,13 @@ public final class EncodingContext {
     private final Map<Event, Formula> addresses = new HashMap<>();
     private final Map<Event, Formula> values = new HashMap<>();
     private final Map<Event, Formula> results = new HashMap<>();
+    private final Map<UnorderedPair, BooleanFormula> executionPairs = new HashMap<>();
+    private int executionPairsUsage;
 
     private EncodingContext(VerificationTask t, Context a, SolverContext s) {
         verificationTask = checkNotNull(t);
         analysisContext = checkNotNull(a);
-        a.requires(BranchEquivalence.class);
+        branchEquivalence = a.requires(BranchEquivalence.class);
         executionAnalysis = a.requires(ExecutionAnalysis.class);
         aliasAnalysis = a.requires(AliasAnalysis.class);
         relationAnalysis = a.requires(RelationAnalysis.class);
@@ -107,6 +112,22 @@ public final class EncodingContext {
         return booleanFormulaManager;
     }
 
+    public BooleanFormula encodeExecutionPairs() {
+        List<BooleanFormula> enc = new ArrayList<>();
+        for (Map.Entry<UnorderedPair, BooleanFormula> e : executionPairs.entrySet()) {
+            BooleanFormula f1 = e.getKey().first instanceof Event ?
+                    execution((Event) e.getKey().first) :
+                    controlFlow(((BranchEquivalence.Class) e.getKey().first).getRepresentative());
+            BooleanFormula f2 = e.getKey().second instanceof Event ?
+                    execution((Event) e.getKey().second) :
+                    controlFlow(((BranchEquivalence.Class) e.getKey().second).getRepresentative());
+            enc.add(booleanFormulaManager.equivalence(e.getValue(), booleanFormulaManager.and(f1, f2)));
+        }
+        logger.info("Number of execution pairs: {}", executionPairs.size());
+        logger.info("Usage of execution pairs: {}", executionPairsUsage);
+        return booleanFormulaManager.and(enc);
+    }
+
     public BooleanFormula controlFlow(Event event) {
         return controlFlowVariables.get(event);
     }
@@ -130,16 +151,38 @@ public final class EncodingContext {
      * Proposition that both {@code first} and {@code second} are included in the modelled execution.
      */
     public BooleanFormula execution(Event first, Event second) {
-        boolean b = first.getGlobalId() < second.getGlobalId();
-        Event x = b ? first : second;
-        Event y = b ? second : first;
-        if (executionAnalysis.isImplied(x, y)) {
-            return execution(x);
+        if (executionAnalysis.isImplied(first, second)) {
+            return execution(first);
         }
-        if (executionAnalysis.isImplied(y, x)) {
-            return execution(y);
+        if (executionAnalysis.isImplied(second, first)) {
+            return execution(second);
         }
-        return booleanFormulaManager.and(execution(x), execution(y));
+        executionPairsUsage++;
+        Object o1, o2;
+        String s1, s2;
+        int i1, i2;
+        if (first.cfImpliesExec()) {
+            BranchEquivalence.Class c = branchEquivalence.getEquivalenceClass(first);
+            o1 = c;
+            s1 = "cf";
+            i1 = c.getRepresentative().getCId();
+        } else {
+            o1 = first;
+            s1 = "exec";
+            i1 = first.getCId();
+        }
+        if (second.cfImpliesExec()) {
+            BranchEquivalence.Class c = branchEquivalence.getEquivalenceClass(second);
+            o2 = c;
+            s2 = "cf";
+            i2 = c.getRepresentative().getCId();
+        } else {
+            o2 = second;
+            s2 = "exec";
+            i2 = second.getCId();
+        }
+        return executionPairs.computeIfAbsent(new UnorderedPair(o1, o2),
+                k -> booleanFormulaManager.makeVariable(s1 + i1 + s2 + i2));
     }
 
     public BooleanFormula dependency(Event first, Event second) {
@@ -267,5 +310,27 @@ public final class EncodingContext {
         return f instanceof BitvectorFormula ?
                 formulaManager.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula) f, false) :
                 (NumeralFormula.IntegerFormula) f;
+    }
+
+    private static final class UnorderedPair {
+        final Object first;
+        final Object second;
+        UnorderedPair(Object f, Object s) {
+            first = f;
+            second = s;
+        }
+        @Override
+        public int hashCode() {
+            return first.hashCode() ^ second.hashCode();
+        }
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof UnorderedPair)) {
+                return false;
+            }
+            Object f = ((UnorderedPair) o).first;
+            Object s = ((UnorderedPair) o).second;
+            return first == f && second == s || first == s && second == f;
+        }
     }
 }
