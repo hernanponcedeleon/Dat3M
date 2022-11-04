@@ -133,6 +133,7 @@ public class RelationAnalysis {
             logger.info("Count of may-tuples removed: {}", mayCount - a.countMaySet());
             logger.info("Count of must-tuples added: {}", a.countMustSet() - mustCount);
         }
+        verify(a.enableMustSets || a.knowledgeMap.values().stream().allMatch(k -> k.must.isEmpty()));
         logger.info("Number of may-tuples: {}", a.countMaySet());
         logger.info("Number of must-tuples: {}", a.countMustSet());
         if (!a.mutex.isEmpty()) {
@@ -217,6 +218,9 @@ public class RelationAnalysis {
         Propagator propagator = new Propagator();
         for (Set<DependencyGraph<Relation>.Node> scc : DependencyGraph.from(memoryModel.getRelations()).getSCCs()) {
             Set<Relation> stratum = scc.stream().map(DependencyGraph.Node::getContent).collect(toSet());
+            if (!enable && stratum.stream().noneMatch(Relation::isInternal)) {
+                continue;
+            }
             // the algorithm has deterministic order, only if all components are deterministically-ordered
             Map<Relation, List<Delta>> qLocal = new LinkedHashMap<>();
             // move from global queue
@@ -247,7 +251,7 @@ public class RelationAnalysis {
                 }
             }
         }
-        verify(qGlobal.isEmpty(), "knowledge buildup propagated downwards");
+        verify(!enable || qGlobal.isEmpty(), "knowledge buildup propagated downwards");
     }
 
     public static final class Knowledge {
@@ -419,7 +423,7 @@ public class RelationAnalysis {
         }
         @Override
         public Knowledge visitDefinition(Relation r, List<? extends Relation> d) {
-            return defaultKnowledge != null ? defaultKnowledge : new Knowledge(new HashSet<>(), new HashSet<>());
+            return defaultKnowledge != null && !r.isInternal() ? defaultKnowledge : new Knowledge(new HashSet<>(), new HashSet<>());
         }
         @Override
         public Knowledge visitProduct(Relation rel, FilterAbstract domain, FilterAbstract range) {
@@ -433,7 +437,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : Set.of());
         }
         @Override
         public Knowledge visitIdentity(Relation rel, FilterAbstract set) {
@@ -441,7 +445,7 @@ public class RelationAnalysis {
             for (Event e : program.getCache().getEvents(set)) {
                 must.add(new Tuple(e, e));
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : Set.of());
         }
         @Override
         public Knowledge visitExternal(Relation rel) {
@@ -459,7 +463,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : Set.of());
         }
         @Override
         public Knowledge visitInternal(Relation rel) {
@@ -474,7 +478,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : Set.of());
         }
         @Override
         public Knowledge visitProgramOrder(Relation rel, FilterAbstract type) {
@@ -489,7 +493,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : Set.of());
         }
         @Override
         public Knowledge visitControl(Relation rel) {
@@ -519,7 +523,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : Set.of());
         }
         @Override
         public Knowledge visitAddressDependency(Relation rel) {
@@ -552,7 +556,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(may, must);
+            return new Knowledge(may, enableMustSets ? must : Set.of());
         }
         @Override
         public Knowledge visitCompareAndSwapDependency(Relation rel) {
@@ -561,7 +565,7 @@ public class RelationAnalysis {
                 // The target of a CASDep is always the successor of the origin
                 must.add(new Tuple(e, e.getSuccessor()));
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : Set.of());
         }
         @Override
         public Knowledge visitCriticalSections(Relation rel) {
@@ -601,7 +605,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(may, must);
+            return new Knowledge(may, enableMustSets ? must : Set.of());
         }
         @Override
         public Knowledge visitReadModifyWrites(Relation rel) {
@@ -670,7 +674,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(may, must);
+            return new Knowledge(may, enableMustSets ? must : Set.of());
         }
         @Override
         public Knowledge visitMemoryOrder(Relation rel) {
@@ -697,7 +701,7 @@ public class RelationAnalysis {
                 }
             }
             logger.debug("maxTupleSet size for memory order: " + may.size());
-            return new Knowledge(may, must);
+            return new Knowledge(may, enableMustSets ? must : Set.of());
         }
         @Override
         public Knowledge visitReadFrom(Relation rel) {
@@ -792,7 +796,7 @@ public class RelationAnalysis {
                 logger.debug("Atomic block optimization eliminated {} reads", sizeBefore - may.size());
             }
             logger.debug("maxTupleSet size for read-from: {}", may.size());
-            return new Knowledge(may, new HashSet<>());
+            return new Knowledge(may, enableMustSets ? new HashSet<>() : Set.of());
         }
         @Override
         public Knowledge visitSameAddress(Relation rel) {
@@ -811,7 +815,7 @@ public class RelationAnalysis {
                     must.add(t);
                 }
             }
-            return new Knowledge(may, must);
+            return new Knowledge(may, enableMustSets ? must : Set.of());
         }
         private Knowledge visitDependency(List<Event> events, Function<Event, Set<Register>> registers) {
             Set<Tuple> may = new HashSet<>();
@@ -847,7 +851,7 @@ public class RelationAnalysis {
                     must.add(t);
                 }
             }
-            return new Knowledge(may, must);
+            return new Knowledge(may, enableMustSets ? must : Set.of());
         }
     }
 
