@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_ENCODE_SETS;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.Sets.difference;
 
 @Options
 public class Acyclic extends Axiom {
@@ -169,6 +170,11 @@ public class Acyclic extends Axiom {
     protected Set<Tuple> getEncodeTupleSet(Context analysisContext) {
         ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
         RelationAnalysis ra = analysisContext.get(RelationAnalysis.class);
+        RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
+        return difference(getEncodeTupleSet(exec, ra), k.getMustSet());
+    }
+
+    private Set<Tuple> getEncodeTupleSet(ExecutionAnalysis exec, RelationAnalysis ra) {
         logger.info("Computing encodeTupleSet for " + this);
         // ====== Construct [Event -> Successor] mapping ======
         Map<Event, Collection<Event>> succMap = new HashMap<>();
@@ -286,7 +292,9 @@ public class Acyclic extends Axiom {
 
     @Override
 	public BooleanFormula consistent(EncodingContext context) {
-        Set<Tuple> toBeEncoded = getEncodeTupleSet(context.getAnalysisContext());
+        ExecutionAnalysis exec = context.getAnalysisContext().get(ExecutionAnalysis.class);
+        RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
+        Set<Tuple> toBeEncoded = getEncodeTupleSet(exec, ra);
         BooleanFormula enc;
         if(negated) {
             enc = inconsistentSAT(toBeEncoded, context); // There is no IDL-based encoding for inconsistency
