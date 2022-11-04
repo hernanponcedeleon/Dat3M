@@ -725,7 +725,7 @@ public class RelationAnalysis {
                     MemEvent read = (MemEvent) r;
                     // The set of same-thread writes as well as init writes that could be read from (all before the read)
                     // sorted by order (init events first)
-                    List<MemEvent> possibleWrites = writesByRead.get(read).stream()
+                    List<MemEvent> possibleWrites = writesByRead.getOrDefault(read, List.of()).stream()
                             .filter(e -> (e.getThread() == read.getThread() || e.is(INIT)))
                             .map(x -> (MemEvent) x)
                             .sorted((o1, o2) -> o1.is(INIT) == o2.is(INIT) ? (o1.getGlobalId() - o2.getGlobalId()) : o1.is(INIT) ? -1 : 1)
