@@ -161,7 +161,7 @@ public class RelationAnalysis {
     }
 
     /*
-        Returns a set of co-edges (w1, w2) (subset of maxTupleSet) whose clock-constraints
+        Returns a set of co-edges (w1, w2) (subset of may set) whose clock-constraints
         do not need to get encoded explicitly.
         The reason is that whenever we have co(w1,w2) then there exists an intermediary
         w3 s.t. co(w1, w3) /\ co(w3, w2). As a result we have c(w1) < c(w3) < c(w2) transitively.
@@ -610,7 +610,7 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitReadModifyWrites(Relation rel) {
             //NOTE: Changes to the semantics of this method may need to be reflected in RMWGraph for Refinement!
-            // ----- Compute minTupleSet -----
+            // ----- Compute must set -----
             Set<Tuple> must = new HashSet<>();
             // RMWLoad -> RMWStore
             for (Event store : program.getCache().getEvents(
@@ -639,7 +639,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            // ----- Compute maxTupleSet -----
+            // ----- Compute may set -----
             Set<Tuple> may = new HashSet<>(must);
             // LoadExcl -> StoreExcl
             for (Thread thread : program.getThreads()) {
@@ -678,7 +678,7 @@ public class RelationAnalysis {
         }
         @Override
         public Knowledge visitMemoryOrder(Relation rel) {
-            logger.trace("Computing maxTupleSet for memory order");
+            logger.trace("Computing knowledge about memory order");
             final List<Event> nonInitWrites = program.getCache().getEvents(FilterMinus.get(FilterBasic.get(WRITE), FilterBasic.get(INIT)));
             Set<Tuple> may = new HashSet<>();
             for (Event w1 : program.getCache().getEvents(FilterBasic.get(WRITE))) {
@@ -700,12 +700,12 @@ public class RelationAnalysis {
                     }
                 }
             }
-            logger.debug("maxTupleSet size for memory order: " + may.size());
+            logger.debug("may set size for memory order: " + may.size());
             return new Knowledge(may, enableMustSets ? must : Set.of());
         }
         @Override
         public Knowledge visitReadFrom(Relation rel) {
-            logger.trace("Computing maxTupleSet for read-from");
+            logger.trace("Computing knowledge about read-from");
             Set<Tuple> may = new HashSet<>();
             List<Event> loadEvents = program.getCache().getEvents(FilterBasic.get(READ));
             List<Event> storeEvents = program.getCache().getEvents(FilterBasic.get(WRITE));
@@ -795,7 +795,7 @@ public class RelationAnalysis {
                 }
                 logger.debug("Atomic block optimization eliminated {} reads", sizeBefore - may.size());
             }
-            logger.debug("maxTupleSet size for read-from: {}", may.size());
+            logger.debug("may set size for read-from: {}", may.size());
             return new Knowledge(may, enableMustSets ? new HashSet<>() : Set.of());
         }
         @Override
