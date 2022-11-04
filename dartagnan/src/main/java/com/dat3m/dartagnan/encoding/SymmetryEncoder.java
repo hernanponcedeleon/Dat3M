@@ -35,6 +35,7 @@ public class SymmetryEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(SymmetryEncoder.class);
 
+    private final Wmm memoryModel;
     private final EncodingContext context;
     private final List<Axiom> axioms;
     private final ThreadSymmetry symm;
@@ -58,6 +59,7 @@ public class SymmetryEncoder implements Encoder {
 
     private SymmetryEncoder(EncodingContext c, Wmm m, Context a, Configuration config) throws InvalidConfigurationException {
         context = c;
+        memoryModel = m;
         axioms = List.copyOf(m.getAxioms());
         symm = c.getAnalysisContext().requires(ThreadSymmetry.class);
         ra = a.requires(RelationAnalysis.class);
@@ -94,14 +96,14 @@ public class SymmetryEncoder implements Encoder {
                 edgeEncoder = t -> context.execution(t.getFirst(), t.getSecond());
                 break;
             default:
-                if (!context.getTask().getMemoryModel().containsRelation(symmBreakTarget)) {
+                Wmm baseline = context.getTask().getMemoryModel();
+                if (!baseline.containsRelation(symmBreakTarget) || !memoryModel.containsRelation(symmBreakTarget)) {
                     logger.warn("The wmm has no relation named {} to break symmetry on." +
                             " Symmetry breaking was disabled.", symmBreakTarget);
                     return bmgr.makeTrue();
                 }
-                Relation rel = context.getTask().getMemoryModel().getRelation(symmBreakTarget);
-                maySet = ra.getKnowledge(rel).getMaySet();
-                edgeEncoder = context.edge(rel);
+                maySet = ra.getKnowledge(memoryModel.getRelation(symmBreakTarget)).getMaySet();
+                edgeEncoder = context.edge(baseline.getRelation(symmBreakTarget));
         }
         return symm.getNonTrivialClasses().stream()
                 .map(symmClass -> encodeSymmetryBreakingOnClass(maySet, edgeEncoder, symmClass))
