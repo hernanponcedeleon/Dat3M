@@ -425,6 +425,10 @@ public class WmmEncoder implements Encoder {
             for (Tuple tuple : encodeSets.get(rmw)) {
                 MemEvent load = (MemEvent) tuple.getFirst();
                 MemEvent store = (MemEvent) tuple.getSecond();
+                if (!load.is(Tag.EXCL) || !store.is(Tag.EXCL)) {
+                    enc = bmgr.and(enc, bmgr.equivalence(edge(rmw, tuple), context.execution(load, store)));
+                    continue;
+                }
                 BooleanFormula sameAddress = store.is(Tag.MATCHADDRESS) ? bmgr.makeTrue() : context.sameAddress(load, store);
                 enc = bmgr.and(enc, bmgr.equivalence(
                         edge(rmw, tuple),
