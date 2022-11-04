@@ -432,7 +432,7 @@ public class RelationAnalysis {
             List<Event> l2 = program.getCache().getEvents(range);
             for (Event e1 : l1) {
                 for (Event e2 : l2) {
-                    if (!exec.areMutuallyExclusive(e1, e2)) {
+                    if (!enableMustSets || !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -457,6 +457,7 @@ public class RelationAnalysis {
                     Thread t2 = threads.get(j);
                     for (Event e1 : t1.getCache().getEvents(FilterBasic.get(VISIBLE))) {
                         for (Event e2 : t2.getCache().getEvents(FilterBasic.get(VISIBLE))) {
+                            // No test for exec.areMutuallyExclusive, since that currently does not span across threads
                             must.add(new Tuple(e1, e2));
                             must.add(new Tuple(e2, e1));
                         }
@@ -472,7 +473,7 @@ public class RelationAnalysis {
                 List<Event> events = t.getCache().getEvents(FilterBasic.get(VISIBLE));
                 for (Event e1 : events) {
                     for (Event e2 : events) {
-                        if (!exec.areMutuallyExclusive(e1, e2)) {
+                        if (!enableMustSets || !exec.areMutuallyExclusive(e1, e2)) {
                             must.add(new Tuple(e1, e2));
                         }
                     }
@@ -489,7 +490,9 @@ public class RelationAnalysis {
                     Event e1 = events.get(i);
                     for (int j = i + 1; j < events.size(); j++) {
                         Event e2 = events.get(j);
-                        must.add(new Tuple(e1, e2));
+                        if (!enableMustSets || !exec.areMutuallyExclusive(e1, e2)) {
+                            must.add(new Tuple(e1, e2));
+                        }
                     }
                 }
             }
@@ -504,7 +507,7 @@ public class RelationAnalysis {
             for (Thread thread : program.getThreads()) {
                 for (Event e1 : thread.getCache().getEvents(FilterBasic.get(CMP))) {
                     for (Event e2 : ((IfAsJump) e1).getBranchesEvents()) {
-                        if (!exec.areMutuallyExclusive(e1, e2)) {
+                        if (!enableMustSets || !exec.areMutuallyExclusive(e1, e2)) {
                             must.add(new Tuple(e1, e2));
                         }
                     }
@@ -516,7 +519,7 @@ public class RelationAnalysis {
                 if (!condJumps.isEmpty()) {
                     for (Event e2 : thread.getCache().getEvents(FilterBasic.get(ANY))) {
                         for (Event e1 : condJumps) {
-                            if (e1.getGlobalId() < e2.getGlobalId() && !exec.areMutuallyExclusive(e1, e2)) {
+                            if (e1.getGlobalId() < e2.getGlobalId() && (!enableMustSets || !exec.areMutuallyExclusive(e1, e2))) {
                                 must.add(new Tuple(e1, e2));
                             }
                         }
@@ -547,7 +550,7 @@ public class RelationAnalysis {
                 for (Event e1 : eventsBefore) {
                     boolean isImpliedByE1 = enableMustSets && exec.isImplied(e1, f);
                     for (Event e2 : eventsAfter) {
-                        if (!exec.areMutuallyExclusive(e1, e2)) {
+                        if (!enableMustSets || !exec.areMutuallyExclusive(e1, e2)) {
                             may.add(new Tuple(e1, e2));
                             if (isImpliedByE1 || enableMustSets && exec.isImplied(e2, f)) {
                                 must.add(new Tuple(e1, e2));
@@ -582,10 +585,10 @@ public class RelationAnalysis {
                     // iteration order assures that all intermediaries were already iterated
                     for (Event lock : locks) {
                         if (unlock.getGlobalId() < lock.getGlobalId() ||
-                                exec.areMutuallyExclusive(lock, unlock) ||
+                                enableMustSets && (exec.areMutuallyExclusive(lock, unlock) ||
                                 Stream.concat(mustMap.getOrDefault(lock, Set.of()).stream(),
                                                 mustMap.getOrDefault(unlock, Set.of()).stream())
-                                        .anyMatch(e -> exec.isImplied(lock, e) || exec.isImplied(unlock, e))) {
+                                        .anyMatch(e -> exec.isImplied(lock, e) || exec.isImplied(unlock, e)))) {
                             continue;
                         }
                         boolean noIntermediary = enableMustSets &&
@@ -633,7 +636,7 @@ public class RelationAnalysis {
                 for (int i = 0; i < block.size(); i++) {
                     Event e = block.get(i);
                     for (int j = i + 1; j < block.size(); j++) {
-                        if (!exec.areMutuallyExclusive(e, block.get(j))) {
+                        if (!enableMustSets || !exec.areMutuallyExclusive(e, block.get(j))) {
                             must.add(new Tuple(e, block.get(j)));
                         }
                     }
@@ -655,7 +658,7 @@ public class RelationAnalysis {
                             .filter(i -> exec.isImplied(store, events.get(i)))
                             .findFirst().orElse(0);
                     List<Event> candidates = events.subList(start, end).stream()
-                            .filter(e -> !exec.areMutuallyExclusive(e, store))
+                            .filter(enableMustSets ? e -> !exec.areMutuallyExclusive(e, store) : e -> true)
                             .collect(toList());
                     int size = candidates.size();
                     for (int i = 0; i < size; i++) {
@@ -683,7 +686,7 @@ public class RelationAnalysis {
             Set<Tuple> may = new HashSet<>();
             for (Event w1 : program.getCache().getEvents(FilterBasic.get(WRITE))) {
                 for (Event w2 : nonInitWrites) {
-                    if (w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)
+                    if (w1.getGlobalId() != w2.getGlobalId() && (!enableMustSets || !exec.areMutuallyExclusive(w1, w2))
                             && alias.mayAlias((MemEvent) w1, (MemEvent) w2)) {
                         may.add(new Tuple(w1, w2));
                     }
@@ -711,7 +714,7 @@ public class RelationAnalysis {
             List<Event> storeEvents = program.getCache().getEvents(FilterBasic.get(WRITE));
             for (Event e1 : storeEvents) {
                 for (Event e2 : loadEvents) {
-                    if (alias.mayAlias((MemEvent) e1, (MemEvent) e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (alias.mayAlias((MemEvent) e1, (MemEvent) e2) && (!enableMustSets || !exec.areMutuallyExclusive(e1, e2))) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
