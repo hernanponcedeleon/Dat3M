@@ -47,6 +47,29 @@ public class Acyclic extends Axiom {
         super(rel, false, false);
     }
 
+    public static final class Statistics {
+        private final List<Axiom> axioms;
+        private final ExecutionAnalysis exec;
+        private final RelationAnalysis ra;
+
+        public Statistics(List<Axiom> a, Context c) {
+            axioms = a;
+            exec = c.get(ExecutionAnalysis.class);
+            ra = c.get(RelationAnalysis.class);
+        }
+
+        @Override
+        public String toString() {
+            int i = 0;
+            for (Axiom a : axioms) {
+                if (a instanceof Acyclic) {
+                    i += ((Acyclic) a).getEncodeTupleSet(exec, ra).size();
+                }
+            }
+            return "Number of encoded tuples for acyclicity: " + i;
+        }
+    }
+
     @Override
     public void configure(Configuration config) throws InvalidConfigurationException {
         config.inject(this);

@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -84,6 +85,7 @@ public final class EncodingContext {
         logger.info("{}: {}", IDL_TO_SAT, context.useSATEncoding);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
         context.initialize();
+        logger.info("{}", new Acyclic.Statistics(task.getMemoryModel().getAxioms(), analysisContext));
         return context;
     }
 
