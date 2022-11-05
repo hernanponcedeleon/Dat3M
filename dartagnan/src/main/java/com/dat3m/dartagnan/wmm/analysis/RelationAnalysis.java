@@ -693,12 +693,19 @@ public class RelationAnalysis {
                 }
             }
             Set<Tuple> must = new HashSet<>();
+            for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
+                MemEvent w1 = (MemEvent) t.getFirst();
+                MemEvent w2 = (MemEvent) t.getSecond();
+                if (!w2.is(INIT) && alias.mustAlias(w1, w2) && w1.is(INIT)) {
+                    must.add(t);
+                }
+            }
             if (wmmAnalysis.isLocallyConsistent()) {
                 may.removeIf(Tuple::isBackward);
                 for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
                     MemEvent w1 = (MemEvent) t.getFirst();
                     MemEvent w2 = (MemEvent) t.getSecond();
-                    if (!w2.is(INIT) && alias.mustAlias(w1, w2) && (w1.is(INIT) || t.isForward())) {
+                    if (alias.mustAlias(w1, w2) && t.isForward()) {
                         must.add(t);
                     }
                 }
