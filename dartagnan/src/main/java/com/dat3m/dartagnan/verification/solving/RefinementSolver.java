@@ -15,9 +15,11 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.dat3m.dartagnan.wmm.Assumption;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.axiom.Empty;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
@@ -109,6 +111,16 @@ public class RefinementSolver extends ModelChecker {
         performStaticProgramAnalyses(task, analysisContext, config);
         Context baselineContext = Context.createCopyFrom(analysisContext);
         performStaticWmmAnalyses(task, analysisContext, config);
+        // Transfer knowledge from target model to baseline model
+        RelationAnalysis ra = analysisContext.requires(RelationAnalysis.class);
+        for (Relation baselineRelation : baselineModel.getRelations()) {
+            String name = baselineRelation.getNameOrTerm();
+            memoryModel.getRelations().stream()
+                    .filter(r -> name.equals(r.getNameOrTerm()))
+                    .map(ra::getKnowledge)
+                    .map(k -> new Assumption(baselineRelation, k.getMaySet(), k.getMustSet()))
+                    .forEach(baselineModel::addConstraint);
+        }
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
 
         context = EncodingContext.of(baselineTask, baselineContext, ctx);
