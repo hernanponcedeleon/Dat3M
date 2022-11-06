@@ -290,7 +290,7 @@ public class RefinementSolver extends ModelChecker {
                     // in our Wmm but for CAAT they are derived from unary predicates!
                     logger.info("Found difference {}. Cutting rhs relation {}", rel, sec);
                     cutRelations.add(sec);
-                    baselineWmm.addAxiom(new ForceEncodeAxiom(getCopyOfRelation(sec, baselineWmm)));
+                    baselineWmm.addConstraint(new ForceEncodeAxiom(getCopyOfRelation(sec, baselineWmm)));
                 }
             }
         }
@@ -426,7 +426,7 @@ public class RefinementSolver extends ModelChecker {
         Relation rf = baseline.getRelation(RF);
         if(baselines.contains(Baseline.UNIPROC)) {
             // ---- acyclic(po-loc | com) ----
-            baseline.addAxiom(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
+            baseline.addConstraint(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
                     baseline.getRelation(POLOC),
                     rf,
                     baseline.getRelation(CO),
@@ -434,7 +434,7 @@ public class RefinementSolver extends ModelChecker {
         }
         if(baselines.contains(Baseline.NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
-            baseline.addAxiom(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
+            baseline.addConstraint(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
                     baseline.getRelation(CTRL),
                     baseline.getRelation(DATA),
                     baseline.getRelation(ADDR),
@@ -447,7 +447,7 @@ public class RefinementSolver extends ModelChecker {
             Relation fre = baseline.getRelation(FRE);
             Relation frecoe = baseline.addDefinition(new Composition(baseline.newRelation(), fre, coe));
             Relation rmwANDfrecoe = baseline.addDefinition(new Intersection(baseline.newRelation(), rmw, frecoe));
-            baseline.addAxiom(new Empty(rmwANDfrecoe));
+            baseline.addConstraint(new Empty(rmwANDfrecoe));
         }
         return baseline;
     }

@@ -345,13 +345,15 @@ public class RelationAnalysis {
             }
         }
         Map<Relation, List<ExtendedDelta>> q = new LinkedHashMap<>();
-        for (Axiom a : memoryModel.getAxioms()) {
-            if (a.isFlagged()) {
+        for (Constraint c : memoryModel.getConstraints()) {
+            if (c instanceof Axiom && ((Axiom) c).isFlagged()) {
                 continue;
             }
-            dependents.computeIfAbsent(a.getRelation(), k ->new ArrayList<>()).add(a);
+            for (Relation r : c.getConstrainedRelations()) {
+                dependents.computeIfAbsent(r, k -> new ArrayList<>()).add(c);
+            }
             for (Map.Entry<Relation, ExtendedDelta> e :
-                    a.computeInitialKnowledgeClosure(knowledgeMap, analysisContext).entrySet()) {
+                    c.computeInitialKnowledgeClosure(knowledgeMap, analysisContext).entrySet()) {
                 q.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
             }
         }

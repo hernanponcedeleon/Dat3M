@@ -27,7 +27,7 @@ public class Wmm {
 
     public final static ImmutableSet<String> BASE_RELATIONS = ImmutableSet.of(CO, RF, RMW);
 
-    private final List<Axiom> axioms = new ArrayList<>();
+    private final List<Constraint> constraints = new ArrayList<>();
     private final Map<String, FilterAbstract> filters = new HashMap<>();
     private final Set<Relation> relations = new HashSet<>();
 
@@ -37,20 +37,30 @@ public class Wmm {
 
     /**
      * Inserts a constraint into this model.
-     * @param ax Constraint over relations in this model, to be inserted.
+     * @param constraint Constraint over relations in this model, to be inserted.
      */
-    public void addAxiom(Axiom ax) {
-        Relation r = ax.getRelation();
-        checkArgument(relations.contains(r),
-                "Untracked relation %s", r);
-        axioms.add(ax);
+    public void addConstraint(Constraint constraint) {
+        if (constraint instanceof Definition) {
+            addDefinition((Definition) constraint);
+        }
+        Collection<? extends Relation> constrainedRelations = constraint.getConstrainedRelations();
+        checkArgument(relations.containsAll(constrainedRelations),
+                "Some untracked relation in %s", constrainedRelations);
+        constraints.add(constraint);
+    }
+
+    public List<Constraint> getConstraints() {
+        return Stream.concat(constraints.stream(), relations.stream().map(Relation::getDefinition))
+                .collect(Collectors.toList());
     }
 
     /**
      * @return View of all axioms in this model in insertion order.
      */
     public List<Axiom> getAxioms() {
-        return List.copyOf(axioms);
+        return constraints.stream()
+                .filter(Axiom.class::isInstance).map(Axiom.class::cast)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -132,7 +142,7 @@ public class Wmm {
     public void deleteRelation(Relation relation) {
         checkArgument(relation.definition instanceof Definition.Undefined,
                 "Still defined relation %s.", relation);
-        checkArgument(axioms.stream().noneMatch(a -> a.getRelation().equals(relation)),
+        checkArgument(constraints.stream().noneMatch(c -> c instanceof Axiom && ((Axiom) c).getRelation().equals(relation)),
                 "Some axiom constrains relation %s.", relation);
         checkArgument(relations.stream().noneMatch(r -> r.getDependencies().contains(relation)),
                 "Some definition constrains relation %s.", relation);
@@ -185,8 +195,10 @@ public class Wmm {
             rel.configure(config);
         }
 
-        for (Axiom ax : axioms) {
-            ax.configure(config);
+        for (Constraint c : constraints) {
+            if (c instanceof Axiom) {
+                ((Axiom) c).configure(config);
+            }
         }
     }
 
@@ -197,7 +209,7 @@ public class Wmm {
 
     @Override
     public String toString() {
-        Stream<String> a = axioms.stream().map(Axiom::toString);
+        Stream<String> a = constraints.stream().map(Constraint::toString);
         Stream<String> r = relations.stream()
                 .filter(x -> !x.names.isEmpty() && !(x.definition instanceof Definition.Undefined) && !x.hasName(x.definition.getTerm()))
                 .map(x -> x.definition.toString());
@@ -208,7 +220,7 @@ public class Wmm {
     private void simplifyAssociatives(Class<? extends Definition> cls, BiFunction<Relation, Relation[], Definition> constructor) {
         for (Relation r : List.copyOf(relations)) {
             if (!r.names.isEmpty() || !cls.isInstance(r.definition) ||
-                    axioms.stream().anyMatch(a -> a.getRelation().equals(r))) {
+                    constraints.stream().anyMatch(c -> ((Axiom) c).getRelation().equals(r))) {
                 continue;
             }
             List<Relation> parents = relations.stream()
