@@ -185,6 +185,8 @@ public class WmmEncoder implements Encoder {
         public BooleanFormula visitIntersection(Relation rel, Relation... r) {
             BooleanFormula enc = bmgr.makeTrue();
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
+            RelationAnalysis.Knowledge[] knowledges = Stream.of(r).map(ra::getKnowledge).toArray(RelationAnalysis.Knowledge[]::new);
+            EncodingContext.EdgeEncoder[] encoders = Stream.of(r).map(context::edge).toArray(EncodingContext.EdgeEncoder[]::new);
             for (Tuple tuple : encodeSets.get(rel)) {
                 BooleanFormula edge = edge(rel, tuple);
                 if (k.containsMust(tuple)) {
@@ -192,8 +194,10 @@ public class WmmEncoder implements Encoder {
                     continue;
                 }
                 List<BooleanFormula> opt = new ArrayList<>(r.length);
-                for (Relation relation : r) {
-                    opt.add(edge(relation, tuple));
+                for (int i = 0; i < r.length; i++) {
+                    if (!knowledges[i].containsMust(tuple)) {
+                        opt.add(encoders[i].encode(tuple));
+                    }
                 }
                 enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.and(opt)));
             }
