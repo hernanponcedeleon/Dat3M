@@ -27,8 +27,8 @@ declare -a XRA_OPTS=(
     "$OPT_RA=true $OPT_MUST=true $OPT_XRA=false $OPT_ACTIVE=true $OPT_RAE=false" 
     ## [3]
     "$OPT_RA=true $OPT_MUST=true $OPT_XRA=false $OPT_ACTIVE=true $OPT_RAE=true" 
-    ## [2,5]
-    "$OPT_RA=true $OPT_MUST=false $OPT_XRA=true $OPT_ACTIVE=true $OPT_RAE=false" 
+    ## [5]
+    "$OPT_RA=true $OPT_MUST=true $OPT_XRA=true $OPT_ACTIVE=true $OPT_RAE=false" 
     # []
     "$OPT_RA=true $OPT_MUST=true $OPT_XRA=true $OPT_ACTIVE=true $OPT_RAE=true" 
 )
