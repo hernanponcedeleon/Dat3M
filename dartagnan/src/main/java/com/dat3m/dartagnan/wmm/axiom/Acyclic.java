@@ -27,6 +27,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_ENCODE_SETS;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Sets.difference;
+import static com.google.common.collect.Sets.intersection;
 
 @Options
 public class Acyclic extends Axiom {
@@ -222,8 +223,53 @@ public class Acyclic extends Axiom {
 
         logger.info("encodeTupleSet size " + result.size());
         if (reduceAcyclicityEncoding) {
+            Set<Tuple> obsolete = mustSetProducts(exec, ra.getKnowledge(rel));
+            //TODO skip this call
             reduceWithMinSets(result, exec, ra);
-            logger.info("reduced encodeTupleSet size " + result.size());
+            Set<Tuple> copy = Set.copyOf(intersection(obsolete, result));
+            if (!copy.isEmpty()) {
+                logger.warn("missed {} tuples", copy.size());
+            }
+            result.removeAll(obsolete);
+            logger.info("reduced encodeTupleSet size {}", result.size());
+        }
+        return result;
+    }
+
+    private Set<Tuple> mustSetProducts(ExecutionAnalysis exec, RelationAnalysis.Knowledge k) {
+        Set<Tuple> result = new HashSet<>();
+        Map<Event, List<Event>> map = new HashMap<>();
+        Map<Event, List<Event>> mapInverse = new HashMap<>();
+        Collection<Tuple> current = k.getMustSet();
+        while (!current.isEmpty()) {
+            List<Tuple> next = new ArrayList<>();
+            for (Tuple tuple : current) {
+                map.computeIfAbsent(tuple.getFirst(), x -> new ArrayList<>()).add(tuple.getSecond());
+                mapInverse.computeIfAbsent(tuple.getSecond(), x -> new ArrayList<>()).add(tuple.getFirst());
+            }
+            for (Tuple xy : current) {
+                Event x = xy.getFirst();
+                Event y = xy.getSecond();
+                boolean implied = exec.isImplied(y, x);
+                boolean implies = exec.isImplied(x, y);
+                for (Event z : map.getOrDefault(y, List.of())) {
+                    if ((implies || exec.isImplied(z, y)) && !exec.areMutuallyExclusive(x, z)) {
+                        Tuple xz = new Tuple(x, z);
+                        if (result.add(xz)) {
+                            next.add(xz);
+                        }
+                    }
+                }
+                for (Event w : mapInverse.getOrDefault(x, List.of())) {
+                    if ((implied || exec.isImplied(w, x)) && !exec.areMutuallyExclusive(w, y)) {
+                        Tuple wy = new Tuple(w, y);
+                        if (result.add(wy)) {
+                            next.add(wy);
+                        }
+                    }
+                }
+            }
+            current = next;
         }
         return result;
     }
@@ -253,6 +299,7 @@ public class Acyclic extends Axiom {
         List<Tuple> crossEdges = k.getMustSet().stream()
                 .filter(t -> t.isCrossThread() && !t.getFirst().is(Tag.INIT))
                 .collect(Collectors.toList());
+        logger.info("cross-edges: {}", crossEdges.size());
         Map<Event, Set<Event>> transMinSet = new HashMap<>();
         for (Tuple t : k.getMustSet()) {
             transMinSet.computeIfAbsent(t.getSecond(), x -> new HashSet<>()).add(t.getFirst());
@@ -260,20 +307,16 @@ public class Acyclic extends Axiom {
         for (Tuple crossEdge : crossEdges) {
             Event e1 = crossEdge.getFirst();
             Event e2 = crossEdge.getSecond();
-
             List<Event> ingoing = new ArrayList<>();
             ingoing.add(e1); // ingoing events + self
             k.getMustIn(e1).stream().map(Tuple::getFirst)
                     .filter(e -> exec.isImplied(e, e1))
                     .forEach(ingoing::add);
-
-
             List<Event> outgoing = new ArrayList<>();
             outgoing.add(e2); // outgoing edges + self
             k.getMustOut(e2).stream().map(Tuple::getSecond)
                     .filter(e -> exec.isImplied(e, e2))
                     .forEach(outgoing::add);
-
             for (Event in : ingoing) {
                 for (Event out : outgoing) {
                     transMinSet.computeIfAbsent(out, x -> new HashSet<>()).add(in);
@@ -291,19 +334,11 @@ public class Acyclic extends Axiom {
             Event e1 = start.getContent();
             List<DependencyGraph<Event>.Node> deps = start.getDependents();
             for (int i = deps.size() - 1; i >= 0; i--) {
-                DependencyGraph<Event>.Node end = deps.get(i);
-                Event e3 = end.getContent();
-                boolean redundant = false;
-                for (DependencyGraph<Event>.Node mid : deps.subList(0, i)) {
-                    Event e2 = mid.getContent();
-                    if (exec.isImplied(e1, e2) || exec.isImplied(e3, e2)) {
-                        if (transMinSet.getOrDefault(e3, Set.of()).contains(e2)) {
-                            redundant = true;
-                            break;
-                        }
-                    }
-                }
-                if (!redundant) {
+                Event e3 = deps.get(i).getContent();
+                if (deps.subList(0, i).stream()
+                        .map(DependencyGraph.Node::getContent)
+                        .noneMatch(e2 -> (exec.isImplied(e1, e2) || exec.isImplied(e3, e2)) &&
+                                transMinSet.getOrDefault(e3, Set.of()).contains(e2))) {
                     reduct.add(new Tuple(e1, e3));
                 }
             }
