@@ -15,6 +15,7 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
 
     private final RelationAnalysis ra;
     List<Tuple> news;
+    Map<Relation, Map<Event, List<Tuple>>> outSetMap = new HashMap<>();
 
     EncodeSets(Context analysisContext) {
         ra = analysisContext.requires(RelationAnalysis.class);
@@ -57,9 +58,17 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
         final Set<Tuple> set2 = new HashSet<>();
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
         final RelationAnalysis.Knowledge k2 = ra.getKnowledge(r2);
+        if(!outSetMap.containsKey(r1)) {
+            Map<Event, List<Tuple>> outSet = new HashMap<>();
+            for (Tuple t : k1.getMaySet()) { 
+                outSet.computeIfAbsent(t.getFirst(), key -> new ArrayList<>()).add(t);
+            }
+            outSetMap.put(r1, outSet);    
+        }
+
         for (Tuple t : news) {
             Event e = t.getSecond();
-            for (Tuple t1 : k1.getMayOut(t.getFirst())) {
+            for (Tuple t1 : outSetMap.get(r1).get(t.getFirst())) {
                 Tuple t2 = new Tuple(t1.getSecond(), e);
                 if (k2.containsMay(t2)) {
                     if (!k1.containsMust(t1)) {
@@ -96,9 +105,17 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
     public Map<Relation, Stream<Tuple>> visitTransitiveClosure(Relation rel, Relation r1) {
         HashSet<Tuple> factors = new HashSet<>();
         final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rel);
+        if(!outSetMap.containsKey(rel)) {
+            Map<Event, List<Tuple>> outSet = new HashMap<>();
+            for (Tuple t : k0.getMaySet()) { 
+                outSet.computeIfAbsent(t.getFirst(), key -> new ArrayList<>()).add(t);
+            }
+            outSetMap.put(rel, outSet);    
+        }
+
         for (Tuple t : news) {
             Event e = t.getSecond();
-            for (Tuple t1 : k0.getMayOut(t.getFirst())) {
+            for (Tuple t1 : outSetMap.get(rel).get(t.getFirst())) {
                 Tuple t2 = new Tuple(t1.getSecond(), e);
                 if (k0.containsMay(t2)) {
                     if (!k0.containsMust(t1)) {
