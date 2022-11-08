@@ -16,14 +16,19 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 
 public class SvcompProcedures {
 
+	private static final Logger logger = LogManager.getLogger(SvcompProcedures.class);
+
 	public static List<String> SVCOMPPROCEDURES = Arrays.asList(
 			"__VERIFIER_assert",
-//			"__VERIFIER_assume",
+			"__VERIFIER_assume",
 //			"assume_abort_if_not",
 			"__VERIFIER_loop_bound",
 			"__VERIFIER_loop_begin",
@@ -61,10 +66,10 @@ public class SvcompProcedures {
 			case "__VERIFIER_assert":
 				visitor.addAssertion((IExpr)ctx.call_params().exprs().accept(visitor));
 				break;
-			case "__VERIFIER_assume":
-			case "assume_abort_if_not":
-				__VERIFIER_assume(visitor, ctx);
-				break;
+			// case "__VERIFIER_assume":
+			// case "assume_abort_if_not":
+			// 	__VERIFIER_assume(visitor, ctx);
+			// 	break;
 			case "__VERIFIER_atomic_begin":
 				if(GlobalSettings.ATOMIC_AS_LOCK) {
 					__VERIFIER_atomic(visitor, true);
@@ -95,7 +100,8 @@ public class SvcompProcedures {
 				__VERIFIER_nondet(visitor, ctx, name);
 				break;
 			default:
-				throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
+				logger.warn(name + " contains an empty implementation");
+				// throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
 		}
 	}
 
