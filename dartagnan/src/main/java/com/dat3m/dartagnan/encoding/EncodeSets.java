@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 // Collections of relationships in a verification task that need to be constrained in an SMT-based verification.
@@ -15,7 +16,7 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
 
     private final RelationAnalysis ra;
     List<Tuple> news;
-    Map<Relation, Map<Event, List<Tuple>>> outSetMap = new HashMap<>();
+    Map<Relation, Function<Event, Collection<Tuple>>> outSetMap = new HashMap<>();
 
     EncodeSets(Context analysisContext) {
         ra = analysisContext.requires(RelationAnalysis.class);
@@ -58,17 +59,10 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
         final Set<Tuple> set2 = new HashSet<>();
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
         final RelationAnalysis.Knowledge k2 = ra.getKnowledge(r2);
-        if(!outSetMap.containsKey(r1)) {
-            Map<Event, List<Tuple>> outSet = new HashMap<>();
-            for (Tuple t : k1.getMaySet()) { 
-                outSet.computeIfAbsent(t.getFirst(), key -> new ArrayList<>()).add(t);
-            }
-            outSetMap.put(r1, outSet);    
-        }
-
+        final Function<Event, Collection<Tuple>> out = outSetMap.computeIfAbsent(r1, k -> k1.getMayOut());
         for (Tuple t : news) {
             Event e = t.getSecond();
-            for (Tuple t1 : outSetMap.get(r1).get(t.getFirst())) {
+            for (Tuple t1 : out.apply(t.getFirst())) {
                 Tuple t2 = new Tuple(t1.getSecond(), e);
                 if (k2.containsMay(t2)) {
                     if (!k1.containsMust(t1)) {
@@ -86,13 +80,19 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
     @Override
     public Map<Relation, Stream<Tuple>> visitDomainIdentity(Relation rel, Relation r1) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
-        return Map.of(r1, news.stream().flatMap(t -> k1.getMayOut(t.getFirst()).stream().filter(t1 -> !k1.containsMust(t1))));
+        final Function<Event, Collection<Tuple>> out = k1.getMayOut();
+        return Map.of(r1, news.stream()
+                .flatMap(t -> out.apply(t.getFirst()).stream())
+                .filter(t -> !k1.containsMust(t)));
     }
 
     @Override
     public Map<Relation, Stream<Tuple>> visitRangeIdentity(Relation rel, Relation r1) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
-        return Map.of(r1, news.stream().flatMap(t -> k1.getMayIn(t.getSecond()).stream().filter(t1 -> !k1.containsMust(t1))));
+        final Function<Event, Collection<Tuple>> in = k1.getMayIn();
+        return Map.of(r1, news.stream()
+                .flatMap(t -> in.apply(t.getSecond()).stream())
+                .filter(t -> !k1.containsMust(t)));
     }
 
     @Override
@@ -105,17 +105,10 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
     public Map<Relation, Stream<Tuple>> visitTransitiveClosure(Relation rel, Relation r1) {
         HashSet<Tuple> factors = new HashSet<>();
         final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rel);
-        if(!outSetMap.containsKey(rel)) {
-            Map<Event, List<Tuple>> outSet = new HashMap<>();
-            for (Tuple t : k0.getMaySet()) { 
-                outSet.computeIfAbsent(t.getFirst(), key -> new ArrayList<>()).add(t);
-            }
-            outSetMap.put(rel, outSet);    
-        }
-
+        final Function<Event, Collection<Tuple>> out = outSetMap.computeIfAbsent(r1, k -> k0.getMayOut());
         for (Tuple t : news) {
             Event e = t.getSecond();
-            for (Tuple t1 : outSetMap.get(rel).get(t.getFirst())) {
+            for (Tuple t1 : out.apply(t.getFirst())) {
                 Tuple t2 = new Tuple(t1.getSecond(), e);
                 if (k0.containsMay(t2)) {
                     if (!k0.containsMust(t1)) {
@@ -134,16 +127,18 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
     public Map<Relation, Stream<Tuple>> visitCriticalSections(Relation rscs) {
         List<Tuple> queue = new ArrayList<>();
         final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rscs);
+        final Function<Event, Collection<Tuple>> in = k0.getMayIn();
+        final Function<Event, Collection<Tuple>> out = k0.getMayOut();
         for (Tuple tuple : news) {
             Event lock = tuple.getFirst();
             Event unlock = tuple.getSecond();
-            for (Tuple t : k0.getMayIn(unlock)) {
+            for (Tuple t : in.apply(unlock)) {
                 Event e = t.getFirst();
                 if (lock.getGlobalId() < e.getGlobalId() && e.getGlobalId() < unlock.getGlobalId()) {
                     queue.add(t);
                 }
             }
-            for (Tuple t : k0.getMayOut(lock)) {
+            for (Tuple t : out.apply(lock)) {
                 Event e = t.getSecond();
                 if (lock.getGlobalId() < e.getGlobalId() && e.getGlobalId() < unlock.getGlobalId()) {
                     queue.add(t);

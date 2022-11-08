@@ -28,6 +28,7 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
@@ -227,6 +228,7 @@ public class WmmEncoder implements Encoder {
             final RelationAnalysis.Knowledge k2 = ra.getKnowledge(r2);
             final Set<Tuple> a1 = Sets.union(encodeSets.get(r1), k1.getMustSet());
             final Set<Tuple> a2 = Sets.union(encodeSets.get(r2), k2.getMustSet());
+            final Function<Event, Collection<Tuple>> out = k1.getMayOut();
             for (Tuple tuple : encodeSets.get(rel)) {
                 BooleanFormula expr = bmgr.makeFalse();
                 if (k.containsMust(tuple)) {
@@ -234,7 +236,7 @@ public class WmmEncoder implements Encoder {
                 } else {
                     Event x = tuple.getFirst();
                     Event z = tuple.getSecond();
-                    for (Tuple t1 : k1.getMayOut(x)) {
+                    for (Tuple t1 : out.apply(x)) {
                         Event y = t1.getSecond();
                         Tuple t2 = new Tuple(y, z);
                         if (k2.containsMay(t2)) {
@@ -251,12 +253,12 @@ public class WmmEncoder implements Encoder {
         @Override
         public BooleanFormula visitDomainIdentity(Relation rel, Relation r1) {
             BooleanFormula enc = bmgr.makeTrue();
-            final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
+            final Function<Event, Collection<Tuple>> mayOut = ra.getKnowledge(r1).getMayOut();
             for (Tuple tuple : encodeSets.get(rel)) {
                 Event e = tuple.getFirst();
                 BooleanFormula opt = bmgr.makeFalse();
                 //TODO: Optimize using minSets (but no CAT uses this anyway)
-                for (Tuple t : k1.getMayOut(e)) {
+                for (Tuple t : mayOut.apply(e)) {
                     opt = bmgr.or(opt, edge(r1, t));
                 }
                 enc = bmgr.and(enc, bmgr.equivalence(edge(rel, tuple), opt));
@@ -266,12 +268,12 @@ public class WmmEncoder implements Encoder {
         @Override
         public BooleanFormula visitRangeIdentity(Relation rel, Relation r1) {
             BooleanFormula enc = bmgr.makeTrue();
-            final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
+            final Function<Event, Collection<Tuple>> mayIn = ra.getKnowledge(r1).getMayIn();
             //TODO: Optimize using minSets (but no CAT uses this anyway)
             for (Tuple tuple : encodeSets.get(rel)) {
                 Event e = tuple.getFirst();
                 BooleanFormula opt = bmgr.makeFalse();
-                for (Tuple t : k1.getMayIn(e)) {
+                for (Tuple t : mayIn.apply(e)) {
                     opt = bmgr.or(opt, edge(r1, t));
                 }
                 enc = bmgr.and(enc, bmgr.equivalence(edge(rel, tuple), opt));
@@ -283,6 +285,7 @@ public class WmmEncoder implements Encoder {
             BooleanFormula enc = bmgr.makeTrue();
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
             final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
+            final Function<Event, Collection<Tuple>> out = k1.getMayOut();
             for (Tuple tuple : encodeSets.get(rel)) {
                 BooleanFormula edge = edge(rel, tuple);
                 if (k.containsMust(tuple)) {
@@ -295,7 +298,7 @@ public class WmmEncoder implements Encoder {
                 if (k1.containsMay(tuple)) {
                     orClause = bmgr.or(orClause, edge(r1, tuple));
                 }
-                for (Tuple t : k1.getMayOut(e1)) {
+                for (Tuple t : out.apply(e1)) {
                     Event e3 = t.getSecond();
                     if (e3.getGlobalId() != e1.getGlobalId() && e3.getGlobalId() != e2.getGlobalId() && k.containsMay(new Tuple(e3, e2))) {
                         BooleanFormula tVar = k.containsMust(t) ? edge(rel, t) : edge(r1, t);
@@ -377,17 +380,19 @@ public class WmmEncoder implements Encoder {
         public BooleanFormula visitCriticalSections(Relation rscs) {
             BooleanFormula enc = bmgr.makeTrue();
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rscs);
+            final Function<Event, Collection<Tuple>> mayIn = k.getMayIn();
+            final Function<Event, Collection<Tuple>> mayOut = k.getMayOut();
             for (Tuple tuple : encodeSets.get(rscs)) {
                 Event lock = tuple.getFirst();
                 Event unlock = tuple.getSecond();
                 BooleanFormula relation = execution(tuple);
-                for (Tuple t : k.getMayIn(unlock)) {
+                for (Tuple t : mayIn.apply(unlock)) {
                     Event y = t.getFirst();
                     if (lock.getGlobalId() < y.getGlobalId() && y.getGlobalId() < unlock.getGlobalId()) {
                         relation = bmgr.and(relation, bmgr.not(edge(rscs, t)));
                     }
                 }
-                for (Tuple t : k.getMayOut(lock)) {
+                for (Tuple t : mayOut.apply(lock)) {
                     Event y = t.getSecond();
                     if (lock.getGlobalId() < y.getGlobalId() && y.getGlobalId() < unlock.getGlobalId()) {
                         relation = bmgr.and(relation, bmgr.not(edge(rscs, t)));
@@ -402,16 +407,18 @@ public class WmmEncoder implements Encoder {
             BooleanFormula enc = bmgr.makeTrue();
             BooleanFormula unpredictable = bmgr.makeFalse();
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rmw);
+            final Function<Event, Collection<Tuple>> mayIn = k.getMayIn();
+            final Function<Event, Collection<Tuple>> mayOut = k.getMayOut();
             for (Event store : program.getCache().getEvents(
                     FilterIntersection.get(FilterBasic.get(Tag.WRITE), FilterBasic.get(Tag.EXCL)))) {
                 checkState(store instanceof MemEvent, "non-memory event participating in '" + rmw.getNameOrTerm() + "'");
                 BooleanFormula storeExec = bmgr.makeFalse();
-                for (Tuple t : k.getMayIn(store)) {
+                for (Tuple t : mayIn.apply(store)) {
                     MemEvent load = (MemEvent) t.getFirst();
                     BooleanFormula sameAddress = context.sameAddress(load, (MemEvent) store);
                     // Encode if load and store form an exclusive pair
                     BooleanFormula isPair = exclPair(load, store);
-                    BooleanFormula pairingCond = pairingCond(load, store, k);
+                    BooleanFormula pairingCond = pairingCond(load, store, mayIn, mayOut);
                     // For ARMv8, the store can be executed if addresses mismatch, but behaviour is "constrained unpredictable"
                     // The implementation does not include all possible unpredictable cases: in case of address
                     // mismatch, addresses of read and write are unknown, i.e. read and write can use any address.
@@ -447,15 +454,15 @@ public class WmmEncoder implements Encoder {
             return bmgr.makeVariable("excl(" + load.getGlobalId() + "," + store.getGlobalId() + ")");
         }
 
-        private BooleanFormula pairingCond(Event load, Event store, RelationAnalysis.Knowledge k) {
+        private BooleanFormula pairingCond(Event load, Event store, Function<Event, Collection<Tuple>> mayIn, Function<Event, Collection<Tuple>> mayOut) {
             BooleanFormula pairingCond = bmgr.and(context.execution(load), context.controlFlow(store));
-            for (Tuple t : k.getMayIn(store)) {
+            for (Tuple t : mayIn.apply(store)) {
                 Event otherLoad = t.getFirst();
                 if (otherLoad.getGlobalId() > load.getGlobalId()) {
                     pairingCond = bmgr.and(pairingCond, bmgr.not(context.execution(otherLoad)));
                 }
             }
-            for (Tuple t : k.getMayOut(load)) {
+            for (Tuple t : mayOut.apply(load)) {
                 Event otherStore = t.getSecond();
                 if (otherStore.getGlobalId() < store.getGlobalId()) {
                     pairingCond = bmgr.and(pairingCond, bmgr.not(context.controlFlow(otherStore)));

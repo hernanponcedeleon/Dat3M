@@ -170,16 +170,23 @@ public class SymmetryEncoder implements Encoder {
             outEvents.add(t.getSecond());
         }
 
+        final List<RelationAnalysis.Knowledge> knowledge = axioms.stream()
+                .map(a -> ra.getKnowledge(a.getRelation()))
+                .collect(Collectors.toList());
+        final List<Function<Event, Collection<Tuple>>> mustIn = knowledge.stream()
+                .map(RelationAnalysis.Knowledge::getMustIn)
+                .collect(Collectors.toList());
+        final List<Function<Event, Collection<Tuple>>> mustOut = knowledge.stream()
+                .map(RelationAnalysis.Knowledge::getMustOut)
+                .collect(Collectors.toList());
         final Map<Event, Integer> combInDegree = new HashMap<>(inEvents.size());
         final Map<Event, Integer> combOutDegree = new HashMap<>(outEvents.size());
         for (Event e : inEvents) {
-            int syncDeg = axioms.stream()
-                    .mapToInt(ax -> ra.getKnowledge(ax.getRelation()).getMustIn(e).size() + 1).max().orElse(0);
+            int syncDeg = mustIn.stream().mapToInt(m -> m.apply(e).size() + 1).max().orElse(0);
             combInDegree.put(e, syncDeg);
         }
         for (Event e : outEvents) {
-            int syncDec = axioms.stream()
-                    .mapToInt(ax -> ra.getKnowledge(ax.getRelation()).getMustOut(e).size() + 1).max().orElse(0);
+            int syncDec = mustOut.stream().mapToInt(m -> m.apply(e).size() + 1).max().orElse(0);
             combOutDegree.put(e, syncDec);
         }
 

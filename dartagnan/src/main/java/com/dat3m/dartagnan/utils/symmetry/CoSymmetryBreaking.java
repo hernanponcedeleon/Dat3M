@@ -122,13 +122,15 @@ public class CoSymmetryBreaking {
         // axioms. The sync-degree of w for axiom(r) is computed via must(r).
         List<Axiom> axioms = task.getMemoryModel().getAxioms();
         Map<Store, Integer> syncDegreeMap = new HashMap<>(writes.size());
-        for (Store w : writes) {
-            int syncDeg = 0;
-            for (Axiom ax : axioms) {
-                final RelationAnalysis.Knowledge k = ra.getKnowledge(ax.getRelation());
-                syncDeg = Math.max(syncDeg, (1 + k.getMustIn(w).size()) * (1 + k.getMustOut(w).size()));
+        for (final Axiom ax : axioms) {
+            final RelationAnalysis.Knowledge k = ra.getKnowledge(ax.getRelation());
+            final Function<Event, Collection<Tuple>> mustIn = k.getMustIn();
+            final Function<Event, Collection<Tuple>> mustOut = k.getMustOut();
+            for (final Store w : writes) {
+                final int in = 1 + mustIn.apply(w).size();
+                final int out = 1 + mustOut.apply(w).size();
+                syncDegreeMap.merge(w, in * out, Integer::sum);
             }
-            syncDegreeMap.put(w, syncDeg);
         }
 
         // Sort the writes by sync-degree (highest first).

@@ -181,13 +181,19 @@ public class RelationAnalysis {
     public Set<Tuple> findTransitivelyImpliedCo(Relation co) {
         final RelationAnalysis.Knowledge k = getKnowledge(co);
         Set<Tuple> transCo = new HashSet<>();
+        final Function<Event, Collection<Tuple>> mustIn = k.getMustIn();
+        final Function<Event, Collection<Tuple>> mustOut = k.getMustOut();
         for (final Tuple t : k.may) {
             final MemEvent x = (MemEvent) t.getFirst();
             final MemEvent z = (MemEvent) t.getSecond();
-            final boolean hasIntermediary = k.getMustOut(x).stream().map(Tuple::getSecond)
-                    .anyMatch(y -> y != x && y != z && (exec.isImplied(x, y) || exec.isImplied(z, y)) && !k.containsMay(new Tuple(z, y))) ||
-                    k.getMustIn(z).stream().map(Tuple::getFirst)
-                            .anyMatch(y -> y != x && y != z && (exec.isImplied(x, y) || exec.isImplied(z, y)) && !k.containsMay(new Tuple(y, x)));
+            final boolean hasIntermediary = mustOut.apply(x).stream().map(Tuple::getSecond)
+                            .anyMatch(y -> y != x && y != z &&
+                                    (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
+                                    !k.containsMay(new Tuple(z, y))) ||
+                    mustIn.apply(z).stream().map(Tuple::getFirst)
+                            .anyMatch(y -> y != x && y != z &&
+                                    (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
+                                    !k.containsMay(new Tuple(y, x)));
             if (hasIntermediary) {
                 transCo.add(t);
             }
@@ -267,13 +273,19 @@ public class RelationAnalysis {
         public boolean containsMay(Tuple t) {
             return may.contains(t);
         }
-        public Set<Tuple> getMayIn(Event second) {
-            checkNotNull(second);
-            return may.stream().filter(t -> t.getSecond().equals(second)).collect(toSet());
+        public Function<Event, Collection<Tuple>> getMayIn() {
+            final Map<Event, Collection<Tuple>> map = new HashMap<>();
+            for (final Tuple t : may) {
+                map.computeIfAbsent(t.getSecond(), k -> new ArrayList<>()).add(t);
+            }
+            return e -> map.getOrDefault(e, List.of());
         }
-        public Set<Tuple> getMayOut(Event first) {
-            checkNotNull(first);
-            return may.stream().filter(t -> t.getFirst().equals(first)).collect(toSet());
+        public Function<Event, Collection<Tuple>> getMayOut() {
+            final Map<Event, Collection<Tuple>> map = new HashMap<>();
+            for (final Tuple t : may) {
+                map.computeIfAbsent(t.getFirst(), k -> new ArrayList<>()).add(t);
+            }
+            return e -> map.getOrDefault(e, List.of());
         }
         public Set<Tuple> getMustSet() {
             return must;
@@ -281,13 +293,19 @@ public class RelationAnalysis {
         public boolean containsMust(Tuple t) {
             return must.contains(t);
         }
-        public Set<Tuple> getMustIn(Event second) {
-            checkNotNull(second);
-            return must.stream().filter(t -> t.getSecond().equals(second)).collect(toSet());
+        public Function<Event, Collection<Tuple>> getMustIn() {
+            final Map<Event, Collection<Tuple>> map = new HashMap<>();
+            for (final Tuple t : must) {
+                map.computeIfAbsent(t.getSecond(), k -> new ArrayList<>()).add(t);
+            }
+            return e -> map.getOrDefault(e, List.of());
         }
-        public Set<Tuple> getMustOut(Event first) {
-            checkNotNull(first);
-            return must.stream().filter(t -> t.getFirst().equals(first)).collect(toSet());
+        public Function<Event, Collection<Tuple>> getMustOut() {
+            final Map<Event, Collection<Tuple>> map = new HashMap<>();
+            for (final Tuple t : must) {
+                map.computeIfAbsent(t.getFirst(), k -> new ArrayList<>()).add(t);
+            }
+            return e -> map.getOrDefault(e, List.of());
         }
         @Override
         public String toString() {

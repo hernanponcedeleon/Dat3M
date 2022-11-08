@@ -26,6 +26,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
@@ -171,6 +172,7 @@ public class PropertyEncoder implements Encoder {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         Relation rf = memoryModel.getRelation(RelationNameRepository.RF);
         final EncodingContext.EdgeEncoder edge = context.edge(rf);
+        final Function<Event, Collection<Tuple>> mayIn = ra.getKnowledge(rf).getMayIn();
         // Compute "stuckness": A thread is stuck if it reaches a spinloop bound event
         // while reading from a co-maximal write.
         Map<Thread, BooleanFormula> isStuckMap = new HashMap<>();
@@ -185,7 +187,7 @@ public class PropertyEncoder implements Encoder {
                 BooleanFormula allCoMaximalLoad = bmgr.makeTrue();
                 for (Load load : pair.loads) {
                     BooleanFormula coMaximalLoad = bmgr.makeFalse();
-                    for (Tuple rfEdge : ra.getKnowledge(rf).getMayIn(load)) {
+                    for (Tuple rfEdge : mayIn.apply(load)) {
                         coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(edge.encode(rfEdge), lastCoVar(rfEdge.getFirst())));
                     }
                     allCoMaximalLoad = bmgr.and(allCoMaximalLoad, bmgr.implication(context.execution(load), coMaximalLoad));
@@ -272,6 +274,7 @@ public class PropertyEncoder implements Encoder {
                 .map(Tuple::getFirst).collect(Collectors.toSet());
         // ---- Construct encoding ----
         BooleanFormula enc = bmgr.makeTrue();
+        final Function<Event, Collection<Tuple>> out = knowledge.getMayOut();
         for (Event writeEvent : writes) {
             MemEvent w1 = (MemEvent) writeEvent;
             if (dominatedWrites.contains(w1)) {
@@ -280,7 +283,7 @@ public class PropertyEncoder implements Encoder {
             }
             BooleanFormula isLast = context.execution(w1);
             // ---- Find all possibly overwriting writes ----
-            for (Tuple t : knowledge.getMayOut(w1)) {
+            for (Tuple t : out.apply(w1)) {
                 if (transCo.contains(t)) {
                     // We can skip the co-edge (w1,w2), because there will be an intermediate write w3
                     // that already witnesses that w1 is not last.

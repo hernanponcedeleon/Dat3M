@@ -21,6 +21,7 @@ import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
@@ -304,17 +305,19 @@ public class Acyclic extends Axiom {
         for (Tuple t : k.getMustSet()) {
             transMinSet.computeIfAbsent(t.getSecond(), x -> new HashSet<>()).add(t.getFirst());
         }
+        final Function<Event, Collection<Tuple>> mustIn = k.getMustIn();
+        final Function<Event, Collection<Tuple>> mustOut = k.getMustOut();
         for (Tuple crossEdge : crossEdges) {
             Event e1 = crossEdge.getFirst();
             Event e2 = crossEdge.getSecond();
             List<Event> ingoing = new ArrayList<>();
             ingoing.add(e1); // ingoing events + self
-            k.getMustIn(e1).stream().map(Tuple::getFirst)
+            mustIn.apply(e1).stream().map(Tuple::getFirst)
                     .filter(e -> exec.isImplied(e, e1))
                     .forEach(ingoing::add);
             List<Event> outgoing = new ArrayList<>();
             outgoing.add(e2); // outgoing edges + self
-            k.getMustOut(e2).stream().map(Tuple::getSecond)
+            mustOut.apply(e2).stream().map(Tuple::getSecond)
                     .filter(e -> exec.isImplied(e, e2))
                     .forEach(outgoing::add);
             for (Event in : ingoing) {
