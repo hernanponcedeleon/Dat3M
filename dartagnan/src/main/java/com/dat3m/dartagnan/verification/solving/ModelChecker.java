@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
@@ -41,6 +40,7 @@ import java.util.Optional;
 import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 import static com.dat3m.dartagnan.configuration.Property.CAT;
 import static java.lang.Boolean.TRUE;
+import static java.util.stream.Collectors.toList;
 
 public abstract class ModelChecker {
 
@@ -114,7 +114,7 @@ public abstract class ModelChecker {
     }
 
     private static void updateAssertions(Program program) {
-        List<Event> assertions = program.getCache().getEvents(FilterBasic.get(ASSERTION));
+        List<Event> assertions = program.getEvents().stream().filter(e -> e.is(ASSERTION)).collect(toList());
         AbstractAssert ass = new AssertTrue();
         if(!assertions.isEmpty()) {
             ass = new AssertInline((Local)assertions.get(0));

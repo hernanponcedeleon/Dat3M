@@ -5,13 +5,9 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.Result;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -171,7 +167,7 @@ public class WitnessBuilder {
 		List<Event> execEvents = new ArrayList<>();
 		// TODO: we recently added many cline to many events and this might affect the witness generation.
 		Predicate<Event> executedCEvents = e -> Boolean.TRUE.equals(model.evaluate(context.execution(e))) &&  e.getCLine() > - 1;
-		execEvents.addAll(context.getTask().getProgram().getCache().getEvents(FilterBasic.get(Tag.INIT)).stream().filter(executedCEvents).collect(Collectors.toList()));
+		execEvents.addAll(context.getTask().getProgram().getEvents(Init.class).stream().filter(executedCEvents).collect(Collectors.toList()));
 		execEvents.addAll(context.getTask().getProgram().getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));
 		Map<Integer, List<Event>> map = new HashMap<>();
         for(Event e : execEvents) {
@@ -194,8 +190,9 @@ public class WitnessBuilder {
 		List<Event> result = new ArrayList<>();
 		Set<Event> processedEvents = new HashSet<>(); // Maintained for constant lookup time
 		// All the atomic blocks in the code that have to stay together in any execution
-		List<List<Event>> atomicBlocks = program.getCache().getEvents(FilterBasic.get(Tag.SVCOMP.SVCOMPATOMIC))
-				.stream().map(e -> ((EndAtomic)e).getBlock().stream().
+		List<List<Event>> atomicBlocks = program.getEvents().stream()
+				.filter(e -> e.is(Tag.SVCOMP.SVCOMPATOMIC))
+				.map(e -> ((EndAtomic)e).getBlock().stream().
 						filter(order::contains).
 						collect(Collectors.toList()))
 				.collect(Collectors.toList());

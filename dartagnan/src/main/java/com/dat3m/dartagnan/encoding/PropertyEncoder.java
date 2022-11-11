@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
-import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -89,8 +88,13 @@ public class PropertyEncoder implements Encoder {
     public BooleanFormula encodeBoundEventExec() {
         logger.info("Encoding bound events execution");
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        return program.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.BOUND), FilterBasic.get(Tag.SPINLOOP)))
-                .stream().map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
+        List<BooleanFormula> enc = new ArrayList<>();
+        for (Event e : program.getEvents()) {
+            if (e.is(Tag.BOUND) && !e.is(Tag.SPINLOOP)) {
+                enc.add(context.execution(e));
+            }
+        }
+        return bmgr.or(enc);
     }
 
     public BooleanFormula encodeAssertions() {
@@ -229,7 +233,7 @@ public class PropertyEncoder implements Encoder {
                 if(t1.getId() == t2.getId()) {
                     continue;
                 }
-                for(Event e1 : t1.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.WRITE), FilterBasic.get(Tag.INIT)))) {
+                for(Event e1 : t1.getCache().getEvents(FilterMinus.get(FilterBasic.get(WRITE), FilterBasic.get(Tag.INIT)))) {
                     MemEvent w = (MemEvent)e1;
                     for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.INIT)))) {
                         MemEvent m = (MemEvent)e2;
@@ -259,8 +263,7 @@ public class PropertyEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final EncodingContext.EdgeEncoder edge = context.edge(co);
         final RelationAnalysis.Knowledge knowledge = ra.getKnowledge(co);
-        final List<Event> initEvents = program.getCache().getEvents(FilterBasic.get(INIT));
-        final List<Event> writes = program.getCache().getEvents(FilterBasic.get(WRITE));
+        final List<Init> initEvents = program.getEvents(Init.class);
         final boolean doEncodeFinalAddressValues = program.getFormat() == LITMUS;
         // Find transitively implied coherences. We can use these to reduce the encoding.
         final Set<Tuple> transCo = ra.findTransitivelyImpliedCo(co);
@@ -271,7 +274,10 @@ public class PropertyEncoder implements Encoder {
         // ---- Construct encoding ----
         BooleanFormula enc = bmgr.makeTrue();
         final Function<Event, Collection<Tuple>> out = knowledge.getMayOut();
-        for (Event writeEvent : writes) {
+        for (Event writeEvent : program.getEvents()) {
+            if (!writeEvent.is(WRITE)) {
+                continue;
+            }
             MemEvent w1 = (MemEvent) writeEvent;
             if (dominatedWrites.contains(w1)) {
                 enc = bmgr.and(enc, bmgr.not(lastCoVar(w1)));
@@ -293,8 +299,7 @@ public class PropertyEncoder implements Encoder {
             enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, isLast));
             if (doEncodeFinalAddressValues) {
                 // ---- Encode final values of addresses ----
-                for (Event initEvent : initEvents) {
-                    Init init = (Init) initEvent;
+                for (Init init : initEvents) {
                     if (!alias.mayAlias(w1, init)) {
                         continue;
                     }

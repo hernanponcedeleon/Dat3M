@@ -8,8 +8,6 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.filter.FilterIntersection;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -357,7 +355,7 @@ public class WmmEncoder implements Encoder {
         public BooleanFormula visitFences(Relation rel, FilterAbstract fenceSet) {
             BooleanFormula enc = bmgr.makeTrue();
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
-            List<Event> fences = program.getCache().getEvents(fenceSet);
+            List<Event> fences = program.getEvents().stream().filter(fenceSet::filter).collect(toList());
             EncodingContext.EdgeEncoder encoder = context.edge(rel);
             for (Tuple tuple : encodeSets.get(rel)) {
                 Event e1 = tuple.getFirst();
@@ -443,8 +441,10 @@ public class WmmEncoder implements Encoder {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rmw);
             final Function<Event, Collection<Tuple>> mayIn = k.getMayIn();
             final Function<Event, Collection<Tuple>> mayOut = k.getMayOut();
-            for (Event store : program.getCache().getEvents(
-                    FilterIntersection.get(FilterBasic.get(Tag.WRITE), FilterBasic.get(Tag.EXCL)))) {
+            for (Event store : program.getEvents()) {
+                if (!store.is(Tag.WRITE) || !store.is(Tag.EXCL)) {
+                    continue;
+                }
                 checkState(store instanceof MemEvent, "non-memory event participating in '" + rmw.getNameOrTerm() + "'");
                 BooleanFormula storeExec = bmgr.makeFalse();
                 for (Tuple t : mayIn.apply(store)) {
@@ -555,8 +555,8 @@ public class WmmEncoder implements Encoder {
         public BooleanFormula visitCoherence(Relation co) {
             List<BooleanFormula> enc = new ArrayList<>();
             boolean idl = !context.useSATEncoding;
-            List<MemEvent> allWrites = program.getCache().getEvents(FilterBasic.get(WRITE)).stream()
-                    .map(MemEvent.class::cast)
+            List<MemEvent> allWrites = program.getEvents(MemEvent.class).stream()
+                    .filter(e -> e.is(WRITE))
                     .sorted(Comparator.comparingInt(Event::getCId))
                     .collect(toList());
             EncodingContext.EdgeEncoder edge = context.edge(co);

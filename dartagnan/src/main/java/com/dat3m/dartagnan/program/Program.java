@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.program.event.EventCache;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
@@ -11,6 +10,7 @@ import com.dat3m.dartagnan.program.memory.Memory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Program {
 
@@ -20,7 +20,6 @@ public class Program {
 	private final List<Thread> threads;
 	private final Memory memory;
 	private Arch arch;
-    private EventCache cache;
     private int unrollingBound = 0;
     private boolean isCompiled;
     private SourceLanguage format;
@@ -92,27 +91,24 @@ public class Program {
 		threads.add(t);
 	}
 
-    public EventCache getCache(){
-        if(cache == null){
-            cache = new EventCache(getEvents());
-        }
-        return cache;
-    }
-
     public void clearCache(boolean clearThreadCaches){
         if (clearThreadCaches) {
             for (Thread t : threads) {
                 t.clearCache();
             }
         }
-    	cache = null;
     }
 
     public List<Thread> getThreads() {
         return threads;
     }
 
-	public List<Event> getEvents(){
+    /**
+     * Iterates all events in this program.
+     *
+     * @return {@code cId}-ordered complete sequence of all events in this program.
+     */
+	public List<Event> getEvents() {
         // TODO: Why don't we use the cache if available?
         List<Event> events = new ArrayList<>();
 		for(Thread t : threads){
@@ -120,6 +116,17 @@ public class Program {
 		}
 		return events;
 	}
+
+    /**
+     * Iterates a subset of events in this program.
+     *
+     * @param cls Class of events to be selected.
+     * @return {@code cId}-ordered complete sequence of all events of class {@code cls} in this program.
+     * @param <T> Desired subclass of {@link Event}.
+     */
+    public <T extends Event> List<T> getEvents(Class<T> cls) {
+        return getEvents().stream().filter(cls::isInstance).map(cls::cast).collect(Collectors.toList());
+    }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
@@ -142,6 +149,6 @@ public class Program {
         isCompiled = true;
         return true;
     }
-    
+
     public enum SourceLanguage {LITMUS, BOOGIE;}
 }

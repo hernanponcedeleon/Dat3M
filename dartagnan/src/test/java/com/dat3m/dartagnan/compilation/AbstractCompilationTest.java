@@ -2,9 +2,7 @@ package com.dat3m.dartagnan.compilation;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.filter.FilterAbstract;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.filter.FilterUnion;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
@@ -126,18 +124,21 @@ public abstract class AbstractCompilationTest {
 
     @Test
     public void testIncremental() throws Exception {
-    	// The following have RCU features that hardware models do not support
-    	FilterAbstract rcu = FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_LOCK), 
-    			FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_UNLOCK), FilterBasic.get(Tag.Linux.RCU_SYNC)));
-    	
     	Result expected = getCompilationBreakers().contains(path) ? Result.FAIL : Result.PASS;
     	
-    	if(task1Provider.get().getProgram().getCache().getEvents(rcu).isEmpty()) {
+    	if(task1Provider.get().getProgram().getEvents().stream().noneMatch(AbstractCompilationTest::isRcuOrLock)) {
             IncrementalSolver s1 = IncrementalSolver.run(context1Provider.get(), prover1Provider.get(), task1Provider.get());
         	if(s1.getResult().equals(Result.PASS)) {
                 IncrementalSolver s2 = IncrementalSolver.run(context2Provider.get(), prover2Provider.get(), task2Provider.get());
         		assertEquals(expected, s2.getResult());
         	}
     	}
+    }
+
+    private static boolean isRcuOrLock(Event e) {
+        // The following have features (locks and RCU) that hardware models do not support
+        return Stream.of(
+                Tag.Linux.RCU_LOCK, Tag.Linux.RCU_UNLOCK, Tag.Linux.RCU_SYNC)
+                .anyMatch(e::is);
     }
 }

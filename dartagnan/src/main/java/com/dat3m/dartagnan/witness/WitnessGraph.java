@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.google.common.collect.Lists;
@@ -82,7 +83,7 @@ public class WitnessGraph extends ElemWithAttributes {
 		BooleanFormula enc = bmgr.makeTrue();
 		List<Event> previous = new ArrayList<>();
 		for(Edge edge : edges.stream().filter(Edge::hasCline).collect(Collectors.toList())) {
-			List<Event> events = program.getCache().getEvents(FilterBasic.get(MEMORY)).stream()
+			List<Event> events = program.getEvents(MemEvent.class).stream()
 					.filter(e -> e.getCLine() == edge.getCline())
 					.collect(Collectors.toList());
 			if(!previous.isEmpty() && !events.isEmpty()) {
@@ -96,20 +97,18 @@ public class WitnessGraph extends ElemWithAttributes {
 			// FIXME: The reliance on "globalId" for matching is very fragile (see comment in WitnessBuilder)
 			if(edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(LOADEDVALUE.toString())) {
 				int id = Integer.parseInt(edge.getAttributed(EVENTID.toString()));
-				if(program.getCache().getEvents(FilterBasic.get(READ)).stream().anyMatch(e -> e.getGlobalId() == id)) {
-					Load load = (Load)program.getCache().getEvents(FilterBasic.get(READ)).stream()
-							.filter(e -> e.getGlobalId() == id).findFirst().get();
+				Optional<Load> load = program.getEvents(Load.class).stream().filter(e -> e.getGlobalId() == id).findFirst();
+				if (load.isPresent()) {
 					BigInteger value = new BigInteger(edge.getAttributed(LOADEDVALUE.toString()));
-					enc = bmgr.and(enc, context.equal(context.result(load), imgr.makeNumber(value)));
+					enc = bmgr.and(enc, context.equal(context.result(load.get()), imgr.makeNumber(value)));
 				}
 			}
 			if(edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(STOREDVALUE.toString())) {
 				int id = Integer.parseInt(edge.getAttributed(EVENTID.toString()));
-				if(program.getCache().getEvents(FilterBasic.get(WRITE)).stream().anyMatch(e -> e.getGlobalId() == id)) {
-					Store store = (Store)program.getCache().getEvents(FilterBasic.get(WRITE)).stream()
-							.filter(e -> e.getGlobalId() == id).findFirst().get();
+				Optional<Store> store = program.getEvents(Store.class).stream().filter(e -> e.getGlobalId() == id).findFirst();
+				if (store.isPresent()) {
 					BigInteger value = new BigInteger(edge.getAttributed(STOREDVALUE.toString()));
-					enc = bmgr.and(enc, context.equal(context.value(store), imgr.makeNumber(value)));
+					enc = bmgr.and(enc, context.equal(context.value(store.get()), imgr.makeNumber(value)));
 				}
 			}
 		}

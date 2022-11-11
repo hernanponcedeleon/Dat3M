@@ -75,6 +75,7 @@ public class Acyclic extends Axiom {
     @Override
     public void configure(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
+        logger.info("{}: {}", REDUCE_ACYCLICITY_ENCODE_SETS, reduceAcyclicityEncoding);
     }
 
     @Override
