@@ -14,17 +14,23 @@ OPT_XRA="--wmm.analysis.extendedRelationAnalysis"
 OPT_ACTIVE="--encoding.activeSets"
 OPT_RAE="--encoding.wmm.reduceAcyclicityEncodeSets"
 
-# Combinations
+## Combinations
 CAV19="$OPT_RA=true $OPT_MUST=false $OPT_XRA=false $OPT_ACTIVE=true $OPT_RAE=false" 
 XRA="$OPT_RA=true $OPT_MUST=true $OPT_XRA=true $OPT_ACTIVE=true $OPT_RAE=false" 
 XRA_ACY="$OPT_RA=true $OPT_MUST=true $OPT_XRA=true $OPT_ACTIVE=true $OPT_RAE=true" 
 
-declare -a BENCHMARKS=( "locks/ttas-5" "locks/ticketlock-6" "locks/mutex-4" "locks/spinlock-5" "locks/linuxrwlock-3" "locks/mutex_musl-4" "lfds/safe_stack-3" "lfds/chase-lev-5" "lfds/dglm-3" "lfds/ms-3" "lfds/treiber-3" )
 declare -a METHODS=( "caat assume" )
 declare -a XRA_OPTS=( "$CAV19" "$XRA" "$XRA_ACY" )
 
 CAT=$1
 TARGET=$2
+
+if [ "$TARGET" == "POWER" ]; then
+    ## Smaller instances for POWER
+    declare -a BENCHMARKS=( "locks/ttas-5" "locks/ticketlock-6" "locks/mutex-3" "locks/spinlock-5" "locks/linuxrwlock-3" "locks/mutex_musl-3" "lfds/safe_stack-3" "lfds/chase-lev-5" "lfds/dglm-3" "lfds/ms-3" "lfds/treiber-3" )
+else
+    declare -a BENCHMARKS=( "locks/ttas-5" "locks/ticketlock-6" "locks/mutex-4" "locks/spinlock-5" "locks/linuxrwlock-3" "locks/mutex_musl-4" "lfds/safe_stack-3" "lfds/chase-lev-5" "lfds/dglm-3" "lfds/ms-3" "lfds/treiber-3" )
+fi
 
 for METHOD in ${METHODS[@]}; do
     for XRA_OPT in "${XRA_OPTS[@]}"; do
