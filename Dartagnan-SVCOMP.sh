@@ -22,15 +22,7 @@ else
 
     cflags="-DSVCOMP -DCUSTOM_VERIFIER_ASSERT -fno-vectorize -fno-slp-vectorize"
     smackflags="-q -t --no-memory-splitting"
-    
-    svcompflags="--method=assume --program.processing.constantPropagation=false"
-    if ! grep -q "pthread" $programpath; then
-        cflags+=" -O3"
-        smackflags+=" --integer-encoding bit-vector"
-        svcompflags+=" cat/sc.cat"
-    else
-        svcompflags+=" --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat"
-    fi
+    svcompflags="--method=assume --program.processing.constantPropagation=false --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat"
 
     export DAT3M_HOME=$(pwd)
     export DAT3M_OUTPUT=$DAT3M_HOME/output
