@@ -57,7 +57,7 @@ public class C11LFDSTest extends AbstractCTest {
             {"dglm-3-CAS-relaxed", C11, FAIL},
             // {"ms-3", C11, UNKNOWN},
             {"ms-3-CAS-relaxed", C11, FAIL},
-            {"treiber-3", C11, UNKNOWN},
+            // {"treiber-3", C11, UNKNOWN},
             {"treiber-3-CAS-relaxed", C11, FAIL},
             {"chase-lev-5", C11, PASS},
             // These ones have an extra thief that violate the assertion
