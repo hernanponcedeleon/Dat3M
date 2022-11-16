@@ -41,7 +41,7 @@ public class C11LocksTest extends AbstractCTest {
 
     @Override
     protected long getTimeout() {
-        return 60000;
+        return 180000;
     }
 
     @Override
