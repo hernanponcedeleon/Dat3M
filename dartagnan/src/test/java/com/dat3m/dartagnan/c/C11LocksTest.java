@@ -75,7 +75,9 @@ public class C11LocksTest extends AbstractCTest {
             {"mutex_musl-3-acq2rx_lock", C11, FAIL},
             {"mutex_musl-3-rel2rx_futex", C11, UNKNOWN},
             {"mutex_musl-3-rel2rx_unlock", C11, FAIL},
-            {"seqlock-6", C11, UNKNOWN},
+            // The actual result is PASS, but CAAT returns UNKNOWN
+            // because we do not refine for the bound check 
+            {"seqlock-6", C11, PASS},
 		});
     }
 
