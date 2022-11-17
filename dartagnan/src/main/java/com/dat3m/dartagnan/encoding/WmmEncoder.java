@@ -528,102 +528,65 @@ public class WmmEncoder implements Encoder {
 
         @Override
         public BooleanFormula visitMemoryOrder(Relation co) {
-            return context.useSATEncoding ? encodeCoWithSAT(co) : encodeCoWithIDL(co);
-        }
-
-        private BooleanFormula encodeCoWithIDL(Relation co) {
-            IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
+            List<BooleanFormula> enc = new ArrayList<>();
+            boolean idl = !context.useSATEncoding;
             List<MemEvent> allWrites = program.getCache().getEvents(FilterBasic.get(WRITE)).stream()
                     .map(MemEvent.class::cast)
-                    .sorted(Comparator.comparingInt(Event::getGlobalId))
+                    .sorted(Comparator.comparingInt(Event::getCId))
                     .collect(toList());
-            final RelationAnalysis.Knowledge k = ra.getKnowledge(co);
-            Set<Tuple> transCo = ra.findTransitivelyImpliedCo(co);
-            BooleanFormula enc = bmgr.makeTrue();
-            // ---- Encode clock conditions (init = 0, non-init > 0) ----
-            NumeralFormula.IntegerFormula zero = imgr.makeNumber(0);
-            for (MemEvent w : allWrites) {
-                NumeralFormula.IntegerFormula clock = context.memoryOrderClock(w);
-                enc = bmgr.and(enc, w.is(INIT) ? imgr.equal(clock, zero) : imgr.greaterThan(clock, zero));
-            }
-
-            // ---- Encode coherences ----
-            for (int i = 0; i < allWrites.size() - 1; i++) {
-                MemEvent w1 = allWrites.get(i);
-                for (MemEvent w2 : allWrites.subList(i + 1, allWrites.size())) {
-                    Tuple t = new Tuple(w1, w2);
-                    boolean forwardPossible = k.containsMay(t);
-                    boolean backwardPossible = k.containsMay(t.getInverse());
-                    if (!forwardPossible && !backwardPossible) {
-                        continue;
-                    }
-                    BooleanFormula execPair = execution(t);
-                    BooleanFormula sameAddress = context.sameAddress(w1, w2);
-                    BooleanFormula pairingCond = bmgr.and(execPair, sameAddress);
-                    BooleanFormula fCond = (w1.is(INIT) || transCo.contains(t)) ? bmgr.makeTrue() :
-                            imgr.lessThan(context.memoryOrderClock(w1), context.memoryOrderClock(w2));
-                    BooleanFormula bCond = (w2.is(INIT) || transCo.contains(t.getInverse())) ? bmgr.makeTrue() :
-                            imgr.lessThan(context.memoryOrderClock(w2), context.memoryOrderClock(w1));
-                    BooleanFormula coF = forwardPossible ? edge(co, new Tuple(w1, w2)) : bmgr.makeFalse();
-                    BooleanFormula coB = backwardPossible ? edge(co, new Tuple(w2, w1)) : bmgr.makeFalse();
-                    enc = bmgr.and(enc,
-                            bmgr.implication(coF, fCond),
-                            bmgr.implication(coB, bCond),
-                            bmgr.equivalence(pairingCond, bmgr.or(coF, coB))
-                    );
+            RelationAnalysis.Knowledge k = ra.getKnowledge(co);
+            Set<Tuple> transCo = idl ? ra.findTransitivelyImpliedCo(co) : null;
+            IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
+            if (idl) {
+                // ---- Encode clock conditions (init = 0, non-init > 0) ----
+                NumeralFormula.IntegerFormula zero = imgr.makeNumber(0);
+                for (MemEvent w : allWrites) {
+                    NumeralFormula.IntegerFormula clock = context.memoryOrderClock(w);
+                    enc.add(w.is(INIT) ? imgr.equal(clock, zero) : imgr.greaterThan(clock, zero));
                 }
             }
-            return enc;
-        }
-
-        private BooleanFormula encodeCoWithSAT(Relation co) {
-            List<MemEvent> allWrites = program.getCache().getEvents(FilterBasic.get(WRITE)).stream()
-                    .map(MemEvent.class::cast)
-                    .sorted(Comparator.comparingInt(Event::getGlobalId))
-                    .collect(toList());
-            final RelationAnalysis.Knowledge k = ra.getKnowledge(co);
-            BooleanFormula enc = bmgr.makeTrue();
             // ---- Encode coherences ----
             for (int i = 0; i < allWrites.size() - 1; i++) {
-                MemEvent w1 = allWrites.get(i);
-                for (MemEvent w2 : allWrites.subList(i + 1, allWrites.size())) {
-                    Tuple t = new Tuple(w1, w2);
-                    Tuple tInv = t.getInverse();
-                    boolean forwardPossible = k.containsMay(t);
-                    boolean backwardPossible = k.containsMay(tInv);
+                MemEvent x = allWrites.get(i);
+                for (MemEvent z : allWrites.subList(i + 1, allWrites.size())) {
+                    Tuple xz = new Tuple(x, z);
+                    Tuple zx = xz.getInverse();
+                    boolean forwardPossible = k.containsMay(xz);
+                    boolean backwardPossible = k.containsMay(zx);
                     if (!forwardPossible && !backwardPossible) {
                         continue;
                     }
-                    BooleanFormula execPair = execution(t);
-                    BooleanFormula sameAddress = context.sameAddress(w1, w2);
+                    BooleanFormula execPair = execution(xz);
+                    BooleanFormula sameAddress = context.sameAddress(x, z);
                     BooleanFormula pairingCond = bmgr.and(execPair, sameAddress);
-                    BooleanFormula coF = forwardPossible ? edge(co, t) : bmgr.makeFalse();
-                    BooleanFormula coB = backwardPossible ? edge(co, tInv) : bmgr.makeFalse();
-                    enc = bmgr.and(enc,
-                            bmgr.equivalence(pairingCond, bmgr.or(coF, coB)),
-                            bmgr.or(bmgr.not(coF), bmgr.not(coB))
-                    );
-                    if (!k.containsMust(t) && !k.containsMust(tInv)) {
-                        for (MemEvent w3 : allWrites) {
-                            Tuple t1 = new Tuple(w1, w3);
-                            Tuple t2 = new Tuple(w3, w2);
-                            if (forwardPossible && k.containsMay(t1) && k.containsMay(t2)) {
-                                BooleanFormula co1 = edge(co, t1);
-                                BooleanFormula co2 = edge(co, t2);
-                                enc = bmgr.and(enc, bmgr.implication(bmgr.and(co1, co2), coF));
-                            }
-                            Tuple inverse1 = t1.getInverse();
-                            Tuple inverse2 = t2.getInverse();
-                            if (backwardPossible && k.containsMay(inverse1) && k.containsMay(inverse2)) {
-                                BooleanFormula co1 = edge(co, inverse1);
-                                BooleanFormula co2 = edge(co, inverse2);
-                                enc = bmgr.and(enc, bmgr.implication(bmgr.and(co1, co2), coB));
+                    BooleanFormula coF = forwardPossible ? edge(co, xz) : bmgr.makeFalse();
+                    BooleanFormula coB = backwardPossible ? edge(co, zx) : bmgr.makeFalse();
+                    enc.add(bmgr.equivalence(pairingCond, bmgr.or(coF, coB)));
+                    if (idl) {
+                        enc.add(bmgr.implication(coF, x.is(INIT) || transCo.contains(xz) ? bmgr.makeTrue() :
+                                imgr.lessThan(context.memoryOrderClock(x), context.memoryOrderClock(z))));
+                        enc.add(bmgr.implication(coB, z.is(INIT) || transCo.contains(zx) ? bmgr.makeTrue() :
+                                imgr.lessThan(context.memoryOrderClock(z), context.memoryOrderClock(x))));
+                    } else {
+                        enc.add(bmgr.or(bmgr.not(coF), bmgr.not(coB)));
+                        if (!k.containsMust(xz) && !k.containsMust(zx)) {
+                            for (MemEvent y : allWrites) {
+                                Tuple xy = new Tuple(x, y);
+                                Tuple yz = new Tuple(y, z);
+                                if (forwardPossible && k.containsMay(xy) && k.containsMay(yz)) {
+                                    enc.add(bmgr.implication(bmgr.and(edge(co, xy), edge(co, yz)), coF));
+                                }
+                                Tuple yx = xy.getInverse();
+                                Tuple zy = yz.getInverse();
+                                if (backwardPossible && k.containsMay(yx) && k.containsMay(zy)) {
+                                    enc.add(bmgr.implication(bmgr.and(edge(co, yx), edge(co, zy)), coB));
+                                }
                             }
                         }
                     }
                 }
             }
-            return enc;
+            return bmgr.and(enc);
         }
 
         private BooleanFormula edge(Relation relation, Tuple tuple) {
