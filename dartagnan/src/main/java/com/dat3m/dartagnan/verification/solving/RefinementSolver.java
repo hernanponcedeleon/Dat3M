@@ -432,24 +432,20 @@ public class RefinementSolver extends ModelChecker {
         Wmm baseline = new Wmm();
         Relation rf = baseline.getRelation(RF);
         if(baselines.contains(Baseline.UNIPROC)) {
-            // ---- acyclic(po-loc | rf) ----
-            Relation poloc = baseline.getRelation(POLOC);
-            Relation co = baseline.getRelation(CO);
-            Relation fr = baseline.getRelation(FR);
-            Relation porf = baseline.addDefinition(new Union(baseline.newRelation(), poloc, rf));
-            Relation porfco = baseline.addDefinition(new Union(baseline.newRelation(), porf, co));
-            Relation porfcofr = baseline.addDefinition(new Union(baseline.newRelation(), porfco, fr));
-            baseline.addAxiom(new Acyclic(porfcofr));
+            // ---- acyclic(po-loc | com) ----
+            baseline.addAxiom(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
+                    baseline.getRelation(POLOC),
+                    rf,
+                    baseline.getRelation(CO),
+                    baseline.getRelation(FR)))));
         }
         if(baselines.contains(Baseline.NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
-            Relation data = baseline.getRelation(DATA);
-            Relation ctrl = baseline.getRelation(CTRL);
-            Relation addr = baseline.getRelation(ADDR);
-            Relation dep = baseline.addDefinition(new Union(baseline.newRelation(), data, addr));
-            Relation dep2 = baseline.addDefinition(new Union(baseline.newRelation(), ctrl, dep));
-            Relation hb = baseline.addDefinition(new Union(baseline.newRelation(), dep2, rf));
-            baseline.addAxiom(new Acyclic(hb));
+            baseline.addAxiom(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
+                    baseline.getRelation(CTRL),
+                    baseline.getRelation(DATA),
+                    baseline.getRelation(ADDR),
+                    rf))));
         }
         if(baselines.contains(Baseline.ATOMIC_RMW)) {
             // ---- empty (rmw & fre;coe) ----

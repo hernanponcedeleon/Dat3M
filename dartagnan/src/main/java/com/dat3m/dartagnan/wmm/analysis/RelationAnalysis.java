@@ -417,6 +417,7 @@ public class RelationAnalysis {
         }
         @Override
         public Knowledge visitReadModifyWrites(Relation rel) {
+            //NOTE: Changes to the semantics of this method may need to be reflected in RMWGraph for Refinement!
             // ----- Compute minTupleSet -----
             TupleSet must = new TupleSet();
             // RMWLoad -> RMWStore

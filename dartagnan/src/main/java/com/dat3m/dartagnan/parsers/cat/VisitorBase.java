@@ -22,6 +22,7 @@ import java.util.Map;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ID;
 import static com.google.common.base.Verify.verify;
+import static java.util.Objects.requireNonNullElseGet;
 
 class VisitorBase extends CatBaseVisitor<Object> {
 
@@ -104,21 +105,10 @@ class VisitorBase extends CatBaseVisitor<Object> {
     @Override
     public Object visitExprBasic(ExprBasicContext ctx) {
         String n = ctx.n.getText();
-        Object o = namespace.get(n);
-        if (o != null) {
-            addCurrentName(o);
-            return o;
-        }
-        Relation r = wmm.getRelation(n);
-        if (r != null) {
-            namespace.put(n, r);
-            addCurrentName(r);
-            return r;
-        }
-        FilterBasic f = FilterBasic.get(n);
-        namespace.put(n, f);
-        addCurrentName(f);
-        return f;
+        Object o = namespace.computeIfAbsent(n,
+                k -> requireNonNullElseGet(wmm.getRelation(k), () -> FilterBasic.get(k)));
+        addCurrentName(o);
+        return o;
     }
 
     @Override
@@ -276,7 +266,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
 
     private void checkNoCurrent(ExpressionContext c) {
         if(current != null) {
-            throw new ParsingException("unexpected recursive context at expression: " + c.getText());
+            throw new ParsingException("Unexpected recursive context at expression: " + c.getText());
         }
     }
 
@@ -287,9 +277,8 @@ class VisitorBase extends CatBaseVisitor<Object> {
     }
 
     private void checkNoCurrentOrNoAlias(ExpressionContext c) {
-        if (current != null && alias != null) {
-            throw new ParsingException("unexpected context at expression: " + c.getText());
-        }
+        verify(current == null || alias == null,
+                "Broken structure invariant at expression: {}", new Object() {@Override public String toString() { return c.getText(); }});
     }
 
     private String alias() {
@@ -341,7 +330,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         if (o instanceof Relation) {
             return (Relation) o;
         }
-        throw new ParsingException("expected relation, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
+        throw new ParsingException("Expected relation, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
     }
 
     private FilterAbstract set(ExpressionContext t) {
@@ -352,7 +341,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         if (o instanceof FilterAbstract) {
             return (FilterAbstract) o;
         }
-        throw new ParsingException("expected set, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
+        throw new ParsingException("Expected set, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
     }
 }
 
