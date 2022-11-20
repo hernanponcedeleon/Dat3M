@@ -3,12 +3,11 @@
 (*
  * GenMC does not follow the published IMM model to the letter
  * https://github.com/MPI-SWS/genmc/issues/44
- * This is (AFAIK) a faithfull model following GenMC's implementation
+ * Viktor confirmed this is a faithfull model following GenMC's implementation
  *)
 
 (* coherence *)
 let rs = [W];po-loc;[W] | [W];(po-loc?;rf;rmw)*                                                                                     (* release sequence *)
-let release = ([W & REL] | [(F & REL) | (F & ACQ_REL) | (F & SC)];po);rs                                                            (* release prefix *)
 (* GenMC uses the same sw definition as RC11 *)
 let sw = [(REL | ACQ_REL | SC)]; ([F]; po)?; rs; rf; [R & (RLX | REL | ACQ | ACQ_REL | SC)]; (po; [F])?; [(ACQ | ACQ_REL | SC)]     (* synchronizes with *)
 let hb = (po | sw)+                                                                                                                 (* happens-before *)

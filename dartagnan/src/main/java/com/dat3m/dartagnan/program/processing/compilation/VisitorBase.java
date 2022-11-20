@@ -168,7 +168,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
 	// LLVM Events
 	@Override
-	public List<Event> visitLlvmAbstract(LlvmAbstract e) {
+	public List<Event> visitLlvmAbstract(LlvmAbstractRMW e) {
 		throw new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName());
 	}
 
