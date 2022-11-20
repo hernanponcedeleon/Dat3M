@@ -100,8 +100,7 @@ public class SvcompProcedures {
 				__VERIFIER_nondet(visitor, ctx, name);
 				break;
 			default:
-				logger.warn(name + " contains an empty implementation");
-				// throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
+				throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
 		}
 	}
 

@@ -52,7 +52,7 @@ public class ProcessingManager implements ProgramProcessor {
         		FindSpinLoops.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
-                // DeadAssignmentElimination.fromConfig(config),
+                DeadAssignmentElimination.fromConfig(config),
                 RemoveDeadCondJumps.fromConfig(config),
                 AtomicityPropagation.fromConfig(config),
                 Compilation.fromConfig(config),
