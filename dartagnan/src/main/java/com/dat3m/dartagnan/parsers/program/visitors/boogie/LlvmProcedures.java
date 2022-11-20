@@ -31,7 +31,10 @@ public class LlvmProcedures {
 			"__llvm_atomic64_rmw",
 			"__llvm_atomic_fence",
 			// Intrinsics 
-			"llvm.smax.i32"
+			"llvm.smax.i32",
+			"llvm.smax.i64",
+			"llvm.smin.i32",
+			"llvm.smin.i64"
 			);
 
 	public static void handleLlvmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -81,6 +84,8 @@ public class LlvmProcedures {
 				// Such registers must be created at parsing time
 				visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(0)", GlobalSettings.ARCH_PRECISION);
 				visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(1)", GlobalSettings.ARCH_PRECISION);
+				// The compilation of Llvm.newCompareExchange will 
+				// assign the correct values to the registers above
 				mo = C11.intToMo(((IConst) p3).getValueAsInt());
 				visitor.programBuilder.addChild(visitor.threadCount, Llvm.newCompareExchange(reg, (IExpr) p0, (IExpr) p1, (IExpr) p2, mo, true))
 	        		.setCLine(visitor.currentLine)
@@ -120,24 +125,17 @@ public class LlvmProcedures {
 				return;
 			case "llvm.smax.i32":
 			case "llvm.smax.i64":
-				i1 = (IExpr)p0;
-				i2 = (IExpr)p1;
-				cond = new Atom(i1, COpBin.GTE, i2);
-				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, new IfExpr(cond, i1, i2)))
-					.setCLine(visitor.currentLine)
-					.setSourceCodeFile(visitor.sourceCodeFile);
-				return;
 			case "llvm.smin.i32":
 			case "llvm.smin.i64":
 				i1 = (IExpr)p0;
 				i2 = (IExpr)p1;
-				cond = new Atom(i1, COpBin.GTE, i2);
-				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, new IfExpr(cond, i2, i1)))
+				cond = name.contains("max") ? new Atom(i1, COpBin.GTE, i2) : new Atom(i1, COpBin.LTE, i2);
+				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, new IfExpr(cond, i1, i2)))
 					.setCLine(visitor.currentLine)
 					.setSourceCodeFile(visitor.sourceCodeFile);
 				return;
 			default:
-			throw new UnsupportedOperationException(name + " procedure is not part of LLVMPROCEDURES");
+				throw new UnsupportedOperationException(name + " procedure is not part of LLVMPROCEDURES");
 		}
 	}
 }

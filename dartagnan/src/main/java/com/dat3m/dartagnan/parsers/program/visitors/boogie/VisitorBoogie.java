@@ -669,8 +669,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		if(name.startsWith("$extractvalue")) {
 			String structName = ctx.expr(0).getText();
 			String idx = ctx.expr(1).getText();
-			logger.warn("Accessing structure " + structName + ". Please ensure field " + idx + " is properly initialised.");
-			return programBuilder.getOrCreateRegister(threadCount, String.format("%s:%s(%s)", currentScope.getID(), structName, idx), GlobalSettings.ARCH_PRECISION);
+			Register reg = programBuilder.getRegister(threadCount, String.format("%s:%s(%s)", currentScope.getID(), structName, idx));
+			if(reg == null) {
+				throw new ParsingException(String.format("Structure %s at index %s has not been initialized", structName, idx));
+			}
+			return reg;
 		}
 		if(name.contains("$load.")) {
 			return ctx.expr(1).accept(this);
