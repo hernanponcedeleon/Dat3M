@@ -75,7 +75,7 @@ public class Compilation {
 
 	private static File runCmd(ArrayList<String> cmd, String outputFileName) throws Exception {
 		ProcessBuilder processBuilder = new ProcessBuilder(cmd);
-    	logger.info("Running " + String.join(" ", cmd));
+    	logger.debug(String.join(" ", cmd));
     	Process proc = processBuilder.start();
     	proc.waitFor();
     	if(proc.exitValue() == 1) {

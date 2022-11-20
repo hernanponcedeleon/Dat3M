@@ -32,6 +32,7 @@ public class OptionNames {
 	public static final String REDUCE_SYMMETRY = "program.processing.reduceSymmetry";
 	public static final String ATOMIC_BLOCKS_AS_LOCKS = "program.processing.atomicBlocksAsLocks";
 	public static final String CONSTANT_PROPAGATION = "program.processing.constantPropagation";
+	public static final String DEAD_ASSIGNEMENT_ELIMINATION = "program.processing.dce";
 	
 	// Program Property Options
 	public static final String ALIAS_METHOD = "program.analysis.alias";
