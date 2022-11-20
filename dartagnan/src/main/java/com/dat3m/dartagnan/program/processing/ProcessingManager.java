@@ -36,7 +36,7 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name= CONSTANT_PROPAGATION,
         description="Performs constant propagation.",
         secure=true)
-        private boolean constantPropagation = true;
+        private boolean constantPropagation = false;
 
 	@Option(name= DEAD_ASSIGNEMENT_ELIMINATION,
 			description="Performs dead code elimination.",
