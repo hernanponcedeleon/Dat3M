@@ -28,7 +28,7 @@ public class VisitorC11 extends VisitorBase {
 	public List<Event> visitCreate(Create e) {
 
         Store store = newStore(e.getAddress(), e.getMemValue(), Tag.C11.MO_RELEASE);
-        store.addFilters(C11.PTHREAD);
+        store.addFilters(C11.PTHREAD, C11.ATOMIC);
 
         return eventSequence(
                 store
@@ -37,20 +37,20 @@ public class VisitorC11 extends VisitorBase {
 
 	@Override
 	public List<Event> visitEnd(End e) {
+        Store store = newStore(e.getAddress(), IValue.ZERO, Tag.C11.MO_RELEASE);
+        store.addFilters(C11.ATOMIC);
         return eventSequence(
-                newStore(e.getAddress(), IValue.ZERO, Tag.C11.MO_RELEASE)
+                store
         );
 	}
 
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-	Local load = newLocal(resultRegister, e.getExpr());
-        load.addFilters(C11.PTHREAD);
         
         return eventSequence(
-        		load,
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
+                newLocal(resultRegister, e.getExpr()),
+        	newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
         );
 	}
 
@@ -58,7 +58,7 @@ public class VisitorC11 extends VisitorBase {
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
-        load.addFilters(Tag.STARTLOAD);
+        load.addFilters(Tag.STARTLOAD, C11.ATOMIC);
 
         return eventSequence(
         		load,

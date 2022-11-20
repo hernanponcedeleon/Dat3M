@@ -24,13 +24,13 @@ import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class IMMLocksTest extends AbstractCTest {
+public class C11LocksTest extends AbstractCTest {
 	
 	// We use this for a fast CI.
 	// For benchmarking we use CLocksTest{TSO, ARM, Power}
 	// which use higher bounds and more threads
 	
-    public IMMLocksTest(String name, Arch target, Result expected) {
+    public C11LocksTest(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
 
@@ -41,53 +41,55 @@ public class IMMLocksTest extends AbstractCTest {
 
     @Override
     protected long getTimeout() {
-        return 60000;
+        return 180000;
     }
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Provider.fromSupplier(() -> new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/imm.cat")));
+        return Provider.fromSupplier(() -> new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/c11.cat")));
     }
 
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
     	return Arrays.asList(new Object[][]{
-            {"ttas-5", IMM, UNKNOWN},
-            {"ttas-5-acq2rx", IMM, FAIL},
-            {"ttas-5-rel2rx", IMM, FAIL},
-            {"ticketlock-3", IMM, PASS},
-            {"ticketlock-3-acq2rx", IMM, FAIL},
-            {"ticketlock-3-rel2rx", IMM, FAIL},
-            {"mutex-3", IMM, UNKNOWN},
-            {"mutex-3-acq2rx_futex", IMM, UNKNOWN},
-            {"mutex-3-acq2rx_lock", IMM, FAIL},
-            {"mutex-3-rel2rx_futex", IMM, UNKNOWN},
-            {"mutex-3-rel2rx_unlock", IMM, FAIL},
-            {"spinlock-5", IMM, UNKNOWN},
-            {"spinlock-5-acq2rx", IMM, FAIL},
-            {"spinlock-5-rel2rx", IMM, FAIL},
-            {"linuxrwlock-3", IMM, UNKNOWN},
-            {"linuxrwlock-3-acq2rx", IMM, FAIL},
-            {"linuxrwlock-3-rel2rx", IMM, FAIL},
-            {"mutex_musl-3", IMM, UNKNOWN},
-            {"mutex_musl-3-acq2rx_futex", IMM, UNKNOWN},
-            {"mutex_musl-3-acq2rx_lock", IMM, FAIL},
-            {"mutex_musl-3-rel2rx_futex", IMM, UNKNOWN},
-            {"mutex_musl-3-rel2rx_unlock", IMM, FAIL},
+            {"ttas-5", C11, UNKNOWN},
+            {"ttas-5-acq2rx", C11, FAIL},
+            {"ttas-5-rel2rx", C11, FAIL},
+            {"ticketlock-3", C11, PASS},
+            {"ticketlock-3-acq2rx", C11, FAIL},
+            {"ticketlock-3-rel2rx", C11, FAIL},
+            {"mutex-3", C11, UNKNOWN},
+            {"mutex-3-acq2rx_futex", C11, UNKNOWN},
+            {"mutex-3-acq2rx_lock", C11, FAIL},
+            {"mutex-3-rel2rx_futex", C11, UNKNOWN},
+            {"mutex-3-rel2rx_unlock", C11, FAIL},
+            {"spinlock-5", C11, UNKNOWN},
+            {"spinlock-5-acq2rx", C11, FAIL},
+            {"spinlock-5-rel2rx", C11, FAIL},
+            // For most models the one below is safe (UNKNOWN)
+            // It could be the case for C11 is unsafe (because it is weaker)
+            // but we are not 100% sure about this
+            {"linuxrwlock-3", C11, FAIL},
+            {"mutex_musl-3", C11, UNKNOWN},
+            {"mutex_musl-3-acq2rx_futex", C11, UNKNOWN},
+            {"mutex_musl-3-acq2rx_lock", C11, FAIL},
+            {"mutex_musl-3-rel2rx_futex", C11, UNKNOWN},
+            {"mutex_musl-3-rel2rx_unlock", C11, FAIL},
             // The actual result is PASS, but CAAT returns UNKNOWN
             // because we do not refine for the bound check 
-            {"seqlock-6", IMM, UNKNOWN},
+            {"seqlock-6", C11, PASS},
 		});
     }
 
-//    @Test
+   @Test
 	@CSVLogger.FileName("csv/assume")
 	public void testAssume() throws Exception {
         AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
 		assertEquals(expected, s.getResult());
 	}
 
-    @Test
+    // CAAT might not yet work for C11 
+    // @Test
 	@CSVLogger.FileName("csv/refinement")
 	public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());

@@ -72,7 +72,7 @@ public class IncrementalSolver extends ModelChecker {
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
         prover.addConstraint(task.getWitness().encode(context));
-        prover.addConstraint(symmetryEncoder.encodeFullSymmetry());
+        prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
         logger.info("Starting push()");
         prover.push();
         prover.addConstraint(propertyEncoding);

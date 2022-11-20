@@ -72,7 +72,7 @@ public class AssumeSolver extends ModelChecker {
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
         prover.addConstraint(task.getWitness().encode(context));
-        prover.addConstraint(symmetryEncoder.encodeFullSymmetry());
+        prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
