@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.Register;
 
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class LlvmRMW extends LlvmAbstract {
+public class LlvmRMW extends LlvmAbstractRMW {
 
     private final IOpBin op;
 

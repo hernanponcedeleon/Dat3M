@@ -10,7 +10,7 @@ import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 import java.util.HashSet;
 import java.util.Set;
 
-public class LlvmCmpXchg extends LlvmAbstract {
+public class LlvmCmpXchg extends LlvmAbstractRMW {
 
     private IExpr expectedValue;
 

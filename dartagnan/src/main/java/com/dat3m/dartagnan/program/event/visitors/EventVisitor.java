@@ -4,15 +4,13 @@ import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
-import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
-import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmAbstract;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmAbstractRMW;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmFence;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
@@ -104,7 +102,7 @@ public interface EventVisitor<T> {
 	default T visitDat3mCAS(Dat3mCAS e) { return visitAtomicAbstract(e); }
 
 	// LLVM Events
-	default T visitLlvmAbstract(LlvmAbstract e) { return visitMemEvent(e); }
+	default T visitLlvmAbstract(LlvmAbstractRMW e) { return visitMemEvent(e); }
 	default T visitLlvmCmpXchg(LlvmCmpXchg e) { return visitLlvmAbstract(e); }
 	default T visitLlvmRMW(LlvmRMW e) { return visitLlvmAbstract(e); }
 	default T visitLlvmLoad(LlvmLoad e) { return visitMemEvent(e); }

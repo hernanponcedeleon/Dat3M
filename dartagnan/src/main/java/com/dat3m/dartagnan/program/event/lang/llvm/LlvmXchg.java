@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.program.Register;
 
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class LlvmXchg extends LlvmAbstract {
+public class LlvmXchg extends LlvmAbstractRMW {
 
     public LlvmXchg(Register register, IExpr address, IExpr value, String mo) {
         super(address, register, value, mo);

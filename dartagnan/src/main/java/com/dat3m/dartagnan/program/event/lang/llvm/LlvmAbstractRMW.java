@@ -11,19 +11,19 @@ import com.google.common.collect.ImmutableSet;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
-public abstract class LlvmAbstract extends MemEvent implements RegWriter, RegReaderData {
+public abstract class LlvmAbstractRMW extends MemEvent implements RegWriter, RegReaderData {
 
     protected final Register resultRegister;
     protected ExprInterface value;
 
-    LlvmAbstract(IExpr address, Register register, IExpr value, String mo) {
+    LlvmAbstractRMW(IExpr address, Register register, IExpr value, String mo) {
         super(address, mo);
         this.resultRegister = register;
         this.value = value;
         addFilters(ANY, VISIBLE, MEMORY, READ, WRITE, RMW, REG_WRITER, REG_READER);
     }
 
-    LlvmAbstract(LlvmAbstract other) {
+    LlvmAbstractRMW(LlvmAbstractRMW other) {
         super(other);
         this.resultRegister = other.resultRegister;
         this.value = other.value;

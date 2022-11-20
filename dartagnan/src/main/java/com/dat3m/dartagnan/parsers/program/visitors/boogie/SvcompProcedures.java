@@ -28,8 +28,7 @@ public class SvcompProcedures {
 
 	public static List<String> SVCOMPPROCEDURES = Arrays.asList(
 			"__VERIFIER_assert",
-			"__VERIFIER_assume",
-//			"assume_abort_if_not",
+			// "__VERIFIER_assume",
 			"__VERIFIER_loop_bound",
 			"__VERIFIER_loop_begin",
 			"__VERIFIER_spin_start",
@@ -66,10 +65,9 @@ public class SvcompProcedures {
 			case "__VERIFIER_assert":
 				visitor.addAssertion((IExpr)ctx.call_params().exprs().accept(visitor));
 				break;
-			// case "__VERIFIER_assume":
-			// case "assume_abort_if_not":
-			// 	__VERIFIER_assume(visitor, ctx);
-			// 	break;
+			case "__VERIFIER_assume":
+				__VERIFIER_assume(visitor, ctx);
+				break;
 			case "__VERIFIER_atomic_begin":
 				if(GlobalSettings.ATOMIC_AS_LOCK) {
 					__VERIFIER_atomic(visitor, true);
