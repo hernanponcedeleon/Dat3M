@@ -71,7 +71,7 @@ public class AtomicProcedures {
 	private static void atomicInit(VisitorBoogie visitor, Call_cmdContext ctx) {
 		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
 		ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr().get(1).accept(visitor);
-		visitor.programBuilder.addChild(visitor.threadCount, newStore(add, value, null))
+		visitor.programBuilder.addChild(visitor.threadCount, newStore(add, value, ""))
 				.setCLine(visitor.currentLine)
 				.setSourceCodeFile(visitor.sourceCodeFile);
 	}
@@ -79,7 +79,7 @@ public class AtomicProcedures {
 	private static void atomicStore(VisitorBoogie visitor, Call_cmdContext ctx) {
 		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
 		ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr().get(1).accept(visitor);
-		String mo = null;
+		String mo = "";
 		if(ctx.call_params().exprs().expr().size() > 2) {
 			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getValueAsInt());
 		}
@@ -91,7 +91,7 @@ public class AtomicProcedures {
 	private static void atomicLoad(VisitorBoogie visitor, Call_cmdContext ctx) {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
 		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
-		String mo = null;
+		String mo = "";
 		if(ctx.call_params().exprs().expr().size() > 1) {
 			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(1).accept(visitor)).getValueAsInt());
 		}
@@ -104,7 +104,7 @@ public class AtomicProcedures {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
 		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
 		IExpr value = (IExpr)ctx.call_params().exprs().expr().get(1).accept(visitor);
-		String mo = null;
+		String mo = "";
 		IOpBin op;
 		if(ctx.getText().contains("_add")) {
 			op = IOpBin.PLUS;
@@ -131,7 +131,7 @@ public class AtomicProcedures {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
 		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
 		IExpr value = (IExpr)ctx.call_params().exprs().expr().get(1).accept(visitor);
-		String mo = null;
+		String mo = "";
 		if(ctx.call_params().exprs().expr().size() > 2) {
 			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getValueAsInt());
 		}
@@ -146,7 +146,7 @@ public class AtomicProcedures {
 		IExpr addr = (IExpr) params.get(0).accept(visitor);
 		IExpr expectedVal = (IExpr) params.get(1).accept(visitor);
 		IExpr desiredVal = (IExpr) params.get(2).accept(visitor);
-		String mo = null;
+		String mo = "";
 		if(params.size() > 3) {
 			mo = intToMo(((IConst) params.get(3).accept(visitor)).getValueAsInt());
 		}
@@ -168,7 +168,7 @@ public class AtomicProcedures {
 		IExpr addr = (IExpr) params.get(0).accept(visitor);
 		IExpr expectedAddr = (IExpr) params.get(1).accept(visitor); // NOTE: We assume a register here
 		IExpr desiredVal = (IExpr) params.get(2).accept(visitor);
-		String mo = null;
+		String mo = "";
 		boolean strong = ctx.getText().contains("strong");
 		if(params.size() > 3) {
 			mo = intToMo(((IConst) params.get(3).accept(visitor)).getValueAsInt());

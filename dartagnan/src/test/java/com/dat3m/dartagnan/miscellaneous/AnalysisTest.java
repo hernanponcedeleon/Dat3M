@@ -318,7 +318,7 @@ public class AnalysisTest {
     }
 
     private Load newLoad(Register value, IExpr address) {
-        return EventFactory.newLoad(value,address,null);
+        return EventFactory.newLoad(value,address,"");
     }
 
     private Store newStore(IExpr address) {
@@ -326,7 +326,7 @@ public class AnalysisTest {
     }
 
     private Store newStore(IExpr address, IExpr value) {
-        return EventFactory.newStore(address,value,null);
+        return EventFactory.newStore(address,value,"");
     }
 
     private IValue value(long v) {
