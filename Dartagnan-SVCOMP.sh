@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=3.0.0
+version=3.1.1
 
 if [ $# -eq 0 ]; then
     echo "No input file supplied"
@@ -22,17 +22,11 @@ else
 
     cflags="-DSVCOMP -DCUSTOM_VERIFIER_ASSERT -fno-vectorize -fno-slp-vectorize"
     smackflags="-q -t --no-memory-splitting"
-    
-    svcompflags="--method=assume"
-    if ! grep -q "pthread" $programpath; then
-        cflags+=" -O3"
-        smackflags+=" --integer-encoding bit-vector"
-        svcompflags+=" cat/sc.cat"
-    else
-        svcompflags+=" --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat"
-    fi
+    svcompflags="--method=assume --program.processing.constantPropagation=false --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat"
 
     export DAT3M_HOME=$(pwd)
+    export DAT3M_OUTPUT=$DAT3M_HOME/output
+    export PATH=$PATH:$DAT3M_HOME/smack/bin
     export CFLAGS=$cflags
     export SMACK_FLAGS=$smackflags
 

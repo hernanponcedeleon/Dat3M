@@ -55,7 +55,7 @@ public abstract class MemEvent extends Event {
     }
 
     public boolean canRace() {
-    	return mo == null || mo.equals(C11.NONATOMIC);
+    	return mo.equals("") || mo.equals(C11.NONATOMIC);
     }
 
 	// Visitor
