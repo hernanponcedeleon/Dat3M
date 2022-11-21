@@ -52,7 +52,10 @@ public abstract class MemEvent extends Event {
             removeFilters(this.mo);    		
     	}
         this.mo = mo;
-        addFilters(mo);
+        // This cannot be merged with the if above, because this.mo was updated
+        if(!this.mo.isEmpty()) {
+            addFilters(mo);
+    	}
     }
 
     public boolean canRace() {

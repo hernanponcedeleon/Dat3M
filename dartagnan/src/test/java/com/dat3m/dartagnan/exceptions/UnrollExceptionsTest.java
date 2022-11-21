@@ -29,7 +29,7 @@ public class UnrollExceptionsTest {
 		Label start = pb.getOrCreateLabel("loopStart");
 		pb.addChild(0, start);
         Load load = EventFactory.newRMWLoad(pb.getOrCreateRegister(0, "r1", 32), object, null);
-        pb.addChild(0, EventFactory.newRMWStore(load, object, IValue.ONE, null));
+        pb.addChild(0, EventFactory.newRMWStore(load, object, IValue.ONE, ""));
 		pb.addChild(0, EventFactory.newGoto(start));
     	LoopUnrolling processor = LoopUnrolling.newInstance();
     	processor.setUnrollingBound(2);

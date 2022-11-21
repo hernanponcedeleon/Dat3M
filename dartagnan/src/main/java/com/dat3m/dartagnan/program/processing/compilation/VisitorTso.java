@@ -76,10 +76,10 @@ class VisitorTso extends VisitorBase {
         IExpr address = e.getAddress();
 
         Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-		Load load = newRMWLoad(dummyReg, address, null);
+		Load load = newRMWLoad(dummyReg, address, "");
         load.addFilters(Tag.TSO.ATOM);
 
-        RMWStore store = newRMWStore(load, address, resultRegister, null);
+        RMWStore store = newRMWStore(load, address, resultRegister, "");
         store.addFilters(Tag.TSO.ATOM);
 
         return eventSequence(
