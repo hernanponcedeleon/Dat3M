@@ -30,7 +30,7 @@ public class Store extends MemEvent implements RegReaderData {
 
     @Override
     public String toString() {
-        return "store(*" + address + ", " + value + (mo != null ? ", " + mo : "") + ")";
+        return "store(*" + address + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")";
     }
 
     @Override

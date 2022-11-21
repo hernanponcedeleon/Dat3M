@@ -30,7 +30,7 @@ public class StoreExclusive extends Store implements RegWriter {
 
     @Override
     public String toString(){
-        return register + " <- store(*" + address + ", " + value + (mo != null ? ", " + mo : "") + ")";
+        return register + " <- store(*" + address + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")";
     }
 
     // Unrolling
