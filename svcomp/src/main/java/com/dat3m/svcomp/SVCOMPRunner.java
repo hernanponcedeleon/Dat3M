@@ -134,7 +134,7 @@ public class SVCOMPRunner extends BaseOptions {
 	    	cmd.add("java");
 	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
 	    	cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
-	    	cmd.addAll(Arrays.asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-3.1.0.jar"));
+	    	cmd.addAll(Arrays.asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-3.1.1.jar"));
 			cmd.add(fileModel.toString());
 			cmd.add(boogieName);
 			cmd.add(String.format("--%s=%s", PROPERTY, r.property.asStringOption()));
@@ -148,7 +148,13 @@ public class SVCOMPRunner extends BaseOptions {
 				BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 				proc.waitFor();
 				while(read.ready()) {
-					output = read.readLine();
+					String next = read.readLine();
+					// This is now the last line in the console.
+					// We avoid updating the output
+					if(next.contains("Total verification time(ms):")) {
+						break;
+					}
+					output = next;
 					System.out.println(output);
 				}
 				if(proc.exitValue() == 1) {
