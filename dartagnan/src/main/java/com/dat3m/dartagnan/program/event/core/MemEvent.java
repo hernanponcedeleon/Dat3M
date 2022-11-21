@@ -15,7 +15,7 @@ public abstract class MemEvent extends Event {
     	Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
         this.address = address;
         this.mo = mo;
-        if(mo != null){
+        if(!mo.isEmpty()){
             addFilters(mo);
         }
     }
@@ -48,7 +48,7 @@ public abstract class MemEvent extends Event {
 
     public void setMo(String mo){
     	Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
-    	if(this.mo != null) {
+    	if(!this.mo.isEmpty()) {
             removeFilters(this.mo);    		
     	}
         this.mo = mo;
@@ -56,7 +56,7 @@ public abstract class MemEvent extends Event {
     }
 
     public boolean canRace() {
-    	return mo.equals("") || mo.equals(C11.NONATOMIC);
+    	return mo.isEmpty() || mo.equals(C11.NONATOMIC);
     }
 
 	// Visitor
