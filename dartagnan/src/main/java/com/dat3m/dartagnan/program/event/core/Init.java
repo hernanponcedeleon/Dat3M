@@ -16,7 +16,7 @@ public class Init extends MemEvent {
 	private final int offset;
 	
 	public Init(MemoryObject b, int o) {
-		super(b.add(o), null);
+		super(b.add(o), "");
 		base = b;
 		offset = o;
 		addFilters(Tag.ANY, Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.INIT);

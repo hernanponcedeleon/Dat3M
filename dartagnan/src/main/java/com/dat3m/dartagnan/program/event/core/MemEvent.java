@@ -12,6 +12,7 @@ public abstract class MemEvent extends Event {
     protected String mo;
 
     public MemEvent(IExpr address, String mo){
+    	Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
         this.address = address;
         this.mo = mo;
         if(mo != null){
@@ -46,7 +47,7 @@ public abstract class MemEvent extends Event {
     }
 
     public void setMo(String mo){
-    	Preconditions.checkNotNull(mo, "Only the parser can set the memory ordering to null");
+    	Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
     	if(this.mo != null) {
             removeFilters(this.mo);    		
     	}
