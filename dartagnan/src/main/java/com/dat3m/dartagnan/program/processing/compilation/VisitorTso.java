@@ -99,7 +99,7 @@ class VisitorTso extends VisitorBase {
 		int precision = resultRegister.getPrecision();
 
 		Register regExpected = e.getThread().newRegister(precision);
-        Load loadExpected = newLoad(regExpected, expectedAddr, null);
+        Load loadExpected = newLoad(regExpected, expectedAddr, "");
         Register regValue = e.getThread().newRegister(precision);
         Load loadValue = newRMWLoad(regValue, address, mo);
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
@@ -108,7 +108,7 @@ class VisitorTso extends VisitorBase {
         Store storeValue = newRMWStore(loadValue, address, value, mo);
         Label casEnd = newLabel("CAS_end");
         CondJump gotoCasEnd = newGoto(casEnd);
-        Store storeExpected = newStore(expectedAddr, regValue, null);
+        Store storeExpected = newStore(expectedAddr, regValue, "");
 
         return eventSequence(
                 // Indentation shows the branching structure
