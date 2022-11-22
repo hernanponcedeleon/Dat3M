@@ -62,9 +62,9 @@ public class AtomicAsLock implements ProgramProcessor {
 			Event event = predecessor.getSuccessor();
 			boolean begin = event instanceof BeginAtomic;
 			if(begin || event instanceof EndAtomic) {
-				Event load = EventFactory.newLoad(register,address,null);
+				Event load = EventFactory.newLoad(register,address,"");
 				Event check = EventFactory.newJump(new Atom(register,NEQ,begin?IValue.ZERO:IValue.ONE),end);
-				Event store = EventFactory.newStore(address,begin?IValue.ONE:IValue.ZERO,null);
+				Event store = EventFactory.newStore(address,begin?IValue.ONE:IValue.ZERO,"");
 				load.setOId(event.getOId());
 				check.setOId(event.getOId());
 				store.setOId(event.getOId());

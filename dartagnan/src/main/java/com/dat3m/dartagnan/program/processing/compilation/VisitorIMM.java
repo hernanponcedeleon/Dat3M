@@ -29,7 +29,7 @@ class VisitorIMM extends VisitorBase {
 	public List<Event> visitLoad(Load e) {
 		String mo = e.getMo();
         return eventSequence(
-        		newLoad(e.getResultRegister(), e.getAddress(), mo == null || mo.equals(C11.NONATOMIC) ? C11.MO_RELAXED : mo)
+        		newLoad(e.getResultRegister(), e.getAddress(), mo.isEmpty() || mo.equals(C11.NONATOMIC) ? C11.MO_RELAXED : mo)
         );
 	}
 
@@ -37,7 +37,7 @@ class VisitorIMM extends VisitorBase {
 	public List<Event> visitStore(Store e) {
 		String mo = e.getMo();
         return eventSequence(
-        		newStore(e.getAddress(), e.getMemValue(), mo == null || mo.equals(C11.NONATOMIC) ? C11.MO_RELAXED : mo)
+        		newStore(e.getAddress(), e.getMemValue(), mo.isEmpty() || mo.equals(C11.NONATOMIC) ? C11.MO_RELAXED : mo)
         );
 	}
 	
@@ -103,9 +103,9 @@ class VisitorIMM extends VisitorBase {
 
 		Register regExpected = e.getThread().newRegister(precision);
         Register regValue = e.getThread().newRegister(precision);
-        Load loadExpected = newLoad(regExpected, expectedAddr, null);
+        Load loadExpected = newLoad(regExpected, expectedAddr, "");
         loadExpected.addFilters(Tag.IMM.CASDEPORIGIN);
-        Store storeExpected = newStore(expectedAddr, regValue, null);
+        Store storeExpected = newStore(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
