@@ -435,8 +435,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	        	if(ctx.getText().contains("$load.") || value instanceof MemoryObject) {
 
 					if(allocations.containsKey(value)) {
-		        		// These events are eventually compiled and we need to compare its mo, thus it cannot be null
-		        		programBuilder.addChild(threadCount, EventFactory.newLoad(register, allocations.get(value), ""))
+		        		// These loads corresponding to pthread_joins and thus need acquire semantics
+		        		programBuilder.addChild(threadCount, EventFactory.newLoad(register, allocations.get(value), Tag.C11.MO_ACQUIRE))
 	    	    				.setCLine(currentLine)
 	        					.setSourceCodeFile(sourceCodeFile);
 		        	    continue;
