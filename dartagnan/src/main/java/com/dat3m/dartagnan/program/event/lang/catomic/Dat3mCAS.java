@@ -22,7 +22,7 @@ public class Dat3mCAS extends AtomicAbstract {
 
     @Override
     public String toString() {
-        return resultRegister + " = __DAT3M_CAS(*" + address + ", " + expectedValue + ", " + value + (mo != null ? ", " + mo : "") + ")";
+        return resultRegister + " = __DAT3M_CAS(*" + address + ", " + expectedValue + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")";
     }
 
     @Override

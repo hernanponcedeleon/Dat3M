@@ -53,11 +53,11 @@ public final class Tag {
         }
 
         public static String extractStoreMoFromLKMo(String lkMo) {
-            return lkMo.equals(Tag.Linux.MO_RELEASE) || lkMo.equals(Tag.Linux.MO_MB) ? Tag.ARMv8.MO_REL : null;
+            return lkMo.equals(Tag.Linux.MO_RELEASE) || lkMo.equals(Tag.Linux.MO_MB) ? Tag.ARMv8.MO_REL : "";
         }
 
         public static String extractLoadMoFromLKMo(String lkMo) {
-            return lkMo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : null;
+            return lkMo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : "";
         }
 
     }
@@ -86,16 +86,16 @@ public final class Tag {
 			case C11.MO_SC:
 				return MO_ACQ_REL;
 			default:
-				return null;
+				return "";
 			}
         }
         
         public static String extractStoreMoFromCMo(String cMo) {
-            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_RELEASE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_REL : null;
+            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_RELEASE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_REL : "";
         }
 
         public static String extractLoadMoFromCMo(String cMo) {
-            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_ACQUIRE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_ACQ : null;
+            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_ACQUIRE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_ACQ : "";
         }
 
     }

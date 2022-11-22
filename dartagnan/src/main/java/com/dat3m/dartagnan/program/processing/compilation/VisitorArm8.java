@@ -110,8 +110,8 @@ class VisitorArm8 extends VisitorBase {
 
 		Register regExpected = e.getThread().newRegister(precision);
         Register regValue = e.getThread().newRegister(precision);
-        Load loadExpected = newLoad(regExpected, expectedAddr, null);
-        Store storeExpected = newStore(expectedAddr, regValue, null);
+        Load loadExpected = newLoad(regExpected, expectedAddr, "");
+        Store storeExpected = newStore(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
@@ -269,7 +269,7 @@ class VisitorArm8 extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-        Store store = newStore(address, value, mo.equals(Tag.Linux.MO_RELEASE) ? Tag.ARMv8.MO_REL : null);
+        Store store = newStore(address, value, mo.equals(Tag.Linux.MO_RELEASE) ? Tag.ARMv8.MO_REL : "");
         
         return eventSequence(
                 store
@@ -387,8 +387,8 @@ class VisitorArm8 extends VisitorBase {
 		IExpr address = e.getAddress();
 		
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        Load load = newRMWLoadExclusive(dummy, address, null);
-        Store store = newRMWStoreExclusive(address, new IExprBin(dummy, op, value), null, true);
+        Load load = newRMWLoadExclusive(dummy, address, "");
+        Store store = newRMWStoreExclusive(address, new IExprBin(dummy, op, value), "", true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
