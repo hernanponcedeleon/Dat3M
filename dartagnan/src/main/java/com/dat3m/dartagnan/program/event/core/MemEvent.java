@@ -11,6 +11,7 @@ public abstract class MemEvent extends Event {
     protected IExpr address;
     protected String mo;
 
+    // The empty string means no memory order 
     public MemEvent(IExpr address, String mo){
     	Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
         this.address = address;
