@@ -73,7 +73,7 @@ public class PthreadsProcedures {
 		ExprInterface callingValue = (ExprInterface)ctx.call_params().exprs().expr().get(3).accept(visitor);
 		visitor.threadCallingValues.get(visitor.currentThread).add(callingValue);
 
-		Register pointer = (Register)ctx.call_params().exprs().expr(0).accept(visitor);
+		IExpr pointer = (IExpr)ctx.call_params().exprs().expr(0).accept(visitor);
 		String threadName = ctx.call_params().exprs().expr().get(2).getText();
 		visitor.pool.add(pointer, threadName, visitor.threadCount);
         
@@ -83,7 +83,7 @@ public class PthreadsProcedures {
 		visitor.pool.addMatcher(pointer, matcher);
 		
 		MemoryObject object = visitor.programBuilder.getOrNewObject(cc);
-		visitor.allocationRegisters.put(pointer, object);
+		visitor.allocations.put(pointer, object);
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(object, threadName))
 			.setCLine(visitor.currentLine)
 			.setSourceCodeFile(visitor.sourceCodeFile);
