@@ -94,7 +94,9 @@ public class PthreadsProcedures {
 	private static void pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
 		IExpr expr = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
-        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(reg, expr));
+        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(reg, expr))
+			.setCLine(visitor.currentLine)
+			.setSourceCodeFile(visitor.sourceCodeFile);
 	}
 
 	private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {
