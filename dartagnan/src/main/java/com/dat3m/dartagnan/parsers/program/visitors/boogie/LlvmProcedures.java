@@ -79,9 +79,9 @@ public class LlvmProcedures {
 	        	return;
 			case "__llvm_atomic32_cmpxchg":
 			case "__llvm_atomic64_cmpxchg":
-				// LLVM CAS returns a structure
-				// We use registers for each structure member
-				// Such registers must be created at parsing time
+				// Since we don't support struct types, we instead model each member as a register.
+				// It is the responsibility of each LLVM istruction creating a structure to create such registers,
+				// then when calling "extractvalue" we can check if the member was properly initialized 
 				visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(0)", GlobalSettings.ARCH_PRECISION);
 				visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(1)", GlobalSettings.ARCH_PRECISION);
 				// The compilation of Llvm.newCompareExchange will 

@@ -670,6 +670,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			String structName = ctx.expr(0).getText();
 			String idx = ctx.expr(1).getText();
 			Register reg = programBuilder.getRegister(threadCount, String.format("%s:%s(%s)", currentScope.getID(), structName, idx));
+			// It is the responsibility of each LLVM istruction creating a structure to create such registers,
+			// thus we use getRegister and fail if the register is not there. 
 			if(reg == null) {
 				throw new ParsingException(String.format("Structure %s at index %s has not been initialized", structName, idx));
 			}
