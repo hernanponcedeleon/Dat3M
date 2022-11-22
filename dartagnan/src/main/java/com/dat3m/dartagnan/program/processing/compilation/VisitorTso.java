@@ -135,8 +135,8 @@ class VisitorTso extends VisitorBase {
 
     @Override
     public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
-            Register oldValueRegister = e.getThread().getRegister(e.getResultRegister() + "(0)");
-            Register resultRegister = e.getThread().getRegister(e.getResultRegister() + "(1)");
+        Register oldValueRegister = e.getThread().getRegister(e.getResultRegisterAsString() + "(0)");
+        Register resultRegister = e.getThread().getRegister(e.getResultRegisterAsString() + "(1)");
 
             ExprInterface value = e.getMemValue();
             IExpr address = e.getAddress();

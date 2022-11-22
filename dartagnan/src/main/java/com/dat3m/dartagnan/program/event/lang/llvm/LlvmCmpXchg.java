@@ -27,9 +27,22 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
         this.expectedValue = other.expectedValue;
     }
 
+    // The llvm instructions actually returns a structure.
+    // In most cases the structure is not used as a whole, 
+    // but rather by accessing its members. Thus there is
+    // no need to support this method.
     @Override
     public Register getResultRegister() {
 		throw new UnsupportedOperationException("getResultRegister() not supported for " + this);
+    }
+
+    // However member registers have the form reg(idx) and
+    // thus we need to know the id of the original register.
+    // This would be a possible usage for the method above
+    // having an implementation, but we rather introduce this
+    // one to avoid wrong usages.
+    public String getResultRegisterAsString() {
+		return resultRegister.toString();
     }
 
     public ExprInterface getExpectedValue() {
