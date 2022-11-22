@@ -27,6 +27,11 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
         this.expectedValue = other.expectedValue;
     }
 
+    @Override
+    public Register getResultRegister() {
+		throw new UnsupportedOperationException("getResultRegister() not supported for " + this);
+    }
+
     public ExprInterface getExpectedValue() {
     	return expectedValue;
     }
