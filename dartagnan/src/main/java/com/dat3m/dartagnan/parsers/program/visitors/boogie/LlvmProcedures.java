@@ -82,12 +82,12 @@ public class LlvmProcedures {
 				// Since we don't support struct types, we instead model each member as a register.
 				// It is the responsibility of each LLVM istruction creating a structure to create such registers,
 				// then when calling "extractvalue" we can check if the member was properly initialized 
-				visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(0)", GlobalSettings.ARCH_PRECISION);
-				visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(1)", GlobalSettings.ARCH_PRECISION);
+				Register oldValueRegister = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(0)", GlobalSettings.ARCH_PRECISION);
+				Register cmpRegister = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(1)", GlobalSettings.ARCH_PRECISION);
 				// The compilation of Llvm.newCompareExchange will 
 				// assign the correct values to the registers above
 				mo = C11.intToMo(((IConst) p3).getValueAsInt());
-				visitor.programBuilder.addChild(visitor.threadCount, Llvm.newCompareExchange(reg, (IExpr) p0, (IExpr) p1, (IExpr) p2, mo, true))
+				visitor.programBuilder.addChild(visitor.threadCount, Llvm.newCompareExchange(oldValueRegister, cmpRegister, (IExpr) p0, (IExpr) p1, (IExpr) p2, mo, true))
 	        		.setCLine(visitor.currentLine)
 	        		.setSourceCodeFile(visitor.sourceCodeFile);
 				return;		

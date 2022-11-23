@@ -13,10 +13,14 @@ import java.util.Set;
 public class LlvmCmpXchg extends LlvmAbstractRMW {
 
     private IExpr expectedValue;
+    private Register oldValueRegister;
+    private Register cmpRegister;
 
-    public LlvmCmpXchg(Register register, IExpr address, IExpr expectedValue, IExpr value, String mo, boolean strong) {
-        super(address, register, value, mo);
+    public LlvmCmpXchg(Register oldValueRegister, Register cmpRegister, IExpr address, IExpr expectedValue, IExpr value, String mo, boolean strong) {
+        super(address, null, value, mo);
         this.expectedValue = expectedValue;
+        this.oldValueRegister = oldValueRegister;
+        this.cmpRegister = cmpRegister;
         if(strong) {
         	addFilters(STRONG);
         }
@@ -36,13 +40,15 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
 		throw new UnsupportedOperationException("getResultRegister() not supported for " + this);
     }
 
-    // However member registers have the form reg(idx) and
-    // thus we need to know the id of the original register.
-    // This would be a possible usage for the method above
-    // having an implementation, but we rather introduce this
-    // one to avoid wrong usages.
-    public String getResultRegisterAsString() {
-		return resultRegister.toString();
+    public Register getStructRegister(int idx) {
+		switch(idx) {
+            case 1 :
+                return oldValueRegister;
+            case 2:
+                return cmpRegister;
+            default:
+                throw new UnsupportedOperationException("Cannot access structure with id " + idx + " in " + getClass().getName());
+        }
     }
 
     public ExprInterface getExpectedValue() {
