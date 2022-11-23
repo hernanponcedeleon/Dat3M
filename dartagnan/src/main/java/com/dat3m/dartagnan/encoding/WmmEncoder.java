@@ -514,7 +514,7 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public BooleanFormula visitMemoryOrder(Relation co) {
+        public BooleanFormula visitCoherence(Relation co) {
             List<BooleanFormula> enc = new ArrayList<>();
             boolean idl = !context.useSATEncoding;
             List<MemEvent> allWrites = program.getCache().getEvents(FilterBasic.get(WRITE)).stream()

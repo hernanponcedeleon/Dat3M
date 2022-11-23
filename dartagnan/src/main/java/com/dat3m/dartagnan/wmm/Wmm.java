@@ -260,7 +260,7 @@ public class Wmm {
             case EXT:
                 return new DifferentThreads(r);
             case CO:
-                return new MemoryOrder(r);
+                return new Coherence(r);
             case RF:
                 return new ReadFrom(r);
             case RMW:

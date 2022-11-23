@@ -700,7 +700,7 @@ public class RelationAnalysis {
             return new Knowledge(may, enableMustSets ? must : Set.of());
         }
         @Override
-        public Knowledge visitMemoryOrder(Relation rel) {
+        public Knowledge visitCoherence(Relation rel) {
             logger.trace("Computing knowledge about memory order");
             final List<Event> nonInitWrites = program.getCache().getEvents(FilterMinus.get(FilterBasic.get(WRITE), FilterBasic.get(INIT)));
             Set<Tuple> may = new HashSet<>();
@@ -1374,7 +1374,7 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Map<Relation, ExtendedDelta> visitMemoryOrder(Relation co) {
+        public Map<Relation, ExtendedDelta> visitCoherence(Relation co) {
             if (disabled.isEmpty()) {
                 return Map.of();
             }

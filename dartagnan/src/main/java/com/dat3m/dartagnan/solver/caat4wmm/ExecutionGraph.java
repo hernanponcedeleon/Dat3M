@@ -259,7 +259,7 @@ public class ExecutionGraph {
             graph = new LocationGraph();
         } else if (relClass == ProgramOrder.class) {
             graph = new ProgramOrderGraph();
-        } else if (relClass == MemoryOrder.class) {
+        } else if (relClass == Coherence.class) {
             graph = new CoherenceGraph();
         } else if (relClass == Inverse.class || relClass == TransitiveClosure.class || relClass == RangeIdentity.class) {
             RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));

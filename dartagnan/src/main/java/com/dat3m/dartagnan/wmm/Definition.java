@@ -88,7 +88,7 @@ public abstract class Definition implements Constraint {
         default T visitAddressDependency(Relation addrDirect) { return visitDefinition(addrDirect, List.of()); }
         default T visitCriticalSections(Relation rscs) { return visitDefinition(rscs, List.of()); }
         default T visitReadModifyWrites(Relation rmw) { return visitDefinition(rmw, List.of()); }
-        default T visitMemoryOrder(Relation co) { return visitDefinition(co, List.of()); }
+        default T visitCoherence(Relation co) { return visitDefinition(co, List.of()); }
         default T visitSameAddress(Relation loc) { return visitDefinition(loc, List.of()); }
         default T visitReadFrom(Relation rf) { return visitDefinition(rf, List.of()); }
     }
