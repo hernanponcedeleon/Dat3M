@@ -156,6 +156,7 @@ public class WmmEncoder implements Encoder {
         final Program program = context.getTask().getProgram();
         final RelationAnalysis ra = context.getAnalysisContext().requires(RelationAnalysis.class);
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+
         @Override
         public BooleanFormula visitDefinition(Relation rel, List<? extends Relation> dependencies) {
             BooleanFormula enc = bmgr.makeTrue();
@@ -164,6 +165,7 @@ public class WmmEncoder implements Encoder {
             }
             return enc;
         }
+
         @Override
         public BooleanFormula visitUnion(Relation rel, Relation... r) {
             BooleanFormula enc = bmgr.makeTrue();
@@ -182,6 +184,7 @@ public class WmmEncoder implements Encoder {
             }
             return enc;
         }
+
         @Override
         public BooleanFormula visitIntersection(Relation rel, Relation... r) {
             BooleanFormula enc = bmgr.makeTrue();
@@ -204,6 +207,7 @@ public class WmmEncoder implements Encoder {
             }
             return enc;
         }
+
         @Override
         public BooleanFormula visitDifference(Relation rel, Relation r1, Relation r2) {
             BooleanFormula enc = bmgr.makeTrue();
@@ -220,6 +224,7 @@ public class WmmEncoder implements Encoder {
             }
             return enc;
         }
+
         @Override
         public BooleanFormula visitComposition(Relation rel, Relation r1, Relation r2) {
             BooleanFormula enc = bmgr.makeTrue();
@@ -250,6 +255,7 @@ public class WmmEncoder implements Encoder {
             }
             return enc;
         }
+
         @Override
         public BooleanFormula visitDomainIdentity(Relation rel, Relation r1) {
             BooleanFormula enc = bmgr.makeTrue();
@@ -265,6 +271,7 @@ public class WmmEncoder implements Encoder {
             }
             return enc;
         }
+
         @Override
         public BooleanFormula visitRangeIdentity(Relation rel, Relation r1) {
             BooleanFormula enc = bmgr.makeTrue();
@@ -280,6 +287,7 @@ public class WmmEncoder implements Encoder {
             }
             return enc;
         }
+
         @Override
         public BooleanFormula visitTransitiveClosure(Relation rel, Relation r1) {
             BooleanFormula enc = bmgr.makeTrue();
@@ -309,6 +317,7 @@ public class WmmEncoder implements Encoder {
             }
             return enc;
         }
+
         @Override
         public BooleanFormula visitInverse(Relation rel, Relation r1) {
             BooleanFormula enc = bmgr.makeTrue();
@@ -322,6 +331,7 @@ public class WmmEncoder implements Encoder {
             }
             return enc;
         }
+
         @Override
         public BooleanFormula visitFences(Relation rel, FilterAbstract fenceSet) {
             BooleanFormula enc = bmgr.makeTrue();
@@ -402,6 +412,7 @@ public class WmmEncoder implements Encoder {
             }
             return enc;
         }
+
         @Override
         public BooleanFormula visitReadModifyWrites(Relation rmw) {
             BooleanFormula enc = bmgr.makeTrue();
@@ -480,6 +491,7 @@ public class WmmEncoder implements Encoder {
             }
             return enc;
         }
+
         @Override
         public BooleanFormula visitReadFrom(Relation rf) {
             List<BooleanFormula> enc = new ArrayList<>();
@@ -579,6 +591,7 @@ public class WmmEncoder implements Encoder {
         private BooleanFormula edge(Relation relation, Tuple tuple) {
             return context.edge(relation, tuple);
         }
+
         private BooleanFormula execution(Tuple tuple) {
             return context.execution(tuple.getFirst(), tuple.getSecond());
         }
