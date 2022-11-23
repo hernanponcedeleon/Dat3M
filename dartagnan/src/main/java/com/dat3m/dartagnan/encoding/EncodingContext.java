@@ -125,8 +125,8 @@ public final class EncodingContext {
                     controlFlow(((BranchEquivalence.Class) e.getKey().second).getRepresentative());
             enc.add(booleanFormulaManager.equivalence(e.getValue(), booleanFormulaManager.and(f1, f2)));
         }
-        logger.info("Number of execution pairs: {}", executionPairs.size());
-        logger.info("Usage of execution pairs: {}", executionPairsUsage);
+        logger.debug("Number of execution pairs: {}", executionPairs.size());
+        logger.debug("Usage of execution pairs: {}", executionPairsUsage);
         return booleanFormulaManager.and(enc);
     }
 

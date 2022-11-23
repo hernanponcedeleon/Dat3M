@@ -127,7 +127,7 @@ public class Acyclic extends Axiom {
                 }
             }
         }
-        logger.info("disabled {} tuples in {}ms", d.size(), System.currentTimeMillis() - t0);
+        logger.debug("disabled {} tuples in {}ms", d.size(), System.currentTimeMillis() - t0);
         return Map.of(rel, new RelationAnalysis.ExtendedDelta(d, Set.of()));
     }
 
@@ -187,7 +187,7 @@ public class Acyclic extends Axiom {
                 }
             }
         }
-        logger.info("disabled {} tuples in {}ms", d.size(), System.currentTimeMillis() - t0);
+        logger.debug("Disabled {} tuples in {}ms", d.size(), System.currentTimeMillis() - t0);
         return Map.of(rel, new RelationAnalysis.ExtendedDelta(d, Set.of()));
     }
 
@@ -200,7 +200,7 @@ public class Acyclic extends Axiom {
     }
 
     private Set<Tuple> getEncodeTupleSet(ExecutionAnalysis exec, RelationAnalysis ra) {
-        logger.info("Computing encodeTupleSet for " + this);
+        logger.trace("Computing encodeTupleSet for " + this);
         // ====== Construct [Event -> Successor] mapping ======
         Map<Event, Collection<Event>> succMap = new HashMap<>();
         final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
@@ -222,7 +222,7 @@ public class Acyclic extends Axiom {
             }
         }
 
-        logger.info("encodeTupleSet size " + result.size());
+        logger.debug("encodeTupleSet size " + result.size());
         if (reduceAcyclicityEncoding) {
             Set<Tuple> obsolete = mustSetProducts(exec, ra.getKnowledge(rel));
             //TODO skip this call
@@ -232,7 +232,7 @@ public class Acyclic extends Axiom {
                 logger.warn("missed {} tuples", copy.size());
             }
             result.removeAll(obsolete);
-            logger.info("reduced encodeTupleSet size {}", result.size());
+            logger.debug("reduced encodeTupleSet size {}", result.size());
         }
         return result;
     }
@@ -300,7 +300,7 @@ public class Acyclic extends Axiom {
         List<Tuple> crossEdges = k.getMustSet().stream()
                 .filter(t -> t.isCrossThread() && !t.getFirst().is(Tag.INIT))
                 .collect(Collectors.toList());
-        logger.info("cross-edges: {}", crossEdges.size());
+        logger.debug("cross-edges: {}", crossEdges.size());
         Map<Event, Set<Event>> transMinSet = new HashMap<>();
         for (Tuple t : k.getMustSet()) {
             transMinSet.computeIfAbsent(t.getSecond(), x -> new HashSet<>()).add(t.getFirst());
