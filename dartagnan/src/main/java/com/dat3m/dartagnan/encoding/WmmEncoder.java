@@ -485,7 +485,7 @@ public class WmmEncoder implements Encoder {
         }
         @Override
         public BooleanFormula visitReadFrom(Relation rf) {
-            BooleanFormula enc = bmgr.makeTrue();
+            List<BooleanFormula> enc = new ArrayList<>();
             Map<MemEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
             for (Tuple tuple : ra.getKnowledge(rf).getMaySet()) {
                 MemEvent w = (MemEvent) tuple.getFirst();
@@ -494,36 +494,26 @@ public class WmmEncoder implements Encoder {
                 BooleanFormula sameAddress = context.sameAddress(w, r);
                 BooleanFormula sameValue = context.equal(context.value(w), context.value(r));
                 edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(edge);
-                enc = bmgr.and(enc, bmgr.implication(edge, bmgr.and(execution(tuple), sameAddress, sameValue)));
+                enc.add(bmgr.implication(edge, bmgr.and(execution(tuple), sameAddress, sameValue)));
             }
             for (MemEvent r : edgeMap.keySet()) {
-                enc = bmgr.and(enc, encodeEdgeSeq(r, edgeMap.get(r)));
+                List<BooleanFormula> edges = edgeMap.get(r);
+                if (GlobalSettings.ALLOW_MULTIREADS) {
+                    enc.add(bmgr.implication(context.execution(r), bmgr.or(edges)));
+                    continue;
+                }
+                int num = edges.size();
+                String rPrefix = "s(" + RF + ",E" + r.getCId() + ",";
+                BooleanFormula lastSeqVar = edges.get(0);
+                for (int i = 1; i < num; i++) {
+                    BooleanFormula newSeqVar = bmgr.makeVariable(rPrefix + i + ")");
+                    enc.add(bmgr.equivalence(newSeqVar, bmgr.or(lastSeqVar, edges.get(i))));
+                    enc.add(bmgr.not(bmgr.and(edges.get(i), lastSeqVar)));
+                    lastSeqVar = newSeqVar;
+                }
+                enc.add(bmgr.implication(context.execution(r), lastSeqVar));
             }
-            return enc;
-        }
-
-        private BooleanFormula encodeEdgeSeq(Event read, List<BooleanFormula> edges) {
-            if (GlobalSettings.ALLOW_MULTIREADS) {
-                return bmgr.implication(context.execution(read), bmgr.or(edges));
-            }
-            int num = edges.size();
-            int readId = read.getGlobalId();
-            BooleanFormula lastSeqVar = mkSeqVar(readId, 0);
-            BooleanFormula newSeqVar = lastSeqVar;
-            BooleanFormula atMostOne = bmgr.equivalence(lastSeqVar, edges.get(0));
-            for (int i = 1; i < num; i++) {
-                newSeqVar = mkSeqVar(readId, i);
-                atMostOne = bmgr.and(atMostOne, bmgr.equivalence(newSeqVar, bmgr.or(lastSeqVar, edges.get(i))));
-                atMostOne = bmgr.and(atMostOne, bmgr.not(bmgr.and(edges.get(i), lastSeqVar)));
-                lastSeqVar = newSeqVar;
-            }
-            BooleanFormula atLeastOne = bmgr.or(newSeqVar, edges.get(edges.size() - 1));
-            atLeastOne = bmgr.implication(context.execution(read), atLeastOne);
-            return bmgr.and(atMostOne, atLeastOne);
-        }
-
-        private BooleanFormula mkSeqVar(int readId, int i) {
-            return bmgr.makeVariable("s(" + RF + ",E" + readId + "," + i + ")");
+            return bmgr.and(enc);
         }
 
         @Override
