@@ -418,17 +418,31 @@ public class WmmEncoder implements Encoder {
                     BooleanFormula sameAddress = context.sameAddress(load, (MemEvent) store);
                     // Encode if load and store form an exclusive pair
                     BooleanFormula isPair = exclPair(load, store);
-                    BooleanFormula pairingCond = pairingCond(load, store, mayIn, mayOut);
+                    List<BooleanFormula> pairingCond = new ArrayList<>();
+                    pairingCond.add(context.execution(load));
+                    pairingCond.add(context.controlFlow(store));
+                    for (Tuple t1 : mayIn.apply(store)) {
+                        Event otherLoad = t1.getFirst();
+                        if (otherLoad.getCId() > load.getCId()) {
+                            pairingCond.add(bmgr.not(context.execution(otherLoad)));
+                        }
+                    }
+                    for (Tuple t1 : mayOut.apply(load)) {
+                        Event otherStore = t1.getSecond();
+                        if (otherStore.getCId() < store.getCId()) {
+                            pairingCond.add(bmgr.not(context.controlFlow(otherStore)));
+                        }
+                    }
                     // For ARMv8, the store can be executed if addresses mismatch, but behaviour is "constrained unpredictable"
                     // The implementation does not include all possible unpredictable cases: in case of address
                     // mismatch, addresses of read and write are unknown, i.e. read and write can use any address.
                     // For RISCV and Power, addresses should match.
                     if (store.is(Tag.MATCHADDRESS)) {
-                        pairingCond = bmgr.and(pairingCond, sameAddress);
+                        pairingCond.add(sameAddress);
                     } else {
                         unpredictable = bmgr.or(unpredictable, bmgr.and(context.execution(store), isPair, bmgr.not(sameAddress)));
                     }
-                    enc = bmgr.and(enc, bmgr.equivalence(isPair, pairingCond));
+                    enc = bmgr.and(enc, bmgr.equivalence(isPair, bmgr.and(pairingCond)));
                     storeExec = bmgr.or(storeExec, isPair);
                 }
                 enc = bmgr.and(enc, bmgr.implication(context.execution(store), storeExec));
@@ -452,23 +466,6 @@ public class WmmEncoder implements Encoder {
 
         private BooleanFormula exclPair(Event load, Event store) {
             return bmgr.makeVariable("excl(" + load.getGlobalId() + "," + store.getGlobalId() + ")");
-        }
-
-        private BooleanFormula pairingCond(Event load, Event store, Function<Event, Collection<Tuple>> mayIn, Function<Event, Collection<Tuple>> mayOut) {
-            BooleanFormula pairingCond = bmgr.and(context.execution(load), context.controlFlow(store));
-            for (Tuple t : mayIn.apply(store)) {
-                Event otherLoad = t.getFirst();
-                if (otherLoad.getGlobalId() > load.getGlobalId()) {
-                    pairingCond = bmgr.and(pairingCond, bmgr.not(context.execution(otherLoad)));
-                }
-            }
-            for (Tuple t : mayOut.apply(load)) {
-                Event otherStore = t.getSecond();
-                if (otherStore.getGlobalId() < store.getGlobalId()) {
-                    pairingCond = bmgr.and(pairingCond, bmgr.not(context.controlFlow(otherStore)));
-                }
-            }
-            return pairingCond;
         }
 
         @Override
