@@ -44,7 +44,6 @@ public final class EncodingContext {
     private final ExecutionAnalysis executionAnalysis;
     private final AliasAnalysis aliasAnalysis;
     private final RelationAnalysis relationAnalysis;
-    private final SolverContext solverContext;
     private final FormulaManager formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
 
@@ -67,20 +66,19 @@ public final class EncodingContext {
     private final Map<UnorderedPair, BooleanFormula> executionPairs = new HashMap<>();
     private int executionPairsUsage;
 
-    private EncodingContext(VerificationTask t, Context a, SolverContext s) {
+    private EncodingContext(VerificationTask t, Context a, FormulaManager m) {
         verificationTask = checkNotNull(t);
         analysisContext = checkNotNull(a);
         branchEquivalence = a.requires(BranchEquivalence.class);
         executionAnalysis = a.requires(ExecutionAnalysis.class);
         aliasAnalysis = a.requires(AliasAnalysis.class);
         relationAnalysis = a.requires(RelationAnalysis.class);
-        solverContext = checkNotNull(s);
-        formulaManager = s.getFormulaManager();
-        booleanFormulaManager = formulaManager.getBooleanFormulaManager();
+        formulaManager = m;
+        booleanFormulaManager = m.getBooleanFormulaManager();
     }
 
-    public static EncodingContext of(VerificationTask task, Context analysisContext, SolverContext solverContext) throws InvalidConfigurationException {
-        EncodingContext context = new EncodingContext(task, analysisContext, solverContext);
+    public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
+        EncodingContext context = new EncodingContext(task, analysisContext, formulaManager);
         task.getConfig().inject(context);
         logger.info("{}: {}", IDL_TO_SAT, context.useSATEncoding);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
@@ -99,11 +97,6 @@ public final class EncodingContext {
 
     public Context getAnalysisContext() {
         return analysisContext;
-    }
-
-    @Deprecated(forRemoval = true)
-    public SolverContext getSolverContext() {
-        return solverContext;
     }
 
     public FormulaManager getFormulaManager() {

@@ -123,7 +123,7 @@ public class RefinementSolver extends ModelChecker {
         }
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
 
-        context = EncodingContext.of(baselineTask, baselineContext, ctx);
+        context = EncodingContext.of(baselineTask, baselineContext, ctx.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         // We use the original memory model for symmetry breaking because we need axioms
