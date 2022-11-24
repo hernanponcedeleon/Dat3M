@@ -485,7 +485,7 @@ public class RelationAnalysis {
         }
         @Override
         public Knowledge visitMemoryOrder(Relation rel) {
-            logger.info("Computing maxTupleSet for memory order");
+            logger.trace("Computing maxTupleSet for memory order");
             final List<Event> nonInitWrites = program.getCache().getEvents(FilterMinus.get(FilterBasic.get(WRITE), FilterBasic.get(INIT)));
             TupleSet may = new TupleSet();
             for (Event w1 : program.getCache().getEvents(FilterBasic.get(WRITE))) {
@@ -507,12 +507,12 @@ public class RelationAnalysis {
                     }
                 }
             }
-            logger.info("maxTupleSet size for memory order: " + may.size());
+            logger.debug("maxTupleSet size for memory order: " + may.size());
             return new Knowledge(may, must);
         }
         @Override
         public Knowledge visitReadFrom(Relation rel) {
-            logger.info("Computing maxTupleSet for read-from");
+            logger.trace("Computing maxTupleSet for read-from");
             TupleSet may = new TupleSet();
             List<Event> loadEvents = program.getCache().getEvents(FilterBasic.get(READ));
             List<Event> storeEvents = program.getCache().getEvents(FilterBasic.get(WRITE));
@@ -596,9 +596,9 @@ public class RelationAnalysis {
                         }
                     }
                 }
-                logger.info("Atomic block optimization eliminated {} reads", sizeBefore - may.size());
+                logger.debug("Atomic block optimization eliminated {} reads", sizeBefore - may.size());
             }
-            logger.info("maxTupleSet size for read-from: {}", may.size());
+            logger.debug("maxTupleSet size for read-from: {}", may.size());
             return new Knowledge(may, new TupleSet());
         }
         @Override

@@ -95,7 +95,7 @@ public class Wmm {
                 "relation %s is constrained by some axiom", relation);
         checkArgument(relations.stream().noneMatch(r -> r.getDependencies().contains(relation)),
                 "relation %s is constrained by some definition", relation);
-        logger.debug("delete relation {}", relation);
+        logger.trace("delete relation {}", relation);
         relations.remove(relation);
     }
 
@@ -108,7 +108,7 @@ public class Wmm {
      */
     public Relation addDefinition(Definition definition) {
         checkArgument(relations.containsAll(definition.getConstrainedRelations()));
-        logger.debug("add definition {}", definition);
+        logger.trace("add definition {}", definition);
         Relation relation = definition.getDefinedRelation();
         checkArgument(relation.definition == null);
         relation.definition = definition;
@@ -118,7 +118,7 @@ public class Wmm {
     public void removeDefinition(Relation definedRelation) {
         checkArgument(definedRelation.definition != null,
                 "relation %s already undefined", definedRelation);
-        logger.debug("remove definition {}", definedRelation.definition);
+        logger.trace("remove definition {}", definedRelation.definition);
         definedRelation.definition = null;
     }
 
