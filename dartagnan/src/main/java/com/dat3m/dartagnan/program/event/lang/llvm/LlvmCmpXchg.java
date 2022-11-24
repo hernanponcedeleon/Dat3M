@@ -42,9 +42,9 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
 
     public Register getStructRegister(int idx) {
 		switch(idx) {
-            case 1 :
+            case 0:
                 return oldValueRegister;
-            case 2:
+            case 1:
                 return cmpRegister;
             default:
                 throw new UnsupportedOperationException("Cannot access structure with id " + idx + " in " + getClass().getName());
