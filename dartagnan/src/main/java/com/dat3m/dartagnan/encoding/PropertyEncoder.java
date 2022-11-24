@@ -7,8 +7,6 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.filter.FilterMinus;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -27,7 +25,6 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
-import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -202,7 +199,8 @@ public class PropertyEncoder implements Encoder {
         BooleanFormula atLeastOneStuck = bmgr.makeFalse();
         for (Thread t : program.getThreads()) {
             BooleanFormula isStuck = isStuckMap.getOrDefault(t, bmgr.makeFalse());
-            BooleanFormula pending = t.getCache().getEvents(FilterBasic.get(Tag.EARLYTERMINATION)).stream()
+            BooleanFormula pending = t.getEvents().stream()
+                    .filter(e -> e.is(Tag.EARLYTERMINATION))
                     .map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
 
             atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
@@ -233,9 +231,15 @@ public class PropertyEncoder implements Encoder {
                 if(t1.getId() == t2.getId()) {
                     continue;
                 }
-                for(Event e1 : t1.getCache().getEvents(FilterMinus.get(FilterBasic.get(WRITE), FilterBasic.get(Tag.INIT)))) {
+                for(Event e1 : t1.getEvents()) {
+                    if (!(e1 instanceof MemEvent) || !e1.is(Tag.WRITE) || e1.is(Tag.INIT)) {
+                        continue;
+                    }
                     MemEvent w = (MemEvent)e1;
-                    for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.INIT)))) {
+                    for(Event e2 : t2.getEvents()) {
+                        if (!(e2 instanceof MemEvent) || e2.is(Tag.INIT)) {
+                            continue;
+                        }
                         MemEvent m = (MemEvent)e2;
                         if(w.hasFilter(Tag.RMW) && m.hasFilter(Tag.RMW)) {
                             continue;
@@ -275,7 +279,7 @@ public class PropertyEncoder implements Encoder {
         BooleanFormula enc = bmgr.makeTrue();
         final Function<Event, Collection<Tuple>> out = knowledge.getMayOut();
         for (Event writeEvent : program.getEvents()) {
-            if (!writeEvent.is(WRITE)) {
+            if (!writeEvent.is(Tag.WRITE)) {
                 continue;
             }
             MemEvent w1 = (MemEvent) writeEvent;

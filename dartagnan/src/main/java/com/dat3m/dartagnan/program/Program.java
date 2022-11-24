@@ -3,9 +3,7 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.memory.Memory;
 
 import java.util.ArrayList;
@@ -109,10 +107,9 @@ public class Program {
      * @return {@code cId}-ordered complete sequence of all events in this program.
      */
 	public List<Event> getEvents() {
-        // TODO: Why don't we use the cache if available?
         List<Event> events = new ArrayList<>();
-		for(Thread t : threads){
-			events.addAll(t.getCache().getEvents(FilterBasic.get(Tag.ANY)));
+		for (Thread t : threads) {
+			events.addAll(t.getEvents());
 		}
 		return events;
 	}

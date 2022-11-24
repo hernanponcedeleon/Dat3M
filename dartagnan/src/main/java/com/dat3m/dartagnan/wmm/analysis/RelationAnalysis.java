@@ -16,10 +16,6 @@ import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.filter.FilterIntersection;
-import com.dat3m.dartagnan.program.filter.FilterMinus;
-import com.dat3m.dartagnan.program.filter.FilterUnion;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -475,10 +471,11 @@ public class RelationAnalysis {
             List<Thread> threads = program.getThreads();
             for (int i = 0; i < threads.size(); i++) {
                 Thread t1 = threads.get(i);
+                List<Event> visible1 = visibleEvents(t1);
                 for (int j = i + 1; j < threads.size(); j++) {
                     Thread t2 = threads.get(j);
-                    for (Event e1 : t1.getCache().getEvents(FilterBasic.get(VISIBLE))) {
-                        for (Event e2 : t2.getCache().getEvents(FilterBasic.get(VISIBLE))) {
+                    for (Event e2 : visibleEvents(t2)) {
+                        for (Event e1 : visible1) {
                             // No test for exec.areMutuallyExclusive, since that currently does not span across threads
                             must.add(new Tuple(e1, e2));
                             must.add(new Tuple(e2, e1));
@@ -492,7 +489,7 @@ public class RelationAnalysis {
         public Knowledge visitInternal(Relation rel) {
             Set<Tuple> must = new HashSet<>();
             for (Thread t : program.getThreads()) {
-                List<Event> events = t.getCache().getEvents(FilterBasic.get(VISIBLE));
+                List<Event> events = visibleEvents(t);
                 for (Event e1 : events) {
                     for (Event e2 : events) {
                         if (!exec.areMutuallyExclusive(e1, e2)) {
@@ -507,7 +504,7 @@ public class RelationAnalysis {
         public Knowledge visitProgramOrder(Relation rel, FilterAbstract type) {
             Set<Tuple> must = new HashSet<>();
             for (Thread t : program.getThreads()) {
-                List<Event> events = t.getCache().getEvents(type);
+                List<Event> events = t.getEvents().stream().filter(type::filter).collect(toList());
                 for (int i = 0; i < events.size(); i++) {
                     Event e1 = events.get(i);
                     for (int j = i + 1; j < events.size(); j++) {
@@ -527,20 +524,19 @@ public class RelationAnalysis {
             Set<Tuple> must = new HashSet<>();
             // NOTE: If's (under Linux) have different notion of ctrl dependency than conditional jumps!
             for (Thread thread : program.getThreads()) {
-                for (Event e1 : thread.getCache().getEvents(FilterBasic.get(CMP))) {
-                    for (Event e2 : ((IfAsJump) e1).getBranchesEvents()) {
-                        if (!exec.areMutuallyExclusive(e1, e2)) {
-                            must.add(new Tuple(e1, e2));
+                for (Event e1 : thread.getEvents()) {
+                    if (e1.is(CMP)) {
+                        for (Event e2 : ((IfAsJump) e1).getBranchesEvents()) {
+                            if (!exec.areMutuallyExclusive(e1, e2)) {
+                                must.add(new Tuple(e1, e2));
+                            }
                         }
                     }
                 }
                 // Relates jumps (except those implementing Ifs and their internal jump to end) with all later events
-                List<Event> condJumps = thread.getCache().getEvents(FilterMinus.get(
-                        FilterBasic.get(JUMP),
-                        FilterUnion.get(FilterBasic.get(CMP), FilterBasic.get(IFI))));
-                if (!condJumps.isEmpty()) {
-                    for (Event e2 : thread.getCache().getEvents(FilterBasic.get(ANY))) {
-                        for (Event e1 : condJumps) {
+                for (Event e1 : thread.getEvents()) {
+                    if (e1.is(JUMP) && !e1.is(CMP) && !e1.is(IFI)) {
+                        for (Event e2 : thread.getEvents()) {
                             if (e1.getGlobalId() < e2.getGlobalId() && !exec.areMutuallyExclusive(e1, e2)) {
                                 must.add(new Tuple(e1, e2));
                             }
@@ -562,23 +558,27 @@ public class RelationAnalysis {
         public Knowledge visitFences(Relation rel, FilterAbstract fence) {
             Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
-            for (Event f : program.getEvents()) {
-                if (!fence.filter(f)) {
-                    continue;
-                }
-                List<Event> memEvents = f.getThread().getCache().getEvents(FilterBasic.get(MEMORY));
-                int numEventsBeforeFence = (int) memEvents.stream()
-                        .mapToInt(Event::getGlobalId).filter(id -> id < f.getGlobalId())
-                        .count();
-                List<Event> eventsBefore = memEvents.subList(0, numEventsBeforeFence);
-                List<Event> eventsAfter = memEvents.subList(numEventsBeforeFence, memEvents.size());
-                for (Event e1 : eventsBefore) {
-                    boolean isImpliedByE1 = enableMustSets && exec.isImplied(e1, f);
-                    for (Event e2 : eventsAfter) {
-                        if (!exec.areMutuallyExclusive(e1, e2)) {
-                            may.add(new Tuple(e1, e2));
-                            if (isImpliedByE1 || enableMustSets && exec.isImplied(e2, f)) {
-                                must.add(new Tuple(e1, e2));
+            for (Thread t : program.getThreads()) {
+                List<Event> events = visibleEvents(t);
+                int end = events.size();
+                for (int i = 0; i < end; i++) {
+                    Event f = events.get(i);
+                    if (!fence.filter(f)) {
+                        continue;
+                    }
+                    for (Event x : events.subList(0, i)) {
+                        if (exec.areMutuallyExclusive(x, f)) {
+                            continue;
+                        }
+                        boolean implies = enableMustSets && exec.isImplied(x, f);
+                        for (Event y : events.subList(i + 1, end)) {
+                            if (exec.areMutuallyExclusive(x, y) || exec.areMutuallyExclusive(f, y)) {
+                                continue;
+                            }
+                            Tuple xy = new Tuple(x, y);
+                            may.add(xy);
+                            if (implies || enableMustSets && exec.isImplied(y, f)) {
+                                must.add(xy);
                             }
                         }
                     }
@@ -607,8 +607,11 @@ public class RelationAnalysis {
             for (Thread thread : program.getThreads()) {
                 // assume order by cId
                 // assume cId describes a topological sorting over the control flow
-                List<Event> locks = reverse(thread.getCache().getEvents(FilterBasic.get(Linux.RCU_LOCK)));
-                for (Event unlock : thread.getCache().getEvents(FilterBasic.get(Linux.RCU_UNLOCK))) {
+                List<Event> locks = reverse(thread.getEvents().stream().filter(e -> e.is(Linux.RCU_LOCK)).collect(toList()));
+                for (Event unlock : thread.getEvents()) {
+                    if (!unlock.is(Linux.RCU_UNLOCK)) {
+                        continue;
+                    }
                     // iteration order assures that all intermediaries were already iterated
                     for (Event lock : locks) {
                         if (unlock.getGlobalId() < lock.getGlobalId() ||
@@ -669,7 +672,7 @@ public class RelationAnalysis {
             Set<Tuple> may = new HashSet<>(must);
             // LoadExcl -> StoreExcl
             for (Thread thread : program.getThreads()) {
-                List<Event> events = thread.getCache().getEvents(FilterBasic.get(EXCL));
+                List<Event> events = thread.getEvents().stream().filter(e -> e.is(EXCL)).collect(toList());
                 // assume order by cId
                 // assume cId describes a topological sorting over the control flow
                 for (int end = 1; end < events.size(); end++) {
@@ -1395,6 +1398,10 @@ public class RelationAnalysis {
             }
             return Map.of(co, new ExtendedDelta(Set.of(), e));
         }
+    }
+
+    private static List<Event> visibleEvents(Thread t) {
+        return t.getEvents().stream().filter(e -> e.is(VISIBLE)).collect(toList());
     }
 
     private static Set<Tuple> inverse(Set<Tuple> set) {
