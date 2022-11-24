@@ -345,6 +345,28 @@ public class WmmEncoder implements Encoder {
             }
             return bmgr.and(enc, bmgr.equivalence(Flag.ARM_UNPREDICTABLE_BEHAVIOUR.repr(context.getFormulaManager()), unpredictable));
         }
+
+        private BooleanFormula exclPair(Event load, Event store) {
+            return bmgr.makeVariable("excl(" + load.getCId() + "," + store.getCId() + ")");
+        }
+
+        private BooleanFormula pairingCond(Event load, Event store, TupleSet maySet) {
+            BooleanFormula pairingCond = bmgr.and(context.execution(load), context.controlFlow(store));
+            for (Tuple t : maySet.getBySecond(store)) {
+                Event otherLoad = t.getFirst();
+                if (otherLoad.getCId() > load.getCId()) {
+                    pairingCond = bmgr.and(pairingCond, bmgr.not(context.execution(otherLoad)));
+                }
+            }
+            for (Tuple t : maySet.getByFirst(load)) {
+                Event otherStore = t.getSecond();
+                if (otherStore.getCId() < store.getCId()) {
+                    pairingCond = bmgr.and(pairingCond, bmgr.not(context.controlFlow(otherStore)));
+                }
+            }
+            return pairingCond;
+        }
+
         @Override
         public BooleanFormula visitSameAddress(Relation loc) {
             BooleanFormula enc = bmgr.makeTrue();
@@ -375,29 +397,6 @@ public class WmmEncoder implements Encoder {
             }
             return enc;
         }
-        @Override
-        public BooleanFormula visitMemoryOrder(Relation co) {
-            return context.useSATEncoding ? encodeSAT(co) : encodeIDL(co);
-        }
-        private BooleanFormula pairingCond(Event load, Event store, TupleSet maySet) {
-            BooleanFormula pairingCond = bmgr.and(context.execution(load), context.controlFlow(store));
-            for (Tuple t : maySet.getBySecond(store)) {
-                Event otherLoad = t.getFirst();
-                if (otherLoad.getCId() > load.getCId()) {
-                    pairingCond = bmgr.and(pairingCond, bmgr.not(context.execution(otherLoad)));
-                }
-            }
-            for (Tuple t : maySet.getByFirst(load)) {
-                Event otherStore = t.getSecond();
-                if (otherStore.getCId() < store.getCId()) {
-                    pairingCond = bmgr.and(pairingCond, bmgr.not(context.controlFlow(otherStore)));
-                }
-            }
-            return pairingCond;
-        }
-        private BooleanFormula exclPair(Event load, Event store) {
-            return bmgr.makeVariable("excl(" + load.getCId() + "," + store.getCId() + ")");
-        }
 
         private BooleanFormula encodeEdgeSeq(Event read, List<BooleanFormula> edges) {
             if (GlobalSettings.ALLOW_MULTIREADS) {
@@ -418,9 +417,16 @@ public class WmmEncoder implements Encoder {
             atLeastOne = bmgr.implication(context.execution(read), atLeastOne);
             return bmgr.and(atMostOne, atLeastOne);
         }
+
         private BooleanFormula mkSeqVar(int readId, int i) {
             return bmgr.makeVariable("s(" + RF + ",E" + readId + "," + i + ")");
         }
+
+        @Override
+        public BooleanFormula visitMemoryOrder(Relation co) {
+            return context.useSATEncoding ? encodeSAT(co) : encodeIDL(co);
+        }
+
         private BooleanFormula encodeIDL(Relation co) {
             IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
             List<MemEvent> allWrites = program.getCache().getEvents(FilterBasic.get(WRITE)).stream()
@@ -465,6 +471,7 @@ public class WmmEncoder implements Encoder {
             }
             return enc;
         }
+
         private BooleanFormula encodeSAT(Relation co) {
             List<MemEvent> allWrites = program.getCache().getEvents(FilterBasic.get(WRITE)).stream()
                     .map(MemEvent.class::cast)
@@ -512,6 +519,7 @@ public class WmmEncoder implements Encoder {
             }
             return enc;
         }
+
         private BooleanFormula edge(Relation relation, Tuple tuple) {
             return context.edge(relation, tuple);
         }
