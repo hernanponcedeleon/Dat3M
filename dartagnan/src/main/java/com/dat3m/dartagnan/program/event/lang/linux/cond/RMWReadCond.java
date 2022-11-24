@@ -27,7 +27,7 @@ public abstract class RMWReadCond extends Load implements RegReaderData {
     }
 
     public BooleanFormula getCond(EncodingContext ctx) {
-    	return ctx.equal(ctx.value(this), cmp.toIntFormula(this, ctx.getSolverContext()));
+    	return ctx.equal(ctx.value(this), cmp.toIntFormula(this, ctx.getFormulaManager()));
     }
 
     @Override

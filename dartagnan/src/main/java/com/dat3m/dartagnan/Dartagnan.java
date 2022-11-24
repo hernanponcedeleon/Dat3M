@@ -173,18 +173,18 @@ public class Dartagnan extends BaseOptions {
 					CallStackComputation csc = CallStackComputation.fromConfig(config);
 					csc.run(p);
     				String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
-    				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name, csc.getCallStackMapping());        		
+    				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name, csc.getCallStackMapping());
             	}
 
             	boolean safetyViolationFound = false;
             	if((result == FAIL && !p.getAss().getInvert()) || 
             			(result == PASS && p.getAss().getInvert())) {
 					printWarningIfThreadStartFailed(p, modelChecker.getEncodingContext(), prover);
-            		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(ctx)))) {
+            		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(ctx.getFormulaManager())))) {
             			safetyViolationFound = true;
             			System.out.println("Safety violation found");
             		}
-            		if(TRUE.equals(prover.getModel().evaluate(LIVENESS.getSMTVariable(ctx)))) {
+            		if(TRUE.equals(prover.getModel().evaluate(LIVENESS.getSMTVariable(ctx.getFormulaManager())))) {
             			System.out.println("Liveness violation found");
             		}
                 }

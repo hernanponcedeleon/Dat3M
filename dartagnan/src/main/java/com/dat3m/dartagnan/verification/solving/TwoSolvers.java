@@ -92,7 +92,7 @@ public class TwoSolvers extends ModelChecker {
         } else {
         	res = FAIL;
             if(!task.getProgram().getAss().getInvert()) {
-                logFlaggedPairs(memoryModel, wmmEncoder, prover1, logger, ctx);
+                logFlaggedPairs(memoryModel, wmmEncoder, prover1, logger, ctx.getFormulaManager());
             }
         }
 

@@ -21,8 +21,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -43,7 +43,7 @@ public class ExecutionModel {
 
     // ============= Model specific  =============
     private Model model;
-    private SolverContext context;
+    private FormulaManager formulaManager;
     private FilterAbstract eventFilter;
     private boolean extractCoherences;
 
@@ -219,7 +219,7 @@ public class ExecutionModel {
         // their capacity in previous iterations and thus we should have less overhead in future populations)
         // However, for all intents and purposes, this serves as a constructor.
         this.model = model;
-        this.context = encodingContext.getSolverContext();
+        formulaManager = encodingContext.getFormulaManager();
         this.eventFilter = eventFilter;
         this.extractCoherences = extractCoherences;
         extractEventsFromModel();
@@ -282,7 +282,7 @@ public class ExecutionModel {
 
                 if (e instanceof CondJump) {
                     CondJump jump = (CondJump) e;
-                    if (jump.didJump(model, context)) {
+                    if (jump.didJump(model, formulaManager)) {
                         e = jump.getLabel();
                         continue;
                     }
@@ -326,7 +326,7 @@ public class ExecutionModel {
         data.setWasExecuted(true);
         if (data.isMemoryEvent()) {
             // ===== Memory Events =====
-        	BigInteger address = ((MemEvent) e).getAddress().getIntValue(e, model, context);
+        	BigInteger address = ((MemEvent) e).getAddress().getIntValue(e, model, formulaManager);
             data.setAccessedAddress(address);
             if (!addressReadsMap.containsKey(address)) {
                 addressReadsMap.put(address, new HashSet<>());
@@ -337,7 +337,7 @@ public class ExecutionModel {
                 data.setValue(new BigInteger(model.evaluate(encodingContext.result((RegWriter) e)).toString()));
                 addressReadsMap.get(address).add(data);
             } else if (data.isWrite()) {
-                data.setValue(((MemEvent)e).getMemValue().getIntValue(e, model, context));
+                data.setValue(((MemEvent)e).getMemValue().getIntValue(e, model, formulaManager));
                 addressWritesMap.get(address).add(data);
                 writeReadsMap.put(data, new HashSet<>());
                 if (data.isInit()) {
@@ -354,7 +354,7 @@ public class ExecutionModel {
         } else if (data.isJump()) {
             // ===== Jumps =====
             // We override the meaning of execution here. A jump is executed IFF its condition was true.
-            data.setWasExecuted(((CondJump)e).didJump(model, context));
+            data.setWasExecuted(((CondJump)e).didJump(model, formulaManager));
         } else {
             //TODO: Maybe add some other events (e.g. assertions)
             // But for now all non-visible events are simply registered without

@@ -6,8 +6,8 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 public class Atom extends BExpr {
 	
@@ -22,8 +22,8 @@ public class Atom extends BExpr {
 	}
 
     @Override
-	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
-		return op.encode(lhs.toIntFormula(e, ctx), rhs.toIntFormula(e, ctx), ctx);
+	public BooleanFormula toBoolFormula(Event e, FormulaManager m) {
+		return op.encode(lhs.toIntFormula(e, m), rhs.toIntFormula(e, m), m);
 	}
 
     @Override
@@ -37,8 +37,8 @@ public class Atom extends BExpr {
     }
     
     @Override
-	public boolean getBoolValue(Event e, Model model, SolverContext ctx){
-		return op.combine(lhs.getIntValue(e, model, ctx), rhs.getIntValue(e, model, ctx));
+	public boolean getBoolValue(Event e, Model model, FormulaManager m) {
+		return op.combine(lhs.getIntValue(e, model, m), rhs.getIntValue(e, model, m));
 	}
     
     public COpBin getOp() {

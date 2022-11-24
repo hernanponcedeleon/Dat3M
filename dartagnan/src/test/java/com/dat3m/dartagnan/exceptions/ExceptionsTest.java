@@ -98,7 +98,7 @@ public class ExceptionsTest {
 	    {
             prover.isUnsat();
 	    	BNonDet nonDet = new BNonDet(32);
-	    	nonDet.getBoolValue(null, prover.getModel(), ctx);
+	    	nonDet.getBoolValue(null, prover.getModel(), ctx.getFormulaManager());
 	    }
     }
 
@@ -109,7 +109,7 @@ public class ExceptionsTest {
 	    {
             prover.isUnsat();
 	    	INonDet nonDet = new INonDet(INonDetTypes.INT, 32);
-	    	nonDet.getIntValue(null, prover.getModel(), ctx);
+	    	nonDet.getIntValue(null, prover.getModel(), ctx.getFormulaManager());
 	    }
     }
     

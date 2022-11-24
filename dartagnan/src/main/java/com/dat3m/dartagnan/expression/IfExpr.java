@@ -5,10 +5,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.*;
 
 import java.math.BigInteger;
 
@@ -27,25 +24,25 @@ public class IfExpr extends IExpr {
 	}
 
 	@Override
-	public Formula toIntFormula(Event e, SolverContext ctx) {
-		return ctx.getFormulaManager().getBooleanFormulaManager().ifThenElse(
-				guard.toBoolFormula(e, ctx), tbranch.toIntFormula(e, ctx), fbranch.toIntFormula(e, ctx));
+	public Formula toIntFormula(Event e, FormulaManager m) {
+		return m.getBooleanFormulaManager().ifThenElse(
+				guard.toBoolFormula(e, m), tbranch.toIntFormula(e, m), fbranch.toIntFormula(e, m));
 	}
 
 	@Override
-	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
-		return ctx.getFormulaManager().getBooleanFormulaManager().ifThenElse(
-				guard.toBoolFormula(e, ctx), tbranch.toBoolFormula(e, ctx), fbranch.toBoolFormula(e, ctx));
+	public BooleanFormula toBoolFormula(Event e, FormulaManager m) {
+		return m.getBooleanFormulaManager().ifThenElse(
+				guard.toBoolFormula(e, m), tbranch.toBoolFormula(e, m), fbranch.toBoolFormula(e, m));
 	}
 
 	@Override
-	public BigInteger getIntValue(Event e, Model model, SolverContext ctx) {
-		return guard.getBoolValue(e, model, ctx) ? tbranch.getIntValue(e, model, ctx) : fbranch.getIntValue(e, model, ctx);
+	public BigInteger getIntValue(Event e, Model model, FormulaManager m) {
+		return guard.getBoolValue(e, model, m) ? tbranch.getIntValue(e, model, m) : fbranch.getIntValue(e, model, m);
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Model model, SolverContext ctx) {
-		return guard.getBoolValue(e, model, ctx)? tbranch.getBoolValue(e, model, ctx) : fbranch.getBoolValue(e, model, ctx);
+	public boolean getBoolValue(Event e, Model model, FormulaManager m) {
+		return guard.getBoolValue(e, model, m)? tbranch.getBoolValue(e, model, m) : fbranch.getBoolValue(e, model, m);
 	}
 
 	@Override

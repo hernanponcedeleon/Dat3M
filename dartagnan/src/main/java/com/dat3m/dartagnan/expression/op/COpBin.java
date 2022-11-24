@@ -70,8 +70,8 @@ public enum COpBin {
         }
     }
 
-    public BooleanFormula encode(Formula e1, Formula e2, SolverContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    public BooleanFormula encode(Formula e1, Formula e2, FormulaManager m) {
+        BooleanFormulaManager bmgr = m.getBooleanFormulaManager();
         if(e1 instanceof BooleanFormula && e2 instanceof BooleanFormula) {
             BooleanFormula b1 = (BooleanFormula)e1;
             BooleanFormula b2 = (BooleanFormula)e2;
@@ -85,7 +85,7 @@ public enum COpBin {
     		}
         }
         if(e1 instanceof IntegerFormula && e2 instanceof IntegerFormula) {
-			IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+			IntegerFormulaManager imgr = m.getIntegerFormulaManager();
 			IntegerFormula i1 = (IntegerFormula)e1;
 			IntegerFormula i2 = (IntegerFormula)e2;
     		switch(this) {
@@ -108,7 +108,7 @@ public enum COpBin {
     		}  	
         }
         if(e1 instanceof BitvectorFormula && e2 instanceof BitvectorFormula) {
-        	BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+        	BitvectorFormulaManager bvmgr = m.getBitvectorFormulaManager();
         	BitvectorFormula bv1 = (BitvectorFormula)e1;
             BitvectorFormula bv2 = (BitvectorFormula)e2;
             switch(this) {

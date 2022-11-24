@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.FormulaManager;
 
 import java.math.BigInteger;
 
@@ -46,7 +46,7 @@ public class ExecutionStatus extends Event implements RegWriter {
 
     @Override
     public BooleanFormula encodeExec(EncodingContext context) {
-        SolverContext ctx = context.getSolverContext();
+        FormulaManager fmgr = context.getFormulaManager();
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 
         int precision = register.getPrecision();
@@ -54,7 +54,7 @@ public class ExecutionStatus extends Event implements RegWriter {
 				bmgr.implication(context.execution(event),
 						context.equalZero(context.result(this))),
 				bmgr.implication(bmgr.not(context.execution(event)),
-						context.equal(context.result(this), new IValue(BigInteger.ONE, precision).toIntFormula(this, ctx)))
+						context.equal(context.result(this), new IValue(BigInteger.ONE, precision).toIntFormula(this, fmgr)))
         );
         return bmgr.and(super.encodeExec(context), enc);
     }

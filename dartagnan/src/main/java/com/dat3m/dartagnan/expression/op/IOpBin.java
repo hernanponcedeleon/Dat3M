@@ -72,7 +72,7 @@ public enum IOpBin {
         }
     }
     
-    public Formula encode(Formula e1, Formula e2, SolverContext ctx){
+    public Formula encode(Formula e1, Formula e2, FormulaManager m) {
     	// Some SMT solvers do not support certain theories.
     	// Calling the constructor of the manager in such solvers results in an Exception.
     	// Thus we initialize the manager inside the branches
@@ -80,7 +80,7 @@ public enum IOpBin {
 		BitvectorFormulaManager bvmgr;
 
 		if(e1 instanceof IntegerFormula && e2 instanceof IntegerFormula) {
-			IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+			IntegerFormulaManager imgr = m.getIntegerFormulaManager();
             IntegerFormula i1 = (IntegerFormula)e1;
             IntegerFormula i2 = (IntegerFormula)e2;
 			switch(this){
@@ -96,35 +96,35 @@ public enum IOpBin {
             	case MOD:
             		return imgr.modulo(i1, i2);
             	case AND:
-            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            		bvmgr = m.getBitvectorFormulaManager();
             		return bvmgr.toIntegerFormula(bvmgr.and(bvmgr.makeBitvector(32, i1), bvmgr.makeBitvector(32, i2)), false);
             	case OR:
-            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            		bvmgr = m.getBitvectorFormulaManager();
             		return bvmgr.toIntegerFormula(bvmgr.or(bvmgr.makeBitvector(32, i1), bvmgr.makeBitvector(32, i2)), false);
             	case XOR:
-            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            		bvmgr = m.getBitvectorFormulaManager();
             		return bvmgr.toIntegerFormula(bvmgr.xor(bvmgr.makeBitvector(32, i1), bvmgr.makeBitvector(32, i2)), false);
             	case L_SHIFT:
-            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            		bvmgr = m.getBitvectorFormulaManager();
             		return bvmgr.toIntegerFormula(bvmgr.shiftLeft(bvmgr.makeBitvector(32, i1), bvmgr.makeBitvector(32, i2)), false);
             	case R_SHIFT:
-            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            		bvmgr = m.getBitvectorFormulaManager();
             		return bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, i1), bvmgr.makeBitvector(32, i2), false), false);
             	case AR_SHIFT:
-            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            		bvmgr = m.getBitvectorFormulaManager();
             		return bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, i1), bvmgr.makeBitvector(32, i2), true), false);
             	case SREM:
             	case UREM:
             		IntegerFormula zero = imgr.makeNumber(0);
         			IntegerFormula modulo = imgr.modulo(i1, i2);
-            		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+            		BooleanFormulaManager bmgr = m.getBooleanFormulaManager();
             		BooleanFormula cond = bmgr.and(imgr.distinct(asList(modulo, zero)), imgr.lessThan(i1, zero));
             		return bmgr.ifThenElse(cond, imgr.subtract(modulo, i2), modulo);
             	default:
                     throw new UnsupportedOperationException("Encoding of IOpBin operation " + this + " not supported on integer formulas.");
 			}			
 		} else if ( e1 instanceof BitvectorFormula && e2 instanceof BitvectorFormula) {
-			bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+			bvmgr = m.getBitvectorFormulaManager();
             BitvectorFormula bv1 = (BitvectorFormula)e1;
             BitvectorFormula bv2 = (BitvectorFormula)e2;
 			switch(this){
@@ -138,7 +138,7 @@ public enum IOpBin {
             	case UDIV:
             		return bvmgr.divide(bv1, bv2, this.equals(DIV));
             	case MOD:
-            		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+            		BooleanFormulaManager bmgr = m.getBooleanFormulaManager();
             		BitvectorFormula rem = bvmgr.modulo(bv1, bv2, true);
             		// Check if rem and bv2 have the same sign
             		int rem_length = bvmgr.getLength(rem);

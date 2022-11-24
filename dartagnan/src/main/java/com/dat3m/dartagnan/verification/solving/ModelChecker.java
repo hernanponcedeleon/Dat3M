@@ -30,9 +30,9 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import java.util.List;
@@ -126,10 +126,10 @@ public abstract class ModelChecker {
     }
 
     protected void logFlaggedPairs(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, Logger logger,
-            SolverContext sCtx) throws SolverException {
+            FormulaManager fmgr) throws SolverException {
         Model model = prover.getModel();
         for(Axiom ax : wmm.getAxioms()) {
-            if(ax.isFlagged() && TRUE.equals(model.evaluate(CAT.getSMTVariable(ax, sCtx)))) {
+            if(ax.isFlagged() && TRUE.equals(model.evaluate(CAT.getSMTVariable(ax, fmgr)))) {
                 System.out.println("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
                 if(logger.isDebugEnabled()) {
                     StringBuilder violatingPairs = new StringBuilder("\n ===== The following pairs belong to the relation ===== \n");

@@ -82,7 +82,7 @@ public class AssumeSolver extends ModelChecker {
         } else {
             res = FAIL;
             if(!task.getProgram().getAss().getInvert()) {
-                logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, ctx);
+                logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, ctx.getFormulaManager());
             }
         }
 

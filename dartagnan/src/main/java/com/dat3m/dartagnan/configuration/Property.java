@@ -5,8 +5,7 @@ import java.util.EnumSet;
 import java.util.Optional;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.FormulaManager;
 
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 
@@ -42,13 +41,12 @@ public enum Property implements OptionInterface {
 		return order;
 	}
 	
-	public BooleanFormula getSMTVariable(SolverContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return bmgr.makeVariable(this.toString());
+	public BooleanFormula getSMTVariable(FormulaManager m) {
+		return m.getBooleanFormulaManager().makeVariable(toString());
 	}
 
-	public BooleanFormula getSMTVariable(Axiom ax, SolverContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return bmgr.makeVariable("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
+	public BooleanFormula getSMTVariable(Axiom ax, FormulaManager m) {
+		return m.getBooleanFormulaManager().makeVariable(
+				"Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
 	}
 }

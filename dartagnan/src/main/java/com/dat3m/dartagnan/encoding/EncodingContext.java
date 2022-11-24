@@ -101,7 +101,7 @@ public final class EncodingContext {
         return analysisContext;
     }
 
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public SolverContext getSolverContext() {
         return solverContext;
     }
@@ -135,7 +135,7 @@ public final class EncodingContext {
     }
 
     public BooleanFormula jumpCondition(CondJump event) {
-        return event.getGuard().toBoolFormula(event, solverContext);
+        return event.getGuard().toBoolFormula(event, formulaManager);
     }
 
     public BooleanFormula execution(Event event) {
@@ -297,10 +297,10 @@ public final class EncodingContext {
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
             }
-            Formula r = e instanceof RegWriter ? ((RegWriter) e).getResultRegister().toIntFormulaResult(e, solverContext) : null;
+            Formula r = e instanceof RegWriter ? ((RegWriter) e).getResultRegister().toIntFormulaResult(e, formulaManager) : null;
             if (e instanceof MemEvent) {
-                addresses.put(e, ((MemEvent) e).getAddress().toIntFormula(e, solverContext));
-                values.put(e, e instanceof Load ? r : ((MemEvent) e).getMemValue().toIntFormula(e, solverContext));
+                addresses.put(e, ((MemEvent) e).getAddress().toIntFormula(e, formulaManager));
+                values.put(e, e instanceof Load ? r : ((MemEvent) e).getMemValue().toIntFormula(e, formulaManager));
             }
             if (r != null) {
                 results.put(e, r);
