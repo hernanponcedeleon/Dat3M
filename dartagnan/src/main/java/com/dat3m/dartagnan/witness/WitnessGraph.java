@@ -79,15 +79,14 @@ public class WitnessGraph extends ElemWithAttributes {
 		Program program = context.getTask().getProgram();
 		BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 		IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
-		
-		BooleanFormula enc = bmgr.makeTrue();
+		List<BooleanFormula> enc = new ArrayList<>();
 		List<Event> previous = new ArrayList<>();
 		for(Edge edge : edges.stream().filter(Edge::hasCline).collect(Collectors.toList())) {
 			List<Event> events = program.getEvents(MemEvent.class).stream()
 					.filter(e -> e.getCLine() == edge.getCline())
 					.collect(Collectors.toList());
 			if(!previous.isEmpty() && !events.isEmpty()) {
-				enc = bmgr.and(enc, bmgr.or(Lists.cartesianProduct(previous, events).stream()
+				enc.add(bmgr.or(Lists.cartesianProduct(previous, events).stream()
 						.map(p -> context.edgeVariable("hb", p.get(0), p.get(1)))
 						.toArray(BooleanFormula[]::new)));
 			}
@@ -100,7 +99,7 @@ public class WitnessGraph extends ElemWithAttributes {
 				Optional<Load> load = program.getEvents(Load.class).stream().filter(e -> e.getGlobalId() == id).findFirst();
 				if (load.isPresent()) {
 					BigInteger value = new BigInteger(edge.getAttributed(LOADEDVALUE.toString()));
-					enc = bmgr.and(enc, context.equal(context.result(load.get()), imgr.makeNumber(value)));
+					enc.add(context.equal(context.result(load.get()), imgr.makeNumber(value)));
 				}
 			}
 			if(edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(STOREDVALUE.toString())) {
@@ -108,11 +107,11 @@ public class WitnessGraph extends ElemWithAttributes {
 				Optional<Store> store = program.getEvents(Store.class).stream().filter(e -> e.getGlobalId() == id).findFirst();
 				if (store.isPresent()) {
 					BigInteger value = new BigInteger(edge.getAttributed(STOREDVALUE.toString()));
-					enc = bmgr.and(enc, context.equal(context.value(store.get()), imgr.makeNumber(value)));
+					enc.add(context.equal(context.value(store.get()), imgr.makeNumber(value)));
 				}
 			}
 		}
-		return enc;
+		return bmgr.and(enc);
 	}
 	
 	public void write() {

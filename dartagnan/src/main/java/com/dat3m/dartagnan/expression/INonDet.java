@@ -125,13 +125,14 @@ public class INonDet extends IExpr {
 		if(bp) {
 			boolean signed = !(type.equals(UINT) || type.equals(ULONG) || type.equals(USHORT) || type.equals(UCHAR));
 			BitvectorFormulaManager bvmgr = m.getBitvectorFormulaManager();
-			enc = bmgr.and(enc, bvmgr.greaterOrEquals((BitvectorFormula) toIntFormula(null, m), bvmgr.makeBitvector(precision, min), signed));
-	        enc = bmgr.and(enc, bvmgr.lessOrEquals((BitvectorFormula) toIntFormula(null, m), bvmgr.makeBitvector(precision, max), signed));
+			return bmgr.and(
+					bvmgr.greaterOrEquals((BitvectorFormula) toIntFormula(null, m), bvmgr.makeBitvector(precision, min), signed),
+	        		bvmgr.lessOrEquals((BitvectorFormula) toIntFormula(null, m), bvmgr.makeBitvector(precision, max), signed));
 		} else {
 			IntegerFormulaManager imgr = m.getIntegerFormulaManager();
-			enc = bmgr.and(enc, imgr.greaterOrEquals((IntegerFormula) toIntFormula(null, m), imgr.makeNumber(min)));
-			enc = bmgr.and(enc, imgr.lessOrEquals((IntegerFormula) toIntFormula(null, m), imgr.makeNumber(max)));
+			return bmgr.and(
+					imgr.greaterOrEquals((IntegerFormula) toIntFormula(null, m), imgr.makeNumber(min)),
+					imgr.lessOrEquals((IntegerFormula) toIntFormula(null, m), imgr.makeNumber(max)));
 		}
-		return enc;
 	}
 }

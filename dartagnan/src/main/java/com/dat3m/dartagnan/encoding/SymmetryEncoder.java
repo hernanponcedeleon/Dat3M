@@ -135,7 +135,7 @@ public class SymmetryEncoder implements Encoder {
         sort(t1Tuples);
 
         // Construct symmetric rows
-        BooleanFormula enc = bmgr.makeTrue();
+        List<BooleanFormula> enc = new ArrayList<>();
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
             Function<Event, Event> p = symm.createEventTransposition(t1, t2);
@@ -144,13 +144,12 @@ public class SymmetryEncoder implements Encoder {
             List<BooleanFormula> r1 = t1Tuples.stream().map(edge::encode).collect(Collectors.toList());
             List<BooleanFormula> r2 = t2Tuples.stream().map(edge::encode).collect(Collectors.toList());
             final String id = "_" + rep.getId() + "_" + i;
-            enc = bmgr.and(enc, encodeLexLeader(id, r2, r1, context)); // r1 >= r2
-
+            enc.add(encodeLexLeader(id, r2, r1, context)); // r1 >= r2
             t1 = t2;
             t1Tuples = t2Tuples;
         }
 
-        return enc;
+        return bmgr.and(enc);
     }
 
     private void sort(List<Tuple> row) {
@@ -222,31 +221,29 @@ public class SymmetryEncoder implements Encoder {
         // xi gets related to y(i-1) and yi
 
         BooleanFormula ylast = bmgr.makeVariable("y0" + suffix); // y(i-1)
-        BooleanFormula enc = bmgr.equivalence(ylast, bmgr.makeTrue());
+        List<BooleanFormula> enc = new ArrayList<>();
+        enc.add(ylast);
         // From x1 to x(n-1)
         for (int i = 1; i < size; i++) {
             BooleanFormula y = bmgr.makeVariable("y" + i + suffix); // yi
             BooleanFormula a = r1.get(i-1); // xi(r1)
             BooleanFormula b = r2.get(i-1); // xi(r2)
-            enc = bmgr.and(
-                    enc,
-                    bmgr.or(y, bmgr.not(ylast), bmgr.not(a)), // (see below)
-                    bmgr.or(y, bmgr.not(ylast), b),           // "y(i-1) implies ((xi(r1) >= xi(r2))  =>  yi)"
-                    bmgr.or(bmgr.not(ylast), bmgr.not(a), b)  // "y(i-1) implies (xi(r1) <= xi(r2))"
+            enc.add(bmgr.or(y, bmgr.not(ylast), bmgr.not(a))); // (see below)
+            enc.add(bmgr.or(y, bmgr.not(ylast), b));           // "y(i-1) implies ((xi(r1) >= xi(r2))  =>  yi)"
+            enc.add(bmgr.or(bmgr.not(ylast), bmgr.not(a), b)); // "y(i-1) implies (xi(r1) <= xi(r2))"
                     // NOTE: yi = TRUE means the prefixes (x1, x2, ..., xi) of the rows r1/r2 are equal
                     //       yi = FALSE means that no conditions are imposed on xi
                     // The first point, where y(i-1) is TRUE but yi is FALSE, is the breaking point
                     // where xi(r1) < xi(r2) holds (afterwards all yj (j >= i+1) are unconstrained and can be set to
                     // FALSE by the solver)
-            );
             ylast = y;
         }
         // Final iteration for xn is handled differently as there is no variable yn anymore.
         BooleanFormula a = r1.get(size-1);
         BooleanFormula b = r2.get(size-1);
-        enc = bmgr.and(enc, bmgr.or(bmgr.not(ylast), bmgr.not(a), b));
+        enc.add(bmgr.or(bmgr.not(ylast), bmgr.not(a), b));
 
-        return enc;
+        return bmgr.and(enc);
     }
 
     private Set<Tuple> cfSet() {

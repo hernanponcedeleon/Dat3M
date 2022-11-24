@@ -184,25 +184,23 @@ public class CoSymmetryBreaking {
 
     public BooleanFormula encode() {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        BooleanFormula enc = bmgr.makeTrue();
+        List<BooleanFormula> enc = new ArrayList<>();
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
-            enc = bmgr.and(enc, encode(symmClass));
+            enc.add(encode(symmClass));
         }
-        return enc;
+        return bmgr.and(enc);
     }
 
     public BooleanFormula encode(EquivalenceClass<Thread> symmClass) {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        BooleanFormula enc = bmgr.makeTrue();
         if (symmClass.getEquivalence() != symm) {
-            return enc;
+            return bmgr.makeTrue();
         }
-
         Info info = infoMap.get(symmClass);
         if (info == null) {
             logger.warn("Cannot encode co-symmetry because no information has been computed. " +
                     "Make sure that <initialize> gets called before encoding.");
-            return enc;
+            return bmgr.makeTrue();
         }
         List<Thread> symmThreads = info.threads;
         EncodingContext.EdgeEncoder edge = context.edge(co);
@@ -225,8 +223,8 @@ public class CoSymmetryBreaking {
         for (Tuple t : r1Tuples) {
             r1.add(edge.encode(t));
         }
-
         // Construct symmetric rows
+        List<BooleanFormula> enc = new ArrayList<>();
         Thread rep = symmClass.getRepresentative();
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
@@ -242,13 +240,13 @@ public class CoSymmetryBreaking {
 
             final String id = "_" + rep.getId() + "_" + i;
             // NOTE: We want to have r1 >= r2 but lexLeader encodes r1 <= r2, so we swap r1 and r2.
-            enc = bmgr.and(enc, SymmetryEncoder.encodeLexLeader(id, r2, r1, context));
+            enc.add(SymmetryEncoder.encodeLexLeader(id, r2, r1, context));
 
             t1 = t2;
             r1Tuples = r2Tuples;
             r1 = r2;
         }
 
-        return enc;
+        return bmgr.and(enc);
     }
 }

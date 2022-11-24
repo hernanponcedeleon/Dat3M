@@ -79,12 +79,11 @@ public class ProgramEncoder implements Encoder {
         logger.info("Encoding program control flow");
 
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        
-        BooleanFormula enc = bmgr.makeTrue();
+        List<BooleanFormula> enc = new ArrayList<>();
         for(Thread t : context.getTask().getProgram().getThreads()){
-            enc = bmgr.and(enc, encodeThreadCF(t));
+            enc.add(encodeThreadCF(t));
         }
-        return enc;
+        return bmgr.and(enc);
     }
 
     private BooleanFormula encodeThreadCF(Thread thread) {
@@ -93,7 +92,7 @@ public class ProgramEncoder implements Encoder {
 
         Map<Label, Set<CondJump>> labelJumpMap = new HashMap<>();
         Event pred = null;
-        BooleanFormula enc = bmgr.makeTrue();
+        final List<BooleanFormula> enc = new ArrayList<>();
         for(Event e : thread.getEntry().getSuccessors()) {
             // Immediate control flow
             BooleanFormula cfCond = pred == null ? bmgr.makeTrue() : context.controlFlow(pred);
@@ -111,11 +110,11 @@ public class ProgramEncoder implements Encoder {
                     cfCond = bmgr.or(cfCond, bmgr.and(context.controlFlow(jump), context.jumpCondition(jump)));
                 }
             }
-
-            enc = bmgr.and(enc, bmgr.equivalence(context.controlFlow(e), cfCond), e.encodeExec(context));
+            enc.add(bmgr.equivalence(context.controlFlow(e), cfCond));
+            enc.addAll(e.encodeExec(context));
             pred = e;
         }
-        return enc;
+        return bmgr.and(enc);
     }
 
     // Assigns each Address a fixed memory address.
@@ -152,13 +151,13 @@ public class ProgramEncoder implements Encoder {
         logger.info("Encoding dependencies");
         final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        BooleanFormula enc = bmgr.makeTrue();
+        List<BooleanFormula> enc = new ArrayList<>();
         for(Map.Entry<Event,Map<Register, Dependency.State>> e : dep.getAll()) {
             final Event reader = e.getKey();
             for(Map.Entry<Register, Dependency.State> r : e.getValue().entrySet()) {
                 final Formula value = r.getKey().toIntFormula(reader, fmgr);
                 final Dependency.State state = r.getValue();
-                BooleanFormula overwrite = bmgr.makeFalse();
+                List<BooleanFormula> overwrite = new ArrayList<>();
                 for(Event writer : reverse(state.may)) {
                     assert writer instanceof RegWriter;
                     BooleanFormula edge;
@@ -175,17 +174,19 @@ public class ProgramEncoder implements Encoder {
                         }
                     } else {
                         edge = context.dependency(writer, reader);
-                        enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.and(context.execution(writer), context.controlFlow(reader), bmgr.not(overwrite))));
+                        enc.add(bmgr.equivalence(edge, bmgr.and(context.execution(writer), context.controlFlow(reader), bmgr.not(bmgr.or(overwrite)))));
                     }
-                    enc = bmgr.and(enc, bmgr.implication(edge, context.equal(value, context.result((RegWriter) writer))));
-                    overwrite = bmgr.or(overwrite, context.execution(writer));
+                    enc.add(bmgr.implication(edge, context.equal(value, context.result((RegWriter) writer))));
+                    overwrite.add(context.execution(writer));
                 }
                 if(initializeRegisters && !state.initialized) {
-                    enc = bmgr.and(enc, bmgr.or(overwrite, bmgr.not(context.controlFlow(reader)), context.equalZero(value)));
+                    overwrite.add(bmgr.not(context.controlFlow(reader)));
+                    overwrite.add(context.equalZero(value));
+                    enc.add(bmgr.or(overwrite));
                 }
             }
         }
-        return enc;
+        return bmgr.and(enc);
     }
 
     public BooleanFormula encodeFilter() {
@@ -197,7 +198,6 @@ public class ProgramEncoder implements Encoder {
     public BooleanFormula encodeFinalRegisterValues() {
         final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-
         if (context.getTask().getProgram().getFormat() == Program.SourceLanguage.BOOGIE) {
             // Boogie does not have assertions over final register values, so we do not need to encode them.
             logger.info("Skipping encoding of final register values: C-Code has no assertions over those values.");
@@ -205,31 +205,32 @@ public class ProgramEncoder implements Encoder {
         }
 
         logger.info("Encoding final register values");
-        BooleanFormula enc = bmgr.makeTrue();
+        List<BooleanFormula> enc = new ArrayList<>();
         for(Map.Entry<Register,Dependency.State> e : dep.finalWriters().entrySet()) {
             final Formula value = e.getKey().getLastValueExpr(fmgr);
             final Dependency.State state = e.getValue();
             final List<Event> writers = state.may;
             if(initializeRegisters && !state.initialized) {
-                BooleanFormula clause = context.equalZero(value);
+                List<BooleanFormula> clause = new ArrayList<>();
+                clause.add(context.equalZero(value));
                 for(Event w : writers) {
-                    clause = bmgr.or(clause, context.execution(w));
+                    clause.add(context.execution(w));
                 }
-                enc = bmgr.and(enc, clause);
+                enc.add(bmgr.or(clause));
             }
             for(int i = 0; i < writers.size(); i++) {
                 final Event writer = writers.get(i);
-                BooleanFormula clause = bmgr.or(
-                        context.equal(value, context.result((RegWriter) writer)),
-                        bmgr.not(context.execution(writer)));
+                List<BooleanFormula> clause = new ArrayList<>();
+                clause.add(context.equal(value, context.result((RegWriter) writer)));
+                clause.add(bmgr.not(context.execution(writer)));
                 for(Event w : writers.subList(i + 1, writers.size())) {
                     if(!exec.areMutuallyExclusive(writer, w)) {
-                        clause = bmgr.or(clause, context.execution(w));
+                        clause.add(context.execution(w));
                     }
                 }
-                enc = bmgr.and(enc, clause);
+                enc.add(bmgr.or(clause));
             }
         }
-        return enc;
+        return bmgr.and(enc);
     }
 }

@@ -11,6 +11,8 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
+import java.util.List;
+
 
 public class RMWStoreCond extends RMWStore {
 
@@ -29,9 +31,9 @@ public class RMWStoreCond extends RMWStore {
     }
 
     @Override
-    public BooleanFormula encodeExec(EncodingContext ctx) {
+    public List<BooleanFormula> encodeExec(EncodingContext ctx) {
         BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
-		return bmgr.equivalence(ctx.execution(this), bmgr.and(ctx.controlFlow(this), ((RMWReadCond)loadEvent).getCond(ctx)));
+		return List.of(bmgr.equivalence(ctx.execution(this), bmgr.and(ctx.controlFlow(this), ((RMWReadCond)loadEvent).getCond(ctx))));
     }
 
     // Unrolling

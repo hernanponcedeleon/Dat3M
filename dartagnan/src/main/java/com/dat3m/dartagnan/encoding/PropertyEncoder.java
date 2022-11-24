@@ -109,19 +109,19 @@ public class PropertyEncoder implements Encoder {
         logger.info("Encoding CAT properties");
         FormulaManager fmgr = context.getFormulaManager();
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        BooleanFormula cat = bmgr.makeTrue();
-        BooleanFormula one = bmgr.makeFalse();
+        List<BooleanFormula> cat = new ArrayList<>();
+        List<BooleanFormula> one = new ArrayList<>();
     	for(Axiom ax : memoryModel.getAxioms()) {
     		// Only flagged axioms are encoded as properties
     		if(!ax.isFlagged()) {
     			continue;
     		}
             BooleanFormula v = CAT.getSMTVariable(ax, fmgr);
-			cat = bmgr.and(cat, bmgr.equivalence(v, bmgr.and(ax.consistent(context))));
-			one = bmgr.or(one, v);
+			cat.add(bmgr.equivalence(v, bmgr.and(ax.consistent(context))));
+			one.add(v);
     	}
 		// No need to use the SMT variable if the formula is trivially false
-        return bmgr.isFalse(one) ? one : bmgr.and(one, cat);
+        return one.isEmpty() ? bmgr.makeFalse() : bmgr.and(bmgr.or(one), bmgr.and(cat));
     }
 
     public BooleanFormula encodeLiveness() {
@@ -179,35 +179,34 @@ public class PropertyEncoder implements Encoder {
                 continue;
             }
 
-            BooleanFormula isStuck = bmgr.makeFalse();
+            List<BooleanFormula> isStuck = new ArrayList<>();
             for (SpinLoop pair : loops) {
-                BooleanFormula allCoMaximalLoad = bmgr.makeTrue();
+                List<BooleanFormula> allCoMaximalLoad = new ArrayList<>();
                 for (Load load : pair.loads) {
-                    BooleanFormula coMaximalLoad = bmgr.makeFalse();
+                    List<BooleanFormula> coMaximalLoad = new ArrayList<>();
                     for (Tuple rfEdge : mayIn.apply(load)) {
-                        coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(edge.encode(rfEdge), lastCoVar(rfEdge.getFirst())));
+                        coMaximalLoad.add(bmgr.and(edge.encode(rfEdge), lastCoVar(rfEdge.getFirst())));
                     }
-                    allCoMaximalLoad = bmgr.and(allCoMaximalLoad, bmgr.implication(context.execution(load), coMaximalLoad));
+                    allCoMaximalLoad.add(bmgr.implication(context.execution(load), bmgr.or(coMaximalLoad)));
                 }
-                isStuck  = bmgr.or(isStuck, bmgr.and(context.execution(pair.bound), allCoMaximalLoad));
+                isStuck.add(bmgr.and(context.execution(pair.bound), bmgr.and(allCoMaximalLoad)));
             }
-            isStuckMap.put(t, isStuck);
+            isStuckMap.put(t, bmgr.or(isStuck));
         }
 
         // LivenessViolation <=> allStuckOrDone /\ atLeastOneStuck
-        BooleanFormula allStuckOrDone = bmgr.makeTrue();
-        BooleanFormula atLeastOneStuck = bmgr.makeFalse();
+        List<BooleanFormula> allStuckOrDone = new ArrayList<>();
+        List<BooleanFormula> atLeastOneStuck = new ArrayList<>();
         for (Thread t : program.getThreads()) {
             BooleanFormula isStuck = isStuckMap.getOrDefault(t, bmgr.makeFalse());
             BooleanFormula pending = t.getEvents().stream()
                     .filter(e -> e.is(Tag.EARLYTERMINATION))
                     .map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
-
-            atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
-            allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, bmgr.not(pending)));
+            atLeastOneStuck.add(isStuck);
+            allStuckOrDone.add(bmgr.or(isStuck, bmgr.not(pending)));
         }
-
-        BooleanFormula livenessViolation = bmgr.and(allStuckOrDone, atLeastOneStuck);
+        allStuckOrDone.add(bmgr.or(atLeastOneStuck));
+        BooleanFormula livenessViolation = bmgr.and(allStuckOrDone);
         // We use the SMT variable to extract from the model if the property was violated
 		BooleanFormula enc = bmgr.equivalence(LIVENESS.getSMTVariable(fmgr), livenessViolation);
 		// No need to use the SMT variable if the formula is trivially false 
@@ -276,7 +275,7 @@ public class PropertyEncoder implements Encoder {
                 .filter(t -> exec.isImplied(t.getFirst(), t.getSecond()))
                 .map(Tuple::getFirst).collect(Collectors.toSet());
         // ---- Construct encoding ----
-        BooleanFormula enc = bmgr.makeTrue();
+        List<BooleanFormula> enc = new ArrayList<>();
         final Function<Event, Collection<Tuple>> out = knowledge.getMayOut();
         for (Event writeEvent : program.getEvents()) {
             if (!writeEvent.is(Tag.WRITE)) {
@@ -284,7 +283,7 @@ public class PropertyEncoder implements Encoder {
             }
             MemEvent w1 = (MemEvent) writeEvent;
             if (dominatedWrites.contains(w1)) {
-                enc = bmgr.and(enc, bmgr.not(lastCoVar(w1)));
+                enc.add(bmgr.not(lastCoVar(w1)));
                 continue;
             }
             BooleanFormula isLast = context.execution(w1);
@@ -300,7 +299,7 @@ public class PropertyEncoder implements Encoder {
                 isLast = bmgr.and(isLast, isAfter);
             }
             BooleanFormula lastCoExpr = lastCoVar(w1);
-            enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, isLast));
+            enc.add(bmgr.equivalence(lastCoExpr, isLast));
             if (doEncodeFinalAddressValues) {
                 // ---- Encode final values of addresses ----
                 for (Init init : initEvents) {
@@ -310,11 +309,11 @@ public class PropertyEncoder implements Encoder {
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
                     Formula v2 = init.getBase().getLastMemValueExpr(fmgr, init.getOffset());
                     BooleanFormula sameValue = context.equal(context.value(w1), v2);
-                    enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
+                    enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
             }
         }
-        return enc;
+        return bmgr.and(enc);
     }
 
     private BooleanFormula lastCoVar(Event write) {

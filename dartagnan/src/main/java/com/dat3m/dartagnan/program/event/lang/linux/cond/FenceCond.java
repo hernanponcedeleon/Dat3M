@@ -9,6 +9,8 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
+import java.util.List;
+
 public class FenceCond extends Fence {
 
     private final RMWReadCond loadEvent;
@@ -29,9 +31,9 @@ public class FenceCond extends Fence {
     }
 
     @Override
-    public BooleanFormula encodeExec(EncodingContext ctx) {
+    public List<BooleanFormula> encodeExec(EncodingContext ctx) {
         BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
-		return bmgr.equivalence(ctx.execution(this), bmgr.and(ctx.controlFlow(this), loadEvent.getCond(ctx)));
+		return List.of(bmgr.equivalence(ctx.execution(this), bmgr.and(ctx.controlFlow(this), loadEvent.getCond(ctx))));
     }
 
     // Unrolling

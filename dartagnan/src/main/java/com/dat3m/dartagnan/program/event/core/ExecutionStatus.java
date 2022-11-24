@@ -12,6 +12,8 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ExecutionStatus extends Event implements RegWriter {
 
@@ -45,18 +47,17 @@ public class ExecutionStatus extends Event implements RegWriter {
     }
 
     @Override
-    public BooleanFormula encodeExec(EncodingContext context) {
+    public List<BooleanFormula> encodeExec(EncodingContext context) {
         FormulaManager fmgr = context.getFormulaManager();
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 
         int precision = register.getPrecision();
-		BooleanFormula enc = bmgr.and(
-				bmgr.implication(context.execution(event),
-						context.equalZero(context.result(this))),
-				bmgr.implication(bmgr.not(context.execution(event)),
-						context.equal(context.result(this), new IValue(BigInteger.ONE, precision).toIntFormula(this, fmgr)))
-        );
-        return bmgr.and(super.encodeExec(context), enc);
+        List<BooleanFormula> enc = new ArrayList<>(super.encodeExec(context));
+        enc.add(bmgr.implication(context.execution(event),
+                context.equalZero(context.result(this))));
+        enc.add(bmgr.or(context.execution(event),
+                context.equal(context.result(this), new IValue(BigInteger.ONE, precision).toIntFormula(this, fmgr))));
+        return enc;
     }
 
     // Unrolling

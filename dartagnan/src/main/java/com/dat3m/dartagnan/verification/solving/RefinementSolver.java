@@ -136,8 +136,6 @@ public class RefinementSolver extends ModelChecker {
         baselineEncoder.initializeEncoding(ctx);
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula globalRefinement = bmgr.makeTrue();
-
         WMMSolver solver = WMMSolver.withContext(context, cutRelations, task, analysisContext);
         Refiner refiner = new Refiner(analysisContext);
         CAATSolver.Status status = INCONSISTENT;
@@ -160,7 +158,7 @@ public class RefinementSolver extends ModelChecker {
         long totalCaatTime = 0;
         long totalRefiningTime = 0;
         //  ---------------------------------
-
+        List<BooleanFormula> globalRefinement = new ArrayList<>();
         logger.info("Refinement procedure started.");
         while (!prover.isUnsat()) {
         	if(iterationCount == 0 && logger.isDebugEnabled()) {
@@ -197,7 +195,7 @@ public class RefinementSolver extends ModelChecker {
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 BooleanFormula refinement = refiner.refine(reasons, context);
                 prover.addConstraint(refinement);
-                globalRefinement = bmgr.and(globalRefinement, refinement); // Track overall refinement progress
+                globalRefinement.add(refinement); // Track overall refinement progress
                 totalRefiningTime += (System.currentTimeMillis() - refineTime);
 
                 if (REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES) {
@@ -260,7 +258,7 @@ public class RefinementSolver extends ModelChecker {
             // Add back the constraints found during Refinement
             // TODO: We actually need to perform a second refinement to check for bound reachability
             //  This is needed for the seqlock.c benchmarks!
-            prover.addConstraint(globalRefinement);
+            prover.addConstraint(bmgr.and(globalRefinement));
             res = !prover.isUnsat() ? UNKNOWN : PASS;
             boundCheckTime = System.currentTimeMillis() - lastTime;
         } else {
