@@ -353,63 +353,61 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-	public BooleanFormula consistent(EncodingContext context) {
+	public List<BooleanFormula> consistent(EncodingContext context) {
         ExecutionAnalysis exec = context.getAnalysisContext().get(ExecutionAnalysis.class);
         RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
         Set<Tuple> toBeEncoded = getEncodeTupleSet(exec, ra);
-        BooleanFormula enc;
-        if(negated) {
-            enc = inconsistentSAT(toBeEncoded, context); // There is no IDL-based encoding for inconsistency
-        } else {
-            enc = context.usesSATEncoding() ? consistentSAT(toBeEncoded, context) : consistentIDL(toBeEncoded, context);
-        }
-        return enc;
+        return negated ?
+                inconsistentSAT(toBeEncoded, context) : // There is no IDL-based encoding for inconsistency
+                context.usesSATEncoding() ?
+                        consistentSAT(toBeEncoded, context) :
+                        consistentIDL(toBeEncoded, context);
     }
 
-    private BooleanFormula inconsistentSAT(Set<Tuple> toBeEncoded, EncodingContext context) {
+    private List<BooleanFormula> inconsistentSAT(Set<Tuple> toBeEncoded, EncodingContext context) {
         final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         final Relation rel = this.rel;
-        BooleanFormula enc = bmgr.makeTrue();
-        BooleanFormula eventsInCycle = bmgr.makeFalse();
-        Map<Event, BooleanFormula> inMap = new HashMap<>();
-        Map<Event, BooleanFormula> outMap = new HashMap<>();
+        List<BooleanFormula> enc = new ArrayList<>();
+        List<BooleanFormula> eventsInCycle = new ArrayList<>();
+        Map<Event, List<BooleanFormula>> inMap = new HashMap<>();
+        Map<Event, List<BooleanFormula>> outMap = new HashMap<>();
         for(Tuple t : toBeEncoded) {
             BooleanFormula cycleVar = getSMTCycleVar(t, fmgr);
-            inMap.merge(t.getSecond(), cycleVar, bmgr::or);
-            outMap.merge(t.getFirst(), cycleVar, bmgr::or);
+            inMap.computeIfAbsent(t.getSecond(), k -> new ArrayList<>()).add(cycleVar);
+            outMap.computeIfAbsent(t.getFirst(), k -> new ArrayList<>()).add(cycleVar);
         }
         // We use Boolean variables which guess the edges and nodes constituting the cycle.
         final EncodingContext.EdgeEncoder edge = context.edge(rel);
         for (Event e : toBeEncoded.stream().map(Tuple::getFirst).collect(Collectors.toSet())) {
-            eventsInCycle = bmgr.or(eventsInCycle, cycleVar(e, fmgr));
+            eventsInCycle.add(cycleVar(e, fmgr));
             // We ensure that for every event in the cycle, there should be at least one incoming
             // edge and at least one outgoing edge that are also in the cycle.
-            enc = bmgr.and(enc, bmgr.implication(cycleVar(e, fmgr), bmgr.and(inMap.get(e), outMap.get(e))));
+            enc.add(bmgr.implication(cycleVar(e, fmgr), bmgr.and(bmgr.or(inMap.get(e)), bmgr.or(outMap.get(e)))));
             for (Tuple tuple : toBeEncoded) {
                 Event e1 = tuple.getFirst();
                 Event e2 = tuple.getSecond();
                 // If an edge is guessed to be in a cycle, the edge must belong to relation,
                 // and both events must also be guessed to be on the cycle.
-                enc = bmgr.and(enc, bmgr.implication(getSMTCycleVar(tuple, fmgr),
+                enc.add(bmgr.implication(getSMTCycleVar(tuple, fmgr),
                         bmgr.and(edge.encode(tuple), cycleVar(e1, fmgr), cycleVar(e2, fmgr))));
             }
         }
         // A cycle exists if there is an event in the cycle.
-        enc = bmgr.and(enc, eventsInCycle);
+        enc.add(bmgr.or(eventsInCycle));
         return enc;
     }
 
-    private BooleanFormula consistentIDL(Set<Tuple> toBeEncoded, EncodingContext context) {
+    private List<BooleanFormula> consistentIDL(Set<Tuple> toBeEncoded, EncodingContext context) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
         final Relation rel = this.rel;
         final String clockVarName = rel.getNameOrTerm();
 
-        BooleanFormula enc = bmgr.makeTrue();
+        List<BooleanFormula> enc = new ArrayList<>();
         final EncodingContext.EdgeEncoder edge = context.edge(rel);
         for (Tuple tuple : toBeEncoded) {
-            enc = bmgr.and(enc, bmgr.implication(edge.encode(tuple),
+            enc.add(bmgr.implication(edge.encode(tuple),
                     imgr.lessThan(
                             context.clockVariable(clockVarName, tuple.getFirst()),
                             context.clockVariable(clockVarName, tuple.getSecond()))));
@@ -418,7 +416,7 @@ public class Acyclic extends Axiom {
         return enc;
     }
 
-    private BooleanFormula consistentSAT(Set<Tuple> toBeEncoded, EncodingContext context) {
+    private List<BooleanFormula> consistentSAT(Set<Tuple> toBeEncoded, EncodingContext context) {
         // We use a vertex-elimination graph based encoding.
         final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
@@ -496,12 +494,12 @@ public class Acyclic extends Axiom {
 
         // --- Create encoding ---
         final Set<Tuple> minSet = ra.getKnowledge(rel).getMustSet();
-        BooleanFormula enc = bmgr.makeTrue();
+        List<BooleanFormula> enc = new ArrayList<>();
         final EncodingContext.EdgeEncoder edge = context.edge(rel);
         // Basic lifting
         for (Tuple t : toBeEncoded) {
             BooleanFormula cond = minSet.contains(t) ? context.execution(t.getFirst(), t.getSecond()) : edge.encode(t);
-            enc = bmgr.and(enc, bmgr.implication(cond, getSMTCycleVar(t, fmgr)));
+            enc.add(bmgr.implication(cond, getSMTCycleVar(t, fmgr)));
         }
 
         // Encode triangle rules
@@ -514,13 +512,13 @@ public class Acyclic extends Axiom {
                     context.execution(t3.getFirst(), t3.getSecond())
                     : bmgr.and(getSMTCycleVar(t1, fmgr), getSMTCycleVar(t2, fmgr));
 
-            enc = bmgr.and(enc, bmgr.implication(cond, getSMTCycleVar(t3, fmgr)));
+            enc.add(bmgr.implication(cond, getSMTCycleVar(t3, fmgr)));
         }
 
         //  --- Encode inconsistent assignments ---
         // Handle self-loops
         for (Event e : selfloops) {
-            enc = bmgr.and(enc, bmgr.not(edge.encode(new Tuple(e, e))));
+            enc.add(bmgr.not(edge.encode(new Tuple(e, e))));
         }
         // Handle remaining cycles
         for (int i = 0; i < varOrderings.size(); i++) {
@@ -528,7 +526,7 @@ public class Acyclic extends Axiom {
             for (Tuple t : out) {
                 if (varOrderings.indexOf(t.getSecond()) > i && vertEleInEdges.get(t.getSecond()).contains(t)) {
                     BooleanFormula cond = minSet.contains(t) ? bmgr.makeTrue() : getSMTCycleVar(t, fmgr);
-                    enc = bmgr.and(enc, bmgr.implication(cond, bmgr.not(getSMTCycleVar(t.getInverse(), fmgr))));
+                    enc.add(bmgr.implication(cond, bmgr.not(getSMTCycleVar(t.getInverse(), fmgr))));
                 }
             }
         }

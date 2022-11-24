@@ -117,7 +117,7 @@ public class PropertyEncoder implements Encoder {
     			continue;
     		}
             BooleanFormula v = CAT.getSMTVariable(ax, fmgr);
-			cat = bmgr.and(cat, bmgr.equivalence(v, ax.consistent(context)));
+			cat = bmgr.and(cat, bmgr.equivalence(v, bmgr.and(ax.consistent(context))));
 			one = bmgr.or(one, v);
     	}
 		// No need to use the SMT variable if the formula is trivially false

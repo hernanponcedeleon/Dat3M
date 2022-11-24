@@ -125,7 +125,7 @@ public class WmmEncoder implements Encoder {
         List<BooleanFormula> enc = new ArrayList<>();
         for (Axiom a : memoryModel.getAxioms()) {
             if (!a.isFlagged()) {
-                enc.add(a.consistent(context));
+                enc.addAll(a.consistent(context));
             }
         }
         for (Tuple t : ra.getMutuallyExclusiveTuples()) {

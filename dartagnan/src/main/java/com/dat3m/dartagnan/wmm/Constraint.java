@@ -36,7 +36,13 @@ public interface Constraint {
         return Map.of();
     }
 
-    default BooleanFormula consistent(EncodingContext context) {
-        return context.getBooleanFormulaManager().makeTrue();
+    /**
+     * Encodes the relational information of this constraint.
+     *
+     * @param context Provides shared elements of the current verification problem and their encoding representations.
+     * @return Each model representing a consistent execution has to meet all of those assumptions.
+     */
+    default Collection<BooleanFormula> consistent(EncodingContext context) {
+        return Set.of();
     }
 }
