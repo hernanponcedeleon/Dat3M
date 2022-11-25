@@ -45,8 +45,7 @@ public class Compilation {
 			"-gvn");
 
 		ArrayList<String> cmd = new ArrayList<String>();
-    	cmd.addAll(asList("opt", "-enable-new-pm=0", "-load=" + System.getenv("DAT3M_HOME") + 
-			"/llvm-passes/bin/libatomic-replace.so", "-atomic-replace"));
+    	cmd.addAll(asList("opt", "-enable-new-pm=0", "-load=libatomic-replace.so", "-atomic-replace"));
 		cmd.addAll(optPasses);
 		cmd.addAll(asList(file.getAbsolutePath(), "-S", "-o", output));
 
