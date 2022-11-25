@@ -45,9 +45,7 @@ public class Compilation {
 			"-gvn");
 
 		ArrayList<String> cmd = new ArrayList<String>();
-    	cmd.addAll(asList("opt", "-enable-new-pm=0", "-load=libatomic-replace.so", "-atomic-replace"));
-		cmd.addAll(optPasses);
-		cmd.addAll(asList(file.getAbsolutePath(), "-S", "-o", output));
+		cmd.addAll(asList("atomic-replace", file.getAbsolutePath(), output));
 
 		return runCmd(cmd, output);
 	}
