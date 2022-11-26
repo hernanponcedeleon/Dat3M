@@ -140,20 +140,13 @@ public class RefinementSolver extends ModelChecker {
         Refiner refiner = new Refiner(memoryModel, analysisContext);
         CAATSolver.Status status = INCONSISTENT;
 
-        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification();
-        if(bmgr.isFalse(propertyEncoding)) {
-            logger.info("Verification finished: property trivially holds");
-            res = PASS;
-       	    return;
-        }
-
         logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
         prover.addConstraint(symmEncoder.encodeFullSymmetryBreaking());
 
         prover.push();
-        prover.addConstraint(propertyEncoding);
+        prover.addConstraint(propertyEncoder.encodeSpecification());
 
         //  ------ Just for statistics ------
         List<WMMSolver.Statistics> statList = new ArrayList<>();
