@@ -59,13 +59,6 @@ public class IncrementalSolver extends ModelChecker {
         wmmEncoder.initializeEncoding(ctx);
         symmetryEncoder.initializeEncoding(ctx);
         
-        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification();
-        if(ctx.getFormulaManager().getBooleanFormulaManager().isFalse(propertyEncoding)) {
-            logger.info("Verification finished: property trivially holds");
-       	    res = PASS;
-            return;
-        }
-
         logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
@@ -75,7 +68,7 @@ public class IncrementalSolver extends ModelChecker {
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
         logger.info("Starting push()");
         prover.push();
-        prover.addConstraint(propertyEncoding);
+        prover.addConstraint(propertyEncoder.encodeSpecification());
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsat()) {

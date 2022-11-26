@@ -60,13 +60,6 @@ public class TwoSolvers extends ModelChecker {
         wmmEncoder.initializeEncoding(ctx);
         symmetryEncoder.initializeEncoding(ctx);
 
-        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification();
-        if(ctx.getFormulaManager().getBooleanFormulaManager().isFalse(propertyEncoding)) {
-            logger.info("Verification finished: property trivially holds");
-            res = PASS;
-       	    return;
-        }
-
         logger.info("Starting encoding using " + ctx.getVersion());
         BooleanFormula encodeProg = programEncoder.encodeFullProgram();
         prover1.addConstraint(encodeProg);
@@ -86,7 +79,7 @@ public class TwoSolvers extends ModelChecker {
         prover1.addConstraint(encodeSymm);
         prover2.addConstraint(encodeSymm);
 
-        prover1.addConstraint(propertyEncoding);
+        prover1.addConstraint(propertyEncoder.encodeSpecification());
 
         logger.info("Starting first solver.check()");
         if(prover1.isUnsat()) {
