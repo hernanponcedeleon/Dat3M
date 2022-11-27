@@ -29,6 +29,8 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
     private LlvmCmpXchg(LlvmCmpXchg other){
         super(other);
         this.expectedValue = other.expectedValue;
+        this.oldValueRegister = other.oldValueRegister;
+        this.cmpRegister = other.cmpRegister;
     }
 
     // The llvm instructions actually returns a structure.
@@ -66,7 +68,7 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
     @Override
     public String toString() {
     	String tag = is(STRONG) ? "_strong" : "_weak";
-        return resultRegister + " = llvm_cmpxchg" + tag + "(*" + address + ", " + expectedValue + ", " + value + (mo != null ? ", " + mo : "") + ")\t### LLVM";
+        return "(" + oldValueRegister + ", " + cmpRegister + ") = llvm_cmpxchg" + tag + "(*" + address + ", " + expectedValue + ", " + value + (mo != null ? ", " + mo : "") + ")\t### LLVM";
     }
 
     // Unrolling
