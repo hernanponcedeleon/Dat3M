@@ -93,7 +93,7 @@ class VisitorTso extends VisitorBase {
 
     @Override
     public List<Event> visitLlvmLoad(LlvmLoad e) {
-            Load load = newLoad(e.getResultRegister(), e.getAddress(), null);
+            Load load = newLoad(e.getResultRegister(), e.getAddress(), "");
 
             return eventSequence(
                             load);
@@ -101,7 +101,7 @@ class VisitorTso extends VisitorBase {
 
     @Override
     public List<Event> visitLlvmStore(LlvmStore e) {
-            Store store = newStore(e.getAddress(), e.getMemValue(), null);
+            Store store = newStore(e.getAddress(), e.getMemValue(), "");
             Fence optionalMFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
 
             return eventSequence(
@@ -112,11 +112,11 @@ class VisitorTso extends VisitorBase {
     @Override
     public List<Event> visitLlvmXchg(LlvmXchg e) {
             IExpr address = e.getAddress();
-            Load load = newRMWLoad(e.getResultRegister(), address, null);
+            Load load = newRMWLoad(e.getResultRegister(), address, "");
 
             return eventSequence(
                             load,
-                            newRMWStore(load, address, e.getMemValue(), null));
+                            newRMWStore(load, address, e.getMemValue(), ""));
     }
 
     @Override
@@ -125,12 +125,12 @@ class VisitorTso extends VisitorBase {
             IExpr address = e.getAddress();
 
             Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-            Load load = newRMWLoad(resultRegister, address, null);
+            Load load = newRMWLoad(resultRegister, address, "");
 
             return eventSequence(
                             load,
                             newLocal(dummyReg, new IExprBin(resultRegister, e.getOp(), (IExpr) e.getMemValue())),
-                            newRMWStore(load, address, dummyReg, null));
+                            newRMWStore(load, address, dummyReg, ""));
     }
 
     @Override
@@ -146,8 +146,8 @@ class VisitorTso extends VisitorBase {
             Label casEnd = newLabel("CAS_end");
             CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
 
-            Load load = newRMWLoad(oldValueRegister, address, null);
-            Store store = newRMWStore(load, address, value, null);
+            Load load = newRMWLoad(oldValueRegister, address, "");
+            Store store = newRMWStore(load, address, value, "");
 
             return eventSequence(
                             // Indentation shows the branching structure

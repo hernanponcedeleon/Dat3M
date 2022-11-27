@@ -108,7 +108,7 @@ class VisitorRISCV extends VisitorBase {
 
 		return eventSequence(
 				optionalBarrierBefore,
-				newLoad(e.getResultRegister(), e.getAddress(), null),
+				newLoad(e.getResultRegister(), e.getAddress(), ""),
 				optionalBarrierAfter);
 	}
 
@@ -121,7 +121,7 @@ class VisitorRISCV extends VisitorBase {
 
 		return eventSequence(
 				optionalBarrierBefore,
-				newStore(e.getAddress(), e.getMemValue(), null));
+				newStore(e.getAddress(), e.getMemValue(), ""));
 	}
 
 	@Override

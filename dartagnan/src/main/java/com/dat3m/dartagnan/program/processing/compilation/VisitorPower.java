@@ -103,7 +103,7 @@ public class VisitorPower extends VisitorBase {
 		Register resultRegister = e.getResultRegister();
 
 		Fence optionalBarrierBefore = null;
-		Load load = newLoad(resultRegister, e.getAddress(), null);
+		Load load = newLoad(resultRegister, e.getAddress(), "");
 		Label optionalLabel = null;
 		CondJump optionalFakeCtrlDep = null;
 		Fence optionalBarrierAfter = null;
@@ -143,7 +143,7 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitLlvmStore(LlvmStore e) {
 		Fence optionalBarrierBefore = null;
-		Store store = newStore(e.getAddress(), e.getMemValue(), null);
+		Store store = newStore(e.getAddress(), e.getMemValue(), "");
 		Fence optionalBarrierAfter = null;
 
 		switch (e.getMo()) {
@@ -173,8 +173,8 @@ public class VisitorPower extends VisitorBase {
 		String mo = e.getMo();
 
 		// Power does not have mo tags, thus we use null
-		Load load = newRMWLoadExclusive(resultRegister, address, null);
-		Store store = Power.newRMWStoreConditional(address, e.getMemValue(), null, true);
+		Load load = newRMWLoadExclusive(resultRegister, address, "");
+		Store store = Power.newRMWStoreConditional(address, e.getMemValue(), "",  true);
 		Label label = newLabel("FakeDep");
 		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -222,8 +222,8 @@ public class VisitorPower extends VisitorBase {
 		Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, e.getOp(), (IExpr) e.getMemValue()));
 
 		// Power does not have mo tags, thus we use null
-		Load load = newRMWLoadExclusive(resultRegister, address, null);
-		Store store = Power.newRMWStoreConditional(address, dummyReg, null, true);
+		Load load = newRMWLoadExclusive(resultRegister, address, "");
+		Store store = Power.newRMWStoreConditional(address, dummyReg, "", true);
 		Label label = newLabel("FakeDep");
 		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -279,8 +279,8 @@ public class VisitorPower extends VisitorBase {
 		Label casEnd = newLabel("CAS_end");
 		CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
 
-		Load load = newRMWLoadExclusive(oldValueRegister, address, null);
-		Store store = Power.newRMWStoreConditional(address, e.getMemValue(), null, true);
+		Load load = newRMWLoadExclusive(oldValueRegister, address, "");
+		Store store = Power.newRMWStoreConditional(address, e.getMemValue(), "", true);
 
 		Fence optionalBarrierBefore = null;
 		Fence optionalBarrierAfter = null;

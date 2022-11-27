@@ -87,7 +87,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	private final Map<String, ExprInterface> constantsMap = new HashMap<>();
 	private final Map<String, Integer> constantsTypeMap = new HashMap<>();
 
-	protected final Map<IExpr, MemoryObject> allocations = new HashMap<>();
+	protected final Set<IExpr> allocations = new HashSet<>();
 
 	protected Map<Integer, List<ExprInterface>> threadCallingValues = new HashMap<>();
 	
@@ -244,10 +244,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             programBuilder.initThread(name, threadCount);
             if(threadCount != 1) {
                 // Used to allow execution of threads after they have been created (pthread_create)
-                String cc = String.format("%s", allocations.get(pool.getPtrFromInt(threadCount)));
-				MemoryObject object = programBuilder.getOrNewObject(cc);
+				IExpr pointer = pool.getPtrFromInt(threadCount);
                 Register reg = programBuilder.getOrCreateRegister(threadCount, null, ARCH_PRECISION);
-                programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, object, pool.getMatcher(pool.getPtrFromInt(threadCount))));
+                programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
             }
     	}
 
@@ -292,8 +291,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     	if(create) {
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
-                MemoryObject object = programBuilder.getOrNewObject(String.format("%s", allocations.get(pool.getPtrFromInt(threadCount)), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
-                programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(object));
+				IExpr pointer = pool.getPtrFromInt(threadCount);
+                programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(pointer));
          	}
     	}
     }
@@ -433,20 +432,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
 	        	if(ctx.getText().contains("$load.") || value instanceof MemoryObject) {
-
-					if(allocations.containsKey(value)) {
-		        		// These loads corresponding to pthread_joins and thus need acquire semantics
-		        		programBuilder.addChild(threadCount, EventFactory.newLoad(register, allocations.get(value), Tag.C11.MO_ACQUIRE))
-	    	    				.setCLine(currentLine)
-	        					.setSourceCodeFile(sourceCodeFile);
-		        	    continue;
-					} else {
-		        		// These events are eventually compiled and we need to compare its mo, thus it cannot be null
-		        		programBuilder.addChild(threadCount, EventFactory.newLoad(register, (IExpr)value, ""))
-	    	    				.setCLine(currentLine)
-	        					.setSourceCodeFile(sourceCodeFile);
-		        	    continue;
-					}
+					String mo = allocations.contains(value) ? Tag.C11.MO_ACQUIRE : "";
+					String filter = allocations.contains(value) ? Tag.C11.ATOMIC : Tag.C11.NONATOMIC; 
+		        	// These loads corresponding to pthread_joins and thus need acquire semantics
+		        	programBuilder.addChild(threadCount, EventFactory.newLoad(register, (IExpr)value, mo))
+	    	    			.setCLine(currentLine)
+	        				.setSourceCodeFile(sourceCodeFile)
+							.addFilters(filter);
+		        	continue;
 	        	}
 	        	value = value.visit(exprSimplifier);
 				programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))

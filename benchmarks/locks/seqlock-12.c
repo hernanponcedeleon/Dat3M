@@ -56,6 +56,7 @@ static inline void write(struct seqlock_s *l, int new_data)
 // ==================
 
 seqlock_t lock;
+pthread_t t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12;;
 
 void *writer6(void *unused) {
     write(&lock, 6);
@@ -63,35 +64,30 @@ void *writer6(void *unused) {
 }
 
 void *writer5(void *unused) {
-    pthread_t t6;
     write(&lock, 5);
     pthread_create(&t6, NULL, writer6, NULL);
     return NULL;
 }
 
 void *writer4(void *unused) {
-    pthread_t t5;
     write(&lock, 4);
     pthread_create(&t5, NULL, writer5, NULL);
     return NULL;
 }
 
 void *writer3(void *unused) {
-    pthread_t t4;
     write(&lock, 3);
     pthread_create(&t4, NULL, writer4, NULL);
     return NULL;
 }
 
 void *writer2(void *unused) {
-    pthread_t t3;
     write(&lock, 2);
     pthread_create(&t3, NULL, writer3, NULL);
     return NULL;
 }
 
 void *writer1(void *unused) {
-    pthread_t t2;
     write(&lock, 1);
     pthread_create(&t2, NULL, writer2, NULL);
     return NULL;
@@ -105,7 +101,6 @@ void *reader(void *unused) {
 }
 
 int main() {
-    pthread_t t1, t7, t8, t9, t10, t11, t12;
 	
     seqlock_init(&lock);
 

@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,14 +76,12 @@ public class PthreadsProcedures {
 		String threadName = ctx.call_params().exprs().expr().get(2).getText();
 		visitor.pool.add(pointer, threadName, visitor.threadCount);
         
-		String cc = String.format("%s_active", pointer);
 		Event matcher = EventFactory.newStringAnnotation("// Spawning thread associated to " + pointer);
 		visitor.programBuilder.addChild(visitor.threadCount, matcher);
 		visitor.pool.addMatcher(pointer, matcher);
 		
-		MemoryObject object = visitor.programBuilder.getOrNewObject(cc);
-		visitor.allocations.put(pointer, object);
-		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(object, threadName))
+		visitor.allocations.add(pointer);
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(pointer, threadName))
 			.setCLine(visitor.currentLine)
 			.setSourceCodeFile(visitor.sourceCodeFile);
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
