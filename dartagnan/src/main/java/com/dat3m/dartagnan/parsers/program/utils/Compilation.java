@@ -35,18 +35,9 @@ public class Compilation {
 	}
 
 	public static File applyLlvmPasses(File file) throws Exception {
-		String output = getOutputName(file, "-opt.ll");		
-
-		List<String> optPasses = Arrays.asList( 
-			"-mem2reg",
-			"-indvars",
-			"-loop-unroll",
-			"-simplifycfg",
-			"-gvn");
-
 		ArrayList<String> cmd = new ArrayList<String>();
+		String output = getOutputName(file, "-opt.ll");		
 		cmd.addAll(asList("atomic-replace", file.getAbsolutePath(), output));
-
 		return runCmd(cmd, output);
 	}
 
