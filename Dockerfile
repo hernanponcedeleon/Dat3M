@@ -35,4 +35,3 @@ ENV DAT3M_HOME=/home/Dat3M
 ENV DAT3M_OUTPUT=$DAT3M_HOME/output
 ENV CFLAGS="-I$DAT3M_HOME/include"
 ENV SMACK_FLAGS="-q -t --no-memory-splitting"
-ENV DAT3M_LLVM_PASSES="-mem2reg -indvars -loop-unroll -simplifycfg -gvn"
