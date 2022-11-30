@@ -1,0 +1,47 @@
+function @__llvm_atomic32_load exists only in right module
+function @__llvm_atomic64_load exists only in right module
+function @__llvm_atomic32_store exists only in right module
+function @__llvm_atomic64_store exists only in right module
+function @__llvm_atomic32_cmpxchg exists only in right module
+function @__llvm_atomic64_cmpxchg exists only in right module
+function @__llvm_atomic32_rmw exists only in right module
+function @__llvm_atomic64_rmw exists only in right module
+function @__llvm_atomic_fence exists only in right module
+in function check_atomic_32:
+  in block %0 / %0:
+    >   %1 = call i32 @__llvm_atomic32_load(ptr @x, i32 5)
+    >   %2 = call i32 @__llvm_atomic32_rmw(ptr @y, i32 %1, i32 2, i32 0)
+    >   %3 = call { i32, i1 } @__llvm_atomic32_cmpxchg(ptr @x, i32 %1, i32 %2, i32 5, i32 5)
+    >   %4 = extractvalue { i32, i1 } %3, 1
+    >   call void @__llvm_atomic32_store(ptr @x, i32 %2, i32 0)
+    >   %5 = zext i1 %4 to i32
+    >   ret i32 %5
+    <   %1 = load atomic i32, ptr @x seq_cst, align 4
+    <   %2 = atomicrmw xchg ptr @y, i32 %1 acquire, align 4
+    <   %3 = cmpxchg ptr @x, i32 %1, i32 %2 seq_cst seq_cst, align 4
+    <   %4 = extractvalue { i32, i1 } %3, 1
+    <   store atomic i32 %2, ptr @x monotonic, align 4
+    <   %5 = zext i1 %4 to i32
+    <   ret i32 %5
+
+in function check_atomic_64:
+  in block %0 / %0:
+    >   %1 = call i64 @__llvm_atomic64_load(ptr @x8, i32 5)
+    >   %2 = call i64 @__llvm_atomic64_rmw(ptr @y8, i64 %1, i32 2, i32 0)
+    >   %3 = call { i64, i1 } @__llvm_atomic64_cmpxchg(ptr @x8, i64 %1, i64 %2, i32 5, i32 5)
+    >   %4 = extractvalue { i64, i1 } %3, 1
+    >   call void @__llvm_atomic64_store(ptr @x8, i64 %2, i32 0)
+    >   %5 = zext i1 %4 to i32
+    >   ret i32 %5
+    <   %1 = load atomic i64, ptr @x8 seq_cst, align 8
+    <   %2 = atomicrmw xchg ptr @y8, i64 %1 acquire, align 8
+    <   %3 = cmpxchg ptr @x8, i64 %1, i64 %2 seq_cst seq_cst, align 8
+    <   %4 = extractvalue { i64, i1 } %3, 1
+    <   store atomic i64 %2, ptr @x8 monotonic, align 8
+    <   %5 = zext i1 %4 to i32
+    <   ret i32 %5
+
+in function check_fence:
+  in block %0 / %0:
+    >   call void @__llvm_atomic_fence(i32 3)
+    <   fence release
