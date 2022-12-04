@@ -2432,8 +2432,6 @@ litmus/LKMM/dart/C-re-03.litmus,1
 litmus/LKMM/dart/C-xchg-simple-01.litmus,0
 litmus/LKMM/dart/C-xchg-simple-02.litmus,1
 litmus/LKMM/dart/C-xchg-simple-03.litmus,0
-litmus/LKMM/dart/no-herd/C-bool-const-01.litmus,0
-litmus/LKMM/dart/no-herd/C-bool-const-02.litmus,1
 litmus/LKMM/lkml/Atomic-RMW+mb__after_atomic-is-stronger-than-acquire.litmus,0
 litmus/LKMM/lkml/RCU+sync+read.litmus,0
 litmus/LKMM/lkml/rel-acq-write-ordering-1.litmus,1
@@ -4955,9 +4953,6 @@ litmus/LKMM/tree/LB+poacquireonce+pooncerelease.litmus,0
 litmus/LKMM/tree/LB+poonceonces.litmus,1
 litmus/LKMM/tree/LB+unlocklockonceonce+poacquireonce.litmus,0
 litmus/LKMM/tree/MP+fencewmbonceonce+fencermbonceonce.litmus,0
-litmus/LKMM/tree/MP+onceassign+derefonce.litmus,0
-litmus/LKMM/tree/MP+polockmbonce+poacquiresilsil.litmus,0
-litmus/LKMM/tree/MP+polockonce+poacquiresilsil.litmus,1
 litmus/LKMM/tree/MP+polocks.litmus,0
 litmus/LKMM/tree/MP+poonceonces.litmus,1
 litmus/LKMM/tree/MP+pooncerelease+poacquireonce.litmus,0
@@ -4967,9 +4962,7 @@ litmus/LKMM/tree/R+fencembonceonces.litmus,0
 litmus/LKMM/tree/R+poonceonces.litmus,1
 litmus/LKMM/tree/S+fencewmbonceonce+poacquireonce.litmus,0
 litmus/LKMM/tree/S+poonceonces.litmus,1
-litmus/LKMM/tree/SB+fencembonceonces.litmus,0
 litmus/LKMM/tree/SB+poonceonces.litmus,1
-litmus/LKMM/tree/SB+rfionceonce-poonceonces.litmus,1
 litmus/LKMM/tree/WRC+poonceonces+Once.litmus,1
 litmus/LKMM/tree/WRC+pooncerelease+fencermbonceonce+Once.litmus,0
 litmus/LKMM/tree/Z6.0+pooncelock+poonceLock+pombonce.litmus,0
