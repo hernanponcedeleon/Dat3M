@@ -177,7 +177,7 @@ let vis = cumul-fence* ; rfe? ; [Marked] ;
 	((update-strong-fence ; [Marked] ; xbstar) | (xbstar & int))
 
 (* Boundaries for lifetimes of plain accesses *)
-let w-pre-bounded = [Marked] ; (addr | fence)?
+let w-pre-bounded = [Marked] ; (addr | update-fence)?
 let r-pre-bounded = [Marked] ; (addr | nonrw-fence |
 	([R4rmb] ; fencerel(Rmb) ; [~Noreturn]))?
 let w-post-bounded = update-fence? ; rmw-sequence
