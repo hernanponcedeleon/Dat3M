@@ -176,11 +176,12 @@ public class ExecutionGraphVisualizer {
             		String.format("W(%s, %d, %s)", address, value, mo) :
             		String.format("%d = R(%s, %s)", value, address, mo);
         }
-        return String.format("\"T%d:E%s (%s:L%d)\\n%s\"", 
+        return String.format("\"T%d:E%s (%s:L%d)\\n%s\\n%s\"", 
         				e.getThread().getId(), 
         				e.getEvent().getCId(), 
         				e.getEvent().getSourceCodeFile(), 
         				e.getEvent().getCLine(), 
+        				e.getEvent().getCallStack(), 
         				tag);
     }
 
