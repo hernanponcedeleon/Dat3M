@@ -141,8 +141,7 @@ public class Compilation implements ProgramProcessor {
                 e.setCId(nextId++);
                 e.setThread(thread);
                 e.setCFileInformation(toBeCompiled.getCLine(), 
-                                    toBeCompiled.getSourceCodeFile(),
-                                    toBeCompiled.getCallStack());
+                                    toBeCompiled.getSourceCodeFile());
                 pred.setSuccessor(e);
                 pred = e;
             }

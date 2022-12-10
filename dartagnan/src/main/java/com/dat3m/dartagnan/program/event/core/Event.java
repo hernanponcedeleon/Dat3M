@@ -23,7 +23,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	protected int cLine = -1;				// line in the original C program
 	protected String sourceCodeFile = "";	// filename of the original C program
-	protected String callStack = "";		// call stack of procedures
 
 	protected Thread thread; // The thread this event belongs to
 
@@ -45,7 +44,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
         this.fId = other.fId;
         this.cLine = other.cLine;
         this.sourceCodeFile = other.sourceCodeFile;
-        this.callStack = other.callStack;
         this.filter = other.filter; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
         this.thread = other.thread;
     }
@@ -71,14 +69,9 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		return sourceCodeFile;
 	}
 
-	public String getCallStack() {
-		return callStack;
-	}
-
-	public Event setCFileInformation(int line, String file, String callStack) {
+	public Event setCFileInformation(int line, String file) {
 		this.cLine = line;
 		this.sourceCodeFile = file;
-		this.callStack = callStack;
 		return this;
 	}
 

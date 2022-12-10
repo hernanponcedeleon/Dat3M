@@ -63,7 +63,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
 	protected int currentLine= -1;
 	protected String sourceCodeFile = "";
-	protected Stack<String> callStack = new Stack<>();
 	
     private Label currentLabel = null;
     private final Map<Label, Label> pairLabels = new HashMap<>();
@@ -267,7 +266,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         				Register register = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText(), precision);
         				ExprInterface value = callingValues.get(index);
 						programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))
-								.setCFileInformation(currentLine, sourceCodeFile, stackToString());
+								.setCFileInformation(currentLine, sourceCodeFile);
         				index++;    					
     				}
     			}
@@ -378,9 +377,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
 		FunCall call = EventFactory.newFunctionCall(name);
-		callStack.push(name);
 		programBuilder.addChild(threadCount, call)
-				.setCFileInformation(currentLine, sourceCodeFile, stackToString());
+				.setCFileInformation(currentLine, sourceCodeFile);
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
 			atomicMode = null;
@@ -391,9 +389,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			}
 			
 		}
-		callStack.pop();
 		programBuilder.addChild(threadCount, EventFactory.newFunctionReturn(name))
-				.setCFileInformation(currentLine, sourceCodeFile, stackToString());
+				.setCFileInformation(currentLine, sourceCodeFile);
 		if(name.equals("$initialize")) {
 			initMode = false;
 		}
@@ -438,26 +435,26 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	        		}
 	        		// These events are eventually compiled and we need to compare its mo, thus it cannot be null
 	        		programBuilder.addChild(threadCount, EventFactory.newLoad(register, (IExpr)value, ""))
-							.setCFileInformation(currentLine, sourceCodeFile, stackToString());
+							.setCFileInformation(currentLine, sourceCodeFile);
 		            continue;
 	        	}
 	        	value = value.visit(exprSimplifier);
 				programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))
-						.setCFileInformation(currentLine, sourceCodeFile, stackToString());
+						.setCFileInformation(currentLine, sourceCodeFile);
 	            continue;
 	        }
             MemoryObject object = programBuilder.getObject(name);
             if(object != null){
     			// These events are eventually compiled and we need to compare its mo, thus it cannot be null
 				programBuilder.addChild(threadCount, EventFactory.newStore(object, value, ""))
-						.setCFileInformation(currentLine, sourceCodeFile, stackToString());
+						.setCFileInformation(currentLine, sourceCodeFile);
 	            continue;
 	        }
 	        if(currentReturnName.equals(name)) {
 	        	if(!returnRegister.isEmpty()) {
 	        		Register ret = returnRegister.remove(returnRegister.size() - 1);
 					programBuilder.addChild(threadCount, EventFactory.newLocal(ret, value))
-							.setCFileInformation(currentLine, sourceCodeFile, stackToString());
+							.setCFileInformation(currentLine, sourceCodeFile);
 	        	}
 	        	continue;
 	        }
@@ -678,7 +675,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 				return null;
 			}
 			programBuilder.addChild(threadCount, EventFactory.newStore(address, value, ""))
-					.setCFileInformation(currentLine, sourceCodeFile, stackToString());
+					.setCFileInformation(currentLine, sourceCodeFile);
 			return null;
 		}
 		// push currentCall to the call stack
@@ -757,25 +754,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, expr.getPrecision());
     	assertionIndex++;
     	programBuilder.addChild(threadCount, EventFactory.newLocal(ass, expr))
-				.setCFileInformation(currentLine, sourceCodeFile, stackToString())
+				.setCFileInformation(currentLine, sourceCodeFile)
 				.addFilters(Tag.ASSERTION);
        	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 		CondJump jump = EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end);
 		jump.addFilters(Tag.EARLYTERMINATION);
 		programBuilder.addChild(threadCount, jump);
 		
-	}
-
-	protected String stackToString() {
-		StringBuilder strB = new StringBuilder();
-		Iterator<String> it = callStack.iterator();
-		while(it.hasNext()) {
-			String next = it.next();
-			strB.append(next);
-			if(it.hasNext()) {
-				strB.append(" -> \\n");
-			}
-		}
-		return strB.toString();
 	}
 }
