@@ -15,7 +15,8 @@
 #endif
 
 rwlock_t mylock;
-int shareddata;
+// volatile is needed otherwise the compile can simplify the reader CS
+int volatile shareddata;
 int sum = 0;
 
 void *threadR(void *arg)
