@@ -42,7 +42,7 @@ public class C11LocksTest extends AbstractCTest {
     @Override
     protected long getTimeout() {
         return 180000;
-    }-3
+    }
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
