@@ -47,7 +47,6 @@
 #define mo_rel2rx_unlock4 memory_order_release
 #endif
 
-__thread intptr_t tindex;
 int current_numa_node() {
     return __VERIFIER_nondet_uint();
 }

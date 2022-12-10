@@ -6,6 +6,8 @@
 #define NTHREADS 3
 #endif
 
+__thread intptr_t tindex;
+
 cna_lock_t lock;
 cna_node_t node[NTHREADS];
 int shared = 0;

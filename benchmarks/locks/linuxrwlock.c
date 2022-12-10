@@ -24,6 +24,7 @@ void *threadR(void *arg)
     int r = shareddata;
     assert(r == shareddata);
     read_unlock(&mylock);
+
     return NULL;
 }
 
@@ -34,6 +35,7 @@ void *threadW(void *arg)
     assert(42 == shareddata);
     sum++;
     write_unlock(&mylock);
+
     return NULL;
 }
 
@@ -45,8 +47,8 @@ void *threadRW(void *arg)
     read_unlock(&mylock);
 
     write_lock(&mylock);
-    shareddata = 2;
-    assert(shareddata == 2);
+    shareddata = 42;
+    assert(42 == shareddata);
     sum++;
     write_unlock(&mylock);
 
