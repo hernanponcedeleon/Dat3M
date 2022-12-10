@@ -35,14 +35,18 @@ public class ExecutionGraphVisualizer {
     private static final Logger logger = LogManager.getLogger(ExecutionGraphVisualizer.class);
 	
     private final Graphviz graphviz;
-    private final Map<Event, String> callStackMapping;
+    private Map<Event, String> callStackMapping;
     private BiPredicate<EventData, EventData> rfFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
     private Map<BigInteger, IExpr> addresses = new HashMap<BigInteger, IExpr>();
 
-    public ExecutionGraphVisualizer(Map<Event, String> callStackMapping) {
+    public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
+    }
+
+    public ExecutionGraphVisualizer setCallStackMapping(Map<Event, String> callStackMapping) {
         this.callStackMapping = callStackMapping;
+        return this;
     }
 
     public ExecutionGraphVisualizer setReadFromFilter(BiPredicate<EventData, EventData> filter) {
@@ -197,7 +201,8 @@ public class ExecutionGraphVisualizer {
         fileVio.getParentFile().mkdirs();
         try (FileWriter writer = new FileWriter(fileVio)) {
             // Create .dot file
-            new ExecutionGraphVisualizer(callStackMapping)
+            new ExecutionGraphVisualizer()
+                    .setCallStackMapping(callStackMapping)
                     .setReadFromFilter(edgeFilter)
                     .setCoherenceFilter(edgeFilter)
                     .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
