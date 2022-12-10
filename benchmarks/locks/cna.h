@@ -1,17 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <pthread.h>
 #include <stdatomic.h>
-#include <assert.h>
-#ifdef GENMC
-#include <genmc.h>
-#else
 #include <dat3m.h>
-#endif
-
-extern int __VERIFIER_nondet_int(void);
-extern void __VERIFIER_assume(int cond);
 
 #ifdef ACQ2RX_LOCK
 #define mo_acq2rx_lock memory_order_relaxed
@@ -59,22 +47,7 @@ extern void __VERIFIER_assume(int cond);
 #define mo_rel2rx_unlock4 memory_order_release
 #endif
 
-#define await_while(cond)                                                  \
-    for (int tmp = (__VERIFIER_loop_begin(), 0); __VERIFIER_spin_start(),  \
-        tmp = cond, __VERIFIER_spin_end(!tmp), tmp;)
-
-#ifdef GENMC
 __thread intptr_t tindex;
-atomic_bool threshold_reached = 0;
- 
-int current_numa_node() {
-    return (tindex < 2);
-}
- 
-_Bool keep_lock_local() {
-    return threshold_reached;
-}
-#else
 int current_numa_node() {
     return __VERIFIER_nondet_uint();
 }
@@ -82,8 +55,6 @@ int current_numa_node() {
 _Bool keep_lock_local() {
     return __VERIFIER_nondet_bool();
 }
-#endif
-
  
 typedef struct cna_node {
     _Atomic(uintptr_t) spin;
@@ -198,48 +169,3 @@ static inline void cna_unlock(cna_lock_t *lock, cna_node_t *me)
         atomic_store_explicit(&succ->spin, 1, mo_rel2rx_unlock4);
     }
 }
- 
-cna_lock_t lock;
-cna_node_t node[4];
-int shared = 0;
-int sum = 0;
-
-void *run(void *arg)
-{
-#ifdef GENMC
-    tindex = ((intptr_t) arg);
-#else
-    intptr_t tindex = ((intptr_t) arg);
-#endif
-    cna_lock(&lock, &node[tindex]);
-    shared = tindex;
-    int r = shared;
-    assert(r == tindex);
-    sum++;
-    cna_unlock(&lock, &node[tindex]);
-    return NULL;
-}
- 
-int main()
-{
-    pthread_t t0, t1, t2, t3;
- 
-    pthread_create(&t0, NULL, run, (void *) 0);
-    pthread_create(&t1, NULL, run, (void *) 1);
-    pthread_create(&t2, NULL, run, (void *) 2);
-    pthread_create(&t3, NULL, run, (void *) 3);
- 
-#ifdef GENMC
-    atomic_store_explicit(&threshold_reached, 1, memory_order_relaxed);
-#endif
-
-    pthread_join(t0, 0);
-    pthread_join(t1, 0);
-    pthread_join(t2, 0);
-    pthread_join(t3, 0);
- 
-    assert (sum == 4); // check mutual exclusion
-   
-    return 0;
-}
-

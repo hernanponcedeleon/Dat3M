@@ -1,3 +1,6 @@
+extern int __VERIFIER_nondet_int(void);
+extern void __VERIFIER_assume(int cond);
+
 // Used for spinloops
 extern void __VERIFIER_loop_begin(void);
 extern void __VERIFIER_spin_start(void);

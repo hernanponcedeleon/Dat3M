@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <pthread.h>
 #include <stdatomic.h>
-#include <assert.h>
 
 #ifdef ACQ2RX
 #define mo_lock memory_order_relaxed
@@ -15,9 +10,6 @@
 #else
 #define mo_unlock memory_order_release
 #endif
-
-// linuxrwlocks.c
-//
 
 #define RW_LOCK_BIAS            0x00100000
 
@@ -87,65 +79,4 @@ static inline void read_unlock(rwlock_t *rw)
 static inline void write_unlock(rwlock_t *rw)
 {
     atomic_fetch_add_explicit(&rw->lock, RW_LOCK_BIAS, mo_unlock);
-}
-
-rwlock_t mylock;
-int shareddata;
-int sum = 0;
-
-void *threadR(void *arg)
-{
-    read_lock(&mylock);
-    int r = shareddata;
-    assert(r == shareddata);
-    read_unlock(&mylock);
-    return NULL;
-}
-
-void *threadW(void *arg)
-{
-    write_lock(&mylock);
-    shareddata = 42;
-    assert(42 == shareddata);
-    sum++;
-    write_unlock(&mylock);
-    return NULL;
-}
-
-void *threadRW(void *arg)
-{
-    read_lock(&mylock);
-    int r = shareddata;
-    assert(r == shareddata);
-    read_unlock(&mylock);
-
-    write_lock(&mylock);
-    shareddata = 2;
-    assert(shareddata == 2);
-    sum++;
-    write_unlock(&mylock);
-
-    return NULL;
-}
-
-// variant
-//
-int main()
-{
-    pthread_t W0, R0, RW0;
-
-    atomic_init(&mylock.lock, RW_LOCK_BIAS);
-    
-    pthread_create(&W0, NULL, threadW, NULL);
-    pthread_create(&R0, NULL, threadR, NULL);
-    pthread_create(&RW0, NULL, threadRW, NULL);
-
-    pthread_join(W0, 0);
-    pthread_join(R0, 0);
-    pthread_join(RW0, 0);
-
-    // Only write threads increment sum
-    assert(sum == 2);
-
-    return 0;
 }
