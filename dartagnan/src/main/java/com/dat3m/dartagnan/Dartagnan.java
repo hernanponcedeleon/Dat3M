@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.dat3m.dartagnan.program.processing.CallStackAnalysis;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -170,8 +171,10 @@ public class Dartagnan extends BaseOptions {
             	if(result.equals(FAIL) && o.generateGraphviz()) {
                 	ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
                 	m.initialize(prover.getModel());
+					CallStackAnalysis csa = CallStackAnalysis.fromConfig(config);
+					csa.run(p);
     				String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
-    				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name);        		
+    				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name, csa.getCallStackMappint());        		
             	}
 
             	boolean safetyViolationFound = false;
