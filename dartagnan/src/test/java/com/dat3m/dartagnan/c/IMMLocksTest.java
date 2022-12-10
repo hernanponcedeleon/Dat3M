@@ -26,10 +26,6 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class IMMLocksTest extends AbstractCTest {
 	
-	// We use this for a fast CI.
-	// For benchmarking we use CLocksTest{TSO, ARM, Power}
-	// which use higher bounds and more threads
-	
     public IMMLocksTest(String name, Arch target, Result expected) {
         super(name, target, expected);
     }

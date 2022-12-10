@@ -26,10 +26,6 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class RC11LocksTest extends AbstractCTest {
 	
-	// We use this for a fast CI.
-	// For benchmarking we use CLocksTest{TSO, ARM, Power}
-	// which use higher bounds and more threads
-	
     public RC11LocksTest(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
