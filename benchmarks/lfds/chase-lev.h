@@ -1,15 +1,8 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <stdint.h>
 #include <stdatomic.h>
-#include <pthread.h>
-#include <assert.h>
-
-// deque.h
+#include <stdbool.h>
 
 #ifndef LEN
-# define LEN 10
+#define LEN 10
 #endif
 
 struct Deque {
@@ -78,63 +71,4 @@ int try_steal(struct Deque *deq, int N, int* data)
                                                                  memory_order_relaxed,
                                                                  memory_order_relaxed);
     return (is_successful ? 0 : -2); // success or lost
-}
-
-
-// chase-lev.c
-
-#ifndef NUM
-# define NUM 10
-#endif
-
-struct Deque deq;
-
-void *thief(void *unused)
-{
-    int data;
-    try_steal(&deq, NUM, &data);
-    return NULL;
-}
-
-void *owner(void *unused)
-{
-    pthread_t t0, t1, t2, t3, t4;
-    
-    int count = 0;
-    int data;
-
-    count++;
-    try_push(&deq, NUM, count);
-
-#ifdef FAIL
-    pthread_t t5;
-    pthread_create(&t5, NULL, thief, NULL);
-#endif
-    // Unless the thief thread was created above, I should pop the value that I just pushed
-    try_pop(&deq, NUM, &data);
-    assert(data == count);
-
-    try_push(&deq, NUM, count);
-    try_push(&deq, NUM, count);
-    try_push(&deq, NUM, count);
-    try_push(&deq, NUM, count);
-    try_push(&deq, NUM, count);
-
-    pthread_create(&t1, NULL, thief, NULL);
-    pthread_create(&t2, NULL, thief, NULL);
-    pthread_create(&t3, NULL, thief, NULL);
-    pthread_create(&t4, NULL, thief, NULL);
-
-    // The  number of pop + steal == push to this holds
-    assert(try_pop(&deq, NUM, &data) >= 0);
-
-    return NULL;
-}
-
-int main()
-{
-	pthread_t t0;
-
-	pthread_create(&t0, NULL, owner, NULL);
-    return 0;
 }
