@@ -53,15 +53,15 @@ public class C11LFDSTest extends AbstractCTest {
     public static Iterable<Object[]> data() throws IOException {
         // Commented ones take too long ATM
 		return Arrays.asList(new Object[][]{
-            // {"dglm-3", C11, UNKNOWN},
-            {"dglm-3-CAS-relaxed", C11, FAIL},
-            // {"ms-3", C11, UNKNOWN},
-            {"ms-3-CAS-relaxed", C11, FAIL},
-            // {"treiber-3", C11, UNKNOWN},
-            {"treiber-3-CAS-relaxed", C11, FAIL},
-            {"chase-lev-5", C11, PASS},
+            // {"dglm", C11, UNKNOWN},
+            {"dglm-CAS-relaxed", C11, FAIL},
+            // {"ms", C11, UNKNOWN},
+            {"ms-CAS-relaxed", C11, FAIL},
+            // {"treiber", C11, UNKNOWN},
+            {"treiber-CAS-relaxed", C11, FAIL},
+            {"chase-lev", C11, PASS},
             // These ones have an extra thief that violate the assertion
-            {"chase-lev-6", C11, FAIL},
+            {"chase-lev-fail", C11, FAIL},
         });
     }
 
