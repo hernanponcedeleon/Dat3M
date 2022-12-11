@@ -419,9 +419,9 @@ public class RefinementSolver extends ModelChecker {
         String directoryName = String.format("%s/refinement/%s-%s-debug/", System.getenv("DAT3M_OUTPUT"), programName, task.getProgram().getArch());
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
         // File with reason edges only
-        generateGraphvizFile(model, iterationCount, edgeFilter, directoryName, fileNameBase);
+        generateGraphvizFile(model, iterationCount, edgeFilter, directoryName, fileNameBase, new HashMap<>());
         // File with all edges
-        generateGraphvizFile(model, iterationCount, (x,y) -> true, directoryName, fileNameBase + "-full");
+        generateGraphvizFile(model, iterationCount, (x,y) -> true, directoryName, fileNameBase + "-full", new HashMap<>());
     }
 
     private Wmm createDefaultWmm() {

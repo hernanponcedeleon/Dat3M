@@ -266,8 +266,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         				Register register = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText(), precision);
         				ExprInterface value = callingValues.get(index);
 						programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))
-    							.setCLine(currentLine)
-    							.setSourceCodeFile(sourceCodeFile);
+								.setCFileInformation(currentLine, sourceCodeFile);
         				index++;    					
     				}
     			}
@@ -379,8 +378,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		}
 		FunCall call = EventFactory.newFunctionCall(name);
 		programBuilder.addChild(threadCount, call)
-				.setCLine(currentLine)
-				.setSourceCodeFile(sourceCodeFile);	
+				.setCFileInformation(currentLine, sourceCodeFile);
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
 			atomicMode = null;
@@ -392,8 +390,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			
 		}
 		programBuilder.addChild(threadCount, EventFactory.newFunctionReturn(name))
-				.setCLine(call.getCLine())
-				.setSourceCodeFile(sourceCodeFile);
+				.setCFileInformation(currentLine, sourceCodeFile);
 		if(name.equals("$initialize")) {
 			initMode = false;
 		}
@@ -438,30 +435,26 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	        		}
 	        		// These events are eventually compiled and we need to compare its mo, thus it cannot be null
 	        		programBuilder.addChild(threadCount, EventFactory.newLoad(register, (IExpr)value, ""))
-	        				.setCLine(currentLine)
-	        				.setSourceCodeFile(sourceCodeFile);
+							.setCFileInformation(currentLine, sourceCodeFile);
 		            continue;
 	        	}
 	        	value = value.visit(exprSimplifier);
 				programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))
-						.setCLine(currentLine)
-						.setSourceCodeFile(sourceCodeFile);
+						.setCFileInformation(currentLine, sourceCodeFile);
 	            continue;
 	        }
             MemoryObject object = programBuilder.getObject(name);
             if(object != null){
     			// These events are eventually compiled and we need to compare its mo, thus it cannot be null
 				programBuilder.addChild(threadCount, EventFactory.newStore(object, value, ""))
-						.setCLine(currentLine)
-						.setSourceCodeFile(sourceCodeFile);
+						.setCFileInformation(currentLine, sourceCodeFile);
 	            continue;
 	        }
 	        if(currentReturnName.equals(name)) {
 	        	if(!returnRegister.isEmpty()) {
 	        		Register ret = returnRegister.remove(returnRegister.size() - 1);
 					programBuilder.addChild(threadCount, EventFactory.newLocal(ret, value))
-							.setCLine(currentLine)
-							.setSourceCodeFile(sourceCodeFile);
+							.setCFileInformation(currentLine, sourceCodeFile);
 	        	}
 	        	continue;
 	        }
@@ -681,10 +674,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 				programBuilder.getOrNewObject(text).appendInitialValue(rhs,value.reduce());
 				return null;
 			}
-			// These events are eventually compiled and we need to compare its mo, thus it cannot be null
 			programBuilder.addChild(threadCount, EventFactory.newStore(address, value, ""))
-					.setCLine(currentLine)
-					.setSourceCodeFile(sourceCodeFile);	
+					.setCFileInformation(currentLine, sourceCodeFile);
 			return null;
 		}
 		// push currentCall to the call stack
@@ -763,8 +754,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, expr.getPrecision());
     	assertionIndex++;
     	programBuilder.addChild(threadCount, EventFactory.newLocal(ass, expr))
-				.setCLine(currentLine)
-				.setSourceCodeFile(sourceCodeFile)
+				.setCFileInformation(currentLine, sourceCodeFile)
 				.addFilters(Tag.ASSERTION);
        	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 		CondJump jump = EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end);
