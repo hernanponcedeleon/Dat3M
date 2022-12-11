@@ -16,6 +16,7 @@ public class AtomicLoad extends MemEvent implements RegWriter {
 
     public AtomicLoad(Register register, IExpr address, String mo) {
         super(address, mo);
+        Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
     	Preconditions.checkArgument(!mo.equals(MO_RELEASE) && !mo.equals(MO_ACQUIRE_RELEASE),
     			getClass().getName() + " can not have memory order: " + mo);
         this.resultRegister = register;
