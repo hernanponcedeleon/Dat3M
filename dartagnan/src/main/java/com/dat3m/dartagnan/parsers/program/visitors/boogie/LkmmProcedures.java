@@ -45,67 +45,56 @@ public class LkmmProcedures {
 		case "__LKMM_LOAD":
 			mo = Linux.intToMo(((IConst) p1).getValueAsInt());
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLKMMLoad(reg, (IExpr) p0, mo))
-	        		.setCLine(visitor.currentLine)
-	        		.setSourceCodeFile(visitor.sourceCodeFile);
+	        		.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	        return;
 		case "__LKMM_STORE":
 			mo = Linux.intToMo(((IConst) p2).getValueAsInt());
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLKMMStore((IExpr) p0, (IExpr) p1, mo.equals(Linux.MO_MB) ? Tag.Linux.MO_ONCE : mo))
-    				.setCLine(visitor.currentLine)
-    				.setSourceCodeFile(visitor.sourceCodeFile);
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	        if(mo.equals(Tag.Linux.MO_MB)){
 	            visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newMemoryBarrier())
-        				.setCLine(visitor.currentLine)
-        				.setSourceCodeFile(visitor.sourceCodeFile);
+						.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	        }
 	        return;
 		case "__LKMM_XCHG":
 			mo = Linux.intToMo(((IConst) p2).getValueAsInt());
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWExchange((IExpr) p0, reg, (IExpr) p1, mo))
-	        		.setCLine(visitor.currentLine)
-	        		.setSourceCodeFile(visitor.sourceCodeFile);
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_CMPXCHG":
 			mo = Linux.intToMo(((IConst) p3).getValueAsInt());
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWCompareExchange((IExpr) p0, reg, (IExpr) p1, (IExpr) p2, mo))
-	        		.setCLine(visitor.currentLine)
-	        		.setSourceCodeFile(visitor.sourceCodeFile);
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_ATOMIC_FETCH_OP":
 			mo = Linux.intToMo(((IConst) p2).getValueAsInt());
 			op = IOpBin.intToOp(((IConst) p3).getValueAsInt());
 	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWFetchOp((IExpr) p0, reg, (IExpr) p1, op, mo))
-	        		.setCLine(visitor.currentLine)
-	        		.setSourceCodeFile(visitor.sourceCodeFile);
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_ATOMIC_OP_RETURN":
 			mo = Linux.intToMo(((IConst) p2).getValueAsInt());
 			op = IOpBin.intToOp(((IConst) p3).getValueAsInt());
 	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWOpReturn((IExpr) p0, reg, (IExpr) p1, op, mo))
-	        		.setCLine(visitor.currentLine)
-	        		.setSourceCodeFile(visitor.sourceCodeFile);
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_ATOMIC_OP":
 			op = IOpBin.intToOp(((IConst) p2).getValueAsInt());
 	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWOp((IExpr) p0, reg, (IExpr) p1, op))
-	        		.setCLine(visitor.currentLine)
-	        		.setSourceCodeFile(visitor.sourceCodeFile);
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_FENCE":
 			String fence = Linux.intToMo(((IConst) p0).getValueAsInt());
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLKMMFence(fence))
-					.setCLine(visitor.currentLine)
-					.setSourceCodeFile(visitor.sourceCodeFile);
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_SPIN_LOCK":
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLock((IExpr) p0))
-					.setCLine(visitor.currentLine)
-					.setSourceCodeFile(visitor.sourceCodeFile);
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_SPIN_UNLOCK":
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newUnlock((IExpr) p0))
-					.setCLine(visitor.currentLine)
-					.setSourceCodeFile(visitor.sourceCodeFile);
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		default:
 			throw new UnsupportedOperationException(name + " procedure is not part of LKMMPROCEDURES");

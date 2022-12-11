@@ -82,8 +82,7 @@ public class PthreadsProcedures {
 		
 		visitor.allocations.add(pointer);
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(pointer, threadName))
-			.setCLine(visitor.currentLine)
-			.setSourceCodeFile(visitor.sourceCodeFile);
+				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, IValue.ZERO));
 		}
@@ -92,8 +91,7 @@ public class PthreadsProcedures {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
 		IExpr expr = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
         visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(reg, expr))
-			.setCLine(visitor.currentLine)
-			.setSourceCodeFile(visitor.sourceCodeFile);
+				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	}
 
 	private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -102,8 +100,7 @@ public class PthreadsProcedures {
 		IExpr value = (IExpr)ctx.call_params().exprs().expr(1).accept(visitor);
 		if(lockAddress != null) {
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newInitLock(lock.getText(), lockAddress, value))
-				.setCLine(visitor.currentLine)
-				.setSourceCodeFile(visitor.sourceCodeFile);
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 		}
 	}
 	
@@ -113,8 +110,7 @@ public class PthreadsProcedures {
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
 		if(lockAddress != null) {
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newLock(lock.getText(), lockAddress, register))
-				.setCLine(visitor.currentLine)
-				.setSourceCodeFile(visitor.sourceCodeFile);
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 		}
 	}
 	
@@ -124,8 +120,7 @@ public class PthreadsProcedures {
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
 		if(lockAddress != null) {
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newUnlock(lock.getText(), lockAddress, register))
-			.setCLine(visitor.currentLine)
-			.setSourceCodeFile(visitor.sourceCodeFile);
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 		}
 	}
 }

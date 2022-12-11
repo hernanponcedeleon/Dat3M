@@ -170,8 +170,7 @@ public class SvcompProcedures {
 		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
 	    if(register != null){
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, new INonDet(type, register.getPrecision())))
-					.setCLine(visitor.currentLine)
-					.setSourceCodeFile(visitor.sourceCodeFile);
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	    }
 	}
 
@@ -180,13 +179,13 @@ public class SvcompProcedures {
 		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
 	    if(register != null){
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, new BNonDet(register.getPrecision())))
-					.setCLine(visitor.currentLine)
-					.setSourceCodeFile(visitor.sourceCodeFile);		
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	    }
 	}
 
 	private static void __VERIFIER_loop_bound(VisitorBoogie visitor, Call_cmdContext ctx) {
 		int bound = ((IExpr)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValueAsInt();
-		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBound(bound));
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBound(bound))
+				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	}
 }

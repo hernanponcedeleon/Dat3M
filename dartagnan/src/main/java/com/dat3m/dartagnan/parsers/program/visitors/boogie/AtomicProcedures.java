@@ -72,8 +72,7 @@ public class AtomicProcedures {
 		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
 		ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr().get(1).accept(visitor);
 		visitor.programBuilder.addChild(visitor.threadCount, newStore(add, value, ""))
-				.setCLine(visitor.currentLine)
-				.setSourceCodeFile(visitor.sourceCodeFile);
+				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	}
 
 	private static void atomicStore(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -84,8 +83,7 @@ public class AtomicProcedures {
 			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getValueAsInt());
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newStore(add, value, mo))
-				.setCLine(visitor.currentLine)
-				.setSourceCodeFile(visitor.sourceCodeFile);
+				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	}
 
 	private static void atomicLoad(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -96,8 +94,7 @@ public class AtomicProcedures {
 			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(1).accept(visitor)).getValueAsInt());
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newLoad(reg, add, mo))
-				.setCLine(visitor.currentLine)
-				.setSourceCodeFile(visitor.sourceCodeFile);
+				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	}
 
 	private static void atomicFetchOp(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -123,8 +120,7 @@ public class AtomicProcedures {
 			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getValueAsInt());
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newFetchOp(reg, add, value, op, mo))
-				.setCLine(visitor.currentLine)
-				.setSourceCodeFile(visitor.sourceCodeFile);
+				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	}
 
 	private static void atomicXchg(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -136,8 +132,7 @@ public class AtomicProcedures {
 			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getValueAsInt());
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newExchange(reg, add, value, mo))
-				.setCLine(visitor.currentLine)
-				.setSourceCodeFile(visitor.sourceCodeFile);
+			.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	}
 
 	private static void DAT3M_CAS(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -151,15 +146,13 @@ public class AtomicProcedures {
 			mo = intToMo(((IConst) params.get(3).accept(visitor)).getValueAsInt());
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newDat3mCAS(reg, addr, expectedVal, desiredVal, mo))
-				.setCLine(visitor.currentLine)
-				.setSourceCodeFile(visitor.sourceCodeFile);
+				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	}
 
 	private static void atomicThreadFence(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(0).accept(visitor)).getValueAsInt());
 		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newFence(mo))
-				.setCLine(visitor.currentLine)
-				.setSourceCodeFile(visitor.sourceCodeFile);
+				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	}
 	
 	private static void atomicCmpXchg(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -176,7 +169,6 @@ public class AtomicProcedures {
 			// (see issue #123 for an explanation)
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, Atomic.newCompareExchange(reg, addr, expectedAddr, desiredVal, mo, strong))
-				.setCLine(visitor.currentLine)
-				.setSourceCodeFile(visitor.sourceCodeFile);
+				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	}
 }
