@@ -18,6 +18,7 @@ public class LlvmStore extends MemEvent implements RegReaderData {
 
     public LlvmStore(IExpr address, ExprInterface value, String mo){
         super(address, mo);
+        Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
         Preconditions.checkArgument(!mo.equals(MO_ACQUIRE) && !mo.equals(MO_ACQUIRE_RELEASE),
         		getClass().getName() + " cannot have memory order: " + mo);
         this.value = value;
