@@ -20,56 +20,71 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 public class VisitorC11 extends VisitorBase {
 
-	protected VisitorC11(boolean forceStart) {
-		super(forceStart);
+        protected VisitorC11(boolean forceStart) {
+                super(forceStart);
         }
-	
-	@Override
-	public List<Event> visitCreate(Create e) {
 
-        Store store = newStore(e.getAddress(), e.getMemValue(), Tag.C11.MO_RELEASE);
-        store.addFilters(C11.PTHREAD, C11.ATOMIC);
+        @Override
+        public List<Event> visitCreate(Create e) {
+                Store store = newStore(e.getAddress(), e.getMemValue(), Tag.C11.MO_RELEASE);
+                store.addFilters(C11.PTHREAD, C11.ATOMIC);
 
-        return eventSequence(
-                store
-        );
-	}
+                return eventSequence(
+                                store);
+        }
 
-	@Override
-	public List<Event> visitEnd(End e) {
-        Store store = newStore(e.getAddress(), IValue.ZERO, Tag.C11.MO_RELEASE);
-        store.addFilters(C11.ATOMIC);
-        return eventSequence(
-                store
-        );
-	}
+        @Override
+        public List<Event> visitEnd(End e) {
+                Store store = newStore(e.getAddress(), IValue.ZERO, Tag.C11.MO_RELEASE);
+                store.addFilters(C11.ATOMIC);
+                
+                return eventSequence(
+                                store);
+        }
 
-	@Override
-	public List<Event> visitJoin(Join e) {
-        Register resultRegister = e.getResultRegister();
-        
-        return eventSequence(
-                newLocal(resultRegister, e.getExpr()),
-        	newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
-        );
-	}
+        @Override
+        public List<Event> visitJoin(Join e) {
+                Register resultRegister = e.getResultRegister();
 
-	@Override
-	public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getResultRegister();
-        Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
-        load.addFilters(Tag.STARTLOAD, C11.ATOMIC);
+                return eventSequence(
+                                newLocal(resultRegister, e.getExpr()),
+                                newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit()));
+        }
 
-        return eventSequence(
-        		load,
-				super.visitStart(e),
-				newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
-        );
-	}
+        @Override
+        public List<Event> visitStart(Start e) {
+                Register resultRegister = e.getResultRegister();
+                Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
+                load.addFilters(Tag.STARTLOAD, C11.ATOMIC);
 
-    // =============================================================================================
-    // =========================================== C11 =============================================
-    // =============================================================================================
+                return eventSequence(
+                                load,
+                                super.visitStart(e),
+                                newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE),
+                                                (Label) e.getThread().getExit()));
+        }
+
+        @Override
+        public List<Event> visitLoad(Load e) {
+                Load load = newLoad(e.getResultRegister(), e.getAddress(), e.getMo());
+                load.addFilters(C11.NONATOMIC);
+                
+                return eventSequence(
+                                load);
+        }
+
+        @Override
+        public List<Event> visitStore(Store e) {
+                Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo());
+                store.addFilters(Tag.C11.NONATOMIC);
+                
+                return eventSequence(
+                                store);
+        }
+
+        // =============================================================================================
+        // =========================================== C11 =============================================
+        // =============================================================================================
 
         @Override
 	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
