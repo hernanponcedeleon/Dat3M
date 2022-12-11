@@ -54,7 +54,7 @@ public class ProgramParser {
         	case "c":
         	case "i":
         	case "ll":
-				File parsedFile = path.equals("") ?
+				File parsedFile = path.isEmpty() ?
 						// This is for the case where the user fully typed the program instead of loading it
 						File.createTempFile("dat3m", ".c") :
 						// This is for the case where the user loaded the program 						

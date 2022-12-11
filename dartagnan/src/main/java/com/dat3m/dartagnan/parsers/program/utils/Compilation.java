@@ -24,7 +24,7 @@ public class Compilation {
 		cmd.addAll(asList("clang", "-Xclang", "-disable-O0-optnone", "-S", 
 			"-emit-llvm", "-g", "-gcolumn-info", "-o", output));
 		// We use cflags when using the UI and fallback top CFLAGS otherwise
-		cflags = cflags.equals("") ? System.getenv().getOrDefault("CFLAGS", "") : cflags;
+		cflags = cflags.isEmpty() ? System.getenv().getOrDefault("CFLAGS", "") : cflags;
 		// Needed to handle more than one flag in CFLAGS
 		for(String option : cflags.split(" ")) {
 			cmd.add(option);

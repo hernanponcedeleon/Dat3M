@@ -43,7 +43,7 @@ public class BoundListener implements KeyListener, FocusListener {
 			boundPane.setStableBound(cText);			
 		} catch (Exception e) {
 			// Empty string is allowed here to allow deleting. It will be handled by focusLost
-			if(cText.equals("")) {
+			if(cText.isEmpty()) {
 				return;
 			}
 			boundPane.setText(boundPane.getStableBound());
@@ -58,7 +58,7 @@ public class BoundListener implements KeyListener, FocusListener {
 
 	@Override
 	public void focusLost(FocusEvent arg0) {
-		if(boundPane.getText().equals("")) {
+		if(boundPane.getText().isEmpty()) {
 			boundPane.setText(boundPane.getStableBound());
 			showError("The bound should be greater than 1", "Option error");
 		}
