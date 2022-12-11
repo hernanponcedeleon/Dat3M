@@ -204,14 +204,18 @@ public class VisitorC11 extends VisitorBase {
 
     @Override
     public List<Event> visitLlvmLoad(LlvmLoad e) {
+            Load load = newLoad(e.getResultRegister(), e.getAddress(), C11.extractLoadMo(e.getMo()));
+            load.addFilters(e.getMo().isEmpty() ? Tag.C11.NONATOMIC : Tag.C11.ATOMIC);
             return eventSequence(
-                            newLoad(e.getResultRegister(), e.getAddress(), C11.extractLoadMo(e.getMo())));
+                            load);
     }
 
     @Override
     public List<Event> visitLlvmStore(LlvmStore e) {
+            Store store = newStore(e.getAddress(), e.getMemValue(), C11.extractStoreMo(e.getMo()));
+            store.addFilters(e.getMo().isEmpty() ? Tag.C11.NONATOMIC : Tag.C11.ATOMIC);
             return eventSequence(
-                            newStore(e.getAddress(), e.getMemValue(), C11.extractStoreMo(e.getMo())));
+                            store);
     }
 
     @Override
@@ -222,14 +226,12 @@ public class VisitorC11 extends VisitorBase {
             String mo = e.getMo();
 
             Load load = newRMWLoadExclusive(resultRegister, address, C11.extractLoadMo(mo));
+            load.addFilters(e.getMo().isEmpty() ? Tag.C11.NONATOMIC : Tag.C11.ATOMIC);
             Store store = newRMWStoreExclusive(address, value, C11.extractStoreMo(mo), true);
-            Label label = newLabel("FakeDep");
-            Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+            store.addFilters(e.getMo().isEmpty() ? Tag.C11.NONATOMIC : Tag.C11.ATOMIC);
 
             return eventSequence(
                             load,
-                            fakeCtrlDep,
-                            label,
                             store);
     }
 
@@ -245,14 +247,12 @@ public class VisitorC11 extends VisitorBase {
             Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
 
             Load load = newRMWLoadExclusive(resultRegister, address, C11.extractLoadMo(mo));
+            load.addFilters(e.getMo().isEmpty() ? Tag.C11.NONATOMIC : Tag.C11.ATOMIC);
             Store store = newRMWStoreExclusive(address, dummyReg, C11.extractStoreMo(mo), true);
-            Label label = newLabel("FakeDep");
-            Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+            store.addFilters(e.getMo().isEmpty() ? Tag.C11.NONATOMIC : Tag.C11.ATOMIC);
 
             return eventSequence(
                             load,
-                            fakeCtrlDep,
-                            label,
                             localOp,
                             store);
     }
@@ -272,7 +272,9 @@ public class VisitorC11 extends VisitorBase {
             CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
 
             Load load = newRMWLoadExclusive(oldValueRegister, address, C11.extractLoadMo(mo));
+            load.addFilters(e.getMo().isEmpty() ? Tag.C11.NONATOMIC : Tag.C11.ATOMIC);
             Store store = newRMWStoreExclusive(address, value, C11.extractStoreMo(mo), true);
+            store.addFilters(e.getMo().isEmpty() ? Tag.C11.NONATOMIC : Tag.C11.ATOMIC);
 
             return eventSequence(
                             // Indentation shows the branching structure
