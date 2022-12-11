@@ -1,19 +1,10 @@
 #include <stdatomic.h>
-#include <pthread.h>
-#include <assert.h>
-#include <stdlib.h>
-
-extern void abort(void);
 
 #ifdef FAIL
 #define CAS(ptr, expected, desired) (atomic_compare_exchange_strong_explicit(ptr, expected, desired, __ATOMIC_RELAXED, __ATOMIC_RELAXED))
 #else
 #define CAS(ptr, expected, desired) (atomic_compare_exchange_strong_explicit(ptr, expected, desired, __ATOMIC_ACQ_REL, __ATOMIC_RELAXED))
 #endif
-#define load(loc) (atomic_load_explicit(loc, __ATOMIC_ACQUIRE))
-#define store(loc, val) (atomic_store_explicit(loc, val, __ATOMIC_RELEASE))
-#define rx_load(loc) (atomic_load_explicit(loc, __ATOMIC_RELAXED))
-#define rx_store(loc, val) (atomic_store_explicit(loc, val, __ATOMIC_RELAXED))
 
 #define EMPTY -1
 
@@ -41,11 +32,11 @@ void enqueue(int value) {
 	atomic_init(&node->next, NULL);
 
 	while (1) {
-		tail = load(&Tail);
+		tail = atomic_load_explicit(&Tail, __ATOMIC_ACQUIRE);
         assert(tail != NULL);
-		next = load(&tail->next);
+		next = atomic_load_explicit(&tail->next, __ATOMIC_ACQUIRE);
 
-        if (tail == load(&Tail)) {
+        if (tail == atomic_load_explicit(&Tail, __ATOMIC_ACQUIRE)) {
             if (next == NULL) {
 				if (CAS(&tail->next, &next, node)) {
 				    CAS(&Tail, &tail, node);
@@ -64,11 +55,11 @@ int dequeue() {
 	int result;
 
 	while (1) {
-		head = load(&Head);
+		head = atomic_load_explicit(&Head, __ATOMIC_ACQUIRE);
         assert(head != NULL);
-		next = load(&head->next);
+		next = atomic_load_explicit(&head->next, __ATOMIC_ACQUIRE);
 
-		if (head == load(&Head)) {
+		if (head == atomic_load_explicit(&Head, __ATOMIC_ACQUIRE)) {
 			if (next == NULL) {
 				result = EMPTY;
 				break;
@@ -76,7 +67,7 @@ int dequeue() {
 			} else {
                 result = next->val; //make atomic?
                 if (CAS(&Head, &head, next)) {
-                    tail = load(&Tail);
+                    tail = atomic_load_explicit(&Tail, __ATOMIC_ACQUIRE);
                     assert(tail != NULL);
                     if (head == tail) {
                         CAS(&Tail, &tail, next);
@@ -88,51 +79,4 @@ int dequeue() {
 	}
 
 	return result;
-}
-
-
-// =========== Worker threads ==============
-
-void *worker_1(void *unused)
-{
-	int r;
-
-	enqueue(42);
-    r = dequeue();
-
-	assert(r != EMPTY);
-
-	return NULL;
-}
-
-void *worker_2(void *unused)
-{
-	int r;
-
-	enqueue(41);
-    r = dequeue();
-
-    assert(r != EMPTY);
-
-	return NULL;
-}
-
-int main()
-{
-    pthread_t t1, t2, t3;
-
-    init();
-
-    pthread_create(&t1, NULL, worker_1, NULL);
-    pthread_create(&t2, NULL, worker_2, NULL);
-    pthread_create(&t3, NULL, worker_1, NULL);
-
-    pthread_join(t1, NULL);
-    pthread_join(t2, NULL);
-    pthread_join(t3, NULL);
-
-    int r = dequeue();
-    assert(r == EMPTY);
-
-    return 0;
 }
