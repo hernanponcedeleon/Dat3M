@@ -97,9 +97,7 @@ public class VisitorC11 extends VisitorBase {
 		Register regExpected = e.getThread().newRegister(precision);
         Register regValue = e.getThread().newRegister(precision);
         Load loadExpected = newLoad(regExpected, expectedAddr, "");
-        loadExpected.addFilters(C11.ATOMIC);
         Store storeExpected = newStore(expectedAddr, regValue, "");
-        storeExpected.addFilters(C11.ATOMIC);
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
