@@ -67,7 +67,7 @@ public class VisitorC11 extends VisitorBase {
         @Override
         public List<Event> visitLoad(Load e) {
                 Load load = newLoad(e.getResultRegister(), e.getAddress(), e.getMo());
-                load.addFilters(e.getMo().isEmpty() ? C11.NONATOMIC : C11.ATOMIC);
+                load.addFilters(e.canRace() ? C11.NONATOMIC : C11.ATOMIC);
                 
                 return eventSequence(
                                 load);
@@ -76,7 +76,7 @@ public class VisitorC11 extends VisitorBase {
         @Override
         public List<Event> visitStore(Store e) {
                 Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo());
-                store.addFilters(e.getMo().isEmpty() ? C11.NONATOMIC : C11.ATOMIC);
+                store.addFilters(e.canRace() ? C11.NONATOMIC : C11.ATOMIC);
                 
                 return eventSequence(
                                 store);
