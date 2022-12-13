@@ -78,18 +78,24 @@ public class AnalysisTest {
         context.register(BranchEquivalence.class,BranchEquivalence.fromConfig(program,config));
         context.register(ExecutionAnalysis.class,ExecutionAnalysis.fromConfig(program,context,config));
         Dependency dep = Dependency.fromConfig(program,context,config);
-        assertTrue(dep.of(e1,r0).initialized);
-        assertList(dep.of(e1,r0).may,e0);
-        assertList(dep.of(e1,r0).must,e0);
-        assertFalse(dep.of(e3,r0).initialized);
-        assertList(dep.of(e3,r0).may,e0);
-        assertList(dep.of(e3,r0).must,e0);
-        assertTrue(dep.of(e4,r1).initialized);
-        assertList(dep.of(e4,r1).may,e1,e2);
-        assertList(dep.of(e4,r1).must,e1,e2);
-        assertTrue(dep.of(e5,r2).initialized);
-        assertList(dep.of(e5,r2).may,e4);
-        assertList(dep.of(e5,r2).must,e4);
+        Event me0 = findMatchingEventAfterCompilation(program, e0);
+        Event me1 = findMatchingEventAfterCompilation(program, e1);
+        Event me2 = findMatchingEventAfterCompilation(program, e2);
+        Event me3 = findMatchingEventAfterCompilation(program, e3);
+        Event me4 = findMatchingEventAfterCompilation(program, e4);
+        Event me5 = findMatchingEventAfterCompilation(program, e5);
+        assertTrue(dep.of(me1,r0).initialized);
+        assertList(dep.of(me1,r0).may,me0);
+        assertList(dep.of(me1,r0).must,me0);
+        assertFalse(dep.of(me3,r0).initialized);
+        assertList(dep.of(me3,r0).may,me0);
+        assertList(dep.of(me3,r0).must,me0);
+        assertTrue(dep.of(me4,r1).initialized);
+        assertList(dep.of(me4,r1).may,me1,me2);
+        assertList(dep.of(me4,r1).must,me1,me2);
+        assertTrue(dep.of(me5,r2).initialized);
+        assertList(dep.of(me5,r2).may,me4);
+        assertList(dep.of(me5,r2).must,me4);
     }
 
     @Test
@@ -122,13 +128,19 @@ public class AnalysisTest {
         Store e3 = newStore(y);
         b.addChild(0,e3);
 
-        AliasAnalysis a = analyze(b,method);
-        assertAlias(expect[0],a,e0,e1);//precisely no
-        assertAlias(expect[1],a,e0,e2);
-        assertAlias(expect[2],a,e1,e2);
-        assertAlias(expect[3],a,e0,e3);
-        assertAlias(expect[4],a,e1,e3);
-        assertAlias(expect[5],a,e2,e3);
+        Program program = b.build();
+        AliasAnalysis a = analyze(program,method);
+        MemEvent me0 = (MemEvent) findMatchingEventAfterCompilation(program, e0);
+        MemEvent me1 = (MemEvent) findMatchingEventAfterCompilation(program, e1);
+        MemEvent me2 = (MemEvent) findMatchingEventAfterCompilation(program, e2);
+        MemEvent me3 = (MemEvent) findMatchingEventAfterCompilation(program, e3);
+
+        assertAlias(expect[0],a,me0,me1);//precisely no
+        assertAlias(expect[1],a,me0,me2);
+        assertAlias(expect[2],a,me1,me2);
+        assertAlias(expect[3],a,me0,me3);
+        assertAlias(expect[4],a,me1,me3);
+        assertAlias(expect[5],a,me2,me3);
     }
 
     @Test
@@ -157,13 +169,19 @@ public class AnalysisTest {
         Store e3 = newStore(plus(r0,1),r0);
         b.addChild(0,e3);
 
-        AliasAnalysis a = analyze(b,method);
-        assertAlias(expect[0],a,e0,e1);
-        assertAlias(expect[1],a,e0,e2);
-        assertAlias(expect[2],a,e1,e2);
-        assertAlias(expect[3],a,e0,e3);
-        assertAlias(expect[4],a,e1,e3);
-        assertAlias(expect[5],a,e2,e3);
+        Program program = b.build();
+        AliasAnalysis a = analyze(program,method);
+        MemEvent me0 = (MemEvent) findMatchingEventAfterCompilation(program, e0);
+        MemEvent me1 = (MemEvent) findMatchingEventAfterCompilation(program, e1);
+        MemEvent me2 = (MemEvent) findMatchingEventAfterCompilation(program, e2);
+        MemEvent me3 = (MemEvent) findMatchingEventAfterCompilation(program, e3);
+
+        assertAlias(expect[0],a,me0,me1);
+        assertAlias(expect[1],a,me0,me2);
+        assertAlias(expect[2],a,me1,me2);
+        assertAlias(expect[3],a,me0,me3);
+        assertAlias(expect[4],a,me1,me3);
+        assertAlias(expect[5],a,me2,me3);
     }
 
     @Test
@@ -197,13 +215,19 @@ public class AnalysisTest {
         b.addChild(0,e3);
         b.addChild(0,l0);
 
-        AliasAnalysis a = analyze(b,method);
-        assertAlias(expect[0],a,e0,e1);
-        assertAlias(expect[1],a,e0,e2);
-        assertAlias(expect[2],a,e1,e2);
-        assertAlias(expect[3],a,e0,e3);
-        assertAlias(expect[4],a,e1,e3);
-        assertAlias(expect[5],a,e2,e3);
+        Program program = b.build();
+        AliasAnalysis a = analyze(program,method);
+        MemEvent me0 = (MemEvent) findMatchingEventAfterCompilation(program, e0);
+        MemEvent me1 = (MemEvent) findMatchingEventAfterCompilation(program, e1);
+        MemEvent me2 = (MemEvent) findMatchingEventAfterCompilation(program, e2);
+        MemEvent me3 = (MemEvent) findMatchingEventAfterCompilation(program, e3);
+
+        assertAlias(expect[0],a,me0,me1);
+        assertAlias(expect[1],a,me0,me2);
+        assertAlias(expect[2],a,me1,me2);
+        assertAlias(expect[3],a,me0,me3);
+        assertAlias(expect[4],a,me1,me3);
+        assertAlias(expect[5],a,me2,me3);
     }
 
     @Test
@@ -232,13 +256,19 @@ public class AnalysisTest {
         Store e3 = newStore(r0);
         b.addChild(0,e3);
 
-        AliasAnalysis a = analyze(b,method);
-        assertAlias(expect[0],a,e0,e1);
-        assertAlias(expect[1],a,e0,e2);
-        assertAlias(expect[2],a,e1,e2);
-        assertAlias(expect[3],a,e0,e3);
-        assertAlias(expect[4],a,e1,e3);
-        assertAlias(expect[5],a,e2,e3);//precisely no
+        Program program = b.build();
+        AliasAnalysis a = analyze(program,method);
+        MemEvent me0 = (MemEvent) findMatchingEventAfterCompilation(program, e0);
+        MemEvent me1 = (MemEvent) findMatchingEventAfterCompilation(program, e1);
+        MemEvent me2 = (MemEvent) findMatchingEventAfterCompilation(program, e2);
+        MemEvent me3 = (MemEvent) findMatchingEventAfterCompilation(program, e3);
+
+        assertAlias(expect[0],a,me0,me1);
+        assertAlias(expect[1],a,me0,me2);
+        assertAlias(expect[2],a,me1,me2);
+        assertAlias(expect[3],a,me0,me3);
+        assertAlias(expect[4],a,me1,me3);
+        assertAlias(expect[5],a,me2,me3);//precisely no
     }
 
     @Test
@@ -270,13 +300,19 @@ public class AnalysisTest {
         Store e3 = newStore(z);
         b.addChild(0,e3);
 
-        AliasAnalysis a = analyze(b,method);
-        assertAlias(expect[0],a,e0,e1);//precisely no
-        assertAlias(expect[1],a,e0,e2);//precisely must
-        assertAlias(expect[2],a,e1,e2);
-        assertAlias(expect[3],a,e0,e3);
-        assertAlias(expect[4],a,e1,e3);
-        assertAlias(expect[5],a,e2,e3);
+        Program program = b.build();
+        AliasAnalysis a = analyze(program,method);
+        MemEvent me0 = (MemEvent) findMatchingEventAfterCompilation(program, e0);
+        MemEvent me1 = (MemEvent) findMatchingEventAfterCompilation(program, e1);
+        MemEvent me2 = (MemEvent) findMatchingEventAfterCompilation(program, e2);
+        MemEvent me3 = (MemEvent) findMatchingEventAfterCompilation(program, e3);
+
+        assertAlias(expect[0],a,me0,me1);//precisely no
+        assertAlias(expect[1],a,me0,me2);//precisely must
+        assertAlias(expect[2],a,me1,me2);
+        assertAlias(expect[3],a,me0,me3);
+        assertAlias(expect[4],a,me1,me3);
+        assertAlias(expect[5],a,me2,me3);
     }
 
     @Test
@@ -308,13 +344,19 @@ public class AnalysisTest {
         Store e3 = newStore(z);
         b.addChild(0,e3);
 
-        AliasAnalysis a = analyze(b,method);
-        assertAlias(expect[0],a,e0,e1);//precisely no
-        assertAlias(expect[1],a,e0,e2);//precisely must
-        assertAlias(expect[2],a,e1,e2);
-        assertAlias(expect[3],a,e0,e3);
-        assertAlias(expect[4],a,e1,e3);
-        assertAlias(expect[5],a,e2,e3);
+        Program program = b.build();
+        AliasAnalysis a = analyze(program,method);
+        MemEvent me0 = (MemEvent) findMatchingEventAfterCompilation(program, e0);
+        MemEvent me1 = (MemEvent) findMatchingEventAfterCompilation(program, e1);
+        MemEvent me2 = (MemEvent) findMatchingEventAfterCompilation(program, e2);
+        MemEvent me3 = (MemEvent) findMatchingEventAfterCompilation(program, e3);
+
+        assertAlias(expect[0],a,me0,me1);//precisely no
+        assertAlias(expect[1],a,me0,me2);//precisely must
+        assertAlias(expect[2],a,me1,me2);
+        assertAlias(expect[3],a,me0,me3);
+        assertAlias(expect[4],a,me1,me3);
+        assertAlias(expect[5],a,me2,me3);
     }
 
     private Load newLoad(Register value, IExpr address) {
@@ -341,8 +383,7 @@ public class AnalysisTest {
         return new IExprBin(lhs,MULT,value(rhs));
     }
 
-    private AliasAnalysis analyze(ProgramBuilder builder, Alias method) throws InvalidConfigurationException {
-        Program program = builder.build();
+    private AliasAnalysis analyze(Program program, Alias method) throws InvalidConfigurationException {
         LoopUnrolling.newInstance().run(program);
         Compilation.newInstance().run(program);
         return AliasAnalysis.fromConfig(program,Configuration.builder().setOption(ALIAS_METHOD,method.asStringOption()).build());
@@ -367,5 +408,9 @@ public class AnalysisTest {
 
     private void assertList(List<?> results, Object... expected) {
         assertArrayEquals(expected,results.toArray());
+    }
+
+    private Event findMatchingEventAfterCompilation(Program p, Event orig) {
+        return p.getEvents().stream().filter(e -> e.getOId() == orig.getOId()).findFirst().get();
     }
 }
