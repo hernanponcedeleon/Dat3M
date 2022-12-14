@@ -13,6 +13,8 @@ RUN apt-get update && \
     apt-get install -y wget && \
     apt-get install -y maven && \
     apt-get install -y cmake && \
+    apt-get install -y autoconf && \
+    apt-get install -y automake && \
     apt-get install -y graphviz
 
 # Install SMACK
@@ -27,6 +29,12 @@ RUN cd home && \
     cd Dat3M && \
     chmod 755 Dartagnan-SVCOMP.sh && \
     mvn clean install -DskipTests
+
+# Build atomic-replace library
+RUN cd Dat3M/llvm-passes/atomic-replace/      \
+    && mkdir build && cd build                \
+    && cmake ..                               \
+    && make all install
 
 # symlink for clang
 RUN ln -s clang-12 /usr/bin/clang
