@@ -321,34 +321,6 @@ class VisitorArm8 extends VisitorBase {
         );
 	}
 
-	@Override
-	public List<Event> visitDat3mCAS(Dat3mCAS e) {
-		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		ExprInterface expectedValue = e.getExpectedValue();
-
-        // Events common for all compilation schemes.
-        Register regValue = e.getThread().newRegister(resultRegister.getPrecision());
-        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
-        Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
-
-        Load load = newRMWLoadExclusive(regValue, address, ARMv8.extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), true);
-
-        // --- Add success events ---
-        return eventSequence(
-                // Indentation shows the branching structure
-                load,
-                casCmpResult,
-                branchOnCasCmpResult,
-                    store,
-                casEnd
-        );
-	}
-	
     // =============================================================================================
     // =========================================== LKMM ============================================
     // =============================================================================================

@@ -183,34 +183,6 @@ public class VisitorC11 extends VisitorBase {
         );
 	}
 
-	@Override
-	public List<Event> visitDat3mCAS(Dat3mCAS e) {
-		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		ExprInterface expectedValue = e.getExpectedValue();
-
-        Register regValue = e.getThread().newRegister(resultRegister.getPrecision());
-        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
-        Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
-
-        Load load = newRMWLoad(regValue, address, mo);
-        load.addFilters(C11.ATOMIC);
-        Store store = newRMWStore(load, address, value, mo);
-        store.addFilters(C11.ATOMIC);
-        
-        return eventSequence(
-                // Indentation shows the branching structure
-                load,
-                casCmpResult,
-                branchOnCasCmpResult,
-                    store,
-                casEnd
-        );
-	}
-
     // =============================================================================================
     // =========================================== LLVM ============================================
     // =============================================================================================

@@ -593,59 +593,6 @@ public class VisitorPower extends VisitorBase {
         );
 	}
 
-	@Override
-	public List<Event> visitDat3mCAS(Dat3mCAS e) {
-		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		ExprInterface expectedValue = e.getExpectedValue();
-
-        Register regValue = e.getThread().newRegister(resultRegister.getPrecision());
-        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
-        Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
-        Load load = newRMWLoadExclusive(regValue, address, "");
-        Store store = Power.newRMWStoreConditional(address, value, "", true);
-
-        Fence optionalBarrierBefore = null;
-        Fence optionalBarrierAfter = null;
-        
-        switch(mo) {
-			case C11.MO_SC:
-				if(cToPowerScheme.equals(LEADING_SYNC)) {
-					optionalBarrierBefore = Power.newSyncBarrier();
-					optionalBarrierAfter = Power.newISyncBarrier();
-				} else {
-					optionalBarrierBefore = Power.newLwSyncBarrier();
-					optionalBarrierAfter = Power.newSyncBarrier();
-				}
-				break;
-			case C11.MO_ACQUIRE:
-				optionalBarrierAfter = Power.newISyncBarrier();
-				break;
-			case C11.MO_RELEASE:
-				optionalBarrierBefore = Power.newLwSyncBarrier();
-				break;
-			case C11.MO_ACQUIRE_RELEASE:
-				optionalBarrierBefore = Power.newLwSyncBarrier();
-				optionalBarrierAfter = Power.newISyncBarrier();
-				break;
-		}
-        
-        // --- Add success events ---
-        return eventSequence(
-                // Indentation shows the branching structure
-        		optionalBarrierBefore,
-                load,
-                casCmpResult,
-                branchOnCasCmpResult,
-                    store,
-                optionalBarrierAfter,
-                casEnd
-        );
-	}
-	
     // =============================================================================================
     // =========================================== LKMM ============================================
     // =============================================================================================

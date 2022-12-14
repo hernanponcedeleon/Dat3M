@@ -99,7 +99,6 @@ public interface EventVisitor<T> {
 	default T visitAtomicStore(AtomicStore e) { return visitMemEvent(e); }
 	default T visitAtomicThreadFence(AtomicThreadFence e) { return visitFence(e); }
 	default T visitAtomicXchg(AtomicXchg e) { return visitAtomicAbstract(e); }
-	default T visitDat3mCAS(Dat3mCAS e) { return visitAtomicAbstract(e); }
 
 	// LLVM Events
 	default T visitLlvmAbstract(LlvmAbstractRMW e) { return visitMemEvent(e); }

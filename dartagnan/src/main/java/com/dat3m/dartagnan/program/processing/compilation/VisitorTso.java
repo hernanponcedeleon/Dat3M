@@ -261,27 +261,4 @@ class VisitorTso extends VisitorBase {
                 newRMWStore(load, address, e.getMemValue(), mo)
         );
 	}
-
-	@Override
-	public List<Event> visitDat3mCAS(Dat3mCAS e) {
-		Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-
-        Register regValue = e.getThread().newRegister(resultRegister.getPrecision());
-        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, e.getExpectedValue()));
-        Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
-        Load load = newRMWLoad(regValue, address, mo);
-        Store store = newRMWStore(load, address, e.getMemValue(), mo);
-
-        return eventSequence(
-                // Indentation shows the branching structure
-                load,
-                casCmpResult,
-                branchOnCasCmpResult,
-                    store,
-                casEnd
-        );
-	}
 }

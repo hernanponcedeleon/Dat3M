@@ -41,8 +41,6 @@ import static com.dat3m.dartagnan.parsers.program.boogie.LlvmUnary.LLVMUNARY;
 import static com.dat3m.dartagnan.parsers.program.boogie.LlvmUnary.llvmUnary;
 import static com.dat3m.dartagnan.parsers.program.boogie.SmackPredicates.SMACKPREDICATES;
 import static com.dat3m.dartagnan.parsers.program.boogie.SmackPredicates.smackPredicate;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicProcedures.ATOMICPROCEDURES;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicProcedures.handleAtomicFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.DummyProcedures.DUMMYPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProcedures.PTHREADPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProcedures.handlePthreadsFunctions;
@@ -178,7 +176,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			if(ctx.getText().contains(":treadLocal")) {
 				threadLocalVariables.add(name);
 			}
-			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name) && ATOMICPROCEDURES.stream().noneMatch(name::startsWith)) {
+			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name)) {
 				int size = ctx.getText().contains(":allocSize")
 					? Integer.parseInt(ctx.getText().split(":allocSize")[1].split("}")[0])
 					: 1;
@@ -341,10 +339,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		}
 		if(SVCOMPPROCEDURES.stream().anyMatch(name::contains)) {
 			handleSvcompFunction(this, ctx);
-			return null;
-		}
-		if(ATOMICPROCEDURES.stream().anyMatch(name::startsWith)) {
-			handleAtomicFunction(this, ctx);
 			return null;
 		}
 		if(STDPROCEDURES.stream().anyMatch(name::startsWith)) {
