@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.Tag.IMM;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
@@ -16,8 +17,8 @@ import java.util.List;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.Tag.C11.extractLoadMo;
-import static com.dat3m.dartagnan.program.event.Tag.C11.extractStoreMo;
+import static com.dat3m.dartagnan.program.event.Tag.IMM.extractLoadMo;
+import static com.dat3m.dartagnan.program.event.Tag.IMM.extractStoreMo;
 
 class VisitorIMM extends VisitorBase {
 
@@ -200,13 +201,13 @@ class VisitorIMM extends VisitorBase {
 	@Override
 	public List<Event> visitLlvmLoad(LlvmLoad e) {
 		return eventSequence(
-				newLoad(e.getResultRegister(), e.getAddress(), C11.extractLoadMo(e.getMo())));
+				newLoad(e.getResultRegister(), e.getAddress(), IMM.extractLoadMo(e.getMo())));
 	}
 
 	@Override
 	public List<Event> visitLlvmStore(LlvmStore e) {
 		return eventSequence(
-				newStore(e.getAddress(), e.getMemValue(), C11.extractStoreMo(e.getMo())));
+				newStore(e.getAddress(), e.getMemValue(), IMM.extractStoreMo(e.getMo())));
 	}
 
 	@Override
@@ -216,8 +217,8 @@ class VisitorIMM extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Load load = newRMWLoadExclusive(resultRegister, address, C11.extractLoadMo(mo));
-		Store store = newRMWStoreExclusive(address, value, C11.extractStoreMo(mo), true);
+		Load load = newRMWLoadExclusive(resultRegister, address, IMM.extractLoadMo(mo));
+		Store store = newRMWStoreExclusive(address, value, IMM.extractStoreMo(mo), true);
 		Label label = newLabel("FakeDep");
 		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -239,8 +240,8 @@ class VisitorIMM extends VisitorBase {
 		Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
 		Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
 
-		Load load = newRMWLoadExclusive(resultRegister, address, C11.extractLoadMo(mo));
-		Store store = newRMWStoreExclusive(address, dummyReg, C11.extractStoreMo(mo), true);
+		Load load = newRMWLoadExclusive(resultRegister, address, IMM.extractLoadMo(mo));
+		Store store = newRMWStoreExclusive(address, dummyReg, IMM.extractStoreMo(mo), true);
 		Label label = newLabel("FakeDep");
 		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -266,8 +267,8 @@ class VisitorIMM extends VisitorBase {
 		Label casEnd = newLabel("CAS_end");
 		CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
 
-		Load load = newRMWLoadExclusive(oldValueRegister, address, C11.extractLoadMo(mo));
-		Store store = newRMWStoreExclusive(address, value, C11.extractStoreMo(mo), true);
+		Load load = newRMWLoadExclusive(oldValueRegister, address, IMM.extractLoadMo(mo));
+		Store store = newRMWStoreExclusive(address, value, IMM.extractStoreMo(mo), true);
 
 		return eventSequence(
 				// Indentation shows the branching structure

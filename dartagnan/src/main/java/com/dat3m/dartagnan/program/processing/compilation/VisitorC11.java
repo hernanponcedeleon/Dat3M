@@ -189,7 +189,7 @@ public class VisitorC11 extends VisitorBase {
 
     @Override
     public List<Event> visitLlvmLoad(LlvmLoad e) {
-            Load load = newLoad(e.getResultRegister(), e.getAddress(), C11.extractLoadMo(e.getMo()));
+            Load load = newLoad(e.getResultRegister(), e.getAddress(), e.getMo());
             load.addFilters(Tag.C11.ATOMIC);
             return eventSequence(
                             load);
@@ -197,7 +197,7 @@ public class VisitorC11 extends VisitorBase {
 
     @Override
     public List<Event> visitLlvmStore(LlvmStore e) {
-            Store store = newStore(e.getAddress(), e.getMemValue(), C11.extractStoreMo(e.getMo()));
+            Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo());
             store.addFilters(Tag.C11.ATOMIC);
             return eventSequence(
                             store);
@@ -210,9 +210,9 @@ public class VisitorC11 extends VisitorBase {
             IExpr address = e.getAddress();
             String mo = e.getMo();
 
-            Load load = newRMWLoadExclusive(resultRegister, address, C11.extractLoadMo(mo));
+            Load load = newRMWLoadExclusive(resultRegister, address, mo);
             load.addFilters(Tag.C11.ATOMIC);
-            Store store = newRMWStoreExclusive(address, value, C11.extractStoreMo(mo), true);
+            Store store = newRMWStoreExclusive(address, value, mo, true);
             store.addFilters(Tag.C11.ATOMIC);
 
             return eventSequence(
@@ -231,9 +231,9 @@ public class VisitorC11 extends VisitorBase {
             Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
             Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
 
-            Load load = newRMWLoadExclusive(resultRegister, address, C11.extractLoadMo(mo));
+            Load load = newRMWLoadExclusive(resultRegister, address, mo);
             load.addFilters(Tag.C11.ATOMIC);
-            Store store = newRMWStoreExclusive(address, dummyReg, C11.extractStoreMo(mo), true);
+            Store store = newRMWStoreExclusive(address, dummyReg, mo, true);
             store.addFilters(Tag.C11.ATOMIC);
 
             return eventSequence(
@@ -256,9 +256,9 @@ public class VisitorC11 extends VisitorBase {
             Label casEnd = newLabel("CAS_end");
             CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
 
-            Load load = newRMWLoadExclusive(oldValueRegister, address, C11.extractLoadMo(mo));
+            Load load = newRMWLoadExclusive(oldValueRegister, address, mo);
             load.addFilters(Tag.C11.ATOMIC);
-            Store store = newRMWStoreExclusive(address, value, C11.extractStoreMo(mo), true);
+            Store store = newRMWStoreExclusive(address, value, mo, true);
             store.addFilters(Tag.C11.ATOMIC);
 
             return eventSequence(
