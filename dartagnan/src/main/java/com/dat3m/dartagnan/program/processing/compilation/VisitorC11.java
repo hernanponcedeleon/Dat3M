@@ -246,14 +246,14 @@ public class VisitorC11 extends VisitorBase {
     }
 
     private List<Event> tagList(List<Event> in) {
-        return in.stream().map(e -> tagEvent(e)).collect(Collectors.toList());
+        in.forEach(this::tagEvent);
+        return in;
     }
 
-    private Event tagEvent(Event e) {
+    private void tagEvent(Event e) {
         if(e instanceof MemEvent) {
                 e.addFilters(((MemEvent)e).canRace() ? C11.NONATOMIC : C11.ATOMIC);
         }
-        return e;
     }
 
 }
