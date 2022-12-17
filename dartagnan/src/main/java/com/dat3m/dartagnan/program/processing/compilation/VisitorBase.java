@@ -98,52 +98,62 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
     @Override
 	public List<Event> visitStoreExclusive(StoreExclusive e) {
-		throw new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName());
+				throw new IllegalArgumentException(throwError(e));
+
 	};
 
 	@Override
 	public List<Event> visitRMWAbstract(RMWAbstract e) {
-		throw new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName());
+				throw new IllegalArgumentException(throwError(e));
+
 	};
 	
 	@Override
 	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
-		throw new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName());
+				throw new IllegalArgumentException(throwError(e));
+
 	};
 
 	@Override
 	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
-		throw new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName());
+				throw new IllegalArgumentException(throwError(e));
+
 	};
 	
 	@Override
 	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
-		throw new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName());
+				throw new IllegalArgumentException(throwError(e));
+
 	};
 	
 	@Override
 	public List<Event> visitRMWOp(RMWOp e) {
-		throw new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName());
+				throw new IllegalArgumentException(throwError(e));
+
 	};
 	
 	@Override
 	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
-		throw new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName());
+				throw new IllegalArgumentException(throwError(e));
+
 	};
 	
 	@Override
 	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
-		throw new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName());
+				throw new IllegalArgumentException(throwError(e));
+
 	};
 	
 	@Override
 	public List<Event> visitRMWXchg(RMWXchg e) {
-		throw new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName());
+				throw new IllegalArgumentException(throwError(e));
+
 	};
 
 	@Override
 	public List<Event> visitXchg(Xchg e) {
-		throw new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName());
+				throw new IllegalArgumentException(throwError(e));
+
 	}
 
 	@Override
@@ -163,23 +173,30 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	
 	@Override
 	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
-		throw new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName());
+				throw new IllegalArgumentException(throwError(e));
+
 	}
 
 	// LLVM Events
 	@Override
 	public List<Event> visitLlvmAbstract(LlvmAbstractRMW e) {
-		throw new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName());
+				throw new IllegalArgumentException(throwError(e));
+
 	}
 
 	@Override
 	public List<Event> visitLlvmLoad(LlvmLoad e) {
-		throw new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName());
+				throw new IllegalArgumentException(throwError(e));
+
 	}
 
 	@Override
 	public List<Event> visitLlvmStore(LlvmStore e) {
-		throw new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName());
+		throw new IllegalArgumentException(throwError(e));
+	}
+
+	private String throwError(Event e) {
+		return "Compilation for " + e.getClass().getSimpleName() + " is not supported by " + getClass().getSimpleName();
 	}
 	
 }
