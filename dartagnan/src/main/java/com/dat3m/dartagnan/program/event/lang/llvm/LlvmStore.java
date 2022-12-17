@@ -37,7 +37,7 @@ public class LlvmStore extends MemEvent implements RegReaderData {
 
     @Override
     public String toString() {
-        return "llvm_store(*" + address + ", " +  value + (mo != null ? ", " + mo : "") + ")\t### LLVM";
+        return "llvm_store(*" + address + ", " +  value + ")\t### LLVM";
     }
 
     @Override
