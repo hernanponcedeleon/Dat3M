@@ -35,7 +35,7 @@ public class AtomicLoad extends MemEvent implements RegWriter {
 
     @Override
     public String toString() {
-        return resultRegister + " = atomic_load_explicit(*" + address + (!mo.isEmpty() ? ", " + mo : "") + ")\t### C11";
+        return resultRegister + " = atomic_load(*" + address + ")\t### C11";
     }
 
     @Override

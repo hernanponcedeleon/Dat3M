@@ -18,7 +18,7 @@ public class AtomicXchg extends AtomicAbstract {
 
     @Override
     public String toString() {
-        return resultRegister + " = atomic_exchange_explicit(*" + address + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")\t### C11";
+        return resultRegister + " = atomic_exchange(*" + address + ", " + value + ")\t### C11";
     }
 
     @Override

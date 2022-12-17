@@ -35,8 +35,8 @@ public class AtomicCmpXchg extends AtomicAbstract {
     
     @Override
     public String toString() {
-    	String tag = is(STRONG) ? "_strong_explicit" : "_weak_explicit";
-        return resultRegister + " = atomic_compare_exchange_explicit" + tag + "(*" + address + ", " + expectedAddr + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")\t### C11";
+        return resultRegister + " = atomic_compare_exchange" + (is(STRONG) ? "_strong" : "_weak") + 
+            "(*" + address + ", " + expectedAddr + ", " + value + ")\t### C11";
     }
 
     // Unrolling

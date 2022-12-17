@@ -67,8 +67,8 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
 
     @Override
     public String toString() {
-    	String tag = is(STRONG) ? "_strong" : "_weak";
-        return "(" + oldValueRegister + ", " + cmpRegister + ") = llvm_cmpxchg" + tag + "(*" + address + ", " + expectedValue + ", " + value + ")\t### LLVM";
+        return "(" + oldValueRegister + ", " + cmpRegister + ") = llvm_cmpxchg" + (is(STRONG) ? "_strong" : "_weak") + 
+            "(*" + address + ", " + expectedValue + ", " + value + ")\t### LLVM";
     }
 
     // Unrolling

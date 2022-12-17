@@ -37,7 +37,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
 
     @Override
     public String toString() {
-        return "atomic_store_explicit(*" + address + ", " +  value + (!mo.isEmpty() ? ", " + mo : "") + ")\t### C11";
+        return "atomic_store(*" + address + ", " +  value + ")\t### C11";
     }
 
     @Override
