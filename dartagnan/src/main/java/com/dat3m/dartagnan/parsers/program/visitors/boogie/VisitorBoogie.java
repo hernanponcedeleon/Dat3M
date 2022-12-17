@@ -482,6 +482,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			// "assume false" simple terminates the thread
 			// pairingLabel is guaranteed to be "END_OF_T"
 			if(ctx.proposition().expr().getText().equals("false")) {
+				programBuilder.addChild(threadCount, EventFactory.newAssume(BConst.FALSE));
 				programBuilder.addChild(threadCount, EventFactory.newGoto(pairingLabel));
 			}
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
