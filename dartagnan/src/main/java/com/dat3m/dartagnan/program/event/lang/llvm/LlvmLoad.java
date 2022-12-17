@@ -35,7 +35,7 @@ public class LlvmLoad extends MemEvent implements RegWriter {
 
     @Override
     public String toString() {
-        return resultRegister + " = llvm_load(*" + address + ")\t### LLVM";
+        return resultRegister + " = llvm_load(*" + address + ", " + mo + ")\t### LLVM";
     }
 
     @Override

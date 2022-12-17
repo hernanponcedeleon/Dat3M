@@ -18,7 +18,7 @@ public class LlvmXchg extends LlvmAbstractRMW {
 
     @Override
     public String toString() {
-        return resultRegister + " = llvm_xchg(*" + address + ", " + value + ")\t### LLVM";
+        return resultRegister + " = llvm_xchg(*" + address + ", " + value + ", " + mo + ")\t### LLVM";
     }
 
     @Override

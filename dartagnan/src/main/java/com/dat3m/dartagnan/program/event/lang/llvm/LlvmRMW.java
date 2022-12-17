@@ -24,7 +24,7 @@ public class LlvmRMW extends LlvmAbstractRMW {
     @Override
     public String toString() {
         return resultRegister + " = llvm_rmw_" + op.toLinuxName() + 
-            "(*" + address + ", " + value + ")\t### LLVM";
+            "(*" + address + ", " + value + ", " + mo + ")\t### LLVM";
     }
 
     public IOpBin getOp() {
