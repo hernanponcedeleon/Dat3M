@@ -774,7 +774,7 @@ public class VisitorPower extends VisitorBase {
 				newRMWLoadExclusive(dummy, e.getLock(), ""),
                 newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)),
                 Power.newRMWStoreConditional(e.getLock(), IValue.ONE, "", true),
-				// Fake depedency to guarantee acquire semantics
+				// Fake dependency to guarantee acquire semantics
 				newFakeCtrlDep(dummy, label),
 				label,
 				Power.newISyncBarrier()

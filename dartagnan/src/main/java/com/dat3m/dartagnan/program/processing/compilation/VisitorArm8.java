@@ -547,10 +547,12 @@ class VisitorArm8 extends VisitorBase {
 	public List<Event> visitLKMMLock(LKMMLock e) {
 	Register dummy = e.getThread().newRegister(GlobalSettings.ARCH_PRECISION);
         // Spinlock events are guaranteed to succeed, i.e. we can use assumes
+        // With this we miss a ctrl dependency, but this does not matter
+        // becase the load is an acquire one.
 	return eventSequence(
                 newRMWLoadExclusive(dummy, e.getLock(), ARMv8.MO_ACQ),
                 newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)),
-                newRMWStoreExclusive(e.getLock(), IValue.ONE, ARMv8.MO_RX, true)
+                newRMWStoreExclusive(e.getLock(), IValue.ONE, "", true)
         );
 	}
 
