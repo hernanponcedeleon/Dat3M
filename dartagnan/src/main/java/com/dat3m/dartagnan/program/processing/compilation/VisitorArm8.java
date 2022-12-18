@@ -303,12 +303,12 @@ class VisitorArm8 extends VisitorBase {
 				optionalMemoryBarrier = AArch64.DMB.newISHBarrier();
 				break;
                         // #define smp_mb__after_spinlock()	smp_mb()       
-                        //        https://elixir.bootlin.com/linux/v6.1/source/arch/arm64/include/asm/spinlock.h#L12
+                        //              https://elixir.bootlin.com/linux/v6.1/source/arch/arm64/include/asm/spinlock.h#L12
                         case Tag.Linux.AFTER_SPINLOCK:
                                 optionalMemoryBarrier = AArch64.DSB.newISHBarrier();
                                 break;
                         // #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
-                        // https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
+                        //              https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
                         // It seem to be only used for RCU related stuff in the kernel so it makes sense
                         // it is defined in that header file
                         case Tag.Linux.AFTER_UNLOCK_LOCK:

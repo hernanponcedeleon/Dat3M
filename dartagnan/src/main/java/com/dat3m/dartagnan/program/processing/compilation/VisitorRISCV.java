@@ -19,7 +19,6 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Join;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 
 import com.dat3m.dartagnan.GlobalSettings;
-
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
@@ -299,16 +298,16 @@ class VisitorRISCV extends VisitorBase {
 				optionalMemoryBarrier = RISCV.newWWFence();
 				break;
 			// ##define smp_mb__after_spinlock()	RISCV_FENCE(iorw,iorw)    
-            //        https://elixir.bootlin.com/linux/v6.1/source/arch/riscv/include/asm/barrier.h#L72
+            // 		https://elixir.bootlin.com/linux/v6.1/source/arch/riscv/include/asm/barrier.h#L72
 			// RISCV_FENCE(iorw,iorw) imposes ordering both on devices and memory
-			// 		  https://github.com/westerndigitalcorporation/RISC-V-Linux/blob/master/linux/arch/riscv/include/asm/barrier.h
+			// 		https://github.com/westerndigitalcorporation/RISC-V-Linux/blob/master/linux/arch/riscv/include/asm/barrier.h
 			// Since the memory model says nothing about devices, we use RISCV_FENCE(rw,rw) which I think
 			// gives the ordering we want wrt. memory
             case Tag.Linux.AFTER_SPINLOCK:
 				optionalMemoryBarrier = RISCV.newRWRWFence();
 				break;
             // #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
-            // https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
+            // 		https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
             // It seem to be only used for RCU related stuff in the kernel so it makes sense
             // it is defined in that header file
             case Tag.Linux.AFTER_UNLOCK_LOCK:
