@@ -479,10 +479,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			} else {
 				pairingLabel = pairLabels.get(currentLabel);
 			}
-			// "assume false" simple terminates the thread
+			// Smack converts any unreachable instruction into an "assume(false)".
+			// 		https://github.com/smackers/smack/blob/main/lib/smack/SmackInstGenerator.cpp#L329-L333
+			// There a mismatch between this and our Assume event semantics, thus we cannot use Assume. 
 			// pairingLabel is guaranteed to be "END_OF_T"
 			if(ctx.proposition().expr().getText().equals("false")) {
-				programBuilder.addChild(threadCount, EventFactory.newAssume(BConst.FALSE));
 				programBuilder.addChild(threadCount, EventFactory.newGoto(pairingLabel));
 			}
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
