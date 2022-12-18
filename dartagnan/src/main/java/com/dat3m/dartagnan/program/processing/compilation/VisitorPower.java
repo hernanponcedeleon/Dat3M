@@ -1,7 +1,9 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory.*;
@@ -469,6 +471,18 @@ public class VisitorPower extends VisitorBase {
 			case Tag.Linux.AFTER_ATOMIC:
 				optionalMemoryBarrier = Power.newSyncBarrier();
 				break;
+        	// #define smp_mb__after_spinlock()	smp_mb()       
+            // 		https://elixir.bootlin.com/linux/v6.1/source/arch/powerpc/include/asm/spinlock.h#L14
+            case Tag.Linux.AFTER_SPINLOCK:
+				optionalMemoryBarrier = Power.newSyncBarrier();
+				break;
+            // #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
+            // 		https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
+            // It seem to be only used for RCU related stuff in the kernel so it makes sense
+            // it is defined in that header file
+            case Tag.Linux.AFTER_UNLOCK_LOCK:
+				optionalMemoryBarrier = Power.newSyncBarrier();
+                break;
 			default:
 				throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
 		}
@@ -751,6 +765,30 @@ public class VisitorPower extends VisitorBase {
         );
 	};
 	
+	@Override
+	public List<Event> visitLKMMLock(LKMMLock e) {
+	Register dummy = e.getThread().newRegister(GlobalSettings.ARCH_PRECISION);
+	Label label = newLabel("FakeDep");
+    // Spinlock events are guaranteed to succeed, i.e. we can use assumes
+	return eventSequence(
+				newRMWLoadExclusive(dummy, e.getLock(), ""),
+                newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)),
+                Power.newRMWStoreConditional(e.getLock(), IValue.ONE, "", true),
+				// Fake dependency to guarantee acquire semantics
+				newFakeCtrlDep(dummy, label),
+				label,
+				Power.newISyncBarrier()
+        );
+	}
+
+        @Override
+	public List<Event> visitLKMMUnlock(LKMMUnlock e) {
+	return eventSequence(
+				Power.newLwSyncBarrier(),
+                newStore(e.getAddress(), IValue.ZERO, "")
+        );
+	}
+
 	public enum PowerScheme {
 
 		LEADING_SYNC, TRAILING_SYNC;

@@ -1,7 +1,9 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory.*;
@@ -300,6 +302,18 @@ class VisitorArm8 extends VisitorBase {
 			case Tag.Linux.AFTER_ATOMIC:
 				optionalMemoryBarrier = AArch64.DMB.newISHBarrier();
 				break;
+                        // #define smp_mb__after_spinlock()	smp_mb()       
+                        //              https://elixir.bootlin.com/linux/v6.1/source/arch/arm64/include/asm/spinlock.h#L12
+                        case Tag.Linux.AFTER_SPINLOCK:
+                                optionalMemoryBarrier = AArch64.DSB.newISHBarrier();
+                                break;
+                        // #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
+                        //              https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
+                        // It seem to be only used for RCU related stuff in the kernel so it makes sense
+                        // it is defined in that header file
+                        case Tag.Linux.AFTER_UNLOCK_LOCK:
+                                optionalMemoryBarrier = AArch64.DSB.newISHBarrier();
+                                break;
 			default:
 				throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
 		}
@@ -528,4 +542,25 @@ class VisitorArm8 extends VisitorBase {
                 testOp
         );	
 	};
+
+        @Override
+	public List<Event> visitLKMMLock(LKMMLock e) {
+	Register dummy = e.getThread().newRegister(GlobalSettings.ARCH_PRECISION);
+        // Spinlock events are guaranteed to succeed, i.e. we can use assumes
+        // With this we miss a ctrl dependency, but this does not matter
+        // becase the load is an acquire one.
+	return eventSequence(
+                newRMWLoadExclusive(dummy, e.getLock(), ARMv8.MO_ACQ),
+                newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)),
+                newRMWStoreExclusive(e.getLock(), IValue.ONE, "", true)
+        );
+	}
+
+        @Override
+	public List<Event> visitLKMMUnlock(LKMMUnlock e) {
+	return eventSequence(
+                newStore(e.getAddress(), IValue.ZERO, ARMv8.MO_REL)
+        );
+	}
+
 }

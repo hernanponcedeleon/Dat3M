@@ -4,8 +4,6 @@ import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
-import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
-import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
