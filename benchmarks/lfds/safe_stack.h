@@ -5,7 +5,7 @@
 #endif
 
 typedef struct {
-    atomic_int value;
+    volatile value;
     atomic_int next;
 } SafeStackItem;
 

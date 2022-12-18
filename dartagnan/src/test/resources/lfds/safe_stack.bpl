@@ -43,7 +43,7 @@ const $MALLOC_TOP: ref;
 var $M.0: [ref] i32;
 
 // Memory address bounds
-axiom ($GLOBALS_BOTTOM == $sub.ref(0, 38311));
+axiom ($GLOBALS_BOTTOM == $sub.ref(0, 36202));
 axiom ($EXTERNS_BOTTOM == $add.ref($GLOBALS_BOTTOM, $sub.ref(0, 32768)));
 axiom ($MALLOC_TOP == 9223372036854775807);
 function {:inline} $isExternal(p: ref) returns (bool) { $slt.ref.bool(p, $EXTERNS_BOTTOM) }
@@ -1493,19 +1493,623 @@ const {:allocSize 4} head: ref;
 axiom (head == $sub.ref(0, 2056));
 const {:allocSize 24} {:count 3} array: ref;
 axiom (array == $sub.ref(0, 3104));
-const {:allocSize 70} .str: ref;
-axiom (.str == $sub.ref(0, 4198));
+const {:allocSize 25} .str: ref;
+axiom (.str == $sub.ref(0, 4153));
 const {:allocSize 51} {:count 51} .str.1: ref;
-axiom (.str.1 == $sub.ref(0, 5273));
+axiom (.str.1 == $sub.ref(0, 5228));
 const {:allocSize 22} {:count 22} __PRETTY_FUNCTION__.thread3: ref;
-axiom (__PRETTY_FUNCTION__.thread3 == $sub.ref(0, 6319));
-const init: ref;
-axiom (init == $sub.ref(0, 7351));
-procedure  init()
+axiom (__PRETTY_FUNCTION__.thread3 == $sub.ref(0, 6274));
+const llvm.dbg.value: ref;
+axiom (llvm.dbg.value == $sub.ref(0, 7306));
+procedure  llvm.dbg.value($p0: ref, $p1: ref, $p2: ref);
+const __llvm_atomic32_load: ref;
+axiom (__llvm_atomic32_load == $sub.ref(0, 8338));
+procedure  __llvm_atomic32_load($p0: ref, $i1: i32)
+  returns ($r: i32);
+const __llvm_atomic32_rmw: ref;
+axiom (__llvm_atomic32_rmw == $sub.ref(0, 9370));
+procedure  __llvm_atomic32_rmw($p0: ref, $i1: i32, $i2: i32, $i3: i32)
+  returns ($r: i32);
+const __llvm_atomic32_cmpxchg: ref;
+axiom (__llvm_atomic32_cmpxchg == $sub.ref(0, 10402));
+procedure  __llvm_atomic32_cmpxchg($p0: ref, $i1: i32, $i2: i32, $i3: i32, $i4: i32)
+  returns ($r: ref);
+const __llvm_atomic32_store: ref;
+axiom (__llvm_atomic32_store == $sub.ref(0, 11434));
+procedure  __llvm_atomic32_store($p0: ref, $i1: i32, $i2: i32);
+const thread3: ref;
+axiom (thread3 == $sub.ref(0, 12466));
+procedure  thread3($p0: ref)
+  returns ($r: ref)
 {
+  var $i1: i32;
+  var $i2: i1;
+  var $i4: i32;
+  var $i5: i64;
+  var $p6: ref;
+  var $i7: i32;
+  var $i8: i1;
+  var $p9: ref;
+  var $i10: i1;
+  var $i11: i32;
+  var $i12: i32;
+  var $i13: i32;
+  var $i14: i1;
+  var $i3: i32;
+  var $i15: i1;
+  var $i16: i64;
+  var $i17: i32;
+  var $i18: i32;
+  var $i19: i64;
+  var $p20: ref;
+  var $i21: i32;
+  var $i22: i64;
+  var $i23: i1;
+  var $i24: i32;
+  var $p25: ref;
+  var $i26: i32;
+  var $p27: ref;
+  var $i28: i1;
+  var $i29: i32;
+  var $i30: i32;
+  var $i31: i32;
+  var $i32: i1;
+  var $i34: i32;
+  var $i35: i64;
+  var $p36: ref;
+  var $i37: i32;
+  var $i38: i1;
+  var $p39: ref;
+  var $i40: i1;
+  var $i41: i32;
+  var $i42: i32;
+  var $i43: i32;
+  var $i44: i1;
+  var $i33: i32;
+  var $i45: i1;
+  var $i46: i32;
+  var $i47: i64;
+  var $i48: i1;
 $bb0:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 19, 5} true;
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 10, 5} true;
   assume {:verifier.code 0} true;
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 10, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb1;
+$bb1:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 63} true;
+  assume {:verifier.code 0} true;
+  call $i1 := __llvm_atomic32_load(count, 2);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 63} true;
+  assume {:verifier.code 0} true;
+  $i2 := $sgt.i32($i1, 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  $i3 := $sub.i32(0, 1);
+  assume {:branchcond $i2} true;
+  goto $bb2, $bb4;
+$bb2:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  assume ($i2 == 1);
+  goto $bb3;
+$bb3:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 0, 0} true;
+  assume {:verifier.code 0} true;
+  call $i4 := __llvm_atomic32_load(head, 2);
+  call {:cexpr "head1"} boogie_si_record_i32($i4);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 31, 47} true;
+  assume {:verifier.code 0} true;
+  $i5 := $sext.i32.i64($i4);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 31, 60} true;
+  assume {:verifier.code 0} true;
+  $p6 := $add.ref($add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref($i5, 8)), $mul.ref(4, 1));
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 0, 0} true;
+  assume {:verifier.code 0} true;
+  call $i7 := __llvm_atomic32_rmw($p6, $sub.i32(0, 1), 5, 0);
+  call {:cexpr "next1"} boogie_si_record_i32($i7);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 33, 19} true;
+  assume {:verifier.code 0} true;
+  $i8 := $sgt.i32($i7, $sub.i32(0, 1));
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 33, 13} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i8} true;
+  goto $bb6, $bb7;
+$bb4:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  assume !(($i2 == 1));
+  goto $bb5;
+$bb5:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 10, 25} true;
+  assume {:verifier.code 0} true;
+  $i15 := $slt.i32($i3, 0);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 10, 5} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i15} true;
+  goto $bb13, $bb14;
+$bb6:
+  assume ($i8 == 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 35, 17} true;
+  assume {:verifier.code 0} true;
+  call $p9 := __llvm_atomic32_cmpxchg(head, $i4, $i7, 5, 5);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 35, 17} true;
+  assume {:verifier.code 0} true;
+  $i10 := $extractvalue.i1($p9, 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 35, 17} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i10} true;
+  goto $bb9, $bb10;
+$bb7:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 33, 13} true;
+  assume {:verifier.code 0} true;
+  assume !(($i8 == 1));
+  goto $bb8;
+$bb8:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 63} true;
+  assume {:verifier.code 0} true;
+  call $i13 := __llvm_atomic32_load(count, 2);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 63} true;
+  assume {:verifier.code 0} true;
+  $i14 := $sgt.i32($i13, 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  $i3 := $sub.i32(0, 1);
+  assume {:branchcond $i14} true;
+  goto $bb11, $bb12;
+$bb9:
+  assume ($i10 == 1);
+  assume {:verifier.code 0} true;
+  call $i11 := __llvm_atomic32_rmw(count, 1, 5, 2);
+  assume {:verifier.code 0} true;
+  $i3 := $i4;
+  goto $bb5;
+$bb10:
+  assume !(($i10 == 1));
+  assume {:verifier.code 0} true;
+  call $i12 := __llvm_atomic32_rmw($p6, $i7, 5, 0);
+  assume {:verifier.code 0} true;
+  goto $bb8;
+$bb11:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  assume ($i14 == 1);
+  goto $bb3;
+$bb12:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  assume !(($i14 == 1));
+  goto $bb5;
+$bb13:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 10, 5} true;
+  assume {:verifier.code 0} true;
+  assume ($i15 == 1);
+  goto $bb1;
+$bb14:
+  assume !(($i15 == 1));
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 7, 21} true;
+  assume {:verifier.code 0} true;
+  $i16 := $p2i.ref.i64($p0);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 10, 25} true;
+  assume {:verifier.code 0} true;
+  /* benchmarks/lfds/safe_stack.c:10:25: SMACK warning: overapproximating bitwise operation lshr (can lead to false alarms); */
+  $i17 := $lshr.i32($i3, 31);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 11, 25} true;
+  assume {:verifier.code 0} true;
+  $i18 := $trunc.i64.i32($i16);
+  assume {:verifier.code 0} true;
+  $i19 := $zext.i32.i64($i17);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 11, 17} true;
+  assume {:verifier.code 0} true;
+  $p20 := $add.ref($add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref($i19, 8)), $mul.ref(0, 1));
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 11, 23} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $store.i32($M.0, $p20, $i18);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 12, 5} true;
+  assume {:verifier.code 0} true;
+  $i21 := $load.i32($M.0, $p20);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 12, 5} true;
+  assume {:verifier.code 0} true;
+  $i22 := $sext.i32.i64($i21);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 12, 5} true;
+  assume {:verifier.code 0} true;
+  $i23 := $eq.i64($i22, $i16);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 12, 5} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i23} true;
+  goto $bb15, $bb16;
+$bb15:
+  assume ($i23 == 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 0, 0} true;
+  assume {:verifier.code 0} true;
+  call $i24 := __llvm_atomic32_load(head, 2);
+  call {:cexpr "head1"} boogie_si_record_i32($i24);
+  assume {:verifier.code 0} true;
+  $p25 := $add.ref($add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref($i19, 8)), $mul.ref(4, 1));
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 49, 5} true;
+  assume {:verifier.code 0} true;
+  $i26 := $i24;
+  goto $bb17;
+$bb16:
+  assume !(($i23 == 1));
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 12, 5} true;
+  assume {:verifier.code 0} true;
+  call __assert_fail(.str, .str.1, 12, __PRETTY_FUNCTION__.thread3);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 12, 5} true;
+  assume {:verifier.code 0} true;
+  assume false;
+$bb17:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 48, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 51, 14} true;
+  assume {:verifier.code 0} true;
+  call __llvm_atomic32_store($p25, $i26, 3);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 51, 14} true;
+  assume {:verifier.code 0} true;
+  call $p27 := __llvm_atomic32_cmpxchg(head, $i26, $i17, 5, 5);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 51, 14} true;
+  assume {:verifier.code 0} true;
+  $i28 := $extractvalue.i1($p27, 1);
+  assume {:verifier.code 0} true;
+  $i29 := $extractvalue.i32($p27, 0);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 51, 5} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i28} true;
+  goto $bb18, $bb19;
+$bb18:
+  assume ($i28 == 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 15, 5} true;
+  assume {:verifier.code 0} true;
+  call $i30 := __llvm_atomic32_rmw(count, 1, 5, 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 15, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb20;
+$bb19:
+  assume !(($i28 == 1));
+  assume {:verifier.code 0} true;
+  $i26 := $i29;
+  goto $bb17;
+$bb20:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 63} true;
+  assume {:verifier.code 0} true;
+  call $i31 := __llvm_atomic32_load(count, 2);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 63} true;
+  assume {:verifier.code 0} true;
+  $i32 := $sgt.i32($i31, 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  $i33 := $sub.i32(0, 1);
+  assume {:branchcond $i32} true;
+  goto $bb21, $bb23;
+$bb21:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  assume ($i32 == 1);
+  goto $bb22;
+$bb22:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 0, 0} true;
+  assume {:verifier.code 0} true;
+  call $i34 := __llvm_atomic32_load(head, 2);
+  call {:cexpr "head1"} boogie_si_record_i32($i34);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 31, 47} true;
+  assume {:verifier.code 0} true;
+  $i35 := $sext.i32.i64($i34);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 31, 60} true;
+  assume {:verifier.code 0} true;
+  $p36 := $add.ref($add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref($i35, 8)), $mul.ref(4, 1));
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 0, 0} true;
+  assume {:verifier.code 0} true;
+  call $i37 := __llvm_atomic32_rmw($p36, $sub.i32(0, 1), 5, 0);
+  call {:cexpr "next1"} boogie_si_record_i32($i37);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 33, 19} true;
+  assume {:verifier.code 0} true;
+  $i38 := $sgt.i32($i37, $sub.i32(0, 1));
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 33, 13} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i38} true;
+  goto $bb25, $bb26;
+$bb23:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  assume !(($i32 == 1));
+  goto $bb24;
+$bb24:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 15, 18} true;
+  assume {:verifier.code 0} true;
+  $i45 := $slt.i32($i33, 0);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 15, 5} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i45} true;
+  goto $bb32, $bb33;
+$bb25:
+  assume ($i38 == 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 35, 17} true;
+  assume {:verifier.code 0} true;
+  call $p39 := __llvm_atomic32_cmpxchg(head, $i34, $i37, 5, 5);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 35, 17} true;
+  assume {:verifier.code 0} true;
+  $i40 := $extractvalue.i1($p39, 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 35, 17} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i40} true;
+  goto $bb28, $bb29;
+$bb26:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 33, 13} true;
+  assume {:verifier.code 0} true;
+  assume !(($i38 == 1));
+  goto $bb27;
+$bb27:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 63} true;
+  assume {:verifier.code 0} true;
+  call $i43 := __llvm_atomic32_load(count, 2);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 63} true;
+  assume {:verifier.code 0} true;
+  $i44 := $sgt.i32($i43, 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  $i33 := $sub.i32(0, 1);
+  assume {:branchcond $i44} true;
+  goto $bb30, $bb31;
+$bb28:
+  assume ($i40 == 1);
+  assume {:verifier.code 0} true;
+  call $i41 := __llvm_atomic32_rmw(count, 1, 5, 2);
+  assume {:verifier.code 0} true;
+  $i33 := $i34;
+  goto $bb24;
+$bb29:
+  assume !(($i40 == 1));
+  assume {:verifier.code 0} true;
+  call $i42 := __llvm_atomic32_rmw($p36, $i37, 5, 0);
+  assume {:verifier.code 0} true;
+  goto $bb27;
+$bb30:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  assume ($i44 == 1);
+  goto $bb22;
+$bb31:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  assume !(($i44 == 1));
+  goto $bb24;
+$bb32:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 15, 5} true;
+  assume {:verifier.code 0} true;
+  assume ($i45 == 1);
+  goto $bb20;
+$bb33:
+  assume !(($i45 == 1));
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 16, 23} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $store.i32($M.0, $p20, $i18);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 17, 5} true;
+  assume {:verifier.code 0} true;
+  $i46 := $load.i32($M.0, $p20);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 17, 5} true;
+  assume {:verifier.code 0} true;
+  $i47 := $sext.i32.i64($i46);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 17, 5} true;
+  assume {:verifier.code 0} true;
+  $i48 := $eq.i64($i47, $i16);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 17, 5} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i48} true;
+  goto $bb34, $bb35;
+$bb34:
+  assume ($i48 == 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 18, 5} true;
+  assume {:verifier.code 0} true;
+  $r := $0.ref;
+  $exn := false;
+  return;
+$bb35:
+  assume !(($i48 == 1));
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 17, 5} true;
+  assume {:verifier.code 0} true;
+  call __assert_fail(.str, .str.1, 17, __PRETTY_FUNCTION__.thread3);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 17, 5} true;
+  assume {:verifier.code 0} true;
+  assume false;
+}
+const __assert_fail: ref;
+axiom (__assert_fail == $sub.ref(0, 13498));
+procedure  __assert_fail($p0: ref, $p1: ref, $i2: i32, $p3: ref);
+const thread1: ref;
+axiom (thread1 == $sub.ref(0, 14530));
+procedure  thread1($p0: ref)
+  returns ($r: ref)
+{
+  var $i1: i32;
+  var $i2: i1;
+  var $i4: i32;
+  var $i5: i64;
+  var $p6: ref;
+  var $i7: i32;
+  var $i8: i1;
+  var $p9: ref;
+  var $i10: i1;
+  var $i11: i32;
+  var $i12: i32;
+  var $i13: i32;
+  var $i14: i1;
+  var $i3: i32;
+  var $i15: i1;
+$bb0:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 25, 5} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 25, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb1;
+$bb1:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 63} true;
+  assume {:verifier.code 0} true;
+  call $i1 := __llvm_atomic32_load(count, 2);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 63} true;
+  assume {:verifier.code 0} true;
+  $i2 := $sgt.i32($i1, 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  $i3 := $sub.i32(0, 1);
+  assume {:branchcond $i2} true;
+  goto $bb2, $bb4;
+$bb2:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  assume ($i2 == 1);
+  goto $bb3;
+$bb3:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 0, 0} true;
+  assume {:verifier.code 0} true;
+  call $i4 := __llvm_atomic32_load(head, 2);
+  call {:cexpr "head1"} boogie_si_record_i32($i4);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 31, 47} true;
+  assume {:verifier.code 0} true;
+  $i5 := $sext.i32.i64($i4);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 31, 60} true;
+  assume {:verifier.code 0} true;
+  $p6 := $add.ref($add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref($i5, 8)), $mul.ref(4, 1));
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 0, 0} true;
+  assume {:verifier.code 0} true;
+  call $i7 := __llvm_atomic32_rmw($p6, $sub.i32(0, 1), 5, 0);
+  call {:cexpr "next1"} boogie_si_record_i32($i7);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 33, 19} true;
+  assume {:verifier.code 0} true;
+  $i8 := $sgt.i32($i7, $sub.i32(0, 1));
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 33, 13} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i8} true;
+  goto $bb6, $bb7;
+$bb4:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  assume !(($i2 == 1));
+  goto $bb5;
+$bb5:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 25, 18} true;
+  assume {:verifier.code 0} true;
+  $i15 := $slt.i32($i3, 0);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 25, 5} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i15} true;
+  goto $bb13, $bb14;
+$bb6:
+  assume ($i8 == 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 35, 17} true;
+  assume {:verifier.code 0} true;
+  call $p9 := __llvm_atomic32_cmpxchg(head, $i4, $i7, 5, 5);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 35, 17} true;
+  assume {:verifier.code 0} true;
+  $i10 := $extractvalue.i1($p9, 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 35, 17} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i10} true;
+  goto $bb9, $bb10;
+$bb7:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 33, 13} true;
+  assume {:verifier.code 0} true;
+  assume !(($i8 == 1));
+  goto $bb8;
+$bb8:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 63} true;
+  assume {:verifier.code 0} true;
+  call $i13 := __llvm_atomic32_load(count, 2);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 63} true;
+  assume {:verifier.code 0} true;
+  $i14 := $sgt.i32($i13, 1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  $i3 := $sub.i32(0, 1);
+  assume {:branchcond $i14} true;
+  goto $bb11, $bb12;
+$bb9:
+  assume ($i10 == 1);
+  assume {:verifier.code 0} true;
+  call $i11 := __llvm_atomic32_rmw(count, 1, 5, 2);
+  assume {:verifier.code 0} true;
+  $i3 := $i4;
+  goto $bb5;
+$bb10:
+  assume !(($i10 == 1));
+  assume {:verifier.code 0} true;
+  call $i12 := __llvm_atomic32_rmw($p6, $i7, 5, 0);
+  assume {:verifier.code 0} true;
+  goto $bb8;
+$bb11:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  assume ($i14 == 1);
+  goto $bb3;
+$bb12:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
+  assume {:verifier.code 0} true;
+  assume !(($i14 == 1));
+  goto $bb5;
+$bb13:
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 25, 5} true;
+  assume {:verifier.code 0} true;
+  assume ($i15 == 1);
+  goto $bb1;
+$bb14:
+  assume !(($i15 == 1));
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 26, 5} true;
+  assume {:verifier.code 0} true;
+  $r := $0.ref;
+  $exn := false;
+  return;
+}
+const main: ref;
+axiom (main == $sub.ref(0, 15562));
+procedure {:entrypoint} main()
+  returns ($r: i32)
+{
+  var $p0: ref;
+  var $p1: ref;
+  var $p2: ref;
+  var $p3: ref;
+  var $p4: ref;
+  var $p5: ref;
+  var $i6: i32;
+  var $i7: i32;
+  var $i8: i32;
+$bb0:
+  call $initialize();
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 31, 5} true;
+  assume {:verifier.code 0} true;
+  call {:cexpr "smack:entry:main"} boogie_si_record_ref(main);
+  assume {:verifier.code 0} true;
+  call $p0 := $alloc($mul.ref(8, $zext.i32.i64(1)));
+  assume {:verifier.code 0} true;
+  call $p1 := $alloc($mul.ref(8, $zext.i32.i64(1)));
+  assume {:verifier.code 0} true;
+  call $p2 := $alloc($mul.ref(8, $zext.i32.i64(1)));
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 31, 5} true;
+  assume {:verifier.code 0} true;
+  $p3 := $bitcast.ref.ref($p0);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 31, 5} true;
+  assume {:verifier.code 0} true;
+  /* benchmarks/lfds/safe_stack.c:31:5: SMACK warning: approximating llvm.lifetime.start.p0i8 (can lead to both false alarms and missed detections); */
+  call llvm.lifetime.start.p0i8(8, $p3);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 31, 5} true;
+  assume {:verifier.code 0} true;
+  $p4 := $bitcast.ref.ref($p1);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 31, 5} true;
+  assume {:verifier.code 0} true;
+  /* benchmarks/lfds/safe_stack.c:31:5: SMACK warning: approximating llvm.lifetime.start.p0i8 (can lead to both false alarms and missed detections); */
+  call llvm.lifetime.start.p0i8(8, $p4);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 31, 5} true;
+  assume {:verifier.code 0} true;
+  $p5 := $bitcast.ref.ref($p2);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 31, 5} true;
+  assume {:verifier.code 0} true;
+  /* benchmarks/lfds/safe_stack.c:31:5: SMACK warning: approximating llvm.lifetime.start.p0i8 (can lead to both false alarms and missed detections); */
+  call llvm.lifetime.start.p0i8(8, $p5);
   assume {:sourceloc "benchmarks/lfds/safe_stack.h", 19, 5} true;
   assume {:verifier.code 0} true;
   $M.0 := $store.i32($M.0, count, 3);
@@ -1523,460 +2127,49 @@ $bb0:
   assume {:sourceloc "benchmarks/lfds/safe_stack.h", 25, 5} true;
   assume {:verifier.code 0} true;
   $M.0 := $store.i32($M.0, $add.ref($add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref(2, 8)), $mul.ref(4, 1)), $sub.i32(0, 1));
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 26, 1} true;
-  assume {:verifier.code 0} true;
-  $exn := false;
-  return;
-}
-const llvm.dbg.value: ref;
-axiom (llvm.dbg.value == $sub.ref(0, 8383));
-procedure  llvm.dbg.value($p0: ref, $p1: ref, $p2: ref);
-const pop: ref;
-axiom (pop == $sub.ref(0, 9415));
-procedure  pop()
-  returns ($r: i32)
-{
-  var $i0: i32;
-  var $i1: i1;
-  var $i3: i32;
-  var $i4: i64;
-  var $p5: ref;
-  var $p6: ref;
-  var $i7: i32;
-  var $i8: i1;
-  var $p9: ref;
-  var $i10: i1;
-  var $i11: i32;
-  var $i12: i32;
-  var $i2: i32;
-$bb0:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
-  assume {:verifier.code 0} true;
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
-  assume {:verifier.code 0} true;
-  goto $bb1;
-$bb1:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 12} true;
-  assume {:verifier.code 0} true;
-  call $i0 := __llvm_atomic32_load(count, 2);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 63} true;
-  assume {:verifier.code 0} true;
-  $i1 := $sgt.i32($i0, 1);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
-  assume {:verifier.code 0} true;
-  $i2 := $sub.i32(0, 1);
-  assume {:branchcond $i1} true;
-  goto $bb2, $bb3;
-$bb2:
-  assume ($i1 == 1);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 30, 21} true;
-  assume {:verifier.code 0} true;
-  call $i3 := __llvm_atomic32_load(head, 2);
-  call {:cexpr "head1"} boogie_si_record_i32($i3);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 31, 47} true;
-  assume {:verifier.code 0} true;
-  $i4 := $sext.i32.i64($i3);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 31, 47} true;
-  assume {:verifier.code 0} true;
-  $p5 := $add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref($i4, 8));
-  $p6 := $add.ref($add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref($i4, 8)), $mul.ref(4, 1));
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 31, 21} true;
-  assume {:verifier.code 0} true;
-  call $i7 := __llvm_atomic32_rmw($p6, $sub.i32(0, 1), 5, 0);
-  call {:cexpr "next1"} boogie_si_record_i32($i7);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 33, 19} true;
-  assume {:verifier.code 0} true;
-  $i8 := $sge.i32($i7, 0);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 33, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i8} true;
-  goto $bb5, $bb6;
-$bb3:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
-  assume {:verifier.code 0} true;
-  assume !(($i1 == 1));
-  goto $bb4;
-$bb4:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 0, 0} true;
-  assume {:verifier.code 0} true;
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 45, 1} true;
-  assume {:verifier.code 0} true;
-  $r := $i2;
-  $exn := false;
-  return;
-$bb5:
-  assume ($i8 == 1);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 35, 17} true;
-  assume {:verifier.code 0} true;
-  call $p9 := __llvm_atomic32_cmpxchg(head, $i3, $i7, 5, 5);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 35, 17} true;
-  assume {:verifier.code 0} true;
-  $i10 := $extractvalue.i1($p9, 1);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 35, 17} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i10} true;
-  goto $bb8, $bb9;
-$bb6:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 33, 13} true;
-  assume {:verifier.code 0} true;
-  assume !(($i8 == 1));
-  goto $bb7;
-$bb7:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 29, 5} true;
-  assume {:verifier.code 0} true;
-  goto $bb1;
-$bb8:
-  assume ($i10 == 1);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 36, 17} true;
-  assume {:verifier.code 0} true;
-  call $i11 := __llvm_atomic32_rmw(count, 1, 5, 2);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 37, 17} true;
-  assume {:verifier.code 0} true;
-  $i2 := $i3;
-  goto $bb4;
-$bb9:
-  assume !(($i10 == 1));
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 40, 17} true;
-  assume {:verifier.code 0} true;
-  call $i12 := __llvm_atomic32_rmw($p6, $i7, 5, 0);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 42, 9} true;
-  assume {:verifier.code 0} true;
-  goto $bb7;
-}
-const __llvm_atomic32_load: ref;
-axiom (__llvm_atomic32_load == $sub.ref(0, 10447));
-procedure  __llvm_atomic32_load($p0: ref, $i1: i32)
-  returns ($r: i32);
-const __llvm_atomic32_rmw: ref;
-axiom (__llvm_atomic32_rmw == $sub.ref(0, 11479));
-procedure  __llvm_atomic32_rmw($p0: ref, $i1: i32, $i2: i32, $i3: i32)
-  returns ($r: i32);
-const __llvm_atomic32_cmpxchg: ref;
-axiom (__llvm_atomic32_cmpxchg == $sub.ref(0, 12511));
-procedure  __llvm_atomic32_cmpxchg($p0: ref, $i1: i32, $i2: i32, $i3: i32, $i4: i32)
-  returns ($r: ref);
-const push: ref;
-axiom (push == $sub.ref(0, 13543));
-procedure  push($i0: i32)
-{
-  var $i1: i32;
-  var $i2: i32;
-  var $i3: i64;
-  var $p4: ref;
-  var $p5: ref;
-  var $p6: ref;
-  var $i7: i32;
-  var $i8: i1;
-  var $i9: i32;
-  var $i10: i32;
-  var $i11: i1;
-  var $i12: i32;
-$bb0:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 48, 17} true;
-  assume {:verifier.code 0} true;
-  call {:cexpr "push:arg:index"} boogie_si_record_i32($i0);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 48, 17} true;
-  assume {:verifier.code 0} true;
-  call $i1 := __llvm_atomic32_load(head, 2);
-  call {:cexpr "head1"} boogie_si_record_i32($i1);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 49, 5} true;
-  assume {:verifier.code 0} true;
-  $i2 := $i1;
-  goto $bb1;
-$bb1:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 48, 9} true;
-  assume {:verifier.code 0} true;
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 50, 32} true;
-  assume {:verifier.code 0} true;
-  $i3 := $sext.i32.i64($i0);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 50, 32} true;
-  assume {:verifier.code 0} true;
-  $p4 := $add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref($i3, 8));
-  $p5 := $add.ref($add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref($i3, 8)), $mul.ref(4, 1));
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 51, 5} true;
-  assume {:verifier.code 0} true;
-  call __llvm_atomic32_store($p5, $i2, 3);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 51, 14} true;
-  assume {:verifier.code 0} true;
-  call $p6 := __llvm_atomic32_cmpxchg(head, $i2, $i0, 5, 5);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 51, 14} true;
-  assume {:verifier.code 0} true;
-  $i7 := $extractvalue.i32($p6, 0);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 51, 14} true;
-  assume {:verifier.code 0} true;
-  $i8 := $extractvalue.i1($p6, 1);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 51, 14} true;
-  assume {:verifier.code 0} true;
-  $i9 := (if ($i8 == 1) then $i2 else $i7);
-  call {:cexpr "head1"} boogie_si_record_i32($i9);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 51, 14} true;
-  assume {:verifier.code 0} true;
-  $i10 := $zext.i1.i32($i8);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 51, 120} true;
-  assume {:verifier.code 0} true;
-  $i11 := $eq.i32($i10, 0);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 51, 5} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i11} true;
-  goto $bb2, $bb3;
-$bb2:
-  assume ($i11 == 1);
-  assume {:verifier.code 0} true;
-  $i2 := $i9;
-  goto $bb1;
-$bb3:
-  assume !(($i11 == 1));
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 52, 5} true;
-  assume {:verifier.code 0} true;
-  call $i12 := __llvm_atomic32_rmw(count, 1, 5, 1);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.h", 53, 1} true;
-  assume {:verifier.code 0} true;
-  $exn := false;
-  return;
-}
-const __llvm_atomic32_store: ref;
-axiom (__llvm_atomic32_store == $sub.ref(0, 14575));
-procedure  __llvm_atomic32_store($p0: ref, $i1: i32, $i2: i32);
-const thread3: ref;
-axiom (thread3 == $sub.ref(0, 15607));
-procedure  thread3($p0: ref)
-  returns ($r: ref)
-{
-  var $i1: i32;
-  var $i2: i1;
-  var $i3: i32;
-  var $i4: i64;
-  var $i5: i64;
-  var $p6: ref;
-  var $p7: ref;
-  var $i8: i32;
-  var $i9: i32;
-  var $i10: i64;
-  var $i11: i1;
-  var $i12: i32;
-  var $i13: i1;
-  var $i14: i32;
-  var $i15: i64;
-  var $i16: i1;
-$bb0:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 10, 5} true;
-  assume {:verifier.code 0} true;
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 10, 5} true;
-  assume {:verifier.code 0} true;
-  goto $bb1;
-$bb1:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 10, 19} true;
-  assume {:verifier.code 0} true;
-  call $i1 := pop();
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 10, 25} true;
-  assume {:verifier.code 0} true;
-  $i2 := $slt.i32($i1, 0);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 10, 25} true;
-  assume {:verifier.code 0} true;
-  $i3 := $zext.i1.i32($i2);
-  call {:cexpr "elem"} boogie_si_record_i32($i3);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 10, 5} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i2} true;
-  goto $bb2, $bb3;
-$bb2:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 10, 5} true;
-  assume {:verifier.code 0} true;
-  assume ($i2 == 1);
-  goto $bb1;
-$bb3:
-  assume !(($i2 == 1));
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 7, 21} true;
-  assume {:verifier.code 0} true;
-  $i4 := $p2i.ref.i64($p0);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 11, 28} true;
-  assume {:verifier.code 0} true;
-  $i5 := $sext.i32.i64($i3);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 11, 28} true;
-  assume {:verifier.code 0} true;
-  $p6 := $add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref($i5, 8));
-  $p7 := $add.ref($add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref($i5, 8)), $mul.ref(0, 1));
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 11, 47} true;
-  assume {:verifier.code 0} true;
-  $i8 := $trunc.i64.i32($i4);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 12, 5} true;
-  assume {:verifier.code 0} true;
-  call __llvm_atomic32_store($p7, $i8, 0);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 12, 5} true;
-  assume {:verifier.code 0} true;
-  call $i9 := __llvm_atomic32_load($p7, 0);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 12, 5} true;
-  assume {:verifier.code 0} true;
-  $i10 := $sext.i32.i64($i9);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 12, 5} true;
-  assume {:verifier.code 0} true;
-  $i11 := $eq.i64($i10, $i4);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 12, 5} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i11} true;
-  goto $bb4, $bb5;
-$bb4:
-  assume ($i11 == 1);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 13, 5} true;
-  assume {:verifier.code 0} true;
-  call push($i3);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 15, 5} true;
-  assume {:verifier.code 0} true;
-  goto $bb6;
-$bb5:
-  assume !(($i11 == 1));
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 12, 5} true;
-  assume {:verifier.code 0} true;
-  call __assert_fail(.str, .str.1, 12, __PRETTY_FUNCTION__.thread3);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 12, 5} true;
-  assume {:verifier.code 0} true;
-  assume false;
-$bb6:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 15, 12} true;
-  assume {:verifier.code 0} true;
-  call $i12 := pop();
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 15, 18} true;
-  assume {:verifier.code 0} true;
-  $i13 := $slt.i32($i12, 0);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 15, 5} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i13} true;
-  goto $bb7, $bb8;
-$bb7:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 15, 5} true;
-  assume {:verifier.code 0} true;
-  assume ($i13 == 1);
-  goto $bb6;
-$bb8:
-  assume !(($i13 == 1));
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 17, 5} true;
-  assume {:verifier.code 0} true;
-  call __llvm_atomic32_store($p7, $i8, 0);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 17, 5} true;
-  assume {:verifier.code 0} true;
-  call $i14 := __llvm_atomic32_load($p7, 0);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 17, 5} true;
-  assume {:verifier.code 0} true;
-  $i15 := $sext.i32.i64($i14);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 17, 5} true;
-  assume {:verifier.code 0} true;
-  $i16 := $eq.i64($i15, $i4);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 17, 5} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i16} true;
-  goto $bb9, $bb10;
-$bb9:
-  assume ($i16 == 1);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 18, 5} true;
-  assume {:verifier.code 0} true;
-  $r := $0.ref;
-  $exn := false;
-  return;
-$bb10:
-  assume !(($i16 == 1));
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 17, 5} true;
-  assume {:verifier.code 0} true;
-  call __assert_fail(.str, .str.1, 17, __PRETTY_FUNCTION__.thread3);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 17, 5} true;
-  assume {:verifier.code 0} true;
-  assume false;
-}
-const __assert_fail: ref;
-axiom (__assert_fail == $sub.ref(0, 16639));
-procedure  __assert_fail($p0: ref, $p1: ref, $i2: i32, $p3: ref);
-const thread1: ref;
-axiom (thread1 == $sub.ref(0, 17671));
-procedure  thread1($p0: ref)
-  returns ($r: ref)
-{
-  var $i1: i32;
-  var $i2: i1;
-$bb0:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 25, 5} true;
-  assume {:verifier.code 0} true;
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 25, 5} true;
-  assume {:verifier.code 0} true;
-  goto $bb1;
-$bb1:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 25, 12} true;
-  assume {:verifier.code 0} true;
-  call $i1 := pop();
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 25, 18} true;
-  assume {:verifier.code 0} true;
-  $i2 := $slt.i32($i1, 0);
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 25, 5} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i2} true;
-  goto $bb2, $bb3;
-$bb2:
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 25, 5} true;
-  assume {:verifier.code 0} true;
-  assume ($i2 == 1);
-  goto $bb1;
-$bb3:
-  assume !(($i2 == 1));
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 26, 5} true;
-  assume {:verifier.code 0} true;
-  $r := $0.ref;
-  $exn := false;
-  return;
-}
-const main: ref;
-axiom (main == $sub.ref(0, 18703));
-procedure {:entrypoint} main()
-  returns ($r: i32)
-{
-  var $p0: ref;
-  var $p1: ref;
-  var $p2: ref;
-  var $i3: i32;
-  var $i4: i32;
-  var $i5: i32;
-$bb0:
-  call $initialize();
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 33, 5} true;
-  assume {:verifier.code 0} true;
-  call {:cexpr "smack:entry:main"} boogie_si_record_ref(main);
-  assume {:verifier.code 0} true;
-  call $p0 := $alloc($mul.ref(8, $zext.i32.i64(1)));
-  assume {:verifier.code 0} true;
-  call $p1 := $alloc($mul.ref(8, $zext.i32.i64(1)));
-  assume {:verifier.code 0} true;
-  call $p2 := $alloc($mul.ref(8, $zext.i32.i64(1)));
-  assume true;
-  assume true;
-  assume true;
-  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 33, 5} true;
-  assume {:verifier.code 0} true;
-  call init();
   assume {:sourceloc "benchmarks/lfds/safe_stack.c", 35, 5} true;
   assume {:verifier.code 0} true;
-  call $i3 := pthread_create($p0, $0.ref, thread3, $0.ref);
+  call $i6 := pthread_create($p0, $0.ref, thread3, $0.ref);
   assume {:sourceloc "benchmarks/lfds/safe_stack.c", 36, 5} true;
   assume {:verifier.code 0} true;
-  call $i4 := pthread_create($p1, $0.ref, thread3, $i2p.i64.ref(1));
+  call $i7 := pthread_create($p1, $0.ref, thread3, $i2p.i64.ref(1));
   assume {:sourceloc "benchmarks/lfds/safe_stack.c", 37, 5} true;
   assume {:verifier.code 0} true;
-  call $i5 := pthread_create($p2, $0.ref, thread1, $i2p.i64.ref(2));
+  call $i8 := pthread_create($p2, $0.ref, thread1, $i2p.i64.ref(2));
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 40, 1} true;
+  assume {:verifier.code 0} true;
+  /* benchmarks/lfds/safe_stack.c:40:1: SMACK warning: approximating llvm.lifetime.end.p0i8 (can lead to both false alarms and missed detections); */
+  call llvm.lifetime.end.p0i8(8, $p5);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 40, 1} true;
+  assume {:verifier.code 0} true;
+  /* benchmarks/lfds/safe_stack.c:40:1: SMACK warning: approximating llvm.lifetime.end.p0i8 (can lead to both false alarms and missed detections); */
+  call llvm.lifetime.end.p0i8(8, $p4);
+  assume {:sourceloc "benchmarks/lfds/safe_stack.c", 40, 1} true;
+  assume {:verifier.code 0} true;
+  /* benchmarks/lfds/safe_stack.c:40:1: SMACK warning: approximating llvm.lifetime.end.p0i8 (can lead to both false alarms and missed detections); */
+  call llvm.lifetime.end.p0i8(8, $p3);
   assume {:sourceloc "benchmarks/lfds/safe_stack.c", 39, 5} true;
   assume {:verifier.code 0} true;
   $r := 0;
   $exn := false;
   return;
 }
-const llvm.dbg.declare: ref;
-axiom (llvm.dbg.declare == $sub.ref(0, 19735));
-procedure  llvm.dbg.declare($p0: ref, $p1: ref, $p2: ref);
+const llvm.lifetime.start.p0i8: ref;
+axiom (llvm.lifetime.start.p0i8 == $sub.ref(0, 16594));
+procedure  llvm.lifetime.start.p0i8($i0: i64, $p1: ref);
 const pthread_create: ref;
-axiom (pthread_create == $sub.ref(0, 20767));
+axiom (pthread_create == $sub.ref(0, 17626));
 procedure  pthread_create($p0: ref, $p1: ref, $p2: ref, $p3: ref)
   returns ($r: i32);
+const llvm.lifetime.end.p0i8: ref;
+axiom (llvm.lifetime.end.p0i8 == $sub.ref(0, 18658));
+procedure  llvm.lifetime.end.p0i8($i0: i64, $p1: ref);
 const __SMACK_code: ref;
-axiom (__SMACK_code == $sub.ref(0, 21799));
+axiom (__SMACK_code == $sub.ref(0, 19690));
 procedure  __SMACK_code.ref($p0: ref);
 procedure  __SMACK_code.ref.i32($p0: ref, p.1: i32);
 const __VERIFIER_assume: ref;
-axiom (__VERIFIER_assume == $sub.ref(0, 22831));
+axiom (__VERIFIER_assume == $sub.ref(0, 20722));
 procedure  __VERIFIER_assume($i0: i32)
 {
 $bb0:
@@ -1995,7 +2188,7 @@ $bb0:
   return;
 }
 const __SMACK_dummy: ref;
-axiom (__SMACK_dummy == $sub.ref(0, 23863));
+axiom (__SMACK_dummy == $sub.ref(0, 21754));
 procedure  __SMACK_dummy($i0: i32)
 {
 $bb0:
@@ -2011,7 +2204,7 @@ $bb0:
   return;
 }
 const __SMACK_and32: ref;
-axiom (__SMACK_and32 == $sub.ref(0, 24895));
+axiom (__SMACK_and32 == $sub.ref(0, 22786));
 procedure  __SMACK_and32($i0: i32, $i1: i32)
   returns ($r: i32)
 {
@@ -9223,7 +9416,7 @@ $bb576:
   goto $bb570;
 }
 const __SMACK_and64: ref;
-axiom (__SMACK_and64 == $sub.ref(0, 25927));
+axiom (__SMACK_and64 == $sub.ref(0, 23818));
 procedure  __SMACK_and64($i0: i64, $i1: i64)
   returns ($r: i64)
 {
@@ -9256,7 +9449,7 @@ $bb0:
   return;
 }
 const __SMACK_and16: ref;
-axiom (__SMACK_and16 == $sub.ref(0, 26959));
+axiom (__SMACK_and16 == $sub.ref(0, 24850));
 procedure  __SMACK_and16($i0: i16, $i1: i16)
   returns ($r: i16)
 {
@@ -11916,7 +12109,7 @@ $bb144:
   goto $bb138;
 }
 const __SMACK_and8: ref;
-axiom (__SMACK_and8 == $sub.ref(0, 27991));
+axiom (__SMACK_and8 == $sub.ref(0, 25882));
 procedure  __SMACK_and8($i0: i8, $i1: i8)
   returns ($r: i8)
 {
@@ -13224,7 +13417,7 @@ $bb72:
   goto $bb66;
 }
 const __SMACK_or32: ref;
-axiom (__SMACK_or32 == $sub.ref(0, 29023));
+axiom (__SMACK_or32 == $sub.ref(0, 26914));
 procedure  __SMACK_or32($i0: i32, $i1: i32)
   returns ($r: i32)
 {
@@ -16340,7 +16533,7 @@ $bb192:
   goto $bb189;
 }
 const __SMACK_or64: ref;
-axiom (__SMACK_or64 == $sub.ref(0, 30055));
+axiom (__SMACK_or64 == $sub.ref(0, 27946));
 procedure  __SMACK_or64($i0: i64, $i1: i64)
   returns ($r: i64)
 {
@@ -16373,7 +16566,7 @@ $bb0:
   return;
 }
 const __SMACK_or16: ref;
-axiom (__SMACK_or16 == $sub.ref(0, 31087));
+axiom (__SMACK_or16 == $sub.ref(0, 28978));
 procedure  __SMACK_or16($i0: i16, $i1: i16)
   returns ($r: i16)
 {
@@ -16406,7 +16599,7 @@ $bb0:
   return;
 }
 const __SMACK_or8: ref;
-axiom (__SMACK_or8 == $sub.ref(0, 32119));
+axiom (__SMACK_or8 == $sub.ref(0, 30010));
 procedure  __SMACK_or8($i0: i8, $i1: i8)
   returns ($r: i8)
 {
@@ -16439,7 +16632,7 @@ $bb0:
   return;
 }
 const __SMACK_check_overflow: ref;
-axiom (__SMACK_check_overflow == $sub.ref(0, 33151));
+axiom (__SMACK_check_overflow == $sub.ref(0, 31042));
 procedure  __SMACK_check_overflow($i0: i32)
 {
 $bb0:
@@ -16458,7 +16651,7 @@ $bb0:
   return;
 }
 const __SMACK_loop_exit: ref;
-axiom (__SMACK_loop_exit == $sub.ref(0, 34183));
+axiom (__SMACK_loop_exit == $sub.ref(0, 32074));
 procedure  __SMACK_loop_exit()
 {
 $bb0:
@@ -16473,7 +16666,7 @@ $bb0:
   return;
 }
 const __SMACK_decls: ref;
-axiom (__SMACK_decls == $sub.ref(0, 35215));
+axiom (__SMACK_decls == $sub.ref(0, 33106));
 type $mop;
 procedure  boogie_si_record_mop(m: $mop);
 const $MOP: $mop;
@@ -16512,10 +16705,10 @@ modifies $CurrAddr;
 procedure  $free(p: ref);
 
 const __SMACK_top_decl: ref;
-axiom (__SMACK_top_decl == $sub.ref(0, 36247));
+axiom (__SMACK_top_decl == $sub.ref(0, 34138));
 procedure  __SMACK_top_decl.ref($p0: ref);
 const __SMACK_init_func_memory_model: ref;
-axiom (__SMACK_init_func_memory_model == $sub.ref(0, 37279));
+axiom (__SMACK_init_func_memory_model == $sub.ref(0, 35170));
 procedure  __SMACK_init_func_memory_model()
 {
 $bb0:
@@ -16530,10 +16723,16 @@ $bb0:
   return;
 }
 const __SMACK_static_init: ref;
-axiom (__SMACK_static_init == $sub.ref(0, 38311));
+axiom (__SMACK_static_init == $sub.ref(0, 36202));
 procedure  __SMACK_static_init()
 {
 $bb0:
+  $M.0 := $store.i32($M.0, array, 0);
+  $M.0 := $store.i32($M.0, $add.ref($add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref(0, 8)), $mul.ref(4, 1)), 0);
+  $M.0 := $store.i32($M.0, $add.ref($add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref(1, 8)), $mul.ref(0, 1)), 0);
+  $M.0 := $store.i32($M.0, $add.ref($add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref(1, 8)), $mul.ref(4, 1)), 0);
+  $M.0 := $store.i32($M.0, $add.ref($add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref(2, 8)), $mul.ref(0, 1)), 0);
+  $M.0 := $store.i32($M.0, $add.ref($add.ref($add.ref(array, $mul.ref(0, 24)), $mul.ref(2, 8)), $mul.ref(4, 1)), 0);
   $exn := false;
   return;
 }

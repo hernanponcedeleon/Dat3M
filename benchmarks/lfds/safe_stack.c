@@ -8,13 +8,13 @@ void *thread3(void *arg)
 
     int elem;
     while (elem = pop() < 0) {}
-    atomic_store_explicit(&array[elem].value, idx, memory_order_relaxed);
-    assert (atomic_load_explicit(&array[elem].value, memory_order_relaxed) == idx);
+    array[elem].value = idx;
+    assert (array[elem].value == idx);
     push(elem);
 
     while (pop() < 0) {}
-    atomic_store_explicit(&array[elem].value, idx, memory_order_relaxed);
-    assert (atomic_load_explicit(&array[elem].value, memory_order_relaxed) == idx);
+    array[elem].value = idx;
+    assert (array[elem].value == idx);
     return NULL;
 }
 
