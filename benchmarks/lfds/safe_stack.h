@@ -5,7 +5,7 @@
 #endif
 
 typedef struct {
-    volatile value;
+    volatile int value;
     atomic_int next;
 } SafeStackItem;
 
@@ -15,7 +15,7 @@ SafeStackItem array[SIZE];
 
 void init() {
     
-    // Creates stack of fixed sizeS
+    // Creates stack of fixed size
     atomic_init(&count, SIZE);
     atomic_init(&head, 0);
 
