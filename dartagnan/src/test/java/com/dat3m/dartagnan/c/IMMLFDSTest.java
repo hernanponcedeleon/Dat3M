@@ -52,15 +52,15 @@ public class IMMLFDSTest extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-            {"dglm-3", IMM, UNKNOWN},
-            {"dglm-3-CAS-relaxed", IMM, FAIL},
-            {"ms-3", IMM, UNKNOWN},
-            {"ms-3-CAS-relaxed", IMM, FAIL},
-            {"treiber-3", IMM, UNKNOWN},
-            {"treiber-3-CAS-relaxed", IMM, FAIL},
-            {"chase-lev-5", IMM, PASS},
+            {"dglm", IMM, UNKNOWN},
+            {"dglm-CAS-relaxed", IMM, FAIL},
+            {"ms", IMM, UNKNOWN},
+            {"ms-CAS-relaxed", IMM, FAIL},
+            {"treiber", IMM, UNKNOWN},
+            {"treiber-CAS-relaxed", IMM, FAIL},
+            {"chase-lev", IMM, PASS},
             // These ones have an extra thief that violate the assertion
-            {"chase-lev-6", IMM, FAIL},
+            {"chase-lev-fail", IMM, FAIL},
         });
     }
 

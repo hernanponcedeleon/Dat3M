@@ -1,0 +1,33 @@
+(* CAT for IMM (as implemented by GenMC) *)
+
+(*
+ * GenMC does not follow the published IMM model to the letter
+ * https://github.com/MPI-SWS/genmc/issues/44
+ * Viktor confirmed this is a faithfull model following GenMC's implementation
+ *)
+
+(* coherence *)
+let rs = [W];po-loc;[W] | [W];(po-loc?;rf;rmw)*                                                                                     (* release sequence *)
+(* GenMC uses the same sw definition as RC11 *)
+let sw = [(REL | ACQ_REL | SC)]; ([F]; po)?; rs; rf; [R & (RLX | REL | ACQ | ACQ_REL | SC)]; (po; [F])?; [(ACQ | ACQ_REL | SC)]     (* synchronizes with *)
+let hb = (po | sw)+                                                                                                                 (* happens-before *)
+let eco = rf | co;(rf?) | fr;(rf?)                                                                                                  (* extended coherence order *)
+
+irreflexive hb;(eco?)
+(* alternative *)
+(* acyclic ((hb & loc) | rf | co | fr) *)
+
+(* atomicity *)
+empty rmw & (fre;coe)
+
+(* global ordering against OOTA*)
+
+let bob = po;[W & REL] | [R & ACQ];po | po;[F] | [F];po | [W & REL];po-loc;[W]                  (* barrier order *)
+let deps = data | ctrl | addr;(po?) | casdep | [R & RMW];po                                     (* syntactic dependencies *)
+let ppo = [R];(deps | rfi)+;[W]                                                                 (* preserved program order *)
+let detour = (coe;rfe) & po                                                                     (* detour *)
+let psc = [F & SC];hb;eco;hb;[F & SC]                                                           (* partial SC fence order *)
+
+(* no OOTA *)
+let ar = rfe | bob | ppo | detour | psc | [W & STRONG];po;[W]
+acyclic ar

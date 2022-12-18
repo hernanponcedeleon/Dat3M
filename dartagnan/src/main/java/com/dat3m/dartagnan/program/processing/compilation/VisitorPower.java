@@ -12,10 +12,8 @@ import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.lang.llvm.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 
 import java.util.List;
 
@@ -66,7 +64,7 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+		Local load = newLocal(resultRegister, e.getExpr());
         load.addFilters(C11.PTHREAD);
         Label label = newLabel("Jump_" + e.getOId());
         CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
@@ -96,6 +94,238 @@ public class VisitorPower extends VisitorBase {
 				super.visitStart(e),
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
+	}
+
+	// =============================================================================================
+    // =========================================== LLVM ============================================
+    // =============================================================================================
+
+	@Override
+	public List<Event> visitLlvmLoad(LlvmLoad e) {
+		Register resultRegister = e.getResultRegister();
+
+		Fence optionalBarrierBefore = null;
+		Load load = newLoad(resultRegister, e.getAddress(), "");
+		Label optionalLabel = null;
+		CondJump optionalFakeCtrlDep = null;
+		Fence optionalBarrierAfter = null;
+
+		switch (e.getMo()) {
+			case C11.MO_SC:
+				if (cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+					optionalLabel = newLabel("FakeDep");
+					optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
+					optionalBarrierAfter = Power.newISyncBarrier();
+				} else {
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_ACQUIRE:
+				optionalLabel = newLabel("FakeDep");
+				optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+			case C11.MO_RELAXED:
+				if (useRC11Scheme) {
+					optionalLabel = newLabel("FakeDep");
+					optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
+				}
+				break;
+		}
+
+		return eventSequence(
+				optionalBarrierBefore,
+				load,
+				optionalFakeCtrlDep,
+				optionalLabel,
+				optionalBarrierAfter);
+	}
+
+	@Override
+	public List<Event> visitLlvmStore(LlvmStore e) {
+		Fence optionalBarrierBefore = null;
+		Store store = newStore(e.getAddress(), e.getMemValue(), "");
+		Fence optionalBarrierAfter = null;
+
+		switch (e.getMo()) {
+			case C11.MO_SC:
+				if (cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+				} else {
+					optionalBarrierBefore = Power.newLwSyncBarrier();
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				break;
+		}
+
+		return eventSequence(
+				optionalBarrierBefore,
+				store,
+				optionalBarrierAfter);
+	}
+
+	@Override
+	public List<Event> visitLlvmXchg(LlvmXchg e) {
+		Register resultRegister = e.getResultRegister();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+		// Power does not have mo tags, thus we use null
+		Load load = newRMWLoadExclusive(resultRegister, address, "");
+		Store store = Power.newRMWStoreConditional(address, e.getMemValue(), "",  true);
+		Label label = newLabel("FakeDep");
+		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+		Fence optionalBarrierBefore = null;
+		Fence optionalBarrierAfter = null;
+
+		switch (mo) {
+			case C11.MO_SC:
+				if (cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+					optionalBarrierAfter = Power.newISyncBarrier();
+				} else {
+					optionalBarrierBefore = Power.newLwSyncBarrier();
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_ACQUIRE:
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+			case C11.MO_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				break;
+			case C11.MO_ACQUIRE_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+		}
+
+		return eventSequence(
+				optionalBarrierBefore,
+				load,
+				fakeCtrlDep,
+				label,
+				store,
+				optionalBarrierAfter);
+	}
+
+	@Override
+	public List<Event> visitLlvmRMW(LlvmRMW e) {
+		Register resultRegister = e.getResultRegister();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+		Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+		Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, e.getOp(), (IExpr) e.getMemValue()));
+
+		// Power does not have mo tags, thus we use null
+		Load load = newRMWLoadExclusive(resultRegister, address, "");
+		Store store = Power.newRMWStoreConditional(address, dummyReg, "", true);
+		Label label = newLabel("FakeDep");
+		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+		Fence optionalBarrierBefore = null;
+		// Academics papers (e.g. https://plv.mpi-sws.org/imm/paper.pdf) say an isync
+		// barrier is enough
+		// However, power compilers in godbolt.org use a lwsync.
+		// We stick to the literature to potentially find bugs in what researchers
+		// claim.
+		Fence optionalBarrierAfter = null;
+
+		switch (mo) {
+			case C11.MO_SC:
+				if (cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+					optionalBarrierAfter = Power.newISyncBarrier();
+				} else {
+					optionalBarrierBefore = Power.newLwSyncBarrier();
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_ACQUIRE:
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+			case C11.MO_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				break;
+			case C11.MO_ACQUIRE_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+		}
+
+		return eventSequence(
+				optionalBarrierBefore,
+				load,
+				fakeCtrlDep,
+				label,
+				localOp,
+				store,
+				optionalBarrierAfter);
+	}
+
+ 	@Override
+	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
+		Register oldValueRegister = e.getStructRegister(0);
+		Register resultRegister = e.getStructRegister(1);
+
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+		Local casCmpResult = newLocal(resultRegister, new Atom(oldValueRegister, EQ, e.getExpectedValue()));
+		Label casEnd = newLabel("CAS_end");
+		CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
+
+		Load load = newRMWLoadExclusive(oldValueRegister, address, "");
+		Store store = Power.newRMWStoreConditional(address, e.getMemValue(), "", true);
+
+		Fence optionalBarrierBefore = null;
+		Fence optionalBarrierAfter = null;
+
+		switch (mo) {
+			case C11.MO_SC:
+				if (cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+					optionalBarrierAfter = Power.newISyncBarrier();
+				} else {
+					optionalBarrierBefore = Power.newLwSyncBarrier();
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_ACQUIRE:
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+			case C11.MO_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				break;
+			case C11.MO_ACQUIRE_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+		}
+
+		return eventSequence(
+				// Indentation shows the branching structure
+				optionalBarrierBefore,
+				load,
+				casCmpResult,
+				branchOnCasCmpResult,
+				store,
+				casEnd,
+				optionalBarrierAfter);
+	}
+
+	@Override
+	public List<Event> visitLlvmFence(LlvmFence e) {
+		Fence fence = e.getMo().equals(Tag.C11.MO_SC) ? Power.newSyncBarrier() : Power.newLwSyncBarrier();
+
+		return eventSequence(
+				fence);
 	}
 
     // =============================================================================================
@@ -365,59 +595,6 @@ public class VisitorPower extends VisitorBase {
         );
 	}
 
-	@Override
-	public List<Event> visitDat3mCAS(Dat3mCAS e) {
-		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		ExprInterface expectedValue = e.getExpectedValue();
-
-        Register regValue = e.getThread().newRegister(resultRegister.getPrecision());
-        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
-        Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
-        Load load = newRMWLoadExclusive(regValue, address, "");
-        Store store = Power.newRMWStoreConditional(address, value, "", true);
-
-        Fence optionalBarrierBefore = null;
-        Fence optionalBarrierAfter = null;
-        
-        switch(mo) {
-			case C11.MO_SC:
-				if(cToPowerScheme.equals(LEADING_SYNC)) {
-					optionalBarrierBefore = Power.newSyncBarrier();
-					optionalBarrierAfter = Power.newISyncBarrier();
-				} else {
-					optionalBarrierBefore = Power.newLwSyncBarrier();
-					optionalBarrierAfter = Power.newSyncBarrier();
-				}
-				break;
-			case C11.MO_ACQUIRE:
-				optionalBarrierAfter = Power.newISyncBarrier();
-				break;
-			case C11.MO_RELEASE:
-				optionalBarrierBefore = Power.newLwSyncBarrier();
-				break;
-			case C11.MO_ACQUIRE_RELEASE:
-				optionalBarrierBefore = Power.newLwSyncBarrier();
-				optionalBarrierAfter = Power.newISyncBarrier();
-				break;
-		}
-        
-        // --- Add success events ---
-        return eventSequence(
-                // Indentation shows the branching structure
-        		optionalBarrierBefore,
-                load,
-                casCmpResult,
-                branchOnCasCmpResult,
-                    store,
-                optionalBarrierAfter,
-                casEnd
-        );
-	}
-	
     // =============================================================================================
     // =========================================== LKMM ============================================
     // =============================================================================================

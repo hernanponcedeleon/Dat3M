@@ -41,8 +41,6 @@ import static com.dat3m.dartagnan.parsers.program.boogie.LlvmUnary.LLVMUNARY;
 import static com.dat3m.dartagnan.parsers.program.boogie.LlvmUnary.llvmUnary;
 import static com.dat3m.dartagnan.parsers.program.boogie.SmackPredicates.SMACKPREDICATES;
 import static com.dat3m.dartagnan.parsers.program.boogie.SmackPredicates.smackPredicate;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicProcedures.ATOMICPROCEDURES;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicProcedures.handleAtomicFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.DummyProcedures.DUMMYPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProcedures.PTHREADPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProcedures.handlePthreadsFunctions;
@@ -50,6 +48,8 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.handleStdFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.SVCOMPPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LkmmProcedures.*;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LlvmProcedures.LLVMPROCEDURES;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LlvmProcedures.handleLlvmFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.handleSvcompFunction;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> {
@@ -84,6 +84,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	
 	private final Map<String, ExprInterface> constantsMap = new HashMap<>();
 	private final Map<String, Integer> constantsTypeMap = new HashMap<>();
+
+	protected final Set<IExpr> allocations = new HashSet<>();
 
 	protected Map<Integer, List<ExprInterface>> threadCallingValues = new HashMap<>();
 	
@@ -122,7 +124,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     		throw new ParsingException("Program shall have a main procedure");
     	}
 
-    	Register next = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + "ptrMain", ARCH_PRECISION);
+    	IExpr next = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + "ptrMain", ARCH_PRECISION);
     	pool.add(next, "main", -1);
     	while(pool.canCreate()) {
     		next = pool.next();
@@ -174,7 +176,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			if(ctx.getText().contains(":treadLocal")) {
 				threadLocalVariables.add(name);
 			}
-			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name) && ATOMICPROCEDURES.stream().noneMatch(name::startsWith)) {
+			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name)) {
 				int size = ctx.getText().contains(":allocSize")
 					? Integer.parseInt(ctx.getText().split(":allocSize")[1].split("}")[0])
 					: 1;
@@ -240,10 +242,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             programBuilder.initThread(name, threadCount);
             if(threadCount != 1) {
                 // Used to allow execution of threads after they have been created (pthread_create)
-                String cc = String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount)));
-				MemoryObject object = programBuilder.getOrNewObject(cc);
+				IExpr pointer = pool.getPtrFromInt(threadCount);
                 Register reg = programBuilder.getOrCreateRegister(threadCount, null, ARCH_PRECISION);
-                programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, object, pool.getMatcher(cc)));
+                programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
             }
     	}
 
@@ -287,8 +288,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     	if(create) {
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
-                MemoryObject object = programBuilder.getOrNewObject(String.format("%s(%s)_active", pool.getPtrFromInt(threadCount), pool.getCreatorFromPtr(pool.getPtrFromInt(threadCount))));
-                programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(object));
+				IExpr pointer = pool.getPtrFromInt(threadCount);
+                programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(pointer));
          	}
     	}
     }
@@ -340,16 +341,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			handleSvcompFunction(this, ctx);
 			return null;
 		}
-		if(ATOMICPROCEDURES.stream().anyMatch(name::startsWith)) {
-			handleAtomicFunction(this, ctx);
-			return null;
-		}
 		if(STDPROCEDURES.stream().anyMatch(name::startsWith)) {
 			handleStdFunction(this, ctx);
 			return null;
 		}
 		if(LKMMPROCEDURES.stream().anyMatch(name::equals)) {
 			handleLkmmFunction(this, ctx);
+			return null;
+		}
+		if(LLVMPROCEDURES.stream().anyMatch(name::equals)) {
+			handleLlvmFunction(this, ctx);
 			return null;
 		}
 		if(name.contains("__VERIFIER_atomic_")) {
@@ -422,21 +423,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
 	        	if(ctx.getText().contains("$load.") || value instanceof MemoryObject) {
-	        		try {
-		    			// This names are global so we don't use currentScope.getID(), but per thread.
-		    			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText(), ARCH_PRECISION);
-		    			String tmp = ctx.def_body().exprs().expr(0).getText();
-		    			tmp = tmp.substring(tmp.indexOf(",") + 1, tmp.indexOf(")"));
-		    			// This names are global so we don't use currentScope.getID(), but per thread.
-		    			Register ptr = programBuilder.getOrCreateRegister(threadCount, tmp, ARCH_PRECISION);
-	        			pool.addRegPtr(reg, ptr);	        				        			
-	        		} catch (Exception e) {
-	        			// Nothing to be done
-	        		}
-	        		// These events are eventually compiled and we need to compare its mo, thus it cannot be null
-	        		programBuilder.addChild(threadCount, EventFactory.newLoad(register, (IExpr)value, ""))
-							.setCFileInformation(currentLine, sourceCodeFile);
-		            continue;
+					String mo = allocations.contains(value) ? Tag.C11.MO_ACQUIRE : "";
+					String filter = allocations.contains(value) ? Tag.C11.ATOMIC : Tag.C11.NONATOMIC; 
+		        	// These loads corresponding to pthread_joins and thus need acquire semantics
+		        	programBuilder.addChild(threadCount, EventFactory.newLoad(register, (IExpr)value, mo))
+							.setCFileInformation(currentLine, sourceCodeFile)
+							.addFilters(filter);
+		        	continue;
 	        	}
 	        	value = value.visit(exprSimplifier);
 				programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))
@@ -485,6 +478,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 				pairingLabel = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 			} else {
 				pairingLabel = pairLabels.get(currentLabel);
+			}
+			// Smack converts any unreachable instruction into an "assume(false)".
+			// 		https://github.com/smackers/smack/blob/main/lib/smack/SmackInstGenerator.cpp#L329-L333
+			// There a mismatch between this and our Assume event semantics, thus we cannot use Assume. 
+			// pairingLabel is guaranteed to be "END_OF_T"
+			if(ctx.proposition().expr().getText().equals("false")) {
+				programBuilder.addChild(threadCount, EventFactory.newGoto(pairingLabel));
 			}
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
 			if(c != null) {
@@ -647,6 +647,17 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		Function function = functions.get(name);
 		if(function == null) {
 			throw new ParsingException("Function " + name + " is not defined");
+		}
+		if(name.startsWith("$extractvalue")) {
+			String structName = ctx.expr(0).getText();
+			String idx = ctx.expr(1).getText();
+			Register reg = programBuilder.getRegister(threadCount, String.format("%s:%s(%s)", currentScope.getID(), structName, idx));
+			// It is the responsibility of each LLVM istruction creating a structure to create such registers,
+			// thus we use getRegister and fail if the register is not there. 
+			if(reg == null) {
+				throw new ParsingException(String.format("Structure %s at index %s has not been initialized", structName, idx));
+			}
+			return reg;
 		}
 		if(name.contains("$load.")) {
 			return ctx.expr(1).accept(this);

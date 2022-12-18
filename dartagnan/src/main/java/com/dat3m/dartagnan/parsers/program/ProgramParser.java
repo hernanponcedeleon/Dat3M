@@ -8,6 +8,7 @@ import org.antlr.v4.runtime.CharStreams;
 
 import java.io.*;
 
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.applyLlvmPasses;
 import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
 import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithSmack;
 
@@ -21,12 +22,14 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_C           = "C";
 
     public Program parse(File file) throws Exception {
-    	if(file.getPath().endsWith("c")) {
-            compileWithClang(file, "");
-            compileWithSmack(file, "");
-            String name = file.getName().substring(0, file.getName().lastIndexOf('.'));
-            return new ProgramParser().parse(new File(System.getenv("DAT3M_OUTPUT") + "/" + name + ".bpl"));    		
-    	}
+        if(needsSmack(file)) {
+            if(needsClang(file)) {
+                file = compileWithClang(file, "");
+            }
+            file = applyLlvmPasses(file);
+            file = compileWithSmack(file, "");
+            return new ProgramParser().parse(file);    		
+        }
 
         Program program;
         try (FileInputStream stream = new FileInputStream(file)) {
@@ -38,27 +41,40 @@ public class ProgramParser {
         return program;
     }
 
+    private boolean needsClang(File f) {
+        return f.getPath().endsWith(".c") || f.getPath().endsWith(".i");
+    }
+
+    private boolean needsSmack(File f) {
+        return needsClang(f) || f.getPath().endsWith(".ll");
+    }
+
     public Program parse(String raw, String path, String format, String cflags) throws Exception {
         switch (format) {
         	case "c":
         	case "i":
-				File CFile = path.equals("") ?
+        	case "ll":
+				File parsedFile = path.isEmpty() ?
 						// This is for the case where the user fully typed the program instead of loading it
 						File.createTempFile("dat3m", ".c") :
 						// This is for the case where the user loaded the program 						
 						new File(path, "dat3m.c");
-				CFile.deleteOnExit();
-        		String name = CFile.getName().substring(0, CFile.getName().lastIndexOf('.'));
-                try (FileWriter writer = new FileWriter(CFile)) {
+                try (FileWriter writer = new FileWriter(parsedFile)) {
                     writer.write(raw);
                 }
-                compileWithClang(CFile, cflags);
-	            compileWithSmack(CFile, cflags);
-	            File BplFile = new File(System.getenv("DAT3M_OUTPUT") + "/" + name + ".bpl");
-	            BplFile.deleteOnExit();
-	            Program p = new ProgramParser().parse(BplFile);
-	            CFile.delete();
-	            BplFile.delete();
+                File compiledFile = null;
+                if(needsClang(parsedFile)) {
+                    compiledFile = compileWithClang(parsedFile, cflags);
+                }
+                File optimisedFile = applyLlvmPasses(compiledFile != null ? compiledFile : parsedFile);
+	            File bplFile = compileWithSmack(optimisedFile, cflags);
+	            Program p = new ProgramParser().parse(bplFile);
+                parsedFile.delete();
+                if(compiledFile != null) {
+                    compiledFile.delete();
+                }
+                optimisedFile.delete();
+                bplFile.delete();
 	            return p;
             case "bpl":
                 return new ParserBoogie().parse(CharStreams.fromString(raw));

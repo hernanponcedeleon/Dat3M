@@ -10,6 +10,13 @@ import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmAbstractRMW;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmFence;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmRMW;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmXchg;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
@@ -40,7 +47,7 @@ public interface EventVisitor<T> {
 	default T visitCreate(Create e) { return visitStore(e); }
 	default T visitEnd(End e) { return visitStore(e); }
 	default T visitInitLock(InitLock e) { return visitStore(e); }
-	default T visitJoin(Join e) { return visitLoad(e); }
+	default T visitJoin(Join e) { return visitLocal(e); }
 	default T visitLock(Lock e) { return visitMemEvent(e); }
 	default T visitStart(Start e) { return visitLoad(e); }
 	default T visitUnlock(Unlock e) { return visitMemEvent(e); }
@@ -92,7 +99,15 @@ public interface EventVisitor<T> {
 	default T visitAtomicStore(AtomicStore e) { return visitMemEvent(e); }
 	default T visitAtomicThreadFence(AtomicThreadFence e) { return visitFence(e); }
 	default T visitAtomicXchg(AtomicXchg e) { return visitAtomicAbstract(e); }
-	default T visitDat3mCAS(Dat3mCAS e) { return visitAtomicAbstract(e); }
+
+	// LLVM Events
+	default T visitLlvmAbstract(LlvmAbstractRMW e) { return visitMemEvent(e); }
+	default T visitLlvmCmpXchg(LlvmCmpXchg e) { return visitLlvmAbstract(e); }
+	default T visitLlvmRMW(LlvmRMW e) { return visitLlvmAbstract(e); }
+	default T visitLlvmLoad(LlvmLoad e) { return visitMemEvent(e); }
+	default T visitLlvmStore(LlvmStore e) { return visitMemEvent(e); }
+	default T visitLlvmXchg(LlvmXchg e) { return visitLlvmAbstract(e); }
+	default T visitLlvmFence(LlvmFence e) { return visitFence(e); }
 
 	// SVCOMP Events
 	default T visitBeginAtomic(BeginAtomic e) { return visitEvent(e); }

@@ -33,12 +33,17 @@ public class ProcessingManager implements ProgramProcessor {
 			secure=true)
 		private boolean atomicBlocksAsLocks = false;
 
-	@Option(name= CONSTANT_PROPAGATION,
-			description="Performs constant propagation.",
-			secure=true)
-		private boolean constantPropagation = true;
+    @Option(name= CONSTANT_PROPAGATION,
+        description="Performs constant propagation.",
+        secure=true)
+        private boolean constantPropagation = false;
 
-    // ======================================================================
+	@Option(name= DEAD_ASSIGNEMENT_ELIMINATION,
+			description="Performs dead code elimination.",
+			secure=true)
+		private boolean dce = false;
+
+// ======================================================================
 
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
@@ -52,7 +57,7 @@ public class ProcessingManager implements ProgramProcessor {
         		FindSpinLoops.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
-                DeadAssignmentElimination.fromConfig(config),
+                dce ? DeadAssignmentElimination.fromConfig(config) : null,
                 RemoveDeadCondJumps.fromConfig(config),
                 AtomicityPropagation.fromConfig(config),
                 Compilation.fromConfig(config),

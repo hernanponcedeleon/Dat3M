@@ -23,8 +23,8 @@ public class AtomicFetchOp extends AtomicAbstract {
 
     @Override
     public String toString() {
-    	String tag = !mo.isEmpty() ? "_explicit" : "";
-        return resultRegister + " = atomic_fetch_" + op.toLinuxName() + tag + "(*" + address + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")\t### C11";
+        return resultRegister + " = atomic_fetch_" + op.toLinuxName() + 
+            "(*" + address + ", " + value + ", " + mo + ")\t### C11";
     }
 
     public IOpBin getOp() {

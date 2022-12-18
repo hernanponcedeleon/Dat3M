@@ -130,29 +130,6 @@ public final class Tag {
         public static final String MO_ACQUIRE_RELEASE   = "ACQ_REL";
         public static final String MO_SC                = "SC";
 
-        public static String extractStoreMo(String cMo) {
-        	switch(cMo) {
-        		case C11.MO_SC:
-        		case C11.MO_ACQUIRE_RELEASE:
-        			return C11.MO_RELEASE;
-        		case C11.MO_ACQUIRE:
-        			return C11.MO_RELAXED;
-        		default:
-        			return cMo;
-        	}
-        }
-
-        public static String extractLoadMo(String cMo) {
-        	switch(cMo) {
-    			case C11.MO_SC:
-    			case C11.MO_ACQUIRE_RELEASE:
-    				return C11.MO_ACQUIRE;
-    			case C11.MO_RELEASE:
-    				return C11.MO_RELAXED;
-    			default:
-    				return cMo;
-        	}
-        }
         public static String intToMo(int i) {
             switch(i) {
                 case 0: return MO_RELAXED;
@@ -259,5 +236,29 @@ public final class Tag {
         private IMM() {}
 
         public static final String CASDEPORIGIN = "CASDEPORIGIN";
+
+        public static String extractStoreMo(String cMo) {
+        	switch(cMo) {
+        		case C11.MO_SC:
+        		case C11.MO_ACQUIRE_RELEASE:
+        			return C11.MO_RELEASE;
+        		case C11.MO_ACQUIRE:
+        			return C11.MO_RELAXED;
+        		default:
+        			return cMo;
+        	}
+        }
+
+        public static String extractLoadMo(String cMo) {
+        	switch(cMo) {
+    			case C11.MO_SC:
+    			case C11.MO_ACQUIRE_RELEASE:
+    				return C11.MO_ACQUIRE;
+    			case C11.MO_RELEASE:
+    				return C11.MO_RELAXED;
+    			default:
+    				return cMo;
+        	}
+        }
     }
 }

@@ -29,7 +29,7 @@ public class PrinterTest {
 
 	@Test()
 	public void PrintBpl2() throws Exception {
-		Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "locks/linuxrwlock-3.bpl"));
+		Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "locks/linuxrwlock.bpl"));
 		assertNotNull(new Printer().print(p));
     	LoopUnrolling.newInstance().run(p);
     	Compilation.newInstance().run(p);

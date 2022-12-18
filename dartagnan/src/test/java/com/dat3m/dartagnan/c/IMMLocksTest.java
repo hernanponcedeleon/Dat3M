@@ -26,10 +26,6 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class IMMLocksTest extends AbstractCTest {
 	
-	// We use this for a fast CI.
-	// For benchmarking we use CLocksTest{TSO, ARM, Power}
-	// which use higher bounds and more threads
-	
     public IMMLocksTest(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
@@ -52,31 +48,31 @@ public class IMMLocksTest extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
     	return Arrays.asList(new Object[][]{
-            {"ttas-5", IMM, UNKNOWN},
-            {"ttas-5-acq2rx", IMM, FAIL},
-            {"ttas-5-rel2rx", IMM, FAIL},
-            {"ticketlock-3", IMM, PASS},
-            {"ticketlock-3-acq2rx", IMM, FAIL},
-            {"ticketlock-3-rel2rx", IMM, FAIL},
-            {"mutex-3", IMM, UNKNOWN},
-            {"mutex-3-acq2rx_futex", IMM, UNKNOWN},
-            {"mutex-3-acq2rx_lock", IMM, FAIL},
-            {"mutex-3-rel2rx_futex", IMM, UNKNOWN},
-            {"mutex-3-rel2rx_unlock", IMM, FAIL},
-            {"spinlock-5", IMM, UNKNOWN},
-            {"spinlock-5-acq2rx", IMM, FAIL},
-            {"spinlock-5-rel2rx", IMM, FAIL},
-            {"linuxrwlock-3", IMM, UNKNOWN},
-            {"linuxrwlock-3-acq2rx", IMM, FAIL},
-            {"linuxrwlock-3-rel2rx", IMM, FAIL},
-            {"mutex_musl-3", IMM, UNKNOWN},
-            {"mutex_musl-3-acq2rx_futex", IMM, UNKNOWN},
-            {"mutex_musl-3-acq2rx_lock", IMM, FAIL},
-            {"mutex_musl-3-rel2rx_futex", IMM, UNKNOWN},
-            {"mutex_musl-3-rel2rx_unlock", IMM, FAIL},
+            {"ttas", IMM, UNKNOWN},
+            {"ttas-acq2rx", IMM, FAIL},
+            {"ttas-rel2rx", IMM, FAIL},
+            {"ticketlock", IMM, PASS},
+            {"ticketlock-acq2rx", IMM, FAIL},
+            {"ticketlock-rel2rx", IMM, FAIL},
+            {"mutex", IMM, UNKNOWN},
+            {"mutex-acq2rx_futex", IMM, UNKNOWN},
+            {"mutex-acq2rx_lock", IMM, FAIL},
+            {"mutex-rel2rx_futex", IMM, UNKNOWN},
+            {"mutex-rel2rx_unlock", IMM, FAIL},
+            {"spinlock", IMM, UNKNOWN},
+            {"spinlock-acq2rx", IMM, FAIL},
+            {"spinlock-rel2rx", IMM, FAIL},
+            {"linuxrwlock", IMM, UNKNOWN},
+            {"linuxrwlock-acq2rx", IMM, FAIL},
+            {"linuxrwlock-rel2rx", IMM, FAIL},
+            {"mutex_musl", IMM, UNKNOWN},
+            {"mutex_musl-acq2rx_futex", IMM, UNKNOWN},
+            {"mutex_musl-acq2rx_lock", IMM, FAIL},
+            {"mutex_musl-rel2rx_futex", IMM, UNKNOWN},
+            {"mutex_musl-rel2rx_unlock", IMM, FAIL},
             // The actual result is PASS, but CAAT returns UNKNOWN
             // because we do not refine for the bound check 
-            {"seqlock-6", IMM, UNKNOWN},
+            {"seqlock", IMM, UNKNOWN},
 		});
     }
 

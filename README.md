@@ -13,6 +13,7 @@ Requirements
 * [Java](https://openjdk.java.net/projects/jdk/16/) 8 or above
 * [Smack](https://github.com/smackers/smack) 2.8.0 or above (only to verify C programs)
 * [Clang](https://clang.llvm.org) the concrete version depends on Smack (only to verify C programs)
+* [Atomic-replace](https://github.com/hernanponcedeleon/Dat3M/tree/master/llvm-passes/atomic-replace) library
 * [Graphviz](https://graphviz.org) (only if option `--witness.graphviz=true` is used)
 
 Installation
@@ -44,6 +45,7 @@ At least the following compiler flag needs to be set, further can be added
 ```
 export CFLAGS="-I$DAT3M_HOME/include"
 export SMACK_FLAGS="-q -t --no-memory-splitting"
+export ATOMIC_REPLACE_OPTS="-mem2reg -indvars -loop-unroll -simplifycfg -gvn"
 ```
 
 If you are verifying C code, be sure both `clang` and `smack` are in your `PATH`.

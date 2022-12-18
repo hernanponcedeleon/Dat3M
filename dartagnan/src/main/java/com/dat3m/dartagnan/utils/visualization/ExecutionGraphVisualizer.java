@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -123,17 +124,14 @@ public class ExecutionGraphVisualizer {
 
     private ExecutionGraphVisualizer addAllThreadPos(ExecutionModel model) {
         for (Thread thread : model.getThreads()) {
-            // We skip the first two threads (empty thread and main) for now
-            if (thread.getId() <= 1) {
-                continue;
-            }
             addThreadPo(thread, model);
         }
         return this;
     }
 
     private ExecutionGraphVisualizer addThreadPo(Thread thread, ExecutionModel model) {
-        List<EventData> threadEvents = model.getThreadEventsMap().get(thread);
+        List<EventData> threadEvents = model.getThreadEventsMap().get(thread)
+            .stream().filter(e -> e.isMemoryEvent()).collect(Collectors.toList());
         if (threadEvents.size() <= 1) {
             return this;
         }

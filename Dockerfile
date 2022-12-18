@@ -13,6 +13,8 @@ RUN apt-get update && \
     apt-get install -y wget && \
     apt-get install -y maven && \
     apt-get install -y cmake && \
+    apt-get install -y autoconf && \
+    apt-get install -y automake && \
     apt-get install -y graphviz
 
 # Install SMACK
@@ -28,6 +30,12 @@ RUN cd home && \
     chmod 755 Dartagnan-SVCOMP.sh && \
     mvn clean install -DskipTests
 
+# Build atomic-replace library
+RUN cd Dat3M/llvm-passes/atomic-replace/      \
+    && mkdir build && cd build                \
+    && cmake ..                               \
+    && make all install
+
 # symlink for clang
 RUN ln -s clang-12 /usr/bin/clang
 
@@ -35,3 +43,4 @@ ENV DAT3M_HOME=/home/Dat3M
 ENV DAT3M_OUTPUT=$DAT3M_HOME/output
 ENV CFLAGS="-I$DAT3M_HOME/include"
 ENV SMACK_FLAGS="-q -t --no-memory-splitting"
+ENV ATOMIC_REPLACE_OPTS="-mem2reg -indvars -loop-unroll -simplifycfg -gvn"

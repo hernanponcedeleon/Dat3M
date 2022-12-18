@@ -15,10 +15,8 @@ import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.lang.llvm.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 
 import java.util.List;
 
@@ -63,7 +61,7 @@ class VisitorArm8 extends VisitorBase {
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+	Local load = newLocal(resultRegister, e.getExpr());
         load.addFilters(C11.PTHREAD);
 
         return eventSequence(
@@ -95,6 +93,115 @@ class VisitorArm8 extends VisitorBase {
                 store,
                 newExecutionStatus(e.getResultRegister(), store)
         );
+	}
+
+
+    // =============================================================================================
+    // =========================================== LLVM ============================================
+    // =============================================================================================
+
+        @Override
+	public List<Event> visitLlvmLoad(LlvmLoad e) {
+                Load load = newLoad(e.getResultRegister(), e.getAddress(), ARMv8.extractLoadMoFromCMo(e.getMo()));
+        
+		return eventSequence(
+        		load
+                );
+	}
+
+        @Override
+	public List<Event> visitLlvmStore(LlvmStore e) {
+                Store store = newStore(e.getAddress(), e.getMemValue(), ARMv8.extractStoreMoFromCMo(e.getMo()));
+        
+		return eventSequence(
+        		store
+                );
+	}
+
+        @Override
+	public List<Event> visitLlvmXchg(LlvmXchg e) {
+		Register resultRegister = e.getResultRegister();
+		ExprInterface value = e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+                Load load = newRMWLoadExclusive(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
+                Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), true);
+                Label label = newLabel("FakeDep");
+                Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+                return eventSequence(
+                        load,
+                        fakeCtrlDep,
+                        label,
+                        store
+                );
+	}
+
+        @Override
+	public List<Event> visitLlvmRMW(LlvmRMW e) {
+		Register resultRegister = e.getResultRegister();
+		IOpBin op = e.getOp();
+		IExpr value = (IExpr) e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		
+                Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+                Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+
+                Load load = newRMWLoadExclusive(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
+                Store store = newRMWStoreExclusive(address, dummyReg, ARMv8.extractStoreMoFromCMo(mo), true);
+                Label label = newLabel("FakeDep");
+                Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+                return eventSequence(
+                        load,
+                        fakeCtrlDep,
+                        label,
+                        localOp,
+                        store
+                );
+	}
+
+        @Override
+	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
+                Register oldValueRegister = e.getStructRegister(0);
+                Register resultRegister = e.getStructRegister(1);
+
+                ExprInterface value = e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		ExprInterface expectedValue = e.getExpectedValue();
+
+                Local casCmpResult = newLocal(resultRegister, new Atom(oldValueRegister, EQ, expectedValue));
+                Label casEnd = newLabel("CAS_end");
+                CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
+
+                Load load = newRMWLoadExclusive(oldValueRegister, address, ARMv8.extractLoadMoFromCMo(mo));
+                Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), true);
+
+                return eventSequence(
+                        // Indentation shows the branching structure
+                        load,
+                        casCmpResult,
+                        branchOnCasCmpResult,
+                                store,
+                        casEnd
+                );
+	}
+
+        @Override
+        public List<Event> visitLlvmFence(LlvmFence e) {
+		String mo = e.getMo();
+                Fence fence = mo.equals(C11.MO_RELEASE) || mo.equals(C11.MO_ACQUIRE_RELEASE) || mo.equals(C11.MO_SC) ? 
+                        AArch64.DMB.newISHBarrier() :
+                        mo.equals(C11.MO_ACQUIRE) ?
+                                AArch64.DSB.newISHLDBarrier() :
+                                null;
+
+                return eventSequence(
+                        fence
+                );
 	}
 
     // =============================================================================================
@@ -216,34 +323,6 @@ class VisitorArm8 extends VisitorBase {
         );
 	}
 
-	@Override
-	public List<Event> visitDat3mCAS(Dat3mCAS e) {
-		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		ExprInterface expectedValue = e.getExpectedValue();
-
-        // Events common for all compilation schemes.
-        Register regValue = e.getThread().newRegister(resultRegister.getPrecision());
-        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
-        Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
-
-        Load load = newRMWLoadExclusive(regValue, address, ARMv8.extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), true);
-
-        // --- Add success events ---
-        return eventSequence(
-                // Indentation shows the branching structure
-                load,
-                casCmpResult,
-                branchOnCasCmpResult,
-                    store,
-                casEnd
-        );
-	}
-	
     // =============================================================================================
     // =========================================== LKMM ============================================
     // =============================================================================================

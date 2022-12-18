@@ -13,10 +13,8 @@ import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.lang.llvm.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import java.util.List;
@@ -65,7 +63,7 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+		Local load = newLocal(resultRegister, e.getExpr());
         load.addFilters(C11.PTHREAD);
 
         return eventSequence(
@@ -97,6 +95,137 @@ class VisitorRISCV extends VisitorBase {
                 store,
                 newExecutionStatusWithDependencyTracking(e.getResultRegister(), store)
         );
+	}
+
+	// =============================================================================================
+    // =========================================== LLVM ============================================
+    // =============================================================================================
+
+	@Override
+	public List<Event> visitLlvmLoad(LlvmLoad e) {
+		String mo = e.getMo();
+		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? RISCV.newRWRWFence() : null;
+		Fence optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? RISCV.newRRWFence()
+				: null;
+
+		return eventSequence(
+				optionalBarrierBefore,
+				newLoad(e.getResultRegister(), e.getAddress(), ""),
+				optionalBarrierAfter);
+	}
+
+	@Override
+	public List<Event> visitLlvmStore(LlvmStore e) {
+		String mo = e.getMo();
+		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) || useRC11Scheme
+				? RISCV.newRWWFence()
+				: null;
+
+		return eventSequence(
+				optionalBarrierBefore,
+				newStore(e.getAddress(), e.getMemValue(), ""));
+	}
+
+	@Override
+	public List<Event> visitLlvmXchg(LlvmXchg e) {
+		Register resultRegister = e.getResultRegister();
+		ExprInterface value = e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+		Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+		Store store = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
+		Register statusReg = e.getThread().newRegister("status(" + e.getUId() + ")", resultRegister.getPrecision());
+		// We normally make the following optional.
+		// Here we make it mandatory to guarantee correct dependencies.
+		ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
+		Label label = newLabel("FakeDep");
+		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+		return eventSequence(
+				load,
+				fakeCtrlDep,
+				label,
+				store,
+				execStatus);
+	}
+
+	@Override
+	public List<Event> visitLlvmRMW(LlvmRMW e) {
+		Register resultRegister = e.getResultRegister();
+		IOpBin op = e.getOp();
+		IExpr value = (IExpr) e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+		Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+		Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+
+		Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+		Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
+		Register statusReg = e.getThread().newRegister("status(" + e.getUId() + ")", resultRegister.getPrecision());
+		// We normally make the following optional.
+		// Here we make it mandatory to guarantee correct dependencies.
+		ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
+
+		Label label = newLabel("FakeDep");
+		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+		return eventSequence(
+				load,
+				fakeCtrlDep,
+				label,
+				localOp,
+				store,
+				execStatus);
+	}
+
+	@Override
+	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
+		Register oldValueRegister = e.getStructRegister(0);
+		Register resultRegister = e.getStructRegister(1);
+
+		ExprInterface value = e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		ExprInterface expectedValue = e.getExpectedValue();
+
+		Local casCmpResult = newLocal(resultRegister, new Atom(oldValueRegister, EQ, expectedValue));
+		Label casEnd = newLabel("CAS_end");
+		CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
+
+		Load load = newRMWLoadExclusive(oldValueRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+		Store store = newRMWStoreExclusive(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
+
+		return eventSequence(
+				// Indentation shows the branching structure
+				load,
+				casCmpResult,
+				branchOnCasCmpResult,
+				store,
+				casEnd);
+	}
+
+	@Override
+	public List<Event> visitLlvmFence(LlvmFence e) {
+		Fence fence = null;
+		switch (e.getMo()) {
+			case Tag.C11.MO_ACQUIRE:
+				fence = RISCV.newRRWFence();
+				break;
+			case Tag.C11.MO_RELEASE:
+				fence = RISCV.newRWWFence();
+				break;
+			case Tag.C11.MO_ACQUIRE_RELEASE:
+				fence = RISCV.newTsoFence();
+				break;
+			case Tag.C11.MO_SC:
+				fence = RISCV.newRWRWFence();
+				break;
+		}
+
+		return eventSequence(
+				fence);
 	}
 
     // =============================================================================================
