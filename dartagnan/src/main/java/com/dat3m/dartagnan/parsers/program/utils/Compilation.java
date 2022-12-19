@@ -62,8 +62,14 @@ public class Compilation {
 	}
 
 	private static File runCmd(ArrayList<String> cmd, String outputFileName) throws Exception {
-		ProcessBuilder processBuilder = new ProcessBuilder(cmd);
     	logger.debug(String.join(" ", cmd));
+		ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+		// "Unless the standard input and output streams are promptly written and read respectively 
+		// of the sub process, it may block or deadlock the sub process."
+		//		https://www.developer.com/design/understanding-java-process-and-java-processbuilder/
+		// The lines below take care of this.
+		processBuilder.redirectErrorStream(true);
+		processBuilder.redirectOutput(File.createTempFile("log", null));		
     	Process proc = processBuilder.start();
     	proc.waitFor();
     	if(proc.exitValue() == 1) {
