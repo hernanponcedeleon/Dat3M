@@ -30,15 +30,13 @@ class VisitorTso extends VisitorBase {
                 store.addFilters(C11.PTHREAD);
 
                 return eventSequence(
-                                store,
-                                X86.newMemoryFence());
+                                store);
         }
 
         @Override
         public List<Event> visitEnd(End e) {
                 return eventSequence(
-                                newStore(e.getAddress(), IValue.ZERO, ""),
-                                X86.newMemoryFence());
+                                newStore(e.getAddress(), IValue.ZERO, ""));
         }
 
         @Override
