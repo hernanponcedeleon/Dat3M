@@ -30,39 +30,34 @@ public class VisitorLKMM extends VisitorBase {
 		super(forceStart);
         }
 	
-	@Override
-	public List<Event> visitCreate(Create e) {
-        Store store = newStore(e.getAddress(), e.getMemValue(), Tag.Linux.MO_RELEASE);
-        store.addFilters(C11.PTHREAD);
+        @Override
+        public List<Event> visitCreate(Create e) {
+                Store store = newStore(e.getAddress(), e.getMemValue(), Tag.Linux.MO_RELEASE);
+                store.addFilters(C11.PTHREAD);
 
-        return eventSequence(
-        		Linux.newMemoryBarrier(),
-                store
-        );
-	}
+                return eventSequence(
+                                store);
+        }
 
-	@Override
-	public List<Event> visitEnd(End e) {
-        return eventSequence(
-        		Linux.newMemoryBarrier(),
-                newStore(e.getAddress(), IValue.ZERO, Tag.Linux.MO_RELEASE)
-        );
-	}
+        @Override
+        public List<Event> visitEnd(End e) {
+                return eventSequence(
+                                newStore(e.getAddress(), IValue.ZERO, Tag.Linux.MO_RELEASE));
+        }
 
-	@Override
+    @Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-	Local load = newLocal(resultRegister, e.getExpr());
+        Load load = newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
         load.addFilters(C11.PTHREAD);
         
         return eventSequence(
         		load,
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit()),
-        		Linux.newMemoryBarrier()
+        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
         );
 	}
 
-	@Override
+    @Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
@@ -70,9 +65,8 @@ public class VisitorLKMM extends VisitorBase {
 
         return eventSequence(
         		load,
-				super.visitStart(e),
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()),
-            	Linux.newMemoryBarrier()
+			super.visitStart(e),
+        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}
 

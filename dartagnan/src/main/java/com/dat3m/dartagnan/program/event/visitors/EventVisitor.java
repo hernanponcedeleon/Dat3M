@@ -47,7 +47,7 @@ public interface EventVisitor<T> {
 	default T visitCreate(Create e) { return visitStore(e); }
 	default T visitEnd(End e) { return visitStore(e); }
 	default T visitInitLock(InitLock e) { return visitStore(e); }
-	default T visitJoin(Join e) { return visitLocal(e); }
+	default T visitJoin(Join e) { return visitLoad(e); }
 	default T visitLock(Lock e) { return visitMemEvent(e); }
 	default T visitStart(Start e) { return visitLoad(e); }
 	default T visitUnlock(Unlock e) { return visitMemEvent(e); }

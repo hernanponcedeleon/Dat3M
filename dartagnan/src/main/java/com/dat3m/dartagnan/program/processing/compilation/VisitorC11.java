@@ -41,9 +41,11 @@ public class VisitorC11 extends VisitorBase {
         @Override
         public List<Event> visitJoin(Join e) {
                 Register resultRegister = e.getResultRegister();
+                Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
+                load.addFilters(C11.PTHREAD);
 
                 return tagList(eventSequence(
-                                newLocal(resultRegister, e.getExpr()),
+                                load,
                                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())));
         }
 
@@ -56,8 +58,7 @@ public class VisitorC11 extends VisitorBase {
                 return tagList(eventSequence(
                                 load,
                                 super.visitStart(e),
-                                newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE),
-                                                (Label) e.getThread().getExit())));
+                                newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())));
         }
 
         @Override

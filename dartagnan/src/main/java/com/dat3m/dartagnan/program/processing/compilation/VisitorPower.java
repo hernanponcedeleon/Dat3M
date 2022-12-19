@@ -64,7 +64,7 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		Local load = newLocal(resultRegister, e.getExpr());
+		Load load = newLoad(resultRegister, e.getAddress(), "");
         load.addFilters(C11.PTHREAD);
         Label label = newLabel("Jump_" + e.getOId());
         CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
