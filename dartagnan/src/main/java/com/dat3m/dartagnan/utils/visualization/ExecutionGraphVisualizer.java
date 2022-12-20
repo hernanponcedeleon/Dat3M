@@ -176,10 +176,11 @@ public class ExecutionGraphVisualizer {
         if(e.isMemoryEvent()) {
             Object address = addresses.get(e.getAccessedAddress());
             BigInteger value = e.getValue();
-        	String mo = ofNullable(((MemEvent)e.getEvent()).getMo()).orElse(C11.NONATOMIC);
+        	String mo = ((MemEvent)e.getEvent()).getMo();
+            mo = mo.isEmpty() ? mo : ", " + mo;
             tag = e.isWrite() ?
-            		String.format("W(%s, %d, %s)", address, value, mo) :
-            		String.format("%d = R(%s, %s)", value, address, mo);
+            		String.format("W(%s, %d%s)", address, value, mo) :
+            		String.format("%d = R(%s%s)", value, address, mo);
         }
         return String.format("\"T%d:E%s (%s:L%d)\\n%s%s\"", 
         				e.getThread().getId(), 
