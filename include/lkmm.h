@@ -57,10 +57,10 @@ extern int __LKMM_ATOMIC_OP_RETURN(int*, int, memory_order, operation);
 #define smp_store_release(p, v)  __LKMM_STORE(p, v, memory_order_release)
 #define rcu_dereference(p)       READ_ONCE(p)
 #define rcu_assign_pointer(p, v) smp_store_release(&(p), v)
-#define smp_store_mb(x, v)                    \
-do {                                \
-    atomic_store_explicit(&x, v, memory_order_relaxed);    \
-    smp_mb();                        \
+#define smp_store_mb(x, v)    \
+do {                          \
+    WRITE_ONCE(x, v);         \
+    smp_mb();                 \
 } while (0)
 
 /* Exchange */
