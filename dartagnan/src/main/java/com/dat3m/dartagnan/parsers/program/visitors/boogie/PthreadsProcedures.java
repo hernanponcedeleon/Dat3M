@@ -42,7 +42,8 @@ public class PthreadsProcedures {
 			pthread_create(visitor, ctx);
 			break;
 		case "pthread_join":
-			pthread_join(visitor, ctx);
+			// VisitorBoogie already took care of creating the join event
+			// when it parsed the previous load.
 			break;
 		case "pthread_cond_init":
 		case "pthread_cond_wait":
@@ -87,13 +88,6 @@ public class PthreadsProcedures {
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, IValue.ZERO));
 		}
 	
-	private static void pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {
-		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
-		IExpr expr = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
-        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(reg, expr))
-				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-	}
-
 	private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {
 		ExprContext lock = ctx.call_params().exprs().expr(0);
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
