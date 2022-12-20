@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
@@ -423,13 +424,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
 	        	if(ctx.getText().contains("$load.") || value instanceof MemoryObject) {
-					String mo = allocations.contains(value) ? Tag.C11.MO_ACQUIRE : "";
-					String filter = allocations.contains(value) ? Tag.C11.ATOMIC : Tag.C11.NONATOMIC; 
-		        	// These loads corresponding to pthread_joins and thus need acquire semantics
-		        	programBuilder.addChild(threadCount, EventFactory.newLoad(register, (IExpr)value, mo))
-							.setCFileInformation(currentLine, sourceCodeFile)
-							.addFilters(filter);
-		        	continue;
+					Event child;
+					if(allocations.contains(value)) {
+						// These loads corresponding to pthread_joins
+						child = EventFactory.Pthread.newJoin(register, (IExpr)value);
+					} else {
+						child = EventFactory.newLoad(register, (IExpr)value, "");
+					}
+					programBuilder.addChild(threadCount, child)
+							.setCFileInformation(currentLine, sourceCodeFile);
+					continue;
 	        	}
 	        	value = value.visit(exprSimplifier);
 				programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))

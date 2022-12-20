@@ -27,73 +27,62 @@ import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 
 class VisitorArm8 extends VisitorBase {
 
-	// If the source WMM does not allow OOTA behaviors (e.g. RC11)
-	// we need to strength the compilation following the paper
-	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
-	private final boolean useRC11Scheme; 
+        // If the source WMM does not allow OOTA behaviors (e.g. RC11)
+        // we need to strength the compilation following the paper
+        // "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
+        private final boolean useRC11Scheme;
+
+        protected VisitorArm8(boolean forceStart, boolean useRC11Scheme) {
+                super(forceStart);
+                this.useRC11Scheme = useRC11Scheme;
+        }
 	
-	protected VisitorArm8(boolean forceStart, boolean useRC11Scheme) {
-		super(forceStart);
-		this.useRC11Scheme = useRC11Scheme;
-	}
-	
-	@Override
-	public List<Event> visitCreate(Create e) {
-        Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo());
-        store.addFilters(C11.PTHREAD);
+    @Override
+    public List<Event> visitCreate(Create e) {
+            Store store = newStore(e.getAddress(), e.getMemValue(), Tag.ARMv8.MO_REL);
+            store.addFilters(C11.PTHREAD);
 
-        return eventSequence(
-        		AArch64.DMB.newISHBarrier(),
-                store,
-                AArch64.DMB.newISHBarrier()
-        );
-	}
+            return eventSequence(
+                            store);
+    }
 
-	@Override
-	public List<Event> visitEnd(End e) {
-        return eventSequence(
-        		AArch64.DMB.newISHBarrier(),
-        		newStore(e.getAddress(), IValue.ZERO, e.getMo()),
-                AArch64.DMB.newISHBarrier()
-        );
-	}
+    @Override
+    public List<Event> visitEnd(End e) {
+            return eventSequence(
+                            newStore(e.getAddress(), IValue.ZERO, Tag.ARMv8.MO_REL));
+    }
 
-	@Override
-	public List<Event> visitJoin(Join e) {
-        Register resultRegister = e.getResultRegister();
-	Local load = newLocal(resultRegister, e.getExpr());
-        load.addFilters(C11.PTHREAD);
+    @Override
+    public List<Event> visitJoin(Join e) {
+            Register resultRegister = e.getResultRegister();
+            Load load = newLoad(resultRegister, e.getAddress(), Tag.ARMv8.MO_ACQ);
+            load.addFilters(C11.PTHREAD);
 
-        return eventSequence(
-                load,
-                AArch64.DMB.newISHBarrier(),
-                newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
-        );
-	}
+            return eventSequence(
+                            load,
+                            newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit()));
+    }
 
-	@Override
-	public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getResultRegister();
-        Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
-        load.addFilters(Tag.STARTLOAD);
+    @Override
+    public List<Event> visitStart(Start e) {
+            Register resultRegister = e.getResultRegister();
+            Load load = newLoad(resultRegister, e.getAddress(), Tag.ARMv8.MO_ACQ);
+            load.addFilters(Tag.STARTLOAD);
 
-        return eventSequence(
-				load,
-				AArch64.DMB.newISHBarrier(),
-                super.visitStart(e),
-                newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
-        );
-	}
+            return eventSequence(
+                            load,
+                            super.visitStart(e),
+                            newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()));
+    }
 
-	@Override
-	public List<Event> visitStoreExclusive(StoreExclusive e) {
-        RMWStoreExclusive store = newRMWStoreExclusive(e.getAddress(), e.getMemValue(), e.getMo());
-        
-        return eventSequence(
-                store,
-                newExecutionStatus(e.getResultRegister(), store)
-        );
-	}
+    @Override
+    public List<Event> visitStoreExclusive(StoreExclusive e) {
+            RMWStoreExclusive store = newRMWStoreExclusive(e.getAddress(), e.getMemValue(), e.getMo());
+
+            return eventSequence(
+                            store,
+                            newExecutionStatus(e.getResultRegister(), store));
+    }
 
 
     // =============================================================================================

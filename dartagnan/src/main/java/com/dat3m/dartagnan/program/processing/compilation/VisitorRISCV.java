@@ -41,34 +41,28 @@ class VisitorRISCV extends VisitorBase {
 	
 	@Override
 	public List<Event> visitCreate(Create e) {
-        Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo());
+        Store store = newStore(e.getAddress(), e.getMemValue(), Tag.RISCV.MO_REL);
         store.addFilters(C11.PTHREAD);
 
         return eventSequence(
-        		RISCV.newRWRWFence(),
-                store,
-                RISCV.newRWRWFence()
+                store
         );
 	}
 
 	@Override
 	public List<Event> visitEnd(End e) {
         return eventSequence(
-        		RISCV.newRWRWFence(),
-        		newStore(e.getAddress(), IValue.ZERO, e.getMo()),
-        		RISCV.newRWRWFence()
-        );
+        		newStore(e.getAddress(), IValue.ZERO, Tag.RISCV.MO_REL));
 	}
 
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		Local load = newLocal(resultRegister, e.getExpr());
+		Load load = newLoad(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
         load.addFilters(C11.PTHREAD);
 
         return eventSequence(
                 load,
-                RISCV.newRWRWFence(),
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
         );
 	}
@@ -76,12 +70,11 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-        Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+		Load load = newLoad(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
         load.addFilters(Tag.STARTLOAD);
 
         return eventSequence(
         		load,
-                RISCV.newRWRWFence(),
 				super.visitStart(e),
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );

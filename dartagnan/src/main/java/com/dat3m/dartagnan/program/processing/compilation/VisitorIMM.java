@@ -44,11 +44,10 @@ class VisitorIMM extends VisitorBase {
 	
 	@Override
 	public List<Event> visitCreate(Create e) {
-        Store store = newStore(e.getAddress(), e.getMemValue(), extractStoreMo(e.getMo()));
+        Store store = newStore(e.getAddress(), e.getMemValue(), C11.MO_RELEASE);
         store.addFilters(C11.PTHREAD);
         
         return eventSequence(
-        		newFence(Tag.C11.MO_SC),
                 store
         );
 	}
@@ -56,35 +55,32 @@ class VisitorIMM extends VisitorBase {
 	@Override
 	public List<Event> visitEnd(End e) {
         return eventSequence(
-        		newFence(Tag.C11.MO_SC),
-        		newStore(e.getAddress(), IValue.ZERO, extractStoreMo(e.getMo()))
+        		newStore(e.getAddress(), IValue.ZERO, C11.MO_RELEASE)
         );
 	}
 
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		Local load = newLocal(resultRegister, e.getExpr());
+		Load load = newLoad(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
         load.addFilters(C11.PTHREAD);
         
         return eventSequence(
         		load,
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit()),
-        		newFence(Tag.C11.MO_SC)
+        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
         );
 	}
 
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-        Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+        Load load = newLoad(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
         load.addFilters(Tag.STARTLOAD);
 
         return eventSequence(
         		load,
 				super.visitStart(e),
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()),
-        		newFence(Tag.C11.MO_SC)
+        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}
 

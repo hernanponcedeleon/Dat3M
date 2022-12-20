@@ -24,49 +24,43 @@ class VisitorTso extends VisitorBase {
                 super(forceStart);
         }
 
-	@Override
-	public List<Event> visitCreate(Create e) {
-        Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo());
-        store.addFilters(C11.PTHREAD);
-        
-        return eventSequence(
-                store,
-                X86.newMemoryFence()
-        );
-	}
+        @Override
+        public List<Event> visitCreate(Create e) {
+                Store store = newStore(e.getAddress(), e.getMemValue(), "");
+                store.addFilters(C11.PTHREAD);
 
-	@Override
-	public List<Event> visitEnd(End e) {
-        return eventSequence(
-        		newStore(e.getAddress(), IValue.ZERO, e.getMo()),
-                X86.newMemoryFence()
-        );
-	}
+                return eventSequence(
+                                store);
+        }
 
-	@Override
-	public List<Event> visitJoin(Join e) {
-        Register resultRegister = e.getResultRegister();
-	Local load = newLocal(resultRegister, e.getExpr());
-        load.addFilters(C11.PTHREAD);
-        
-        return eventSequence(
-        		load,
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
-        );
-	}
+        @Override
+        public List<Event> visitEnd(End e) {
+                return eventSequence(
+                                newStore(e.getAddress(), IValue.ZERO, ""));
+        }
 
-	@Override
-	public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getResultRegister();
-        Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
-        load.addFilters(Tag.STARTLOAD);
-        
-        return eventSequence(
-        		load,
-				super.visitStart(e),
-				newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
-        );
-	}
+        @Override
+        public List<Event> visitJoin(Join e) {
+                Register resultRegister = e.getResultRegister();
+                Load load = newLoad(resultRegister, e.getAddress(), "");
+                load.addFilters(C11.PTHREAD);
+
+                return eventSequence(
+                                load,
+                                newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit()));
+        }
+
+        @Override
+        public List<Event> visitStart(Start e) {
+                Register resultRegister = e.getResultRegister();
+                Load load = newLoad(resultRegister, e.getAddress(), "");
+                load.addFilters(Tag.STARTLOAD);
+
+                return eventSequence(
+                                load,
+                                super.visitStart(e),
+                                newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()));
+        }
 
 	@Override
 	public List<Event> visitXchg(Xchg e) {
