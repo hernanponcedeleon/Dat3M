@@ -9,7 +9,7 @@ public class LKMMLock extends MemEvent {
 	public LKMMLock(IExpr lock) {
 		// This event will be compiled to LKMMLockRead + LKMMLockWrite 
 		// and each of those will be assigned a proper memory ordering
-		super(lock, null);
+		super(lock, "");
 	}
 
     protected LKMMLock(LKMMLock other){

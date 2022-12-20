@@ -29,7 +29,7 @@ public class Load extends MemEvent implements RegWriter {
 
     @Override
     public String toString() {
-        return resultRegister + " = load(*" + address + (mo != null ? ", " + mo : "") + ")";
+        return resultRegister + " = load(*" + address + (!mo.isEmpty() ? ", " + mo : "") + ")";
     }
 
     @Override

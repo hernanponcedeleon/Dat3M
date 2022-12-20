@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
+import com.dat3m.dartagnan.program.analysis.CallStackComputation;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -57,7 +58,7 @@ public class Dartagnan extends BaseOptions {
 	private static final Logger logger = LogManager.getLogger(Dartagnan.class);
 
 	private static final Set<String> supportedFormats = 
-    		ImmutableSet.copyOf(Arrays.asList(".litmus", ".bpl", ".c", ".i"));
+    		ImmutableSet.copyOf(Arrays.asList(".litmus", ".bpl", ".c", ".i", "ll"));
 
 	private Dartagnan(Configuration config) throws InvalidConfigurationException {
 		config.recursiveInject(this);
@@ -170,8 +171,10 @@ public class Dartagnan extends BaseOptions {
             	if(result.equals(FAIL) && o.generateGraphviz()) {
                 	ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
                 	m.initialize(prover.getModel());
+					CallStackComputation csc = CallStackComputation.fromConfig(config);
+					csc.run(p);
     				String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
-    				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name);        		
+    				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name, csc.getCallStackMapping());        		
             	}
 
             	boolean safetyViolationFound = false;

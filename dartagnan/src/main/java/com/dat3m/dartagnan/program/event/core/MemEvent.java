@@ -11,10 +11,12 @@ public abstract class MemEvent extends Event {
     protected IExpr address;
     protected String mo;
 
+    // The empty string means no memory order 
     public MemEvent(IExpr address, String mo){
+    	Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
         this.address = address;
         this.mo = mo;
-        if(mo != null){
+        if(!mo.isEmpty()){
             addFilters(mo);
         }
     }
@@ -46,16 +48,19 @@ public abstract class MemEvent extends Event {
     }
 
     public void setMo(String mo){
-    	Preconditions.checkNotNull(mo, "Only the parser can set the memory ordering to null");
-    	if(this.mo != null) {
+    	Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
+    	if(!this.mo.isEmpty()) {
             removeFilters(this.mo);    		
     	}
         this.mo = mo;
-        addFilters(mo);
+        // This cannot be merged with the if above, because this.mo was updated
+        if(!this.mo.isEmpty()) {
+            addFilters(mo);
+    	}
     }
 
     public boolean canRace() {
-    	return mo == null || mo.equals(C11.NONATOMIC);
+    	return mo.isEmpty() || mo.equals(C11.NONATOMIC);
     }
 
 	// Visitor

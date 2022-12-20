@@ -1,0 +1,10 @@
+function @__llvm_atomic32_load exists only in right module
+function @__llvm_atomic32_store exists only in right module
+function @__llvm_atomic32_cmpxchg exists only in right module
+function @__llvm_atomic32_rmw exists only in right module
+function @__assert_fail exists only in right module
+function @__llvm_atomic64_load exists only in right module
+function @__llvm_atomic64_store exists only in right module
+function @__llvm_atomic64_cmpxchg exists only in right module
+function @__llvm_atomic64_rmw exists only in right module
+function @__llvm_atomic_fence exists only in right module

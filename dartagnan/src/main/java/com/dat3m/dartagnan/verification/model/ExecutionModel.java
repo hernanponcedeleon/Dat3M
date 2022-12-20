@@ -370,14 +370,15 @@ public class ExecutionModel {
     // =============== Dependency tracking ===============
     //TODO: The following code is refinement specific and assumes that only visible events get extracted!
 
-    private Map<Register, Set<EventData>> lastRegWrites;
+    // Due to intra thread communication using registers, we do not
+    // reset this map for every thread, but keep it global
+    private Map<Register, Set<EventData>> lastRegWrites = new HashMap<>();
     private Set<EventData> curCtrlDeps;
     // The following is used for Linux
     private Stack<Set<EventData>> ifCtrlDeps;
     private Stack<Label> endIfs;
     //------------------------
     private void initDepTracking() {
-        lastRegWrites = new HashMap<>();
         curCtrlDeps = new HashSet<>();
         ifCtrlDeps = new Stack<>();
         endIfs = new Stack<>();

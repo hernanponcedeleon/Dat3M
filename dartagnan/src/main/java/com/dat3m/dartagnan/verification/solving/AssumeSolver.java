@@ -60,13 +60,6 @@ public class AssumeSolver extends ModelChecker {
         wmmEncoder.initializeEncoding(ctx);
         symmetryEncoder.initializeEncoding(ctx);
 
-        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification();
-        if(ctx.getFormulaManager().getBooleanFormulaManager().isFalse(propertyEncoding)) {
-            logger.info("Verification finished: property trivially holds");
-            res = PASS;
-            return;
-        }
-
         logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
@@ -77,6 +70,7 @@ public class AssumeSolver extends ModelChecker {
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
+        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification();
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
         prover.addConstraint(assumedSpec);
         

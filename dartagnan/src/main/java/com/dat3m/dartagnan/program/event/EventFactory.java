@@ -17,6 +17,12 @@ import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmFence;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmRMW;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmXchg;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -194,11 +200,11 @@ public class EventFactory {
     public static class Pthread {
         private Pthread() {}
 
-        public static Create newCreate(Register pthread_t, String routine, MemoryObject address) {
-            return new Create(pthread_t, routine, address);
+        public static Create newCreate(IExpr address, String routine) {
+            return new Create(address, routine);
         }
 
-        public static End newEnd(MemoryObject address){
+        public static End newEnd(IExpr address){
             return new End(address);
         }
 
@@ -206,15 +212,15 @@ public class EventFactory {
             return new InitLock(name, address, value);
         }
 
-        public static Join newJoin(Register pthread_t, Register reg, MemoryObject address) {
-            return new Join(pthread_t, reg, address);
+        public static Join newJoin(Register reg, IExpr expr) {
+            return new Join(reg, expr);
         }
 
         public static Lock newLock(String name, IExpr address, Register reg) {
             return new Lock(name, address, reg);
         }
 
-        public static Start newStart(Register reg, MemoryObject address, Event creationEvent) {
+        public static Start newStart(Register reg, IExpr address, Event creationEvent) {
             return new Start(reg, address, creationEvent);
         }
 
@@ -265,10 +271,42 @@ public class EventFactory {
         public static AtomicXchg newExchange(Register register, IExpr address, IExpr value, String mo) {
             return new AtomicXchg(register, address, value, mo);
         }
+    }
+    // =============================================================================================
+    // =========================================== LLVM ============================================
+    // =============================================================================================
 
-        public static Dat3mCAS newDat3mCAS(Register register, IExpr address, IExpr expected, IExpr value, String mo) {
-            return new Dat3mCAS(register, address, expected, value, mo);
+    public static class Llvm {
+        private Llvm() {}
+
+        public static LlvmLoad newLoad(Register register, IExpr address, String mo) {
+            return new LlvmLoad(register, address, mo);
         }
+
+        public static LlvmStore newStore(IExpr address, ExprInterface value, String mo) {
+            return new LlvmStore(address, value, mo);
+        }
+
+        public static LlvmXchg newExchange(Register register, IExpr address, IExpr value, String mo) {
+            return new LlvmXchg(register, address, value, mo);
+        }
+
+        public static LlvmCmpXchg newCompareExchange(Register oldValueRegister, Register cmpRegister, IExpr address, IExpr expectedAddr, IExpr desiredValue, String mo, boolean isStrong) {
+            return new LlvmCmpXchg(oldValueRegister, cmpRegister, address, expectedAddr, desiredValue, mo, isStrong);
+        }
+
+        public static LlvmCmpXchg newCompareExchange(Register oldValueRegister, Register cmpRegister, IExpr address, IExpr expectedAddr, IExpr desiredValue, String mo) {
+            return newCompareExchange(oldValueRegister, cmpRegister, address, expectedAddr, desiredValue, mo, false);
+        }
+
+        public static LlvmRMW newRMW(Register register, IExpr address, IExpr value, IOpBin op, String mo) {
+            return new LlvmRMW(register, address, value, op, mo);
+        }
+
+        public static LlvmFence newFence(String mo) {
+            return new LlvmFence(mo);
+        }
+
     }
 
     // =============================================================================================

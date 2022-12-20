@@ -43,7 +43,7 @@ public class TimeoutListener implements KeyListener, FocusListener {
 			timeoutPane.setStableBound(cText);			
 		} catch (Exception e) {
 			// Empty string is allowed here to allow deleting. It will be handled by focusLost
-			if(cText.equals("")) {
+			if(cText.isEmpty()) {
 				return;
 			}
 			timeoutPane.setText(timeoutPane.getStableBound());
@@ -58,7 +58,7 @@ public class TimeoutListener implements KeyListener, FocusListener {
 
 	@Override
 	public void focusLost(FocusEvent arg0) {
-		if(timeoutPane.getText().equals("")) {
+		if(timeoutPane.getText().isEmpty()) {
 			timeoutPane.setText(timeoutPane.getStableBound());
 			showError("The timeout should be greater than 1", "Option error");
 		}

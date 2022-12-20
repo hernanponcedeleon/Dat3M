@@ -64,17 +64,14 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public int getCLine() {
 		return cLine;
 	}
-	public Event setCLine(int line) {
-		this.cLine = line;
-		return this;
-	}
-
+	
 	public String getSourceCodeFile() {
 		return sourceCodeFile;
 	}
 
-	public Event setSourceCodeFile(String name) {
-		this.sourceCodeFile = name;
+	public Event setCFileInformation(int line, String file) {
+		this.cLine = line;
+		this.sourceCodeFile = file;
 		return this;
 	}
 

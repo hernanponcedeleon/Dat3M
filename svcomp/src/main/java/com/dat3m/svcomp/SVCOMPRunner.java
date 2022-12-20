@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.svcomp.utils.BoogieSan;
-import com.dat3m.svcomp.utils.SVCOMPSanitizer;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import org.sosy_lab.common.configuration.Configuration;
@@ -110,18 +109,13 @@ public class SVCOMPRunner extends BaseOptions {
         }
 
         int bound = witness.hasAttributed(UNROLLBOUND.toString()) ? parseInt(witness.getAttributed(UNROLLBOUND.toString())) : r.umin;
-        File tmp = new SVCOMPSanitizer(fileProgram).run(bound);
 
         // First time we compiler with standard atomic header to catch compilation problems
-		compileWithClang(tmp, "");
+		compileWithClang(fileProgram, "");
 
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN")) {
-			compileWithSmack(tmp, "");
-	        // If not removed here, file is not removed when we reach the timeout
-	        // File can be safely deleted since it was created by the SVCOMPSanitizer
-	        // (it not the original C file) and we already created the Boogie file
-	        tmp.delete();
+			compileWithSmack(fileProgram, "");
 	        
 	        String boogieName = System.getenv().get("DAT3M_HOME") + "/output/" +
 	        		Files.getNameWithoutExtension(programPath) + ".bpl";
@@ -134,7 +128,7 @@ public class SVCOMPRunner extends BaseOptions {
 	    	cmd.add("java");
 	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
 	    	cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
-	    	cmd.addAll(Arrays.asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-3.1.0.jar"));
+	    	cmd.addAll(Arrays.asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan-3.1.1.jar"));
 			cmd.add(fileModel.toString());
 			cmd.add(boogieName);
 			cmd.add(String.format("--%s=%s", PROPERTY, r.property.asStringOption()));
@@ -148,7 +142,13 @@ public class SVCOMPRunner extends BaseOptions {
 				BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 				proc.waitFor();
 				while(read.ready()) {
-					output = read.readLine();
+					String next = read.readLine();
+					// This is now the last line in the console.
+					// We avoid updating the output
+					if(next.contains("Total verification time(ms):")) {
+						break;
+					}
+					output = next;
 					System.out.println(output);
 				}
 				if(proc.exitValue() == 1) {
@@ -168,10 +168,7 @@ public class SVCOMPRunner extends BaseOptions {
 			}
 			// We always do iterations 1 and 2 and then use the step
 			bound = bound == 1 ? 2 : bound + r.step;
-	        tmp = new SVCOMPSanitizer(fileProgram).run(bound);
 		}
-
-        tmp.delete();
     }
     
     private static List<String> filterOptions(Configuration config) {

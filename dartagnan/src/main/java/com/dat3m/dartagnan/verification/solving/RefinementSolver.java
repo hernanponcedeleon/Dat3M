@@ -130,20 +130,13 @@ public class RefinementSolver extends ModelChecker {
         Refiner refiner = new Refiner(analysisContext);
         CAATSolver.Status status = INCONSISTENT;
 
-        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification();
-        if(bmgr.isFalse(propertyEncoding)) {
-            logger.info("Verification finished: property trivially holds");
-            res = PASS;
-       	    return;
-        }
-
         logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
         prover.addConstraint(symmEncoder.encodeFullSymmetryBreaking());
 
         prover.push();
-        prover.addConstraint(propertyEncoding);
+        prover.addConstraint(propertyEncoder.encodeSpecification());
 
         //  ------ Just for statistics ------
         List<WMMSolver.Statistics> statList = new ArrayList<>();
@@ -423,9 +416,9 @@ public class RefinementSolver extends ModelChecker {
         String directoryName = String.format("%s/refinement/%s-%s-debug/", System.getenv("DAT3M_OUTPUT"), programName, task.getProgram().getArch());
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
         // File with reason edges only
-        generateGraphvizFile(model, iterationCount, edgeFilter, directoryName, fileNameBase);
+        generateGraphvizFile(model, iterationCount, edgeFilter, directoryName, fileNameBase, new HashMap<>());
         // File with all edges
-        generateGraphvizFile(model, iterationCount, (x,y) -> true, directoryName, fileNameBase + "-full");
+        generateGraphvizFile(model, iterationCount, (x,y) -> true, directoryName, fileNameBase + "-full", new HashMap<>());
     }
 
     private Wmm createDefaultWmm() {
