@@ -22,7 +22,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
         Preconditions.checkArgument(!mo.equals(MO_ACQUIRE) && !mo.equals(MO_ACQUIRE_RELEASE),
         		getClass().getName() + " can not have memory order: " + mo);
         this.value = value;
-        addFilters(ANY, VISIBLE, MEMORY, WRITE, REG_READER);
+        addFilters(WRITE, REG_READER);
     }
 
     private AtomicStore(AtomicStore other){
