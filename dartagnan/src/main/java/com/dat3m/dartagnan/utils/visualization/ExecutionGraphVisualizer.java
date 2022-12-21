@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.utils.visualization;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.verification.model.EventData;
@@ -128,7 +129,7 @@ public class ExecutionGraphVisualizer {
 
     private ExecutionGraphVisualizer addThreadPo(Thread thread, ExecutionModel model) {
         List<EventData> threadEvents = model.getThreadEventsMap().get(thread)
-            .stream().filter(e -> e.isMemoryEvent() || e.isFence()).collect(Collectors.toList());
+            .stream().filter(e -> e.is(Tag.VISIBLE)).collect(Collectors.toList());
         if (threadEvents.size() <= 1) {
             return this;
         }
