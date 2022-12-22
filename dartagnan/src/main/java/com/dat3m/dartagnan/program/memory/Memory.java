@@ -55,7 +55,11 @@ public class Memory {
             BigInteger i = BigInteger.ONE;
             for(MemoryObject a : program.getMemory().objects) {
                 a.address = i;
-                i = i.add(BigInteger.valueOf(a.size()));
+                // Addresses are tipically at least two byte aligned
+                //      https://stackoverflow.com/questions/23315939/why-2-lsbs-of-32-bit-arm-instruction-address-not-used
+                // Many algorithms rely on this assumption for correctness
+                int padding = (a.size() % 2);
+                i = i.add(BigInteger.valueOf(a.size() + padding));
             }
         }
     }
