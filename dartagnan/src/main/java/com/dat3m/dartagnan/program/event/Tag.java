@@ -57,6 +57,9 @@ public final class Tag {
         }
 
         public static String extractLoadMoFromLKMo(String lkMo) {
+            // We return "" when lkMo.equals(Tag.Linux.MO_MB) because the caller of
+            // this method will use a dmb.ish barrier for the acquire part, see e.g.,
+            //      https://elixir.bootlin.com/linux/v6.1/source/arch/arm64/include/asm/cmpxchg.h#L16
             return lkMo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : "";
         }
 
