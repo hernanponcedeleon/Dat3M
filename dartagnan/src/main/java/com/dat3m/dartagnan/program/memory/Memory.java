@@ -52,7 +52,7 @@ public class Memory {
 
         @Override
         public void run(Program program) {
-            BigInteger i = BigInteger.ONE;
+            BigInteger i = BigInteger.TWO;
             for(MemoryObject a : program.getMemory().objects) {
                 a.address = i;
                 // Addresses are tipically at least two byte aligned
