@@ -20,7 +20,7 @@ public class LlvmLoad extends MemEvent implements RegWriter {
     	Preconditions.checkArgument(!mo.equals(MO_RELEASE) && !mo.equals(MO_ACQUIRE_RELEASE),
     			getClass().getName() + " cannot have memory order: " + mo);
         this.resultRegister = register;
-        addFilters(ANY, VISIBLE, MEMORY, READ, REG_WRITER);
+        addFilters(READ, REG_WRITER);
     }
 
     private LlvmLoad(LlvmLoad other){
