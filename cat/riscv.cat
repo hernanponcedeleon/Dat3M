@@ -6,6 +6,9 @@ Partial
 (* Definitions *)
 (***************)
 
+(* Define co (and fr) *)
+include "cos.cat"
+
 (*************)
 (* Utilities *)
 (*************)

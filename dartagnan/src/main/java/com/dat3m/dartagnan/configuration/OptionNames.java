@@ -10,18 +10,20 @@ public class OptionNames {
 	public static final String SOLVER = "solver";
 	public static final String TIMEOUT = "timeout";
 	public static final String VALIDATE = "validate";
-	
+
+	// Modeling Options
+	public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";
+
 	// Compilation Options
 	public static final String USE_RC11_TO_ARCH_SCHEME = "compilation.rc11ToArch";
 	public static final String C_TO_POWER_SCHEME = "compilation.cToPower";
 	
 	// Encoding Options
 	public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";
-	public static final String ALLOW_PARTIAL_EXECUTIONS = "encoding.allowPartialExecutions";
 	public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
 	public static final String INITIALIZE_REGISTERS = "encoding.initializeRegisters";
 	public static final String PRECISION = "encoding.precision";
-	public static final String BREAK_SYMMETRY_ON_RELATION = "encoding.symmetry.breakOnRelation";
+	public static final String BREAK_SYMMETRY_ON = "encoding.symmetry.breakOn";
 	public static final String BREAK_SYMMETRY_BY_SYNC_DEGREE = "encoding.symmetry.orderBySyncDegree";
 	public static final String IDL_TO_SAT = "encoding.wmm.idl2sat";
 	
@@ -30,6 +32,7 @@ public class OptionNames {
 	public static final String REDUCE_SYMMETRY = "program.processing.reduceSymmetry";
 	public static final String ATOMIC_BLOCKS_AS_LOCKS = "program.processing.atomicBlocksAsLocks";
 	public static final String CONSTANT_PROPAGATION = "program.processing.constantPropagation";
+	public static final String DEAD_ASSIGNEMENT_ELIMINATION = "program.processing.dce";
 	
 	// Program Property Options
 	public static final String ALIAS_METHOD = "program.analysis.alias";

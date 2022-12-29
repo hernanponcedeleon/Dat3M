@@ -1,11 +1,13 @@
 package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.encoding.Encoder;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
@@ -18,21 +20,16 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
-import static com.dat3m.dartagnan.encoding.ProgramEncoder.execution;
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 /**
  *
  * @author Florian Furbach
  */
 //TODO: Remove "Encoder" once we split data and operations appropriately
-public abstract class Relation implements Encoder, Dependent<Relation> {
-
-    public static boolean PostFixApprox = false;
+public abstract class Relation implements Constraint, Encoder, Dependent<Relation> {
 
     protected String name;
     protected String term;
@@ -51,9 +48,15 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
         this.name = name;
     }
 
+    public <T> T accept(Visitor<? extends T> visitor) {
+        return visitor.visitDefinition(this, List.of());
+    }
+
     @Override
     public List<Relation> getDependencies() {
-        return Collections.emptyList();
+        List<Relation> relations = getConstrainedRelations();
+        // no copying required, as long as getConstrainedRelations() returns a new or unmodifiable list
+        return relations.subList(1, relations.size());
     }
 
     // TODO: The following two methods are provided because currently Relations are treated as three things:
@@ -114,6 +117,24 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
         return name != null;
     }
 
+    /**
+     * @return Non-empty list of all relations directly participating in this definition.
+     * The first relation is always the defined relation,
+     * while the roles of the others are implementation-dependent.
+     */
+    @Override
+    public List<Relation> getConstrainedRelations() {
+        return accept(new Visitor<>() {
+            @Override
+            public List<Relation> visitDefinition(Relation rel, List<? extends Relation> dependencies) {
+                List<Relation> relations = new ArrayList<>(dependencies.size() + 1);
+                relations.add(rel);
+                relations.addAll(dependencies);
+                return relations;
+            }
+        });
+    }
+
     @Override
     public String toString(){
         if(name != null){
@@ -138,29 +159,8 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
         return getName().equals(((Relation)obj).getName());
     }
 
-    public BooleanFormula encode(SolverContext ctx) {
-        return encodeApprox(ctx);
-    }
-
-    protected abstract BooleanFormula encodeApprox(SolverContext ctx);
-
-    public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
-        return !getMaxTupleSet().contains(edge) ?
-        		ctx.getFormulaManager().getBooleanFormulaManager().makeFalse() :
-                edge(getName(), edge.getFirst(), edge.getSecond(), ctx);
-    }
-
-    public final BooleanFormula getSMTVar(Event e1, Event e2, SolverContext ctx) {
-        return getSMTVar(new Tuple(e1, e2), ctx);
-    }
-
-    protected BooleanFormula getExecPair(Event e1, Event e2, SolverContext ctx) {
-        ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
-        return execution(e1, e2, exec, ctx);
-    }
-
-    protected final BooleanFormula getExecPair(Tuple t, SolverContext ctx) {
-        return getExecPair(t.getFirst(), t.getSecond(), ctx);
+    public BooleanFormula getSMTVar(Tuple edge, EncodingContext c) {
+        return c.edgeVariable(getName(), edge.getFirst(), edge.getSecond());
     }
 
     protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {
@@ -169,19 +169,19 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     }
 
     // ========================== Utility methods =========================
-    
+
     public boolean isStaticRelation() {
     	return this instanceof StaticRelation;
     }
-    
+
     public boolean isUnaryRelation() {
     	return this instanceof UnaryRelation;
     }
-    
+
     public boolean isBinaryRelation() {
     	return this instanceof BinaryRelation;
     }
-    
+
     public boolean isRecursiveRelation() {
     	return this instanceof RecursiveRelation;
     }
@@ -189,12 +189,41 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     public Relation getInner() {
         return (isUnaryRelation() || isRecursiveRelation()) ? getDependencies().get(0) : null;
     }
-    
+
     public Relation getFirst() {
     	return isBinaryRelation() ? getDependencies().get(0) : null;
     }
-    
+
     public Relation getSecond() {
     	return isBinaryRelation() ? getDependencies().get(1) : null;
+    }
+
+    public interface Visitor <T> {
+        default T visitDefinition(Relation rel, List<? extends Relation> dependencies) { throw new UnsupportedOperationException("applying" + getClass().getSimpleName() + " to relation " + rel); }
+        default T visitUnion(Relation rel, Relation... operands) { return visitDefinition(rel, List.of(operands)); }
+        default T visitIntersection(Relation rel, Relation... operands) { return visitDefinition(rel, List.of(operands)); }
+        default T visitDifference(Relation rel, Relation superset, Relation complement) { return visitDefinition(rel, List.of(superset, complement)); }
+        default T visitComposition(Relation rel, Relation front, Relation back) { return visitDefinition(rel, List.of(front, back)); }
+        default T visitDomainIdentity(Relation rel, Relation operand) { return visitDefinition(rel, List.of(operand)); }
+        default T visitRangeIdentity(Relation rel, Relation operand) { return visitDefinition(rel, List.of(operand)); }
+        default T visitInverse(Relation rel, Relation operand) { return visitDefinition(rel, List.of(operand)); }
+        default T visitRecursive(Relation rel, Relation other) { return visitDefinition(rel, List.of(other)); }
+        default T visitTransitiveClosure(Relation rel, Relation operand) { return visitDefinition(rel, List.of(operand)); }
+        default T visitEmpty(Relation rel) { return visitDefinition(rel, List.of()); }
+        default T visitIdentity(Relation id, FilterAbstract set) { return visitDefinition(id, List.of()); }
+        default T visitProduct(Relation rel, FilterAbstract domain, FilterAbstract range) { return visitDefinition(rel, List.of()); }
+        default T visitExternal(Relation ext) { return visitDefinition(ext, List.of()); }
+        default T visitInternal(Relation int_) { return visitDefinition(int_, List.of()); }
+        default T visitProgramOrder(Relation po, FilterAbstract type) { return visitDefinition(po, List.of()); }
+        default T visitControl(Relation ctrlDirect) { return visitDefinition(ctrlDirect, List.of()); }
+        default T visitFences(Relation fence, FilterAbstract type) { return visitDefinition(fence, List.of()); }
+        default T visitInternalDataDependency(Relation idd) { return visitDefinition(idd, List.of()); }
+        default T visitCompareAndSwapDependency(Relation casDep) { return visitDefinition(casDep, List.of()); }
+        default T visitAddressDependency(Relation addrDirect) { return visitDefinition(addrDirect, List.of()); }
+        default T visitCriticalSections(Relation rscs) { return visitDefinition(rscs, List.of()); }
+        default T visitReadModifyWrites(Relation rmw) { return visitDefinition(rmw, List.of()); }
+        default T visitMemoryOrder(Relation co) { return visitDefinition(co, List.of()); }
+        default T visitSameAddress(Relation loc) { return visitDefinition(loc, List.of()); }
+        default T visitReadFrom(Relation rf) { return visitDefinition(rf, List.of()); }
     }
 }

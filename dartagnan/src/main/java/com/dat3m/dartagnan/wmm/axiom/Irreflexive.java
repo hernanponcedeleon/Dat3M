@@ -1,11 +1,13 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.util.Set;
 
 /**
  *
@@ -29,12 +31,12 @@ public class Irreflexive extends Axiom {
     }
 
     @Override
-    public BooleanFormula consistent(SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    public BooleanFormula consistent(Set<Tuple> toBeEncoded, EncodingContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
-        for(Tuple tuple : rel.getEncodeTupleSet()){
+        for (Tuple tuple : toBeEncoded) {
             if(tuple.isLoop()){
-                enc = bmgr.and(enc, bmgr.not(rel.getSMTVar(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.not(ctx.edge(rel, tuple)));
             }
         }
         return negated ? bmgr.not(enc) : enc;

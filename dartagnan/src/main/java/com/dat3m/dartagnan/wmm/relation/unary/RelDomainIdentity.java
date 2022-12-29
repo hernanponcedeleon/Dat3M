@@ -1,14 +1,10 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.Sets;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 public class RelDomainIdentity extends UnaryRelation {
 
@@ -24,6 +20,11 @@ public class RelDomainIdentity extends UnaryRelation {
     public RelDomainIdentity(Relation r1, String name) {
         super(r1, name);
         term = makeTerm(r1);
+    }
+
+    @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitDomainIdentity(this, r1);
     }
 
     @Override
@@ -62,22 +63,5 @@ public class RelDomainIdentity extends UnaryRelation {
             }
             r1.addEncodeTupleSet(r1Set);
         }
-    }
-
-    @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
-
-        for(Tuple tuple1 : encodeTupleSet){
-            Event e = tuple1.getFirst();
-            BooleanFormula opt = bmgr.makeFalse();
-            //TODO: Optimize using minSets (but no CAT uses this anyway)
-            for(Tuple tuple2 : r1.getMaxTupleSet().getByFirst(e)){
-                opt = bmgr.or(r1.getSMTVar(e, tuple2.getSecond(), ctx));
-            }
-            enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(e, e, ctx), opt));
-        }
-        return enc;
     }
 }

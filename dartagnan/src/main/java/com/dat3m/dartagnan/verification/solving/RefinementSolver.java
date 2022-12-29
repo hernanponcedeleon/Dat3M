@@ -1,17 +1,14 @@
 package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.configuration.Baseline;
-import com.dat3m.dartagnan.encoding.ProgramEncoder;
-import com.dat3m.dartagnan.encoding.PropertyEncoder;
-import com.dat3m.dartagnan.encoding.SymmetryEncoder;
-import com.dat3m.dartagnan.encoding.WmmEncoder;
+import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
@@ -31,7 +28,10 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
 import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
 import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
-import com.dat3m.dartagnan.wmm.utils.RelationRepository;
+import com.dat3m.dartagnan.wmm.relation.unary.RelDomainIdentity;
+import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
+import com.dat3m.dartagnan.wmm.relation.unary.RelRangeIdentity;
+import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -50,6 +50,7 @@ import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+import static com.google.common.base.Preconditions.checkArgument;
 
 /*
     Refinement is a custom solving procedure that starts from a weak memory model (possibly the empty model)
@@ -89,15 +90,16 @@ public class RefinementSolver extends ModelChecker {
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
     //TODO (2): Add possibility for Refinement to handle CAT-properties (it ignores them for now).
-    public static Result run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    public static RefinementSolver run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
         RefinementSolver solver = new RefinementSolver(ctx, prover, task);
         task.getConfig().inject(solver);
         logger.info("{}: {}", BASELINE, solver.baselines);
-        return solver.run();
+        solver.run();
+        return solver;
     }
 
-    private Result run() throws InterruptedException, SolverException, InvalidConfigurationException {
+    private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
 
         Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
@@ -119,10 +121,13 @@ public class RefinementSolver extends ModelChecker {
         performStaticWmmAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
 
-        ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
-        PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, baselineModel, analysisContext, config);
-        SymmetryEncoder symmEncoder = SymmetryEncoder.fromConfig(baselineModel, analysisContext, config);
-        WmmEncoder baselineEncoder = WmmEncoder.fromConfig(baselineModel, baselineContext, config);
+        context = EncodingContext.of(baselineTask, baselineContext, ctx);
+        ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
+        PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
+        // We use the original memory model for symmetry breaking because we need axioms
+        // to compute the breaking order.
+        SymmetryEncoder symmEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);
+        WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
         programEncoder.initializeEncoding(ctx);
         propertyEncoder.initializeEncoding(ctx);
         symmEncoder.initializeEncoding(ctx);
@@ -131,23 +136,17 @@ public class RefinementSolver extends ModelChecker {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula globalRefinement = bmgr.makeTrue();
 
-        WMMSolver solver = new WMMSolver(task, analysisContext, cutRelations);
+        WMMSolver solver = WMMSolver.withContext(context, cutRelations, task, analysisContext);
         Refiner refiner = new Refiner(memoryModel, analysisContext);
         CAATSolver.Status status = INCONSISTENT;
 
-        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
-        if(bmgr.isFalse(propertyEncoding)) {
-            logger.info("Verification finished: property trivially holds");
-       		return PASS;        	
-        }
-
         logger.info("Starting encoding using " + ctx.getVersion());
-        prover.addConstraint(programEncoder.encodeFullProgram(ctx));
-        prover.addConstraint(baselineEncoder.encodeFullMemoryModel(ctx));
-        prover.addConstraint(symmEncoder.encodeFullSymmetry(ctx));
+        prover.addConstraint(programEncoder.encodeFullProgram());
+        prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
+        prover.addConstraint(symmEncoder.encodeFullSymmetryBreaking());
 
         prover.push();
-        prover.addConstraint(propertyEncoding);
+        prover.addConstraint(propertyEncoder.encodeSpecification());
 
         //  ------ Just for statistics ------
         List<WMMSolver.Statistics> statList = new ArrayList<>();
@@ -179,7 +178,7 @@ public class RefinementSolver extends ModelChecker {
             curTime = System.currentTimeMillis();
             WMMSolver.Result solverResult;
             try (Model model = prover.getModel()) {
-                solverResult = solver.check(model, ctx);
+                solverResult = solver.check(model);
             } catch (SolverException e) {
                 logger.error(e);
                 throw e;
@@ -193,7 +192,7 @@ public class RefinementSolver extends ModelChecker {
             if (status == INCONSISTENT) {
                 long refineTime = System.currentTimeMillis();
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
-                BooleanFormula refinement = refiner.refine(reasons, ctx);
+                BooleanFormula refinement = refiner.refine(reasons, context);
                 prover.addConstraint(refinement);
                 globalRefinement = bmgr.and(globalRefinement, refinement); // Track overall refinement progress
                 totalRefiningTime += (System.currentTimeMillis() - refineTime);
@@ -244,26 +243,25 @@ public class RefinementSolver extends ModelChecker {
 
         if (status == INCONCLUSIVE) {
             // CAATSolver got no result (should not be able to happen), so we cannot proceed further.
-            return UNKNOWN;
+            res = UNKNOWN;
+            return;
         }
 
-
-        Result veriResult;
         long boundCheckTime = 0;
         if (prover.isUnsat()) {
             // ------- CHECK BOUNDS -------
             lastTime = System.currentTimeMillis();
             prover.pop();
             // Add bound check
-            prover.addConstraint(propertyEncoder.encodeBoundEventExec(ctx));
+            prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             // Add back the constraints found during Refinement
             // TODO: We actually need to perform a second refinement to check for bound reachability
             //  This is needed for the seqlock.c benchmarks!
             prover.addConstraint(globalRefinement);
-            veriResult = !prover.isUnsat() ? UNKNOWN : PASS;
+            res = !prover.isUnsat() ? UNKNOWN : PASS;
             boundCheckTime = System.currentTimeMillis() - lastTime;
         } else {
-            veriResult = FAIL;
+            res = FAIL;
         }
 
         if (logger.isInfoEnabled()) {
@@ -279,9 +277,8 @@ public class RefinementSolver extends ModelChecker {
     		logger.debug(smtStatistics.toString());
         }
 
-        veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;
-        logger.info("Verification finished with result " + veriResult);
-        return veriResult;
+        res = program.getAss().getInvert() ? res.invert() : res;
+        logger.info("Verification finished with result " + res);
     }
     // ======================= Helper Methods ======================
 
@@ -290,7 +287,6 @@ public class RefinementSolver extends ModelChecker {
     // ignored for Refinement.
     private static Set<Relation> cutRelationDifferences(Wmm targetWmm, Wmm baselineWmm) {
         // TODO: Add support to move flagged axioms to the baselineWmm
-        RelationRepository repo = baselineWmm.getRelationRepository();
         Set<Relation> cutRelations = new HashSet<>();
         Set<Relation> cutCandidates = new HashSet<>();
         targetWmm.getAxioms().stream().filter(ax -> !ax.isFlagged())
@@ -303,7 +299,7 @@ public class RefinementSolver extends ModelChecker {
                     // in our Wmm but for CAAT they are derived from unary predicates!
                     logger.info("Found difference {}. Cutting rhs relation {}", rel, sec);
                     cutRelations.add(sec);
-                    baselineWmm.addAxiom(new ForceEncodeAxiom(getCopyOfRelation(sec, repo)));
+                    baselineWmm.addAxiom(new ForceEncodeAxiom(getCopyOfRelation(sec, baselineWmm)));
                 }
             }
         }
@@ -316,40 +312,35 @@ public class RefinementSolver extends ModelChecker {
         }
     }
 
-    private static Relation getCopyOfRelation(Relation rel, RelationRepository repo) {
-        if (repo.containsRelation(rel.getName())) {
-            return repo.getRelation(rel.getName());
+    private static Relation getCopyOfRelation(Relation rel, Wmm m) {
+        checkArgument(!(rel instanceof RecursiveRelation), "Cannot cut recursively defined relation %s from memory model. ", rel);
+        Relation namedCopy = m.getRelation(rel.getName());
+        if (namedCopy != null) {
+            return namedCopy;
         }
-
-        if (rel instanceof RecursiveRelation) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot cut recursively defined relation %s from memory model. ", rel));
+        Relation copy = rel.accept(new RelationCopier(m));
+        if (rel.getIsNamed()) {
+            copy.setName(rel.getName());
         }
-
-        Relation copy = repo.getRelation(rel.getName());
-        if (copy == null) {
-            List<Object> deps = new ArrayList<>(rel.getDependencies().size());
-            if (rel instanceof RelSetIdentity) {
-                deps.add(((RelSetIdentity)rel).getFilter());
-            } else if (rel instanceof RelCartesian) {
-                deps.add(((RelCartesian) rel).getFirstFilter());
-                deps.add(((RelCartesian) rel).getSecondFilter());
-            } else if (rel instanceof RelFencerel) {
-                deps.add(((RelFencerel)rel).getFenceName());
-            } else {
-                for (Relation dep : rel.getDependencies()) {
-                    deps.add(getCopyOfRelation(dep, repo));
-                }
-            }
-
-            copy = repo.getRelation(rel.getClass(), deps.toArray());
-            if (rel.getIsNamed()) {
-                copy.setName(rel.getName());
-                repo.updateRelation(copy);
-            }
-        }
-
+        m.addRelation(copy);
         return copy;
+    }
+
+    private static final class RelationCopier implements Relation.Visitor<Relation> {
+        final Wmm targetModel;
+        RelationCopier(Wmm m) { targetModel = m; }
+        @Override public Relation visitUnion(Relation rel, Relation... r) { return new RelUnion(copy(r[0]), copy(r[1])); }
+        @Override public Relation visitIntersection(Relation rel, Relation... r) { return new RelIntersection(copy(r[0]), copy(r[1])); }
+        @Override public Relation visitDifference(Relation rel, Relation r1, Relation r2) { return new RelMinus(copy(r1), copy(r2)); }
+        @Override public Relation visitComposition(Relation rel, Relation r1, Relation r2) { return new RelComposition(copy(r1), copy(r2)); }
+        @Override public Relation visitInverse(Relation rel, Relation r1) { return new RelInverse(copy(r1)); }
+        @Override public Relation visitDomainIdentity(Relation rel, Relation r1) { return new RelDomainIdentity(copy(r1)); }
+        @Override public Relation visitRangeIdentity(Relation rel, Relation r1) { return new RelRangeIdentity(copy(r1)); }
+        @Override public Relation visitTransitiveClosure(Relation rel, Relation r1) { return new RelTrans(copy(r1)); }
+        @Override public Relation visitIdentity(Relation rel, FilterAbstract filter) { return new RelSetIdentity(filter); }
+        @Override public Relation visitProduct(Relation rel, FilterAbstract f1, FilterAbstract f2) { return new RelCartesian(f1, f2); }
+        @Override public Relation visitFences(Relation rel, FilterAbstract type) { return new RelFencerel(type); }
+        private Relation copy(Relation r) { return getCopyOfRelation(r, targetModel); }
     }
 
     // -------------------- Printing -----------------------------
@@ -428,50 +419,49 @@ public class RefinementSolver extends ModelChecker {
         String directoryName = String.format("%s/refinement/%s-%s-debug/", System.getenv("DAT3M_OUTPUT"), programName, task.getProgram().getArch());
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
         // File with reason edges only
-        generateGraphvizFile(model, iterationCount, edgeFilter, directoryName, fileNameBase);
+        generateGraphvizFile(model, iterationCount, edgeFilter, directoryName, fileNameBase, new HashMap<>());
         // File with all edges
-        generateGraphvizFile(model, iterationCount, (x,y) -> true, directoryName, fileNameBase + "-full");
+        generateGraphvizFile(model, iterationCount, (x,y) -> true, directoryName, fileNameBase + "-full", new HashMap<>());
     }
 
     private Wmm createDefaultWmm() {
         Wmm baseline = new Wmm();
-        RelationRepository repo = baseline.getRelationRepository();
-        Relation rf = repo.getRelation(RF);
+        Relation rf = baseline.getRelation(RF);
         if(baselines.contains(Baseline.UNIPROC)) {
             // ---- acyclic(po-loc | rf) ----
-            Relation poloc = repo.getRelation(POLOC);
-            Relation co = repo.getRelation(CO);
-            Relation fr = repo.getRelation(FR);
+            Relation poloc = baseline.getRelation(POLOC);
+            Relation co = baseline.getRelation(CO);
+            Relation fr = baseline.getRelation(FR);
             Relation porf = new RelUnion(poloc, rf);
-            repo.addRelation(porf);
+            baseline.addRelation(porf);
             Relation porfco = new RelUnion(porf, co);
-            repo.addRelation(porfco);
+            baseline.addRelation(porfco);
             Relation porfcofr = new RelUnion(porfco, fr);
-            repo.addRelation(porfcofr);
+            baseline.addRelation(porfcofr);
             baseline.addAxiom(new Acyclic(porfcofr));
         }
         if(baselines.contains(Baseline.NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
-            Relation data = repo.getRelation(DATA);
-            Relation ctrl = repo.getRelation(CTRL);
-            Relation addr = repo.getRelation(ADDR);
+            Relation data = baseline.getRelation(DATA);
+            Relation ctrl = baseline.getRelation(CTRL);
+            Relation addr = baseline.getRelation(ADDR);
             Relation dep = new RelUnion(data, addr);
-            repo.addRelation(dep);
+            baseline.addRelation(dep);
             dep = new RelUnion(ctrl, dep);
-            repo.addRelation(dep);
+            baseline.addRelation(dep);
             Relation hb = new RelUnion(dep, rf);
-            repo.addRelation(hb);
+            baseline.addRelation(hb);
             baseline.addAxiom(new Acyclic(hb));
         }
         if(baselines.contains(Baseline.ATOMIC_RMW)) {
             // ---- empty (rmw & fre;coe) ----
-            Relation rmw = repo.getRelation(RMW);
-            Relation coe = repo.getRelation(COE);
-            Relation fre = repo.getRelation(FRE);
+            Relation rmw = baseline.getRelation(RMW);
+            Relation coe = baseline.getRelation(COE);
+            Relation fre = baseline.getRelation(FRE);
             Relation frecoe = new RelComposition(fre, coe);
-            repo.addRelation(frecoe);
+            baseline.addRelation(frecoe);
             Relation rmwANDfrecoe = new RelIntersection(rmw, frecoe);
-            repo.addRelation(rmwANDfrecoe);
+            baseline.addRelation(rmwANDfrecoe);
             baseline.addAxiom(new Empty(rmwANDfrecoe));
         }
         return baseline;

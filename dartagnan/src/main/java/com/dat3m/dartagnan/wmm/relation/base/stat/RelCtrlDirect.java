@@ -23,6 +23,11 @@ public class RelCtrlDirect extends StaticRelation {
     }
 
     @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitControl(this);
+    }
+
+    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();

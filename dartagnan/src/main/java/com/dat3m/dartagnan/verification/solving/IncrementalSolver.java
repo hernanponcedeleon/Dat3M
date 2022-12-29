@@ -1,11 +1,7 @@
 package com.dat3m.dartagnan.verification.solving;
 
-import com.dat3m.dartagnan.encoding.ProgramEncoder;
-import com.dat3m.dartagnan.encoding.PropertyEncoder;
-import com.dat3m.dartagnan.encoding.SymmetryEncoder;
-import com.dat3m.dartagnan.encoding.WmmEncoder;
+import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -18,8 +14,7 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.*;
 
 public class IncrementalSolver extends ModelChecker {
 
@@ -35,13 +30,14 @@ public class IncrementalSolver extends ModelChecker {
         task = t;
     }
 
-    public static Result run(SolverContext ctx, ProverEnvironment prover, VerificationTask task) 
+    public static IncrementalSolver run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
     		throws InterruptedException, SolverException, InvalidConfigurationException {
-        return new IncrementalSolver(ctx, prover, task).run();
+        IncrementalSolver s = new IncrementalSolver(ctx, prover, task);
+        s.run();
+        return s;
     }
 
-    private Result run() throws InterruptedException, SolverException, InvalidConfigurationException {
-        Result res = Result.UNKNOWN;
+    private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
         Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
         Context analysisContext = Context.create();
@@ -52,39 +48,34 @@ public class IncrementalSolver extends ModelChecker {
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
 
-        ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
-        PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, memoryModel,analysisContext, config);
-        WmmEncoder wmmEncoder = WmmEncoder.fromConfig(memoryModel, analysisContext, config);
-        SymmetryEncoder symmetryEncoder = SymmetryEncoder.fromConfig(memoryModel, analysisContext, config);
+        context = EncodingContext.of(task, analysisContext, ctx);
+        ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
+        PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
+        WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
+        SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);
 
         programEncoder.initializeEncoding(ctx);
         propertyEncoder.initializeEncoding(ctx);
         wmmEncoder.initializeEncoding(ctx);
         symmetryEncoder.initializeEncoding(ctx);
         
-        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
-        if(ctx.getFormulaManager().getBooleanFormulaManager().isFalse(propertyEncoding)) {
-            logger.info("Verification finished: property trivially holds");
-       		return PASS;        	
-        }
-
         logger.info("Starting encoding using " + ctx.getVersion());
-        prover.addConstraint(programEncoder.encodeFullProgram(ctx));
-        prover.addConstraint(wmmEncoder.encodeFullMemoryModel(ctx));
+        prover.addConstraint(programEncoder.encodeFullProgram());
+        prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
-        prover.addConstraint(task.getWitness().encode(task.getProgram(), ctx));
-        prover.addConstraint(symmetryEncoder.encodeFullSymmetry(ctx));
+        prover.addConstraint(task.getWitness().encode(context));
+        prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
         logger.info("Starting push()");
         prover.push();
-        prover.addConstraint(propertyEncoding);
+        prover.addConstraint(propertyEncoder.encodeSpecification());
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsat()) {
         	prover.pop();
-			prover.addConstraint(propertyEncoder.encodeBoundEventExec(ctx));
+			prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             logger.info("Starting second solver.check()");
-            res = prover.isUnsat()? PASS : Result.UNKNOWN;
+            res = prover.isUnsat()? PASS : UNKNOWN;
         } else {
         	res = FAIL;
         }
@@ -99,6 +90,5 @@ public class IncrementalSolver extends ModelChecker {
 
         res = task.getProgram().getAss().getInvert() ? res.invert() : res;
         logger.info("Verification finished with result " + res);
-        return res;
     }
 }

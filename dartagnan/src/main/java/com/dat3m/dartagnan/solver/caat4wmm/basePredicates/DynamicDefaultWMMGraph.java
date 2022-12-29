@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.solver.caat4wmm.basePredicates;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Collections;
 import java.util.List;
@@ -31,7 +31,7 @@ public class DynamicDefaultWMMGraph extends MaterializedWMMGraph {
         // Careful: The wrapped model <getModel> might get closed/disposed while ExecutionModel as a whole is
         // still in use. The caller should make sure that the underlying model is still alive right now.
         Model m = model.getModel();
-        SolverContext ctx = model.getContext();
+        EncodingContext ctx = model.getContext();
 
         if (relation.getMaxTupleSet().size() < domain.size() * domain.size()) {
             relation.getMaxTupleSet()
@@ -49,12 +49,12 @@ public class DynamicDefaultWMMGraph extends MaterializedWMMGraph {
         }
     }
 
-    private Edge getEdgeFromEventData(EventData e1, EventData e2, Model m, SolverContext ctx) {
-        return m.evaluate(relation.getSMTVar(e1.getEvent(), e2.getEvent(), ctx)) == Boolean.TRUE
+    private Edge getEdgeFromEventData(EventData e1, EventData e2, Model m, EncodingContext ctx) {
+        return m.evaluate(ctx.edge(relation, e1.getEvent(), e2.getEvent())) == Boolean.TRUE
                 ? new Edge(e1.getId(), e2.getId()) : null;
     }
 
-    private Edge getEdgeFromTuple(Tuple t, Model m, SolverContext ctx) {
+    private Edge getEdgeFromTuple(Tuple t, Model m, EncodingContext ctx) {
         Optional<EventData> e1 = model.getData(t.getFirst());
         Optional<EventData> e2 = model.getData(t.getSecond());
         return e1.isPresent() && e2.isPresent() ? getEdgeFromEventData(e1.get(), e2.get(), m, ctx) : null;

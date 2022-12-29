@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.utils.symmetry;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
@@ -9,20 +10,16 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
-import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 import java.util.function.Function;
@@ -75,6 +72,7 @@ public class CoSymmetryBreaking {
 
     private static final Logger logger = LogManager.getLogger(CoSymmetryBreaking.class);
 
+    private final EncodingContext context;
     private final VerificationTask task;
     private final ThreadSymmetry symm;
     private final AliasAnalysis alias;
@@ -89,11 +87,12 @@ public class CoSymmetryBreaking {
         boolean hasMustEdges; // True if the coherences of the first write in <writes> can be broken via must-edges.
     }
 
-    public CoSymmetryBreaking(VerificationTask task, Context analysisContext) {
-        this.task = Preconditions.checkNotNull(task);
-        this.symm = analysisContext.requires(ThreadSymmetry.class);
-        this.alias = analysisContext.requires(AliasAnalysis.class);
-        this.co = task.getMemoryModel().getRelationRepository().getRelation(RelationNameRepository.CO);
+    public CoSymmetryBreaking(EncodingContext context) {
+        this.context = context;
+        this.task = context.getTask();
+        this.symm = context.getAnalysisContext().requires(ThreadSymmetry.class);
+        this.alias = context.getAnalysisContext().requires(AliasAnalysis.class);
+        this.co = task.getMemoryModel().getRelation(RelationNameRepository.CO);
         infoMap = new HashMap<>();
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
             initialize(symmClass);
@@ -180,17 +179,17 @@ public class CoSymmetryBreaking {
         return mustEdges;
     }
 
-    public BooleanFormula encode(SolverContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    public BooleanFormula encode() {
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
-            enc = bmgr.and(enc, encode(symmClass, ctx));
+            enc = bmgr.and(enc, encode(symmClass));
         }
         return enc;
     }
 
-    public BooleanFormula encode(EquivalenceClass<Thread> symmClass, SolverContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    public BooleanFormula encode(EquivalenceClass<Thread> symmClass) {
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         if (symmClass.getEquivalence() != symm) {
             return enc;
@@ -217,9 +216,11 @@ public class CoSymmetryBreaking {
         // Starting row
         List<BooleanFormula> r1 = new ArrayList<>(r1Tuples.size() + 1);
         if (info.hasMustEdges) {
-            r1.add(info.writes.get(0).exec());
+            r1.add(context.execution(info.writes.get(0)));
         }
-        r1.addAll(Lists.transform(r1Tuples, t -> co.getSMTVar(t, ctx)));
+        for (Tuple t : r1Tuples) {
+            r1.add(context.edge(co, t));
+        }
 
         // Construct symmetric rows
         Thread rep = symmClass.getRepresentative();
@@ -229,13 +230,15 @@ public class CoSymmetryBreaking {
             List<Tuple> r2Tuples = r1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
             List<BooleanFormula> r2 = new ArrayList<>(r2Tuples.size() + 1);
             if (info.hasMustEdges) {
-                r2.add(symm.map(info.writes.get(0), t2).exec());
+                r2.add(context.execution(symm.map(info.writes.get(0), t2)));
             }
-            r2.addAll(Lists.transform(r2Tuples, t -> co.getSMTVar(t, ctx)));
+            for (Tuple t : r2Tuples) {
+                r2.add(context.edge(co, t));
+            }
 
             final String id = "_" + rep.getId() + "_" + i;
             // NOTE: We want to have r1 >= r2 but lexLeader encodes r1 <= r2, so we swap r1 and r2.
-            enc = bmgr.and(enc, SymmetryEncoder.encodeLexLeader(id, r2, r1, ctx));
+            enc = bmgr.and(enc, SymmetryEncoder.encodeLexLeader(id, r2, r1, context));
 
             t1 = t2;
             r1Tuples = r2Tuples;

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -17,15 +16,12 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
-import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 public class RelRf extends Relation {
 
@@ -35,6 +31,10 @@ public class RelRf extends Relation {
         term = RF;
     }
 
+    @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitReadFrom(this);
+    }
 
     @Override
     public TupleSet getMinTupleSet(){
@@ -164,65 +164,4 @@ public class RelRf extends Relation {
         }
         logger.info("Atomic block optimization eliminated "  + (sizeBefore - maxTupleSet.size()) + " reads");
     }
-
-    @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
-    	FormulaManager fmgr = ctx.getFormulaManager();
-		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-
-    	BooleanFormula enc = bmgr.makeTrue();
-        Map<MemEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
-
-        for(Tuple tuple : maxTupleSet){
-            MemEvent w = (MemEvent) tuple.getFirst();
-            MemEvent r = (MemEvent) tuple.getSecond();
-            BooleanFormula edge = this.getSMTVar(tuple, ctx);
-
-            // The boogie file might have a different type (Ints vs BVs) that the imposed by ARCH_PRECISION
-            // In such cases we perform the transformation 
-            Formula a1 = w.getMemAddressExpr();
-            Formula a2 = r.getMemAddressExpr();
-            BooleanFormula sameAddress = generalEqual(a1, a2, ctx);
-            Formula v1 = w.getMemValueExpr();
-            Formula v2 = r.getMemValueExpr();
-            BooleanFormula sameValue = generalEqual(v1, v2, ctx);
-
-            edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(edge);
-            enc = bmgr.and(enc, bmgr.implication(edge, bmgr.and(getExecPair(w, r, ctx), sameAddress, sameValue)));
-        }
-
-        for(MemEvent r : edgeMap.keySet()){
-            enc = bmgr.and(enc, encodeEdgeSeq(r, edgeMap.get(r), ctx));
-        }
-        return enc;
-    }
-
-    private BooleanFormula encodeEdgeSeq(Event read, List<BooleanFormula> edges, SolverContext ctx){
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        if (GlobalSettings.ALLOW_MULTIREADS) {
-            return bmgr.implication(read.exec(), bmgr.or(edges));
-        }
-    	
-        int num = edges.size();
-        int readId = read.getCId();
-        BooleanFormula lastSeqVar = mkSeqVar(readId, 0, ctx);
-        BooleanFormula newSeqVar = lastSeqVar;
-        BooleanFormula atMostOne = bmgr.equivalence(lastSeqVar, edges.get(0));
-
-        for(int i = 1; i < num; i++){
-            newSeqVar = mkSeqVar(readId, i, ctx);
-            atMostOne = bmgr.and(atMostOne, bmgr.equivalence(newSeqVar, bmgr.or(lastSeqVar, edges.get(i))));
-            atMostOne = bmgr.and(atMostOne, bmgr.not(bmgr.and(edges.get(i), lastSeqVar)));
-            lastSeqVar = newSeqVar;
-        }
-        BooleanFormula atLeastOne = bmgr.or(newSeqVar, edges.get(edges.size() - 1));
-
-        atLeastOne = bmgr.implication(read.exec(), atLeastOne);
-        return bmgr.and(atMostOne, atLeastOne);
-    }
-
-    private BooleanFormula mkSeqVar(int readId, int i, SolverContext ctx) {
-    	return ctx.getFormulaManager().makeVariable(BooleanType, "s(" + term + ",E" + readId + "," + i + ")");
-    }
-
 }

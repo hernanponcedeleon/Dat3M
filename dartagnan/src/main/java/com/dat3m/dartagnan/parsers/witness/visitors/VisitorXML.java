@@ -42,6 +42,9 @@ public class VisitorXML extends XMLParserBaseVisitor<Object> {
 					if(key.equals(UNROLLBOUND.toString())) {
 						graph.addAttribute(key, value);	
 					}
+					if(key.equals(WITNESSTYPE.toString()) && !value.equals("violation_witness")) {
+						throw new ParsingException("Dartagnan can only validate violation witnesses");	
+					}
 				}
 			}
 			if(ctx.Name(0).getText().equals("node")) {

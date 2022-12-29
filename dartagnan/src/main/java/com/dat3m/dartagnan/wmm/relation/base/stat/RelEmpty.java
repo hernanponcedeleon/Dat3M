@@ -17,6 +17,11 @@ public class RelEmpty extends StaticRelation {
     }
 
     @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitEmpty(this);
+    }
+
+    @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             minTupleSet = new TupleSet();
@@ -30,10 +35,5 @@ public class RelEmpty extends StaticRelation {
             maxTupleSet = new TupleSet();
         }
         return maxTupleSet;
-    }
-
-    @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
-        return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
     }
 }

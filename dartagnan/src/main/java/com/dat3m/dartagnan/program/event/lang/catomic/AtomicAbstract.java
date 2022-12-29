@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
@@ -18,9 +19,10 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
 
     AtomicAbstract(IExpr address, Register register, IExpr value, String mo) {
         super(address, mo);
+        Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
         this.resultRegister = register;
         this.value = value;
-        addFilters(ANY, VISIBLE, MEMORY, READ, WRITE, RMW, REG_WRITER, REG_READER);
+        addFilters(READ, WRITE, RMW, REG_WRITER, REG_READER);
     }
 
     AtomicAbstract(AtomicAbstract other) {

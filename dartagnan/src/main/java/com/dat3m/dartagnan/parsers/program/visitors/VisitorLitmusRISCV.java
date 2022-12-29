@@ -247,8 +247,8 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	// =======================================
 	
 	private String getMo(LitmusRISCVParser.MoRISCVContext mo1, LitmusRISCVParser.MoRISCVContext mo2) {
-		String moR = mo1 != null ? mo1.mo : null;
-		String moW = mo2 != null ? mo2.mo : null;
-		return moR != null ? (moW != null ? Tag.RISCV.MO_ACQ_REL : moR) : moW;
+		String moR = mo1 != null ? mo1.mo : "";
+		String moW = mo2 != null ? mo2.mo : "";
+		return !moR.isEmpty() ? (!moW.isEmpty() ? Tag.RISCV.MO_ACQ_REL : moR) : moW;
 	}
 }

@@ -11,7 +11,7 @@ GENMC_FAIL="Assertion violation"
 NIDHUGG_PASS="No errors were detected"
 NIDHUGG_FAIL="Assertion violation"
 
-declare -a BENCHMARKS=( "locks/ttas-5" "locks/ticketlock-6" "locks/mutex-4" "locks/spinlock-5" "locks/linuxrwlock-3" "locks/mutex_musl-4" "lfds/safe_stack-3" "lfds/chase-lev-5" "lfds/dglm-3" "lfds/harris-3" "lfds/ms-3" "lfds/treiber-3" )
+declare -a BENCHMARKS=( "locks/ttas" "locks/ticketlock" "locks/mutex" "locks/spinlock" "locks/linuxrwlock" "locks/mutex_musl" "lfds/safe_stack-3" "lfds/chase-lev-5" "lfds/dglm-3" "lfds/harris-3" "lfds/ms-3" "lfds/treiber-3" )
 declare -a METHODS=( "caat assume" )
 
 CAT=riscv-orig.cat

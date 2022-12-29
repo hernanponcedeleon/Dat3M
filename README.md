@@ -13,6 +13,7 @@ Requirements
 * [Java](https://openjdk.java.net/projects/jdk/16/) 8 or above
 * [Smack](https://github.com/smackers/smack) 2.8.0 or above (only to verify C programs)
 * [Clang](https://clang.llvm.org) the concrete version depends on Smack (only to verify C programs)
+* [Atomic-replace](https://github.com/hernanponcedeleon/Dat3M/tree/master/llvm-passes/atomic-replace) library
 * [Graphviz](https://graphviz.org) (only if option `--witness.graphviz=true` is used)
 
 Installation
@@ -44,6 +45,7 @@ At least the following compiler flag needs to be set, further can be added
 ```
 export CFLAGS="-I$DAT3M_HOME/include"
 export SMACK_FLAGS="-q -t --no-memory-splitting"
+export ATOMIC_REPLACE_OPTS="-mem2reg -indvars -loop-unroll -simplifycfg -gvn"
 ```
 
 If you are verifying C code, be sure both `clang` and `smack` are in your `PATH`.
@@ -58,7 +60,7 @@ Usage
 Dartagnan comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
 You can start the user interface by running
 ```
-java -jar ui/target/ui-3.1.0.jar
+java -jar ui/target/ui-3.1.1.jar
 ```
 <p align="center"> 
 <img src="ui/src/main/resources/ui.jpg">
@@ -74,7 +76,7 @@ There are three possible results for the verification:
 You can also run Dartagnan from the console:
 
 ```
-java -jar dartagnan/target/dartagnan-3.1.0.jar <CAT file> [--target=<arch>] <program file> [options]
+java -jar dartagnan/target/dartagnan-3.1.1.jar <CAT file> [--target=<arch>] <program file> [options]
 ```
 For programs written in `.c` and `.bpl`, value `<arch>` specifies the programming language or architectures to which the program will be compiled. It must be one of the following: 
 - c11

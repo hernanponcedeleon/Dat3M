@@ -17,6 +17,11 @@ public class RelAddrDirect extends BasicRegRelation {
     }
 
     @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitAddressDependency(this);
+    }
+
+    @Override
     protected Collection<Event> getEvents() {
         return task.getProgram().getCache().getEvents(FilterBasic.get(Tag.MEMORY));
     }

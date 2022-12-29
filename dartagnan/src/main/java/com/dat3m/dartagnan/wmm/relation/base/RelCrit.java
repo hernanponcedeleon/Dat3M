@@ -7,9 +7,6 @@ import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.ArrayDeque;
 import java.util.List;
@@ -26,6 +23,11 @@ public class RelCrit extends StaticRelation {
 
     public RelCrit(){
         term = CRIT;
+    }
+
+    @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitCriticalSections(this);
     }
 
     @Override
@@ -97,29 +99,6 @@ public class RelCrit extends StaticRelation {
                 }
             }
         }
-    }
-
-    @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
-        for (Tuple tuple : encodeTupleSet) {
-            Event lock = tuple.getFirst();
-            Event unlock = tuple.getSecond();
-            BooleanFormula relation = getExecPair(tuple, ctx);
-            for (Tuple t : maxTupleSet.getBySecond(unlock)) {
-                if (isOrdered(lock, t.getFirst(), unlock)) {
-                    relation = bmgr.and(relation, bmgr.not(getSMTVar(t, ctx)));
-                }
-            }
-            for (Tuple t : maxTupleSet.getByFirst(lock)) {
-                if (isOrdered(lock, t.getSecond(), unlock)) {
-                    relation = bmgr.and(relation, bmgr.not(getSMTVar(t, ctx)));
-                }
-            }
-            enc = bmgr.and(enc, bmgr.equivalence(getSMTVar(tuple, ctx), relation));
-        }
-        return enc;
     }
 
     private boolean isOrdered(Event x, Event y, Event z) {

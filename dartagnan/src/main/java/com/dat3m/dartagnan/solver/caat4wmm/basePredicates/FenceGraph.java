@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.solver.caat4wmm.basePredicates;
 
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.solver.caat.misc.EdgeDirection;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
@@ -11,11 +12,11 @@ import java.util.stream.Stream;
 
 public class FenceGraph extends StaticWMMGraph {
 
-    private final String fenceName;
+    private final FilterAbstract fenceFilter;
     private Map<Thread, List<EventData>> threadFencesMap;
 
-    public FenceGraph(String fenceName) {
-        this.fenceName = fenceName;
+    public FenceGraph(FilterAbstract fenceFilter) {
+        this.fenceFilter = fenceFilter;
     }
 
     @Override
@@ -37,14 +38,10 @@ public class FenceGraph extends StaticWMMGraph {
         for (Thread t : model.getThreads()) {
             threadFencesMap.put(t, new ArrayList<>());
         }
-        Set<EventData> fenceEvents = model.getFenceMap().get(fenceName);
-        if (fenceEvents == null) {
-            return;
-        }
 
-        for (EventData fence : fenceEvents) {
-            threadFencesMap.get(fence.getThread()).add(fence);
-        }
+        model.getEventList().stream().filter(e -> fenceFilter.filter(e.getEvent()))
+                .forEach(fence -> threadFencesMap.get(fence.getThread()).add(fence));
+
         for (List<EventData> fenceList : threadFencesMap.values()) {
             fenceList.sort(Comparator.comparingInt(EventData::getLocalId));
         }

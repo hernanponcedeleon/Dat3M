@@ -65,12 +65,14 @@ public class CLKMM extends AbstractCTest {
 	@Test
 	@CSVLogger.FileName("csv/assume")
 	public void testAssume() throws Exception {
-		assertEquals(expected, AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
+		AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+		assertEquals(expected, s.getResult());
 	}
 
 	@Test
 	@CSVLogger.FileName("csv/refinement")
 	public void testRefinement() throws Exception {
-		assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
+		RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+		assertEquals(expected, s.getResult());
 	}
 }

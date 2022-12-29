@@ -1,14 +1,14 @@
 package com.dat3m.dartagnan.asserts;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
-
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AssertBasic extends AbstractAssert {
 
@@ -23,7 +23,8 @@ public class AssertBasic extends AbstractAssert {
     }
 
     @Override
-    public BooleanFormula encode(SolverContext ctx) {
+    public BooleanFormula encode(EncodingContext context) {
+        SolverContext ctx = context.getSolverContext();
         return op.encode(e1.getLastValueExpr(ctx), e2.getLastValueExpr(ctx), ctx);
     }
 

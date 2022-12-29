@@ -4,35 +4,39 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.List;
 
 public class RelFencerel extends StaticRelation {
 
-    private final String fenceName;
+    protected FilterAbstract filter;
 
-    public static String makeTerm(String fenceName){
-        return "fencerel(" + fenceName + ")";
+    public static String makeTerm(FilterAbstract filter){
+        return "fencerel(" + filter + ")";
     }
 
-    public RelFencerel(String fenceName) {
-        this.fenceName = fenceName;
-        term = makeTerm(fenceName);
+    public RelFencerel(FilterAbstract filter) {
+        this.filter = filter;
+        term = makeTerm(filter);
     }
 
-    public RelFencerel(String fenceName, String name) {
+    public RelFencerel(FilterAbstract filter, String name) {
         super(name);
-        this.fenceName = fenceName;
-        term = makeTerm(fenceName);
+        this.filter = filter;
+        term = makeTerm(filter);
     }
 
-    public String getFenceName() { return fenceName; }
+    public String getFenceName() { return name != null ? name : filter.getName(); }
+    public FilterAbstract getFilter() { return filter; }
+
+    @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitFences(this, filter);
+    }
 
     @Override
     public TupleSet getMinTupleSet(){
@@ -40,7 +44,7 @@ public class RelFencerel extends StaticRelation {
             ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
             minTupleSet = new TupleSet();
             for(Thread t : task.getProgram().getThreads()){
-                List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));
+                List<Event> fences = t.getCache().getEvents(filter);
                 List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(Tag.MEMORY));
                 for (Event fence : fences) {
                     int numEventsBeforeFence = (int) memEvents.stream()
@@ -69,7 +73,7 @@ public class RelFencerel extends StaticRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Thread t : task.getProgram().getThreads()){
-                List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));
+                List<Event> fences = t.getCache().getEvents(filter);
                 List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(Tag.MEMORY));
                 for (Event fence : fences) {
                     int numEventsBeforeFence = (int) memEvents.stream()
@@ -88,32 +92,5 @@ public class RelFencerel extends StaticRelation {
             removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
-    }
-
-    @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
-
-        List<Event> fences = task.getProgram().getCache().getEvents(FilterBasic.get(fenceName));
-
-        for(Tuple tuple : encodeTupleSet){
-            Event e1 = tuple.getFirst();
-            Event e2 = tuple.getSecond();
-
-            BooleanFormula orClause;
-            if(minTupleSet.contains(tuple)) {
-                orClause = bmgr.makeTrue();
-            } else {
-                orClause = fences.stream()
-                        .filter(f -> e1.getCId() < f.getCId() && f.getCId() < e2.getCId())
-                        .map(Event::exec).reduce(bmgr.makeFalse(), bmgr::or);
-            }
-
-            BooleanFormula rel = this.getSMTVar(tuple, ctx);
-            enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(getExecPair(tuple, ctx), orClause)));
-        }
-
-        return enc;
     }
 }

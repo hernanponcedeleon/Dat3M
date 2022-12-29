@@ -11,11 +11,9 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Memory;
-import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -23,12 +21,9 @@ import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.*;
-import java.util.function.BiFunction;
 
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqualZero;
 import static com.google.common.collect.Lists.reverse;
 
 @Options
@@ -38,17 +33,6 @@ public class ProgramEncoder implements Encoder {
 
     // =========================== Configurables ===========================
 
-    @Option(name = ALLOW_PARTIAL_EXECUTIONS,
-            description = "Allows to terminate executions on the first found violation. " +
-                    "This is not allowed on Litmus tests due to their different assertion condition.",
-            secure = true)
-    private boolean shouldAllowPartialExecutions = false;
-
-    @Option(name = MERGE_CF_VARS,
-            description = "Merges control flow variables of events with identical control-flow behaviour.",
-            secure = true)
-    private boolean shouldMergeCFVars = true;
-
     @Option(name = INITIALIZE_REGISTERS,
             description = "Assume thread-local variables start off containing zero.",
             secure = true)
@@ -56,87 +40,64 @@ public class ProgramEncoder implements Encoder {
 
     // =====================================================================
 
-    private final Program program;
-    private final BranchEquivalence eq;
+    private final EncodingContext context;
     private final ExecutionAnalysis exec;
     private final Dependency dep;
-    private boolean isInitialized = false;
 
-    private ProgramEncoder(Program program, Context context, Configuration config) throws InvalidConfigurationException {
-        Preconditions.checkArgument(program.isCompiled(), "The program must be compiled before encoding.");
-        this.program = Preconditions.checkNotNull(program);
-        this.eq = context.requires(BranchEquivalence.class);
-        this.exec = context.requires(ExecutionAnalysis.class);
-        this.dep = context.requires(Dependency.class);
-        config.inject(this);
-
-        logger.info("{}: {}", ALLOW_PARTIAL_EXECUTIONS, shouldAllowPartialExecutions);
-        logger.info("{}: {}", MERGE_CF_VARS, shouldMergeCFVars);
+    private ProgramEncoder(EncodingContext c) {
+        Preconditions.checkArgument(c.getTask().getProgram().isCompiled(), "The program must be compiled before encoding.");
+        context = c;
+        c.getAnalysisContext().requires(BranchEquivalence.class);
+        this.exec = c.getAnalysisContext().requires(ExecutionAnalysis.class);
+        this.dep = c.getAnalysisContext().requires(Dependency.class);
     }
 
-    public static ProgramEncoder fromConfig(Program program, Context context, Configuration config) throws InvalidConfigurationException {
-        return new ProgramEncoder(program, context, config);
+    public static ProgramEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
+        ProgramEncoder encoder = new ProgramEncoder(context);
+        context.getTask().getConfig().inject(encoder);
+        logger.info("{}: {}", INITIALIZE_REGISTERS, encoder.initializeRegisters);
+        return encoder;
     }
 
     // ============================== Initialization ==============================
 
     public void initializeEncoding(SolverContext ctx) {
-        for(Event e : program.getEvents()){
-            initEvent(e, ctx);
-        }
-        isInitialized = true;
-    }
-
-    private void initEvent(Event e, SolverContext ctx){
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-
-        boolean mergeVars = shouldMergeCFVars && !shouldAllowPartialExecutions;
-        String repr = mergeVars ? eq.getRepresentative(e).repr() : e.repr();
-        e.setCfVar(bmgr.makeVariable("cf(" + repr + ")"));
-        e.initializeEncoding(ctx);
-    }
-
-    private void checkInitialized() {
-        Preconditions.checkState(isInitialized, "initializeEncoding must get called before encoding.");
     }
 
     // ============================== Encoding ==============================
 
-    public BooleanFormula encodeFullProgram(SolverContext ctx) {
-        return ctx.getFormulaManager().getBooleanFormulaManager().and(
-                encodeMemory(ctx),
-                encodeControlFlow(ctx),
-                encodeFinalRegisterValues(ctx),
-                encodeFilter(ctx),
-                encodeDependencies(ctx));
+    public BooleanFormula encodeFullProgram() {
+        return context.getBooleanFormulaManager().and(
+                encodeMemory(),
+                encodeControlFlow(),
+                encodeFinalRegisterValues(),
+                encodeFilter(),
+                encodeDependencies());
     }
 
-    public BooleanFormula encodeControlFlow(SolverContext ctx) {
-        checkInitialized();
+    public BooleanFormula encodeControlFlow() {
         logger.info("Encoding program control flow");
 
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         
         BooleanFormula enc = bmgr.makeTrue();
-        for(Thread t : program.getThreads()){
-            enc = bmgr.and(enc, encodeThreadCF(t, ctx));
+        for(Thread t : context.getTask().getProgram().getThreads()){
+            enc = bmgr.and(enc, encodeThreadCF(t));
         }
         return enc;
     }
 
-    private BooleanFormula encodeThreadCF(Thread thread, SolverContext ctx){
-        checkInitialized();
+    private BooleanFormula encodeThreadCF(Thread thread) {
+        SolverContext ctx = context.getSolverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
-        BiFunction<BooleanFormula, BooleanFormula, BooleanFormula> cfEncoder = shouldAllowPartialExecutions ?
-                bmgr::implication : bmgr::equivalence;
         Map<Label, Set<Event>> labelJumpMap = new HashMap<>();
 
         Event pred = null;
         for(Event e : thread.getEntry().getSuccessors()) {
 
             // Immediate control flow
-            BooleanFormula cfCond = pred == null ? bmgr.makeTrue() : pred.cf();
+            BooleanFormula cfCond = pred == null ? bmgr.makeTrue() : context.controlFlow(pred);
             if (pred instanceof CondJump) {
                 CondJump jump = (CondJump) pred;
                 cfCond = bmgr.and(cfCond, bmgr.not(jump.getGuard().toBoolFormula(jump, ctx)));
@@ -149,22 +110,22 @@ public class ProgramEncoder implements Encoder {
             if (e instanceof Label) {
                 for (Event jump : labelJumpMap.getOrDefault(e, Collections.emptySet())) {
                     CondJump j = (CondJump)jump;
-                    cfCond = bmgr.or(cfCond, bmgr.and(j.cf(), j.getGuard().toBoolFormula(j, ctx)));
+                    cfCond = bmgr.or(cfCond, bmgr.and(context.controlFlow(j), context.jumpCondition(j)));
                 }
             }
 
-            enc = bmgr.and(enc, cfEncoder.apply(e.cf(), cfCond), e.encodeExec(ctx));
+            enc = bmgr.and(enc, bmgr.equivalence(context.controlFlow(e), cfCond), e.encodeExec(context));
             pred = e;
         }
         return enc;
     }
 
     // Assigns each Address a fixed memory address.
-    public BooleanFormula encodeMemory(SolverContext ctx) {
-        checkInitialized();
+    public BooleanFormula encodeMemory() {
+        SolverContext ctx = context.getSolverContext();
         logger.info("Encoding fixed memory");
 
-        Memory memory = program.getMemory();
+        Memory memory = context.getTask().getProgram().getMemory();
         FormulaManager fmgr = ctx.getFormulaManager();
         
         BooleanFormula[] addrExprs;
@@ -186,43 +147,15 @@ public class ProgramEncoder implements Encoder {
     }
 
     /**
-     * Simple formula proposing the execution of two events.
-     * Does not test for mutual exclusion.
-     * @param first
-     * Some event of a program to be encoded.
-     * @param second
-     * Another event of the same program.
-     * @param exec
-     * Analysis performed on the associated program.
-     * @param ctx
-     * Builder of expressions and formulas.
-     * @return
-     * Proposition that both {@code first} and {@code second} are included in the modelled execution.
-     */
-    public static BooleanFormula execution(Event first, Event second, ExecutionAnalysis exec, SolverContext ctx) {
-        boolean b = first.getCId() < second.getCId();
-        Event x = b ? first : second;
-        Event y = b ? second : first;
-        if(x.exec()==y.exec() || exec.isImplied(x,y)) {
-            return x.exec();
-        }
-        if(exec.isImplied(y,x)) {
-            return y.exec();
-        }
-        return ctx.getFormulaManager().getBooleanFormulaManager().and(x.exec(),y.exec());
-    }
-
-    /**
-     * @param ctx
-     * Builder of expressions and formulas.
      * @return
      * Describes that for each pair of events, if the reader uses the result of the writer,
      * then the value the reader gets from the register is exactly the value that the writer computed.
      * Also, the reader may only use the value of the latest writer that is executed.
      * Also, if no fitting writer is executed, the reader uses 0.
      */
-    public BooleanFormula encodeDependencies(SolverContext ctx) {
+    public BooleanFormula encodeDependencies() {
         logger.info("Encoding dependencies");
+        SolverContext ctx = context.getSolverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         for(Map.Entry<Event,Map<Register,Dependency.State>> e : dep.getAll()) {
@@ -243,37 +176,37 @@ public class ProgramEncoder implements Encoder {
                             assert state.may.size() == 1;
                             edge = bmgr.makeTrue();
                         } else {
-                            edge = bmgr.and(writer.exec(), reader.cf());
+                            edge = bmgr.and(context.execution(writer), context.controlFlow(reader));
                         }
                     } else {
-                        edge = dependencyEdgeVariable(writer, reader, bmgr);
-                        enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.and(writer.exec(), reader.cf(), bmgr.not(overwrite))));
+                        edge = context.dependency(writer, reader);
+                        enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.and(context.execution(writer), context.controlFlow(reader), bmgr.not(overwrite))));
                     }
-                    enc = bmgr.and(enc, bmgr.implication(edge, generalEqual(value, ((RegWriter) writer).getResultRegisterExpr(), ctx)));
-                    overwrite = bmgr.or(overwrite, writer.exec());
+                    enc = bmgr.and(enc, bmgr.implication(edge, context.equal(value, context.result((RegWriter) writer))));
+                    overwrite = bmgr.or(overwrite, context.execution(writer));
                 }
                 if(initializeRegisters && !state.initialized) {
-                    enc = bmgr.and(enc, bmgr.or(overwrite, bmgr.not(reader.cf()), generalEqualZero(value, ctx)));
+                    enc = bmgr.and(enc, bmgr.or(overwrite, bmgr.not(context.controlFlow(reader)), context.equalZero(value)));
                 }
             }
         }
         return enc;
     }
 
-    public BooleanFormula encodeFilter(SolverContext ctx) {
-    	return program.getAssFilter() != null ? 
-    			program.getAssFilter().encode(ctx) :
-    			ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
+    public BooleanFormula encodeFilter() {
+    	return context.getTask().getProgram().getAssFilter() != null ?
+                context.getTask().getProgram().getAssFilter().encode(context) :
+    			context.getBooleanFormulaManager().makeTrue();
     }
     
-    public BooleanFormula encodeFinalRegisterValues(SolverContext ctx) {
-        checkInitialized();
+    public BooleanFormula encodeFinalRegisterValues() {
+        SolverContext ctx = context.getSolverContext();
         logger.info("Encoding final register values");
 
         FormulaManager fmgr = ctx.getFormulaManager();
         BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 
-        if (program.getFormat() == Program.SourceLanguage.BOOGIE) {
+        if (context.getTask().getProgram().getFormat() == Program.SourceLanguage.BOOGIE) {
             // Boogie does not have assertions over final register values, so we do not need to encode them.
             return bmgr.makeTrue();
         }
@@ -284,29 +217,25 @@ public class ProgramEncoder implements Encoder {
             Dependency.State state = e.getValue();
             List<Event> writers = state.may;
             if(initializeRegisters && !state.initialized) {
-                BooleanFormula clause = generalEqualZero(value, ctx);
+                BooleanFormula clause = context.equalZero(value);
                 for(Event w : writers) {
-                    clause = bmgr.or(clause, w.exec());
+                    clause = bmgr.or(clause, context.execution(w));
                 }
                 enc = bmgr.and(enc, clause);
             }
             for(int i = 0; i < writers.size(); i++) {
                 Event writer = writers.get(i);
                 BooleanFormula clause = bmgr.or(
-                        generalEqual(value, ((RegWriter) writer).getResultRegisterExpr(), ctx),
-                        bmgr.not(writer.exec()));
+                        context.equal(value, context.result((RegWriter) writer)),
+                        bmgr.not(context.execution(writer)));
                 for(Event w : writers.subList(i + 1, writers.size())) {
                     if(!exec.areMutuallyExclusive(writer, w)) {
-                        clause = bmgr.or(clause, w.exec());
+                        clause = bmgr.or(clause, context.execution(w));
                     }
                 }
                 enc = bmgr.and(enc, clause);
             }
         }
         return enc;
-    }
-
-    public static BooleanFormula dependencyEdgeVariable(Event writer, Event reader, BooleanFormulaManager bmgr) {
-        return bmgr.makeVariable("idd " + writer.getCId() + " " + reader.getCId());
     }
 }

@@ -108,7 +108,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	public Object visitLoad(LitmusLISAParser.LoadContext ctx) {
         Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
         IExpr address = (IExpr) ctx.expression().accept(this);
-        String mo = ctx.mo() != null ? ctx.mo().getText() : null;
+        String mo = ctx.mo() != null ? ctx.mo().getText() : "";
 		programBuilder.addChild(mainThread, EventFactory.newLoad(reg, address, mo));
 		return null;
 	}
@@ -125,7 +125,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	public Object visitStore(LitmusLISAParser.StoreContext ctx) {
 		IExpr value = (IExpr) ctx.value().accept(this);
         IExpr address = (IExpr) ctx.expression().accept(this);
-        String mo = ctx.mo() != null ? ctx.mo().getText() : null;
+        String mo = ctx.mo() != null ? ctx.mo().getText() : "";
         programBuilder.addChild(mainThread, EventFactory.newStore(address, value, mo));
 		return null;
 
@@ -136,14 +136,14 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
         Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
 		IExpr value = (IExpr) ctx.value().accept(this);
         IExpr address = (IExpr) ctx.expression().accept(this);
-        String mo = ctx.mo() != null ? ctx.mo().getText() : null;
+        String mo = ctx.mo() != null ? ctx.mo().getText() : "";
         programBuilder.addChild(mainThread, EventFactory.LISA.newRMW(address, reg, value, mo));
 		return null;
 	}
 
 	@Override
 	public Object visitFence(LitmusLISAParser.FenceContext ctx) {
-        String mo = ctx.mo() != null ? ctx.mo().getText() : null;
+        String mo = ctx.mo() != null ? ctx.mo().getText() : "";
         programBuilder.addChild(mainThread, EventFactory.newFence(mo));
 		return null;
 	}

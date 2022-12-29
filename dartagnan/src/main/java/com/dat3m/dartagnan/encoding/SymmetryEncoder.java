@@ -1,19 +1,19 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
-import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -29,109 +29,117 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_BY_SYNC_DEGREE;
-import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_ON_RELATION;
+import static com.dat3m.dartagnan.configuration.OptionNames.BREAK_SYMMETRY_ON;
 
 @Options
 public class SymmetryEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(SymmetryEncoder.class);
 
-    private final Wmm memoryModel;
+    private final EncodingContext context;
+    private final List<Axiom> axioms;
     private final ThreadSymmetry symm;
     private final Relation rel;
 
-    @Option(name = BREAK_SYMMETRY_ON_RELATION,
-            description = "The relation on which symmetry breaking should happen." +
-            "Empty, if symmetry shall not be encoded.",
+    @Option(name = BREAK_SYMMETRY_ON,
+            description = "The target to break symmetry on. Allowed options are:\n" +
+                    "- A relation name to break symmetry on.\n" +
+                    "- The special value \"_cf\" to break symmetry on the control flow.\n" +
+                    "- The empty string to disable symmetry breaking.",
             secure = true)
-    private String symmBreakRelName = RelationNameRepository.RF;
+    private String symmBreakTarget = "";
 
     @Option(name = BREAK_SYMMETRY_BY_SYNC_DEGREE,
-            description = "Orders the relation edges to break on based on their synchronization strength.",
+            description = "Orders the relation edges to break on based on their synchronization strength." +
+            "Only has impact if breaking symmetry on relations rather than control flow.",
             secure = true)
     private boolean breakBySyncDegree = true;
 
     // =====================================================================
 
-    private SymmetryEncoder(Wmm memoryModel, Context context, Configuration config) throws InvalidConfigurationException {
-        this.memoryModel = Preconditions.checkNotNull(memoryModel);
-        this.symm = context.requires(ThreadSymmetry.class);
+    private SymmetryEncoder(EncodingContext c, Wmm m, Context a, Configuration config) throws InvalidConfigurationException {
+        context = c;
+        axioms = List.copyOf(m.getAxioms());
+        symm = c.getAnalysisContext().requires(ThreadSymmetry.class);
+        a.requires(RelationAnalysis.class);
         config.inject(this);
 
-        RelationRepository repo = memoryModel.getRelationRepository();
-        if (symmBreakRelName.isEmpty()) {
+        if (symmBreakTarget.isEmpty()) {
             logger.info("Symmetry breaking disabled.");
             this.rel = null;
-        } else if (!repo.containsRelation(symmBreakRelName)) {
-            logger.warn("The wmm has no relation named {} to break symmetry on." +
-                    " Symmetry breaking was disabled.", symmBreakRelName);
-            this.rel = null;
+        } else if (symmBreakTarget.equals("_cf")) {
+            logger.info("Breaking symmetry on control flow.");
+            a.requires(BranchEquivalence.class);
+            this.rel = new CfRelation();
+            this.breakBySyncDegree = false; // We cannot break by sync degree here
         } else {
-            this.rel = repo.getRelation(symmBreakRelName);
-            logger.info("Breaking symmetry on relation: " + symmBreakRelName);
-            logger.info("Breaking by sync degree: " + breakBySyncDegree);
+            this.rel = c.getTask().getMemoryModel().getRelation(symmBreakTarget);
+            if (this.rel == null) {
+                logger.warn("The wmm has no relation named {} to break symmetry on." +
+                        " Symmetry breaking was disabled.", symmBreakTarget);
+            } else {
+                logger.info("Breaking symmetry on relation: " + symmBreakTarget);
+                logger.info("Breaking by sync degree: " + breakBySyncDegree);
+            }
         }
     }
 
-    public static SymmetryEncoder fromConfig(Wmm memoryModel, Context context, Configuration config) throws InvalidConfigurationException {
-        return new SymmetryEncoder(memoryModel, context, config);
+    public static SymmetryEncoder withContext(EncodingContext context, Wmm memoryModel, Context analysisContext) throws InvalidConfigurationException {
+        return new SymmetryEncoder(context, memoryModel, analysisContext, context.getTask().getConfig());
     }
 
     @Override
     public void initializeEncoding(SolverContext context) { }
 
-    public BooleanFormula encodeFullSymmetry(SolverContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula enc = bmgr.makeTrue();
-        if (rel == null) {
-            return enc;
+    public BooleanFormula encodeFullSymmetryBreaking() {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        if (rel != null) {
+            return symm.getNonTrivialClasses().stream()
+                    .map(symmClass -> encodeSymmetryBreakingOnClass(rel, symmClass))
+                    .reduce(bmgr.makeTrue(), bmgr::and);
         }
-
-        for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
-            enc = bmgr.and(enc, encodeSymmetryClass(symmClass, ctx));
-        }
-        return enc;
+        return bmgr.makeTrue();
     }
 
-    public BooleanFormula encodeSymmetryClass(EquivalenceClass<Thread> symmClass, SolverContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula enc = bmgr.makeTrue();
-        if (rel == null || symmClass.getEquivalence() != symm) {
-            return enc;
-        }
+    private BooleanFormula encodeSymmetryBreakingOnClass(Relation rel, EquivalenceClass<Thread> symmClass) {
+        Preconditions.checkArgument(symmClass.getEquivalence() == symm,
+                "Symmetry class belongs to unexpected symmetry relation.");
+        Preconditions.checkNotNull(rel);
 
-        Thread rep = symmClass.getRepresentative();
-        List<Thread> symmThreads = new ArrayList<>(symmClass);
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final Thread rep = symmClass.getRepresentative();
+        final List<Thread> symmThreads = new ArrayList<>(symmClass);
         symmThreads.sort(Comparator.comparingInt(Thread::getId));
-
 
         // ===== Construct row =====
         //IMPORTANT: Each thread writes to its own special location for the purpose of starting/terminating threads
         // These need to get skipped.
         Thread t1 = symmThreads.get(0);
-        List<Tuple> r1Tuples = new ArrayList<>();
+        List<Tuple> t1Tuples = new ArrayList<>();
         for (Tuple t : rel.getMaxTupleSet()) {
             Event a = t.getFirst();
             Event b = t.getSecond();
-            if (!a.is(Tag.C11.PTHREAD) && !b.is(Tag.C11.PTHREAD) && a.getThread() == t1) {
-                r1Tuples.add(t);
+            if (!a.is(Tag.C11.PTHREAD) && !b.is(Tag.C11.PTHREAD)
+                    && a.getThread() == t1 && symmClass.contains(b.getThread())) {
+                t1Tuples.add(t);
             }
         }
-        sort(r1Tuples);
+        sort(t1Tuples);
 
         // Construct symmetric rows
+        BooleanFormula enc = bmgr.makeTrue();
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
             Function<Event, Event> p = symm.createTransposition(t1, t2);
-            List<Tuple> r2Tuples = r1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
+            List<Tuple> t2Tuples = t1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
 
-            List<BooleanFormula> r1 = Lists.transform(r1Tuples, t -> rel.getSMTVar(t, ctx));
-            List<BooleanFormula> r2 = Lists.transform(r2Tuples, t -> rel.getSMTVar(t, ctx));
+            List<BooleanFormula> r1 = t1Tuples.stream().map(t -> context.edge(rel, t)).collect(Collectors.toList());
+            List<BooleanFormula> r2 = t2Tuples.stream().map(t -> context.edge(rel, t)).collect(Collectors.toList());
             final String id = "_" + rep.getId() + "_" + i;
-            enc = bmgr.and(enc, encodeLexLeader(id, r2, r1, ctx)); // r1 >= r2
+            enc = bmgr.and(enc, encodeLexLeader(id, r2, r1, context)); // r1 >= r2
 
             t1 = t2;
-            r1Tuples = r2Tuples;
+            t1Tuples = t2Tuples;
         }
 
         return enc;
@@ -147,17 +155,15 @@ public class SymmetryEncoder implements Encoder {
         // ====== Sync-degree based order ======
 
         // Setup of data structures
-        Set<Event> inEvents = new HashSet<>();
-        Set<Event> outEvents = new HashSet<>();
+        final Set<Event> inEvents = new HashSet<>();
+        final Set<Event> outEvents = new HashSet<>();
         for (Tuple t : row) {
             inEvents.add(t.getFirst());
             outEvents.add(t.getSecond());
         }
 
-        Map<Event, Integer> combInDegree = new HashMap<>(inEvents.size());
-        Map<Event, Integer> combOutDegree = new HashMap<>(outEvents.size());
-
-        List<Axiom> axioms = memoryModel.getAxioms();
+        final Map<Event, Integer> combInDegree = new HashMap<>(inEvents.size());
+        final Map<Event, Integer> combOutDegree = new HashMap<>(outEvents.size());
         for (Event e : inEvents) {
             int syncDeg = axioms.stream()
                     .mapToInt(ax -> ax.getRelation().getMinTupleSet().getBySecond(e).size() + 1).max().orElse(0);
@@ -186,15 +192,13 @@ public class SymmetryEncoder implements Encoder {
         NOTE: Creates extra variables named "yi_<uniqueIdent>" which can cause conflicts if
               <uniqueIdent> is not uniquely used.
     */
-    public static BooleanFormula encodeLexLeader(String uniqueIdent, List<BooleanFormula> r1, List<BooleanFormula> r2, SolverContext ctx) {
+    public static BooleanFormula encodeLexLeader(String uniqueIdent, List<BooleanFormula> r1, List<BooleanFormula> r2, EncodingContext context) {
         Preconditions.checkArgument(r1.size() == r2.size());
-
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         // Return TRUE if there is nothing to encode
         if(r1.isEmpty()) {
-        	return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
+        	return bmgr.makeTrue();
         }
-        
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final int size = r1.size();
         final String suffix = "_" + uniqueIdent;
 
@@ -227,7 +231,27 @@ public class SymmetryEncoder implements Encoder {
         BooleanFormula b = r2.get(size-1);
         enc = bmgr.and(enc, bmgr.or(bmgr.not(ylast), bmgr.not(a), b));
 
-
         return enc;
+    }
+
+
+
+    // ========================================
+    // We use a dummy relation to break on control flow rather than a typical relation.
+    // This relation contains a self-loop for each event that represents a control-flow branch.
+    private class CfRelation extends Relation {
+
+        @Override
+        public TupleSet getMinTupleSet() { return getMaxTupleSet(); }
+
+        @Override
+        public TupleSet getMaxTupleSet() {
+            final BranchEquivalence branchEq = context.getAnalysisContext().requires(BranchEquivalence.class);
+            return branchEq.getAllEquivalenceClasses().stream()
+                    .filter(c -> c != branchEq.getInitialClass() && c != branchEq.getUnreachableClass())
+                    .map(EquivalenceClass::getRepresentative)
+                    .map(rep -> new Tuple(rep, rep))
+                    .collect(Collectors.toCollection(TupleSet::new));
+        }
     }
 }

@@ -129,14 +129,14 @@ public abstract class AbstractCompilationTest {
     	// The following have features (locks and RCU) that hardware models do not support
     	FilterAbstract rcu = FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_LOCK), 
     			FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_UNLOCK), FilterBasic.get(Tag.Linux.RCU_SYNC)));
-    	FilterAbstract lock = FilterUnion.get(FilterBasic.get(Tag.Linux.LOCK_READ), 
-    			FilterUnion.get(FilterBasic.get(Tag.Linux.LOCK_WRITE), FilterBasic.get(Tag.Linux.UNLOCK)));
     	
     	Result expected = getCompilationBreakers().contains(path) ? Result.FAIL : Result.PASS;
     	
-    	if(task1Provider.get().getProgram().getCache().getEvents(FilterUnion.get(rcu, lock)).isEmpty()) {
-        	if(IncrementalSolver.run(context1Provider.get(), prover1Provider.get(), task1Provider.get()).equals(Result.PASS)) {
-        		assertEquals(expected, IncrementalSolver.run(context2Provider.get(), prover2Provider.get(), task2Provider.get()));
+    	if(task1Provider.get().getProgram().getCache().getEvents(rcu).isEmpty()) {
+            IncrementalSolver s1 = IncrementalSolver.run(context1Provider.get(), prover1Provider.get(), task1Provider.get());
+        	if(s1.getResult().equals(Result.PASS)) {
+                IncrementalSolver s2 = IncrementalSolver.run(context2Provider.get(), prover2Provider.get(), task2Provider.get());
+        		assertEquals(expected, s2.getResult());
         	}
     	}
     }

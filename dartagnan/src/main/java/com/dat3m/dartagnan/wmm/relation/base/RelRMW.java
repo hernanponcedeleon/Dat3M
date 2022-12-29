@@ -12,23 +12,15 @@ import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterIntersection;
 import com.dat3m.dartagnan.program.filter.FilterUnion;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
-import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.program.event.Tag.SVCOMP.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RMW;
-import static com.google.common.base.Preconditions.checkState;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.iterate;
-import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 /*
     NOTE: Changes to the semantics of this class may need to be reflected
@@ -38,6 +30,11 @@ public class RelRMW extends StaticRelation {
 
     public RelRMW(){
         term = RMW;
+    }
+
+    @Override
+    public <T> T accept(Visitor<? extends T> v) {
+        return v.visitReadModifyWrites(this);
     }
 
     @Override
@@ -122,74 +119,5 @@ public class RelRMW extends StaticRelation {
                 }
             }
         }
-    }
-
-    @Override
-    protected BooleanFormula encodeApprox(SolverContext ctx) {
-        FormulaManager fmgr = ctx.getFormulaManager();
-		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-        BooleanFormula enc = bmgr.makeTrue();
-        BooleanFormula unpredictable = bmgr.makeFalse();
-        for(Event store : task.getProgram().getCache().getEvents(
-                FilterIntersection.get(FilterBasic.get(Tag.WRITE), FilterBasic.get(Tag.EXCL)))) {
-            checkState(store instanceof MemEvent, "non-memory event participating in '" + getName() + "'");
-            BooleanFormula storeExec = bmgr.makeFalse();
-            for(Tuple t : maxTupleSet.getBySecond(store)) {
-                MemEvent load = (MemEvent) t.getFirst();
-                BooleanFormula sameAddress = generalEqual(load.getMemAddressExpr(), ((MemEvent) store).getMemAddressExpr(), ctx);
-                // Encode if load and store form an exclusive pair
-                BooleanFormula isPair = exclPair(load, store, ctx);
-                BooleanFormula pairingCond = pairingCond(load, store, ctx);
-                // For ARMv8, the store can be executed if addresses mismatch, but behaviour is "constrained unpredictable"
-                // The implementation does not include all possible unpredictable cases: in case of address
-                // mismatch, addresses of read and write are unknown, i.e. read and write can use any address.
-                // For RISCV and Power, addresses should match.
-                if(store.is(Tag.MATCHADDRESS)) {
-                    pairingCond = bmgr.and(pairingCond, sameAddress);
-                } else {
-                    unpredictable = bmgr.or(unpredictable, bmgr.and(store.exec(), isPair, bmgr.not(sameAddress)));
-                }
-                enc = bmgr.and(enc, bmgr.equivalence(isPair, pairingCond));
-                storeExec = bmgr.or(storeExec, isPair);
-            }
-            enc = bmgr.and(enc, bmgr.implication(store.exec(), storeExec));
-        }
-
-        final AliasAnalysis alias = analysisContext.requires(AliasAnalysis.class);
-        for(Tuple tuple : encodeTupleSet) {
-            MemEvent load = (MemEvent) tuple.getFirst();
-            MemEvent store = (MemEvent) tuple.getSecond();
-            BooleanFormula sameAddress = (alias.mustAlias(load, store) || store.is(Tag.MATCHADDRESS)) ? bmgr.makeTrue()
-                    : generalEqual(load.getMemAddressExpr(), store.getMemAddressExpr(), ctx);
-            enc = bmgr.and(enc, bmgr.equivalence(
-                    getSMTVar(tuple, ctx),
-                    minTupleSet.contains(tuple) ? getExecPair(tuple, ctx) :
-                            // Relation between exclusive load and store
-                            bmgr.and(store.exec(), exclPair(load, store, ctx), sameAddress)));
-        }
-        return bmgr.and(enc, bmgr.equivalence(Flag.ARM_UNPREDICTABLE_BEHAVIOUR.repr(ctx), unpredictable));
-    }
-
-    private BooleanFormula pairingCond(Event load, Event store, SolverContext ctx){
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula pairingCond = bmgr.and(load.exec(), store.cf());
-
-        for (Tuple t : maxTupleSet.getBySecond(store)) {
-            Event otherLoad = t.getFirst();
-            if(otherLoad.getCId() > load.getCId()) {
-                pairingCond = bmgr.and(pairingCond, bmgr.not(otherLoad.exec()));
-            }
-        }
-        for (Tuple t : maxTupleSet.getByFirst(load)) {
-            Event otherStore = t.getSecond();
-            if(otherStore.getCId() < store.getCId()) {
-                pairingCond = bmgr.and(pairingCond, bmgr.not(otherStore.cf()));
-            }
-        }
-        return pairingCond;
-    }
-
-    private BooleanFormula exclPair(Event load, Event store, SolverContext ctx){
-    	return ctx.getFormulaManager().makeVariable(BooleanType, "excl(" + load.getCId() + "," + store.getCId() + ")");
     }
 }

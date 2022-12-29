@@ -1,31 +1,22 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory.*;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.EventFactory.AArch64;
 import com.dat3m.dartagnan.program.event.Tag.ARMv8;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.linux.LKMMFence;
-import com.dat3m.dartagnan.program.event.lang.linux.LKMMLoad;
-import com.dat3m.dartagnan.program.event.lang.linux.LKMMStore;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWAddUnless;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWCmpXchg;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOpAndTest;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOpReturn;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWXchg;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.lang.linux.*;
+import com.dat3m.dartagnan.program.event.lang.llvm.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 
 import java.util.List;
 
@@ -36,67 +27,170 @@ import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 
 class VisitorArm8 extends VisitorBase {
 
-	// If the source WMM does not allow OOTA behaviors (e.g. RC11)
-	// we need to strength the compilation following the paper
-	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
-	private final boolean useRC11Scheme; 
+        // If the source WMM does not allow OOTA behaviors (e.g. RC11)
+        // we need to strength the compilation following the paper
+        // "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
+        private final boolean useRC11Scheme;
+
+        protected VisitorArm8(boolean forceStart, boolean useRC11Scheme) {
+                super(forceStart);
+                this.useRC11Scheme = useRC11Scheme;
+        }
 	
-	protected VisitorArm8(boolean useRC11Scheme) {
-		this.useRC11Scheme = useRC11Scheme;
-	}
-	
-	@Override
-	public List<Event> visitCreate(Create e) {
-        Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo());
-        store.addFilters(C11.PTHREAD);
+    @Override
+    public List<Event> visitCreate(Create e) {
+            Store store = newStore(e.getAddress(), e.getMemValue(), Tag.ARMv8.MO_REL);
+            store.addFilters(C11.PTHREAD);
 
-        return eventSequence(
-        		AArch64.DMB.newISHBarrier(),
-                store,
-                AArch64.DMB.newISHBarrier()
-        );
-	}
+            return eventSequence(
+                            store);
+    }
 
-	@Override
-	public List<Event> visitEnd(End e) {
-        return eventSequence(
-        		AArch64.DMB.newISHBarrier(),
-        		newStore(e.getAddress(), IValue.ZERO, e.getMo()),
-                AArch64.DMB.newISHBarrier()
-        );
-	}
+    @Override
+    public List<Event> visitEnd(End e) {
+            return eventSequence(
+                            newStore(e.getAddress(), IValue.ZERO, Tag.ARMv8.MO_REL));
+    }
 
-	@Override
-	public List<Event> visitJoin(Join e) {
-        Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
-        load.addFilters(C11.PTHREAD);
+    @Override
+    public List<Event> visitJoin(Join e) {
+            Register resultRegister = e.getResultRegister();
+            Load load = newLoad(resultRegister, e.getAddress(), Tag.ARMv8.MO_ACQ);
+            load.addFilters(C11.PTHREAD);
 
-        return eventSequence(
-                load,
-                AArch64.DMB.newISHBarrier(),
-                newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
-        );
-	}
+            return eventSequence(
+                            load,
+                            newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit()));
+    }
 
-	@Override
-	public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getResultRegister();
-        return eventSequence(
-                newLoad(resultRegister, e.getAddress(), e.getMo()),
-                AArch64.DMB.newISHBarrier(),
-                newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
-        );
-	}
+    @Override
+    public List<Event> visitStart(Start e) {
+            Register resultRegister = e.getResultRegister();
+            Load load = newLoad(resultRegister, e.getAddress(), Tag.ARMv8.MO_ACQ);
+            load.addFilters(Tag.STARTLOAD);
 
-	@Override
-	public List<Event> visitStoreExclusive(StoreExclusive e) {
-        RMWStoreExclusive store = newRMWStoreExclusive(e.getAddress(), e.getMemValue(), e.getMo());
+            return eventSequence(
+                            load,
+                            super.visitStart(e),
+                            newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()));
+    }
+
+    @Override
+    public List<Event> visitStoreExclusive(StoreExclusive e) {
+            RMWStoreExclusive store = newRMWStoreExclusive(e.getAddress(), e.getMemValue(), e.getMo());
+
+            return eventSequence(
+                            store,
+                            newExecutionStatus(e.getResultRegister(), store));
+    }
+
+
+    // =============================================================================================
+    // =========================================== LLVM ============================================
+    // =============================================================================================
+
+        @Override
+	public List<Event> visitLlvmLoad(LlvmLoad e) {
+                Load load = newLoad(e.getResultRegister(), e.getAddress(), ARMv8.extractLoadMoFromCMo(e.getMo()));
         
-        return eventSequence(
-                store,
-                newExecutionStatus(e.getResultRegister(), store)
-        );
+		return eventSequence(
+        		load
+                );
+	}
+
+        @Override
+	public List<Event> visitLlvmStore(LlvmStore e) {
+                Store store = newStore(e.getAddress(), e.getMemValue(), ARMv8.extractStoreMoFromCMo(e.getMo()));
+        
+		return eventSequence(
+        		store
+                );
+	}
+
+        @Override
+	public List<Event> visitLlvmXchg(LlvmXchg e) {
+		Register resultRegister = e.getResultRegister();
+		ExprInterface value = e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+                Load load = newRMWLoadExclusive(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
+                Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), true);
+                Label label = newLabel("FakeDep");
+                Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+                return eventSequence(
+                        load,
+                        fakeCtrlDep,
+                        label,
+                        store
+                );
+	}
+
+        @Override
+	public List<Event> visitLlvmRMW(LlvmRMW e) {
+		Register resultRegister = e.getResultRegister();
+		IOpBin op = e.getOp();
+		IExpr value = (IExpr) e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		
+                Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+                Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+
+                Load load = newRMWLoadExclusive(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
+                Store store = newRMWStoreExclusive(address, dummyReg, ARMv8.extractStoreMoFromCMo(mo), true);
+                Label label = newLabel("FakeDep");
+                Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+                return eventSequence(
+                        load,
+                        fakeCtrlDep,
+                        label,
+                        localOp,
+                        store
+                );
+	}
+
+        @Override
+	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
+                Register oldValueRegister = e.getStructRegister(0);
+                Register resultRegister = e.getStructRegister(1);
+
+                ExprInterface value = e.getMemValue();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+		ExprInterface expectedValue = e.getExpectedValue();
+
+                Local casCmpResult = newLocal(resultRegister, new Atom(oldValueRegister, EQ, expectedValue));
+                Label casEnd = newLabel("CAS_end");
+                CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
+
+                Load load = newRMWLoadExclusive(oldValueRegister, address, ARMv8.extractLoadMoFromCMo(mo));
+                Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), true);
+
+                return eventSequence(
+                        // Indentation shows the branching structure
+                        load,
+                        casCmpResult,
+                        branchOnCasCmpResult,
+                                store,
+                        casEnd
+                );
+	}
+
+        @Override
+        public List<Event> visitLlvmFence(LlvmFence e) {
+		String mo = e.getMo();
+                Fence fence = mo.equals(C11.MO_RELEASE) || mo.equals(C11.MO_ACQUIRE_RELEASE) || mo.equals(C11.MO_SC) ? 
+                        AArch64.DMB.newISHBarrier() :
+                        mo.equals(C11.MO_ACQUIRE) ?
+                                AArch64.DSB.newISHLDBarrier() :
+                                null;
+
+                return eventSequence(
+                        fence
+                );
 	}
 
     // =============================================================================================
@@ -114,8 +208,8 @@ class VisitorArm8 extends VisitorBase {
 
 		Register regExpected = e.getThread().newRegister(precision);
         Register regValue = e.getThread().newRegister(precision);
-        Load loadExpected = newLoad(regExpected, expectedAddr, null);
-        Store storeExpected = newStore(expectedAddr, regValue, null);
+        Load loadExpected = newLoad(regExpected, expectedAddr, "");
+        Store storeExpected = newStore(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
@@ -218,34 +312,6 @@ class VisitorArm8 extends VisitorBase {
         );
 	}
 
-	@Override
-	public List<Event> visitDat3mCAS(Dat3mCAS e) {
-		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		ExprInterface expectedValue = e.getExpectedValue();
-
-        // Events common for all compilation schemes.
-        Register regValue = e.getThread().newRegister(resultRegister.getPrecision());
-        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
-        Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
-
-        Load load = newRMWLoadExclusive(regValue, address, ARMv8.extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), true);
-
-        // --- Add success events ---
-        return eventSequence(
-                // Indentation shows the branching structure
-                load,
-                casCmpResult,
-                branchOnCasCmpResult,
-                    store,
-                casEnd
-        );
-	}
-	
     // =============================================================================================
     // =========================================== LKMM ============================================
     // =============================================================================================
@@ -273,7 +339,7 @@ class VisitorArm8 extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-        Store store = newStore(address, value, mo.equals(Tag.Linux.MO_RELEASE) ? Tag.ARMv8.MO_REL : null);
+        Store store = newStore(address, value, mo.equals(Tag.Linux.MO_RELEASE) ? Tag.ARMv8.MO_REL : "");
         
         return eventSequence(
                 store
@@ -304,6 +370,18 @@ class VisitorArm8 extends VisitorBase {
 			case Tag.Linux.AFTER_ATOMIC:
 				optionalMemoryBarrier = AArch64.DMB.newISHBarrier();
 				break;
+                        // #define smp_mb__after_spinlock()	smp_mb()       
+                        //              https://elixir.bootlin.com/linux/v6.1/source/arch/arm64/include/asm/spinlock.h#L12
+                        case Tag.Linux.AFTER_SPINLOCK:
+                                optionalMemoryBarrier = AArch64.DSB.newISHBarrier();
+                                break;
+                        // #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
+                        //              https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
+                        // It seem to be only used for RCU related stuff in the kernel so it makes sense
+                        // it is defined in that header file
+                        case Tag.Linux.AFTER_UNLOCK_LOCK:
+                                optionalMemoryBarrier = AArch64.DSB.newISHBarrier();
+                                break;
 			default:
 				throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
 		}
@@ -391,8 +469,8 @@ class VisitorArm8 extends VisitorBase {
 		IExpr address = e.getAddress();
 		
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        Load load = newRMWLoadExclusive(dummy, address, null);
-        Store store = newRMWStoreExclusive(address, new IExprBin(dummy, op, value), null, true);
+        Load load = newRMWLoadExclusive(dummy, address, "");
+        Store store = newRMWStoreExclusive(address, new IExprBin(dummy, op, value), "", true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -532,4 +610,25 @@ class VisitorArm8 extends VisitorBase {
                 testOp
         );	
 	};
+
+        @Override
+	public List<Event> visitLKMMLock(LKMMLock e) {
+	Register dummy = e.getThread().newRegister(GlobalSettings.ARCH_PRECISION);
+        // Spinlock events are guaranteed to succeed, i.e. we can use assumes
+        // With this we miss a ctrl dependency, but this does not matter
+        // becase the load is an acquire one.
+	return eventSequence(
+                newRMWLoadExclusive(dummy, e.getLock(), ARMv8.MO_ACQ),
+                newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)),
+                newRMWStoreExclusive(e.getLock(), IValue.ONE, "", true)
+        );
+	}
+
+        @Override
+	public List<Event> visitLKMMUnlock(LKMMUnlock e) {
+	return eventSequence(
+                newStore(e.getAddress(), IValue.ZERO, ARMv8.MO_REL)
+        );
+	}
+
 }

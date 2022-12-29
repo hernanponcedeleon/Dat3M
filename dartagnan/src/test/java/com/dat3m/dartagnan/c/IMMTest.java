@@ -58,10 +58,7 @@ public class IMMTest extends AbstractCTest {
 	            {"paper-E3.8", IMM, PASS},
 	            {"paper-E3.8-alt", IMM, FAIL},
 	            {"paper-E3.9", IMM, PASS},
-	            // The actual example 3.10 in the paper marks the write of the FADD as strong 
-	            // which forms a cycle making the result PASS. Since we currently don't have
-	            // a way to mark FADD instructions as weak/strong, the behavior is allowed.
-	            {"paper-E3.10", IMM, FAIL},
+	            {"paper-E3.10", IMM, PASS},
 	            {"paper-R2", IMM, PASS},
 	            {"paper-R2-alt", IMM, PASS},
 		});
@@ -70,12 +67,14 @@ public class IMMTest extends AbstractCTest {
     @Test
 	@CSVLogger.FileName("csv/assume")
 	public void testAssume() throws Exception {
-		assertEquals(expected, AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
+		AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+		assertEquals(expected, s.getResult());
 	}
 
     @Test
 	@CSVLogger.FileName("csv/refinement")
 	public void testRefinement() throws Exception {
-		assertEquals(expected, RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get()));
+		RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+		assertEquals(expected, s.getResult());
 	}
 }

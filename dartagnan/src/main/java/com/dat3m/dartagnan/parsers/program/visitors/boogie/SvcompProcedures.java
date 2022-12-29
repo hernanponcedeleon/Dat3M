@@ -16,15 +16,19 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 
 public class SvcompProcedures {
 
+	private static final Logger logger = LogManager.getLogger(SvcompProcedures.class);
+
 	public static List<String> SVCOMPPROCEDURES = Arrays.asList(
 			"__VERIFIER_assert",
-//			"__VERIFIER_assume",
-//			"assume_abort_if_not",
+			// "__VERIFIER_assume",
 			"__VERIFIER_loop_bound",
 			"__VERIFIER_loop_begin",
 			"__VERIFIER_spin_start",
@@ -62,7 +66,6 @@ public class SvcompProcedures {
 				visitor.addAssertion((IExpr)ctx.call_params().exprs().accept(visitor));
 				break;
 			case "__VERIFIER_assume":
-			case "assume_abort_if_not":
 				__VERIFIER_assume(visitor, ctx);
 				break;
 			case "__VERIFIER_atomic_begin":
@@ -167,8 +170,7 @@ public class SvcompProcedures {
 		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
 	    if(register != null){
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, new INonDet(type, register.getPrecision())))
-					.setCLine(visitor.currentLine)
-					.setSourceCodeFile(visitor.sourceCodeFile);
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	    }
 	}
 
@@ -177,13 +179,13 @@ public class SvcompProcedures {
 		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
 	    if(register != null){
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, new BNonDet(register.getPrecision())))
-					.setCLine(visitor.currentLine)
-					.setSourceCodeFile(visitor.sourceCodeFile);		
+					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	    }
 	}
 
 	private static void __VERIFIER_loop_bound(VisitorBoogie visitor, Call_cmdContext ctx) {
 		int bound = ((IExpr)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValueAsInt();
-		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBound(bound));
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBound(bound))
+				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	}
 }

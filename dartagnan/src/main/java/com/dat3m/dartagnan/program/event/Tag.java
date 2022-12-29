@@ -29,6 +29,7 @@ public final class Tag {
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
     public static final String NOOPT   			= "NOOPT";
     public static final String ANNOTATION   	= "ANNOTATION";
+    public static final String STARTLOAD   	    = "STARTLOAD";
 
     // =============================================================================================
     // =========================================== ARMv8 ===========================================
@@ -52,11 +53,14 @@ public final class Tag {
         }
 
         public static String extractStoreMoFromLKMo(String lkMo) {
-            return lkMo.equals(Tag.Linux.MO_RELEASE) || lkMo.equals(Tag.Linux.MO_MB) ? Tag.ARMv8.MO_REL : null;
+            return lkMo.equals(Tag.Linux.MO_RELEASE) || lkMo.equals(Tag.Linux.MO_MB) ? Tag.ARMv8.MO_REL : "";
         }
 
         public static String extractLoadMoFromLKMo(String lkMo) {
-            return lkMo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : null;
+            // We return "" when lkMo.equals(Tag.Linux.MO_MB) because the caller of
+            // this method will use a dmb.ish barrier for the acquire part, see e.g.,
+            //      https://elixir.bootlin.com/linux/v6.1/source/arch/arm64/include/asm/cmpxchg.h#L16
+            return lkMo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.ARMv8.MO_ACQ : "";
         }
 
     }
@@ -85,16 +89,16 @@ public final class Tag {
 			case C11.MO_SC:
 				return MO_ACQ_REL;
 			default:
-				return null;
+				return "";
 			}
         }
         
         public static String extractStoreMoFromCMo(String cMo) {
-            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_RELEASE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_REL : null;
+            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_RELEASE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_REL : "";
         }
 
         public static String extractLoadMoFromCMo(String cMo) {
-            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_ACQUIRE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_ACQ : null;
+            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_ACQUIRE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_ACQ : "";
         }
 
     }
@@ -129,29 +133,6 @@ public final class Tag {
         public static final String MO_ACQUIRE_RELEASE   = "ACQ_REL";
         public static final String MO_SC                = "SC";
 
-        public static String extractStoreMo(String cMo) {
-        	switch(cMo) {
-        		case C11.MO_SC:
-        		case C11.MO_ACQUIRE_RELEASE:
-        			return C11.MO_RELEASE;
-        		case C11.MO_ACQUIRE:
-        			return C11.MO_RELAXED;
-        		default:
-        			return cMo;
-        	}
-        }
-
-        public static String extractLoadMo(String cMo) {
-        	switch(cMo) {
-    			case C11.MO_SC:
-    			case C11.MO_ACQUIRE_RELEASE:
-    				return C11.MO_ACQUIRE;
-    			case C11.MO_RELEASE:
-    				return C11.MO_RELAXED;
-    			default:
-    				return cMo;
-        	}
-        }
         public static String intToMo(int i) {
             switch(i) {
                 case 0: return MO_RELAXED;
@@ -258,5 +239,29 @@ public final class Tag {
         private IMM() {}
 
         public static final String CASDEPORIGIN = "CASDEPORIGIN";
+
+        public static String extractStoreMo(String cMo) {
+        	switch(cMo) {
+        		case C11.MO_SC:
+        		case C11.MO_ACQUIRE_RELEASE:
+        			return C11.MO_RELEASE;
+        		case C11.MO_ACQUIRE:
+        			return C11.MO_RELAXED;
+        		default:
+        			return cMo;
+        	}
+        }
+
+        public static String extractLoadMo(String cMo) {
+        	switch(cMo) {
+    			case C11.MO_SC:
+    			case C11.MO_ACQUIRE_RELEASE:
+    				return C11.MO_ACQUIRE;
+    			case C11.MO_RELEASE:
+    				return C11.MO_RELAXED;
+    			default:
+    				return cMo;
+        	}
+        }
     }
 }

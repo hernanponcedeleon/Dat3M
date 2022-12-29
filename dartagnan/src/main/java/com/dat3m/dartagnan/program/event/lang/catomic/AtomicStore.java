@@ -18,10 +18,11 @@ public class AtomicStore extends MemEvent implements RegReaderData {
 
     public AtomicStore(IExpr address, ExprInterface value, String mo){
         super(address, mo);
+        Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
         Preconditions.checkArgument(!mo.equals(MO_ACQUIRE) && !mo.equals(MO_ACQUIRE_RELEASE),
         		getClass().getName() + " can not have memory order: " + mo);
         this.value = value;
-        addFilters(ANY, VISIBLE, MEMORY, WRITE, REG_READER);
+        addFilters(WRITE, REG_READER);
     }
 
     private AtomicStore(AtomicStore other){
@@ -36,8 +37,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
 
     @Override
     public String toString() {
-    	String tag = mo != null ? "_explicit" : "";
-        return "atomic_store" + tag + "(*" + address + ", " +  value + (mo != null ? ", " + mo : "") + ")\t### C11";
+        return "atomic_store(*" + address + ", " +  value + ", " + mo + ")\t### C11";
     }
 
     @Override

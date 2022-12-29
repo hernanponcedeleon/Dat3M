@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  * An instance of this class is generated for each defined location in the shared memory of a program.
@@ -17,10 +16,10 @@ public class Init extends MemEvent {
 	private final int offset;
 	
 	public Init(MemoryObject b, int o) {
-		super(b.add(o), null);
+		super(b.add(o), "");
 		base = b;
 		offset = o;
-		addFilters(Tag.ANY, Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.INIT);
+		addFilters(Tag.WRITE, Tag.INIT);
 	}
 
 	/**
@@ -48,12 +47,6 @@ public class Init extends MemEvent {
 	 */
 	public IConst getValue(){
 		return base.getInitialValue(offset);
-	}
-
-	@Override
-	public void initializeEncoding(SolverContext ctx) {
-		super.initializeEncoding(ctx);
-		memValueExpr = getValue().toIntFormula(ctx);
 	}
 
 	@Override

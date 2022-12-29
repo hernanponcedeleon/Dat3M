@@ -10,19 +10,24 @@ import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
+import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmFence;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmRMW;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmXchg;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
@@ -37,7 +42,28 @@ public class EventFactory {
     // =============================================================================================
 
     public static List<Event> eventSequence(Event... events) {
-        return Arrays.stream(events).filter(Objects::nonNull).collect(Collectors.toList());
+        return eventSequence(Arrays.asList(events));
+    }
+
+    public static List<Event> eventSequence(Collection<? extends Event> events) {
+        return events.stream().filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    public static List<Event> eventSequence(Object... events) {
+        List<Event> retVal = new ArrayList<>();
+        for (Object obj : events) {
+            if (obj == null) {
+                continue;
+            }
+            if (obj instanceof Event) {
+                retVal.add((Event) obj);
+            } else if (obj instanceof Collection<?>) {
+                retVal.addAll((Collection<? extends Event>)obj );
+            } else {
+                throw new IllegalArgumentException("Cannot parse " + obj.getClass() + " as event.");
+            }
+        }
+        return retVal;
     }
 
 
@@ -85,6 +111,10 @@ public class EventFactory {
 
     public static FunRet newFunctionReturn(String funName) {
         return new FunRet(funName);
+    }
+
+    public static StringAnnotation newStringAnnotation(String annotation) {
+        return new StringAnnotation(annotation);
     }
 
     public static Local newLocal(Register register, ExprInterface expr) {
@@ -170,11 +200,11 @@ public class EventFactory {
     public static class Pthread {
         private Pthread() {}
 
-        public static Create newCreate(Register pthread_t, String routine, MemoryObject address) {
-            return new Create(pthread_t, routine, address);
+        public static Create newCreate(IExpr address, String routine) {
+            return new Create(address, routine);
         }
 
-        public static End newEnd(MemoryObject address){
+        public static End newEnd(IExpr address){
             return new End(address);
         }
 
@@ -182,16 +212,16 @@ public class EventFactory {
             return new InitLock(name, address, value);
         }
 
-        public static Join newJoin(Register pthread_t, Register reg, MemoryObject address) {
-            return new Join(pthread_t, reg, address);
+        public static Join newJoin(Register reg, IExpr expr) {
+            return new Join(reg, expr);
         }
 
         public static Lock newLock(String name, IExpr address, Register reg) {
             return new Lock(name, address, reg);
         }
 
-        public static Start newStart(Register reg, MemoryObject address) {
-            return new Start(reg, address);
+        public static Start newStart(Register reg, IExpr address, Event creationEvent) {
+            return new Start(reg, address, creationEvent);
         }
 
         public static Unlock newUnlock(String name, IExpr address, Register reg) {
@@ -241,10 +271,42 @@ public class EventFactory {
         public static AtomicXchg newExchange(Register register, IExpr address, IExpr value, String mo) {
             return new AtomicXchg(register, address, value, mo);
         }
+    }
+    // =============================================================================================
+    // =========================================== LLVM ============================================
+    // =============================================================================================
 
-        public static Dat3mCAS newDat3mCAS(Register register, IExpr address, IExpr expected, IExpr value, String mo) {
-            return new Dat3mCAS(register, address, expected, value, mo);
+    public static class Llvm {
+        private Llvm() {}
+
+        public static LlvmLoad newLoad(Register register, IExpr address, String mo) {
+            return new LlvmLoad(register, address, mo);
         }
+
+        public static LlvmStore newStore(IExpr address, ExprInterface value, String mo) {
+            return new LlvmStore(address, value, mo);
+        }
+
+        public static LlvmXchg newExchange(Register register, IExpr address, IExpr value, String mo) {
+            return new LlvmXchg(register, address, value, mo);
+        }
+
+        public static LlvmCmpXchg newCompareExchange(Register oldValueRegister, Register cmpRegister, IExpr address, IExpr expectedAddr, IExpr desiredValue, String mo, boolean isStrong) {
+            return new LlvmCmpXchg(oldValueRegister, cmpRegister, address, expectedAddr, desiredValue, mo, isStrong);
+        }
+
+        public static LlvmCmpXchg newCompareExchange(Register oldValueRegister, Register cmpRegister, IExpr address, IExpr expectedAddr, IExpr desiredValue, String mo) {
+            return newCompareExchange(oldValueRegister, cmpRegister, address, expectedAddr, desiredValue, mo, false);
+        }
+
+        public static LlvmRMW newRMW(Register register, IExpr address, IExpr value, IOpBin op, String mo) {
+            return new LlvmRMW(register, address, value, op, mo);
+        }
+
+        public static LlvmFence newFence(String mo) {
+            return new LlvmFence(mo);
+        }
+
     }
 
     // =============================================================================================

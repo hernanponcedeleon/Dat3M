@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
-import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 import java.util.ArrayList;
@@ -40,7 +39,6 @@ public class CoreReasoner {
 
     public Conjunction<CoreLiteral> toCoreReason(Conjunction<CAATLiteral> baseReason) {
 
-        RelationRepository repo = memoryModel.getRelationRepository();
         EventDomain domain = executionGraph.getDomain();
 
         List<CoreLiteral> coreReason = new ArrayList<>(baseReason.getSize());
@@ -56,7 +54,7 @@ public class CoreReasoner {
                 Event e1 = domain.getObjectById(edge.getFirst()).getEvent();
                 Event e2 = domain.getObjectById(edge.getSecond()).getEvent();
                 Tuple tuple = new Tuple(e1, e2);
-                Relation rel = repo.getRelation(lit.getName());
+                Relation rel = memoryModel.getRelation(lit.getName());
 
                 if (lit.isPositive() && rel.getMinTupleSet().contains(tuple)) {
                     // Statically present edges

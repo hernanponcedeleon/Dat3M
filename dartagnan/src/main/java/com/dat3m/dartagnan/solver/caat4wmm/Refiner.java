@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.solver.caat4wmm;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -16,13 +17,11 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_SYMMETRY_LEARNING;
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /*
@@ -48,12 +47,12 @@ public class Refiner {
 
     // This method computes a refinement clause from a set of violations.
     // Furthermore, it computes symmetric violations if symmetry learning is enabled.
-    public BooleanFormula refine(DNF<CoreLiteral> coreReasons, SolverContext context) {
+    public BooleanFormula refine(DNF<CoreLiteral> coreReasons, EncodingContext context) {
         //TODO: A specialized algorithm that computes the orbit under permutation may be better,
         // since most violations involve only few threads and hence the orbit is far smaller than the full
         // set of permutations.
         HashSet<BooleanFormula> addedFormulas = new HashSet<>(); // To avoid adding duplicates
-        BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula refinement = bmgr.makeTrue();
         // For each symmetry permutation, we will create refinement clauses
         for (Function<Event, Event> perm : symmPermutations) {
@@ -121,24 +120,23 @@ public class Refiner {
 
     // Changes a reasoning <literal> based on a given permutation <perm> and translates the result
     // into a BooleanFormula for Refinement.
-    private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm, SolverContext context) {
-        BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+    private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm, EncodingContext encoder) {
+        BooleanFormulaManager bmgr = encoder.getBooleanFormulaManager();
         BooleanFormula enc;
         if (literal instanceof ExecLiteral) {
             ExecLiteral lit = (ExecLiteral) literal;
-            enc = perm.apply(lit.getData()).exec();
+            enc = encoder.execution(perm.apply(lit.getData()));
         } else if (literal instanceof AddressLiteral) {
             AddressLiteral loc = (AddressLiteral) literal;
             MemEvent e1 = (MemEvent) perm.apply(loc.getFirst());
             MemEvent e2 = (MemEvent) perm.apply(loc.getSecond());
-            enc = generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), context);
+            enc = encoder.sameAddress(e1, e2);
         } else if (literal instanceof RelLiteral) {
             RelLiteral lit = (RelLiteral) literal;
-            Relation rel = memoryModel.getRelationRepository().getRelation(lit.getName());
-            enc = rel.getSMTVar(
+            Relation rel = memoryModel.getRelation(lit.getName());
+            enc = encoder.edge(rel,
                     perm.apply(lit.getData().getFirst()),
-                    perm.apply(lit.getData().getSecond()),
-                    context);
+                    perm.apply(lit.getData().getSecond()));
         } else {
             throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
         }

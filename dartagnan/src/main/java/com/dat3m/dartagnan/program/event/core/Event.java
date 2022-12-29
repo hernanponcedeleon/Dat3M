@@ -1,13 +1,13 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.Encoder;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
@@ -30,8 +30,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	protected transient Event successor;
 	protected transient Event predecessor;
-
-	protected transient BooleanFormula cfVar;
 
 	private transient String repr;
 
@@ -66,17 +64,14 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public int getCLine() {
 		return cLine;
 	}
-	public Event setCLine(int line) {
-		this.cLine = line;
-		return this;
-	}
-
+	
 	public String getSourceCodeFile() {
 		return sourceCodeFile;
 	}
 
-	public Event setSourceCodeFile(String name) {
-		this.sourceCodeFile = name;
+	public Event setCFileInformation(int line, String file) {
+		this.cLine = line;
+		this.sourceCodeFile = file;
 		return this;
 	}
 
@@ -222,31 +217,12 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		return repr;
 	}
 
-	public BooleanFormula exec(){
-		return cf();
-	}
-
-	public BooleanFormula cf(){ return cfVar; }
-	public void setCfVar(BooleanFormula cfVar) { this.cfVar = cfVar; }
-
 	// This method needs to get overwritten for conditional events.
 	public boolean cfImpliesExec() {
 		return true;
 	}
 
-	public BooleanFormula encodeExec(SolverContext ctx){
-		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
-	}
-
-	// =============== Utility methods ==================
-
-	public boolean wasExecuted(Model model) {
-		Boolean expr = model.evaluate(exec());
-		return expr != null && expr;
-	}
-
-	public boolean wasInControlFlow(Model model) {
-		Boolean expr = model.evaluate(cf());
-		return expr != null && expr;
+	public BooleanFormula encodeExec(EncodingContext ctx) {
+		return ctx.getBooleanFormulaManager().makeTrue();
 	}
 }

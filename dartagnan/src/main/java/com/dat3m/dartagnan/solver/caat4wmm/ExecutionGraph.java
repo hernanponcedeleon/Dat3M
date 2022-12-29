@@ -8,10 +8,10 @@ import com.dat3m.dartagnan.solver.caat.constraints.EmptinessConstraint;
 import com.dat3m.dartagnan.solver.caat.constraints.IrreflexivityConstraint;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.EmptyGraph;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.IdentityGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.*;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -30,7 +30,6 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
 import com.dat3m.dartagnan.wmm.relation.unary.RelRangeIdentity;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
-import com.dat3m.dartagnan.wmm.relation.unary.RelTransRef;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
@@ -107,7 +106,7 @@ public class ExecutionGraph {
         }
 
         if (!createOnlyAxiomRelevantGraphs) {
-            for (Relation rel : memoryModel.getRelationDependencyGraph().getNodeContents()) {
+            for (Relation rel : DependencyGraph.from(memoryModel.getRelations()).getNodeContents()) {
                 if (!EXCLUDED_RELS.contains(rel.getName())) {
                     RelationGraph graph = getOrCreateGraphFromRelation(rel);
                     graphs.add(graph);
@@ -143,7 +142,7 @@ public class ExecutionGraph {
     }
 
     public RelationGraph getRelationGraphByName(String name) {
-        return getRelationGraph(verificationTask.getMemoryModel().getRelationRepository().getRelation(name));
+        return getRelationGraph(verificationTask.getMemoryModel().getRelation(name));
     }
 
     public Constraint getConstraint(Axiom axiom) {
@@ -251,12 +250,6 @@ public class ExecutionGraph {
                 graph = new TransitiveGraph(innerGraph);
             } else if (relClass == RelRangeIdentity.class) {
                 graph = new RangeIdentityGraph(innerGraph);
-            } else if (relClass == RelTransRef.class) {
-                //FIXME: This is very, very sketchy and instead of doing this
-                // a WmmProcessor should run that transforms the wmm accordingly.
-                RelTrans relTrans = new RelTrans(innerRelation);
-                RelationGraph transGraph = getOrCreateGraphFromRelation(relTrans);
-                graph = new ReflexiveClosureGraph(transGraph);
             } else {
                 throw new UnsupportedOperationException(relClass.toString() + " has no associated graph yet.");
             }
@@ -293,12 +286,10 @@ public class ExecutionGraph {
             } else if (relClass == RelInt.class) {
                 graph = new InternalGraph();
             } else if (relClass == RelFencerel.class) {
-                graph = new FenceGraph(((RelFencerel) rel).getFenceName());
+                graph = new FenceGraph(((RelFencerel) rel).getFilter());
             } else if (relClass == RelSetIdentity.class) {
                 SetPredicate set = getOrCreateSetFromFilter(((RelSetIdentity) rel).getFilter());
                 graph = new SetIdentityGraph(set);
-            } else if (relClass == RelId.class) {
-                graph = new IdentityGraph();
             } else if (relClass == RelEmpty.class) {
                 graph = new EmptyGraph();
             } else {

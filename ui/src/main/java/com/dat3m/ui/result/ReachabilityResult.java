@@ -3,10 +3,7 @@ package com.dat3m.ui.result;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.IncrementalSolver;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
-import com.dat3m.dartagnan.verification.solving.TwoSolvers;
+import com.dat3m.dartagnan.verification.solving.*;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.configuration.Arch;
@@ -66,7 +63,7 @@ public class ReachabilityResult {
     			}});
 
             try {
-                Result result = Result.UNKNOWN;
+                ModelChecker modelChecker;
                 Arch arch = program.getArch() != null ? program.getArch() : options.getTarget();
                 VerificationTask task = VerificationTask.builder()
                         .withBound(options.getBound())
@@ -88,23 +85,25 @@ public class ReachabilityResult {
 
                     switch (options.getMethod()) {
                         case INCREMENTAL:
-                            result = IncrementalSolver.run(ctx, prover, task);
+                            modelChecker = IncrementalSolver.run(ctx, prover, task);
                             break;
                         case ASSUME:
-                            result = AssumeSolver.run(ctx, prover, task);
+                            modelChecker = AssumeSolver.run(ctx, prover, task);
                             break;
                         case TWO:
                             try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-                                result = TwoSolvers.run(ctx, prover, prover2, task);
+                                modelChecker = TwoSolvers.run(ctx, prover, prover2, task);
                             }
                             break;
                         case CAAT:
-                            result = RefinementSolver.run(ctx, prover, task);
+                            modelChecker = RefinementSolver.run(ctx, prover, task);
                             break;
+                        default:
+                            throw new IllegalArgumentException("method " + options.getMethod());
                     }
                     // Verification ended, we can interrupt the timeout Thread
                     t.interrupt();
-                    buildVerdict(program, result, prover, ctx);
+                    buildVerdict(program, modelChecker.getResult(), prover, ctx);
                 }
             } catch (InterruptedException e){
             	verdict = "TIMEOUT";

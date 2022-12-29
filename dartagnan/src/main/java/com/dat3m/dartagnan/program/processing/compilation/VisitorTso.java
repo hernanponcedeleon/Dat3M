@@ -8,10 +8,8 @@ import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.lang.llvm.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 
 import java.util.List;
 
@@ -21,49 +19,48 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 class VisitorTso extends VisitorBase {
 
-	protected VisitorTso() {}
 
-	@Override
-	public List<Event> visitCreate(Create e) {
-        Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo());
-        store.addFilters(C11.PTHREAD);
-        
-        return eventSequence(
-                store,
-                X86.newMemoryFence()
-        );
-	}
+	protected VisitorTso(boolean forceStart) {
+                super(forceStart);
+        }
 
-	@Override
-	public List<Event> visitEnd(End e) {
-        return eventSequence(
-        		newStore(e.getAddress(), IValue.ZERO, e.getMo()),
-                X86.newMemoryFence()
-        );
-	}
+        @Override
+        public List<Event> visitCreate(Create e) {
+                Store store = newStore(e.getAddress(), e.getMemValue(), "");
+                store.addFilters(C11.PTHREAD);
 
-	@Override
-	public List<Event> visitJoin(Join e) {
-        Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
-        load.addFilters(C11.PTHREAD);
-        
-        return eventSequence(
-        		load,
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
-        );
-	}
+                return eventSequence(
+                                store);
+        }
 
-	@Override
-	public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getResultRegister();
+        @Override
+        public List<Event> visitEnd(End e) {
+                return eventSequence(
+                                newStore(e.getAddress(), IValue.ZERO, ""));
+        }
 
-        return eventSequence(
-        		newLoad(resultRegister, e.getAddress(), e.getMo()),
-				//newAssume(resultRegister),
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
-        );
-	}
+        @Override
+        public List<Event> visitJoin(Join e) {
+                Register resultRegister = e.getResultRegister();
+                Load load = newLoad(resultRegister, e.getAddress(), "");
+                load.addFilters(C11.PTHREAD);
+
+                return eventSequence(
+                                load,
+                                newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit()));
+        }
+
+        @Override
+        public List<Event> visitStart(Start e) {
+                Register resultRegister = e.getResultRegister();
+                Load load = newLoad(resultRegister, e.getAddress(), "");
+                load.addFilters(Tag.STARTLOAD);
+
+                return eventSequence(
+                                load,
+                                super.visitStart(e),
+                                newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit()));
+        }
 
 	@Override
 	public List<Event> visitXchg(Xchg e) {
@@ -71,10 +68,10 @@ class VisitorTso extends VisitorBase {
         IExpr address = e.getAddress();
 
         Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-		Load load = newRMWLoad(dummyReg, address, null);
+		Load load = newRMWLoad(dummyReg, address, "");
         load.addFilters(Tag.TSO.ATOM);
 
-        RMWStore store = newRMWStore(load, address, resultRegister, null);
+        RMWStore store = newRMWStore(load, address, resultRegister, "");
         store.addFilters(Tag.TSO.ATOM);
 
         return eventSequence(
@@ -84,7 +81,90 @@ class VisitorTso extends VisitorBase {
         );
 	}
 
-	@Override
+    // =============================================================================================
+    // =========================================== LLVM ============================================
+    // =============================================================================================
+
+    @Override
+    public List<Event> visitLlvmLoad(LlvmLoad e) {
+            Load load = newLoad(e.getResultRegister(), e.getAddress(), "");
+
+            return eventSequence(
+                            load);
+    }
+
+    @Override
+    public List<Event> visitLlvmStore(LlvmStore e) {
+            Store store = newStore(e.getAddress(), e.getMemValue(), "");
+            Fence optionalMFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
+
+            return eventSequence(
+                            store,
+                            optionalMFence);
+    }
+
+    @Override
+    public List<Event> visitLlvmXchg(LlvmXchg e) {
+            IExpr address = e.getAddress();
+            Load load = newRMWLoad(e.getResultRegister(), address, "");
+
+            return eventSequence(
+                            load,
+                            newRMWStore(load, address, e.getMemValue(), ""));
+    }
+
+    @Override
+    public List<Event> visitLlvmRMW(LlvmRMW e) {
+            Register resultRegister = e.getResultRegister();
+            IExpr address = e.getAddress();
+
+            Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+            Load load = newRMWLoad(resultRegister, address, "");
+
+            return eventSequence(
+                            load,
+                            newLocal(dummyReg, new IExprBin(resultRegister, e.getOp(), (IExpr) e.getMemValue())),
+                            newRMWStore(load, address, dummyReg, ""));
+    }
+
+    @Override
+    public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
+            Register oldValueRegister = e.getStructRegister(0);
+            Register resultRegister = e.getStructRegister(1);
+
+            ExprInterface value = e.getMemValue();
+            IExpr address = e.getAddress();
+            ExprInterface expectedValue = e.getExpectedValue();
+
+            Local casCmpResult = newLocal(resultRegister, new Atom(oldValueRegister, EQ, expectedValue));
+            Label casEnd = newLabel("CAS_end");
+            CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
+
+            Load load = newRMWLoad(oldValueRegister, address, "");
+            Store store = newRMWStore(load, address, value, "");
+
+            return eventSequence(
+                            // Indentation shows the branching structure
+                            load,
+                            casCmpResult,
+                            branchOnCasCmpResult,
+                                store,
+                            casEnd);
+    }
+
+    @Override
+    public List<Event> visitLlvmFence(LlvmFence e) {
+            Fence optionalFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
+
+            return eventSequence(
+                            optionalFence);
+    }
+
+    // =============================================================================================
+    // ============================================ C11 ============================================
+    // =============================================================================================
+	
+        @Override
 	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
@@ -94,7 +174,7 @@ class VisitorTso extends VisitorBase {
 		int precision = resultRegister.getPrecision();
 
 		Register regExpected = e.getThread().newRegister(precision);
-        Load loadExpected = newLoad(regExpected, expectedAddr, null);
+        Load loadExpected = newLoad(regExpected, expectedAddr, "");
         Register regValue = e.getThread().newRegister(precision);
         Load loadValue = newRMWLoad(regValue, address, mo);
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
@@ -103,8 +183,7 @@ class VisitorTso extends VisitorBase {
         Store storeValue = newRMWStore(loadValue, address, value, mo);
         Label casEnd = newLabel("CAS_end");
         CondJump gotoCasEnd = newGoto(casEnd);
-        Store storeExpected = newStore(expectedAddr, regValue, null);
-		storeExpected.addFilters("nosideeffect");
+        Store storeExpected = newStore(expectedAddr, regValue, "");
 
         return eventSequence(
                 // Indentation shows the branching structure
@@ -174,29 +253,6 @@ class VisitorTso extends VisitorBase {
         return eventSequence(
                 load,
                 newRMWStore(load, address, e.getMemValue(), mo)
-        );
-	}
-
-	@Override
-	public List<Event> visitDat3mCAS(Dat3mCAS e) {
-		Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-
-        Register regValue = e.getThread().newRegister(resultRegister.getPrecision());
-        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, e.getExpectedValue()));
-        Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
-        Load load = newRMWLoad(regValue, address, mo);
-        Store store = newRMWStore(load, address, e.getMemValue(), mo);
-
-        return eventSequence(
-                // Indentation shows the branching structure
-                load,
-                casCmpResult,
-                branchOnCasCmpResult,
-                    store,
-                casEnd
         );
 	}
 }

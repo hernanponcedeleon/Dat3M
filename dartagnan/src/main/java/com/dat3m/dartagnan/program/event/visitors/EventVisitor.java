@@ -4,14 +4,19 @@ import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
-import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
-import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmAbstractRMW;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmFence;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmRMW;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmXchg;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
@@ -37,8 +42,6 @@ public interface EventVisitor<T> {
 
 	// Annotations
 	default T visitCodeAnnotation(CodeAnnotation e) { return visitEvent(e); }
-	default T visitFunCall(FunCall e) { return visitCodeAnnotation(e); }
-	default T visitFunRet(FunRet e) { return visitCodeAnnotation(e); }
 
 	// Pthread Events
 	default T visitCreate(Create e) { return visitStore(e); }
@@ -96,7 +99,15 @@ public interface EventVisitor<T> {
 	default T visitAtomicStore(AtomicStore e) { return visitMemEvent(e); }
 	default T visitAtomicThreadFence(AtomicThreadFence e) { return visitFence(e); }
 	default T visitAtomicXchg(AtomicXchg e) { return visitAtomicAbstract(e); }
-	default T visitDat3mCAS(Dat3mCAS e) { return visitAtomicAbstract(e); }
+
+	// LLVM Events
+	default T visitLlvmAbstract(LlvmAbstractRMW e) { return visitMemEvent(e); }
+	default T visitLlvmCmpXchg(LlvmCmpXchg e) { return visitLlvmAbstract(e); }
+	default T visitLlvmRMW(LlvmRMW e) { return visitLlvmAbstract(e); }
+	default T visitLlvmLoad(LlvmLoad e) { return visitMemEvent(e); }
+	default T visitLlvmStore(LlvmStore e) { return visitMemEvent(e); }
+	default T visitLlvmXchg(LlvmXchg e) { return visitLlvmAbstract(e); }
+	default T visitLlvmFence(LlvmFence e) { return visitFence(e); }
 
 	// SVCOMP Events
 	default T visitBeginAtomic(BeginAtomic e) { return visitEvent(e); }

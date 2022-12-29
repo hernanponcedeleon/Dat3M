@@ -1,17 +1,15 @@
 package com.dat3m.dartagnan.exceptions;
 
-import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.ProgramEncoder;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.processing.BranchReordering;
@@ -19,9 +17,6 @@ import com.dat3m.dartagnan.program.processing.DeadCodeElimination;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
@@ -71,17 +66,13 @@ public class ExceptionsTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void initializedBeforeCompileException() throws Exception {
+    public void analyzeBeforeCompileException() throws Exception {
     	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
     	pb.initThread(0);
     	Program p = pb.build();
-		Wmm cat = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH+ "cat/tso.cat"));
 		Configuration config = Configuration.defaultConfiguration();
-		VerificationTask task = VerificationTask.builder()
-                .withConfig(config)
-                .build(p, cat, Property.getDefault());
 		// The program must be compiled before being able to construct an Encoder for it
-    	ProgramEncoder.fromConfig(task.getProgram(), Context.create(), config);
+        BranchEquivalence.fromConfig(p, config);
     }
 
     @Test(expected = IllegalArgumentException.class)

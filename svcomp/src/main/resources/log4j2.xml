@@ -7,7 +7,7 @@
       <PatternLayout pattern="%d{HH:mm:ss} [%-5level] %C{1}.%M - %msg%n"/>
     </Console>
 	
-    <File name="File" fileName="output/logs/${sys:LOGNAME}.log">
+    <File name="File" fileName="${env:DAT3M_OUTPUT}/logs/${sys:LOGNAME}.log">
 	    <PatternLayout pattern="%d{HH:mm:ss} [%-5level] %C{1}.%M - %msg%n"/>
     </File>
     

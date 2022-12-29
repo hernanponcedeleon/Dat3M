@@ -3,39 +3,38 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
-import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
-import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
-import com.dat3m.dartagnan.wmm.relation.base.memory.RelRf;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.*;
 
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
-import static com.dat3m.dartagnan.expression.utils.Utils.generalEqual;
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
-import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
+import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
+import static com.dat3m.dartagnan.program.event.Tag.INIT;
+import static com.dat3m.dartagnan.program.event.Tag.WRITE;
+import static com.dat3m.dartagnan.wmm.analysis.RelationAnalysis.findTransitivelyImpliedCo;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.google.common.base.Preconditions.*;
 
 
@@ -44,69 +43,77 @@ public class PropertyEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(PropertyEncoder.class);
 
+    private final EncodingContext context;
     private final Program program;
     private final Wmm memoryModel;
+    private final ExecutionAnalysis exec;
     private final AliasAnalysis alias;
 
     // =====================================================================
 
-    private PropertyEncoder(Program program, Wmm wmm, Context context, Configuration config) throws InvalidConfigurationException {
-        checkArgument(program.isCompiled(),
+    private PropertyEncoder(EncodingContext c) {
+        checkArgument(c.getTask().getProgram().isCompiled(),
                 "The program must get compiled first before its properties can be encoded.");
-        this.program = checkNotNull(program);
-        this.memoryModel = checkNotNull(wmm);
-        this.alias = context.requires(AliasAnalysis.class);
-        config.inject(this);
+        context = c;
+        program = c.getTask().getProgram();
+        memoryModel = c.getTask().getMemoryModel();
+        exec = c.getAnalysisContext().requires(ExecutionAnalysis.class);
+        alias = c.getAnalysisContext().requires(AliasAnalysis.class);
     }
 
-    public static PropertyEncoder fromConfig(Program program, Wmm wmm, Context context, Configuration config) throws InvalidConfigurationException {
-        return new PropertyEncoder(program, wmm, context, config);
+    public static PropertyEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
+        PropertyEncoder encoder = new PropertyEncoder(context);
+        context.getTask().getConfig().inject(encoder);
+        return encoder;
     }
 
     @Override
     public void initializeEncoding(SolverContext context) { }
 
-    public BooleanFormula encodeSpecification(EnumSet<Property> property, SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    public BooleanFormula encodeSpecification() {
+        EnumSet<Property> property = context.getTask().getProperty();
+    	BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
     	// We have a default property therefore this false will always be overwritten
     	BooleanFormula enc = bmgr.makeFalse();
     	if(property.contains(REACHABILITY)) {
-    		enc = bmgr.or(enc, encodeAssertions(ctx));
+    		enc = bmgr.or(enc, encodeAssertions());
     	}
     	if(property.contains(LIVENESS)) {
-    		enc = bmgr.or(enc, encodeLiveness(ctx));
+    		enc = bmgr.or(enc, encodeLiveness());
     	}
     	if(property.contains(RACES)) {
-    		enc = bmgr.or(enc, encodeDataRaces(ctx));
+    		enc = bmgr.or(enc, encodeDataRaces());
     	}
     	if(property.contains(CAT)) {
-    		enc = bmgr.or(enc, encodeCATProperties(ctx));
+    		enc = bmgr.or(enc, encodeCATProperties());
     	}
+        if (program.getFormat().equals(LITMUS) || property.contains(LIVENESS)) {
+            enc = bmgr.and(enc, encodeLastCoConstraints());
+        }
     	return enc;
     }
 
-    public BooleanFormula encodeBoundEventExec(SolverContext ctx){
+    public BooleanFormula encodeBoundEventExec() {
         logger.info("Encoding bound events execution");
-
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return program.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.BOUND), FilterBasic.get(Tag.SPINLOOP)))
-                .stream().map(Event::exec).reduce(bmgr.makeFalse(), bmgr::or);
+                .stream().map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
     }
 
-    public BooleanFormula encodeAssertions(SolverContext ctx) {
+    public BooleanFormula encodeAssertions() {
         logger.info("Encoding assertions");
-
+        SolverContext ctx = context.getSolverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula assertionEncoding = program.getAss().encode(ctx);
+        BooleanFormula assertionEncoding = program.getAss().encode(context);
         // We use the SMT variable to extract from the model if the property was violated
 		BooleanFormula enc = bmgr.equivalence(REACHABILITY.getSMTVariable(ctx), assertionEncoding);
 		// No need to use the SMT variable if the formula is trivially false 
         return bmgr.isFalse(assertionEncoding) ? assertionEncoding : bmgr.and(REACHABILITY.getSMTVariable(ctx), enc);
     }
 
-    public BooleanFormula encodeCATProperties(SolverContext ctx) {
+    public BooleanFormula encodeCATProperties() {
         logger.info("Encoding CAT properties");
-
+        SolverContext ctx = context.getSolverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula cat = bmgr.makeTrue();
         BooleanFormula one = bmgr.makeFalse();
@@ -115,14 +122,15 @@ public class PropertyEncoder implements Encoder {
     		if(!ax.isFlagged()) {
     			continue;
     		}
-			cat = bmgr.and(cat, bmgr.equivalence(CAT.getSMTVariable(ax, ctx), ax.consistent(ctx)));
-			one = bmgr.or(one, CAT.getSMTVariable(ax, ctx));
+            BooleanFormula v = CAT.getSMTVariable(ax, ctx);
+			cat = bmgr.and(cat, bmgr.equivalence(v, ax.consistent(ax.getRelation().getEncodeTupleSet(), context)));
+			one = bmgr.or(one, v);
     	}
 		// No need to use the SMT variable if the formula is trivially false
         return bmgr.isFalse(one) ? one : bmgr.and(one, cat);
     }
 
-    public BooleanFormula encodeLiveness(SolverContext ctx) {
+    public BooleanFormula encodeLiveness() {
 
         // We assume a spinloop to consist of a tagged label and bound jump.
         // Further, we assume that the spinloops are indeed correct, i.e., side-effect free
@@ -163,9 +171,9 @@ public class PropertyEncoder implements Encoder {
             }
         }
 
+        SolverContext ctx = context.getSolverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        RelRf rf = (RelRf) memoryModel.getRelationRepository().getRelation(RelationNameRepository.RF);
-        RelCo co = (RelCo) memoryModel.getRelationRepository().getRelation(RelationNameRepository.CO);
+        Relation rf = memoryModel.getRelation(RelationNameRepository.RF);
         // Compute "stuckness": A thread is stuck if it reaches a spinloop bound event
         // while reading from a co-maximal write.
         Map<Thread, BooleanFormula> isStuckMap = new HashMap<>();
@@ -181,11 +189,11 @@ public class PropertyEncoder implements Encoder {
                 for (Load load : pair.loads) {
                     BooleanFormula coMaximalLoad = bmgr.makeFalse();
                     for (Tuple rfEdge : rf.getMaxTupleSet().getBySecond(load)) {
-                        coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(rf.getSMTVar(rfEdge, ctx), co.getLastCoVar(rfEdge.getFirst(), ctx)));
+                        coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(context.edge(rf, rfEdge), lastCoVar(rfEdge.getFirst())));
                     }
                     allCoMaximalLoad = bmgr.and(allCoMaximalLoad, coMaximalLoad);
                 }
-                isStuck  = bmgr.or(isStuck, bmgr.and(pair.bound.exec(), allCoMaximalLoad));
+                isStuck  = bmgr.or(isStuck, bmgr.and(context.execution(pair.bound), allCoMaximalLoad));
             }
             isStuckMap.put(t, isStuck);
         }
@@ -195,11 +203,11 @@ public class PropertyEncoder implements Encoder {
         BooleanFormula atLeastOneStuck = bmgr.makeFalse();
         for (Thread t : program.getThreads()) {
             BooleanFormula isStuck = isStuckMap.getOrDefault(t, bmgr.makeFalse());
-            BooleanFormula isDone = t.getCache().getEvents(FilterBasic.get(Tag.EARLYTERMINATION)).stream()
-                    .map(e -> bmgr.not(e.exec())).reduce(bmgr.makeTrue(), bmgr::and);
+            BooleanFormula pending = t.getCache().getEvents(FilterBasic.get(Tag.EARLYTERMINATION)).stream()
+                    .map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
 
             atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
-            allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, isDone));
+            allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, bmgr.not(pending)));
         }
 
         BooleanFormula livenessViolation = bmgr.and(allStuckOrDone, atLeastOneStuck);
@@ -209,13 +217,13 @@ public class PropertyEncoder implements Encoder {
         return bmgr.isFalse(enc) ? enc : bmgr.and(LIVENESS.getSMTVariable(ctx), enc);
     }
 
-    public BooleanFormula encodeDataRaces(SolverContext ctx) {
-        final String hb = "hb";
+    public BooleanFormula encodeDataRaces() {
+        final Relation hb = memoryModel.getRelation("hb");
         checkState(memoryModel.getAxioms().stream().anyMatch(ax ->
-                        ax.isAcyclicity() && ax.getRelation().getName().equals(hb)),
+                        ax.isAcyclicity() && ax.getRelation().equals(hb)),
                 "The provided WMM needs an 'acyclic(hb)' axiom to encode data races.");
         logger.info("Encoding data-races");
-
+        SolverContext ctx = context.getSolverContext();
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
 
@@ -233,10 +241,10 @@ public class PropertyEncoder implements Encoder {
                             continue;
                         }
                         if(w.canRace() && m.canRace() && alias.mayAlias(w, m)) {
-                            BooleanFormula conflict = bmgr.and(m.exec(), w.exec(), edge(hb, m, w, ctx),
-                                    generalEqual(w.getMemAddressExpr(), m.getMemAddressExpr(), ctx),
-                                    imgr.equal(intVar(hb, w, ctx),
-                                            imgr.add(intVar(hb, m, ctx), imgr.makeNumber(BigInteger.ONE))));
+                            BooleanFormula conflict = bmgr.and(context.execution(m, w), context.edge(hb, m, w),
+                                    context.sameAddress(w, m),
+                                    imgr.equal(context.clockVariable("hb", w),
+                                            imgr.add(context.clockVariable("hb", m), imgr.makeNumber(BigInteger.ONE))));
                             enc = bmgr.or(enc, conflict);
                         }
                     }
@@ -247,5 +255,63 @@ public class PropertyEncoder implements Encoder {
 		enc = bmgr.equivalence(RACES.getSMTVariable(ctx), enc);
 		// No need to use the SMT variable if the formula is trivially false 
         return bmgr.isFalse(enc) ? enc : bmgr.and(RACES.getSMTVariable(ctx), enc);
+    }
+
+    private BooleanFormula encodeLastCoConstraints() {
+        final Relation co = memoryModel.getRelation(CO);
+        SolverContext ctx = context.getSolverContext();
+        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        final TupleSet minSet = co.getMinTupleSet();
+        final TupleSet maxSet = co.getMaxTupleSet();
+        final List<Event> initEvents = program.getCache().getEvents(FilterBasic.get(INIT));
+        final List<Event> writes = program.getCache().getEvents(FilterBasic.get(WRITE));
+        final boolean doEncodeFinalAddressValues = program.getFormat() == LITMUS;
+        // Find transitively implied coherences. We can use these to reduce the encoding.
+        final Set<Tuple> transCo = findTransitivelyImpliedCo(co, exec);
+        // Find all writes that are never last, i.e., those that will always have a co-successor.
+        final Set<Event> dominatedWrites = minSet.stream()
+                .filter(t -> exec.isImplied(t.getFirst(), t.getSecond()))
+                .map(Tuple::getFirst).collect(Collectors.toSet());
+        // ---- Construct encoding ----
+        BooleanFormula enc = bmgr.makeTrue();
+        for (Event writeEvent : writes) {
+            MemEvent w1 = (MemEvent) writeEvent;
+            if (dominatedWrites.contains(w1)) {
+                enc = bmgr.and(enc, bmgr.not(lastCoVar(w1)));
+                continue;
+            }
+            BooleanFormula isLast = context.execution(w1);
+            // ---- Find all possibly overwriting writes ----
+            for (Tuple t : maxSet.getByFirst(w1)) {
+                if (transCo.contains(t)) {
+                    // We can skip the co-edge (w1,w2), because there will be an intermediate write w3
+                    // that already witnesses that w1 is not last.
+                    continue;
+                }
+                Event w2 = t.getSecond();
+                BooleanFormula isAfter = bmgr.not(minSet.contains(t) ? context.execution(w2) : context.edge(co, t));
+                isLast = bmgr.and(isLast, isAfter);
+            }
+            BooleanFormula lastCoExpr = lastCoVar(w1);
+            enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, isLast));
+            if (doEncodeFinalAddressValues) {
+                // ---- Encode final values of addresses ----
+                for (Event initEvent : initEvents) {
+                    Init init = (Init) initEvent;
+                    if (!alias.mayAlias(w1, init)) {
+                        continue;
+                    }
+                    BooleanFormula sameAddress = context.sameAddress(init, w1);
+                    Formula v2 = init.getBase().getLastMemValueExpr(ctx, init.getOffset());
+                    BooleanFormula sameValue = context.equal(context.value(w1), v2);
+                    enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
+                }
+            }
+        }
+        return enc;
+    }
+
+    private BooleanFormula lastCoVar(Event write) {
+        return context.getBooleanFormulaManager().makeVariable("co_last(" + write.repr() + ")");
     }
 }

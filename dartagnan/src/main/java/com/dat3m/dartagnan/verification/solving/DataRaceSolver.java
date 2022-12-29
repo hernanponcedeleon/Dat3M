@@ -1,11 +1,7 @@
 package com.dat3m.dartagnan.verification.solving;
 
-import com.dat3m.dartagnan.encoding.ProgramEncoder;
-import com.dat3m.dartagnan.encoding.PropertyEncoder;
-import com.dat3m.dartagnan.encoding.SymmetryEncoder;
-import com.dat3m.dartagnan.encoding.WmmEncoder;
+import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -36,12 +32,14 @@ public class DataRaceSolver extends ModelChecker {
 		task = t;
 	}
 
-	public static Result run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+	public static DataRaceSolver run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
 			throws InterruptedException, SolverException, InvalidConfigurationException {
-		return new DataRaceSolver(ctx, prover, task).run();
+		DataRaceSolver s = new DataRaceSolver(ctx, prover, task);
+		s.run();
+		return s;
 	}
 
-	private Result run() throws InterruptedException, SolverException, InvalidConfigurationException {
+	private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
 		Program program = task.getProgram();
 		Wmm memoryModel = task.getMemoryModel();
 		Context analysisContext = Context.create();
@@ -52,29 +50,28 @@ public class DataRaceSolver extends ModelChecker {
 		performStaticProgramAnalyses(task, analysisContext, config);
 		performStaticWmmAnalyses(task, analysisContext, config);
 
-		ProgramEncoder programEncoder = ProgramEncoder.fromConfig(program, analysisContext, config);
-		PropertyEncoder propertyEncoder = PropertyEncoder.fromConfig(program, memoryModel,analysisContext, config);
-		WmmEncoder wmmEncoder = WmmEncoder.fromConfig(memoryModel, analysisContext, config);
-		SymmetryEncoder symmetryEncoder = SymmetryEncoder.fromConfig(memoryModel, analysisContext, config);
+		context = EncodingContext.of(task, analysisContext, ctx);
+		ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
+		PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
+		WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
+		SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);
 
 		programEncoder.initializeEncoding(ctx);
 		propertyEncoder.initializeEncoding(ctx);
 		wmmEncoder.initializeEncoding(ctx);
 		symmetryEncoder.initializeEncoding(ctx);
-		
-		Result res = UNKNOWN;
-			
+
 		logger.info("Starting encoding using " + ctx.getVersion());
-		prover.addConstraint(programEncoder.encodeFullProgram(ctx));
-		prover.addConstraint(wmmEncoder.encodeFullMemoryModel(ctx));
+		prover.addConstraint(programEncoder.encodeFullProgram());
+		prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
 		prover.push();
 
-		prover.addConstraint(propertyEncoder.encodeDataRaces(ctx));
+		prover.addConstraint(propertyEncoder.encodeDataRaces());
 
 		logger.info("Starting first solver.check()");
 		if(prover.isUnsat()) {
 			prover.pop();
-			prover.addConstraint(propertyEncoder.encodeBoundEventExec(ctx));
+			prover.addConstraint(propertyEncoder.encodeBoundEventExec());
 			logger.info("Starting second solver.check()");
 			res = prover.isUnsat() ? PASS : UNKNOWN;
 		} else {
@@ -82,6 +79,5 @@ public class DataRaceSolver extends ModelChecker {
 		}
 
         logger.info("Verification finished with result " + res);
-		return res;
     }
 }

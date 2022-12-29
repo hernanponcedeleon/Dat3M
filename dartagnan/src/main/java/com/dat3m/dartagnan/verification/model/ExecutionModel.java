@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.verification.model;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -15,11 +16,12 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -37,10 +39,10 @@ The ExecutionModel wraps a Model and extracts data from it in a more workable ma
 
 //TODO: Add the capability to remove unnecessary init events from a model
 // i.e. those that init some address which no read nor write accesses.
+@Options
 public class ExecutionModel {
 
-    private final VerificationTask task;
-    private final RelCo co;
+    private final EncodingContext encodingContext;
 
     // ============= Model specific  =============
     private Model model;
@@ -86,11 +88,8 @@ public class ExecutionModel {
 
     private Map<BigInteger, List<EventData>> coherenceMapView;
 
-    //========================== Construction =========================
-
-    public ExecutionModel(VerificationTask task) {
-        this.task = task;
-        co = (RelCo)task.getMemoryModel().getRelationRepository().getRelation(CO);
+    private ExecutionModel(EncodingContext c) {
+        this.encodingContext = Preconditions.checkNotNull(c);
 
         eventList = new ArrayList<>(100);
         threadList = new ArrayList<>(getProgram().getThreads().size());
@@ -109,6 +108,12 @@ public class ExecutionModel {
         coherenceMap = new HashMap<>();
 
         createViews();
+    }
+
+    public static ExecutionModel withContext(EncodingContext context) throws InvalidConfigurationException {
+        ExecutionModel m = new ExecutionModel(context);
+        context.getTask().getConfig().inject(m);
+        return m;
     }
 
     private void createViews() {
@@ -132,23 +137,23 @@ public class ExecutionModel {
 
     // General data
     public VerificationTask getTask() {
-    	return task;
+    	return encodingContext.getTask();
     }
     
     public Wmm getMemoryModel() {
-        return task.getMemoryModel();
+        return encodingContext.getTask().getMemoryModel();
     }
 
     public Program getProgram() {
-        return task.getProgram();
+        return encodingContext.getTask().getProgram();
     }
 
     // Model specific data
     public Model getModel() {
         return model;
     }
-    public SolverContext getContext() {
-        return context;
+    public EncodingContext getContext() {
+        return encodingContext;
     }
     public FilterAbstract getEventFilter() {
     	return eventFilter;
@@ -205,21 +210,21 @@ public class ExecutionModel {
     //========================== Initialization =========================
 
 
-    public void initialize(Model model, SolverContext ctx) {
-        initialize(model, ctx, true);
+    public void initialize(Model model) {
+        initialize(model, true);
     }
 
-    public void initialize(Model model, SolverContext ctx, boolean extractCoherences) {
-        initialize(model, ctx, FilterBasic.get(Tag.VISIBLE), extractCoherences);
+    public void initialize(Model model, boolean extractCoherences) {
+        initialize(model, FilterBasic.get(Tag.VISIBLE), extractCoherences);
     }
 
-    public void initialize(Model model, SolverContext ctx, FilterAbstract eventFilter, boolean extractCoherences) {
+    public void initialize(Model model, FilterAbstract eventFilter, boolean extractCoherences) {
         // We populate here, instead of on construction,
         // to reuse allocated data structures (since these data structures already adapted
         // their capacity in previous iterations and thus we should have less overhead in future populations)
         // However, for all intents and purposes, this serves as a constructor.
         this.model = model;
-        this.context = ctx;
+        this.context = encodingContext.getSolverContext();
         this.eventFilter = eventFilter;
         this.extractCoherences = extractCoherences;
         extractEventsFromModel();
@@ -261,7 +266,7 @@ public class ExecutionModel {
             int atomicBegin = -1;
             int localId = 0;
             do {
-                if (!e.wasExecuted(model)) {
+                if (!Boolean.TRUE.equals(model.evaluate(encodingContext.execution(e)))) {
                     e = e.getSuccessor();
                     continue;
                 }
@@ -334,7 +339,7 @@ public class ExecutionModel {
             }
 
             if (data.isRead()) {
-                data.setValue(new BigInteger(model.evaluate(((RegWriter)e).getResultRegisterExpr()).toString()));
+                data.setValue(new BigInteger(model.evaluate(encodingContext.result((RegWriter) e)).toString()));
                 addressReadsMap.get(address).add(data);
             } else if (data.isWrite()) {
                 data.setValue(((MemEvent)e).getMemValue().getIntValue(e, model, context));
@@ -365,14 +370,15 @@ public class ExecutionModel {
     // =============== Dependency tracking ===============
     //TODO: The following code is refinement specific and assumes that only visible events get extracted!
 
-    private Map<Register, Set<EventData>> lastRegWrites;
+    // Due to intra thread communication using registers, we do not
+    // reset this map for every thread, but keep it global
+    private Map<Register, Set<EventData>> lastRegWrites = new HashMap<>();
     private Set<EventData> curCtrlDeps;
     // The following is used for Linux
     private Stack<Set<EventData>> ifCtrlDeps;
     private Stack<Label> endIfs;
     //------------------------
     private void initDepTracking() {
-        lastRegWrites = new HashMap<>();
         curCtrlDeps = new HashSet<>();
         ifCtrlDeps = new Stack<>();
         endIfs = new Stack<>();
@@ -455,14 +461,14 @@ public class ExecutionModel {
     // ===================================================
 
     private void extractReadsFrom() {
-        final Relation rf = getMemoryModel().getRelationRepository().getRelation(RF);
+        final Relation rf = getMemoryModel().getRelation(RF);
         readWriteMap.clear();
 
         for (Map.Entry<BigInteger, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
         	BigInteger address = addressedReads.getKey();
             for (EventData read : addressedReads.getValue()) {
                 for (EventData write : addressWritesMap.get(address)) {
-                    BooleanFormula rfExpr = rf.getSMTVar(write.getEvent(), read.getEvent(), context);
+                    BooleanFormula rfExpr = encodingContext.edge(rf, write.getEvent(), read.getEvent());
                     // The null check is important: Currently there are cases where no rf-edge between
                     // init writes and loads get encoded (in case of arrays/structs). This is usually no problem,
                     // since in a well-initialized program, the init write should not be readable anyway.
@@ -479,20 +485,20 @@ public class ExecutionModel {
     }
 
     private void extractCoherences() {
-        final RelCo co = (RelCo) task.getMemoryModel().getRelationRepository().getRelation(CO);
+        final Relation co = encodingContext.getTask().getMemoryModel().getRelation(CO);
 
         for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
             final BigInteger addr = addrWrites.getKey();
             final Set<EventData> writes = addrWrites.getValue();
 
             List<EventData> coSortedWrites;
-            if (co.usesSATEncoding()) {
+            if (encodingContext.usesSATEncoding()) {
                 // --- Extracting co from SAT-based encoding ---
                 Map<EventData, List<EventData>> coEdges = new HashMap<>();
                 for (EventData w1 : writes) {
                     coEdges.put(w1, new ArrayList<>());
                     for (EventData w2 : writes) {
-                        if (Boolean.TRUE.equals(model.evaluate(co.getSMTVar(w1.getEvent(), w2.getEvent(), context)))) {
+                        if (Boolean.TRUE.equals(model.evaluate(encodingContext.edge(co, w1.getEvent(), w2.getEvent())))) {
                             coEdges.get(w1).add(w2);
                         }
                     }
@@ -503,7 +509,7 @@ public class ExecutionModel {
                 // --- Extracting co from IDL-based encoding using clock variables ---
                 Map<EventData, BigInteger> writeClockMap = new HashMap<>(writes.size() * 4 / 3, 0.75f);
                 for (EventData w : writes) {
-                    writeClockMap.put(w, model.evaluate(co.getClockVar(w.getEvent(), context)));
+                    writeClockMap.put(w, model.evaluate(encodingContext.memoryOrderClock(w.getEvent())));
                 }
                 coSortedWrites = writes.stream().sorted(Comparator.comparing(writeClockMap::get)).collect(Collectors.toList());
             }

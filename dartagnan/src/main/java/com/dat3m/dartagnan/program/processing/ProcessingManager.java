@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -32,12 +33,17 @@ public class ProcessingManager implements ProgramProcessor {
 			secure=true)
 		private boolean atomicBlocksAsLocks = false;
 
-	@Option(name= CONSTANT_PROPAGATION,
-			description="Performs constant propagation.",
-			secure=true)
-		private boolean constantPropagation = true;
+    @Option(name= CONSTANT_PROPAGATION,
+        description="Performs constant propagation.",
+        secure=true)
+        private boolean constantPropagation = false;
 
-    // ======================================================================
+	@Option(name= DEAD_ASSIGNEMENT_ELIMINATION,
+			description="Performs dead code elimination.",
+			secure=true)
+		private boolean dce = false;
+
+// ======================================================================
 
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
@@ -51,11 +57,10 @@ public class ProcessingManager implements ProgramProcessor {
         		FindSpinLoops.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
-                DeadAssignmentElimination.fromConfig(config),
-                //RemoveDeadCondJumps.fromConfig(config),
+                dce ? DeadAssignmentElimination.fromConfig(config) : null,
+                RemoveDeadCondJumps.fromConfig(config),
                 AtomicityPropagation.fromConfig(config),
                 Compilation.fromConfig(config),
-                //DynamicPureLoopCutting.fromConfig(),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null
         ));
         programProcessors.removeIf(Objects::isNull);

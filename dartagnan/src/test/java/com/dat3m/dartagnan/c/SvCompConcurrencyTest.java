@@ -60,7 +60,8 @@ public class SvCompConcurrencyTest extends AbstractSvCompTest {
                 {"race-2_5-container_of", 1},
                 {"race-3_1-container_of-global", 2},
                 {"race-3_2-container_of-global", 1},
-                {"test-easy8.wvr", 1}
+                {"test-easy8.wvr", 1},
+                {"pthread-demo-datarace-2", 21}
         });
     }
 }

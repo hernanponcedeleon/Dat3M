@@ -3,12 +3,11 @@ package com.dat3m.dartagnan.utils.visualization;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Tag.C11;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-
-import static java.util.Optional.ofNullable;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -21,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,12 +34,18 @@ public class ExecutionGraphVisualizer {
     private static final Logger logger = LogManager.getLogger(ExecutionGraphVisualizer.class);
 	
     private final Graphviz graphviz;
+    private Map<Event, String> callStackMapping;
     private BiPredicate<EventData, EventData> rfFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
     private Map<BigInteger, IExpr> addresses = new HashMap<BigInteger, IExpr>();
 
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
+    }
+
+    public ExecutionGraphVisualizer setCallStackMapping(Map<Event, String> callStackMapping) {
+        this.callStackMapping = callStackMapping;
+        return this;
     }
 
     public ExecutionGraphVisualizer setReadFromFilter(BiPredicate<EventData, EventData> filter) {
@@ -116,17 +122,14 @@ public class ExecutionGraphVisualizer {
 
     private ExecutionGraphVisualizer addAllThreadPos(ExecutionModel model) {
         for (Thread thread : model.getThreads()) {
-            // We skip the first two threads (empty thread and main) for now
-            if (thread.getId() <= 1) {
-                continue;
-            }
             addThreadPo(thread, model);
         }
         return this;
     }
 
     private ExecutionGraphVisualizer addThreadPo(Thread thread, ExecutionModel model) {
-        List<EventData> threadEvents = model.getThreadEventsMap().get(thread);
+        List<EventData> threadEvents = model.getThreadEventsMap().get(thread)
+            .stream().filter(e -> e.is(Tag.VISIBLE)).collect(Collectors.toList());
         if (threadEvents.size() <= 1) {
             return this;
         }
@@ -171,16 +174,18 @@ public class ExecutionGraphVisualizer {
         if(e.isMemoryEvent()) {
             Object address = addresses.get(e.getAccessedAddress());
             BigInteger value = e.getValue();
-        	String mo = ofNullable(((MemEvent)e.getEvent()).getMo()).orElse(C11.NONATOMIC);
+        	String mo = ((MemEvent)e.getEvent()).getMo();
+            mo = mo.isEmpty() ? mo : ", " + mo;
             tag = e.isWrite() ?
-            		String.format("W(%s, %d, %s)", address, value, mo) :
-            		String.format("%d = R(%s, %s)", value, address, mo);
+            		String.format("W(%s, %d%s)", address, value, mo) :
+            		String.format("%d = R(%s%s)", value, address, mo);
         }
-        return String.format("\"T%d:E%s (%s:L%d)\\n%s\"", 
+        return String.format("\"T%d:E%s (%s:L%d)\\n%s%s\"", 
         				e.getThread().getId(), 
         				e.getEvent().getCId(), 
         				e.getEvent().getSourceCodeFile(), 
-        				e.getEvent().getCLine(), 
+        				e.getEvent().getCLine(),
+                        callStackMapping.containsKey(e.getEvent()) ? callStackMapping.get(e.getEvent()) + "\\n" : "", 
         				tag);
     }
 
@@ -188,12 +193,13 @@ public class ExecutionGraphVisualizer {
         graphviz.addEdge(eventToNode(a, model), eventToNode(b, model), options);
     }
     
-    public static void generateGraphvizFile(ExecutionModel model, int iterationCount, BiPredicate<EventData, EventData> edgeFilter, String directoryName, String fileNameBase) {
+    public static void generateGraphvizFile(ExecutionModel model, int iterationCount, BiPredicate<EventData, EventData> edgeFilter, String directoryName, String fileNameBase, Map<Event, String> callStackMapping) {
         File fileVio = new File(directoryName + fileNameBase + ".dot");
         fileVio.getParentFile().mkdirs();
         try (FileWriter writer = new FileWriter(fileVio)) {
             // Create .dot file
             new ExecutionGraphVisualizer()
+                    .setCallStackMapping(callStackMapping)
                     .setReadFromFilter(edgeFilter)
                     .setCoherenceFilter(edgeFilter)
                     .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);

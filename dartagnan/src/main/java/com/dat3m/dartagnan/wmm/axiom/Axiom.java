@@ -1,9 +1,11 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
-import com.dat3m.dartagnan.utils.dependable.Dependent;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.Configuration;
@@ -14,12 +16,13 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  *
  * @author Florian Furbach
  */
-public abstract class Axiom implements Dependent<Relation> {
+public abstract class Axiom implements Constraint {
 
     protected final Relation rel;
     protected final boolean negated;
@@ -49,7 +52,7 @@ public abstract class Axiom implements Dependent<Relation> {
     }
 
     @Override
-    public List<Relation> getDependencies() {
+    public List<? extends Relation> getConstrainedRelations() {
         return Collections.singletonList(rel);
     }
 
@@ -75,12 +78,16 @@ public abstract class Axiom implements Dependent<Relation> {
         this.name = name;
     }
 
+    public String getNameOrTerm() {
+        return name != null ? name : toString();
+    }
+
     @Override
     public abstract String toString();
 
     public abstract TupleSet getEncodeTupleSet();
 
-    public abstract BooleanFormula consistent(SolverContext ctx);
+    public abstract BooleanFormula consistent(Set<Tuple> toBeEncoded, EncodingContext context);
 
     @Override
     public int hashCode() {

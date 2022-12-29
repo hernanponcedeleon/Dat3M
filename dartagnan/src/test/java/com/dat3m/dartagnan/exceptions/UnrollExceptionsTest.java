@@ -28,8 +28,8 @@ public class UnrollExceptionsTest {
         MemoryObject object = pb.getOrNewObject("X");
 		Label start = pb.getOrCreateLabel("loopStart");
 		pb.addChild(0, start);
-        Load load = EventFactory.newRMWLoad(pb.getOrCreateRegister(0, "r1", 32), object, null);
-        pb.addChild(0, EventFactory.newRMWStore(load, object, IValue.ONE, null));
+        Load load = EventFactory.newRMWLoad(pb.getOrCreateRegister(0, "r1", 32), object, "");
+        pb.addChild(0, EventFactory.newRMWStore(load, object, IValue.ONE, ""));
 		pb.addChild(0, EventFactory.newGoto(start));
     	LoopUnrolling processor = LoopUnrolling.newInstance();
     	processor.setUnrollingBound(2);
@@ -43,8 +43,8 @@ public class UnrollExceptionsTest {
         MemoryObject object = pb.getOrNewObject("X");
 		Label start = pb.getOrCreateLabel("loopStart");
 		pb.addChild(0, start);
-        RMWReadCond load = Linux.newRMWReadCondCmp(pb.getOrCreateRegister(0, "r1", 32), BConst.TRUE, object, null);
-        pb.addChild(0, Linux.newRMWStoreCond(load, object, IValue.ONE, null));
+        RMWReadCond load = Linux.newRMWReadCondCmp(pb.getOrCreateRegister(0, "r1", 32), BConst.TRUE, object, "");
+        pb.addChild(0, Linux.newRMWStoreCond(load, object, IValue.ONE, ""));
 		pb.addChild(0, EventFactory.newGoto(start));
     	LoopUnrolling processor = LoopUnrolling.newInstance();
     	processor.setUnrollingBound(2);
@@ -57,7 +57,7 @@ public class UnrollExceptionsTest {
     	pb.initThread(0);
 		Label start = pb.getOrCreateLabel("loopStart");
 		pb.addChild(0, start);
-    	pb.addChild(0, newRMWStoreExclusive(pb.getOrNewObject("X"), IValue.ONE, null, true));
+    	pb.addChild(0, newRMWStoreExclusive(pb.getOrNewObject("X"), IValue.ONE, "", true));
 		pb.addChild(0, EventFactory.newGoto(start));
     	LoopUnrolling processor = LoopUnrolling.newInstance();
     	processor.setUnrollingBound(2);
@@ -71,7 +71,7 @@ public class UnrollExceptionsTest {
         MemoryObject object = pb.getOrNewObject("X");
 		Label start = pb.getOrCreateLabel("loopStart");
 		pb.addChild(0, start);
-        RMWReadCond load = Linux.newRMWReadCondCmp(pb.getOrCreateRegister(0, "r1", 32), BConst.TRUE, object, null);
+        RMWReadCond load = Linux.newRMWReadCondCmp(pb.getOrCreateRegister(0, "r1", 32), BConst.TRUE, object, "");
 		pb.addChild(0, Linux.newConditionalBarrier(load, null));
 		pb.addChild(0, EventFactory.newGoto(start));
     	LoopUnrolling processor = LoopUnrolling.newInstance();
@@ -86,7 +86,7 @@ public class UnrollExceptionsTest {
 		Label start = pb.getOrCreateLabel("loopStart");
 		pb.addChild(0, start);
         MemoryObject object = pb.getOrNewObject("X");
-        RMWStoreExclusive store = newRMWStoreExclusive(object, IValue.ONE, null);
+        RMWStoreExclusive store = newRMWStoreExclusive(object, IValue.ONE, "");
 		pb.addChild(0, EventFactory.newExecutionStatus(pb.getOrCreateRegister(0, "r1", 32), store));
 		pb.addChild(0, EventFactory.newGoto(start));
     	LoopUnrolling processor = LoopUnrolling.newInstance();

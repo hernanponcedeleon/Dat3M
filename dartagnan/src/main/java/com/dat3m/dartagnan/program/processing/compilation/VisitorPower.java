@@ -1,28 +1,19 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory.Power;
+import com.dat3m.dartagnan.program.event.EventFactory.*;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.linux.LKMMFence;
-import com.dat3m.dartagnan.program.event.lang.linux.LKMMLoad;
-import com.dat3m.dartagnan.program.event.lang.linux.LKMMStore;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWAddUnless;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWCmpXchg;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOpAndTest;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOpReturn;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWXchg;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.lang.linux.*;
+import com.dat3m.dartagnan.program.event.lang.llvm.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 
 import java.util.List;
 
@@ -36,7 +27,7 @@ public class VisitorPower extends VisitorBase {
 
 	// The compilation schemes below follows the paper
 	// "Clarifying and Compiling C/C++ Concurrency: from C++11 to POWER"
-	// The paper does not defines the mappings for RMW but we derive them
+	// The paper does not define the mappings for RMW, but we derive them
 	// using the same pattern as for Load/Store	
 	private final PowerScheme cToPowerScheme;
 	// Some language memory models (e.g. RC11) are non-dependency tracking and might need a 
@@ -45,7 +36,8 @@ public class VisitorPower extends VisitorBase {
 	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
 	private final boolean useRC11Scheme; 
 
-	protected VisitorPower(boolean useRC11Scheme, PowerScheme cToPowerScheme) {
+	protected VisitorPower(boolean forceStart, boolean useRC11Scheme, PowerScheme cToPowerScheme) {
+		super(forceStart);
 		this.useRC11Scheme = useRC11Scheme;
 		this.cToPowerScheme = cToPowerScheme;
 	}
@@ -72,7 +64,7 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
+		Load load = newLoad(resultRegister, e.getAddress(), "");
         load.addFilters(C11.PTHREAD);
         Label label = newLabel("Jump_" + e.getOId());
         CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
@@ -90,16 +82,250 @@ public class VisitorPower extends VisitorBase {
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
-        Label label = newLabel("Jump_" + e.getOId());
+		load.addFilters(Tag.STARTLOAD);
+		Label label = newLabel("Jump_" + e.getOId());
         CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-        
+		
 		return eventSequence(
                 load,
                 fakeCtrlDep,
                 label,
                 Power.newISyncBarrier(),
+				super.visitStart(e),
                 newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
+	}
+
+	// =============================================================================================
+    // =========================================== LLVM ============================================
+    // =============================================================================================
+
+	@Override
+	public List<Event> visitLlvmLoad(LlvmLoad e) {
+		Register resultRegister = e.getResultRegister();
+
+		Fence optionalBarrierBefore = null;
+		Load load = newLoad(resultRegister, e.getAddress(), "");
+		Label optionalLabel = null;
+		CondJump optionalFakeCtrlDep = null;
+		Fence optionalBarrierAfter = null;
+
+		switch (e.getMo()) {
+			case C11.MO_SC:
+				if (cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+					optionalLabel = newLabel("FakeDep");
+					optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
+					optionalBarrierAfter = Power.newISyncBarrier();
+				} else {
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_ACQUIRE:
+				optionalLabel = newLabel("FakeDep");
+				optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+			case C11.MO_RELAXED:
+				if (useRC11Scheme) {
+					optionalLabel = newLabel("FakeDep");
+					optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
+				}
+				break;
+		}
+
+		return eventSequence(
+				optionalBarrierBefore,
+				load,
+				optionalFakeCtrlDep,
+				optionalLabel,
+				optionalBarrierAfter);
+	}
+
+	@Override
+	public List<Event> visitLlvmStore(LlvmStore e) {
+		Fence optionalBarrierBefore = null;
+		Store store = newStore(e.getAddress(), e.getMemValue(), "");
+		Fence optionalBarrierAfter = null;
+
+		switch (e.getMo()) {
+			case C11.MO_SC:
+				if (cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+				} else {
+					optionalBarrierBefore = Power.newLwSyncBarrier();
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				break;
+		}
+
+		return eventSequence(
+				optionalBarrierBefore,
+				store,
+				optionalBarrierAfter);
+	}
+
+	@Override
+	public List<Event> visitLlvmXchg(LlvmXchg e) {
+		Register resultRegister = e.getResultRegister();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+		// Power does not have mo tags, thus we use null
+		Load load = newRMWLoadExclusive(resultRegister, address, "");
+		Store store = Power.newRMWStoreConditional(address, e.getMemValue(), "",  true);
+		Label label = newLabel("FakeDep");
+		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+		Fence optionalBarrierBefore = null;
+		Fence optionalBarrierAfter = null;
+
+		switch (mo) {
+			case C11.MO_SC:
+				if (cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+					optionalBarrierAfter = Power.newISyncBarrier();
+				} else {
+					optionalBarrierBefore = Power.newLwSyncBarrier();
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_ACQUIRE:
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+			case C11.MO_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				break;
+			case C11.MO_ACQUIRE_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+		}
+
+		return eventSequence(
+				optionalBarrierBefore,
+				load,
+				fakeCtrlDep,
+				label,
+				store,
+				optionalBarrierAfter);
+	}
+
+	@Override
+	public List<Event> visitLlvmRMW(LlvmRMW e) {
+		Register resultRegister = e.getResultRegister();
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+		Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+		Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, e.getOp(), (IExpr) e.getMemValue()));
+
+		// Power does not have mo tags, thus we use null
+		Load load = newRMWLoadExclusive(resultRegister, address, "");
+		Store store = Power.newRMWStoreConditional(address, dummyReg, "", true);
+		Label label = newLabel("FakeDep");
+		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+		Fence optionalBarrierBefore = null;
+		// Academics papers (e.g. https://plv.mpi-sws.org/imm/paper.pdf) say an isync
+		// barrier is enough
+		// However, power compilers in godbolt.org use a lwsync.
+		// We stick to the literature to potentially find bugs in what researchers
+		// claim.
+		Fence optionalBarrierAfter = null;
+
+		switch (mo) {
+			case C11.MO_SC:
+				if (cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+					optionalBarrierAfter = Power.newISyncBarrier();
+				} else {
+					optionalBarrierBefore = Power.newLwSyncBarrier();
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_ACQUIRE:
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+			case C11.MO_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				break;
+			case C11.MO_ACQUIRE_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+		}
+
+		return eventSequence(
+				optionalBarrierBefore,
+				load,
+				fakeCtrlDep,
+				label,
+				localOp,
+				store,
+				optionalBarrierAfter);
+	}
+
+ 	@Override
+	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
+		Register oldValueRegister = e.getStructRegister(0);
+		Register resultRegister = e.getStructRegister(1);
+
+		IExpr address = e.getAddress();
+		String mo = e.getMo();
+
+		Local casCmpResult = newLocal(resultRegister, new Atom(oldValueRegister, EQ, e.getExpectedValue()));
+		Label casEnd = newLabel("CAS_end");
+		CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
+
+		Load load = newRMWLoadExclusive(oldValueRegister, address, "");
+		Store store = Power.newRMWStoreConditional(address, e.getMemValue(), "", true);
+
+		Fence optionalBarrierBefore = null;
+		Fence optionalBarrierAfter = null;
+
+		switch (mo) {
+			case C11.MO_SC:
+				if (cToPowerScheme.equals(LEADING_SYNC)) {
+					optionalBarrierBefore = Power.newSyncBarrier();
+					optionalBarrierAfter = Power.newISyncBarrier();
+				} else {
+					optionalBarrierBefore = Power.newLwSyncBarrier();
+					optionalBarrierAfter = Power.newSyncBarrier();
+				}
+				break;
+			case C11.MO_ACQUIRE:
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+			case C11.MO_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				break;
+			case C11.MO_ACQUIRE_RELEASE:
+				optionalBarrierBefore = Power.newLwSyncBarrier();
+				optionalBarrierAfter = Power.newISyncBarrier();
+				break;
+		}
+
+		return eventSequence(
+				// Indentation shows the branching structure
+				optionalBarrierBefore,
+				load,
+				casCmpResult,
+				branchOnCasCmpResult,
+				store,
+				casEnd,
+				optionalBarrierAfter);
+	}
+
+	@Override
+	public List<Event> visitLlvmFence(LlvmFence e) {
+		Fence fence = e.getMo().equals(Tag.C11.MO_SC) ? Power.newSyncBarrier() : Power.newLwSyncBarrier();
+
+		return eventSequence(
+				fence);
 	}
 
     // =============================================================================================
@@ -117,17 +343,17 @@ public class VisitorPower extends VisitorBase {
 
 		Register regExpected = e.getThread().newRegister(precision);
         Register regValue = e.getThread().newRegister(precision);
-        Load loadExpected = newLoad(regExpected, expectedAddr, null);
-        Store storeExpected = newStore(expectedAddr, regValue, null);
+        Load loadExpected = newLoad(regExpected, expectedAddr, "");
+        Store storeExpected = newStore(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
 
-        // Power does not have mo tags, thus we use null
-        Load loadValue = newRMWLoadExclusive(regValue, address, null);
-        Store storeValue = Power.newRMWStoreConditional(address, value, null, e.is(STRONG));
+        // Power does not have mo tags, thus we use the emptz string
+        Load loadValue = newRMWLoadExclusive(regValue, address, "");
+        Store storeValue = Power.newRMWStoreConditional(address, value, "", e.is(STRONG));
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
         if (!e.is(STRONG)) {
@@ -190,9 +416,9 @@ public class VisitorPower extends VisitorBase {
         Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
         Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
 
-        // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(resultRegister, address, null);
-        Store store = Power.newRMWStoreConditional(address, dummyReg, null, true);
+        // Power does not have mo tags, thus we use the emptz string
+        Load load = newRMWLoadExclusive(resultRegister, address, "");
+        Store store = Power.newRMWStoreConditional(address, dummyReg, "", true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -328,9 +554,9 @@ public class VisitorPower extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-        // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(resultRegister, address, null);
-        Store store = Power.newRMWStoreConditional(address, value, null, true);
+        // Power does not have mo tags, thus we use the emptz string
+        Load load = newRMWLoadExclusive(resultRegister, address, "");
+        Store store = Power.newRMWStoreConditional(address, value, "", true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -369,59 +595,6 @@ public class VisitorPower extends VisitorBase {
         );
 	}
 
-	@Override
-	public List<Event> visitDat3mCAS(Dat3mCAS e) {
-		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		ExprInterface expectedValue = e.getExpectedValue();
-
-        Register regValue = e.getThread().newRegister(resultRegister.getPrecision());
-        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, expectedValue));
-        Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
-        Load load = newRMWLoadExclusive(regValue, address, null);
-        Store store = Power.newRMWStoreConditional(address, value, null, true);
-
-        Fence optionalBarrierBefore = null;
-        Fence optionalBarrierAfter = null;
-        
-        switch(mo) {
-			case C11.MO_SC:
-				if(cToPowerScheme.equals(LEADING_SYNC)) {
-					optionalBarrierBefore = Power.newSyncBarrier();
-					optionalBarrierAfter = Power.newISyncBarrier();
-				} else {
-					optionalBarrierBefore = Power.newLwSyncBarrier();
-					optionalBarrierAfter = Power.newSyncBarrier();
-				}
-				break;
-			case C11.MO_ACQUIRE:
-				optionalBarrierAfter = Power.newISyncBarrier();
-				break;
-			case C11.MO_RELEASE:
-				optionalBarrierBefore = Power.newLwSyncBarrier();
-				break;
-			case C11.MO_ACQUIRE_RELEASE:
-				optionalBarrierBefore = Power.newLwSyncBarrier();
-				optionalBarrierAfter = Power.newISyncBarrier();
-				break;
-		}
-        
-        // --- Add success events ---
-        return eventSequence(
-                // Indentation shows the branching structure
-        		optionalBarrierBefore,
-                load,
-                casCmpResult,
-                branchOnCasCmpResult,
-                    store,
-                optionalBarrierAfter,
-                casEnd
-        );
-	}
-	
     // =============================================================================================
     // =========================================== LKMM ============================================
     // =============================================================================================
@@ -434,8 +607,8 @@ public class VisitorPower extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 		
-        // Power does not have mo tags, thus we use null
-        Load load = newLoad(resultRegister, address, null);
+        // Power does not have mo tags, thus we use the empty string
+        Load load = newLoad(resultRegister, address, "");
         Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newLwSyncBarrier() : null;
         
         return eventSequence(
@@ -452,8 +625,8 @@ public class VisitorPower extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-        // Power does not have mo tags, thus we use null
-        Store store = newStore(address, value, null);
+        // Power does not have mo tags, thus we use the empty string
+        Store store = newStore(address, value, "");
         Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
         
         return eventSequence(
@@ -475,6 +648,18 @@ public class VisitorPower extends VisitorBase {
 			case Tag.Linux.AFTER_ATOMIC:
 				optionalMemoryBarrier = Power.newSyncBarrier();
 				break;
+        	// #define smp_mb__after_spinlock()	smp_mb()       
+            // 		https://elixir.bootlin.com/linux/v6.1/source/arch/powerpc/include/asm/spinlock.h#L14
+            case Tag.Linux.AFTER_SPINLOCK:
+				optionalMemoryBarrier = Power.newSyncBarrier();
+				break;
+            // #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
+            // 		https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
+            // It seem to be only used for RCU related stuff in the kernel so it makes sense
+            // it is defined in that header file
+            case Tag.Linux.AFTER_UNLOCK_LOCK:
+				optionalMemoryBarrier = Power.newSyncBarrier();
+                break;
 			default:
 				throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
 		}
@@ -523,9 +708,9 @@ public class VisitorPower extends VisitorBase {
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(new Atom(dummy, NEQ, e.getCmp()), casEnd);
 
-        // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(dummy, address, null);
-        Store store = Power.newRMWStoreConditional(address, value, null, true);
+        // Power does not have mo tags, thus we use the empty string
+        Load load = newRMWLoadExclusive(dummy, address, "");
+        Store store = Power.newRMWStoreConditional(address, value, "", true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -556,9 +741,9 @@ public class VisitorPower extends VisitorBase {
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(dummy, address, null);
-        Store store = Power.newRMWStoreConditional(address, value, null, true);
+        // Power does not have mo tags, thus we use the empty string
+        Load load = newRMWLoadExclusive(dummy, address, "");
+        Store store = Power.newRMWStoreConditional(address, value, "", true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -587,9 +772,9 @@ public class VisitorPower extends VisitorBase {
 		String mo = e.getMo();
 		
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(dummy, address, null);
-        Store store = Power.newRMWStoreConditional(address, new IExprBin(dummy, op, value), null, true);
+        // Power does not have mo tags, thus we use the empty string
+        Load load = newRMWLoadExclusive(dummy, address, "");
+        Store store = Power.newRMWStoreConditional(address, new IExprBin(dummy, op, value), "", true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -618,9 +803,9 @@ public class VisitorPower extends VisitorBase {
 		String mo = e.getMo();
 		
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(dummy, address, null);
-        Store store = Power.newRMWStoreConditional(address, dummy, null, true);
+        // Power does not have mo tags, thus we use the empty string
+        Load load = newRMWLoadExclusive(dummy, address, "");
+        Store store = Power.newRMWStoreConditional(address, dummy, "", true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -650,8 +835,8 @@ public class VisitorPower extends VisitorBase {
 		String mo = e.getMo();
 		
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		Load load = newRMWLoadExclusive(dummy, address, null);
-        Store store = Power.newRMWStoreConditional(address, new IExprBin(dummy, e.getOp(), value), null, true);
+		Load load = newRMWLoadExclusive(dummy, address, "");
+        Store store = Power.newRMWStoreConditional(address, new IExprBin(dummy, e.getOp(), value), "", true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -685,9 +870,9 @@ public class VisitorPower extends VisitorBase {
 		int precision = resultRegister.getPrecision();
 
         Register regValue = e.getThread().newRegister(precision);
-        // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(regValue, address, null);
-        Store store = Power.newRMWStoreConditional(address, new IExprBin(regValue, IOpBin.PLUS, (IExpr) value), null, true);
+        // Power does not have mo tags, thus we use the empty string
+        Load load = newRMWLoadExclusive(regValue, address, "");
+        Store store = Power.newRMWStoreConditional(address, new IExprBin(regValue, IOpBin.PLUS, (IExpr) value), "", true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
@@ -733,9 +918,9 @@ public class VisitorPower extends VisitorBase {
         Local localOp = newLocal(retReg, new IExprBin(dummy, op, value));
         Local testOp = newLocal(resultRegister, new Atom(retReg, EQ, IValue.ZERO));
 
-        // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(dummy, address, null);
-        Store store = Power.newRMWStoreConditional(address, retReg, null, true);
+        // Power does not have mo tags, thus we use the empty string
+        Load load = newRMWLoadExclusive(dummy, address, "");
+        Store store = Power.newRMWStoreConditional(address, retReg, "", true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -757,6 +942,30 @@ public class VisitorPower extends VisitorBase {
         );
 	};
 	
+	@Override
+	public List<Event> visitLKMMLock(LKMMLock e) {
+	Register dummy = e.getThread().newRegister(GlobalSettings.ARCH_PRECISION);
+	Label label = newLabel("FakeDep");
+    // Spinlock events are guaranteed to succeed, i.e. we can use assumes
+	return eventSequence(
+				newRMWLoadExclusive(dummy, e.getLock(), ""),
+                newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)),
+                Power.newRMWStoreConditional(e.getLock(), IValue.ONE, "", true),
+				// Fake dependency to guarantee acquire semantics
+				newFakeCtrlDep(dummy, label),
+				label,
+				Power.newISyncBarrier()
+        );
+	}
+
+        @Override
+	public List<Event> visitLKMMUnlock(LKMMUnlock e) {
+	return eventSequence(
+				Power.newLwSyncBarrier(),
+                newStore(e.getAddress(), IValue.ZERO, "")
+        );
+	}
+
 	public enum PowerScheme {
 
 		LEADING_SYNC, TRAILING_SYNC;

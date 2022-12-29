@@ -101,7 +101,8 @@ public class BranchTest {
                     .withSolverTimeout(60)
                     .withTarget(Arch.LKMM)
                     .build(program, wmm, Property.getDefault());
-            assertEquals(expected, TwoSolvers.run(ctx, prover1, prover2, task));
+            TwoSolvers s = TwoSolvers.run(ctx, prover1, prover2, task);
+            assertEquals(expected, s.getResult());
         } catch (Exception e){
             fail("Missing resource file");
         }
