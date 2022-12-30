@@ -108,6 +108,13 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		predecessor = event;
 	}
 
+	public void insertAfter(Event toBeInserted) {
+		if (this.successor != null) {
+			this.successor.setPredecessor(toBeInserted);
+		}
+		this.setSuccessor(toBeInserted);
+	}
+
 	public Thread getThread() {
 		return thread;
 	}

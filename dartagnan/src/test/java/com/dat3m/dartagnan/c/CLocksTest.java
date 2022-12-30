@@ -30,14 +30,9 @@ public class CLocksTest extends AbstractCTest {
         return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "locks/" + name + ".bpl");
     }
 
-	@Override
-	protected Provider<Integer> getBoundProvider() {
-		return () -> 5;
-	}
-
-	@Override
+    @Override
     protected long getTimeout() {
-        return 600000;
+        return 60000;
     }
 
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
@@ -140,7 +135,7 @@ public class CLocksTest extends AbstractCTest {
 		});
     }
 
-    @Test
+//    @Test
 	@CSVLogger.FileName("csv/assume")
 	public void testAssume() throws Exception {
 		AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());

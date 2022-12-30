@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.expression.BExprUn;
-import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -46,7 +44,7 @@ public class LoopUnrolling implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_AFTER_UNROLLING,
             description = "Prints the program after unrolling.",
             secure = true)
-    private boolean print = true;
+    private boolean print = false;
 
     // =====================================================================
 
@@ -186,14 +184,7 @@ public class LoopUnrolling implements ProgramProcessor {
                 Map<Event, Event> copyCtx = new HashMap<>();
                 List<Event> copies = copyPath(loopBegin, loopBackJump, copyCtx);
                 ((Label)copyCtx.get(loopBegin)).setName(loopBegin.getName() + "_" + iterCounter);
-
-                // Test code
-                if (iterCounter > 100) {
-                    Event assume = EventFactory.newAssume(new BExprUn(BOpUn.NOT, loopBackJump.getGuard()));
-                    assume.setThread(loopBackJump.getThread());
-                    assume.setSuccessor(copies.get(0));
-                    copies.add(0, assume);
-                }
+                copyCtx.get(loopBegin).addFilters(Tag.NOOPT);
 
                 // Insert copies at right place
                 loopBegin.getPredecessor().setSuccessor(copies.get(0));
