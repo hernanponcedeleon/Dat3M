@@ -45,7 +45,7 @@ public class LoopUnrolling implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_AFTER_UNROLLING,
             description = "Prints the program after unrolling.",
             secure = true)
-    private boolean print = true;
+    private boolean print = false;
 
     // =====================================================================
 
