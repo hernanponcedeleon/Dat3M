@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -52,16 +53,16 @@ public class Simplifier implements ProgramProcessor {
     @Override
     public void run(Program program) {
         Preconditions.checkArgument(!program.isUnrolled(), "Simplifying should be performed before unrolling.");
-        logger.info("pre-simplification: " + program.getEvents().size() + " events");
 
+        logger.info("pre-simplification: " + program.getEvents().size() + " events");
         for (Thread t : program.getThreads()) {
             if (simplify(t)) {
                 t.clearCache();
             }
         }
         program.clearCache(false);
-
         logger.info("post-simplification: " + program.getEvents().size() + " events");
+
         if(print) {
         	System.out.println("===== Program after simplification =====");
         	System.out.println(new Printer().print(program));
@@ -70,20 +71,18 @@ public class Simplifier implements ProgramProcessor {
     }
 
     private boolean simplify(Thread t) {
-        Event pred = t.getEntry();
         boolean hasAnyChanges = false;
-        while (true) {
-            Event next = pred.getSuccessor();
-            if (next == null) {
-                break;
-            }
-            // Some simplification are only applicable after others.
-            // Thus we apply them iteratively until we reach a fixpoint.
+
+        Event cur = t.getEntry();
+        Event next;
+        while ((next = cur.getSuccessor()) != null) {
             if (simplifyEvent(next)) {
+                // Some simplifications are only applicable after others.
+                // Thus, we apply them iteratively until we reach a fixpoint.
                 hasAnyChanges = true;
             } else {
                 // If nothing has changed, we proceed to the next event
-                pred = pred.getSuccessor();
+                cur = next;
             }
         }
 
@@ -92,6 +91,9 @@ public class Simplifier implements ProgramProcessor {
 
 
     private boolean simplifyEvent(Event next) {
+        if (next.is(Tag.NOOPT)) {
+            return false;
+        }
         boolean changed = false;
         if (next instanceof CondJump) {
             changed = simplifyJump((CondJump) next);
@@ -104,10 +106,10 @@ public class Simplifier implements ProgramProcessor {
     }
 
     private boolean simplifyJump(CondJump jump) {
-        Label label = jump.getLabel();
-        Event successor = jump.getSuccessor();
-        BExpr expr = jump.getGuard();
-        if(label.equals(successor) && expr instanceof BConst) {
+        final Label jumpTarget = jump.getLabel();
+        final Event successor = jump.getSuccessor();
+        final BExpr guard = jump.getGuard();
+        if(jumpTarget.equals(successor) && guard instanceof BConst) {
             jump.delete();
             return true;
         }
@@ -115,7 +117,7 @@ public class Simplifier implements ProgramProcessor {
     }
 
     private boolean simplifyLabel(Label label) {
-        if (label.getJumpSet().isEmpty() && !label.getName().startsWith("END_OF_T")) {
+        if (label.getJumpSet().isEmpty() && label != label.getThread().getExit()) {
             label.delete();
             return true;
         }
@@ -127,7 +129,7 @@ public class Simplifier implements ProgramProcessor {
         while (simplifyEvent(call.getSuccessor())) { }
 
         // Check if we reached the return statement
-        Event successor = call.getSuccessor();
+        final Event successor = call.getSuccessor();
         if(successor instanceof FunRet && ((FunRet)successor).getFunctionName().equals(call.getFunctionName())) {
             // We skip the function call + the function return
             call.getPredecessor().setSuccessor(successor.getSuccessor());

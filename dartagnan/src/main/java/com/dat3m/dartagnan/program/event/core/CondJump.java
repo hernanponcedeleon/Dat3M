@@ -38,10 +38,7 @@ public class CondJump extends Event implements RegReaderData {
     public boolean isGoto() {
     	return expr.isTrue();
     }
-    
-    public boolean isDead() {
-    	return expr.isFalse();
-    }
+    public boolean isDead() {return expr.isFalse(); }
     
     public Label getLabel(){
         return label;
@@ -50,7 +47,6 @@ public class CondJump extends Event implements RegReaderData {
     public BExpr getGuard(){
         return expr;
     }
-
     public void setGuard(BExpr guard){
         this.expr = guard;
     }

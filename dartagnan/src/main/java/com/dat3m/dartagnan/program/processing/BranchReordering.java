@@ -99,11 +99,10 @@ public class BranchReordering implements ProgramProcessor {
 
         private final Thread thread;
         private final List<MovableBranch> branches = new ArrayList<>();
-        private final Map<Event, MovableBranch> eventBranchMap;
+        private final Map<Event, MovableBranch> eventBranchMap = new HashMap<>();
 
         public ThreadReordering(Thread t) {
             this.thread = t;
-            this.eventBranchMap = new HashMap<>();
         }
 
         private void computeBranchDecomposition() {
@@ -136,7 +135,6 @@ public class BranchReordering implements ProgramProcessor {
             final MovableBranch startBranch = movables.get(0);
             final Map<Event, MovableBranch> eventBranchMap = this.eventBranchMap;
 
-
             // Construct successor map of branches
             final Map<MovableBranch, Set<MovableBranch>> successorMap = new HashMap<>();
             for (MovableBranch b : movables) {
@@ -157,7 +155,6 @@ public class BranchReordering implements ProgramProcessor {
             // Compute the actual reordering of the branches
             final DependencyGraph<MovableBranch> depGraph = DependencyGraph.fromSingleton(startBranch, successorMap);
             final List<Set<DependencyGraph<MovableBranch>.Node>> sccs = Lists.reverse(depGraph.getSCCs());
-
             final List<MovableBranch> movedBranches = new ArrayList<>();
             for (Set<DependencyGraph<MovableBranch>.Node> scc : sccs) {
                 final List<MovableBranch> branchesInScc = scc.stream().map(DependencyGraph.Node::getContent)
