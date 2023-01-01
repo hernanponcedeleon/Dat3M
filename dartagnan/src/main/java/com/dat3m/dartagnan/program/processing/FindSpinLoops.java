@@ -73,16 +73,17 @@ public class FindSpinLoops implements ProgramProcessor {
             // Find start of spinloop.
             if (curr.getSuccessor() instanceof LoopStart) {
             	if(!(curr instanceof Label)) {
-            		logger.warn("LoopStart does not match expected use (it should be preceeded by a Label)");
+            		logger.warn("LoopStart does not match expected use (it should be preceded by a Label)");
             		continue;
             	}
-                Label label = (Label) curr;
+                final Label label = (Label) curr;
                 // This looks for all backjumps to the label
-                List<CondJump> backjumps = label.getJumpSet()
+                final List<CondJump> backjumps = label.getJumpSet()
                         .stream().filter(x -> x.getOId() > label.getOId())
                         .collect(Collectors.toList());
+                final boolean isLoop = !backjumps.isEmpty();
 
-                if (!backjumps.isEmpty()) {
+                if (isLoop) {
                     // No need to check if the loop is side effect free
                 	// The user guarantees this by using the annotation
                 	label.addFilters(Tag.SPINLOOP, Tag.NOOPT);
@@ -100,15 +101,16 @@ public class FindSpinLoops implements ProgramProcessor {
         while (curr != null) {
             // Find start of spinloop that is not already marked.
             if (curr instanceof Label && !curr.is(Tag.SPINLOOP)) {
-                Label label = (Label) curr;
-                // Importantly, this looks for the LAST backjump to the label
-                List<CondJump> backjumps = label.getJumpSet()
+                final Label label = (Label) curr;
+                final List<CondJump> backjumps = label.getJumpSet()
                         .stream().filter(x -> x.getOId() > label.getOId())
                         .sorted().collect(Collectors.toList());
+                final boolean isLoop = !backjumps.isEmpty();
 
-                if (!backjumps.isEmpty()) {
-                    Label loopStart = label;
-                    CondJump loopEnd = backjumps.get(backjumps.size() - 1);
+                if (isLoop) {
+                    // Importantly, this looks for the LAST backjump to the loop start
+                    final CondJump loopEnd = backjumps.get(backjumps.size() - 1);
+                    final Label loopStart = label;
                     if (isSideEffectFree(loopStart, loopEnd)) {
                         loopStart.addFilters(Tag.SPINLOOP, Tag.NOOPT);
                         backjumps.forEach(x -> x.addFilters(Tag.SPINLOOP, Tag.NOOPT));
@@ -117,7 +119,6 @@ public class FindSpinLoops implements ProgramProcessor {
                 }
             }
             curr = curr.getSuccessor();
-
         }
 
         t.clearCache();
@@ -130,25 +131,25 @@ public class FindSpinLoops implements ProgramProcessor {
         // Safe means the loop wrote to these register before using them
         Set<Register> safeRegisters = new HashSet<>();
         while (cur != loopEnd) {
-
             if (cur instanceof MemEvent) {
                 if (cur.is(Tag.WRITE)) {
                     return false; // Writes always cause side effects
                 }
-                MemEvent memEvent = (MemEvent) cur;
-                Set<Register> addrRegs = memEvent.getAddress().getRegs();
+                final Set<Register> addrRegs = ((MemEvent) cur).getAddress().getRegs();
                 unsafeRegisters.addAll(Sets.difference(addrRegs, safeRegisters));
             }
 
             if (cur instanceof RegReaderData) {
-                RegReaderData reader = (RegReaderData) cur;
-                Set<Register> dataRegs = reader.getDataRegs();
+                final Set<Register> dataRegs = ((RegReaderData) cur).getDataRegs();
                 unsafeRegisters.addAll(Sets.difference(dataRegs, safeRegisters));
             }
 
             if (cur instanceof RegWriter) {
-                RegWriter writer = (RegWriter) cur;
+                final RegWriter writer = (RegWriter) cur;
                 if (unsafeRegisters.contains(writer.getResultRegister())) {
+                    // The loop writes to a register it previously read from.
+                    // This means the next loop iteration will observe the newly written value,
+                    // hence the loop is not side effect free.
                     return false;
                 } else {
                     safeRegisters.add(writer.getResultRegister());
