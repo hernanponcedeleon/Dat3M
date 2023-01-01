@@ -125,11 +125,12 @@ public class FindSpinLoops implements ProgramProcessor {
     }
 
     private boolean isSideEffectFree(Label loopBegin, CondJump loopEnd) {
-        Event cur = loopBegin.getSuccessor();
         // Unsafe means the loop read from the registers before writing to them.
         Set<Register> unsafeRegisters = new HashSet<>();
         // Safe means the loop wrote to these register before using them
         Set<Register> safeRegisters = new HashSet<>();
+
+        Event cur = loopBegin.getSuccessor();
         while (cur != loopEnd) {
             if (cur instanceof MemEvent) {
                 if (cur.is(Tag.WRITE)) {
