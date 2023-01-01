@@ -85,14 +85,13 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         }
 
         // Here is the actual removal
-        Event pred;
         Event cur = thread.getEntry();
-        do {
-            pred = cur;
-            cur = cur.getSuccessor();
-            if (toBeRemoved.contains(pred)) {
-                pred.delete();
-            }
-        } while (cur != null);
+        while (cur != null) {
+            final Event succ = cur.getSuccessor();
+            if (toBeRemoved.contains(cur)) {
+                cur.delete();
+            };
+            cur = succ;
+        }
     }
 }

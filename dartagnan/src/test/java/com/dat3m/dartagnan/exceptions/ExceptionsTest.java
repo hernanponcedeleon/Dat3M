@@ -13,8 +13,8 @@ import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.processing.BranchReordering;
-import com.dat3m.dartagnan.program.processing.DeadCodeElimination;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
+import com.dat3m.dartagnan.program.processing.UnreachableCodeElimination;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import org.junit.Test;
@@ -82,7 +82,7 @@ public class ExceptionsTest {
         Program p = pb.build();
         LoopUnrolling.newInstance().run(p);
         // DCE cannot be called after unrolling
-        DeadCodeElimination.newInstance().run(p);
+        UnreachableCodeElimination.newInstance().run(p);
     }
 
     @Test(expected = IllegalArgumentException.class)

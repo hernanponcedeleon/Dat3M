@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,17 +15,17 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.util.HashSet;
 import java.util.Set;
 
-public class DeadCodeElimination implements ProgramProcessor {
+public class UnreachableCodeElimination implements ProgramProcessor {
 
-    private static final Logger logger = LogManager.getLogger(DeadCodeElimination.class);
+    private static final Logger logger = LogManager.getLogger(UnreachableCodeElimination.class);
 
-    private DeadCodeElimination() { }
+    private UnreachableCodeElimination() { }
 
-    public static DeadCodeElimination newInstance() {
-        return new DeadCodeElimination();
+    public static UnreachableCodeElimination newInstance() {
+        return new UnreachableCodeElimination();
     }
 
-    public static DeadCodeElimination fromConfig(Configuration config) throws InvalidConfigurationException {
+    public static UnreachableCodeElimination fromConfig(Configuration config) throws InvalidConfigurationException {
         return newInstance();
     }
 
@@ -46,47 +47,46 @@ public class DeadCodeElimination implements ProgramProcessor {
     }
 
     private void eliminateDeadCode(Thread thread, int startId) {
-        Event entry = thread.getEntry();
-        Event exit = thread.getExit();
+        final Event entry = thread.getEntry();
+        final Event exit = thread.getExit();
 
         if (entry.is(Tag.INIT)) {
             return;
         }
 
-        Set<Event> reachableEvents = new HashSet<>();
+        final Set<Event> reachableEvents = new HashSet<>();
         computeReachableEvents(entry, reachableEvents);
 
-        Event pred = null;
-        Event cur = entry;
         int id = startId;
+        Event cur = entry;
         while (cur != null) {
+            final Event succ = cur.getSuccessor();
             if (!reachableEvents.contains(cur) && cur != exit && !cur.is(Tag.NOOPT)) {
                 cur.delete();
-                cur = pred;
             } else {
                 cur.setOId(id++);
             }
-            pred = cur;
-            cur = cur.getSuccessor();
+            cur = succ;
         }
     }
 
-    private void computeReachableEvents(Event e, Set<Event> reachable) {
-        if (reachable.contains(e)) {
-            return;
-        }
-
+    // Modifies the second parameter
+    private void computeReachableEvents(Event start, Set<Event> reachable) {
+        Event e = start;
         while (e != null && reachable.add(e)) {
             if (e instanceof CondJump) {
-                CondJump j = (CondJump) e;
-                if (j.isGoto()) {
-                    e = j.getLabel();
-                    continue;
+                final CondJump jump = (CondJump) e;
+                final Label jumpTarget = jump.getLabel();
+
+                if (jump.isGoto()) {
+                    e = jumpTarget;
                 } else {
-                    computeReachableEvents(j.getLabel(), reachable);
+                    computeReachableEvents(jumpTarget, reachable);
+                    e = e.getSuccessor();
                 }
+            } else {
+                e = e.getSuccessor();
             }
-            e = e.getSuccessor();
         }
     }
 }

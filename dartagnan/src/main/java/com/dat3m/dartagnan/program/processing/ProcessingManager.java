@@ -50,7 +50,7 @@ public class ProcessingManager implements ProgramProcessor {
         programProcessors.addAll(Arrays.asList(
                 atomicBlocksAsLocks ? AtomicAsLock.fromConfig(config) : null,
                 Memory.fixateMemoryValues(),
-                DeadCodeElimination.fromConfig(config),
+                UnreachableCodeElimination.fromConfig(config),
                 BranchReordering.fromConfig(config),
                 Simplifier.fromConfig(config),
         		FindSpinLoops.fromConfig(config),
