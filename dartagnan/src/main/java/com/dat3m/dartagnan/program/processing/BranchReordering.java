@@ -155,15 +155,15 @@ public class BranchReordering implements ProgramProcessor {
             // Compute the actual reordering of the branches
             final DependencyGraph<MovableBranch> depGraph = DependencyGraph.fromSingleton(startBranch, successorMap);
             final List<Set<DependencyGraph<MovableBranch>.Node>> sccs = Lists.reverse(depGraph.getSCCs());
-            final List<MovableBranch> movedBranches = new ArrayList<>();
+            final List<MovableBranch> reorderedBranches = new ArrayList<>();
             for (Set<DependencyGraph<MovableBranch>.Node> scc : sccs) {
                 final List<MovableBranch> branchesInScc = scc.stream().map(DependencyGraph.Node::getContent)
                         .sorted(Comparator.comparingInt(x -> x.id)).collect(Collectors.toList());
-                movedBranches.addAll(computeReordering(branchesInScc));
+                reorderedBranches.addAll(computeReordering(branchesInScc));
 
             }
 
-            return movedBranches;
+            return reorderedBranches;
         }
 
         public void run() {
@@ -172,7 +172,8 @@ public class BranchReordering implements ProgramProcessor {
             // Reorder branches but keep the last branch fixed.
             final List<MovableBranch> reordering = computeReordering(branches.subList(0, branches.size() - 1));
             reordering.add(branches.get(branches.size() - 1));
-            final Iterable<Event> reorderedEvents = Iterables.concat(reordering.stream().map(x -> x.events).collect(Collectors.toList()));
+            final Iterable<Event> reorderedEvents = Iterables.concat(reordering.stream()
+                    .map(x -> x.events).collect(Collectors.toList()));
 
             Event pred = null;
             int id = thread.getEntry().getOId();
