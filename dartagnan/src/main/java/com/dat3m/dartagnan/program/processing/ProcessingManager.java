@@ -27,11 +27,6 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean reduceSymmetry = false;
 
-	@Option(name= ATOMIC_BLOCKS_AS_LOCKS,
-			description="Transforms atomic blocks by adding global locks.",
-			secure=true)
-		private boolean atomicBlocksAsLocks = false;
-
     @Option(name= CONSTANT_PROPAGATION,
         description="Performs constant propagation.",
         secure=true)
@@ -48,7 +43,6 @@ public class ProcessingManager implements ProgramProcessor {
         config.inject(this);
 
         programProcessors.addAll(Arrays.asList(
-                atomicBlocksAsLocks ? AtomicAsLock.fromConfig(config) : null,
                 Memory.fixateMemoryValues(),
                 UnreachableCodeElimination.fromConfig(config),
                 BranchReordering.fromConfig(config),
@@ -58,7 +52,6 @@ public class ProcessingManager implements ProgramProcessor {
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                 RemoveDeadCondJumps.fromConfig(config),
-                AtomicityPropagation.fromConfig(config),
                 Compilation.fromConfig(config),
                 DynamicPureLoopCutting.fromConfig(),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null
