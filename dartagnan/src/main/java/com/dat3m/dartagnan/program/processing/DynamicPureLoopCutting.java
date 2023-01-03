@@ -116,6 +116,8 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
                     new Atom(reg, COpBin.EQ, new IValue(BigInteger.ZERO, GlobalSettings.ARCH_PRECISION)));
         }
         final CondJump assumeSideEffect = EventFactory.newJumpUnless(atLeastOneSideEffect, (Label) thread.getExit());
+        assumeSideEffect.addFilters(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
+        // TODO: Is it sufficient to tag this jump as "SPINLOOP" to get proper spinloop detection?
         insertionPoint.insertAfter(assumeSideEffect);
     }
 
