@@ -4,19 +4,19 @@
   <Appenders>
 
     <Console name="Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} [%level] %C{1}.%M - %msg%n"/>
+      <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} %highlight{[%level]} %C{1}.%M - %msg%n"/>
     </Console>
 	
     <File name="File" fileName="${env:DAT3M_OUTPUT}/logs/${sys:LOGNAME}.log">
-	    <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} [%level] %C{1}.%M - %msg%n"/>
+      <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} %highlight{[%level]} %C{1}.%M - %msg%n"/>
     </File>
 
     <Console name="Refinement_Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} [%level] %C{1}.%M - %msg%n"/>
+      <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} %highlight{[%level]} %C{1}.%M - %msg%n"/>
     </Console>
 
     <File name="Refinement_File" fileName="${env:DAT3M_OUTPUT}/logs/refinement.log">
-      <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} [%level] %C{1}.%M - %msg%n"/>
+      <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} %highlight{[%level]} %C{1}.%M - %msg%n"/>
     </File>
     
   </Appenders>

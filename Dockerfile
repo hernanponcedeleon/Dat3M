@@ -31,7 +31,7 @@ RUN cd home && \
     mvn clean install -DskipTests
 
 # Build atomic-replace library
-RUN cd Dat3M/llvm-passes/atomic-replace/      \
+RUN cd home/Dat3M/llvm-passes/atomic-replace/ \
     && mkdir build && cd build                \
     && cmake ..                               \
     && make all install
