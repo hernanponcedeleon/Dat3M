@@ -32,10 +32,15 @@ public class ProcessingManager implements ProgramProcessor {
         secure=true)
         private boolean constantPropagation = false;
 
-	@Option(name= DEAD_ASSIGNEMENT_ELIMINATION,
+	@Option(name= DEAD_ASSIGNMENT_ELIMINATION,
 			description="Performs dead code elimination.",
 			secure=true)
 		private boolean dce = false;
+
+    @Option(name= DYNAMIC_PURE_LOOP_CUTTING,
+            description="Instruments loops to terminate early when spinning.",
+            secure=true)
+    private boolean dynamicPureLoopCutting = true;
 
 // ======================================================================
 
@@ -53,7 +58,7 @@ public class ProcessingManager implements ProgramProcessor {
                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                 RemoveDeadCondJumps.fromConfig(config),
                 Compilation.fromConfig(config),
-                DynamicPureLoopCutting.fromConfig(),
+                dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null
         ));
         programProcessors.removeIf(Objects::isNull);

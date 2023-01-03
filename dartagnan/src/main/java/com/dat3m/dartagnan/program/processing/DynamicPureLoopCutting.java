@@ -20,6 +20,7 @@ import com.google.common.base.Verify;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.sosy_lab.common.configuration.Configuration;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -62,7 +63,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         Label endLabel = null;
     }
 
-    public static DynamicPureLoopCutting fromConfig() {
+    public static DynamicPureLoopCutting fromConfig(Configuration config) {
         return new DynamicPureLoopCutting();
     }
 
