@@ -45,7 +45,7 @@ public class LoopUnrolling implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_AFTER_UNROLLING,
             description = "Prints the program after unrolling.",
             secure = true)
-    private boolean print = false;
+    private boolean print = true;
 
     // =====================================================================
 
@@ -160,21 +160,27 @@ public class LoopUnrolling implements ProgramProcessor {
         while (--bound >= 0) {
             iterCounter++;
             if (bound == 0) {
+                // Mark end of loop
+                loopBackJump.insertAfter(
+                        EventFactory.newStringAnnotation(String.format("// End of Loop: %s", loopBegin.getName())));
+
+                // Update loop iteration label
                 loopBegin.setName(String.format("%s/itr_%d", loopBegin.getName(), iterCounter));
                 loopBegin.addFilters(Tag.NOOPT);
 
                 // This is the last iteration, so replace loop continuations by terminating bound events.
+                // TODO: LLVM seems to guarantee a unique continuation point (a single backedge)
+                final Label threadExit = (Label) loopBackJump.getThread().getExit();
                 for (CondJump cont : continues) {
                     if (!cont.isGoto()) {
                         logger.warn("Conditional jump {} was replaced by unconditional bound event", cont);
                     }
-                    final Label threadExit = (Label) loopBackJump.getThread().getExit();
                     final CondJump boundEvent = EventFactory.newGoto(threadExit);
                     boundEvent.addFilters(cont.getFilters()); // Keep tags of original jump.
                     boundEvent.addFilters(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
                     cont.replaceBy(boundEvent);
-
                 }
+
             } else {
                 final Map<Event, Event> copyCtx = new HashMap<>();
                 final List<Event> copies = copyPath(loopBegin, loopBackJump, copyCtx);
