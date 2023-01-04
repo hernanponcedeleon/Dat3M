@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.lang.svcomp.LoopStart;
+import com.dat3m.dartagnan.program.event.lang.svcomp.SpinStart;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
@@ -86,7 +86,7 @@ public class FindSpinLoops implements ProgramProcessor {
     }
 
     private boolean isSideEffectFree(Label loopBegin, CondJump loopEnd) {
-        if (loopBegin.getSuccessor() instanceof LoopStart) {
+        if (loopBegin.getSuccessor() instanceof SpinStart) {
             // No need to check if the loop is side effect free
             // The user guarantees this by using the annotation.
 
@@ -94,10 +94,6 @@ public class FindSpinLoops implements ProgramProcessor {
             // #define await_while(cond)                                                  \
             // for (int tmp = (__VERIFIER_loop_begin(), 0); __VERIFIER_spin_start(),  \
             //     tmp = cond, __VERIFIER_spin_end(!tmp), tmp;)
-
-            //FIXME: The fact that we check for "__VERIFIER_loop_begin() / LoopStart" to check for
-            // spinning behavior is odd. We should rename the annotation events and the function call
-            // to include "spinning" somehow.
             return true;
         }
 

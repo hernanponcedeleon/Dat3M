@@ -17,12 +17,7 @@ import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmFence;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmRMW;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmXchg;
+import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -328,12 +323,12 @@ public class EventFactory {
             return new LoopBegin();
         }
 
-        public static LoopStart newLoopStart() {
-            return new LoopStart();
+        public static SpinStart newSpinStart() {
+            return new SpinStart();
         }
 
-        public static LoopEnd newLoopEnd() {
-            return new LoopEnd();
+        public static SpinEnd newSpinEnd() {
+            return new SpinEnd();
         }
 
         public static LoopBound newLoopBound(int bound) {
