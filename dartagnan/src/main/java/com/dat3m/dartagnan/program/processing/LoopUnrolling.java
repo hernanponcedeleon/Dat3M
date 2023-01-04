@@ -14,10 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
@@ -87,47 +84,47 @@ public class LoopUnrolling implements ProgramProcessor {
         }
     }
 
-    private int unrollThreadAndUpdate(Thread t, int bound, int nextId){
-        unrollThread(t, bound);
-        t.clearCache();
-        for (Event e : t.getEvents()) {
+    private int unrollThreadAndUpdate(Thread thread, int defaultBound, int nextId){
+        final Map<CondJump, Integer> loopBoundsMap = computeLoopBoundsMap(thread, defaultBound);
+        thread.getEvents().stream()
+                .filter(CondJump.class::isInstance).map(CondJump.class::cast)
+                .filter(loopBoundsMap::containsKey)
+                .forEach(j -> unrollLoop(j, loopBoundsMap.get(j)));
+
+        thread.clearCache();
+        for (Event e : thread.getEvents()) {
             e.setUId(nextId++);
         }
-
         return nextId;
     }
 
-    private void unrollThread(Thread thread, int defaultBound) {
-        Map<Label, Integer> boundAnnotationMap = new HashMap<>();
+    private Map<CondJump, Integer> computeLoopBoundsMap(Thread thread, int defaultBound) {
 
-        LoopBound curBoundAnn = null;
-        Event cur = thread.getEntry();
-        while (cur != null) {
-            final Event next = cur.getSuccessor();
-            if (cur instanceof LoopBound) {
+        LoopBound curBoundAnnotation = null;
+        final Map<CondJump, Integer> loopBoundsMap = new HashMap<>();
+        for (Event event : thread.getEvents()) {
+            if (event instanceof LoopBound) {
                 // Track LoopBound annotation
-                if (curBoundAnn != null) {
+                if (curBoundAnnotation != null) {
                     logger.warn("Found loop bound annotation that overwrites a previous, unused annotation.");
                 }
-                curBoundAnn = (LoopBound) cur;
-            } else if (curBoundAnn != null && cur instanceof Label) {
-                final Label label = (Label)cur;
-                if (label.getJumpSet().stream().anyMatch(jump -> jump.getOId() > label.getOId())) {
-                    // The label denotes the beginning of a loop, and we found a LoopBound annotation before,
-                    // so we remember the bound and reset the annotation tracker.
-                    boundAnnotationMap.put(label, curBoundAnn.getBound());
-                    curBoundAnn = null;
+                curBoundAnnotation = (LoopBound) event;
+            } else if (event instanceof Label) {
+                final Label label = (Label) event;
+                final Optional<CondJump> backjump = label.getJumpSet().stream()
+                        .filter(j -> j.getOId() > label.getOId()).findFirst();
+                final boolean isLoop = backjump.isPresent();
+
+                if (isLoop) {
+                    // Bound annotation > Spin loop tag > default bound
+                    final int bound = curBoundAnnotation != null ? curBoundAnnotation.getBound()
+                            : label.is(Tag.SPINLOOP) ? 1 : defaultBound;
+                    loopBoundsMap.put(backjump.get(), bound);
+                    curBoundAnnotation = null;
                 }
-            } else if (cur instanceof CondJump && ((CondJump) cur).getLabel().getOId() < cur.getOId()) {
-                // We found a back jump, i.e., we have a loop.
-                final CondJump jump = (CondJump) cur;
-                final Label loopBegin = jump.getLabel();
-                final int bound = boundAnnotationMap.getOrDefault(loopBegin,
-                        (jump.is(Tag.SPINLOOP) ? 1 : defaultBound));
-                unrollLoop(jump, bound);
             }
-            cur = next;
         }
+        return loopBoundsMap;
     }
 
     private void unrollLoop(CondJump loopBackJump, int bound) {
