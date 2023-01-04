@@ -51,6 +51,7 @@ public class ProcessingManager implements ProgramProcessor {
                 Memory.fixateMemoryValues(),
                 UnreachableCodeElimination.fromConfig(config),
                 BranchReordering.fromConfig(config),
+                LoopFormVerification.fromConfig(config),
                 Simplifier.fromConfig(config),
         		FindSpinLoops.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
