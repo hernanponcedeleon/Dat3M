@@ -4965,6 +4965,6 @@ litmus/LKMM/tree/S+poonceonces.litmus,1
 litmus/LKMM/tree/SB+poonceonces.litmus,1
 litmus/LKMM/tree/WRC+poonceonces+Once.litmus,1
 litmus/LKMM/tree/WRC+pooncerelease+fencermbonceonce+Once.litmus,0
-litmus/LKMM/tree/Z6.0+pooncelock+poonceLock+pombonce.litmus,0
+litmus/LKMM/tree/Z6.0+pooncelock+poonceafterlock+pombonce.litmus,0
 litmus/LKMM/tree/Z6.0+pooncelock+pooncelock+pombonce.litmus,1
 litmus/LKMM/tree/Z6.0+pooncerelease+poacquirerelease+fencembonceonce.litmus,1
