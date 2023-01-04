@@ -119,16 +119,12 @@ public class LoopUnrolling implements ProgramProcessor {
                     curBoundAnn = null;
                 }
             } else if (cur instanceof CondJump && ((CondJump) cur).getLabel().getOId() < cur.getOId()) {
-                // We found a backjump, i.e., we have a loop.
+                // We found a back jump, i.e., we have a loop.
                 final CondJump jump = (CondJump) cur;
                 final Label loopBegin = jump.getLabel();
-                if (loopBegin.getJumpSet().stream().allMatch(x -> x.getOId() <= jump.getOId())) {
-                    // We make sure that this is the last backjump, i.e., the end of the loop
-                    // (= we skip intermediate backjumps due to, e.g., a "continue" statement)
-                    final int bound = boundAnnotationMap.getOrDefault(loopBegin,
-                            (jump.is(Tag.SPINLOOP) ? 1 : defaultBound));
-                    unrollLoop(jump, bound);
-                }
+                final int bound = boundAnnotationMap.getOrDefault(loopBegin,
+                        (jump.is(Tag.SPINLOOP) ? 1 : defaultBound));
+                unrollLoop(jump, bound);
             }
             cur = next;
         }
@@ -141,25 +137,10 @@ public class LoopUnrolling implements ProgramProcessor {
                 "The jump does not belong to a loop.");
         Preconditions.checkArgument(loopBackJump.getUId() < 0, "The loop has already been unrolled");
 
-        // (1) Collect continue points of the loop
-        final List<CondJump> continues = loopBegin.getSuccessors().stream()
-                .takeWhile(e -> e != loopBackJump)
-                .filter(e -> e instanceof CondJump && ((CondJump)e).getLabel() == loopBegin)
-                .map(CondJump.class::cast)
-                .collect(Collectors.toList());
-        continues.add(loopBackJump);
-
-        // (2) Collect forward jumps from the outside into the loop
-        final List<CondJump> enterJumps = loopBegin.getSuccessors().stream()
-                .takeWhile(e -> e != loopBackJump)
-                .filter(Label.class::isInstance).map(Label.class::cast)
-                .flatMap(label -> label.getJumpSet().stream().filter(jump -> jump.getOId() < loopBegin.getOId()))
-                .collect(Collectors.toList());
 
         int iterCounter = 0;
-        while (--bound >= 0) {
-            iterCounter++;
-            if (bound == 0) {
+        while (++iterCounter <= bound) {
+            if (iterCounter == bound) {
                 // Mark end of loop
                 loopBackJump.insertAfter(
                         EventFactory.newStringAnnotation(String.format("// End of Loop: %s", loopBegin.getName())));
@@ -168,45 +149,31 @@ public class LoopUnrolling implements ProgramProcessor {
                 loopBegin.setName(String.format("%s/itr_%d", loopBegin.getName(), iterCounter));
                 loopBegin.addFilters(Tag.NOOPT);
 
-                // This is the last iteration, so replace loop continuations by terminating bound events.
-                // TODO: LLVM seems to guarantee a unique continuation point (a single backedge)
+                // This is the last iteration, so we replace the back jump by a bound event.
                 final Label threadExit = (Label) loopBackJump.getThread().getExit();
-                for (CondJump cont : continues) {
-                    if (!cont.isGoto()) {
-                        logger.warn("Conditional jump {} was replaced by unconditional bound event", cont);
-                    }
-                    final CondJump boundEvent = EventFactory.newGoto(threadExit);
-                    boundEvent.addFilters(cont.getFilters()); // Keep tags of original jump.
-                    boundEvent.addFilters(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
-                    cont.replaceBy(boundEvent);
-                }
+                final CondJump boundEvent = EventFactory.newGoto(threadExit);
+                boundEvent.addFilters(loopBackJump.getFilters()); // Keep tags of original jump.
+                boundEvent.addFilters(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
+                loopBackJump.replaceBy(boundEvent);
 
             } else {
                 final Map<Event, Event> copyCtx = new HashMap<>();
                 final List<Event> copies = copyPath(loopBegin, loopBackJump, copyCtx);
 
+                // Insert copy of the loop
+                loopBegin.getPredecessor().insertAfter(copies);
+                if (iterCounter == 1) {
+                    // This is the first unrolling; every outside jump to the loop header
+                    // gets updated to jump to the first iteration instead.
+                    final List<Event> loopEntryJumps = loopBegin.getJumpSet().stream()
+                            .filter(j -> j != loopBackJump).collect(Collectors.toList());
+                    loopEntryJumps.forEach(j -> j.updateReferences(copyCtx));
+                }
+
+                // Rename label of iteration.
                 final Label loopBeginCopy = ((Label)copyCtx.get(loopBegin));
                 loopBeginCopy.setName(String.format("%s/itr_%d", loopBegin.getName(), iterCounter));
                 loopBeginCopy.addFilters(Tag.NOOPT);
-
-                // Insert copy of the loop
-                loopBegin.getPredecessor().insertAfter(copies);
-
-                // Update entering jumps to go to the copies.
-                enterJumps.forEach(e -> e.updateReferences(copyCtx));
-
-                // All "continues" that were copied need to get updated to jump forward to the next iteration.
-                // Those become the new "enterJumps"
-                enterJumps.clear();
-                for (final CondJump cont : continues) {
-                    if (cont == loopBackJump) {
-                        continue;
-                    }
-                    final CondJump copy = (CondJump) copyCtx.get(cont);
-                    copy.updateReferences(Map.of(copy.getLabel(), loopBegin));
-                    enterJumps.add(cont);
-                }
-
             }
         }
     }
@@ -215,19 +182,17 @@ public class LoopUnrolling implements ProgramProcessor {
         final List<Event> copies = new ArrayList<>();
 
         Event cur = from;
+        Event lastCopy = null;
         while(cur != null && !cur.equals(until)){
             final Event copy = cur.getCopy();
+            copy.setPredecessor(lastCopy);
             copies.add(copy);
             copyContext.put(cur, copy);
+            lastCopy = copy;
             cur = cur.getSuccessor();
         }
 
-        Event pred = null;
-        for (Event e : copies) {
-            e.setPredecessor(pred);
-            e.updateReferences(copyContext);
-            pred = e;
-        }
+        copies.forEach(e -> e.updateReferences(copyContext));
         return copies;
     }
 }
