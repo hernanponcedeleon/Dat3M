@@ -193,6 +193,16 @@ public abstract class Event implements Encoder, Comparable<Event> {
 			return;
 		}
 
+		// Make sure that all events are correctly linked
+		for (int i = 0; i < toBeInserted.size() - 1; i++) {
+			final Event e1 = toBeInserted.get(i);
+			final Event e2 = toBeInserted.get(i + 1);
+			if (e1.getSuccessor() != e2) {
+				e1.setSuccessor(e2);
+			}
+		}
+
+		// Insert events
 		if (this.successor != null) {
 			this.successor.setPredecessor(toBeInserted.get(toBeInserted.size() - 1));
 		}
