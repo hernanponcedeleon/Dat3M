@@ -16,6 +16,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	public static final int PRINT_PAD_EXTRA = 50;
 
+	protected int oId = -1; 	// ID after parsing (original), before any passes have been run
 	protected int uId = -1;		// ID after unrolling
 	protected int cId = -1;		// ID after compilation
 	protected int lId = -1;		// (Local) ID within a thread
@@ -38,14 +39,19 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	}
 
 	protected Event(Event other){
+		this.oId = other.oId;
         this.uId = other.uId;
         this.cId = other.cId;
         this.lId = other.lId;
+		this.gId = other.gId;
         this.cLine = other.cLine;
         this.sourceCodeFile = other.sourceCodeFile;
         this.filter = other.filter; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
         this.thread = other.thread;
     }
+
+	public int getOId() { return oId; }
+	public void setOId(int id) { this.oId = id; }
 
 	public int getUId(){ return uId; }
 	public void setUId(int id) { this.uId = id; }

@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,6 +55,7 @@ public class ProgramBuilder {
         }
         program.setAss(ass);
         program.setAssFilter(assFilter);
+        EventIdReassignment.withIdTracking(Event::setOId).run(program);
         return program;
     }
 

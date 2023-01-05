@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.dat3m.dartagnan.program.processing.ProgramProcessor;
 import com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme;
 import com.dat3m.dartagnan.utils.printer.Printer;
@@ -107,19 +108,13 @@ public class Compilation implements ProgramProcessor {
                 throw new UnsupportedOperationException(String.format("Compilation to %s is not supported.", target));
         }
 
-        int nextId = 0;
-        for(Thread thread : program.getThreads()){
-            nextId = compileThread(thread, nextId, visitor);
-
-            int localId = 0;
-            for (Event e : thread.getEvents()) {
-                e.setLocalId(localId++);
-            }
-        }
-
+        program.getEvents().forEach(e -> e.setCId(e.getGlobalId()));
+        program.getThreads().forEach(thread -> this.compileThread(thread, visitor));
         program.setArch(target);
         program.clearCache(false);
         program.markAsCompiled();
+        EventIdReassignment.newInstance().run(program); // Reassign ids
+
         logger.info("Program compiled to {}", target);
         if(print) {
         	System.out.println("===== Program after compilation =====");
@@ -128,16 +123,16 @@ public class Compilation implements ProgramProcessor {
         }
     }
 
-    private int compileThread(Thread thread, int nextId, EventVisitor<List<Event>> visitor) {
+    private void compileThread(Thread thread, EventVisitor<List<Event>> visitor) {
     	Event pred = thread.getEntry();
         Event toBeCompiled = pred.getSuccessor();
-        pred.setCId(nextId++);
 
         while (toBeCompiled != null) {
 			List<Event> compiledEvents = toBeCompiled.accept(visitor);
             for (Event e : compiledEvents) {
+                e.setOId(toBeCompiled.getOId());
                 e.setUId(toBeCompiled.getUId());
-                e.setCId(nextId++);
+                e.setCId(toBeCompiled.getCId());
                 e.setThread(thread);
                 e.setCFileInformation(toBeCompiled.getCLine(), 
                                     toBeCompiled.getSourceCodeFile());
@@ -150,6 +145,5 @@ public class Compilation implements ProgramProcessor {
 
         thread.updateExit(thread.getEntry());
         thread.clearCache();
-        return nextId;
     }
 }

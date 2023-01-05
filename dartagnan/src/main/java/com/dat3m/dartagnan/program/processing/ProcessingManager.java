@@ -50,22 +50,19 @@ public class ProcessingManager implements ProgramProcessor {
 
         programProcessors.addAll(Arrays.asList(
                 Memory.fixateMemoryValues(),
-                EventIdReassignment.newInstance(), // Assign initial ids
                 UnreachableCodeElimination.fromConfig(config),
                 BranchReordering.fromConfig(config),
-                EventIdReassignment.newInstance(), // Reassign ids because of BranchReordering
                 LoopFormVerification.fromConfig(config),
                 Simplifier.fromConfig(config),
         		FindSpinLoops.fromConfig(config),
-                EventIdReassignment.withIdTracking(Event::setUId), // Reassign ids, update uId
                 LoopUnrolling.fromConfig(config),
-                EventIdReassignment.withIdTracking(Event::setUId), // Reassign ids, update uId
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                 RemoveDeadCondJumps.fromConfig(config),
                 Compilation.fromConfig(config),
                 dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
-                reduceSymmetry ? SymmetryReduction.fromConfig(config) : null
+                reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
+                EventIdReassignment.withIdTracking(Event::setCId) // Fixme: We should not update the cId
         ));
         programProcessors.removeIf(Objects::isNull);
     }

@@ -81,20 +81,7 @@ public class Printer {
     private void appendEvent(Event event){
         if(showAuxiliaryEvents || !isAuxiliary(event)){
             StringBuilder idSb = new StringBuilder();
-            switch(idType){
-                case ORIG:
-                    //idSb.append("(").append(event.getOId()).append(")");
-                    idSb.append("(").append(event.getGlobalId()).append(")");
-                    break;
-                case UNROLLED:
-                    idSb.append("[").append(event.getUId()).append("]");
-                    break;
-                case COMPILED:
-                    idSb.append(event.getCId()).append(":");
-                    break;
-                default:
-                	throw new RuntimeException("Unrecognized event id type " + idType);
-            }
+            idSb.append(event.getGlobalId()).append(":");
             result.append(idSb);
             if(!(event instanceof Label)) {
             	result.append("   ");

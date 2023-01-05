@@ -68,15 +68,14 @@ public class LoopUnrolling implements ProgramProcessor {
             logger.warn("Skipped unrolling: Program is already unrolled.");
             return;
         }
+        final int defaultBound = this.bound;
+        program.getEvents().forEach(e -> e.setUId(e.getGlobalId())); // Track ids before unrolling
+        program.getThreads().forEach(thread -> unrollLoopsInThread(thread, defaultBound));
+        program.clearCache(true);
+        program.markAsUnrolled(defaultBound);
+        EventIdReassignment.newInstance().run(program); // Reassign ids because of newly created events
 
-        int nextId = 0;
-        for(Thread thread : program.getThreads()){
-            nextId = unrollThreadAndUpdate(thread, bound, nextId);
-        }
-        program.clearCache(false);
-        program.markAsUnrolled(bound);
-
-        logger.info("Program unrolled {} times", bound);
+        logger.info("Program unrolled {} times", defaultBound);
         if(print) {
         	System.out.println("===== Program after unrolling =====");
         	System.out.println(new Printer().print(program));
@@ -84,18 +83,12 @@ public class LoopUnrolling implements ProgramProcessor {
         }
     }
 
-    private int unrollThreadAndUpdate(Thread thread, int defaultBound, int nextId){
+    private void unrollLoopsInThread(Thread thread, int defaultBound){
         final Map<CondJump, Integer> loopBoundsMap = computeLoopBoundsMap(thread, defaultBound);
         thread.getEvents().stream()
                 .filter(CondJump.class::isInstance).map(CondJump.class::cast)
                 .filter(loopBoundsMap::containsKey)
                 .forEach(j -> unrollLoop(j, loopBoundsMap.get(j)));
-
-        thread.clearCache();
-        for (Event e : thread.getEvents()) {
-            e.setUId(nextId++);
-        }
-        return nextId;
     }
 
     private Map<CondJump, Integer> computeLoopBoundsMap(Thread thread, int defaultBound) {
@@ -132,8 +125,6 @@ public class LoopUnrolling implements ProgramProcessor {
         Preconditions.checkArgument(bound >= 1, "Positive unrolling bound expected.");
         Preconditions.checkArgument(loopBegin.getGlobalId() < loopBackJump.getGlobalId(),
                 "The jump does not belong to a loop.");
-        Preconditions.checkArgument(loopBackJump.getUId() < 0, "The loop has already been unrolled");
-
 
         int iterCounter = 0;
         while (++iterCounter <= bound) {

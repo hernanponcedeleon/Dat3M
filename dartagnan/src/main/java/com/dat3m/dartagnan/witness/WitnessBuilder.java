@@ -139,16 +139,20 @@ public class WitnessBuilder {
 					edge.addAttribute(CREATETHREAD.toString(), valueOf(threads));
 					threads++;
 				}
-				
+
+				// FIXME: The tracking of "globalId" here is very fragile
+				//  If we generate a Witness and try to use it after adapting any processing pass
+				//  the matching will fail. In particular, a Witness can only be validated
+				//  by the version of Dartagnan that created it and only with identical configurations.
 				if(e instanceof Load) {
 					RegWriter l = (RegWriter)e;
-					edge.addAttribute(EVENTID.toString(), valueOf(e.getUId()));
+					edge.addAttribute(EVENTID.toString(), valueOf(e.getGlobalId()));
 					edge.addAttribute(LOADEDVALUE.toString(), String.valueOf(model.evaluate(l.getResultRegister().toIntFormulaResult(e, ctx))));
 				}
 
 				if(e instanceof Store) {
 					Store s = (Store)e;
-					edge.addAttribute(EVENTID.toString(), valueOf(e.getUId()));
+					edge.addAttribute(EVENTID.toString(), valueOf(e.getGlobalId()));
 					edge.addAttribute(STOREDVALUE.toString(), s.getMemValue().getIntValue(s, model, ctx).toString());
 				}
 

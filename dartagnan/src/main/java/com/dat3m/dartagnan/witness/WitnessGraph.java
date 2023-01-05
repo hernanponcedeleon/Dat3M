@@ -93,18 +93,21 @@ public class WitnessGraph extends ElemWithAttributes {
 			if(!events.isEmpty()) {
 				previous = events;				
 			}
+			// FIXME: The reliance on "globalId" for matching is very fragile (see comment in WitnessBuilder)
 			if(edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(LOADEDVALUE.toString())) {
 				int id = Integer.parseInt(edge.getAttributed(EVENTID.toString()));
-				if(program.getCache().getEvents(FilterBasic.get(READ)).stream().anyMatch(e -> e.getUId() == id)) {
-					Load load = (Load)program.getCache().getEvents(FilterBasic.get(READ)).stream().filter(e -> e.getUId() == id).findFirst().get();
+				if(program.getCache().getEvents(FilterBasic.get(READ)).stream().anyMatch(e -> e.getGlobalId() == id)) {
+					Load load = (Load)program.getCache().getEvents(FilterBasic.get(READ)).stream()
+							.filter(e -> e.getGlobalId() == id).findFirst().get();
 					BigInteger value = new BigInteger(edge.getAttributed(LOADEDVALUE.toString()));
 					enc = bmgr.and(enc, context.equal(context.result(load), imgr.makeNumber(value)));
 				}
 			}
 			if(edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(STOREDVALUE.toString())) {
 				int id = Integer.parseInt(edge.getAttributed(EVENTID.toString()));
-				if(program.getCache().getEvents(FilterBasic.get(WRITE)).stream().anyMatch(e -> e.getUId() == id)) {
-					Store store = (Store)program.getCache().getEvents(FilterBasic.get(WRITE)).stream().filter(e -> e.getUId() == id).findFirst().get();
+				if(program.getCache().getEvents(FilterBasic.get(WRITE)).stream().anyMatch(e -> e.getGlobalId() == id)) {
+					Store store = (Store)program.getCache().getEvents(FilterBasic.get(WRITE)).stream()
+							.filter(e -> e.getGlobalId() == id).findFirst().get();
 					BigInteger value = new BigInteger(edge.getAttributed(STOREDVALUE.toString()));
 					enc = bmgr.and(enc, context.equal(context.value(store), imgr.makeNumber(value)));
 				}

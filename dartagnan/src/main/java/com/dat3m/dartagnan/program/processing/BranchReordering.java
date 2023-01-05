@@ -64,9 +64,9 @@ public class BranchReordering implements ProgramProcessor {
     public void run(Program program) {
         Preconditions.checkArgument(!program.isUnrolled(), "Reordering should be performed before unrolling.");
 
-        for (Thread t : program.getThreads()) {
-            new ThreadReordering(t).run();
-        }
+        program.getThreads().forEach(t -> new ThreadReordering(t).run());
+        // We need to reassign Ids, because they do not match with the ordering of the code now.
+        EventIdReassignment.newInstance().run(program);
         logger.info("Branches reordered");
 		logger.info("{}: {}", DETERMINISTIC_REORDERING, reorderDeterministically);
     }
