@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.encoding.*;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -12,12 +13,8 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
-import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 import static com.dat3m.dartagnan.utils.Result.*;
-import static com.dat3m.dartagnan.configuration.Property.CAT;
-import static java.lang.Boolean.TRUE;
 
 public class TwoSolvers extends ModelChecker {
 
@@ -42,6 +39,7 @@ public class TwoSolvers extends ModelChecker {
     }
 
     private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
+        Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
         Context analysisContext = Context.create();
         Configuration config = task.getConfig();
@@ -90,22 +88,11 @@ public class TwoSolvers extends ModelChecker {
             res = prover2.isUnsat() ? PASS : UNKNOWN;
         } else {
         	res = FAIL;
-        }
-
-        for(Axiom ax : memoryModel.getAxioms()) {
-            if(ax.isFlagged() && TRUE.equals(prover1.getModel().evaluate(CAT.getSMTVariable(ax, ctx)))) {
-                System.out.println("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getName()));
-                if(logger.isDebugEnabled()) {
-                    StringBuilder violatingPairs = new StringBuilder("\n ===== The following pairs belong to the relation ===== \n");
-                    for(Tuple tuple : ax.getRelation().getEncodeTupleSet()) {
-                        if(TRUE.equals(prover1.getModel().evaluate(context.edge(ax.getRelation(), tuple)))) {
-                            violatingPairs.append("\t" + tuple.getFirst() + " -> " + tuple.getSecond());
-                        }
-                    }
-                    logger.debug(violatingPairs.toString());
-                }
+            if(!program.getAss().getInvert()) {
+                logFlaggedPairs(memoryModel, prover1, logger, context, ctx);
             }
         }
+
         
         if(logger.isDebugEnabled()) {        	
     		String smtStatistics = "\n ===== SMT Statistics ===== \n";
