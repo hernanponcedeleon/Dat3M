@@ -55,7 +55,8 @@ public class ProgramBuilder {
         }
         program.setAss(ass);
         program.setAssFilter(assFilter);
-        EventIdReassignment.withIdTracking(Event::setOId).run(program);
+        EventIdReassignment.newInstance().run(program);
+        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
         return program;
     }
 
