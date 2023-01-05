@@ -17,21 +17,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Options
 public class FindSpinLoops implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(FindSpinLoops.class);
-
-    // =========================== Configurables ===========================
-
-    // =====================================================================
 
     private FindSpinLoops() { }
 

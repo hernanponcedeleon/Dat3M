@@ -5,11 +5,11 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
@@ -78,8 +78,11 @@ public class IncrementalSolver extends ModelChecker {
             res = prover.isUnsat()? PASS : UNKNOWN;
         } else {
         	res = FAIL;
+            if(!program.getAss().getInvert()) {
+                logFlaggedPairs(memoryModel, prover, logger, context, ctx);
+            }
         }
-
+        
         if(logger.isDebugEnabled()) {        	
     		String smtStatistics = "\n ===== SMT Statistics ===== \n";
     		for(String key : prover.getStatistics().keySet()) {
