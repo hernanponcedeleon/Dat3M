@@ -19,7 +19,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	protected int oId = -1;		// ID after parsing (original)
 	protected int uId = -1;		// ID after unrolling
 	protected int cId = -1;		// ID after compilation
-	protected int fId = -1;		// ID within a function
+	protected int lId = -1;		// ID within a thread
 
 	protected int cLine = -1;				// line in the original C program
 	protected String sourceCodeFile = "";	// filename of the original C program
@@ -41,7 +41,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		this.oId = other.oId;
         this.uId = other.uId;
         this.cId = other.cId;
-        this.fId = other.fId;
+        this.lId = other.lId;
         this.cLine = other.cLine;
         this.sourceCodeFile = other.sourceCodeFile;
         this.filter = other.filter; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
@@ -57,9 +57,8 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public int getCId() { return cId; }
 	public void setCId(int id) { this.cId = id; }
 
-	// TODO: This should be called "LId" (localId) and be set once after all processing is done.
-	public int getFId() { return fId; }
-	public void setFId(int id) { this.fId = id; }
+	public int getLocalId() { return lId; }
+	public void setLocalId(int id) { this.lId = id; }
 
 	public int getCLine() {
 		return cLine;

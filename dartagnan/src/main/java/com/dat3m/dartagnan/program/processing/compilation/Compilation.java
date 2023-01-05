@@ -111,9 +111,9 @@ public class Compilation implements ProgramProcessor {
         for(Thread thread : program.getThreads()){
             nextId = compileThread(thread, nextId, visitor);
 
-            int fId = 0;
+            int localId = 0;
             for (Event e : thread.getEvents()) {
-                e.setFId(fId++);
+                e.setLocalId(localId++);
             }
         }
 
