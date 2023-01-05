@@ -136,7 +136,6 @@ public class Compilation implements ProgramProcessor {
         while (toBeCompiled != null) {
 			List<Event> compiledEvents = toBeCompiled.accept(visitor);
             for (Event e : compiledEvents) {
-                e.setOId(toBeCompiled.getOId());
                 e.setUId(toBeCompiled.getUId());
                 e.setCId(nextId++);
                 e.setThread(thread);

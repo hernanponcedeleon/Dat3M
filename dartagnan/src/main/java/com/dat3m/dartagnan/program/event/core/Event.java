@@ -16,10 +16,10 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	public static final int PRINT_PAD_EXTRA = 50;
 
-	protected int oId = -1;		// ID after parsing (original)
 	protected int uId = -1;		// ID after unrolling
 	protected int cId = -1;		// ID after compilation
-	protected int lId = -1;		// ID within a thread
+	protected int lId = -1;		// (Local) ID within a thread
+	protected int gId = -1;		// (Globla) ID within a program
 
 	protected int cLine = -1;				// line in the original C program
 	protected String sourceCodeFile = "";	// filename of the original C program
@@ -38,7 +38,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	}
 
 	protected Event(Event other){
-		this.oId = other.oId;
         this.uId = other.uId;
         this.cId = other.cId;
         this.lId = other.lId;
@@ -48,9 +47,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
         this.thread = other.thread;
     }
 
-	public int getOId() { return oId; }
-	public void setOId(int id) { this.oId = id; }
-
 	public int getUId(){ return uId; }
 	public void setUId(int id) { this.uId = id; }
 
@@ -59,6 +55,9 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	public int getLocalId() { return lId; }
 	public void setLocalId(int id) { this.lId = id; }
+
+	public int getGlobalId() { return gId; }
+	public void setGlobalId(int id) { this.gId = id; }
 
 	public int getCLine() {
 		return cLine;
@@ -161,12 +160,14 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	
 	@Override
 	public int compareTo(Event e){
-		int result = Integer.compare(cId, e.cId);
-		if(result == 0){
-			result = Integer.compare(uId, e.uId);
-			if(result == 0){
-				result = Integer.compare(oId, e.oId);
-			}
+		if (e == this) {
+			return 0;
+		}
+		int result = Integer.compare(this.getGlobalId(), e.getGlobalId());
+		if (result == 0) {
+			final String error = String.format("Events %s and %s are different but have the same global id %d",
+					this, e, e.getGlobalId());
+			throw new IllegalStateException(error);
 		}
 		return result;
 	}
@@ -227,7 +228,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public String repr() {
 		if (cId == -1) {
 			// We have not yet compiled
-			return "E" + oId;
+			return "E" + getGlobalId();
 		}
 		if (repr == null) {
 			// We cache the result, because this saves string concatenations

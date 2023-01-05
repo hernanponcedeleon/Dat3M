@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import org.sosy_lab.common.configuration.Configuration;
@@ -49,12 +50,16 @@ public class ProcessingManager implements ProgramProcessor {
 
         programProcessors.addAll(Arrays.asList(
                 Memory.fixateMemoryValues(),
+                EventIdReassignment.newInstance(), // Assign initial ids
                 UnreachableCodeElimination.fromConfig(config),
                 BranchReordering.fromConfig(config),
+                EventIdReassignment.newInstance(), // Reassign ids because of BranchReordering
                 LoopFormVerification.fromConfig(config),
                 Simplifier.fromConfig(config),
         		FindSpinLoops.fromConfig(config),
+                EventIdReassignment.withIdTracking(Event::setUId), // Reassign ids, update uId
                 LoopUnrolling.fromConfig(config),
+                EventIdReassignment.withIdTracking(Event::setUId), // Reassign ids, update uId
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                 RemoveDeadCondJumps.fromConfig(config),

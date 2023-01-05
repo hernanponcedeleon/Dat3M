@@ -34,19 +34,12 @@ public class UnreachableCodeElimination implements ProgramProcessor {
         Preconditions.checkArgument(!program.isUnrolled(), "Dead code elimination should be performed before unrolling.");
 
         logger.info("#Events before DCE: " + program.getEvents().size());
-
-        int id = 0;
-        for (Thread t : program.getThreads()) {
-            eliminateDeadCode(t, id);
-            t.clearCache();
-            id = t.getExit().getOId() + 1;
-        }
-        program.clearCache(false);
-
+        program.getThreads().forEach(this::eliminateDeadCode);
+        program.clearCache(true);
         logger.info("#Events after DCE: " + program.getEvents().size());
     }
 
-    private void eliminateDeadCode(Thread thread, int startId) {
+    private void eliminateDeadCode(Thread thread) {
         final Event entry = thread.getEntry();
         final Event exit = thread.getExit();
 
@@ -57,17 +50,9 @@ public class UnreachableCodeElimination implements ProgramProcessor {
         final Set<Event> reachableEvents = new HashSet<>();
         computeReachableEvents(entry, reachableEvents);
 
-        int id = startId;
-        Event cur = entry;
-        while (cur != null) {
-            final Event succ = cur.getSuccessor();
-            if (!reachableEvents.contains(cur) && cur != exit && !cur.is(Tag.NOOPT)) {
-                cur.delete();
-            } else {
-                cur.setOId(id++);
-            }
-            cur = succ;
-        }
+        thread.getEvents().stream()
+                .filter(e -> !reachableEvents.contains(e) && e != exit && !e.is(Tag.NOOPT))
+                .forEach(Event::delete);
     }
 
     // Modifies the second parameter

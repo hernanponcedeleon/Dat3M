@@ -411,6 +411,6 @@ public class AnalysisTest {
     }
 
     private Event findMatchingEventAfterCompilation(Program p, Event orig) {
-        return p.getEvents().stream().filter(e -> e.getOId() == orig.getOId()).findFirst().get();
+        return p.getEvents().stream().filter(e -> e.getUId() == orig.getUId()).findFirst().get();
     }
 }

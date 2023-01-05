@@ -55,11 +55,7 @@ public class Simplifier implements ProgramProcessor {
         Preconditions.checkArgument(!program.isUnrolled(), "Simplifying should be performed before unrolling.");
 
         logger.info("pre-simplification: " + program.getEvents().size() + " events");
-        for (Thread t : program.getThreads()) {
-            if (simplify(t)) {
-                t.clearCache();
-            }
-        }
+        program.getThreads().stream().filter(this::simplify).forEach(Thread::clearCache);
         program.clearCache(false);
         logger.info("post-simplification: " + program.getEvents().size() + " events");
 
@@ -131,8 +127,9 @@ public class Simplifier implements ProgramProcessor {
         // Check if we reached the return statement
         final Event successor = call.getSuccessor();
         if(successor instanceof FunRet && ((FunRet)successor).getFunctionName().equals(call.getFunctionName())) {
-            // We skip the function call + the function return
-            call.getPredecessor().setSuccessor(successor.getSuccessor());
+            final Event ret = successor;
+            call.delete();
+            ret.delete();
             return true;
         }
         return false;

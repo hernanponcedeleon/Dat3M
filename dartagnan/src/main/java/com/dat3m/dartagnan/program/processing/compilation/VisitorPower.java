@@ -6,14 +6,16 @@ import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory.*;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.Create;
+import com.dat3m.dartagnan.program.event.lang.pthread.End;
+import com.dat3m.dartagnan.program.event.lang.pthread.Join;
+import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 
 import java.util.List;
 
@@ -66,7 +68,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
 		Load load = newLoad(resultRegister, e.getAddress(), "");
         load.addFilters(C11.PTHREAD);
-        Label label = newLabel("Jump_" + e.getOId());
+        Label label = newLabel("Jump_" + e.getGlobalId());
         CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         return eventSequence(
@@ -83,7 +85,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
 		load.addFilters(Tag.STARTLOAD);
-		Label label = newLabel("Jump_" + e.getOId());
+		Label label = newLabel("Jump_" + e.getGlobalId());
         CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 		
 		return eventSequence(

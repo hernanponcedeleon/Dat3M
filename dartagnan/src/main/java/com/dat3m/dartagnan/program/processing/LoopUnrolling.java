@@ -112,7 +112,7 @@ public class LoopUnrolling implements ProgramProcessor {
             } else if (event instanceof Label) {
                 final Label label = (Label) event;
                 final Optional<CondJump> backjump = label.getJumpSet().stream()
-                        .filter(j -> j.getOId() > label.getOId()).findFirst();
+                        .filter(j -> j.getGlobalId() > label.getGlobalId()).findFirst();
                 final boolean isLoop = backjump.isPresent();
 
                 if (isLoop) {
@@ -130,7 +130,7 @@ public class LoopUnrolling implements ProgramProcessor {
     private void unrollLoop(CondJump loopBackJump, int bound) {
         final Label loopBegin = loopBackJump.getLabel();
         Preconditions.checkArgument(bound >= 1, "Positive unrolling bound expected.");
-        Preconditions.checkArgument(loopBegin.getOId() < loopBackJump.getOId(),
+        Preconditions.checkArgument(loopBegin.getGlobalId() < loopBackJump.getGlobalId(),
                 "The jump does not belong to a loop.");
         Preconditions.checkArgument(loopBackJump.getUId() < 0, "The loop has already been unrolled");
 

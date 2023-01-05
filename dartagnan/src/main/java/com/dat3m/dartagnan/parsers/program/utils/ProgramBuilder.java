@@ -37,9 +37,7 @@ public class ProgramBuilder {
     private AbstractAssert ass;
     private AbstractAssert assFilter;
 
-    private int lastOrigId = 0;
-    
-    private SourceLanguage format;
+    private final SourceLanguage format;
 
     public ProgramBuilder(SourceLanguage format) {
     	this.format = format;
@@ -62,7 +60,6 @@ public class ProgramBuilder {
     public void initThread(String name, int id){
         if(!threads.containsKey(id)){
             Skip threadEntry = EventFactory.newSkip();
-            threadEntry.setOId(lastOrigId++);
             threads.putIfAbsent(id, new Thread(name, id, threadEntry));
         }
     }
@@ -75,9 +72,8 @@ public class ProgramBuilder {
         if(!threads.containsKey(thread)){
             throw new MalformedProgramException("Thread " + thread + " is not initialised");
         }
-        child.setOId(lastOrigId++);
         threads.get(thread).append(child);
-        // Every event in litmus tests is no-optimisable
+        // Every event in litmus tests is non-optimisable
         if(format.equals(LITMUS)) {
             child.addFilters(Tag.NOOPT);
         }
