@@ -236,19 +236,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public void initializeEncoding(SolverContext ctx) { }
 
 	public void runLocalAnalysis(Program program, Context context) { }
-	
-	public String repr() {
-		if (cId == -1) {
-			// We have not yet compiled
-			return "E" + getGlobalId();
-		}
-		if (repr == null) {
-			// We cache the result, because this saves string concatenations
-			// for every(!) single edge encoded in the program
-			repr = "E" + cId;
-		}
-		return repr;
-	}
 
 	// This method needs to get overwritten for conditional events.
 	public boolean cfImpliesExec() {
