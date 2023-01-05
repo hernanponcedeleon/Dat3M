@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import org.sosy_lab.common.configuration.Configuration;
@@ -62,7 +61,7 @@ public class ProcessingManager implements ProgramProcessor {
                 Compilation.fromConfig(config),
                 dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
-                EventIdReassignment.withIdTracking(Event::setCId) // Fixme: We should not update the cId
+                EventIdReassignment.newInstance() // Normalize used Ids (remove any gaps)
         ));
         programProcessors.removeIf(Objects::isNull);
     }

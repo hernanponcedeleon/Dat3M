@@ -36,7 +36,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
             return true;
         }
         // Normalize direction
-        if (a.getCId() > b.getCId()) {
+        if (a.getGlobalId() > b.getGlobalId()) {
             MemEvent temp = a;
             a = b;
             b = temp;

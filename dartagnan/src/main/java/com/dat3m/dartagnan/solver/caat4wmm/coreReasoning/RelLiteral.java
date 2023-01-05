@@ -16,7 +16,7 @@ public class RelLiteral extends AbstractDataLiteral<CoreLiteral, Tuple> implemen
 
     @Override
     public String toString() {
-        return toStringBase() + "(" + data.getFirst().getCId() + "," + data.getSecond().getCId() + ")";
+        return toStringBase() + "(" + data.getFirst().getGlobalId() + "," + data.getSecond().getGlobalId() + ")";
     }
 
 }

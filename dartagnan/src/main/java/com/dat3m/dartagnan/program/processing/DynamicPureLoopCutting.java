@@ -177,7 +177,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             if (cur instanceof CondJump) {
                 final CondJump jump = (CondJump) cur;
                 final Label jumpTarget = jump.getLabel();
-                if (jump.isGoto() && jumpTarget.getCId() > end.getCId()) {
+                if (jump.isGoto() && jumpTarget.getGlobalId() > end.getGlobalId()) {
                     iteration.trueExitPoints.add(jump);
                 }
             }

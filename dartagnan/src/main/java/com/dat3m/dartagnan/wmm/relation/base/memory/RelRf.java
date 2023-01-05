@@ -17,7 +17,10 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
@@ -91,7 +94,7 @@ public class RelRf extends Relation {
             List<MemEvent> possibleWrites = maxTupleSet.getBySecond(read).stream().map(Tuple::getFirst)
                     .filter(e -> (e.getThread() == read.getThread() || e.is(INIT)))
                     .map(x -> (MemEvent)x)
-                    .sorted((o1, o2) -> o1.is(INIT) == o2.is(INIT) ? (o1.getCId() - o2.getCId()) : o1.is(INIT) ? -1 : 1)
+                    .sorted((o1, o2) -> o1.is(INIT) == o2.is(INIT) ? (o1.getGlobalId() - o2.getGlobalId()) : o1.is(INIT) ? -1 : 1)
                     .collect(Collectors.toList());
 
             // The set of writes that won't be readable due getting overwritten.
@@ -154,7 +157,7 @@ public class RelRf extends Relation {
                 // execute before the read and that aliases with it,
                 // then the read won't be able to read any external writes
                 boolean hasImpliedWrites = writes.stream()
-                        .anyMatch(w -> w.getCId() < r.getCId()
+                        .anyMatch(w -> w.getGlobalId() < r.getGlobalId()
                                 && exec.isImplied(r, w) && alias.mustAlias(r, w));
                 if (hasImpliedWrites) {
                     maxTupleSet.removeIf(t -> t.getSecond() == r && t.isCrossThread());

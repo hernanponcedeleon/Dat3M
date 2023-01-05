@@ -8,6 +8,8 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -21,9 +23,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /*
     This is some rudimentary class to create graphs of executions.
@@ -182,7 +181,7 @@ public class ExecutionGraphVisualizer {
         }
         return String.format("\"T%d:E%s (%s:L%d)\\n%s%s\"", 
         				e.getThread().getId(), 
-        				e.getEvent().getCId(), 
+        				e.getEvent().getGlobalId(),
         				e.getEvent().getSourceCodeFile(), 
         				e.getEvent().getCLine(),
                         callStackMapping.containsKey(e.getEvent()) ? callStackMapping.get(e.getEvent()) + "\\n" : "", 

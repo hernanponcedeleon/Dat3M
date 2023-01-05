@@ -16,11 +16,15 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	public static final int PRINT_PAD_EXTRA = 50;
 
-	protected int oId = -1; 	// ID after parsing (original), before any passes have been run
-	protected int uId = -1;		// ID after unrolling
-	protected int cId = -1;		// ID after compilation
-	protected int lId = -1;		// (Local) ID within a thread
-	protected int gId = -1;		// (Globla) ID within a program
+	// The following two ids are dynamically changing during processing.
+	protected transient int lId = -1;		// (Local) ID within a thread
+	protected transient int gId = -1;		// (Global) ID within a program
+
+	// The following three ids are snapshots of the global id at specific points in the processing.
+	// They are meant to fixed once assigned.
+	protected int oId = -1; 	// Global ID after parsing (original), before any passes have been run
+	protected int uId = -1;		// Global ID right before unrolling
+	protected int cId = -1;		// Global ID right before compilation
 
 	protected int cLine = -1;				// line in the original C program
 	protected String sourceCodeFile = "";	// filename of the original C program
@@ -39,16 +43,24 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	}
 
 	protected Event(Event other){
-		this.oId = other.oId;
-        this.uId = other.uId;
-        this.cId = other.cId;
-        this.lId = other.lId;
-		this.gId = other.gId;
-        this.cLine = other.cLine;
-        this.sourceCodeFile = other.sourceCodeFile;
+		copyMetadataFrom(other);
         this.filter = other.filter; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
         this.thread = other.thread;
     }
+
+	public void copyMetadataFrom(Event other) {
+		this.oId = other.oId;
+		this.uId = other.uId;
+		this.cId = other.cId;
+		this.cLine = other.cLine;
+		this.sourceCodeFile = other.sourceCodeFile;
+	}
+
+	public int getLocalId() { return lId; }
+	public void setLocalId(int id) { this.lId = id; }
+
+	public int getGlobalId() { return gId; }
+	public void setGlobalId(int id) { this.gId = id; }
 
 	public int getOId() { return oId; }
 	public void setOId(int id) { this.oId = id; }
@@ -58,12 +70,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	public int getCId() { return cId; }
 	public void setCId(int id) { this.cId = id; }
-
-	public int getLocalId() { return lId; }
-	public void setLocalId(int id) { this.lId = id; }
-
-	public int getGlobalId() { return gId; }
-	public void setGlobalId(int id) { this.gId = id; }
 
 	public int getCLine() {
 		return cLine;

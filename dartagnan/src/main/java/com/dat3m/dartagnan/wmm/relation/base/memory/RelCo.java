@@ -13,7 +13,8 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.List;
+
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
@@ -70,7 +71,7 @@ public class RelCo extends Relation {
             maxTupleSet = new TupleSet();
             for (Event w1 : allWrites) {
                 for (Event w2 : nonInitWrites) {
-                    if(w1.getCId() != w2.getCId() && !exec.areMutuallyExclusive(w1, w2)
+                    if(w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)
                             && alias.mayAlias((MemEvent) w1, (MemEvent)w2)) {
                         maxTupleSet.add(new Tuple(w1, w2));
                     }

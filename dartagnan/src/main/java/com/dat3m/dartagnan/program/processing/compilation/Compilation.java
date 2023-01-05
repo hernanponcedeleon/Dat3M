@@ -111,7 +111,7 @@ public class Compilation implements ProgramProcessor {
         program.getEvents().forEach(e -> e.setCId(e.getGlobalId()));
         program.getThreads().forEach(thread -> this.compileThread(thread, visitor));
         program.setArch(target);
-        program.clearCache(false);
+        program.clearCache(true);
         program.markAsCompiled();
         EventIdReassignment.newInstance().run(program); // Reassign ids
 
@@ -124,26 +124,18 @@ public class Compilation implements ProgramProcessor {
     }
 
     private void compileThread(Thread thread, EventVisitor<List<Event>> visitor) {
+
     	Event pred = thread.getEntry();
         Event toBeCompiled = pred.getSuccessor();
-
         while (toBeCompiled != null) {
 			List<Event> compiledEvents = toBeCompiled.accept(visitor);
             for (Event e : compiledEvents) {
-                e.setOId(toBeCompiled.getOId());
-                e.setUId(toBeCompiled.getUId());
-                e.setCId(toBeCompiled.getCId());
-                e.setThread(thread);
-                e.setCFileInformation(toBeCompiled.getCLine(), 
-                                    toBeCompiled.getSourceCodeFile());
+                e.copyMetadataFrom(toBeCompiled);
                 pred.setSuccessor(e);
                 pred = e;
             }
-
             toBeCompiled = toBeCompiled.getSuccessor();
         }
-
         thread.updateExit(thread.getEntry());
-        thread.clearCache();
     }
 }

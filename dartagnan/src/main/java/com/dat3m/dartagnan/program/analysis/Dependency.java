@@ -8,9 +8,9 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.verification.Context;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.dat3m.dartagnan.verification.Context;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
@@ -186,7 +186,7 @@ public final class Dependency {
         //NOTE if candidates is empty, the reader is unreachable
         List<Event> mays = candidates.stream()
         .filter(Objects::nonNull)
-        .sorted(Comparator.comparingInt(Event::getCId))
+        .sorted(Comparator.comparingInt(Event::getGlobalId))
         .collect(Collectors.toCollection(ArrayList::new));
         int end = mays.size();
         List<Event> musts = range(0, end)

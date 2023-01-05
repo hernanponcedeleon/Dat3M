@@ -99,7 +99,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     public boolean isReachableFrom(Event start, Event target) {
-        return start.getThread() == target.getThread() && start.getCId() <= target.getCId() && getEquivalenceClass(start).getReachableClasses().contains(getEquivalenceClass(target));
+        return start.getThread() == target.getThread() && start.getGlobalId() <= target.getGlobalId() && getEquivalenceClass(start).getReachableClasses().contains(getEquivalenceClass(target));
     }
 
     public Set<Event> getExclusiveEvents(Event e) {
@@ -317,7 +317,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
                 Event e1 = c1.getRepresentative();
                 Event e2 = c2.getRepresentative();
-                if ( e1.getThread() == e2.getThread() && e1.getCId() < e2.getCId()) {
+                if ( e1.getThread() == e2.getThread() && e1.getGlobalId() < e2.getGlobalId()) {
                     if (!c1.reachableClasses.contains(c2)) {
                         excl.add(c2);
                         c2.exclusiveClasses.add(c1);
@@ -340,7 +340,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             removeClass(unreachableClass);
         } else {
             unreachableClass.representative = unreachableClass.stream()
-                    .min(Comparator.comparingInt(Event::getCId)).get();
+                    .min(Comparator.comparingInt(Event::getGlobalId)).get();
         }
     }
 
@@ -354,7 +354,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                 newClasses.add(eq);
                 scc.forEach(b -> eq.addAllInternal(b.getContent().events));
                 eq.representative = eq.stream()
-                        .min(Comparator.comparingInt(Event::getCId)).get();
+                        .min(Comparator.comparingInt(Event::getGlobalId)).get();
             }
         } else {
             newClasses = new ArrayList<>();

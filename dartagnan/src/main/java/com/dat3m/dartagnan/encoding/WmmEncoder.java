@@ -26,18 +26,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.NumeralFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.*;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
@@ -275,7 +266,7 @@ public class WmmEncoder implements Encoder {
                 }
                 for (Tuple t : r1Max.getByFirst(e1)) {
                     Event e3 = t.getSecond();
-                    if (e3.getCId() != e1.getCId() && e3.getCId() != e2.getCId() && maySet.contains(new Tuple(e3, e2))) {
+                    if (e3.getGlobalId() != e1.getGlobalId() && e3.getGlobalId() != e2.getGlobalId() && maySet.contains(new Tuple(e3, e2))) {
                         BooleanFormula tVar = minSet.contains(t) ? edge(rel, t) : edge(r1, t);
                         orClause = bmgr.or(orClause, bmgr.and(tVar, edge(rel, new Tuple(e3, e2))));
                     }
@@ -313,7 +304,7 @@ public class WmmEncoder implements Encoder {
                     orClause = bmgr.makeTrue();
                 } else {
                     orClause = fences.stream()
-                            .filter(f -> e1.getCId() < f.getCId() && f.getCId() < e2.getCId())
+                            .filter(f -> e1.getGlobalId() < f.getGlobalId() && f.getGlobalId() < e2.getGlobalId())
                             .map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
                 }
                 enc = bmgr.and(enc, bmgr.equivalence(
@@ -332,13 +323,13 @@ public class WmmEncoder implements Encoder {
                 BooleanFormula relation = execution(tuple);
                 for (Tuple t : maySet.getBySecond(unlock)) {
                     Event y = t.getFirst();
-                    if (lock.getCId() < y.getCId() && y.getCId() < unlock.getCId()) {
+                    if (lock.getGlobalId() < y.getGlobalId() && y.getGlobalId() < unlock.getGlobalId()) {
                         relation = bmgr.and(relation, bmgr.not(edge(rscs, t)));
                     }
                 }
                 for (Tuple t : maySet.getByFirst(lock)) {
                     Event y = t.getSecond();
-                    if (lock.getCId() < y.getCId() && y.getCId() < unlock.getCId()) {
+                    if (lock.getGlobalId() < y.getGlobalId() && y.getGlobalId() < unlock.getGlobalId()) {
                         relation = bmgr.and(relation, bmgr.not(edge(rscs, t)));
                     }
                 }
@@ -426,20 +417,20 @@ public class WmmEncoder implements Encoder {
             BooleanFormula pairingCond = bmgr.and(context.execution(load), context.controlFlow(store));
             for (Tuple t : maySet.getBySecond(store)) {
                 Event otherLoad = t.getFirst();
-                if (otherLoad.getCId() > load.getCId()) {
+                if (otherLoad.getGlobalId() > load.getGlobalId()) {
                     pairingCond = bmgr.and(pairingCond, bmgr.not(context.execution(otherLoad)));
                 }
             }
             for (Tuple t : maySet.getByFirst(load)) {
                 Event otherStore = t.getSecond();
-                if (otherStore.getCId() < store.getCId()) {
+                if (otherStore.getGlobalId() < store.getGlobalId()) {
                     pairingCond = bmgr.and(pairingCond, bmgr.not(context.controlFlow(otherStore)));
                 }
             }
             return pairingCond;
         }
         private BooleanFormula exclPair(Event load, Event store) {
-            return bmgr.makeVariable("excl(" + load.getCId() + "," + store.getCId() + ")");
+            return bmgr.makeVariable("excl(" + load.getGlobalId() + "," + store.getGlobalId() + ")");
         }
 
         private BooleanFormula encodeEdgeSeq(Event read, List<BooleanFormula> edges) {
@@ -447,7 +438,7 @@ public class WmmEncoder implements Encoder {
                 return bmgr.implication(context.execution(read), bmgr.or(edges));
             }
             int num = edges.size();
-            int readId = read.getCId();
+            int readId = read.getGlobalId();
             BooleanFormula lastSeqVar = mkSeqVar(readId, 0);
             BooleanFormula newSeqVar = lastSeqVar;
             BooleanFormula atMostOne = bmgr.equivalence(lastSeqVar, edges.get(0));
@@ -469,7 +460,7 @@ public class WmmEncoder implements Encoder {
             ExecutionAnalysis exec = context.getAnalysisContext().get(ExecutionAnalysis.class);
             List<MemEvent> allWrites = program.getCache().getEvents(FilterBasic.get(WRITE)).stream()
                     .map(MemEvent.class::cast)
-                    .sorted(Comparator.comparingInt(Event::getCId))
+                    .sorted(Comparator.comparingInt(Event::getGlobalId))
                     .collect(toList());
             TupleSet maxSet = co.getMaxTupleSet();
             Set<Tuple> transCo = RelationAnalysis.findTransitivelyImpliedCo(co, exec);
@@ -512,7 +503,7 @@ public class WmmEncoder implements Encoder {
         private BooleanFormula encodeSAT(Relation co) {
             List<MemEvent> allWrites = program.getCache().getEvents(FilterBasic.get(WRITE)).stream()
                     .map(MemEvent.class::cast)
-                    .sorted(Comparator.comparingInt(Event::getCId))
+                    .sorted(Comparator.comparingInt(Event::getGlobalId))
                     .collect(toList());
             TupleSet maxSet = co.getMaxTupleSet();
             TupleSet minSet = co.getMinTupleSet();
