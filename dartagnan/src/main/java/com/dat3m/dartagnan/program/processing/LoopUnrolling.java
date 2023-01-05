@@ -25,6 +25,8 @@ public class LoopUnrolling implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(LoopUnrolling.class);
 
+    public static final String LOOP_ITERATION_SEPARATOR = "/itr_";
+
     // =========================== Configurables ===========================
 
     @Option(name = BOUND,
@@ -143,7 +145,7 @@ public class LoopUnrolling implements ProgramProcessor {
                         EventFactory.newStringAnnotation(String.format("// End of Loop: %s", loopBegin.getName())));
 
                 // Update loop iteration label
-                loopBegin.setName(String.format("%s/itr_%d", loopBegin.getName(), iterCounter));
+                loopBegin.setName(String.format("%s%s%d", loopBegin.getName(), LOOP_ITERATION_SEPARATOR, iterCounter));
                 loopBegin.addFilters(Tag.NOOPT);
 
                 // This is the last iteration, so we replace the back jump by a bound event.
@@ -169,7 +171,7 @@ public class LoopUnrolling implements ProgramProcessor {
 
                 // Rename label of iteration.
                 final Label loopBeginCopy = ((Label)copyCtx.get(loopBegin));
-                loopBeginCopy.setName(String.format("%s/itr_%d", loopBegin.getName(), iterCounter));
+                loopBeginCopy.setName(String.format("%s%s%d", loopBegin.getName(), LOOP_ITERATION_SEPARATOR, iterCounter));
                 loopBeginCopy.addFilters(Tag.NOOPT);
             }
         }

@@ -22,7 +22,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.sosy_lab.common.configuration.Configuration;
 
-import java.math.BigInteger;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -102,8 +101,10 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         Event insertionPoint = iter.endLabel.getPredecessor();
         for (int i = 0; i < iter.sideEffects.size(); i++) {
             final Event sideEffect = iter.sideEffects.get(i);
-            final Register dummyReg = new Register(
-                    String.format("Loop%s_%s_%s", loopNumber, iterNumber, i), thread.getId(), GlobalSettings.ARCH_PRECISION);
+            thread.newRegister(String.format("Loop%s_%s_%s", loopNumber, iterNumber, i), GlobalSettings.ARCH_PRECISION);
+            final Register dummyReg = thread.newRegister(
+                    String.format("Loop%s_%s_%s", loopNumber, iterNumber, i),
+                    GlobalSettings.ARCH_PRECISION);
             dummyRegs.add(dummyReg);
 
             final Event execCheck = EventFactory.newExecutionStatus(dummyReg, sideEffect);
@@ -111,24 +112,20 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             insertionPoint = execCheck;
         }
 
-        BExpr atLeastOneSideEffect = new BConst(false);
-        for (Register reg : dummyRegs) {
-            atLeastOneSideEffect = new BExprBin(atLeastOneSideEffect, BOpBin.OR,
-                    new Atom(reg, COpBin.EQ, new IValue(BigInteger.ZERO, GlobalSettings.ARCH_PRECISION)));
-        }
+        final BExpr atLeastOneSideEffect = dummyRegs.stream()
+                .map(reg -> (BExpr)new Atom(reg, COpBin.EQ, IValue.ZERO))
+                .reduce(BConst.FALSE, (x, y) -> new BExprBin(x, BOpBin.OR, y));
         final CondJump assumeSideEffect = EventFactory.newJumpUnless(atLeastOneSideEffect, (Label) thread.getExit());
         assumeSideEffect.addFilters(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
-        // TODO: Is it sufficient to tag this jump as "SPINLOOP" to get proper spinloop detection?
+        // TODO: Is it sufficient to tag this jump as "SPINLOOP" to get proper spin loop detection?
         insertionPoint.insertAfter(assumeSideEffect);
     }
-
 
     // ============================= Actual logic =============================
 
     // Compute all loops in a thread
     private List<Loop> findLoops(Thread thread) {
-        //NOTE: This needs to get updated if the unrolling code renames the loop labels differently
-        final String iterNumberSeparator = "itr_";
+        final String iterNumberSeparator = LoopUnrolling.LOOP_ITERATION_SEPARATOR;
 
         int loopCounter = 0;
         final Map<String, Loop> labelName2LoopMap = new HashMap<>();

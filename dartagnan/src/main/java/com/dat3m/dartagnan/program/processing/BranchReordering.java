@@ -68,6 +68,7 @@ public class BranchReordering implements ProgramProcessor {
         for (Thread t : program.getThreads()) {
             new ThreadReordering(t).run();
         }
+        program.clearCache(true);
         logger.info("Branches reordered");
 		logger.info("{}: {}", DETERMINISTIC_REORDERING, reorderDeterministically);
     }

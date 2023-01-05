@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /*
-    Rather than a transformer, this pass checks that all loops in the program are in a normalized form
+    Rather than a typical transformer, this pass checks that all loops in the program are in a normalized form
     which is usually provided by LLVM.
     NOTE: It does not itself construct this normalized form, instead it throws exceptions if the form is not met.
     The normalized form guarantees the following:
@@ -35,7 +35,6 @@ public class LoopFormVerification implements ProgramProcessor {
     public static LoopFormVerification fromConfig(Configuration config) {
         return new LoopFormVerification();
     }
-
 
     @Override
     public void run(Program program) {
