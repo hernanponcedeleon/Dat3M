@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -80,8 +81,11 @@ public class AssumeSolver extends ModelChecker {
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
         } else {
             res = FAIL;
+            if(!program.getAss().getInvert()) {
+                logFlaggedPairs(memoryModel, prover, logger, context, ctx);
+            }
         }
-    
+
         if(logger.isDebugEnabled()) {        	
     		String smtStatistics = "\n ===== SMT Statistics ===== \n";
     		for(String key : prover.getStatistics().keySet()) {
