@@ -29,17 +29,12 @@ public class FindSpinLoops implements ProgramProcessor {
 
     private FindSpinLoops() { }
 
-    private FindSpinLoops(Configuration config) throws InvalidConfigurationException {
-        this();
-        config.inject(this);
+    public static FindSpinLoops newInstance() {
+        return new FindSpinLoops();
     }
 
     public static FindSpinLoops fromConfig(Configuration config) throws InvalidConfigurationException {
-        return new FindSpinLoops(config);
-    }
-
-    public static FindSpinLoops newInstance() {
-        return new FindSpinLoops();
+        return newInstance();
     }
 
 
