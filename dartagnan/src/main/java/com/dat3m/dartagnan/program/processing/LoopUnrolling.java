@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBound;
-import com.dat3m.dartagnan.utils.printer.Printer;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,7 +17,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
-import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_UNROLLING;
 
 @Options
 public class LoopUnrolling implements ProgramProcessor {
@@ -40,11 +38,6 @@ public class LoopUnrolling implements ProgramProcessor {
         Preconditions.checkArgument(bound >= 1, "The unrolling bound must be positive.");
         this.bound = bound;
     }
-
-    @Option(name = PRINT_PROGRAM_AFTER_UNROLLING,
-            description = "Prints the program after unrolling.",
-            secure = true)
-    private boolean print = false;
 
     // =====================================================================
 
@@ -78,11 +71,6 @@ public class LoopUnrolling implements ProgramProcessor {
         EventIdReassignment.newInstance().run(program); // Reassign ids because of newly created events
 
         logger.info("Program unrolled {} times", defaultBound);
-        if(print) {
-        	System.out.println("===== Program after unrolling =====");
-        	System.out.println(new Printer().print(program));
-        	System.out.println("===================================");
-        }
     }
 
     private void unrollLoopsInThread(Thread thread, int defaultBound){

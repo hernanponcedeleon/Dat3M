@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.dat3m.dartagnan.program.processing.ProgramProcessor;
 import com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme;
-import com.dat3m.dartagnan.utils.printer.Printer;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,11 +28,6 @@ public class Compilation implements ProgramProcessor {
     private static final Logger logger = LogManager.getLogger(Compilation.class);
 
     // =========================== Configurables ===========================
-
-    @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
-            description = "Prints the program after compilation.",
-            secure = true)
-    private boolean print = false;
 
     @Option(name = TARGET,
             description = "The target architecture to which the program shall be compiled to.",
@@ -116,11 +110,6 @@ public class Compilation implements ProgramProcessor {
         EventIdReassignment.newInstance().run(program); // Reassign ids
 
         logger.info("Program compiled to {}", target);
-        if(print) {
-        	System.out.println("===== Program after compilation =====");
-        	System.out.println(new Printer().print(program));
-        	System.out.println("=====================================");
-        }
     }
 
     private void compileThread(Thread thread, EventVisitor<List<Event>> visitor) {
