@@ -20,14 +20,24 @@ import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
+
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
+import static com.dat3m.dartagnan.configuration.Property.CAT;
+import static java.lang.Boolean.TRUE;
 
 public abstract class ModelChecker {
 
@@ -107,5 +117,23 @@ public abstract class ModelChecker {
             }
         }
         program.setAss(ass);
+    }
+
+    protected void logFlaggedPairs(Wmm wmm, ProverEnvironment prover, Logger logger, 
+        EncodingContext eCtx, SolverContext sCtx) throws SolverException {
+        for(Axiom ax : wmm.getAxioms()) {
+            if(ax.isFlagged() && TRUE.equals(prover.getModel().evaluate(CAT.getSMTVariable(ax, sCtx)))) {
+                System.out.println("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getName()));
+                if(logger.isDebugEnabled()) {
+                    StringBuilder violatingPairs = new StringBuilder("\n ===== The following pairs belong to the relation ===== \n");
+                    for(Tuple tuple : ax.getRelation().getEncodeTupleSet()) {
+                        if(TRUE.equals(prover.getModel().evaluate(eCtx.edge(ax.getRelation(), tuple)))) {
+                            violatingPairs.append("\t" + tuple.getFirst() + " -> " + tuple.getSecond());
+                        }
+                    }
+                    logger.debug(violatingPairs.toString());
+                }
+            }
+        }
     }
 }

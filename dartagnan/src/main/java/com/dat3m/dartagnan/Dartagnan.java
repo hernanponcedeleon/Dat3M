@@ -188,11 +188,6 @@ public class Dartagnan extends BaseOptions {
             		if(TRUE.equals(prover.getModel().evaluate(LIVENESS.getSMTVariable(ctx)))) {
             			System.out.println("Liveness violation found");
             		}
-            		for(Axiom ax : task.getMemoryModel().getAxioms()) {
-                		if(ax.isFlagged() && TRUE.equals(prover.getModel().evaluate(CAT.getSMTVariable(ax, ctx)))) {
-                			System.out.println("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getName()));
-                		}                			
-            		}
                 }
                 if (p.getFormat().equals(SourceLanguage.LITMUS)) {
                     if (p.getAssFilter() != null) {

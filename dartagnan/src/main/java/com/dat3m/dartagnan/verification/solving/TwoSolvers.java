@@ -39,7 +39,7 @@ public class TwoSolvers extends ModelChecker {
     }
 
     private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
-    	Program program = task.getProgram();
+        Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
         Context analysisContext = Context.create();
         Configuration config = task.getConfig();
@@ -88,8 +88,12 @@ public class TwoSolvers extends ModelChecker {
             res = prover2.isUnsat() ? PASS : UNKNOWN;
         } else {
         	res = FAIL;
+            if(!program.getAss().getInvert()) {
+                logFlaggedPairs(memoryModel, prover1, logger, context, ctx);
+            }
         }
 
+        
         if(logger.isDebugEnabled()) {        	
     		String smtStatistics = "\n ===== SMT Statistics ===== \n";
     		for(String key : prover1.getStatistics().keySet()) {
