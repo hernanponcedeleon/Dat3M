@@ -64,9 +64,11 @@ public class BranchReordering implements ProgramProcessor {
     @Override
     public void run(Program program) {
         Preconditions.checkArgument(!program.isUnrolled(), "Reordering should be performed before unrolling.");
+
         for (Thread t : program.getThreads()) {
             new ThreadReordering(t).run();
         }
+        program.clearCache(true);
         logger.info("Branches reordered");
 		logger.info("{}: {}", DETERMINISTIC_REORDERING, reorderDeterministically);
     }
@@ -74,7 +76,7 @@ public class BranchReordering implements ProgramProcessor {
     private class ThreadReordering {
         private class MovableBranch {
             int id = 0;
-            List<Event> events = new ArrayList<>();
+            final List<Event> events = new ArrayList<>();
 
             @Override
             public int hashCode() {
@@ -88,7 +90,7 @@ public class BranchReordering implements ProgramProcessor {
                 }
                 if (obj == this) {
                     return true;
-                }else if (obj == null || obj.getClass() != getClass()) {
+                } else if (obj == null || obj.getClass() != getClass()) {
                     return false;
                 }
 
@@ -97,82 +99,83 @@ public class BranchReordering implements ProgramProcessor {
         }
 
         private final Thread thread;
-        private final List<MovableBranch> branches;
-        private final Map<Event, MovableBranch> branchMap;
+        private final List<MovableBranch> branches = new ArrayList<>();
+        private final Map<Event, MovableBranch> eventBranchMap = new HashMap<>();
 
         public ThreadReordering(Thread t) {
             this.thread = t;
-            branches = new ArrayList<>();
-            branchMap = new HashMap<>();
         }
 
         private void computeBranchDecomposition() {
-            Event exit = thread.getExit();
-            MovableBranch cur = new MovableBranch();
-            branches.add(cur);
+            final Event exit = thread.getExit();
 
+            MovableBranch curBranch = new MovableBranch();
+            branches.add(curBranch);
             int id = 1;
             Event e = thread.getEntry();
             while (e != null) {
-                cur.events.add(e);
-                branchMap.put(e, cur);
+                curBranch.events.add(e);
+                eventBranchMap.put(e, curBranch);
 
                 if (e.equals(exit)) {
                     break;
                 }
                 if (e instanceof CondJump && ((CondJump) e).isGoto()) {
-                    branches.add(cur = new MovableBranch());
-                    cur.id = id++;
+                    curBranch = new MovableBranch();
+                    curBranch.id = id++;
+                    branches.add(curBranch);
                 }
                 e = e.getSuccessor();
             }
         }
 
-        private List<MovableBranch> computeReordering(List<MovableBranch> moveables) {
-            if (moveables.size() < 3) {
-                return moveables;
+        private List<MovableBranch> computeReordering(final List<MovableBranch> movables) {
+            if (movables.size() < 3) {
+                return new ArrayList<>(movables);
             }
+            final MovableBranch startBranch = movables.get(0);
+            final Map<Event, MovableBranch> eventBranchMap = this.eventBranchMap;
 
-            // Construct successor map
-            Map<MovableBranch, Set<MovableBranch>> successorMap = new HashMap<>();
-            for (MovableBranch b : moveables) {
+            // Construct successor map of branches
+            final Map<MovableBranch, Set<MovableBranch>> successorMap = new HashMap<>();
+            for (MovableBranch b : movables) {
                 successorMap.put(b, new HashSet<>());
             }
-
-            MovableBranch startBranch = moveables.get(0);
-            for (MovableBranch b : moveables) {
-                for (Event e : b.events) {
+            for (MovableBranch branch : movables) {
+                for (Event e : branch.events) {
                     if (e instanceof CondJump) {
-                        CondJump jump = (CondJump) e;
-                        MovableBranch target = branchMap.get(jump.getLabel());
-                        if (target != startBranch && successorMap.containsKey(target)) {
-                            successorMap.get(b).add(target);
+                        final CondJump jump = (CondJump) e;
+                        final MovableBranch targetBranch = eventBranchMap.get(jump.getLabel());
+                        if (targetBranch != startBranch && successorMap.containsKey(targetBranch)) {
+                            successorMap.get(branch).add(targetBranch);
                         }
                     }
                 }
             }
 
-            moveables = new ArrayList<>();
-            DependencyGraph<MovableBranch> depGraph = DependencyGraph.fromSingleton(startBranch, successorMap);
-            List<Set<DependencyGraph<MovableBranch>.Node>> sccs = Lists.reverse(depGraph.getSCCs());
-
+            // Compute the actual reordering of the branches
+            final DependencyGraph<MovableBranch> depGraph = DependencyGraph.fromSingleton(startBranch, successorMap);
+            final List<Set<DependencyGraph<MovableBranch>.Node>> sccs = Lists.reverse(depGraph.getSCCs());
+            final List<MovableBranch> reorderedBranches = new ArrayList<>();
             for (Set<DependencyGraph<MovableBranch>.Node> scc : sccs) {
-                List<MovableBranch> branches = scc.stream().map(DependencyGraph.Node::getContent)
+                final List<MovableBranch> branchesInScc = scc.stream().map(DependencyGraph.Node::getContent)
                         .sorted(Comparator.comparingInt(x -> x.id)).collect(Collectors.toList());
-                moveables.addAll(computeReordering(branches));
+                reorderedBranches.addAll(computeReordering(branchesInScc));
 
             }
 
-            return moveables;
+            return reorderedBranches;
         }
 
         public void run() {
             computeBranchDecomposition();
-            // We fixate the last branch
-            List<MovableBranch> reordering = computeReordering(branches.subList(0, branches.size() - 1));
+            final List<MovableBranch> branches = this.branches;
+            // Reorder branches but keep the last branch fixed.
+            final List<MovableBranch> reordering = computeReordering(branches.subList(0, branches.size() - 1));
             reordering.add(branches.get(branches.size() - 1));
+            final Iterable<Event> reorderedEvents = Iterables.concat(reordering.stream()
+                    .map(x -> x.events).collect(Collectors.toList()));
 
-            Iterable<Event> reorderedEvents = Iterables.concat(reordering.stream().map(x -> x.events).collect(Collectors.toList()));
             Event pred = null;
             int id = thread.getEntry().getOId();
             for (Event next : reorderedEvents) {

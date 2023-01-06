@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
-
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -33,10 +32,15 @@ public class ProcessingManager implements ProgramProcessor {
         secure=true)
         private boolean constantPropagation = false;
 
-	@Option(name= DEAD_ASSIGNEMENT_ELIMINATION,
+	@Option(name= DEAD_ASSIGNMENT_ELIMINATION,
 			description="Performs dead code elimination.",
 			secure=true)
 		private boolean dce = false;
+
+    @Option(name= DYNAMIC_PURE_LOOP_CUTTING,
+            description="Instruments loops to terminate early when spinning.",
+            secure=true)
+    private boolean dynamicPureLoopCutting = true;
 
 // ======================================================================
 
@@ -45,8 +49,9 @@ public class ProcessingManager implements ProgramProcessor {
 
         programProcessors.addAll(Arrays.asList(
                 Memory.fixateMemoryValues(),
-                DeadCodeElimination.fromConfig(config),
+                UnreachableCodeElimination.fromConfig(config),
                 BranchReordering.fromConfig(config),
+                LoopFormVerification.fromConfig(config),
                 Simplifier.fromConfig(config),
         		FindSpinLoops.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
@@ -54,6 +59,7 @@ public class ProcessingManager implements ProgramProcessor {
                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                 RemoveDeadCondJumps.fromConfig(config),
                 Compilation.fromConfig(config),
+                dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null
         ));
         programProcessors.removeIf(Objects::isNull);

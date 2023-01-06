@@ -111,7 +111,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public Thread getThread() {
 		return thread;
 	}
-
 	public void setThread(Thread thread) {
 		Preconditions.checkNotNull(thread);
 		this.thread = thread;
@@ -173,12 +172,34 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		return result;
 	}
 
+	// ============================ Utility methods ============================
+
 	public void delete() {
 		if (getPredecessor() != null) {
 			getPredecessor().setSuccessor(this.getSuccessor());
 		} else if (getSuccessor() != null) {
 			this.getSuccessor().setPredecessor(null);
 		}
+	}
+
+	public void insertAfter(Event toBeInserted) {
+		if (this.successor != null) {
+			this.successor.setPredecessor(toBeInserted);
+		}
+		this.setSuccessor(toBeInserted);
+	}
+
+	public void insertAfter(List<Event> toBeInserted) {
+		Event cur = this;
+		for (Event next : toBeInserted) {
+			cur.insertAfter(next);
+			cur = next;
+		}
+	}
+
+	public void replaceBy(Event replacement) {
+		this.insertAfter(replacement);
+		this.delete();
 	}
 
 	// Unrolling

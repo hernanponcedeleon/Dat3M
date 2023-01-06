@@ -2,22 +2,22 @@ package com.dat3m.dartagnan.program.event.lang.svcomp;
 
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 
-public class LoopStart extends CodeAnnotation {
+public class SpinEnd extends CodeAnnotation {
 
-	public LoopStart() { }
+	public SpinEnd() { }
 	
-	protected LoopStart(LoopStart other) {
+	protected SpinEnd(SpinEnd other) {
 		super(other);
 	}
 
 	@Override
-	public LoopStart getCopy() {
-		return new LoopStart(this);
+	public SpinEnd getCopy() {
+		return new SpinEnd(this);
 	}
 
 	@Override
 	public String toString() {
-		return "#__VERIFIER_loop_start";
+		return "#__VERIFIER_spin_end";
 	}
 
 }

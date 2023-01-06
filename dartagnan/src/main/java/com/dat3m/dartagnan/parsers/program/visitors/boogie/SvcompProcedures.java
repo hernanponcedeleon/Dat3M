@@ -11,13 +11,12 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
@@ -57,10 +56,10 @@ public class SvcompProcedures {
 				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBegin());
 				break;
 			case "__VERIFIER_spin_start":
-				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopStart());
+				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newSpinStart());
 				break;
 			case "__VERIFIER_spin_end":
-				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopEnd());
+				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newSpinEnd());
 				break;
 			case "__VERIFIER_assert":
 				visitor.addAssertion((IExpr)ctx.call_params().exprs().accept(visitor));
