@@ -15,6 +15,7 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
@@ -65,8 +66,9 @@ public class DeadAssignmentElimination implements ProgramProcessor {
 
 
         // Compute events to be removed (removal is delayed)
+        final List<Event> threadEvents = thread.getEvents();
         final Set<Event> toBeRemoved = new HashSet<>();
-        for(Event e : Lists.reverse(thread.getEvents())) {
+        for(Event e : Lists.reverse(threadEvents)) {
             if (e instanceof RegWriter && !e.is(NOOPT) && !e.is(VISIBLE) && !usedRegs.contains(((RegWriter)e).getResultRegister())) {
                 // TODO (TH): Can we also remove loads to unused registers here?
                 // Invisible RegWriters that write to an unused reg can get removed
@@ -85,13 +87,8 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         }
 
         // Here is the actual removal
-        Event cur = thread.getEntry();
-        while (cur != null) {
-            final Event succ = cur.getSuccessor();
-            if (toBeRemoved.contains(cur)) {
-                cur.delete();
-            };
-            cur = succ;
-        }
+        threadEvents.stream()
+                .filter(toBeRemoved::contains)
+                .forEach(Event::delete);
     }
 }

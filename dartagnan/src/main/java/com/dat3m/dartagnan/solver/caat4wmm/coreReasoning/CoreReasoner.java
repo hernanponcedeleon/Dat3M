@@ -112,7 +112,7 @@ public class CoreReasoner {
         Event e1 = edge.getFirst();
         Event e2 = edge.getSecond();
 
-        if (e1.getCId() > e2.getCId()) {
+        if (e1.getGlobalId() > e2.getGlobalId()) {
             // Normalize edge direction
             Event temp = e1;
             e1 = e2;

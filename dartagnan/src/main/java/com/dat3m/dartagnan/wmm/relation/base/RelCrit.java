@@ -57,7 +57,7 @@ public class RelCrit extends StaticRelation {
             for (Event unlock : thread.getCache().getEvents(FilterBasic.get(RCU_UNLOCK))) {
                 // iteration order assures that all intermediaries were already iterated
                 for (Event lock : locks) {
-                    if (unlock.getCId() < lock.getCId() ||
+                    if (unlock.getGlobalId() < lock.getGlobalId() ||
                             exec.areMutuallyExclusive(lock, unlock) ||
                             concat(minTupleSet.getByFirst(lock).stream().map(Tuple::getSecond),
                                             minTupleSet.getBySecond(unlock).stream().map(Tuple::getFirst))
@@ -102,6 +102,6 @@ public class RelCrit extends StaticRelation {
     }
 
     private boolean isOrdered(Event x, Event y, Event z) {
-        return x.getCId() < y.getCId() && y.getCId() < z.getCId();
+        return x.getGlobalId() < y.getGlobalId() && y.getGlobalId() < z.getGlobalId();
     }
 }

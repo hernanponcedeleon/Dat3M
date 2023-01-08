@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory.*;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.ARMv8;
 import com.dat3m.dartagnan.program.event.Tag.C11;
@@ -16,7 +15,10 @@ import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.Create;
+import com.dat3m.dartagnan.program.event.lang.pthread.End;
+import com.dat3m.dartagnan.program.event.lang.pthread.Join;
+import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 
 import java.util.List;
 
@@ -221,7 +223,7 @@ class VisitorArm8 extends VisitorBase {
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
         if (!e.is(STRONG)) {
-            Register statusReg = e.getThread().newRegister("status(" + e.getUId() + ")",precision);
+            Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")",precision);
             optionalExecStatus = newExecutionStatus(statusReg, storeValue);
             optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
         }

@@ -28,8 +28,8 @@ public class Tuple implements Comparable<Tuple> {
 
     @Override
     public int hashCode() {
-        int a = first.getCId();
-        int b = second.getCId();
+        int a = first.getGlobalId();
+        int b = second.getGlobalId();
         return  a ^ (31 * b + 0x9e3779b9 + (a << 6) + (a >> 2)); // Best hashing function ever :)
         // Alternatives:
         // --- a ^ (b + 0x9e3779b9 + (a << 6) + (a >> 2))
@@ -45,8 +45,8 @@ public class Tuple implements Comparable<Tuple> {
         }
 
         Tuple tObj = (Tuple) obj;
-        return first.getCId() == tObj.getFirst().getCId()
-                && second.getCId() == tObj.getSecond().getCId();
+        return first.getGlobalId() == tObj.getFirst().getGlobalId()
+                && second.getGlobalId() == tObj.getSecond().getGlobalId();
     }
 
     @Override
@@ -74,11 +74,11 @@ public class Tuple implements Comparable<Tuple> {
     }
 
     public boolean isForward() {
-        return isSameThread() && first.getCId() < second.getCId();
+        return isSameThread() && first.getGlobalId() < second.getGlobalId();
     }
 
     public boolean isBackward() {
-        return isSameThread() && first.getCId() > second.getCId();
+        return isSameThread() && first.getGlobalId() > second.getGlobalId();
     }
 
     public boolean isLoop() {

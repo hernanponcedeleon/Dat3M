@@ -386,7 +386,7 @@ public class ExecutionModel {
 
     private void trackDependencies(Event e) {
 
-        while (!endIfs.isEmpty() && e.getCId() >= endIfs.peek().getCId()) {
+        while (!endIfs.isEmpty() && e.getGlobalId() >= endIfs.peek().getGlobalId()) {
             // We exited an If and remove the dependencies associated with it
             // We do this inside a loop just in case multiple Ifs are left simultaneously
             endIfs.pop();

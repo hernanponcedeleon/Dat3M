@@ -63,12 +63,12 @@ public class EndAtomic extends Event {
 		BranchEquivalence.Class startClass = eq.getEquivalenceClass(begin);
 		BranchEquivalence.Class endClass = eq.getEquivalenceClass(this);
 		if (!startClass.getReachableClasses().contains(endClass)) {
-			logger.warn("BeginAtomic" + begin.getCId() + "can't reach EndAtomic " + this.getCId());
+			logger.warn("BeginAtomic" + begin.getGlobalId() + "can't reach EndAtomic " + this.getGlobalId());
 		}
 
 		for (BranchEquivalence.Class c : startClass.getReachableClasses()) {
 			for (Event e : c) {
-				if (begin.getCId() <= e.getCId() && e.getCId() <= this.getCId()) {
+				if (begin.getGlobalId() <= e.getGlobalId() && e.getGlobalId() <= this.getGlobalId()) {
 					if (!eq.isImplied(e, begin)) {
 						logger.warn(e + " is inside atomic block but can be reached from the outside");
 					}

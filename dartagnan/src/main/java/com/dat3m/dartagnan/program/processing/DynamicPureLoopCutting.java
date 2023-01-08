@@ -76,13 +76,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             loops.forEach(this::reduceToDominatingSideEffects);
             loops.forEach(this::insertSideEffectChecks);
         }
-
-        // Update cIds
-        int cId = 0;
         program.clearCache(true);
-        for (Event e : program.getEvents()) {
-            e.setCId(cId++);
-        }
     }
 
     private void insertSideEffectChecks(Loop loop) {
@@ -179,7 +173,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             if (cur instanceof CondJump) {
                 final CondJump jump = (CondJump) cur;
                 final Label jumpTarget = jump.getLabel();
-                if (jump.isGoto() && jumpTarget.getCId() > end.getCId()) {
+                if (jump.isGoto() && jumpTarget.getGlobalId() > end.getGlobalId()) {
                     iteration.trueExitPoints.add(jump);
                 }
             }

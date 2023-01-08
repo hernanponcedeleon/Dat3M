@@ -57,7 +57,7 @@ public class FindSpinLoops implements ProgramProcessor {
         int spinloopCounter = 0;
         for (final Label label : unmarkedLabels) {
             final List<CondJump> backjumps = label.getJumpSet()
-                    .stream().filter(x -> x.getOId() > label.getOId())
+                    .stream().filter(x -> x.getGlobalId() > label.getGlobalId())
                     .collect(Collectors.toList());
             final boolean isLoop = !backjumps.isEmpty();
 

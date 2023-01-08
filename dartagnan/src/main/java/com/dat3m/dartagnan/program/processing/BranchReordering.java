@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,10 +64,10 @@ public class BranchReordering implements ProgramProcessor {
     public void run(Program program) {
         Preconditions.checkArgument(!program.isUnrolled(), "Reordering should be performed before unrolling.");
 
-        for (Thread t : program.getThreads()) {
-            new ThreadReordering(t).run();
-        }
+        program.getThreads().forEach(t -> new ThreadReordering(t).run());
+        // We need to reassign Ids, because they do not match with the ordering of the code now.
         program.clearCache(true);
+        EventIdReassignment.newInstance().run(program);
         logger.info("Branches reordered");
 		logger.info("{}: {}", DETERMINISTIC_REORDERING, reorderDeterministically);
     }
@@ -173,16 +172,11 @@ public class BranchReordering implements ProgramProcessor {
             // Reorder branches but keep the last branch fixed.
             final List<MovableBranch> reordering = computeReordering(branches.subList(0, branches.size() - 1));
             reordering.add(branches.get(branches.size() - 1));
-            final Iterable<Event> reorderedEvents = Iterables.concat(reordering.stream()
-                    .map(x -> x.events).collect(Collectors.toList()));
+            final Iterable<Event> reorderedEvents = reordering.stream().flatMap(x -> x.events.stream())::iterator;
 
             Event pred = null;
-            int id = thread.getEntry().getOId();
             for (Event next : reorderedEvents) {
-                next.setOId(id++);
-                if (pred != null) {
-                    pred.setSuccessor(next);
-                }
+                next.setPredecessor(pred);
                 pred = next;
             }
             assert pred == thread.getExit();

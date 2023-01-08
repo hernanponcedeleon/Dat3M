@@ -16,10 +16,14 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	public static final int PRINT_PAD_EXTRA = 50;
 
-	protected int oId = -1;		// ID after parsing (original)
-	protected int uId = -1;		// ID after unrolling
-	protected int cId = -1;		// ID after compilation
-	protected int fId = -1;		// ID within a function
+	// This id is dynamically changing during processing.
+	protected transient int globalId = -1;		// (Global) ID within a program
+
+	// The following three ids are snapshots of the global id at specific points in the processing.
+	// They are meant to be fixed once assigned.
+	protected int oId = -1; 	// Global ID after parsing (original), before any passes have been run
+	protected int uId = -1;		// Global ID right before unrolling
+	protected int cId = -1;		// Global ID right before compilation
 
 	protected int cLine = -1;				// line in the original C program
 	protected String sourceCodeFile = "";	// filename of the original C program
@@ -31,22 +35,26 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	protected transient Event successor;
 	protected transient Event predecessor;
 
-	private transient String repr;
-
 	protected Event(){
 		filter = new HashSet<>();
 	}
 
 	protected Event(Event other){
-		this.oId = other.oId;
-        this.uId = other.uId;
-        this.cId = other.cId;
-        this.fId = other.fId;
-        this.cLine = other.cLine;
-        this.sourceCodeFile = other.sourceCodeFile;
+		copyMetadataFrom(other);
         this.filter = other.filter; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
         this.thread = other.thread;
     }
+
+	public void copyMetadataFrom(Event other) {
+		this.oId = other.oId;
+		this.uId = other.uId;
+		this.cId = other.cId;
+		this.cLine = other.cLine;
+		this.sourceCodeFile = other.sourceCodeFile;
+	}
+
+	public int getGlobalId() { return globalId; }
+	public void setGlobalId(int id) { this.globalId = id; }
 
 	public int getOId() { return oId; }
 	public void setOId(int id) { this.oId = id; }
@@ -56,10 +64,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	public int getCId() { return cId; }
 	public void setCId(int id) { this.cId = id; }
-
-	// TODO: This should be called "LId" (localId) and be set once after all processing is done.
-	public int getFId() { return fId; }
-	public void setFId(int id) { this.fId = id; }
 
 	public int getCLine() {
 		return cLine;
@@ -162,12 +166,14 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	
 	@Override
 	public int compareTo(Event e){
-		int result = Integer.compare(cId, e.cId);
-		if(result == 0){
-			result = Integer.compare(uId, e.uId);
-			if(result == 0){
-				result = Integer.compare(oId, e.oId);
-			}
+		if (e == this) {
+			return 0;
+		}
+		int result = Integer.compare(this.getGlobalId(), e.getGlobalId());
+		if (result == 0) {
+			final String error = String.format("Events %s and %s are different but have the same global id %d",
+					this, e, e.getGlobalId());
+			throw new IllegalStateException(error);
 		}
 		return result;
 	}
@@ -224,19 +230,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public void initializeEncoding(SolverContext ctx) { }
 
 	public void runLocalAnalysis(Program program, Context context) { }
-	
-	public String repr() {
-		if (cId == -1) {
-			// We have not yet compiled
-			return "E" + oId;
-		}
-		if (repr == null) {
-			// We cache the result, because this saves string concatenations
-			// for every(!) single edge encoded in the program
-			repr = "E" + cId;
-		}
-		return repr;
-	}
 
 	// This method needs to get overwritten for conditional events.
 	public boolean cfImpliesExec() {

@@ -48,7 +48,7 @@ public class RelFencerel extends StaticRelation {
                 List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(Tag.MEMORY));
                 for (Event fence : fences) {
                     int numEventsBeforeFence = (int) memEvents.stream()
-                            .mapToInt(Event::getCId).filter(id -> id < fence.getCId())
+                            .mapToInt(Event::getGlobalId).filter(id -> id < fence.getGlobalId())
                             .count();
                     List<Event> eventsBefore = memEvents.subList(0, numEventsBeforeFence);
                     List<Event> eventsAfter = memEvents.subList(numEventsBeforeFence, memEvents.size());
@@ -77,7 +77,7 @@ public class RelFencerel extends StaticRelation {
                 List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(Tag.MEMORY));
                 for (Event fence : fences) {
                     int numEventsBeforeFence = (int) memEvents.stream()
-                            .mapToInt(Event::getCId).filter(id -> id < fence.getCId())
+                            .mapToInt(Event::getGlobalId).filter(id -> id < fence.getGlobalId())
                             .count();
                     List<Event> eventsBefore = memEvents.subList(0, numEventsBeforeFence);
                     List<Event> eventsAfter = memEvents.subList(numEventsBeforeFence, memEvents.size());

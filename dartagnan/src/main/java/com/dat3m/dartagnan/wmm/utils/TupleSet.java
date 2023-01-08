@@ -163,7 +163,7 @@ public class TupleSet implements Set<Tuple>{
             for(Event e1 : map.keySet()){
                 Set<Event> newEls = new HashSet<>();
                 for(Event e2 : map.get(e1)){
-                    if(e1.getCId() != e2.getCId()){
+                    if(e1.getGlobalId() != e2.getGlobalId()){
                         newEls.addAll(map.get(e2));
                     }
                 }

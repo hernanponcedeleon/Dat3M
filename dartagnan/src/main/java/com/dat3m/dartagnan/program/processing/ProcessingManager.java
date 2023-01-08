@@ -42,25 +42,59 @@ public class ProcessingManager implements ProgramProcessor {
             secure=true)
     private boolean dynamicPureLoopCutting = true;
 
+    // =================== Debugging options ===================
+
+    @Option(name = PRINT_PROGRAM_BEFORE_PROCESSING,
+            description = "Prints the program before any processing.",
+            secure = true)
+    private boolean printBeforeProcessing = false;
+
+    @Option(name = PRINT_PROGRAM_AFTER_SIMPLIFICATION,
+            description = "Prints the program after simplification.",
+            secure = true)
+    private boolean printAfterSimplification = false;
+
+    @Option(name = PRINT_PROGRAM_AFTER_UNROLLING,
+            description = "Prints the program after unrolling.",
+            secure = true)
+    private boolean printAfterUnrolling = false;
+
+    @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
+            description = "Prints the program after compilation.",
+            secure = true)
+    private boolean printAfterCompilation = false;
+
+    @Option(name = PRINT_PROGRAM_AFTER_PROCESSING,
+            description = "Prints the program after all processing.",
+            secure = true)
+    private boolean printAfterProcessing = false;
+
+
 // ======================================================================
 
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
 
         programProcessors.addAll(Arrays.asList(
+                printBeforeProcessing ? DebugPrint.withHeader("Before processing") : null,
                 Memory.fixateMemoryValues(),
                 UnreachableCodeElimination.fromConfig(config),
                 BranchReordering.fromConfig(config),
                 LoopFormVerification.fromConfig(config),
                 Simplifier.fromConfig(config),
+                printAfterSimplification ? DebugPrint.withHeader("After simplification") : null,
         		FindSpinLoops.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
+                printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling") : null,
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                 RemoveDeadCondJumps.fromConfig(config),
                 Compilation.fromConfig(config),
+                printAfterCompilation ? DebugPrint.withHeader("After compilation") : null,
                 dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
-                reduceSymmetry ? SymmetryReduction.fromConfig(config) : null
+                reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
+                EventIdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
+                printAfterProcessing ? DebugPrint.withHeader("After processing") : null
         ));
         programProcessors.removeIf(Objects::isNull);
     }

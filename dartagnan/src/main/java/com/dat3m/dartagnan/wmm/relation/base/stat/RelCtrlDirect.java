@@ -47,7 +47,7 @@ public class RelCtrlDirect extends StaticRelation {
                 if(!condJumps.isEmpty()){
                     for(Event e2 : thread.getCache().getEvents(FilterBasic.get(Tag.ANY))){
                         for(Event e1 : condJumps){
-                            if(e1.getCId() < e2.getCId()){
+                            if(e1.getGlobalId() < e2.getGlobalId()){
                                 maxTupleSet.add(new Tuple(e1, e2));
                             }
                         }

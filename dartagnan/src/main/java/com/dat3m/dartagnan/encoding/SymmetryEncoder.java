@@ -130,7 +130,7 @@ public class SymmetryEncoder implements Encoder {
         BooleanFormula enc = bmgr.makeTrue();
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
-            Function<Event, Event> p = symm.createTransposition(t1, t2);
+            Function<Event, Event> p = symm.createEventTransposition(t1, t2);
             List<Tuple> t2Tuples = t1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
 
             List<BooleanFormula> r1 = t1Tuples.stream().map(t -> context.edge(rel, t)).collect(Collectors.toList());

@@ -94,7 +94,7 @@ public class RelTrans extends UnaryRelation {
                 Event e2 = tuple.getSecond();
                 for (Tuple t : r1.getMaxTupleSet().getByFirst(e1)) {
                     Event e3 = t.getSecond();
-                    if (e3.getCId() != e1.getCId() && e3.getCId() != e2.getCId() &&
+                    if (e3.getGlobalId() != e1.getGlobalId() && e3.getGlobalId() != e2.getGlobalId() &&
                             maxTupleSet.contains(new Tuple(e3, e2))) {
                         result.add(new Tuple(e1, e3));
                         processNext.add(new Tuple(e3, e2));

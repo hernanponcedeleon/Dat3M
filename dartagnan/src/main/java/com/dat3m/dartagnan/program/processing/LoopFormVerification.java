@@ -50,7 +50,7 @@ public class LoopFormVerification implements ProgramProcessor {
         int loopCounter = 0;
         for (Label label : labels) {
             final List<CondJump> backJumps = label.getJumpSet().stream()
-                    .filter(j -> j.getOId() > label.getOId())
+                    .filter(j -> j.getGlobalId() > label.getGlobalId())
                     .collect(Collectors.toList());
             final boolean isLoop = backJumps.size() > 0;
 
@@ -78,8 +78,8 @@ public class LoopFormVerification implements ProgramProcessor {
                     .filter(Label.class::isInstance).map(Label.class::cast)
                     .collect(Collectors.toList());
             for (Label l : loopBodyLabels) {
-                final boolean isLoopEntryPoint = l.getJumpSet().stream()
-                        .anyMatch(j -> j.getOId() < loopBegin.getOId() || j.getOId() > uniqueBackJump.getOId());
+                final boolean isLoopEntryPoint = l.getJumpSet().stream().anyMatch(j ->
+                        j.getGlobalId() < loopBegin.getGlobalId() || j.getGlobalId() > uniqueBackJump.getGlobalId());
                 if (isLoopEntryPoint) {
                     final String error = String.format("Loop body label %s inside loop %s" +
                             " has entry edges from outside the loop", l, loopBegin);

@@ -19,7 +19,7 @@ public class AddressLiteral extends AbstractLiteral<CoreLiteral> implements Core
     // which should perform such normalization.
     public AddressLiteral(Event e1, Event e2, boolean isNegative) {
         super(NAME, isNegative);
-        if (e1.getCId() > e2.getCId()) {
+        if (e1.getGlobalId() > e2.getGlobalId()) {
             // We normalize the direction, because loc is symmetric
             this.e1 = e2;
             this.e2 = e1;
@@ -52,7 +52,7 @@ public class AddressLiteral extends AbstractLiteral<CoreLiteral> implements Core
 
     @Override
     public String toString() {
-        return String.format("(%s(%s) %s %s(%s))", NAME, e1.getCId(), isNegative ? "!=" : "==", NAME, e2.getCId());
+        return String.format("(%s(%s) %s %s(%s))", NAME, e1.getGlobalId(), isNegative ? "!=" : "==", NAME, e2.getGlobalId());
     }
 
     @Override
