@@ -18,13 +18,14 @@ import java.util.stream.Collectors;
 public class ThreadSymmetry extends AbstractEquivalence<Thread> {
 
     private final Program program;
-    private final Map<Thread, Map<Integer, Event>> symmMap = new HashMap<>();
+    private final Map<Thread, Map<Integer, Event>> thread2id2EventMap = new HashMap<>();
+    private final Map<Event, Integer> event2IdMap = new HashMap<>();
 
-    private ThreadSymmetry(Program program, boolean createMappings) {
+    private ThreadSymmetry(Program program, boolean createSymmetryMappings) {
         this.program = program;
-        createClasses();
-        if (createMappings) {
-            createMappings();
+        createEquivalenceClasses();
+        if (createSymmetryMappings) {
+            createSymmetryMappings();
         }
     }
 
@@ -32,61 +33,65 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
         return new ThreadSymmetry(program, true);
     }
 
-    public static ThreadSymmetry withoutMappings(Program program) {
+    public static ThreadSymmetry withoutSymmetryMappings(Program program) {
         return new ThreadSymmetry(program, false);
     }
 
     // ================= Private methods ===================
 
-    private void createClasses() {
-
-        Map<String, Map<Integer, EqClass>> nameMap = new HashMap<>();
+    private void createEquivalenceClasses() {
+        // We put two threads into the same class only if their names and sizes match.
+        final Map<String, Map<Integer, EqClass>> nameSizeMap = new HashMap<>();
         for (Thread thread : program.getThreads()) {
-            nameMap.computeIfAbsent(thread.getName(), key -> new HashMap<>())
+            nameSizeMap.computeIfAbsent(thread.getName(), key -> new HashMap<>())
                     .computeIfAbsent(thread.getEvents().size(), key -> new EqClass()).addInternal(thread);
         }
     }
 
-    private void createMappings() {
+    private void createSymmetryMappings() {
         for (Thread thread : program.getThreads()) {
-            Map<Integer, Event> mapping = symmMap.computeIfAbsent(thread, key -> new HashMap<>());
-            thread.getEvents().forEach(e -> mapping.put(e.getLocalId(), e));
+            final List<Event> threadEvents = thread.getEvents();
+            final Map<Integer, Event> id2EventMap = thread2id2EventMap.computeIfAbsent(thread, key -> new HashMap<>());
+            for (int i = 0; i < threadEvents.size(); i++) {
+                id2EventMap.put(i, threadEvents.get(i));
+                event2IdMap.put(threadEvents.get(i), i);
+            }
         }
 
+        // Verify that all symmetric classes are indeed of the same size.
         Set<? extends EquivalenceClass<Thread>> classes = getAllEquivalenceClasses();
         for (EquivalenceClass<Thread> clazz : classes) {
-            int size = symmMap.get(clazz.getRepresentative()).size();
+            int size = thread2id2EventMap.get(clazz.getRepresentative()).size();
             for (Thread t : clazz) {
-                if (symmMap.get(t).size() == size) {
-                    Verify.verify(symmMap.get(t).size() == size,
-                            "Symmetric threads T%s and T%s have different number of events: %s vs. %s",
-                            clazz.getRepresentative(), t, size, symmMap.get(t).size());
-                }
+                Verify.verify(thread2id2EventMap.get(t).size() == size,
+                        "Symmetric threads T%s and T%s have different number of events: %s vs. %s",
+                        clazz.getRepresentative(), t, size, thread2id2EventMap.get(t).size());
             }
         }
     }
 
     // ================= Public methods ===================
 
-    public Event map(Event source, Thread target) {
-    	Preconditions.checkArgument(areEquivalent(source.getThread(), target), 
+    public Event map(Event source, Thread targetThread) {
+    	Preconditions.checkArgument(areEquivalent(source.getThread(), targetThread),
     			"Target thread is not symmetric with source thread.");
-        return symmMap.get(target).get(source.getLocalId());
+        return thread2id2EventMap.get(targetThread).get(event2IdMap.get(source));
     }
 
-    public Function<Event, Event> createPermutation(List<Thread> orig, List<Thread> target) {
-    	Preconditions.checkArgument(orig.size() == target.size(), "Target permutation has different size");
-        if (orig.equals(target)) {
+    public Function<Event, Event> createEventPermutation(List<Thread> origPerm, List<Thread> targetPerm) {
+    	Preconditions.checkArgument(origPerm.size() == targetPerm.size(),
+                "Target permutation has different size to original permutation.");
+        if (origPerm.equals(targetPerm)) {
             return Function.identity();
         }
 
         return e -> {
-            int index = orig.indexOf(e.getThread());
-            return index < 0 ? e : map(e, target.get(index));
+            int index = origPerm.indexOf(e.getThread());
+            return index < 0 ? e : map(e, targetPerm.get(index));
         };
     }
 
-    public Function<Event, Event> createTransposition(Thread t1, Thread t2) {
+    public Function<Event, Event> createEventTransposition(Thread t1, Thread t2) {
         if (!areEquivalent(t1, t2)) {
             return Function.identity();
         }
@@ -98,14 +103,14 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
         };
     }
 
-    public List<Function<Event, Event>> createAllPermutations(EquivalenceClass<Thread> eqClass) {
+    public List<Function<Event, Event>> createAllEventPermutations(EquivalenceClass<Thread> eqClass) {
     	Preconditions.checkArgument(eqClass.getEquivalence() == this, 
     			"<eqClass> is not a symmetry class of this symmetry equivalence.");
 
-        List<Thread> symmThreads = new ArrayList<>(eqClass);
+        final List<Thread> symmThreads = new ArrayList<>(eqClass);
         symmThreads.sort(Comparator.comparingInt(Thread::getId));
         return Collections2.permutations(symmThreads).stream()
-                .map(perm -> createPermutation(symmThreads, perm))
+                .map(perm -> createEventPermutation(symmThreads, perm))
                 .collect(Collectors.toList());
     }
 }

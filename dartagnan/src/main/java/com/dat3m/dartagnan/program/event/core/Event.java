@@ -16,12 +16,11 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	public static final int PRINT_PAD_EXTRA = 50;
 
-	// The following two ids are dynamically changing during processing.
-	protected transient int lId = -1;		// (Local) ID within a thread
-	protected transient int gId = -1;		// (Global) ID within a program
+	// This id is dynamically changing during processing.
+	protected transient int globalId = -1;		// (Global) ID within a program
 
 	// The following three ids are snapshots of the global id at specific points in the processing.
-	// They are meant to fixed once assigned.
+	// They are meant to be fixed once assigned.
 	protected int oId = -1; 	// Global ID after parsing (original), before any passes have been run
 	protected int uId = -1;		// Global ID right before unrolling
 	protected int cId = -1;		// Global ID right before compilation
@@ -35,8 +34,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	protected transient Event successor;
 	protected transient Event predecessor;
-
-	private transient String repr;
 
 	protected Event(){
 		filter = new HashSet<>();
@@ -56,11 +53,8 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		this.sourceCodeFile = other.sourceCodeFile;
 	}
 
-	public int getLocalId() { return lId; }
-	public void setLocalId(int id) { this.lId = id; }
-
-	public int getGlobalId() { return gId; }
-	public void setGlobalId(int id) { this.gId = id; }
+	public int getGlobalId() { return globalId; }
+	public void setGlobalId(int id) { this.globalId = id; }
 
 	public int getOId() { return oId; }
 	public void setOId(int id) { this.oId = id; }

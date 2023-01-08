@@ -93,18 +93,18 @@ public class Refiner {
                 case LINEAR:
                     for (int i = 0; i < threads.size(); i++) {
                         int j = (i + 1) % threads.size();
-                        perms.add(symm.createTransposition(threads.get(i), threads.get(j)));
+                        perms.add(symm.createEventTransposition(threads.get(i), threads.get(j)));
                     }
                     break;
                 case QUADRATIC:
                     for (int i = 0; i < threads.size(); i++) {
                         for (int j = i + 1; j < threads.size(); j++) {
-                            perms.add(symm.createTransposition(threads.get(i), threads.get(j)));
+                            perms.add(symm.createEventTransposition(threads.get(i), threads.get(j)));
                         }
                     }
                     break;
                 case FULL:
-                    List<Function<Event, Event>> allPerms = symm.createAllPermutations(c);
+                    List<Function<Event, Event>> allPerms = symm.createAllEventPermutations(c);
                     allPerms.remove(Function.identity()); // We avoid adding multiple identities
                     perms.addAll(allPerms);
                     break;
