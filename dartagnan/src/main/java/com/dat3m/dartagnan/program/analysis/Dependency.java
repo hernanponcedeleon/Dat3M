@@ -54,7 +54,6 @@ public final class Dependency {
         logger.info("Analyze dependencies");
         ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
         Dependency result = new Dependency();
-        config.inject(result);
         for(Thread t: program.getThreads()) {
             result.process(t, exec);
         }
