@@ -55,9 +55,7 @@ public class PropertyEncoder implements Encoder {
     }
 
     public static PropertyEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
-        PropertyEncoder encoder = new PropertyEncoder(context);
-        context.getTask().getConfig().inject(encoder);
-        return encoder;
+        return new PropertyEncoder(context);
     }
 
     @Override

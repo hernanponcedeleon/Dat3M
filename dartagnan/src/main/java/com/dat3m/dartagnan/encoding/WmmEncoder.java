@@ -50,9 +50,7 @@ public class WmmEncoder implements Encoder {
     }
 
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
-        WmmEncoder encoder = new WmmEncoder(context);
-        context.getTask().getConfig().inject(encoder);
-        return encoder;
+        return new WmmEncoder(context);
     }
 
     @Override

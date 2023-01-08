@@ -109,9 +109,7 @@ public class ExecutionModel {
     }
 
     public static ExecutionModel withContext(EncodingContext context) throws InvalidConfigurationException {
-        ExecutionModel m = new ExecutionModel(context);
-        context.getTask().getConfig().inject(m);
-        return m;
+        return new ExecutionModel(context);
     }
 
     private void createViews() {
