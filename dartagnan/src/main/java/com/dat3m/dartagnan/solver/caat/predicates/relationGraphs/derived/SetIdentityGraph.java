@@ -44,7 +44,6 @@ public class SetIdentityGraph extends AbstractPredicate implements RelationGraph
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public Collection<Edge> forwardPropagate(CAATPredicate changedSource, Collection<? extends Derivable> added) {
         return added.stream().map(e -> derive((Element) e)).collect(Collectors.toList());
     }

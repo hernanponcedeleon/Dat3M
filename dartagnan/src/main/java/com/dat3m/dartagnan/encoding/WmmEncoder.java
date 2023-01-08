@@ -25,7 +25,6 @@ import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
@@ -36,7 +35,6 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.stream.Collectors.toList;
 
-@Options
 public class WmmEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(WmmEncoder.class);
@@ -52,9 +50,7 @@ public class WmmEncoder implements Encoder {
     }
 
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
-        WmmEncoder encoder = new WmmEncoder(context);
-        context.getTask().getConfig().inject(encoder);
-        return encoder;
+        return new WmmEncoder(context);
     }
 
     @Override

@@ -18,7 +18,6 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
 import java.math.BigInteger;
@@ -33,9 +32,6 @@ import static com.dat3m.dartagnan.wmm.analysis.RelationAnalysis.findTransitively
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-
-
-@Options
 public class PropertyEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(PropertyEncoder.class);
@@ -59,9 +55,7 @@ public class PropertyEncoder implements Encoder {
     }
 
     public static PropertyEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
-        PropertyEncoder encoder = new PropertyEncoder(context);
-        context.getTask().getConfig().inject(encoder);
-        return encoder;
+        return new PropertyEncoder(context);
     }
 
     @Override
