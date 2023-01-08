@@ -13,7 +13,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,7 +27,6 @@ import static java.util.stream.IntStream.range;
  * Instances of this class store the results of the analysis,
  * which was performed on the instance's creation.
  */
-@Options
 public final class Dependency {
 
     private static final Logger logger = LogManager.getLogger(Dependency.class);
