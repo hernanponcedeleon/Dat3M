@@ -95,12 +95,12 @@ public class SymmetryEncoder implements Encoder {
                 edgeEncoder = t -> context.execution(t.getFirst(), t.getSecond());
                 break;
             default:
-                Relation rel = context.getTask().getMemoryModel().getRelation(symmBreakTarget);
-                if (rel == null) {
+                if (!context.getTask().getMemoryModel().containsRelation(symmBreakTarget)) {
                     logger.warn("The wmm has no relation named {} to break symmetry on." +
                             " Symmetry breaking was disabled.", symmBreakTarget);
                     return bmgr.makeTrue();
                 }
+                Relation rel = context.getTask().getMemoryModel().getRelation(symmBreakTarget);
                 maySet = ra.getKnowledge(rel).getMaySet();
                 edgeEncoder = context.edge(rel);
         }

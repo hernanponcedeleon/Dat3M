@@ -35,7 +35,7 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
     public Map<Relation, Stream<Tuple>> visitUnion(Relation rel, Relation... operands) {
         Map<Relation, Stream<Tuple>> m = new HashMap<>();
         for (Relation r : operands) {
-            m.merge(r, lower(news, r), Stream::concat);
+            m.merge(r, filterUnknowns(news, r), Stream::concat);
         }
         return m;
     }
@@ -44,14 +44,14 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
     public Map<Relation, Stream<Tuple>> visitIntersection(Relation rel, Relation... operands) {
         Map<Relation, Stream<Tuple>> m = new HashMap<>();
         for (Relation r : operands) {
-            m.merge(r, lower(news, r), Stream::concat);
+            m.merge(r, filterUnknowns(news, r), Stream::concat);
         }
         return m;
     }
 
     @Override
     public Map<Relation, Stream<Tuple>> visitDifference(Relation rel, Relation r1, Relation r2) {
-        return map(r1, lower(news, r1), r2, lower(news, r2));
+        return map(r1, filterUnknowns(news, r1), r2, filterUnknowns(news, r2));
     }
 
     @Override
@@ -116,7 +116,7 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
                 }
             }
         }
-        return map(rel, factors.stream(), r1, lower(news, r1));
+        return map(rel, factors.stream(), r1, filterUnknowns(news, r1));
     }
 
     @Override
@@ -142,7 +142,7 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
         return Map.of(rscs, queue.stream());
     }
 
-    private Stream<Tuple> lower(Collection<Tuple> news, Relation relation) {
+    private Stream<Tuple> filterUnknowns(Collection<Tuple> news, Relation relation) {
         final RelationAnalysis.Knowledge k = ra.getKnowledge(relation);
         return news.stream().filter(t -> k.getMaySet().contains(t) && !k.getMustSet().contains(t));
     }

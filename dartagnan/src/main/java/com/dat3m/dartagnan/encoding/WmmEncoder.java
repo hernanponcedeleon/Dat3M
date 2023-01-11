@@ -18,10 +18,10 @@ import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
@@ -35,9 +35,9 @@ import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Verify.verify;
 import static java.util.stream.Collectors.toList;
 
-@Options
 public class WmmEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(WmmEncoder.class);
@@ -54,7 +54,6 @@ public class WmmEncoder implements Encoder {
 
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
         WmmEncoder encoder = new WmmEncoder(context);
-        context.getTask().getConfig().inject(encoder);
         encoder.initializeEncodeSets();
         return encoder;
     }
@@ -176,9 +175,16 @@ public class WmmEncoder implements Encoder {
                 if (k.getMustSet().contains(tuple)) {
                     expr = execution(tuple);
                 } else {
-                    for (Tuple t1 : k1.getMaySet().getByFirst(tuple.getFirst())) {
-                        Tuple t2 = new Tuple(t1.getSecond(), tuple.getSecond());
+                    Event x = tuple.getFirst();
+                    Event z = tuple.getSecond();
+                    Set<Tuple> a1 = Sets.union(encodeSets.get(r1), k1.getMustSet());
+                    Set<Tuple> a2 = Sets.union(encodeSets.get(r2), k2.getMustSet());
+                    for (Tuple t1 : k1.getMaySet().getByFirst(x)) {
+                        Event y = t1.getSecond();
+                        Tuple t2 = new Tuple(y, z);
                         if (k2.getMaySet().contains(t2)) {
+                            verify(a1.contains(t1) && a2.contains(t2),
+                                    "Failed to properly propagate active sets across composition at triple: (%s, %s, %s).", x, y, z);
                             expr = bmgr.or(expr, bmgr.and(edge(r1, t1), edge(r2, t2)));
                         }
                     }
@@ -424,10 +430,10 @@ public class WmmEncoder implements Encoder {
 
         @Override
         public BooleanFormula visitMemoryOrder(Relation co) {
-            return context.useSATEncoding ? encodeSAT(co) : encodeIDL(co);
+            return context.useSATEncoding ? encodeCoWithSAT(co) : encodeCoWithIDL(co);
         }
 
-        private BooleanFormula encodeIDL(Relation co) {
+        private BooleanFormula encodeCoWithIDL(Relation co) {
             IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
             List<MemEvent> allWrites = program.getCache().getEvents(FilterBasic.get(WRITE)).stream()
                     .map(MemEvent.class::cast)
@@ -472,7 +478,7 @@ public class WmmEncoder implements Encoder {
             return enc;
         }
 
-        private BooleanFormula encodeSAT(Relation co) {
+        private BooleanFormula encodeCoWithSAT(Relation co) {
             List<MemEvent> allWrites = program.getCache().getEvents(FilterBasic.get(WRITE)).stream()
                     .map(MemEvent.class::cast)
                     .sorted(Comparator.comparingInt(Event::getCId))

@@ -30,9 +30,8 @@ public class Empty extends Axiom {
     public BooleanFormula consistent(EncodingContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
-        final RelationAnalysis ra = ctx.getAnalysisContext().get(RelationAnalysis.class);
         final EncodingContext.EdgeEncoder edge = ctx.edge(rel);
-        for (Tuple tuple : ra.getKnowledge(rel).getMaySet()) {
+        for (Tuple tuple : getEncodeTupleSet(ctx.getAnalysisContext())) {
             enc = bmgr.and(enc, bmgr.not(edge.encode(tuple)));
         }
         return negated ? bmgr.not(enc) : enc;

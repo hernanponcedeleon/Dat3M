@@ -20,6 +20,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
 
+import java.util.Optional;
+
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.configuration.Property.CAT;
 import static com.dat3m.dartagnan.configuration.Property.REACHABILITY;
@@ -119,7 +121,7 @@ public class ReachabilityResult {
     	for(Axiom ax : wmm.getAxioms()) {
         	if(ax.isFlagged() && model != null && TRUE.equals(model.evaluate(CAT.getSMTVariable(ax, ctx)))) {
         		sb.append("Flag ")
-                        .append(ax.getName() != null ? ax.getName() : ax.getRelation().getNameOrTerm())
+                        .append(Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()))
                         .append("\n");
         	}
     	}

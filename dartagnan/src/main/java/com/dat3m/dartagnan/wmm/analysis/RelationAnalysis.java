@@ -101,7 +101,7 @@ public class RelationAnalysis {
      * Fetches results of this analysis.
      *
      * @param relation Some element in the associated task's memory model.
-     * @return Local fraction of results.
+     * @return Pairs of events of the program that may be related in some execution or even must be related in all executions.
      */
     public Knowledge getKnowledge(Relation relation) {
         return knowledgeMap.get(relation);

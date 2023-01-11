@@ -22,7 +22,6 @@ import java.util.Map;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ID;
 import static com.google.common.base.Verify.verify;
-import static java.util.Objects.requireNonNullElseGet;
 
 class VisitorBase extends CatBaseVisitor<Object> {
 
@@ -61,14 +60,14 @@ class VisitorBase extends CatBaseVisitor<Object> {
 
     @Override
     public Void visitLetDefinition(LetDefinitionContext ctx) {
-        String n = ctx.n.getText();
-        alias = ctx.n.getText();
-        Object o = ctx.e.accept(this);
-        namespace.put(n, o);
-        if (o instanceof FilterAbstract) {
-            FilterAbstract f = (FilterAbstract) o;
-            f.setName(n);
-            wmm.addFilter(f);
+        String name = ctx.n.getText();
+        alias = name;
+        Object definedPredicate = ctx.e.accept(this);
+        namespace.put(name, definedPredicate);
+        if (definedPredicate instanceof FilterAbstract) {
+            FilterAbstract filter = (FilterAbstract) definedPredicate;
+            filter.setName(name);
+            wmm.addFilter(filter);
         }
         return null;
     }
@@ -77,13 +76,13 @@ class VisitorBase extends CatBaseVisitor<Object> {
     public Void visitLetRecDefinition(LetRecDefinitionContext ctx) {
         int size = ctx.letRecAndDefinition().size();
         Relation[] recursiveGroup = new Relation[size + 1];
-        String n = ctx.n.getText();
-        recursiveGroup[0] = wmm.newRelation(n);
-        namespace.put(n, recursiveGroup[0]);
+        String name = ctx.n.getText();
+        recursiveGroup[0] = wmm.newRelation(name);
+        namespace.put(name, recursiveGroup[0]);
         for (int i = 0; i < size; i++) {
-            n = ctx.letRecAndDefinition(i).n.getText();
-            recursiveGroup[i + 1] = wmm.newRelation(n);
-            namespace.put(n, recursiveGroup[i + 1]);
+            name = ctx.letRecAndDefinition(i).n.getText();
+            recursiveGroup[i + 1] = wmm.newRelation(name);
+            namespace.put(name, recursiveGroup[i + 1]);
         }
         for (Relation r : recursiveGroup) {
             r.setRecursive();
@@ -104,67 +103,67 @@ class VisitorBase extends CatBaseVisitor<Object> {
 
     @Override
     public Object visitExprBasic(ExprBasicContext ctx) {
-        String n = ctx.n.getText();
-        Object o = namespace.computeIfAbsent(n,
-                k -> requireNonNullElseGet(wmm.getRelation(k), () -> FilterBasic.get(k)));
-        addCurrentName(o);
-        return o;
+        String name = ctx.n.getText();
+        Object predicate = namespace.computeIfAbsent(name,
+                k -> wmm.containsRelation(k) ? wmm.getRelation(k) : FilterBasic.get(k));
+        addCurrentName(predicate);
+        return predicate;
     }
 
     @Override
     public Object visitExprIntersection(ExprIntersectionContext c) {
         checkNoCurrentOrNoAlias(c);
-        Relation r = current();
-        String a = alias();
+        Relation current = current();
+        String alias = alias();
         Object o1 = c.e1.accept(this);
         Object o2 = c.e2.accept(this);
         if (o1 instanceof Relation) {
-            Relation r0 = r != null ? r : newRelation(a);
+            Relation r0 = current != null ? current : newRelation(alias);
             return addDefinition(new Intersection(r0, (Relation) o1, relation(o2, c)));
         }
-        return withAlias(a, FilterIntersection.get(set(o1, c), set(o2, c)));
+        return withAlias(alias, FilterIntersection.get(set(o1, c), set(o2, c)));
     }
 
     @Override
     public Object visitExprMinus(ExprMinusContext c) {
         checkNoCurrent(c);
-        String a = alias();
+        String alias = alias();
         Object o1 = c.e1.accept(this);
         Object o2 = c.e2.accept(this);
         if (o1 instanceof Relation) {
-            Relation r0 = newRelation(a);
+            Relation r0 = newRelation(alias);
             return addDefinition(new Difference(r0, (Relation) o1, relation(o2, c)));
         }
-        return withAlias(a, FilterMinus.get(set(o1, c), set(o2, c)));
+        return withAlias(alias, FilterMinus.get(set(o1, c), set(o2, c)));
     }
 
     @Override
     public Object visitExprUnion(ExprUnionContext c) {
         checkNoCurrentOrNoAlias(c);
-        Relation r = current();
-        String a = alias();
+        Relation current = current();
+        String alias = alias();
         Object o1 = c.e1.accept(this);
         Object o2 = c.e2.accept(this);
         if (o1 instanceof Relation) {
-            Relation r0 = r != null ? r : newRelation(a);
+            Relation r0 = current != null ? current : newRelation(alias);
             return addDefinition(new Union(r0, (Relation) o1, relation(o2, c)));
         }
-        return withAlias(a, FilterUnion.get(set(o1, c), set(o2, c)));
+        return withAlias(alias, FilterUnion.get(set(o1, c), set(o2, c)));
     }
 
     @Override
     public Object visitExprComplement(ExprComplementContext c) {
         checkNoCurrent(c);
-        String a = alias();
+        String alias = alias();
         Object o1 = c.e.accept(this);
         FilterBasic visible = FilterBasic.get(VISIBLE);
         if (o1 instanceof Relation) {
-            Relation r0 = newRelation(a);
+            Relation r0 = newRelation(alias);
             Relation all = wmm.newRelation();
             Relation r1 = wmm.addDefinition(new CartesianProduct(all, visible, visible));
             return addDefinition(new Difference(r0, r1, (Relation) o1));
         }
-        return withAlias(a, FilterMinus.get(visible, set(o1, c)));
+        return withAlias(alias, FilterMinus.get(visible, set(o1, c)));
     }
 
     @Override
@@ -278,7 +277,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
 
     private void checkNoCurrentOrNoAlias(ExpressionContext c) {
         verify(current == null || alias == null,
-                "Broken structure invariant at expression: {}", new Object() {@Override public String toString() { return c.getText(); }});
+                "Simultaneous let and let rec expression.");
     }
 
     private String alias() {
@@ -287,39 +286,39 @@ class VisitorBase extends CatBaseVisitor<Object> {
         return a;
     }
 
-    private FilterAbstract withAlias(String a, FilterAbstract o) {
-        if (a != null) {
-            namespace.put(a, o);
+    private FilterAbstract withAlias(String name, FilterAbstract filter) {
+        if (name != null) {
+            namespace.put(name, filter);
         }
-        return o;
+        return filter;
     }
 
-    private Relation newRelation(String a) {
-        if (a == null) {
+    private Relation newRelation(String name) {
+        if (name == null) {
             return wmm.newRelation();
         }
-        Relation r = wmm.newRelation(a);
-        namespace.put(a, r);
-        return r;
+        Relation newRelation = wmm.newRelation(name);
+        namespace.put(name, newRelation);
+        return newRelation;
     }
 
-    private Relation addDefinition(Definition d) {
-        final String t = d.getTerm();
-        final Relation r = termMap.get(t);
-        Relation o = d.getDefinedRelation();
-        if (r == null) {
-            termMap.put(t, o);
-            return wmm.addDefinition(d);
+    private Relation addDefinition(Definition definition) {
+        String term = definition.getTerm();
+        Relation mappedRelation = termMap.get(term);
+        Relation definedRelation = definition.getDefinedRelation();
+        if (mappedRelation == null) {
+            termMap.put(term, definedRelation);
+            return wmm.addDefinition(definition);
         }
-        String n = o.getName();
-        wmm.deleteRelation(o);
-        if (n != null) {
-            Object v = namespace.put(n, r);
-            verify(v == o);
-            wmm.addAlias(n, r);
+        String name = definedRelation.getName();
+        wmm.deleteRelation(definedRelation);
+        if (name != null) {
+            Object v = namespace.put(name, mappedRelation);
+            verify(v == definedRelation);
+            wmm.addAlias(name, mappedRelation);
         }
-        verify(!namespace.containsValue(o));
-        return r;
+        verify(!namespace.containsValue(definedRelation));
+        return mappedRelation;
     }
 
     private Relation relation(ExpressionContext t) {

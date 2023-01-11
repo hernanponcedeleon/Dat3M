@@ -40,6 +40,7 @@ import java.io.File;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
@@ -190,8 +191,8 @@ public class Dartagnan extends BaseOptions {
             		}
             		for(Axiom ax : task.getMemoryModel().getAxioms()) {
                 		if(ax.isFlagged() && TRUE.equals(prover.getModel().evaluate(CAT.getSMTVariable(ax, ctx)))) {
-                			System.out.println("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getNameOrTerm()));
-                		}                			
+                			System.out.println("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
+                		}
             		}
                 }
                 if (p.getFormat().equals(SourceLanguage.LITMUS)) {

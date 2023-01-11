@@ -13,7 +13,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public abstract class Definition implements Constraint {
 
     protected final Relation definedRelation;
-    final String term;
+    private final String termPattern;
 
     protected Definition(Relation r) {
         this(r, r.getName());
@@ -21,7 +21,7 @@ public abstract class Definition implements Constraint {
 
     protected Definition(Relation r, String t) {
         definedRelation = checkNotNull(r);
-        term = checkNotNull(t);
+        termPattern = checkNotNull(t);
     }
 
     public Relation getDefinedRelation() {
@@ -94,13 +94,16 @@ public abstract class Definition implements Constraint {
     }
 
     private String getTerm(int depth) {
+        if (depth < 0) {
+            return "...";
+        }
         List<Relation> l = getConstrainedRelations();
         int s = l.size() - 1;
         Object[] o = new Object[s];
         for (int i = 0; i < s; i++) {
             Relation r = l.get(i + 1);
-            o[i] = depth == 0 ? r.definition.getTerm(depth - 1) : r.getName() != null ? r.getName() : "(" + r.definition.getTerm(depth - 1) + ")";
+            o[i] = r.getName() != null ? r.getName() : "(" + r.definition.getTerm(depth - 1) + ")";
         }
-        return String.format(term, o);
+        return String.format(termPattern, o);
     }
 }

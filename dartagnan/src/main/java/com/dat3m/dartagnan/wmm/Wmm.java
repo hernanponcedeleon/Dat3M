@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Verify.verify;
 
 public class Wmm {
 
@@ -47,6 +48,10 @@ public class Wmm {
         return Set.copyOf(relations);
     }
 
+    public boolean containsRelation(String name) {
+        return relations.stream().anyMatch(r -> r.hasName(name)) || RelationNameRepository.contains(name);
+    }
+
     /**
      * Queries a relation by name in this model.
      * @param name Uniquely identifies a relation in this model.
@@ -58,11 +63,11 @@ public class Wmm {
                 return r;
             }
         }
-        if (!RelationNameRepository.contains(name)) {
-            return null;
-        }
+        checkArgument(RelationNameRepository.contains(name),
+                "Undefined relation name \"%s\"", name);
         Definition definition = basicDefinition(name);
-        assert definition.definedRelation.definition == null;
+        verify(definition.definedRelation.definition == null,
+                "Already initialized built-in relation \"%s\"", name);
         definition.definedRelation.definition = definition;
         return definition.definedRelation;
     }

@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.configuration;
 
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Optional;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -48,6 +49,6 @@ public enum Property implements OptionInterface {
 
 	public BooleanFormula getSMTVariable(Axiom ax, SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return bmgr.makeVariable("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getNameOrTerm()));
+        return bmgr.makeVariable("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
 	}
 }
