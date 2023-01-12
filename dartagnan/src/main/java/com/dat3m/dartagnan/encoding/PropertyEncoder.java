@@ -182,7 +182,7 @@ public class PropertyEncoder implements Encoder {
                     for (Tuple rfEdge : rf.getMaxTupleSet().getBySecond(load)) {
                         coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(context.edge(rf, rfEdge), lastCoVar(rfEdge.getFirst())));
                     }
-                    allCoMaximalLoad = bmgr.and(allCoMaximalLoad, coMaximalLoad);
+                    allCoMaximalLoad = bmgr.and(allCoMaximalLoad, bmgr.implication(context.execution(load), coMaximalLoad));
                 }
                 isStuck  = bmgr.or(isStuck, bmgr.and(context.execution(pair.bound), allCoMaximalLoad));
             }
