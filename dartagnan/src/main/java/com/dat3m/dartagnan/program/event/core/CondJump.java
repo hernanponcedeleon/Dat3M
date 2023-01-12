@@ -68,11 +68,12 @@ public class CondJump extends Event implements RegReaderData {
     public String toString(){
     	String output;
     	if(isGoto()) {
-            output = "goto " + label;
+            output = "goto " + label.getName();
     	} else {
-            output = "if(" + expr + "); then goto " + label;    		
+            output = "if(" + expr + "); then goto " + label.getName();    		
     	}
-        output = hasFilter(Tag.BOUND) ? String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", output) + "# bound" : output;
+        output = hasFilter(Tag.BOUND) ? String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", output) + "\t### BOUND" : output;
+        output = hasFilter(Tag.SPINLOOP) ? String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", output) + "\t### SPINLOOP" : output;
         return output;
     }
 
