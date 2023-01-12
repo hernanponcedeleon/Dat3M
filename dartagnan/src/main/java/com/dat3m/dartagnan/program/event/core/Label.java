@@ -30,7 +30,7 @@ public class Label extends Event {
 
     @Override
     public String toString(){
-        return name + ":";
+        return name + ":" + (is(Tag.SPINLOOP) ? "\t### SPINLOOP" : "");
     }
 
     // Unrolling
