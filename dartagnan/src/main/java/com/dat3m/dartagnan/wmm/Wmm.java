@@ -35,19 +35,36 @@ public class Wmm {
         BASE_RELATIONS.forEach(this::getRelation);
     }
 
+    /**
+     * Inserts a constraint into this model.
+     * @param ax Constraint over relations in this model, to be inserted.
+     */
     public void addAxiom(Axiom ax) {
-        checkArgument(relations.contains(ax.getRelation()));
+        Relation r = ax.getRelation();
+        checkArgument(relations.contains(r),
+                "Untracked relation %s", r);
         axioms.add(ax);
     }
 
+    /**
+     * @return View of all axioms in this model in insertion order.
+     */
     public List<Axiom> getAxioms() {
-        return axioms;
+        return List.copyOf(axioms);
     }
 
+    /**
+     * @return View of all relation objects in this model, excluding unused built-ins.
+     * Contains at least {@code rf}, {@code co} and {@code rmw}.
+     */
     public Set<Relation> getRelations() {
         return Set.copyOf(relations);
     }
 
+    /**
+     * Tests the namespace of relations.
+     * @return {@code name} is a valid argument for {@link #getRelation(String)}.
+     */
     public boolean containsRelation(String name) {
         return relations.stream().anyMatch(r -> r.hasName(name)) || RelationNameRepository.contains(name);
     }
@@ -64,42 +81,61 @@ public class Wmm {
             }
         }
         checkArgument(RelationNameRepository.contains(name),
-                "Undefined relation name \"%s\"", name);
+                "Undefined relation name %s.", name);
         Definition definition = basicDefinition(name);
-        verify(definition.definedRelation.definition == null,
-                "Already initialized built-in relation \"%s\"", name);
+        verify(definition.definedRelation.definition instanceof Definition.Undefined,
+                "Already initialized built-in relation %s.", name);
         definition.definedRelation.definition = definition;
         return definition.definedRelation;
     }
 
+    /**
+     * Binds a name to a relation.
+     * @param name Currently-unbound identifier, preferably devoid of special symbols.
+     * @param relation Element to be named.
+     */
     public void addAlias(String name, Relation relation) {
         checkArgument(relations.stream().noneMatch(r -> r.hasName(name)),
-                "name %s is already used, aliasing not possible", name);
+                "Already bound name %s.", name);
         relation.names.add(name);
     }
 
+    /**
+     * Instantiates a new unnamed and undefined element in this model.
+     * @return The created relation.
+     */
     public Relation newRelation() {
         Relation relation = new Relation();
         relations.add(relation);
         return relation;
     }
 
+    /**
+     * Instantiates a new undefined element in this model.
+     * @param name Currently-unbound name for the new relation.
+     * @return The created named relation.
+     */
     public Relation newRelation(String name) {
         checkArgument(relations.stream().noneMatch(r -> r.hasName(name)),
-                "name %s is already used, creation not possible", name);
+                "Already bound name %s.", name);
         Relation relation = new Relation();
         relation.names.add(name);
         relations.add(relation);
         return relation;
     }
 
+    /**
+     * Removes a relation from this model, including all names bound to it.
+     * @param relation Relation that participates in no constraint of this model.
+     *                 Should no longer be used.
+     */
     public void deleteRelation(Relation relation) {
-        checkArgument(relation.definition == null,
-                "relation %s is still defined", relation);
+        checkArgument(relation.definition instanceof Definition.Undefined,
+                "Still defined relation %s.", relation);
         checkArgument(axioms.stream().noneMatch(a -> a.getRelation().equals(relation)),
-                "relation %s is constrained by some axiom", relation);
+                "Some axiom constrains relation %s.", relation);
         checkArgument(relations.stream().noneMatch(r -> r.getDependencies().contains(relation)),
-                "relation %s is constrained by some definition", relation);
+                "Some definition constrains relation %s.", relation);
         logger.trace("delete relation {}", relation);
         relations.remove(relation);
     }
@@ -108,23 +144,30 @@ public class Wmm {
      * Inserts a definition to this model.
      * <p>
      * <b>NOTE</b>: This also adds the defined relation to this model, if not done already.
-     * @param definition Constraints a subset of relations.
+     * @param definition Constraints a subset of relations that are tracked in this model.
      * @return Relation inside this model, which is defined accordingly.  Usually the defined relation.
      */
     public Relation addDefinition(Definition definition) {
-        checkArgument(relations.containsAll(definition.getConstrainedRelations()));
-        logger.trace("add definition {}", definition);
+        List<Relation> constrainedRelations = definition.getConstrainedRelations();
+        checkArgument(relations.containsAll(constrainedRelations),
+                "Some untracked relation in %s.", constrainedRelations);
+        logger.trace("Add definition {}", definition);
         Relation relation = definition.getDefinedRelation();
-        checkArgument(relation.definition == null);
+        checkArgument(relation.definition instanceof Definition.Undefined,
+                "Already defined relation %s.", relation);
         relation.definition = definition;
         return relation;
     }
 
+    /**
+     * Removes a single constraint from this model.
+     * @param definedRelation Identifies the definition to be removed.
+     */
     public void removeDefinition(Relation definedRelation) {
-        checkArgument(definedRelation.definition != null,
-                "relation %s already undefined", definedRelation);
-        logger.trace("remove definition {}", definedRelation.definition);
-        definedRelation.definition = null;
+        checkArgument(!(definedRelation.definition instanceof Definition.Undefined),
+                "Already undefined relation %s.", definedRelation);
+        logger.trace("Remove definition {}", definedRelation.definition);
+        definedRelation.definition = new Definition.Undefined(definedRelation);
     }
 
     public void addFilter(FilterAbstract filter) {
@@ -156,7 +199,7 @@ public class Wmm {
     public String toString() {
         Stream<String> a = axioms.stream().map(Axiom::toString);
         Stream<String> r = relations.stream()
-                .filter(x -> !x.names.isEmpty() && x.definition != null && !x.hasName(x.definition.getTerm()))
+                .filter(x -> !x.names.isEmpty() && !(x.definition instanceof Definition.Undefined) && !x.hasName(x.definition.getTerm()))
                 .map(x -> x.definition.toString());
         Stream<String> s = filters.values().stream().map(FilterAbstract::toString);
         return Stream.of(a, r, s).flatMap(Stream::sorted).collect(Collectors.joining("\n"));

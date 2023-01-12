@@ -303,12 +303,12 @@ public class RefinementSolver extends ModelChecker {
     }
 
     private static Relation getCopyOfRelation(Relation rel, Wmm m) {
-        String name = rel.getName();
-        if (name != null && m.containsRelation(name)) {
-            return m.getRelation(name);
+        Optional<String> name = rel.getName();
+        if (name.isPresent() && m.containsRelation(name.get())) {
+            return m.getRelation(name.get());
         }
-        Relation copy = name == null ? m.newRelation() : m.newRelation(name);
-        return m.addDefinition(rel.accept(new RelationCopier(m, copy)));
+        Relation copy = name.map(m::newRelation).orElseGet(m::newRelation);
+        return m.addDefinition(rel.getDefinition().accept(new RelationCopier(m, copy)));
     }
 
     private static final class RelationCopier implements Definition.Visitor<Definition> {

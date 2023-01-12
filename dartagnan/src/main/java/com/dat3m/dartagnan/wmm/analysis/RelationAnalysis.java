@@ -153,7 +153,7 @@ public class RelationAnalysis {
         Initializer initializer = new Initializer();
         Map<Relation, List<Delta>> qGlobal = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
-            Knowledge k = r.accept(initializer);
+            Knowledge k = r.getDefinition().accept(initializer);
             knowledgeMap.put(r, k);
             if (!k.may.isEmpty() || !k.must.isEmpty()) {
                 qGlobal.computeIfAbsent(r, x -> new ArrayList<>(1))
@@ -186,7 +186,7 @@ public class RelationAnalysis {
                 for (Relation r : dependents.getOrDefault(relation, List.of())) {
                     (stratum.contains(r) ? qLocal : qGlobal)
                             .computeIfAbsent(r, k -> new ArrayList<>())
-                            .add(r.accept(propagator));
+                            .add(r.getDefinition().accept(propagator));
                 }
             }
         }

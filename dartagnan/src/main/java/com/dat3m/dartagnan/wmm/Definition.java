@@ -2,11 +2,10 @@ package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -16,7 +15,7 @@ public abstract class Definition implements Constraint {
     private final String termPattern;
 
     protected Definition(Relation r) {
-        this(r, r.getName());
+        this(r, r.getName().orElseThrow());
     }
 
     protected Definition(Relation r, String t) {
@@ -32,12 +31,13 @@ public abstract class Definition implements Constraint {
         return visitor.visitDefinition(definedRelation, List.of());
     }
 
-    public BooleanFormula getSMTVar(Tuple edge, EncodingContext c) {
-        return c.edgeVariable(definedRelation.getNameOrTerm(), edge.getFirst(), edge.getSecond());
+    public EncodingContext.EdgeEncoder getEdgeVariableEncoder(EncodingContext c) {
+        String nameOrTerm = definedRelation.getNameOrTerm();
+        return tuple -> c.edgeVariable(nameOrTerm, tuple.getFirst(), tuple.getSecond());
     }
 
     public String getTerm() {
-        return getTerm(20);
+        return getTerm(new Stack<>());
     }
 
     /**
@@ -62,7 +62,7 @@ public abstract class Definition implements Constraint {
     @Override
     public String toString() {
         String term = getTerm();
-        return definedRelation.names.isEmpty() ? term : definedRelation.getName() + " := " + term;
+        return definedRelation.getName().map(s -> s + " := " + term).orElse(term);
     }
 
     public interface Visitor <T> {
@@ -93,17 +93,26 @@ public abstract class Definition implements Constraint {
         default T visitReadFrom(Relation rf) { return visitDefinition(rf, List.of()); }
     }
 
-    private String getTerm(int depth) {
-        if (depth < 0) {
+    static final class Undefined extends Definition {
+        Undefined(Relation r) {
+            super(r, "undefined");
+        }
+    }
+
+    private String getTerm(Stack<Definition> stack) {
+        if (stack.contains(this)) {
+            // Unreachable, as long as all recursions happen over a named relation
             return "...";
         }
+        stack.push(this);
         List<Relation> l = getConstrainedRelations();
         int s = l.size() - 1;
         Object[] o = new Object[s];
         for (int i = 0; i < s; i++) {
             Relation r = l.get(i + 1);
-            o[i] = r.getName() != null ? r.getName() : "(" + r.definition.getTerm(depth - 1) + ")";
+            o[i] = r.getName().orElseGet(() -> "(" + r.definition.getTerm(stack) + ")");
         }
+        stack.pop();
         return String.format(termPattern, o);
     }
 }

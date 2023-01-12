@@ -81,7 +81,7 @@ public class WmmEncoder implements Encoder {
         RelationEncoder v = new RelationEncoder();
         BooleanFormula enc = v.bmgr.makeTrue();
         for (Relation rel : depGraph.getNodeContents()) {
-            enc = v.bmgr.and(enc, rel.accept(v));
+            enc = v.bmgr.and(enc, rel.getDefinition().accept(v));
         }
         return enc;
     }
@@ -567,7 +567,7 @@ public class WmmEncoder implements Encoder {
             }
             if (!c.isEmpty()) {
                 v.news = c;
-                for (Map.Entry<Relation, Stream<Tuple>> e : r.accept(v).entrySet()) {
+                for (Map.Entry<Relation, Stream<Tuple>> e : r.getDefinition().accept(v).entrySet()) {
                     queue.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
                 }
             }

@@ -36,6 +36,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import java.util.List;
+import java.util.Optional;
 
 import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 import static com.dat3m.dartagnan.configuration.Property.CAT;
@@ -129,7 +130,7 @@ public abstract class ModelChecker {
         Model model = prover.getModel();
         for(Axiom ax : wmm.getAxioms()) {
             if(ax.isFlagged() && TRUE.equals(model.evaluate(CAT.getSMTVariable(ax, sCtx)))) {
-                System.out.println("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getName()));
+                System.out.println("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
                 if(logger.isDebugEnabled()) {
                     StringBuilder violatingPairs = new StringBuilder("\n ===== The following pairs belong to the relation ===== \n");
                     for(Tuple tuple : encoder.getTuples(ax.getRelation(), model)) {

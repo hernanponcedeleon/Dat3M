@@ -13,11 +13,13 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.google.common.base.VerifyException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ID;
@@ -276,8 +278,10 @@ class VisitorBase extends CatBaseVisitor<Object> {
     }
 
     private void checkNoCurrentOrNoAlias(ExpressionContext c) {
-        verify(current == null || alias == null,
-                "Simultaneous let and let rec expression.");
+        if (current != null && alias != null) {
+            // call getText only if necessary.
+            throw new VerifyException(String.format("Simultaneous let and let rec expression at \"%s\"", c.getText()));
+        }
     }
 
     private String alias() {
@@ -310,12 +314,12 @@ class VisitorBase extends CatBaseVisitor<Object> {
             termMap.put(term, definedRelation);
             return wmm.addDefinition(definition);
         }
-        String name = definedRelation.getName();
+        Optional<String> name = definedRelation.getName();
         wmm.deleteRelation(definedRelation);
-        if (name != null) {
-            Object v = namespace.put(name, mappedRelation);
+        if (name.isPresent()) {
+            Object v = namespace.put(name.get(), mappedRelation);
             verify(v == definedRelation);
-            wmm.addAlias(name, mappedRelation);
+            wmm.addAlias(name.get(), mappedRelation);
         }
         verify(!namespace.containsValue(definedRelation));
         return mappedRelation;
