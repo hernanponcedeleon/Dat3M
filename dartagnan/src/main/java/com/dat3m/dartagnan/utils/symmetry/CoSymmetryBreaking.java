@@ -230,7 +230,7 @@ public class CoSymmetryBreaking {
         Thread rep = symmClass.getRepresentative();
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
-            Function<Event, Event> p = symm.createTransposition(t1, t2);
+            Function<Event, Event> p = symm.createEventTransposition(t1, t2);
             List<Tuple> r2Tuples = r1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
             List<BooleanFormula> r2 = new ArrayList<>(r2Tuples.size() + 1);
             if (info.hasMustEdges) {

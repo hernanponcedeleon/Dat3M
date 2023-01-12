@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -76,8 +77,11 @@ public class IncrementalSolver extends ModelChecker {
             res = prover.isUnsat()? PASS : UNKNOWN;
         } else {
         	res = FAIL;
+            if(!task.getProgram().getAss().getInvert()) {
+                logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, ctx);
+            }
         }
-
+        
         if(logger.isDebugEnabled()) {        	
     		String smtStatistics = "\n ===== SMT Statistics ===== \n";
     		for(String key : prover.getStatistics().keySet()) {

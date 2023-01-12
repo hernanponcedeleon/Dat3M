@@ -15,4 +15,4 @@ P0(atomic_t* arr2) {
   WRITE_ONCE(*(r1 + 1), 5);
 }
 
-forall (0:r0 = 4 /\ 0:r1 = arr1[0] /\ 0:r2 = 1 /\ arr1[1] = 5);
+forall (0:r0 = 4 /\ 0:r1 = arr1 /\ 0:r2 = 1 /\ arr1[1] = 5);

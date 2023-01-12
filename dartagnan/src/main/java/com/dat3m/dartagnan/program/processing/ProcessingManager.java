@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
-
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -28,20 +27,48 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean reduceSymmetry = false;
 
-	@Option(name= ATOMIC_BLOCKS_AS_LOCKS,
-			description="Transforms atomic blocks by adding global locks.",
-			secure=true)
-		private boolean atomicBlocksAsLocks = false;
-
     @Option(name= CONSTANT_PROPAGATION,
         description="Performs constant propagation.",
         secure=true)
         private boolean constantPropagation = false;
 
-	@Option(name= DEAD_ASSIGNEMENT_ELIMINATION,
+	@Option(name= DEAD_ASSIGNMENT_ELIMINATION,
 			description="Performs dead code elimination.",
 			secure=true)
 		private boolean dce = false;
+
+    @Option(name= DYNAMIC_PURE_LOOP_CUTTING,
+            description="Instruments loops to terminate early when spinning.",
+            secure=true)
+    private boolean dynamicPureLoopCutting = true;
+
+    // =================== Debugging options ===================
+
+    @Option(name = PRINT_PROGRAM_BEFORE_PROCESSING,
+            description = "Prints the program before any processing.",
+            secure = true)
+    private boolean printBeforeProcessing = false;
+
+    @Option(name = PRINT_PROGRAM_AFTER_SIMPLIFICATION,
+            description = "Prints the program after simplification.",
+            secure = true)
+    private boolean printAfterSimplification = false;
+
+    @Option(name = PRINT_PROGRAM_AFTER_UNROLLING,
+            description = "Prints the program after unrolling.",
+            secure = true)
+    private boolean printAfterUnrolling = false;
+
+    @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
+            description = "Prints the program after compilation.",
+            secure = true)
+    private boolean printAfterCompilation = false;
+
+    @Option(name = PRINT_PROGRAM_AFTER_PROCESSING,
+            description = "Prints the program after all processing.",
+            secure = true)
+    private boolean printAfterProcessing = false;
+
 
 // ======================================================================
 
@@ -49,19 +76,25 @@ public class ProcessingManager implements ProgramProcessor {
         config.inject(this);
 
         programProcessors.addAll(Arrays.asList(
-                atomicBlocksAsLocks ? AtomicAsLock.fromConfig(config) : null,
+                printBeforeProcessing ? DebugPrint.withHeader("Before processing") : null,
                 Memory.fixateMemoryValues(),
-                DeadCodeElimination.fromConfig(config),
+                UnreachableCodeElimination.fromConfig(config),
                 BranchReordering.fromConfig(config),
+                LoopFormVerification.fromConfig(config),
                 Simplifier.fromConfig(config),
+                printAfterSimplification ? DebugPrint.withHeader("After simplification") : null,
         		FindSpinLoops.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
+                printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling") : null,
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                 RemoveDeadCondJumps.fromConfig(config),
-                AtomicityPropagation.fromConfig(config),
                 Compilation.fromConfig(config),
-                reduceSymmetry ? SymmetryReduction.fromConfig(config) : null
+                printAfterCompilation ? DebugPrint.withHeader("After compilation") : null,
+                dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
+                reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
+                EventIdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
+                printAfterProcessing ? DebugPrint.withHeader("After processing") : null
         ));
         programProcessors.removeIf(Objects::isNull);
     }

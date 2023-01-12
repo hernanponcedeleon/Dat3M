@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
+import static com.dat3m.dartagnan.program.event.Tag.*;
+
 public abstract class MemEvent extends Event {
 
     protected IExpr address;
@@ -16,6 +18,7 @@ public abstract class MemEvent extends Event {
     	Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
         this.address = address;
         this.mo = mo;
+        addFilters(ANY, VISIBLE, MEMORY);
         if(!mo.isEmpty()){
             addFilters(mo);
         }

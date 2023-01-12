@@ -128,13 +128,13 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
             Event unlock = tuple.getSecond();
             for (Tuple t : k0.getMaySet().getBySecond(unlock)) {
                 Event e = t.getFirst();
-                if (lock.getCId() < e.getCId() && e.getCId() < unlock.getCId()) {
+                if (lock.getGlobalId() < e.getGlobalId() && e.getGlobalId() < unlock.getGlobalId()) {
                     queue.add(t);
                 }
             }
             for (Tuple t : k0.getMaySet().getByFirst(lock)) {
                 Event e = t.getSecond();
-                if (lock.getCId() < e.getCId() && e.getCId() < unlock.getCId()) {
+                if (lock.getGlobalId() < e.getGlobalId() && e.getGlobalId() < unlock.getGlobalId()) {
                     queue.add(t);
                 }
             }

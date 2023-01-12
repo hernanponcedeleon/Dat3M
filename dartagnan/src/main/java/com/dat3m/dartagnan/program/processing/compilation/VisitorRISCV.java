@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory.*;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -14,9 +14,11 @@ import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.Create;
+import com.dat3m.dartagnan.program.event.lang.pthread.End;
+import com.dat3m.dartagnan.program.event.lang.pthread.Join;
+import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
@@ -128,7 +130,7 @@ class VisitorRISCV extends VisitorBase {
 
 		Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
 		Store store = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
-		Register statusReg = e.getThread().newRegister("status(" + e.getUId() + ")", resultRegister.getPrecision());
+		Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
 		// We normally make the following optional.
 		// Here we make it mandatory to guarantee correct dependencies.
 		ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
@@ -156,7 +158,7 @@ class VisitorRISCV extends VisitorBase {
 
 		Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
 		Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
-		Register statusReg = e.getThread().newRegister("status(" + e.getUId() + ")", resultRegister.getPrecision());
+		Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
 		// We normally make the following optional.
 		// Here we make it mandatory to guarantee correct dependencies.
 		ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
@@ -246,7 +248,7 @@ class VisitorRISCV extends VisitorBase {
 
         Load loadValue = newRMWLoadExclusive(regValue, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store storeValue = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), e.is(STRONG));
-        Register statusReg = e.getThread().newRegister("status(" + e.getUId() + ")",precision);
+        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")",precision);
         // We normally make the following two events optional.
         // Here we make them mandatory to guarantee correct dependencies.
         ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, storeValue);
@@ -281,7 +283,7 @@ class VisitorRISCV extends VisitorBase {
 
         Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
-        Register statusReg = e.getThread().newRegister("status(" + e.getUId() + ")", resultRegister.getPrecision());
+        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
         // We normally make the following optional.
         // Here we make it mandatory to guarantee correct dependencies.
         ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
@@ -355,7 +357,7 @@ class VisitorRISCV extends VisitorBase {
 
         Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store store = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
-        Register statusReg = e.getThread().newRegister("status(" + e.getUId() + ")", resultRegister.getPrecision());
+        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
         // We normally make the following optional.
         // Here we make it mandatory to guarantee correct dependencies.
         ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);

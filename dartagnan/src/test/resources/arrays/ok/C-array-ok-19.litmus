@@ -10,4 +10,4 @@ P0(atomic_t* a) {
   int r2 = READ_ONCE(*(r1 + 2));
 }
 
-forall (0:r0 = arr[0] /\ 0:r1 = arr[0] /\ 0:r2 = 3);
+forall (0:r0 = arr /\ 0:r1 = arr /\ 0:r2 = 3);

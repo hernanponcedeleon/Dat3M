@@ -13,7 +13,10 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -311,10 +314,10 @@ public class Acyclic extends Axiom {
     }
 
     private BooleanFormula cycleVar(Event event, FormulaManager m) {
-        return m.getBooleanFormulaManager().makeVariable(String.format("cycle %s %d", m.escape(getNameOrTerm()), event.getCId()));
+        return m.getBooleanFormulaManager().makeVariable(String.format("cycle %s %d", m.escape(getNameOrTerm()), event.getGlobalId()));
     }
 
     private BooleanFormula getSMTCycleVar(Tuple edge, FormulaManager m) {
-        return m.getBooleanFormulaManager().makeVariable(String.format("cycle %s %d %d", m.escape(getNameOrTerm()), edge.getFirst().getCId(), edge.getSecond().getCId()));
+        return m.getBooleanFormulaManager().makeVariable(String.format("cycle %s %d %d", m.escape(getNameOrTerm()), edge.getFirst().getGlobalId(), edge.getSecond().getGlobalId()));
     }
 }

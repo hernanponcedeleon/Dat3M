@@ -6,11 +6,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Init;
-import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -22,7 +18,6 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Formula;
@@ -38,10 +33,8 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
-import static com.google.common.base.Preconditions.*;
-
-
-@Options
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 public class PropertyEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(PropertyEncoder.class);
@@ -67,9 +60,7 @@ public class PropertyEncoder implements Encoder {
     }
 
     public static PropertyEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
-        PropertyEncoder encoder = new PropertyEncoder(context);
-        context.getTask().getConfig().inject(encoder);
-        return encoder;
+        return new PropertyEncoder(context);
     }
 
     @Override
@@ -319,6 +310,6 @@ public class PropertyEncoder implements Encoder {
     }
 
     private BooleanFormula lastCoVar(Event write) {
-        return context.getBooleanFormulaManager().makeVariable("co_last(" + write.repr() + ")");
+        return context.getBooleanFormulaManager().makeVariable("co_last(" + write.getGlobalId() + ")");
     }
 }

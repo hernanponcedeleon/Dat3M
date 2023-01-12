@@ -102,10 +102,6 @@ public class OptionsPane extends JPanel implements ActionListener {
         return new UiOptions(target, method, bound, solver, timeout, cflags);
     }
 
-    private int getIconHeight(){
-        return min(500, (int) round((Toolkit.getDefaultToolkit().getScreenSize().getHeight() / 2)));
-    }
-
     private void mkGrid(){
 
         JScrollPane scrollConsole = new JScrollPane(consolePane);

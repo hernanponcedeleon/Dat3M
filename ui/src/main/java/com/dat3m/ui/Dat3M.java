@@ -7,8 +7,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.ui.editor.EditorsPane;
 import com.dat3m.ui.editor.Editor;
 import com.dat3m.ui.editor.EditorCode;
-import com.dat3m.ui.icon.IconCode;
-import com.dat3m.ui.icon.IconHelper;
 import com.dat3m.ui.listener.EditorListener;
 import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.options.OptionsPane;

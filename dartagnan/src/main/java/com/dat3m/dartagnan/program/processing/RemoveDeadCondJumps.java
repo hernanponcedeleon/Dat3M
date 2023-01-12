@@ -36,76 +36,81 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
     @Override
     public void run(Program program) {
         Preconditions.checkArgument(program.isUnrolled(), "The program needs to be unrolled before performing " + getClass().getSimpleName());
+
         logger.info(String.format("#Events before %s: %s", getClass().getSimpleName(), + program.getEvents().size()));
-
-        for (Thread t : program.getThreads()) {
-            eliminateDeadCondJumps(t);
-            t.clearCache();
-        }
-        program.clearCache(false);
-
+        program.getThreads().forEach(this::eliminateDeadCondJumps);
+        program.clearCache(true);
         logger.info(String.format("#Events after %s: %s", getClass().getSimpleName(), + program.getEvents().size()));
     }
 
     private void eliminateDeadCondJumps(Thread thread) {
-        Map<Event, List<Event>> immediateLabelPredecessors = new HashMap<>();
-        List<Event> removed = new ArrayList<>();
 
-        Event pred = thread.getEntry();
-        Event current = pred.getSuccessor();
-
+        List<Event> toBeRemoved = new ArrayList<>();
+        Map<Label, List<Event>> immediateLabelPredecessors = new HashMap<>();
         // We fill the map of predecessors
+        Event current = thread.getEntry();
         while (current != null) {
-        	if(current instanceof CondJump) {
-        		CondJump jump = (CondJump)current;
+            final Event pred = current.getPredecessor();
+        	if (current instanceof CondJump) {
+        		final CondJump jump = (CondJump)current;
         		// After constant propagation some jumps have False as condition and are dead
         		if(jump.isDead()) {
-        			removed.add(jump);
+        			toBeRemoved.add(jump);
         		} else {
                     immediateLabelPredecessors.computeIfAbsent(jump.getLabel(), key -> new ArrayList<>()).add(jump);
         		}
-        	} else if(current instanceof Label && !(pred instanceof CondJump && ((CondJump)pred).isGoto())) {
-                immediateLabelPredecessors.computeIfAbsent(current, key -> new ArrayList<>()).add(pred);
+        	} else if (current instanceof Label && !(pred instanceof CondJump && ((CondJump)pred).isGoto())) {
+                immediateLabelPredecessors.computeIfAbsent((Label)current, key -> new ArrayList<>()).add(pred);
         	}
-            pred = current;
         	current = current.getSuccessor();
         }
-        // We check which ifs can be removed
-        for(Event label : immediateLabelPredecessors.keySet()) {
-        	Event next = label.getSuccessor();
-            List<Event> preds = immediateLabelPredecessors.get(label);
-        	// BOUND events
-			if(next instanceof CondJump && preds.stream().allMatch(e -> mutuallyExclusiveIfs((CondJump)next, e))) {
-				removed.add(next);
+
+        // We check which "ifs" can be removed
+        for (Label label : immediateLabelPredecessors.keySet()) {
+        	final Event next = label.getSuccessor();
+            final List<Event> preds = immediateLabelPredecessors.get(label);
+            if (next == null) {
+                continue;
+            }
+			if (next instanceof CondJump && preds.stream().allMatch(e -> mutuallyExclusiveIfs((CondJump)next, e))) {
+				toBeRemoved.add(next);
 			}
-        	// SPINLOOP events
-            if (next != null && preds.size() == 1 && preds.get(0).getSuccessor().equals(label)) {
-                removed.add(label);
+            if (preds.size() == 1 && preds.get(0).getSuccessor().equals(label)) {
+                toBeRemoved.add(label);
             }
         }
+
+        // Make sure to not remove "NOOPT" events.
+        toBeRemoved.removeIf(e -> e.is(Tag.NOOPT));
+
         // Here is the actual removal
-        pred = null;
+        boolean isCurDead = false;
         Event cur = thread.getEntry();
-        boolean dead = false;
         while (cur != null) {
-            if(dead && cur instanceof Label && !immediateLabelPredecessors.getOrDefault(cur,List.of()).isEmpty()) {
-                dead = false;
+            final Event succ = cur.getSuccessor();
+            if(isCurDead && cur instanceof Label && !immediateLabelPredecessors.getOrDefault(cur,List.of()).isEmpty()) {
+                // We reached a label that has a non-dead predecessor, hence we reset the isCurDead flag.
+                isCurDead = false;
             }
-            if(dead && cur instanceof CondJump && immediateLabelPredecessors.containsKey(((CondJump) cur).getLabel())) {
+            if(isCurDead && cur instanceof CondJump && immediateLabelPredecessors.containsKey(((CondJump) cur).getLabel())) {
+                // We encountered a dead jump, so we remove it as a possible predecessor of its jump target
                 immediateLabelPredecessors.get(((CondJump) cur).getLabel()).remove(cur);
             }
-            if(dead && immediateLabelPredecessors.containsKey(cur.getSuccessor())) {
+            if(isCurDead && immediateLabelPredecessors.containsKey(cur.getSuccessor())) {
+                // We encountered a dead event which is a predecessor of a label,
+                // so we remove it as a possible predecessor of the label.
                 immediateLabelPredecessors.get(cur.getSuccessor()).remove(cur);
             }
-            if((dead || removed.contains(cur)) && !cur.is(Tag.NOOPT)) {
+            if((isCurDead || toBeRemoved.contains(cur)) && !cur.is(Tag.NOOPT)) {
+                // If the current event is dead or can be removed for another reason, we delete it
                 cur.delete();
-                cur = pred;
             }
             if(cur instanceof CondJump && ((CondJump) cur).isGoto()) {
-                dead = true;
+                // The immediate successor of a goto is dead by default
+                // (unless it is a label with other possible predecessors, which we check for in the first conditional)
+                isCurDead = true;
             }
-            pred = cur;
-            cur = cur.getSuccessor();
+            cur = succ;
         }
    }
     
@@ -113,14 +118,14 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
         if (!(e instanceof CondJump)) {
             return false;
         }
-        CondJump jump2 = (CondJump) e;
-        if (jump.getGuard() instanceof BExprUn && ((BExprUn)jump.getGuard()).getInner().equals(jump2.getGuard())
-                || jump2.getGuard() instanceof BExprUn && ((BExprUn)jump2.getGuard()).getInner().equals(jump.getGuard())) {
+        final CondJump other = (CondJump) e;
+        if (jump.getGuard() instanceof BExprUn && ((BExprUn)jump.getGuard()).getInner().equals(other.getGuard())
+                || other.getGuard() instanceof BExprUn && ((BExprUn) other.getGuard()).getInner().equals(jump.getGuard())) {
             return true;
         }
-        if (jump.getGuard() instanceof Atom && jump2.getGuard() instanceof Atom) {
-            Atom a1 = (Atom) jump.getGuard();
-            Atom a2 = (Atom) jump2.getGuard();
+        if (jump.getGuard() instanceof Atom && other.getGuard() instanceof Atom) {
+            final Atom a1 = (Atom) jump.getGuard();
+            final Atom a2 = (Atom) other.getGuard();
             return a1.getOp().inverted() == a2.getOp() && a1.getLHS().equals(a2.getLHS()) && a1.getRHS().equals(a2.getRHS());
         }
         return false;

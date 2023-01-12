@@ -5,9 +5,9 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.dat3m.dartagnan.program.processing.ProgramProcessor;
 import com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme;
-import com.dat3m.dartagnan.utils.printer.Printer;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,11 +28,6 @@ public class Compilation implements ProgramProcessor {
     private static final Logger logger = LogManager.getLogger(Compilation.class);
 
     // =========================== Configurables ===========================
-
-    @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
-            description = "Prints the program after compilation.",
-            secure = true)
-    private boolean print = false;
 
     @Option(name = TARGET,
             description = "The target architecture to which the program shall be compiled to.",
@@ -107,50 +102,29 @@ public class Compilation implements ProgramProcessor {
                 throw new UnsupportedOperationException(String.format("Compilation to %s is not supported.", target));
         }
 
-        int nextId = 0;
-        for(Thread thread : program.getThreads()){
-            nextId = compileThread(thread, nextId, visitor);
-
-            int fId = 0;
-            for (Event e : thread.getEvents()) {
-                e.setFId(fId++);
-            }
-        }
-
+        program.getEvents().forEach(e -> e.setCId(e.getGlobalId()));
+        program.getThreads().forEach(thread -> this.compileThread(thread, visitor));
         program.setArch(target);
-        program.clearCache(false);
+        program.clearCache(true);
         program.markAsCompiled();
+        EventIdReassignment.newInstance().run(program); // Reassign ids
+
         logger.info("Program compiled to {}", target);
-        if(print) {
-        	System.out.println("===== Program after compilation =====");
-        	System.out.println(new Printer().print(program));
-        	System.out.println("=====================================");
-        }
     }
 
-    private int compileThread(Thread thread, int nextId, EventVisitor<List<Event>> visitor) {
+    private void compileThread(Thread thread, EventVisitor<List<Event>> visitor) {
+
     	Event pred = thread.getEntry();
         Event toBeCompiled = pred.getSuccessor();
-        pred.setCId(nextId++);
-
         while (toBeCompiled != null) {
 			List<Event> compiledEvents = toBeCompiled.accept(visitor);
             for (Event e : compiledEvents) {
-                e.setOId(toBeCompiled.getOId());
-                e.setUId(toBeCompiled.getUId());
-                e.setCId(nextId++);
-                e.setThread(thread);
-                e.setCFileInformation(toBeCompiled.getCLine(), 
-                                    toBeCompiled.getSourceCodeFile());
+                e.copyMetadataFrom(toBeCompiled);
                 pred.setSuccessor(e);
                 pred = e;
             }
-
             toBeCompiled = toBeCompiled.getSuccessor();
         }
-
         thread.updateExit(thread.getEntry());
-        thread.clearCache();
-        return nextId;
     }
 }

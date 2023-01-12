@@ -68,14 +68,14 @@ public class Register extends IExpr implements LastValueInterface {
 
 	@Override
 	public Formula toIntFormula(Event e, SolverContext ctx) {
-		String name = getName() + "(" + e.repr() + ")";
+		String name = getName() + "(" + e.getGlobalId() + ")";
 		FormulaManager fmgr = ctx.getFormulaManager();
 		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
 		return fmgr.makeVariable(type, name);
 	}
 
 	public Formula toIntFormulaResult(Event e, SolverContext ctx) {
-		String name = getName() + "(" + e.repr() + "_result)";
+		String name = getName() + "(" + e.getGlobalId() + "_result)";
 		FormulaManager fmgr = ctx.getFormulaManager();
 		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
 		return fmgr.makeVariable(type, name);

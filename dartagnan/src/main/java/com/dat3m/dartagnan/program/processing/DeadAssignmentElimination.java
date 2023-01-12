@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
@@ -16,16 +15,15 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
-import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
+import static com.dat3m.dartagnan.program.event.Tag.*;
 
 // This is just Dead Store Elimination, but the use of the term "Store" can be confusing in our setting 
 public class DeadAssignmentElimination implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(DeadAssignmentElimination.class);
-    private Program program;
 
     private DeadAssignmentElimination() { }
 
@@ -39,11 +37,10 @@ public class DeadAssignmentElimination implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-    	this.program = program;
         logger.info("#Events before DSE: " + program.getEvents().size());
 
         for (Thread t : program.getThreads()) {
-            eliminateDeadStores(t);
+            eliminateDeadAssignments(program, t);
             t.clearCache();
         }
         program.clearCache(false);
@@ -51,13 +48,11 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         logger.info("#Events after DSE: " + program.getEvents().size());
     }
 
-    private void eliminateDeadStores(Thread thread) {
-        Set<Event> removed = new HashSet<>();
-
-        // Registers that are used by other threads or assertions cannot be removed
+    private void eliminateDeadAssignments(Program program, Thread thread) {
         Set<Register> usedRegs = new HashSet<>();
+        // Registers that are used by other threads and assertions cannot be removed
         if(program.getAss() != null) {
-            usedRegs.addAll(program.getAss().getRegs());
+            usedRegs.addAll(program.getAss().getRegs()); // for litmus tests
         }
         program.getCache().getEvents(FilterBasic.get(ASSERTION)).stream()
                 .filter(RegWriter.class::isInstance)
@@ -66,16 +61,20 @@ public class DeadAssignmentElimination implements ProgramProcessor {
                 .forEach(usedRegs::add);
         program.getEvents().stream()
                 .filter(o -> !o.getThread().equals(thread))
-                .filter(o -> o instanceof RegReaderData)
+                .filter(RegReaderData.class::isInstance)
                 .forEach(o -> usedRegs.addAll(((RegReaderData)o).getDataRegs()));
 
-        for(Event e : Lists.reverse(thread.getEvents())) {
-            if (e instanceof RegWriter && !e.is(VISIBLE) && !usedRegs.contains(((RegWriter)e).getResultRegister())) {
+
+        // Compute events to be removed (removal is delayed)
+        final List<Event> threadEvents = thread.getEvents();
+        final Set<Event> toBeRemoved = new HashSet<>();
+        for(Event e : Lists.reverse(threadEvents)) {
+            if (e instanceof RegWriter && !e.is(NOOPT) && !e.is(VISIBLE) && !usedRegs.contains(((RegWriter)e).getResultRegister())) {
+                // TODO (TH): Can we also remove loads to unused registers here?
                 // Invisible RegWriters that write to an unused reg can get removed
-                removed.add(e);
-            }
-            // An event that was not removed adds its dependencies to the used registers
-            if (!removed.contains(e)) {
+                toBeRemoved.add(e);
+            } else {
+                // An event that was not removed adds its dependencies to the used registers
                 if (e instanceof RegReaderData) {
                     // Data & Ctrl dependencies
                     usedRegs.addAll(((RegReaderData) e).getDataRegs());
@@ -88,15 +87,8 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         }
 
         // Here is the actual removal
-        Event pred = null;
-        Event cur = thread.getEntry();
-        while (cur != null) {
-            if (removed.contains(cur) && !cur.is(Tag.NOOPT)) {
-                cur.delete();
-                cur = pred;
-            }
-            pred = cur;
-            cur = cur.getSuccessor();
-        }
+        threadEvents.stream()
+                .filter(toBeRemoved::contains)
+                .forEach(Event::delete);
     }
 }

@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -38,7 +37,6 @@ The ExecutionModel wraps a Model and extracts data from it in a more workable ma
 
 //TODO: Add the capability to remove unnecessary init events from a model
 // i.e. those that init some address which no read nor write accesses.
-@Options
 public class ExecutionModel {
 
     private final EncodingContext encodingContext;
@@ -110,9 +108,7 @@ public class ExecutionModel {
     }
 
     public static ExecutionModel withContext(EncodingContext context) throws InvalidConfigurationException {
-        ExecutionModel m = new ExecutionModel(context);
-        context.getTask().getConfig().inject(m);
-        return m;
+        return new ExecutionModel(context);
     }
 
     private void createViews() {
@@ -385,7 +381,7 @@ public class ExecutionModel {
 
     private void trackDependencies(Event e) {
 
-        while (!endIfs.isEmpty() && e.getCId() >= endIfs.peek().getCId()) {
+        while (!endIfs.isEmpty() && e.getGlobalId() >= endIfs.peek().getGlobalId()) {
             // We exited an If and remove the dependencies associated with it
             // We do this inside a loop just in case multiple Ifs are left simultaneously
             endIfs.pop();

@@ -23,6 +23,6 @@ public class ExecLiteral extends AbstractDataLiteral<CoreLiteral, Event> impleme
 
     @Override
     public String toString() {
-        return toStringBase() + "(" + data.getCId() + ")";
+        return toStringBase() + "(" + data.getGlobalId() + ")";
     }
 }

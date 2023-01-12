@@ -130,7 +130,7 @@ public final class EncodingContext {
      * Proposition that both {@code first} and {@code second} are included in the modelled execution.
      */
     public BooleanFormula execution(Event first, Event second) {
-        boolean b = first.getCId() < second.getCId();
+        boolean b = first.getGlobalId() < second.getGlobalId();
         Event x = b ? first : second;
         Event y = b ? second : first;
         if (executionAnalysis.isImplied(x, y)) {
@@ -143,7 +143,7 @@ public final class EncodingContext {
     }
 
     public BooleanFormula dependency(Event first, Event second) {
-        return booleanFormulaManager.makeVariable("idd " + first.getCId() + " " + second.getCId());
+        return booleanFormulaManager.makeVariable("idd " + first.getGlobalId() + " " + second.getGlobalId());
     }
 
     public BooleanFormula equal(Formula left, Formula right) {
@@ -188,7 +188,7 @@ public final class EncodingContext {
     }
 
     public NumeralFormula.IntegerFormula clockVariable(String name, Event event) {
-        return formulaManager.getIntegerFormulaManager().makeVariable(formulaManager.escape(name) + " " + event.getCId());
+        return formulaManager.getIntegerFormulaManager().makeVariable(formulaManager.escape(name) + " " + event.getGlobalId());
     }
 
     public NumeralFormula.IntegerFormula memoryOrderClock(Event write) {
@@ -196,11 +196,11 @@ public final class EncodingContext {
         if (write.is(INIT)) {
             return formulaManager.getIntegerFormulaManager().makeNumber(0);
         }
-        return formulaManager.getIntegerFormulaManager().makeVariable("co " + write.getCId());
+        return formulaManager.getIntegerFormulaManager().makeVariable("co " + write.getGlobalId());
     }
 
     public BooleanFormula edgeVariable(String name, Event first, Event second) {
-        return booleanFormulaManager.makeVariable(formulaManager.escape(name) + " " + first.getCId() + " " + second.getCId());
+        return booleanFormulaManager.makeVariable(formulaManager.escape(name) + " " + first.getGlobalId() + " " + second.getGlobalId());
     }
 
     @FunctionalInterface
@@ -237,19 +237,19 @@ public final class EncodingContext {
     private void initialize() {
         if (shouldMergeCFVars) {
             for (BranchEquivalence.Class cls : analysisContext.get(BranchEquivalence.class).getAllEquivalenceClasses()) {
-                BooleanFormula v = booleanFormulaManager.makeVariable("cf " + cls.getRepresentative().getCId());
+                BooleanFormula v = booleanFormulaManager.makeVariable("cf " + cls.getRepresentative().getGlobalId());
                 for (Event e : cls) {
                     controlFlowVariables.put(e, v);
                 }
             }
         } else {
             for (Event e : verificationTask.getProgram().getEvents()) {
-                controlFlowVariables.put(e, booleanFormulaManager.makeVariable("cf " + e.getCId()));
+                controlFlowVariables.put(e, booleanFormulaManager.makeVariable("cf " + e.getGlobalId()));
             }
         }
         for (Event e : verificationTask.getProgram().getEvents()) {
             if (!e.cfImpliesExec()) {
-                executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getCId()));
+                executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
             }
             Formula r = e instanceof RegWriter ? ((RegWriter) e).getResultRegister().toIntFormulaResult(e, solverContext) : null;
             if (e instanceof MemEvent) {

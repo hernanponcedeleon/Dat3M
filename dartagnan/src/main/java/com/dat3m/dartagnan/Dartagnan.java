@@ -21,7 +21,6 @@ import com.dat3m.dartagnan.verification.solving.*;
 import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,7 +39,6 @@ import java.io.File;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
@@ -188,11 +186,6 @@ public class Dartagnan extends BaseOptions {
             		}
             		if(TRUE.equals(prover.getModel().evaluate(LIVENESS.getSMTVariable(ctx)))) {
             			System.out.println("Liveness violation found");
-            		}
-            		for(Axiom ax : task.getMemoryModel().getAxioms()) {
-                		if(ax.isFlagged() && TRUE.equals(prover.getModel().evaluate(CAT.getSMTVariable(ax, ctx)))) {
-                			System.out.println("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
-                		}
             		}
                 }
                 if (p.getFormat().equals(SourceLanguage.LITMUS)) {

@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -20,14 +21,25 @@ import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
+
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
+import static com.dat3m.dartagnan.configuration.Property.CAT;
+import static java.lang.Boolean.TRUE;
 
 public abstract class ModelChecker {
 
@@ -110,5 +122,22 @@ public abstract class ModelChecker {
             }
         }
         program.setAss(ass);
+    }
+
+    protected void logFlaggedPairs(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, Logger logger,
+            SolverContext sCtx) throws SolverException {
+        Model model = prover.getModel();
+        for(Axiom ax : wmm.getAxioms()) {
+            if(ax.isFlagged() && TRUE.equals(model.evaluate(CAT.getSMTVariable(ax, sCtx)))) {
+                System.out.println("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getName()));
+                if(logger.isDebugEnabled()) {
+                    StringBuilder violatingPairs = new StringBuilder("\n ===== The following pairs belong to the relation ===== \n");
+                    for(Tuple tuple : encoder.getTuples(ax.getRelation(), model)) {
+                        violatingPairs.append("\t").append(tuple.getFirst().getCId()).append(" -> ").append(tuple.getSecond().getCId());
+                    }
+                    logger.debug(violatingPairs.toString());
+                }
+            }
+        }
     }
 }

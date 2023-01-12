@@ -332,7 +332,7 @@ public class RelationAnalysis {
                 if (!condJumps.isEmpty()) {
                     for (Event e2 : thread.getCache().getEvents(FilterBasic.get(ANY))) {
                         for (Event e1 : condJumps) {
-                            if (e1.getCId() < e2.getCId() && !exec.areMutuallyExclusive(e1, e2)) {
+                            if (e1.getGlobalId() < e2.getGlobalId() && !exec.areMutuallyExclusive(e1, e2)) {
                                 must.add(new Tuple(e1, e2));
                             }
                         }
@@ -356,7 +356,7 @@ public class RelationAnalysis {
             for (Event f : program.getCache().getEvents(fence)) {
                 List<Event> memEvents = f.getThread().getCache().getEvents(FilterBasic.get(MEMORY));
                 int numEventsBeforeFence = (int) memEvents.stream()
-                        .mapToInt(Event::getCId).filter(id -> id < f.getCId())
+                        .mapToInt(Event::getGlobalId).filter(id -> id < f.getGlobalId())
                         .count();
                 List<Event> eventsBefore = memEvents.subList(0, numEventsBeforeFence);
                 List<Event> eventsAfter = memEvents.subList(numEventsBeforeFence, memEvents.size());
@@ -394,7 +394,7 @@ public class RelationAnalysis {
                 for (Event unlock : thread.getCache().getEvents(FilterBasic.get(Linux.RCU_UNLOCK))) {
                     // iteration order assures that all intermediaries were already iterated
                     for (Event lock : locks) {
-                        if (unlock.getCId() < lock.getCId() ||
+                        if (unlock.getGlobalId() < lock.getGlobalId() ||
                                 exec.areMutuallyExclusive(lock, unlock) ||
                                 Stream.concat(must.getByFirst(lock).stream().map(Tuple::getSecond),
                                                 must.getBySecond(unlock).stream().map(Tuple::getFirst))
@@ -490,7 +490,7 @@ public class RelationAnalysis {
             TupleSet may = new TupleSet();
             for (Event w1 : program.getCache().getEvents(FilterBasic.get(WRITE))) {
                 for (Event w2 : nonInitWrites) {
-                    if (w1.getCId() != w2.getCId() && !exec.areMutuallyExclusive(w1, w2)
+                    if (w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)
                             && alias.mayAlias((MemEvent) w1, (MemEvent) w2)) {
                         may.add(new Tuple(w1, w2));
                     }
@@ -535,7 +535,7 @@ public class RelationAnalysis {
                     List<MemEvent> possibleWrites = may.getBySecond(read).stream().map(Tuple::getFirst)
                             .filter(e -> (e.getThread() == read.getThread() || e.is(INIT)))
                             .map(x -> (MemEvent) x)
-                            .sorted((o1, o2) -> o1.is(INIT) == o2.is(INIT) ? (o1.getCId() - o2.getCId()) : o1.is(INIT) ? -1 : 1)
+                            .sorted((o1, o2) -> o1.is(INIT) == o2.is(INIT) ? (o1.getGlobalId() - o2.getGlobalId()) : o1.is(INIT) ? -1 : 1)
                             .collect(Collectors.toList());
                     // The set of writes that won't be readable due getting overwritten.
                     Set<MemEvent> deletedWrites = new HashSet<>();
@@ -589,7 +589,7 @@ public class RelationAnalysis {
                         // execute before the read and that aliases with it,
                         // then the read won't be able to read any external writes
                         boolean hasImpliedWrites = writes.stream()
-                                .anyMatch(w -> w.getCId() < r.getCId()
+                                .anyMatch(w -> w.getGlobalId() < r.getGlobalId()
                                         && exec.isImplied(r, w) && alias.mustAlias(r, w));
                         if (hasImpliedWrites) {
                             may.removeIf(t -> t.getSecond() == r && t.isCrossThread());

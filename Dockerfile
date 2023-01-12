@@ -31,7 +31,7 @@ RUN cd home && \
     mvn clean install -DskipTests
 
 # Build atomic-replace library
-RUN cd Dat3M/llvm-passes/atomic-replace/      \
+RUN cd home/Dat3M/llvm-passes/atomic-replace/ \
     && mkdir build && cd build                \
     && cmake ..                               \
     && make all install
@@ -43,4 +43,4 @@ ENV DAT3M_HOME=/home/Dat3M
 ENV DAT3M_OUTPUT=$DAT3M_HOME/output
 ENV CFLAGS="-I$DAT3M_HOME/include"
 ENV SMACK_FLAGS="-q -t --no-memory-splitting"
-ENV ATOMIC_REPLACE_OPTS="-mem2reg -indvars -loop-unroll -simplifycfg -gvn"
+ENV ATOMIC_REPLACE_OPTS="-mem2reg -sroa -early-cse -indvars -loop-unroll -simplifycfg -gvn"
