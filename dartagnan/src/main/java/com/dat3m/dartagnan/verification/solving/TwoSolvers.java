@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.encoding.*;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -39,13 +38,13 @@ public class TwoSolvers extends ModelChecker {
     }
 
     private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
-        Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
         Context analysisContext = Context.create();
         Configuration config = task.getConfig();
 
         memoryModel.configureAll(config);
     	preprocessProgram(task, config);
+        preprocessMemoryModel(task);
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
 
@@ -88,13 +87,13 @@ public class TwoSolvers extends ModelChecker {
             res = prover2.isUnsat() ? PASS : UNKNOWN;
         } else {
         	res = FAIL;
-            if(!program.getAss().getInvert()) {
-                logFlaggedPairs(memoryModel, prover1, logger, context, ctx);
+            if(!task.getProgram().getAss().getInvert()) {
+                logFlaggedPairs(memoryModel, wmmEncoder, prover1, logger, ctx);
             }
         }
 
-        
-        if(logger.isDebugEnabled()) {        	
+
+        if(logger.isDebugEnabled()) {
     		String smtStatistics = "\n ===== SMT Statistics ===== \n";
     		for(String key : prover1.getStatistics().keySet()) {
     			smtStatistics += String.format("\t%s -> %s\n", key, prover1.getStatistics().get(key));

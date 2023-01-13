@@ -3,7 +3,8 @@ package com.dat3m.dartagnan.solver.caat4wmm.basePredicates;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.verification.model.EventData;
-import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 import java.util.Collections;
@@ -14,9 +15,11 @@ import java.util.Optional;
 // Used for static relations that are not yet implemented explicitly
 public class StaticDefaultWMMGraph extends MaterializedWMMGraph {
     private final Relation relation;
+    private final RelationAnalysis ra;
 
-    public StaticDefaultWMMGraph(Relation rel) {
+    public StaticDefaultWMMGraph(Relation rel, RelationAnalysis relationAnalysis) {
         this.relation = rel;
+        this.ra = relationAnalysis;
     }
 
     @Override
@@ -26,7 +29,7 @@ public class StaticDefaultWMMGraph extends MaterializedWMMGraph {
 
     @Override
     public void repopulate() {
-        relation.getMaxTupleSet()
+        ra.getKnowledge(relation).getMaySet()
                 .stream().map(this::getEdgeFromTuple).filter(Objects::nonNull)
                 .forEach(simpleGraph::add);
     }

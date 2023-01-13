@@ -6,7 +6,9 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
@@ -33,16 +35,18 @@ public class Acyclic extends Axiom {
 
     @Override
     public String toString() {
-        return (negated ? "~" : "") + "acyclic " + rel.getName();
+        return (negated ? "~" : "") + "acyclic " + rel.getNameOrTerm();
     }
 
     @Override
-    public TupleSet getEncodeTupleSet(){
+    protected Set<Tuple> getEncodeTupleSet(Context analysisContext) {
+        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
+        RelationAnalysis ra = analysisContext.get(RelationAnalysis.class);
         logger.info("Computing encodeTupleSet for " + this);
         // ====== Construct [Event -> Successor] mapping ======
         Map<Event, Collection<Event>> succMap = new HashMap<>();
-        TupleSet relMaxTuple = rel.getMaxTupleSet();
-        for (Tuple t : relMaxTuple) {
+        final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
+        for (Tuple t : k.getMaySet()) {
             succMap.computeIfAbsent(t.getFirst(), key -> new ArrayList<>()).add(t.getSecond());
         }
 
@@ -53,7 +57,7 @@ public class Acyclic extends Axiom {
             for (DependencyGraph<Event>.Node node1 : scc) {
                 for (DependencyGraph<Event>.Node node2 : scc) {
                     Tuple t = new Tuple(node1.getContent(), node2.getContent());
-                    if (relMaxTuple.contains(t)) {
+                    if (k.getMaySet().contains(t)) {
                         result.add(t);
                     }
                 }
@@ -62,13 +66,13 @@ public class Acyclic extends Axiom {
 
         logger.info("encodeTupleSet size " + result.size());
         if (GlobalSettings.REDUCE_ACYCLICITY_ENCODE_SETS) {
-            reduceWithMinSets(result);
+            reduceWithMinSets(result, exec, ra);
             logger.info("reduced encodeTupleSet size " + result.size());
         }
         return result;
     }
 
-    private void reduceWithMinSets(TupleSet encodeSet) {
+    private void reduceWithMinSets(TupleSet encodeSet, ExecutionAnalysis exec, RelationAnalysis ra) {
         /*
             ASSUMPTION: MinSet is acyclic!
             IDEA:
@@ -87,8 +91,7 @@ public class Acyclic extends Axiom {
                       and b is implied by either a or c.
                     - It is possible to reduce must(rel) but that may give a less precise result.
          */
-        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-        TupleSet minSet = rel.getMinTupleSet();
+        final TupleSet minSet = ra.getKnowledge(rel).getMustSet();
 
         // (1) Approximate transitive closure of minSet (only gets computed when crossEdges are available)
         List<Tuple> crossEdges = minSet.stream()
@@ -129,7 +132,8 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-	public BooleanFormula consistent(Set<Tuple> toBeEncoded, EncodingContext context) {
+	public BooleanFormula consistent(EncodingContext context) {
+        Set<Tuple> toBeEncoded = getEncodeTupleSet(context.getAnalysisContext());
         BooleanFormula enc;
         if(negated) {
             enc = inconsistentSAT(toBeEncoded, context); // There is no IDL-based encoding for inconsistency
@@ -153,6 +157,7 @@ public class Acyclic extends Axiom {
             outMap.merge(t.getFirst(), cycleVar, bmgr::or);
         }
         // We use Boolean variables which guess the edges and nodes constituting the cycle.
+        final EncodingContext.EdgeEncoder edge = context.edge(rel);
         for (Event e : toBeEncoded.stream().map(Tuple::getFirst).collect(Collectors.toSet())) {
             eventsInCycle = bmgr.or(eventsInCycle, cycleVar(e, fmgr));
             // We ensure that for every event in the cycle, there should be at least one incoming
@@ -164,7 +169,7 @@ public class Acyclic extends Axiom {
                 // If an edge is guessed to be in a cycle, the edge must belong to relation,
                 // and both events must also be guessed to be on the cycle.
                 enc = bmgr.and(enc, bmgr.implication(getSMTCycleVar(tuple, fmgr),
-                        bmgr.and(context.edge(rel, tuple), cycleVar(e1, fmgr), cycleVar(e2, fmgr))));
+                        bmgr.and(edge.encode(tuple), cycleVar(e1, fmgr), cycleVar(e2, fmgr))));
             }
         }
         // A cycle exists if there is an event in the cycle.
@@ -176,11 +181,12 @@ public class Acyclic extends Axiom {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
         final Relation rel = this.rel;
-        final String clockVarName = rel.getName();
+        final String clockVarName = rel.getNameOrTerm();
 
         BooleanFormula enc = bmgr.makeTrue();
+        final EncodingContext.EdgeEncoder edge = context.edge(rel);
         for (Tuple tuple : toBeEncoded) {
-            enc = bmgr.and(enc, bmgr.implication(context.edge(rel, tuple),
+            enc = bmgr.and(enc, bmgr.implication(edge.encode(tuple),
                     imgr.lessThan(
                             context.clockVariable(clockVarName, tuple.getFirst()),
                             context.clockVariable(clockVarName, tuple.getSecond()))));
@@ -193,7 +199,8 @@ public class Acyclic extends Axiom {
         // We use a vertex-elimination graph based encoding.
         final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-        final ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
+        final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
+        final RelationAnalysis ra = context.getAnalysisContext().requires(RelationAnalysis.class);
         final Relation rel = this.rel;
 
         // Build original graph G
@@ -265,11 +272,12 @@ public class Acyclic extends Axiom {
         }
 
         // --- Create encoding ---
-        final Set<Tuple> minSet = rel.getMinTupleSet();
+        final Set<Tuple> minSet = ra.getKnowledge(rel).getMustSet();
         BooleanFormula enc = bmgr.makeTrue();
+        final EncodingContext.EdgeEncoder edge = context.edge(rel);
         // Basic lifting
         for (Tuple t : toBeEncoded) {
-            BooleanFormula cond = minSet.contains(t) ? context.execution(t.getFirst(), t.getSecond()) : context.edge(rel, t);
+            BooleanFormula cond = minSet.contains(t) ? context.execution(t.getFirst(), t.getSecond()) : edge.encode(t);
             enc = bmgr.and(enc, bmgr.implication(cond, getSMTCycleVar(t, fmgr)));
         }
 
@@ -289,7 +297,7 @@ public class Acyclic extends Axiom {
         //  --- Encode inconsistent assignments ---
         // Handle self-loops
         for (Event e : selfloops) {
-            enc = bmgr.and(enc, bmgr.not(context.edge(rel, new Tuple(e, e))));
+            enc = bmgr.and(enc, bmgr.not(edge.encode(new Tuple(e, e))));
         }
         // Handle remaining cycles
         for (int i = 0; i < varOrderings.size(); i++) {

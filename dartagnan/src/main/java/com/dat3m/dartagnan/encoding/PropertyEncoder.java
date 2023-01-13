@@ -9,16 +9,20 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
+import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -28,7 +32,6 @@ import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
-import static com.dat3m.dartagnan.wmm.analysis.RelationAnalysis.findTransitivelyImpliedCo;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -41,6 +44,7 @@ public class PropertyEncoder implements Encoder {
     private final Wmm memoryModel;
     private final ExecutionAnalysis exec;
     private final AliasAnalysis alias;
+    private final RelationAnalysis ra;
 
     // =====================================================================
 
@@ -52,6 +56,7 @@ public class PropertyEncoder implements Encoder {
         memoryModel = c.getTask().getMemoryModel();
         exec = c.getAnalysisContext().requires(ExecutionAnalysis.class);
         alias = c.getAnalysisContext().requires(AliasAnalysis.class);
+        ra = c.getAnalysisContext().requires(RelationAnalysis.class);
     }
 
     public static PropertyEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
@@ -114,7 +119,7 @@ public class PropertyEncoder implements Encoder {
     			continue;
     		}
             BooleanFormula v = CAT.getSMTVariable(ax, ctx);
-			cat = bmgr.and(cat, bmgr.equivalence(v, ax.consistent(ax.getRelation().getEncodeTupleSet(), context)));
+			cat = bmgr.and(cat, bmgr.equivalence(v, ax.consistent(context)));
 			one = bmgr.or(one, v);
     	}
 		// No need to use the SMT variable if the formula is trivially false
@@ -163,8 +168,9 @@ public class PropertyEncoder implements Encoder {
         }
 
         SolverContext ctx = context.getSolverContext();
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         Relation rf = memoryModel.getRelation(RelationNameRepository.RF);
+        final EncodingContext.EdgeEncoder edge = context.edge(rf);
         // Compute "stuckness": A thread is stuck if it reaches a spinloop bound event
         // while reading from a co-maximal write.
         Map<Thread, BooleanFormula> isStuckMap = new HashMap<>();
@@ -179,8 +185,8 @@ public class PropertyEncoder implements Encoder {
                 BooleanFormula allCoMaximalLoad = bmgr.makeTrue();
                 for (Load load : pair.loads) {
                     BooleanFormula coMaximalLoad = bmgr.makeFalse();
-                    for (Tuple rfEdge : rf.getMaxTupleSet().getBySecond(load)) {
-                        coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(context.edge(rf, rfEdge), lastCoVar(rfEdge.getFirst())));
+                    for (Tuple rfEdge : ra.getKnowledge(rf).getMaySet().getBySecond(load)) {
+                        coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(edge.encode(rfEdge), lastCoVar(rfEdge.getFirst())));
                     }
                     allCoMaximalLoad = bmgr.and(allCoMaximalLoad, bmgr.implication(context.execution(load), coMaximalLoad));
                 }
@@ -209,9 +215,10 @@ public class PropertyEncoder implements Encoder {
     }
 
     public BooleanFormula encodeDataRaces() {
-        final Relation hb = memoryModel.getRelation("hb");
+        final Relation hbRelation = memoryModel.getRelation("hb");
+        final EncodingContext.EdgeEncoder hb = context.edge(hbRelation);
         checkState(memoryModel.getAxioms().stream().anyMatch(ax ->
-                        ax.isAcyclicity() && ax.getRelation().equals(hb)),
+                        ax.isAcyclicity() && ax.getRelation().equals(hbRelation)),
                 "The provided WMM needs an 'acyclic(hb)' axiom to encode data races.");
         logger.info("Encoding data-races");
         SolverContext ctx = context.getSolverContext();
@@ -232,7 +239,7 @@ public class PropertyEncoder implements Encoder {
                             continue;
                         }
                         if(w.canRace() && m.canRace() && alias.mayAlias(w, m)) {
-                            BooleanFormula conflict = bmgr.and(context.execution(m, w), context.edge(hb, m, w),
+                            BooleanFormula conflict = bmgr.and(context.execution(m, w), hb.encode(m, w),
                                     context.sameAddress(w, m),
                                     imgr.equal(context.clockVariable("hb", w),
                                             imgr.add(context.clockVariable("hb", m), imgr.makeNumber(BigInteger.ONE))));
@@ -251,16 +258,16 @@ public class PropertyEncoder implements Encoder {
     private BooleanFormula encodeLastCoConstraints() {
         final Relation co = memoryModel.getRelation(CO);
         SolverContext ctx = context.getSolverContext();
-        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        final TupleSet minSet = co.getMinTupleSet();
-        final TupleSet maxSet = co.getMaxTupleSet();
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final EncodingContext.EdgeEncoder edge = context.edge(co);
+        final RelationAnalysis.Knowledge knowledge = ra.getKnowledge(co);
         final List<Event> initEvents = program.getCache().getEvents(FilterBasic.get(INIT));
         final List<Event> writes = program.getCache().getEvents(FilterBasic.get(WRITE));
         final boolean doEncodeFinalAddressValues = program.getFormat() == LITMUS;
         // Find transitively implied coherences. We can use these to reduce the encoding.
-        final Set<Tuple> transCo = findTransitivelyImpliedCo(co, exec);
+        final Set<Tuple> transCo = ra.findTransitivelyImpliedCo(co);
         // Find all writes that are never last, i.e., those that will always have a co-successor.
-        final Set<Event> dominatedWrites = minSet.stream()
+        final Set<Event> dominatedWrites = knowledge.getMustSet().stream()
                 .filter(t -> exec.isImplied(t.getFirst(), t.getSecond()))
                 .map(Tuple::getFirst).collect(Collectors.toSet());
         // ---- Construct encoding ----
@@ -273,14 +280,14 @@ public class PropertyEncoder implements Encoder {
             }
             BooleanFormula isLast = context.execution(w1);
             // ---- Find all possibly overwriting writes ----
-            for (Tuple t : maxSet.getByFirst(w1)) {
+            for (Tuple t : knowledge.getMaySet().getByFirst(w1)) {
                 if (transCo.contains(t)) {
                     // We can skip the co-edge (w1,w2), because there will be an intermediate write w3
                     // that already witnesses that w1 is not last.
                     continue;
                 }
                 Event w2 = t.getSecond();
-                BooleanFormula isAfter = bmgr.not(minSet.contains(t) ? context.execution(w2) : context.edge(co, t));
+                BooleanFormula isAfter = bmgr.not(knowledge.getMustSet().contains(t) ? context.execution(w2) : edge.encode(t));
                 isLast = bmgr.and(isLast, isAfter);
             }
             BooleanFormula lastCoExpr = lastCoVar(w1);

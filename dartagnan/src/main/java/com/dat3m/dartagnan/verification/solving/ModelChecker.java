@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -35,6 +36,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import java.util.List;
+import java.util.Optional;
 
 import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 import static com.dat3m.dartagnan.configuration.Property.CAT;
@@ -67,6 +69,9 @@ public abstract class ModelChecker {
         if(program.getFormat()!=Program.SourceLanguage.LITMUS) {
             updateAssertions(program);
         }
+    }
+    public static void preprocessMemoryModel(VerificationTask task) throws InvalidConfigurationException {
+        task.getMemoryModel().simplify();
     }
 
     /**
@@ -120,18 +125,16 @@ public abstract class ModelChecker {
         program.setAss(ass);
     }
 
-    protected void logFlaggedPairs(Wmm wmm, ProverEnvironment prover, Logger logger, 
-        EncodingContext eCtx, SolverContext sCtx) throws SolverException {
+    protected void logFlaggedPairs(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, Logger logger,
+            SolverContext sCtx) throws SolverException {
         Model model = prover.getModel();
         for(Axiom ax : wmm.getAxioms()) {
             if(ax.isFlagged() && TRUE.equals(model.evaluate(CAT.getSMTVariable(ax, sCtx)))) {
-                System.out.println("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getName()));
+                System.out.println("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
                 if(logger.isDebugEnabled()) {
                     StringBuilder violatingPairs = new StringBuilder("\n ===== The following pairs belong to the relation ===== \n");
-                    for(Tuple tuple : ax.getRelation().getEncodeTupleSet()) {
-                        if(TRUE.equals(model.evaluate(eCtx.edge(ax.getRelation(), tuple)))) {
-                            violatingPairs.append("\t" + tuple.getFirst().getCId() + " -> " + tuple.getSecond().getCId());
-                        }
+                    for(Tuple tuple : encoder.getTuples(ax.getRelation(), model)) {
+                        violatingPairs.append("\t").append(tuple.getFirst().getCId()).append(" -> ").append(tuple.getSecond().getCId());
                     }
                     logger.debug(violatingPairs.toString());
                 }

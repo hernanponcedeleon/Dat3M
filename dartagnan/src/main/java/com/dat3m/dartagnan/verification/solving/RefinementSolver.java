@@ -15,23 +15,13 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.dat3m.dartagnan.wmm.Definition;
+import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.axiom.Empty;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
-import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
-import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelSetIdentity;
-import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
-import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
-import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
-import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
-import com.dat3m.dartagnan.wmm.relation.unary.RelDomainIdentity;
-import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
-import com.dat3m.dartagnan.wmm.relation.unary.RelRangeIdentity;
-import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
+import com.dat3m.dartagnan.wmm.definition.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -50,7 +40,6 @@ import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
-import static com.google.common.base.Preconditions.checkArgument;
 
 /*
     Refinement is a custom solving procedure that starts from a weak memory model (possibly the empty model)
@@ -110,6 +99,7 @@ public class RefinementSolver extends ModelChecker {
                 .withConfig(task.getConfig()).build(program, baselineModel, task.getProperty());
 
         preprocessProgram(task, config);
+        preprocessMemoryModel(task);
         // We cut the rhs of differences to get a semi-positive model, if possible.
         // This call modifies the baseline model!
         Set<Relation> cutRelations = cutRelationDifferences(memoryModel, baselineModel);
@@ -137,7 +127,7 @@ public class RefinementSolver extends ModelChecker {
         BooleanFormula globalRefinement = bmgr.makeTrue();
 
         WMMSolver solver = WMMSolver.withContext(context, cutRelations, task, analysisContext);
-        Refiner refiner = new Refiner(memoryModel, analysisContext);
+        Refiner refiner = new Refiner(analysisContext);
         CAATSolver.Status status = INCONSISTENT;
 
         logger.info("Starting encoding using " + ctx.getVersion());
@@ -292,9 +282,9 @@ public class RefinementSolver extends ModelChecker {
         targetWmm.getAxioms().stream().filter(ax -> !ax.isFlagged())
                 .forEach(ax -> collectDependencies(ax.getRelation(), cutCandidates));
         for (Relation rel : cutCandidates) {
-            if (rel instanceof RelMinus) {
-                Relation sec = rel.getSecond();
-                if (sec.getDependencies().size() != 0 || sec instanceof RelSetIdentity || sec instanceof RelCartesian) {
+            if (rel.getDefinition() instanceof Difference) {
+                Relation sec = ((Difference) rel.getDefinition()).complement;
+                if (!sec.getDependencies().isEmpty() || sec.getDefinition() instanceof Identity || sec.getDefinition() instanceof CartesianProduct) {
                     // NOTE: The check for RelSetIdentity/RelCartesian is needed because they appear non-derived
                     // in our Wmm but for CAAT they are derived from unary predicates!
                     logger.info("Found difference {}. Cutting rhs relation {}", rel, sec);
@@ -313,34 +303,40 @@ public class RefinementSolver extends ModelChecker {
     }
 
     private static Relation getCopyOfRelation(Relation rel, Wmm m) {
-        checkArgument(!(rel instanceof RecursiveRelation), "Cannot cut recursively defined relation %s from memory model. ", rel);
-        Relation namedCopy = m.getRelation(rel.getName());
-        if (namedCopy != null) {
-            return namedCopy;
+        Optional<String> name = rel.getName();
+        if (name.isPresent() && m.containsRelation(name.get())) {
+            return m.getRelation(name.get());
         }
-        Relation copy = rel.accept(new RelationCopier(m));
-        if (rel.getIsNamed()) {
-            copy.setName(rel.getName());
-        }
-        m.addRelation(copy);
-        return copy;
+        Relation copy = name.map(m::newRelation).orElseGet(m::newRelation);
+        return m.addDefinition(rel.getDefinition().accept(new RelationCopier(m, copy)));
     }
 
-    private static final class RelationCopier implements Relation.Visitor<Relation> {
+    private static final class RelationCopier implements Definition.Visitor<Definition> {
         final Wmm targetModel;
-        RelationCopier(Wmm m) { targetModel = m; }
-        @Override public Relation visitUnion(Relation rel, Relation... r) { return new RelUnion(copy(r[0]), copy(r[1])); }
-        @Override public Relation visitIntersection(Relation rel, Relation... r) { return new RelIntersection(copy(r[0]), copy(r[1])); }
-        @Override public Relation visitDifference(Relation rel, Relation r1, Relation r2) { return new RelMinus(copy(r1), copy(r2)); }
-        @Override public Relation visitComposition(Relation rel, Relation r1, Relation r2) { return new RelComposition(copy(r1), copy(r2)); }
-        @Override public Relation visitInverse(Relation rel, Relation r1) { return new RelInverse(copy(r1)); }
-        @Override public Relation visitDomainIdentity(Relation rel, Relation r1) { return new RelDomainIdentity(copy(r1)); }
-        @Override public Relation visitRangeIdentity(Relation rel, Relation r1) { return new RelRangeIdentity(copy(r1)); }
-        @Override public Relation visitTransitiveClosure(Relation rel, Relation r1) { return new RelTrans(copy(r1)); }
-        @Override public Relation visitIdentity(Relation rel, FilterAbstract filter) { return new RelSetIdentity(filter); }
-        @Override public Relation visitProduct(Relation rel, FilterAbstract f1, FilterAbstract f2) { return new RelCartesian(f1, f2); }
-        @Override public Relation visitFences(Relation rel, FilterAbstract type) { return new RelFencerel(type); }
+        final Relation relation;
+        RelationCopier(Wmm m, Relation r) {
+            targetModel = m;
+            relation = r;
+        }
+        @Override public Definition visitUnion(Relation r, Relation... o) { return new Union(relation, copy(o)); }
+        @Override public Definition visitIntersection(Relation r, Relation... o) { return new Intersection(relation, copy(o)); }
+        @Override public Definition visitDifference(Relation r, Relation r1, Relation r2) { return new Difference(relation, copy(r1), copy(r2)); }
+        @Override public Definition visitComposition(Relation r, Relation r1, Relation r2) { return new Composition(relation, copy(r1), copy(r2)); }
+        @Override public Definition visitInverse(Relation r, Relation r1) { return new Inverse(relation, copy(r1)); }
+        @Override public Definition visitDomainIdentity(Relation r, Relation r1) { return new DomainIdentity(relation, copy(r1)); }
+        @Override public Definition visitRangeIdentity(Relation r, Relation r1) { return new RangeIdentity(relation, copy(r1)); }
+        @Override public Definition visitTransitiveClosure(Relation r, Relation r1) { return new TransitiveClosure(relation, copy(r1)); }
+        @Override public Definition visitIdentity(Relation r, FilterAbstract filter) { return new Identity(relation, filter); }
+        @Override public Definition visitProduct(Relation r, FilterAbstract f1, FilterAbstract f2) { return new CartesianProduct(relation, f1, f2); }
+        @Override public Definition visitFences(Relation r, FilterAbstract type) { return new Fences(relation, type); }
         private Relation copy(Relation r) { return getCopyOfRelation(r, targetModel); }
+        private Relation[] copy(Relation[] r) {
+            Relation[] a = new Relation[r.length];
+            for (int i = 0; i < r.length; i++) {
+                a[i] = copy(r[i]);
+            }
+            return a;
+        }
     }
 
     // -------------------- Printing -----------------------------
@@ -428,40 +424,28 @@ public class RefinementSolver extends ModelChecker {
         Wmm baseline = new Wmm();
         Relation rf = baseline.getRelation(RF);
         if(baselines.contains(Baseline.UNIPROC)) {
-            // ---- acyclic(po-loc | rf) ----
-            Relation poloc = baseline.getRelation(POLOC);
-            Relation co = baseline.getRelation(CO);
-            Relation fr = baseline.getRelation(FR);
-            Relation porf = new RelUnion(poloc, rf);
-            baseline.addRelation(porf);
-            Relation porfco = new RelUnion(porf, co);
-            baseline.addRelation(porfco);
-            Relation porfcofr = new RelUnion(porfco, fr);
-            baseline.addRelation(porfcofr);
-            baseline.addAxiom(new Acyclic(porfcofr));
+            // ---- acyclic(po-loc | com) ----
+            baseline.addAxiom(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
+                    baseline.getRelation(POLOC),
+                    rf,
+                    baseline.getRelation(CO),
+                    baseline.getRelation(FR)))));
         }
         if(baselines.contains(Baseline.NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
-            Relation data = baseline.getRelation(DATA);
-            Relation ctrl = baseline.getRelation(CTRL);
-            Relation addr = baseline.getRelation(ADDR);
-            Relation dep = new RelUnion(data, addr);
-            baseline.addRelation(dep);
-            dep = new RelUnion(ctrl, dep);
-            baseline.addRelation(dep);
-            Relation hb = new RelUnion(dep, rf);
-            baseline.addRelation(hb);
-            baseline.addAxiom(new Acyclic(hb));
+            baseline.addAxiom(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
+                    baseline.getRelation(CTRL),
+                    baseline.getRelation(DATA),
+                    baseline.getRelation(ADDR),
+                    rf))));
         }
         if(baselines.contains(Baseline.ATOMIC_RMW)) {
             // ---- empty (rmw & fre;coe) ----
             Relation rmw = baseline.getRelation(RMW);
             Relation coe = baseline.getRelation(COE);
             Relation fre = baseline.getRelation(FRE);
-            Relation frecoe = new RelComposition(fre, coe);
-            baseline.addRelation(frecoe);
-            Relation rmwANDfrecoe = new RelIntersection(rmw, frecoe);
-            baseline.addRelation(rmwANDfrecoe);
+            Relation frecoe = baseline.addDefinition(new Composition(baseline.newRelation(), fre, coe));
+            Relation rmwANDfrecoe = baseline.addDefinition(new Intersection(baseline.newRelation(), rmw, frecoe));
             baseline.addAxiom(new Empty(rmwANDfrecoe));
         }
         return baseline;

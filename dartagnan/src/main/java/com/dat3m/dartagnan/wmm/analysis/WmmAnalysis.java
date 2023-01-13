@@ -2,10 +2,14 @@ package com.dat3m.dartagnan.wmm.analysis;
 
 import com.dat3m.dartagnan.exception.MalformedMemoryModelException;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.wmm.Definition;
+import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
-import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
+import com.dat3m.dartagnan.wmm.definition.Difference;
+import com.dat3m.dartagnan.wmm.definition.DomainIdentity;
+import com.dat3m.dartagnan.wmm.definition.Inverse;
+import com.dat3m.dartagnan.wmm.definition.RangeIdentity;
+import com.dat3m.dartagnan.wmm.definition.TransitiveClosure;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -58,16 +62,16 @@ public class WmmAnalysis {
         final DependencyGraph<Relation> depGraph = DependencyGraph.from(memoryModel.getRelations());
         for (Set<DependencyGraph<Relation>.Node> scc : depGraph.getSCCs()) {
             for (DependencyGraph<Relation>.Node node : scc) {
-                final Relation rel = node.getContent();
-                if (rel instanceof UnaryRelation && scc.size() > 1) {
+                final Definition d = node.getContent().getDefinition();
+                if ((d instanceof Inverse || d instanceof DomainIdentity || d instanceof RangeIdentity || d instanceof TransitiveClosure) && scc.size() > 1) {
                     // Unary relations are not implemented in recursions right now
                     throw new UnsupportedOperationException(String.format(
-                            "Unary relation %s not supported in recursive definitions.", rel
+                            "Unary relation %s not supported in recursive definitions.", node.getContent()
                     ));
-                } else if (rel instanceof RelMinus && scc.contains(depGraph.get(rel.getSecond()))) {
+                } else if (d instanceof Difference && scc.contains(depGraph.get(((Difference) d).complement))) {
                     // Non-monotonic recursion gives ill-defined memory models.
                     throw new MalformedMemoryModelException(String.format(
-                            "Non-monotonic recursion is not supported: %s", rel
+                            "Non-monotonic recursion is not supported: %s", node.getContent()
                     ));
                 }
             }

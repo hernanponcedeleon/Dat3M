@@ -11,8 +11,9 @@ import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -76,6 +77,7 @@ public class CoSymmetryBreaking {
     private final VerificationTask task;
     private final ThreadSymmetry symm;
     private final AliasAnalysis alias;
+    private final RelationAnalysis ra;
     private final Relation co;
 
     private final Map<EquivalenceClass<Thread>, Info> infoMap;
@@ -92,6 +94,7 @@ public class CoSymmetryBreaking {
         this.task = context.getTask();
         this.symm = context.getAnalysisContext().requires(ThreadSymmetry.class);
         this.alias = context.getAnalysisContext().requires(AliasAnalysis.class);
+        this.ra = context.getAnalysisContext().requires(RelationAnalysis.class);
         this.co = task.getMemoryModel().getRelation(RelationNameRepository.CO);
         infoMap = new HashMap<>();
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
@@ -123,7 +126,7 @@ public class CoSymmetryBreaking {
         for (Store w : writes) {
             int syncDeg = 0;
             for (Axiom ax : axioms) {
-                TupleSet minSet = ax.getRelation().getMinTupleSet();
+                final TupleSet minSet = ra.getKnowledge(ax.getRelation()).getMustSet();
                 syncDeg = Math.max(syncDeg, (1 + minSet.getBySecond(w).size()) * (1 + minSet.getByFirst(w).size()));
             }
             syncDegreeMap.put(w, syncDeg);
@@ -202,6 +205,7 @@ public class CoSymmetryBreaking {
             return enc;
         }
         List<Thread> symmThreads = info.threads;
+        EncodingContext.EdgeEncoder edge = context.edge(co);
 
         // ============= Construct rows =============
         Thread t1 = symmThreads.get(0);
@@ -219,7 +223,7 @@ public class CoSymmetryBreaking {
             r1.add(context.execution(info.writes.get(0)));
         }
         for (Tuple t : r1Tuples) {
-            r1.add(context.edge(co, t));
+            r1.add(edge.encode(t));
         }
 
         // Construct symmetric rows
@@ -233,7 +237,7 @@ public class CoSymmetryBreaking {
                 r2.add(context.execution(symm.map(info.writes.get(0), t2)));
             }
             for (Tuple t : r2Tuples) {
-                r2.add(context.edge(co, t));
+                r2.add(edge.encode(t));
             }
 
             final String id = "_" + rep.getId() + "_" + i;

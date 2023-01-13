@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.encoding.*;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -39,13 +38,13 @@ public class AssumeSolver extends ModelChecker {
     }
 
     private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
-        Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
         Context analysisContext = Context.create();
         Configuration config = task.getConfig();
 
         memoryModel.configureAll(config);
         preprocessProgram(task, config);
+        preprocessMemoryModel(task);
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
 
@@ -81,8 +80,8 @@ public class AssumeSolver extends ModelChecker {
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
         } else {
             res = FAIL;
-            if(!program.getAss().getInvert()) {
-                logFlaggedPairs(memoryModel, prover, logger, context, ctx);
+            if(!task.getProgram().getAss().getInvert()) {
+                logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, ctx);
             }
         }
 
@@ -94,7 +93,7 @@ public class AssumeSolver extends ModelChecker {
     		logger.debug(smtStatistics);
         }
 
-        res = program.getAss().getInvert() ? res.invert() : res;
+        res = task.getProgram().getAss().getInvert() ? res.invert() : res;
         logger.info("Verification finished with result " + res);
     }
 }

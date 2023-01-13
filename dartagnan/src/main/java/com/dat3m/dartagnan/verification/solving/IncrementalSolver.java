@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.encoding.*;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -38,13 +37,13 @@ public class IncrementalSolver extends ModelChecker {
     }
 
     private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
-        Program program = task.getProgram();
         Wmm memoryModel = task.getMemoryModel();
         Context analysisContext = Context.create();
         Configuration config = task.getConfig();
 
         memoryModel.configureAll(config);
         preprocessProgram(task, config);
+        preprocessMemoryModel(task);
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
 
@@ -78,8 +77,8 @@ public class IncrementalSolver extends ModelChecker {
             res = prover.isUnsat()? PASS : UNKNOWN;
         } else {
         	res = FAIL;
-            if(!program.getAss().getInvert()) {
-                logFlaggedPairs(memoryModel, prover, logger, context, ctx);
+            if(!task.getProgram().getAss().getInvert()) {
+                logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, ctx);
             }
         }
         

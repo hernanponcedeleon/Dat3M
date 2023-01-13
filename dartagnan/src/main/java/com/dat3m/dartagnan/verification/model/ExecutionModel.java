@@ -15,7 +15,6 @@ import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -457,14 +456,14 @@ public class ExecutionModel {
     // ===================================================
 
     private void extractReadsFrom() {
-        final Relation rf = getMemoryModel().getRelation(RF);
+        final EncodingContext.EdgeEncoder rf = encodingContext.edge(encodingContext.getTask().getMemoryModel().getRelation(RF));
         readWriteMap.clear();
 
         for (Map.Entry<BigInteger, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
         	BigInteger address = addressedReads.getKey();
             for (EventData read : addressedReads.getValue()) {
                 for (EventData write : addressWritesMap.get(address)) {
-                    BooleanFormula rfExpr = encodingContext.edge(rf, write.getEvent(), read.getEvent());
+                    BooleanFormula rfExpr = rf.encode(write.getEvent(), read.getEvent());
                     // The null check is important: Currently there are cases where no rf-edge between
                     // init writes and loads get encoded (in case of arrays/structs). This is usually no problem,
                     // since in a well-initialized program, the init write should not be readable anyway.
@@ -481,7 +480,7 @@ public class ExecutionModel {
     }
 
     private void extractCoherences() {
-        final Relation co = encodingContext.getTask().getMemoryModel().getRelation(CO);
+        final EncodingContext.EdgeEncoder co = encodingContext.edge(encodingContext.getTask().getMemoryModel().getRelation(CO));
 
         for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
             final BigInteger addr = addrWrites.getKey();
@@ -494,7 +493,7 @@ public class ExecutionModel {
                 for (EventData w1 : writes) {
                     coEdges.put(w1, new ArrayList<>());
                     for (EventData w2 : writes) {
-                        if (Boolean.TRUE.equals(model.evaluate(encodingContext.edge(co, w1.getEvent(), w2.getEvent())))) {
+                        if (Boolean.TRUE.equals(model.evaluate(co.encode(w1.getEvent(), w2.getEvent())))) {
                             coEdges.get(w1).add(w2);
                         }
                     }

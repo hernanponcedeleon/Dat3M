@@ -1,13 +1,16 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
 import java.util.Set;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -24,26 +27,24 @@ public class Irreflexive extends Axiom {
     }
 
     @Override
-    public TupleSet getEncodeTupleSet(){
-        TupleSet set = new TupleSet();
-        rel.getMaxTupleSet().stream().filter(Tuple::isLoop).forEach(set::add);
-        return set;
+    protected Set<Tuple> getEncodeTupleSet(Context analysisContext) {
+        final RelationAnalysis ra = analysisContext.get(RelationAnalysis.class);
+        return ra.getKnowledge(rel).getMaySet().stream().filter(Tuple::isLoop).collect(toSet());
     }
 
     @Override
-    public BooleanFormula consistent(Set<Tuple> toBeEncoded, EncodingContext ctx) {
+    public BooleanFormula consistent(EncodingContext ctx) {
     	BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
-        for (Tuple tuple : toBeEncoded) {
-            if(tuple.isLoop()){
-                enc = bmgr.and(enc, bmgr.not(ctx.edge(rel, tuple)));
-            }
+        final EncodingContext.EdgeEncoder edge = ctx.edge(rel);
+        for (Tuple tuple : getEncodeTupleSet(ctx.getAnalysisContext())) {
+            enc = bmgr.and(enc, bmgr.not(edge.encode(tuple)));
         }
         return negated ? bmgr.not(enc) : enc;
     }
 
     @Override
     public String toString() {
-        return (negated ? "~" : "") + "irreflexive " + rel.getName();
+        return (negated ? "~" : "") + "irreflexive " + rel.getNameOrTerm();
     }
 }

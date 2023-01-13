@@ -13,13 +13,15 @@ import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
-import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
+import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.definition.Fences;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
@@ -27,13 +29,17 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 public class CoreReasoner {
 
     private final ExecutionGraph executionGraph;
-    private final Wmm memoryModel;
     private final ExecutionAnalysis exec;
+    private final RelationAnalysis ra;
+    private final Map<String, Relation> termMap = new HashMap<>();
 
     public CoreReasoner(VerificationTask task, Context analysisContext, ExecutionGraph executionGraph) {
         this.executionGraph = executionGraph;
-        this.memoryModel = task.getMemoryModel();
         this.exec = analysisContext.requires(ExecutionAnalysis.class);
+        this.ra = analysisContext.requires(RelationAnalysis.class);
+        for (Relation r : task.getMemoryModel().getRelations()) {
+            termMap.put(r.getNameOrTerm(), r);
+        }
     }
 
 
@@ -54,20 +60,21 @@ public class CoreReasoner {
                 Event e1 = domain.getObjectById(edge.getFirst()).getEvent();
                 Event e2 = domain.getObjectById(edge.getSecond()).getEvent();
                 Tuple tuple = new Tuple(e1, e2);
-                Relation rel = memoryModel.getRelation(lit.getName());
+                Relation rel = termMap.get(lit.getName());
 
-                if (lit.isPositive() && rel.getMinTupleSet().contains(tuple)) {
+                if (lit.isPositive() && ra.getKnowledge(rel).getMustSet().contains(tuple)) {
                     // Statically present edges
                     addExecReason(tuple, coreReason);
-                } else if (lit.isNegative() && !rel.getMaxTupleSet().contains(tuple)) {
+                } else if (lit.isNegative() && !ra.getKnowledge(rel).getMaySet().contains(tuple)) {
                     // Statically absent edges
                 } else {
-                    if (rel.getName().equals(RF) || rel.getName().equals(CO)
+                    String name = rel.getNameOrTerm();
+                    if (name.equals(RF) || name.equals(CO)
                             || executionGraph.getCutRelations().contains(rel)) {
-                        coreReason.add(new RelLiteral(rel.getName(), tuple, lit.isNegative()));
-                    } else if (rel.getName().equals(LOC)) {
+                        coreReason.add(new RelLiteral(name, tuple, lit.isNegative()));
+                    } else if (name.equals(LOC)) {
                         coreReason.add(new AddressLiteral(tuple, lit.isNegative()));
-                    } else if (rel instanceof RelFencerel) {
+                    } else if (rel.getDefinition() instanceof Fences) {
                         // This is a special case since "fencerel(F) = po;[F];po".
                         // We should do this transformation directly on the Wmm to avoid this special reasoning
                         if (lit.isNegative()) {

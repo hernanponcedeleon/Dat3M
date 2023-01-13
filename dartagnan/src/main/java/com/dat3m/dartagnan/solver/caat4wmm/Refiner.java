@@ -13,8 +13,7 @@ import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.Relation;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
@@ -22,7 +21,6 @@ import java.util.*;
 import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_SYMMETRY_LEARNING;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /*
     This class handles the computation of refinement clauses from violations found by the WMM-solver procedure.
@@ -32,13 +30,11 @@ public class Refiner {
 
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
 
-    private final Wmm memoryModel;
     private final ThreadSymmetry symm;
     private final List<Function<Event, Event>> symmPermutations;
     private final SymmetryLearning learningOption;
 
-    public Refiner(Wmm memoryModel, Context analysisContext) {
-        this.memoryModel = checkNotNull(memoryModel);
+    public Refiner(Context analysisContext) {
         this.learningOption = REFINEMENT_SYMMETRY_LEARNING;
         symm = analysisContext.requires(ThreadSymmetry.class);
         symmPermutations = computeSymmetryPermutations();
@@ -133,7 +129,7 @@ public class Refiner {
             enc = encoder.sameAddress(e1, e2);
         } else if (literal instanceof RelLiteral) {
             RelLiteral lit = (RelLiteral) literal;
-            Relation rel = memoryModel.getRelation(lit.getName());
+            Relation rel = encoder.getTask().getMemoryModel().getRelation(lit.getName());
             enc = encoder.edge(rel,
                     perm.apply(lit.getData().getFirst()),
                     perm.apply(lit.getData().getSecond()));

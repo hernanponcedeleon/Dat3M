@@ -12,24 +12,22 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.*;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
-import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.relation.base.RelRMW;
-import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
-import com.dat3m.dartagnan.wmm.relation.base.memory.RelLoc;
-import com.dat3m.dartagnan.wmm.relation.base.memory.RelRf;
-import com.dat3m.dartagnan.wmm.relation.base.stat.*;
-import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
-import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
-import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
-import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
-import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
-import com.dat3m.dartagnan.wmm.relation.unary.RelRangeIdentity;
-import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
+import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.definition.Composition;
+import com.dat3m.dartagnan.wmm.definition.Intersection;
+import com.dat3m.dartagnan.wmm.definition.Difference;
+import com.dat3m.dartagnan.wmm.definition.Union;
+import com.dat3m.dartagnan.wmm.definition.Inverse;
+import com.dat3m.dartagnan.wmm.definition.RangeIdentity;
+import com.dat3m.dartagnan.wmm.definition.TransitiveClosure;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
@@ -37,6 +35,7 @@ import com.google.common.collect.Maps;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
@@ -63,6 +62,7 @@ public class ExecutionGraph {
     // assigned during construction.
 
     private final VerificationTask verificationTask;
+    private final RelationAnalysis ra;
     private final BiMap<Relation, RelationGraph> relationGraphMap;
     private final BiMap<FilterAbstract, SetPredicate> filterSetMap;
     private final BiMap<Axiom, Constraint> constraintMap;
@@ -75,8 +75,9 @@ public class ExecutionGraph {
 
     // ============= Construction & Init ===============
 
-    public ExecutionGraph(VerificationTask verificationTask, Set<Relation> cutRelations, boolean createOnlyAxiomRelevantGraphs) {
+    public ExecutionGraph(VerificationTask verificationTask, Context analysisContext, Set<Relation> cutRelations, boolean createOnlyAxiomRelevantGraphs) {
         this.verificationTask = verificationTask;
+        ra = analysisContext.requires(RelationAnalysis.class);
         relationGraphMap = HashBiMap.create();
         filterSetMap = HashBiMap.create();
         constraintMap = HashBiMap.create();
@@ -96,6 +97,29 @@ public class ExecutionGraph {
 
         Set<RelationGraph> graphs = new HashSet<>();
         Set<Constraint> constraints = new HashSet<>();
+        DependencyGraph<Relation> dependencyGraph = DependencyGraph.from(memoryModel.getRelations());
+
+        for (Set<DependencyGraph<Relation>.Node> component : dependencyGraph.getSCCs()) {
+            if (component.size() > 1) {
+                for (DependencyGraph<Relation>.Node node : component) {
+                    Relation relation = node.getContent();
+                    if (relation.isRecursive()) {
+                        RecursiveGraph graph = new RecursiveGraph();
+                        graph.setName(relation.getNameOrTerm() + "_rec");
+                        graphs.add(graph);
+                        relationGraphMap.put(relation, graph);
+                    }
+                }
+                for (DependencyGraph<Relation>.Node node : component) {
+                    Relation relation = node.getContent();
+                    if (relation.isRecursive()) {
+                        // side effect leads to calculation of children
+                        RecursiveGraph graph = (RecursiveGraph) relationGraphMap.get(relation);
+                        graph.setConcreteGraph(createGraphFromRelation(relation));
+                    }
+                }
+            }
+        }
 
         for (Axiom axiom : memoryModel.getAxioms()) {
             if (axiom instanceof ForceEncodeAxiom || axiom.isFlagged()) {
@@ -107,7 +131,7 @@ public class ExecutionGraph {
 
         if (!createOnlyAxiomRelevantGraphs) {
             for (Relation rel : DependencyGraph.from(memoryModel.getRelations()).getNodeContents()) {
-                if (!EXCLUDED_RELS.contains(rel.getName())) {
+                if (!EXCLUDED_RELS.contains(rel.getNameOrTerm())) {
                     RelationGraph graph = getOrCreateGraphFromRelation(rel);
                     graphs.add(graph);
                 }
@@ -198,13 +222,20 @@ public class ExecutionGraph {
         if (relationGraphMap.containsKey(rel)) {
             return relationGraphMap.get(rel);
         }
+        RelationGraph graph = createGraphFromRelation(rel);
+        relationGraphMap.put(rel, graph);
+        return graph;
+    }
 
+    private RelationGraph createGraphFromRelation(Relation rel) {
         RelationGraph graph;
-        Class<?> relClass = rel.getClass();
+        Class<?> relClass = rel.getDefinition().getClass();
+        List<Relation> dependencies = rel.getDependencies();
 
         // ===== Filter special relations ======
-        if (SPECIAL_RELS.contains(rel.getName())) {
-            switch (rel.getName()) {
+        String name = rel.getNameOrTerm();
+        if (SPECIAL_RELS.contains(name)) {
+            switch (name) {
                 case CTRL:
                     graph = new CtrlDepGraph();
                     break;
@@ -218,90 +249,59 @@ public class ExecutionGraph {
                     graph = new RcuGraph();
                     break;
                 default:
-                    throw new UnsupportedOperationException(rel.getName() + " is marked as special relation but has associated graph.");
+                    throw new UnsupportedOperationException(name + " is marked as special relation but has associated graph.");
             }
         } else if (cutRelations.contains(rel)) {
-            graph = new DynamicDefaultWMMGraph(rel);
-        } else if (relClass == RelRf.class) {
+            graph = new DynamicDefaultWMMGraph(name);
+        } else if (relClass == ReadFrom.class) {
             graph = new ReadFromGraph();
-        } else if (relClass == RelLoc.class) {
+        } else if (relClass == SameAddress.class) {
             graph = new LocationGraph();
-        } else if (relClass == RelPo.class) {
+        } else if (relClass == ProgramOrder.class) {
             graph = new ProgramOrderGraph();
-        } else if (relClass == RelCo.class) {
+        } else if (relClass == MemoryOrder.class) {
             graph = new CoherenceGraph();
-        } else if (rel.isRecursiveRelation()) {
-            RecursiveGraph recGraph = new RecursiveGraph();
-            recGraph.setName(rel.getName() + "_rec");
-            relationGraphMap.put(rel, recGraph);
-            recGraph.setConcreteGraph(getOrCreateGraphFromRelation(rel.getInner()));
-            return recGraph;
-        } else if (rel.isUnaryRelation()) {
-            Relation innerRelation = rel.getInner();
-            RelationGraph innerGraph = getOrCreateGraphFromRelation(innerRelation);
-            // A safety check because recursion might have computed this RelationGraph already
-            if (relationGraphMap.containsKey(rel)) {
-                return relationGraphMap.get(rel);
+        } else if (relClass == Inverse.class || relClass == TransitiveClosure.class || relClass == RangeIdentity.class) {
+            RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
+            graph = relClass == Inverse.class ? new InverseGraph(g) :
+                    relClass == TransitiveClosure.class ? new TransitiveGraph(g) :
+                            new RangeIdentityGraph(g);
+        } else if (relClass == Union.class || relClass == Intersection.class) {
+            RelationGraph[] graphs = new RelationGraph[dependencies.size()];
+            for (int i = 0; i < graphs.length; i++) {
+                graphs[i] = getOrCreateGraphFromRelation(dependencies.get(i));
             }
-
-            if (relClass == RelInverse.class) {
-                graph = new InverseGraph(innerGraph);
-            } else if (relClass == RelTrans.class) {
-                graph = new TransitiveGraph(innerGraph);
-            } else if (relClass == RelRangeIdentity.class) {
-                graph = new RangeIdentityGraph(innerGraph);
-            } else {
-                throw new UnsupportedOperationException(relClass.toString() + " has no associated graph yet.");
-            }
-        } else if (rel.isBinaryRelation()) {
-            RelationGraph first = getOrCreateGraphFromRelation(rel.getFirst());
-            RelationGraph second = getOrCreateGraphFromRelation(rel.getSecond());
-
-            // A safety check because recursion might have computed this RelationGraph already
-            if (relationGraphMap.containsKey(rel)) {
-                return relationGraphMap.get(rel);
-            }
-
-            if (relClass == RelUnion.class) {
-                graph = new UnionGraph(first, second);
-            } else if (relClass == RelIntersection.class) {
-                graph = new IntersectionGraph(first, second);
-            } else if (relClass == RelComposition.class) {
-                graph = new CompositionGraph(first, second);
-            } else if (relClass == RelMinus.class) {
-                graph = new DifferenceGraph(first, second);
-            } else {
-                throw new UnsupportedOperationException(relClass.toString() + " has no associated graph yet.");
-            }
-        } else if (rel.isStaticRelation()) {
-            if (relClass == RelCartesian.class) {
-                RelCartesian cartRel = (RelCartesian)rel;
-                SetPredicate lhs = getOrCreateSetFromFilter(cartRel.getFirstFilter());
-                SetPredicate rhs = getOrCreateSetFromFilter(cartRel.getSecondFilter());
-                graph = new CartesianGraph(lhs, rhs);
-            } else if (relClass == RelRMW.class) {
-                graph = new RMWGraph();
-            } else if (relClass == RelExt.class) {
-                graph = new ExternalGraph();
-            } else if (relClass == RelInt.class) {
-                graph = new InternalGraph();
-            } else if (relClass == RelFencerel.class) {
-                graph = new FenceGraph(((RelFencerel) rel).getFilter());
-            } else if (relClass == RelSetIdentity.class) {
-                SetPredicate set = getOrCreateSetFromFilter(((RelSetIdentity) rel).getFilter());
-                graph = new SetIdentityGraph(set);
-            } else if (relClass == RelEmpty.class) {
-                graph = new EmptyGraph();
-            } else {
-                // This is a fallback for all unimplemented static graphs
-                graph = new StaticDefaultWMMGraph(rel);
-            }
+            graph = relClass == Union.class ? new UnionGraph(graphs) :
+                    new IntersectionGraph(graphs);
+        } else if (relClass == Composition.class || relClass == Difference.class) {
+            RelationGraph g1 = getOrCreateGraphFromRelation(dependencies.get(0));
+            RelationGraph g2 = getOrCreateGraphFromRelation(dependencies.get(1));
+            graph = relClass == Composition.class ? new CompositionGraph(g1, g2) :
+                    new DifferenceGraph(g1, g2);
+        } else if (relClass == CartesianProduct.class) {
+            CartesianProduct cartRel = (CartesianProduct)rel.getDefinition();
+            SetPredicate lhs = getOrCreateSetFromFilter(cartRel.getFirstFilter());
+            SetPredicate rhs = getOrCreateSetFromFilter(cartRel.getSecondFilter());
+            graph = new CartesianGraph(lhs, rhs);
+        } else if (relClass == ReadModifyWrites.class) {
+            graph = new RMWGraph();
+        } else if (relClass == DifferentThreads.class) {
+            graph = new ExternalGraph();
+        } else if (relClass == SameThread.class) {
+            graph = new InternalGraph();
+        } else if (relClass == Fences.class) {
+            graph = new FenceGraph(((Fences) rel.getDefinition()).getFilter());
+        } else if (relClass == Identity.class) {
+            SetPredicate set = getOrCreateSetFromFilter(((Identity) rel.getDefinition()).getFilter());
+            graph = new SetIdentityGraph(set);
+        } else if (relClass == Empty.class) {
+            graph = new EmptyGraph();
         } else {
-            throw new UnsupportedOperationException(relClass.toString() + " has no associated graph yet.");
+            // This is a fallback for all unimplemented static graphs
+            graph = new StaticDefaultWMMGraph(rel, ra);
         }
 
-        graph.setName(rel.getName());
-        relationGraphMap.put(rel, graph);
+        graph.setName(name);
         return graph;
     }
 
