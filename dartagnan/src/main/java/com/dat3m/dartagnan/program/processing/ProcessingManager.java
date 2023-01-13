@@ -67,7 +67,7 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_AFTER_PROCESSING,
             description = "Prints the program after all processing.",
             secure = true)
-    private boolean printAfterProcessing = false;
+    private boolean printAfterProcessing = true;
 
 
 // ======================================================================
@@ -79,6 +79,7 @@ public class ProcessingManager implements ProgramProcessor {
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing") : null,
                 Memory.fixateMemoryValues(),
                 UnreachableCodeElimination.fromConfig(config),
+                ComplexBlockSplitting.newInstance(),
                 BranchReordering.fromConfig(config),
                 LoopFormVerification.fromConfig(config),
                 Simplifier.fromConfig(config),
