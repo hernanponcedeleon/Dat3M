@@ -183,6 +183,8 @@ public class WmmEncoder implements Encoder {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
             final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
             final RelationAnalysis.Knowledge k2 = ra.getKnowledge(r2);
+            final Set<Tuple> a1 = Sets.union(encodeSets.get(r1), k1.getMustSet());
+            final Set<Tuple> a2 = Sets.union(encodeSets.get(r2), k2.getMustSet());
             for (Tuple tuple : encodeSets.get(rel)) {
                 BooleanFormula expr = bmgr.makeFalse();
                 if (k.getMustSet().contains(tuple)) {
@@ -190,8 +192,6 @@ public class WmmEncoder implements Encoder {
                 } else {
                     Event x = tuple.getFirst();
                     Event z = tuple.getSecond();
-                    Set<Tuple> a1 = Sets.union(encodeSets.get(r1), k1.getMustSet());
-                    Set<Tuple> a2 = Sets.union(encodeSets.get(r2), k2.getMustSet());
                     for (Tuple t1 : k1.getMaySet().getByFirst(x)) {
                         Event y = t1.getSecond();
                         Tuple t2 = new Tuple(y, z);
