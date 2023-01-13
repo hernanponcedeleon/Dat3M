@@ -79,6 +79,7 @@ public class ProcessingManager implements ProgramProcessor {
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing") : null,
                 Memory.fixateMemoryValues(),
                 UnreachableCodeElimination.fromConfig(config),
+                ComplexBlockSplitting.newInstance(),
                 BranchReordering.fromConfig(config),
                 LoopFormVerification.fromConfig(config),
                 Simplifier.fromConfig(config),
