@@ -136,7 +136,7 @@ public class RefinementSolver extends ModelChecker {
         prover.addConstraint(symmEncoder.encodeFullSymmetryBreaking());
 
         prover.push();
-        prover.addConstraint(propertyEncoder.encodeSpecificationViolation());
+        prover.addConstraint(propertyEncoder.encodeSpecificationViolations());
 
         //  ------ Just for statistics ------
         List<WMMSolver.Statistics> statList = new ArrayList<>();

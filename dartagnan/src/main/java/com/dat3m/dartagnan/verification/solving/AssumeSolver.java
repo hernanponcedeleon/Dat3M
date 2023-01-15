@@ -69,7 +69,7 @@ public class AssumeSolver extends ModelChecker {
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
-        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecificationViolation();
+        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecificationViolations();
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
         prover.addConstraint(assumedSpec);
         

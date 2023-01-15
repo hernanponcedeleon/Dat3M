@@ -74,7 +74,7 @@ public class PropertyEncoder implements Encoder {
                 .stream().map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
     }
 
-    public BooleanFormula encodeSpecificationViolation() {
+    public BooleanFormula encodeSpecificationViolations() {
         final EnumSet<Property> property = context.getTask().getProperty();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 
@@ -104,19 +104,21 @@ public class PropertyEncoder implements Encoder {
 
     private BooleanFormula encodeLastCoConstraints() {
         final Relation co = memoryModel.getRelation(CO);
-        SolverContext ctx = context.getSolverContext();
+        final SolverContext ctx = context.getSolverContext();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final EncodingContext.EdgeEncoder edge = context.edge(co);
-        final RelationAnalysis.Knowledge knowledge = ra.getKnowledge(co);
+        final EncodingContext.EdgeEncoder coEncoder = context.edge(co);
+        final TupleSet maySet = ra.getKnowledge(co).getMaySet();
+        final TupleSet mustSet = ra.getKnowledge(co).getMustSet();
         final List<Event> initEvents = program.getCache().getEvents(FilterBasic.get(INIT));
         final List<Event> writes = program.getCache().getEvents(FilterBasic.get(WRITE));
         final boolean doEncodeFinalAddressValues = program.getFormat() == LITMUS;
         // Find transitively implied coherences. We can use these to reduce the encoding.
         final Set<Tuple> transCo = ra.findTransitivelyImpliedCo(co);
         // Find all writes that are never last, i.e., those that will always have a co-successor.
-        final Set<Event> dominatedWrites = knowledge.getMustSet().stream()
+        final Set<Event> dominatedWrites = mustSet.stream()
                 .filter(t -> exec.isImplied(t.getFirst(), t.getSecond()))
                 .map(Tuple::getFirst).collect(Collectors.toSet());
+
         // ---- Construct encoding ----
         BooleanFormula enc = bmgr.makeTrue();
         for (Event writeEvent : writes) {
@@ -127,14 +129,14 @@ public class PropertyEncoder implements Encoder {
             }
             BooleanFormula isLast = context.execution(w1);
             // ---- Find all possibly overwriting writes ----
-            for (Tuple t : knowledge.getMaySet().getByFirst(w1)) {
-                if (transCo.contains(t)) {
+            for (Tuple coEdge : maySet.getByFirst(w1)) {
+                if (transCo.contains(coEdge)) {
                     // We can skip the co-edge (w1,w2), because there will be an intermediate write w3
                     // that already witnesses that w1 is not last.
                     continue;
                 }
-                Event w2 = t.getSecond();
-                BooleanFormula isAfter = bmgr.not(knowledge.getMustSet().contains(t) ? context.execution(w2) : edge.encode(t));
+                Event w2 = coEdge.getSecond();
+                BooleanFormula isAfter = bmgr.not(mustSet.contains(coEdge) ? context.execution(w2) : coEncoder.encode(coEdge));
                 isLast = bmgr.and(isLast, isAfter);
             }
             BooleanFormula lastCoExpr = lastCoVar(w1);
@@ -172,7 +174,6 @@ public class PropertyEncoder implements Encoder {
         // FIXME: Assert.encode already negates its meaning (it is true IFF the assertion fails)
         //        This inversion is non-obvious and should not happen.
         final BooleanFormula assertionEncoding = program.getAss().encode(context);
-        // We use the SMT variable to extract from the model if the property was violated
         final BooleanFormula violationVariable = REACHABILITY.getSMTVariable(context);
         return bmgr.and(violationVariable, bmgr.equivalence(violationVariable, assertionEncoding));
     }
@@ -292,7 +293,7 @@ public class PropertyEncoder implements Encoder {
     }
 
     /*
-        Encodes the liveness property.
+        Encoder for the liveness property.
 
         We have a liveness violation in some execution if
             - At least one thread is stuck inside a loop (*)
@@ -301,14 +302,14 @@ public class PropertyEncoder implements Encoder {
         (*) A thread is stuck if it finishes a loop iteration
             - without causing side-effects (e.g., visible stores)
             - while reading only from co-maximal stores
-        => Without external help, a stuck thread will never be able to exit the loop
+        => Without external help, a stuck thread will never be able to exit the loop.
 
         (**) A thread terminates normally IFF it terminates without
             - triggering an assertion violation
             - reaching a bound event caused by insufficient unrolling.
 
-        NOTE: The definition of "stuck" is underapproximate: there are cases where a thread can actually be
-        stuck inside a loop without satisfying the stated conditions (e.g., while producing side effects).
+        NOTE: The definition of "stuck" is under-approximate: there are cases where a thread can actually be
+        in a deadlock without satisfying the stated conditions (e.g., while producing side effects).
         Reasoning about such cases is more involved.
     */
     private class LivenessEncoder {
@@ -333,23 +334,22 @@ public class PropertyEncoder implements Encoder {
             final Map<Thread, BooleanFormula> isStuckMap = Maps.toMap(program.getThreads(),
                     t -> this.generateStucknessEncoding(spinloopsMap.get(t), context));
 
-            // LivenessViolation <=> allStuckOrDone /\ atLeastOneStuck
+            // Deadlock <=> allStuckOrDone /\ atLeastOneStuck
             BooleanFormula allStuckOrDone = bmgr.makeTrue();
             BooleanFormula atLeastOneStuck = bmgr.makeFalse();
             for (Thread thread : program.getThreads()) {
                 final BooleanFormula isStuck = isStuckMap.get(thread);
-                final BooleanFormula isProperlyTerminating = thread.getCache()
+                final BooleanFormula isTerminatingNormally = thread.getCache()
                         .getEvents(FilterBasic.get(Tag.EARLYTERMINATION)).stream()
                         .map(context::execution).map(bmgr::not).reduce(bmgr.makeTrue(), bmgr::and);
 
                 atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
-                allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, isProperlyTerminating));
+                allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, isTerminatingNormally));
             }
-            // We use the SMT variable to extract from the model if the property was violated
+
             final BooleanFormula deadlockVariable = LIVENESS.getSMTVariable(context);
             final BooleanFormula hasLivenessViolation = bmgr.and(allStuckOrDone, atLeastOneStuck);
-
-            return  bmgr.and(deadlockVariable, bmgr.equivalence(deadlockVariable, hasLivenessViolation));
+            return bmgr.and(deadlockVariable, bmgr.equivalence(deadlockVariable, hasLivenessViolation));
         }
 
         // Compute "stuckness": A thread is stuck if it reaches a spin loop bound event

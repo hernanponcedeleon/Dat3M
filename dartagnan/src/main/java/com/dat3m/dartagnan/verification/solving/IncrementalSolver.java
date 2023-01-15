@@ -67,7 +67,7 @@ public class IncrementalSolver extends ModelChecker {
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
         logger.info("Starting push()");
         prover.push();
-        prover.addConstraint(propertyEncoder.encodeSpecificationViolation());
+        prover.addConstraint(propertyEncoder.encodeSpecificationViolations());
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsat()) {

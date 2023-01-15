@@ -78,7 +78,7 @@ public class TwoSolvers extends ModelChecker {
         prover1.addConstraint(encodeSymm);
         prover2.addConstraint(encodeSymm);
 
-        prover1.addConstraint(propertyEncoder.encodeSpecificationViolation());
+        prover1.addConstraint(propertyEncoder.encodeSpecificationViolations());
 
         logger.info("Starting first solver.check()");
         if(prover1.isUnsat()) {
