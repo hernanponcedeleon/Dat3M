@@ -69,7 +69,7 @@ public class AssumeSolver extends ModelChecker {
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
-        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification();
+        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecificationViolation();
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
         prover.addConstraint(assumedSpec);
         
@@ -81,7 +81,7 @@ public class AssumeSolver extends ModelChecker {
         } else {
             res = FAIL;
             if(!task.getProgram().getAss().getInvert()) {
-                logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, ctx);
+                logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, context);
             }
         }
 

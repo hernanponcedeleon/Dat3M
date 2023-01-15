@@ -15,6 +15,8 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.collect.Maps;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -24,7 +26,6 @@ import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -66,193 +67,39 @@ public class PropertyEncoder implements Encoder {
     @Override
     public void initializeEncoding(SolverContext context) { }
 
-    public BooleanFormula encodeSpecification() {
-        EnumSet<Property> property = context.getTask().getProperty();
-    	BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-    	// We have a default property therefore this false will always be overwritten
-    	BooleanFormula enc = bmgr.makeFalse();
-    	if(property.contains(REACHABILITY)) {
-    		enc = bmgr.or(enc, encodeAssertions());
-    	}
-    	if(property.contains(LIVENESS)) {
-    		enc = bmgr.or(enc, encodeLiveness());
-    	}
-    	if(property.contains(RACES)) {
-    		enc = bmgr.or(enc, encodeDataRaces());
-    	}
-    	if(property.contains(CAT)) {
-    		enc = bmgr.or(enc, encodeCATProperties());
-    	}
-        if (program.getFormat().equals(LITMUS) || property.contains(LIVENESS)) {
-            enc = bmgr.and(enc, encodeLastCoConstraints());
-        }
-    	return enc;
-    }
-
     public BooleanFormula encodeBoundEventExec() {
         logger.info("Encoding bound events execution");
-        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return program.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.BOUND), FilterBasic.get(Tag.SPINLOOP)))
                 .stream().map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
     }
 
-    public BooleanFormula encodeAssertions() {
-        logger.info("Encoding assertions");
-        SolverContext ctx = context.getSolverContext();
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula assertionEncoding = program.getAss().encode(context);
-        // We use the SMT variable to extract from the model if the property was violated
-		BooleanFormula enc = bmgr.equivalence(REACHABILITY.getSMTVariable(ctx), assertionEncoding);
-		// No need to use the SMT variable if the formula is trivially false 
-        return bmgr.isFalse(assertionEncoding) ? assertionEncoding : bmgr.and(REACHABILITY.getSMTVariable(ctx), enc);
-    }
+    public BooleanFormula encodeSpecificationViolation() {
+        final EnumSet<Property> property = context.getTask().getProperty();
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 
-    public BooleanFormula encodeCATProperties() {
-        logger.info("Encoding CAT properties");
-        SolverContext ctx = context.getSolverContext();
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula cat = bmgr.makeTrue();
-        BooleanFormula one = bmgr.makeFalse();
-    	for(Axiom ax : memoryModel.getAxioms()) {
-    		// Only flagged axioms are encoded as properties
-    		if(!ax.isFlagged()) {
-    			continue;
-    		}
-            BooleanFormula v = CAT.getSMTVariable(ax, ctx);
-			cat = bmgr.and(cat, bmgr.equivalence(v, ax.consistent(context)));
-			one = bmgr.or(one, v);
-    	}
-		// No need to use the SMT variable if the formula is trivially false
-        return bmgr.isFalse(one) ? one : bmgr.and(one, cat);
-    }
-
-    public BooleanFormula encodeLiveness() {
-
-        // We assume a spinloop to consist of a tagged label and bound jump.
-        // Further, we assume that the spinloops are indeed correct, i.e., side-effect free
-        class SpinLoop {
-            public List<Load> loads = new ArrayList<>();
-            public Event bound;
+        BooleanFormula specViolation = bmgr.makeFalse();
+        if(property.contains(REACHABILITY)) {
+            specViolation = bmgr.or(specViolation, encodeAssertionViolations());
+        }
+        if(property.contains(LIVENESS)) {
+            specViolation = bmgr.or(specViolation, encodeDeadlocks());
+        }
+        if(property.contains(RACES)) {
+            specViolation = bmgr.or(specViolation, encodeDataRaces());
+        }
+        if(property.contains(CAT)) {
+            specViolation = bmgr.or(specViolation, encodeCATPropertyViolations());
         }
 
-        logger.info("Encoding liveness");
-
-        Map<Thread, List<SpinLoop>> spinloopsMap = new HashMap<>();
-        // Find spinloops of all threads
-        for (Thread t : program.getThreads()) {
-            List<Event> spinStarts = t.getEvents().stream().filter(e -> e instanceof Label && e.is(Tag.SPINLOOP)).collect(Collectors.toList());
-            List<SpinLoop> spinLoops = new ArrayList<>();
-            spinloopsMap.put(t, spinLoops);
-
-            Event cur = t.getEntry();
-            List<Load> loads = new ArrayList<>();
-            while(cur != null) {
-            	if(spinStarts.contains(cur)) {
-            		// A new loop started: we reset the load list
-            		loads = new ArrayList<>();
-            	}
-                if(cur.is(Tag.READ)) {
-                	// Update
-                    loads.add((Load)cur);
-                }
-                if(cur.is(Tag.SPINLOOP) && !spinStarts.contains(cur)) {
-                	// We found one possible end of the loop
-                	// There might be others thus we keep the load list
-                    SpinLoop loop = new SpinLoop();
-                    loop.bound = cur;
-                    loop.loads.addAll(loads);
-                	spinLoops.add(loop);
-                }
-            	cur = cur.getSuccessor();
-            }
+        if (program.getFormat().equals(LITMUS) || property.contains(LIVENESS)) {
+            // Both litmus assertions and liveness need to identify
+            // the final stores to addresses.
+            // TODO Optimization: This encoding can be restricted to only those addresses
+            //  that are relevant for the specification (e.g., only variables that are used in spin loops).
+            specViolation = bmgr.and(specViolation, encodeLastCoConstraints());
         }
-
-        SolverContext ctx = context.getSolverContext();
-        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        Relation rf = memoryModel.getRelation(RelationNameRepository.RF);
-        final EncodingContext.EdgeEncoder edge = context.edge(rf);
-        // Compute "stuckness": A thread is stuck if it reaches a spinloop bound event
-        // while reading from a co-maximal write.
-        Map<Thread, BooleanFormula> isStuckMap = new HashMap<>();
-        for (Thread t : program.getThreads()) {
-            List<SpinLoop> loops = spinloopsMap.get(t);
-            if (loops.isEmpty()) {
-                continue;
-            }
-
-            BooleanFormula isStuck = bmgr.makeFalse();
-            for (SpinLoop pair : loops) {
-                BooleanFormula allCoMaximalLoad = bmgr.makeTrue();
-                for (Load load : pair.loads) {
-                    BooleanFormula coMaximalLoad = bmgr.makeFalse();
-                    for (Tuple rfEdge : ra.getKnowledge(rf).getMaySet().getBySecond(load)) {
-                        coMaximalLoad = bmgr.or(coMaximalLoad, bmgr.and(edge.encode(rfEdge), lastCoVar(rfEdge.getFirst())));
-                    }
-                    allCoMaximalLoad = bmgr.and(allCoMaximalLoad, bmgr.implication(context.execution(load), coMaximalLoad));
-                }
-                isStuck  = bmgr.or(isStuck, bmgr.and(context.execution(pair.bound), allCoMaximalLoad));
-            }
-            isStuckMap.put(t, isStuck);
-        }
-
-        // LivenessViolation <=> allStuckOrDone /\ atLeastOneStuck
-        BooleanFormula allStuckOrDone = bmgr.makeTrue();
-        BooleanFormula atLeastOneStuck = bmgr.makeFalse();
-        for (Thread t : program.getThreads()) {
-            BooleanFormula isStuck = isStuckMap.getOrDefault(t, bmgr.makeFalse());
-            BooleanFormula pending = t.getCache().getEvents(FilterBasic.get(Tag.EARLYTERMINATION)).stream()
-                    .map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
-
-            atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
-            allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, bmgr.not(pending)));
-        }
-
-        BooleanFormula livenessViolation = bmgr.and(allStuckOrDone, atLeastOneStuck);
-        // We use the SMT variable to extract from the model if the property was violated
-		BooleanFormula enc = bmgr.equivalence(LIVENESS.getSMTVariable(ctx), livenessViolation);
-		// No need to use the SMT variable if the formula is trivially false 
-        return bmgr.isFalse(enc) ? enc : bmgr.and(LIVENESS.getSMTVariable(ctx), enc);
-    }
-
-    public BooleanFormula encodeDataRaces() {
-        final Relation hbRelation = memoryModel.getRelation("hb");
-        final EncodingContext.EdgeEncoder hb = context.edge(hbRelation);
-        checkState(memoryModel.getAxioms().stream().anyMatch(ax ->
-                        ax.isAcyclicity() && ax.getRelation().equals(hbRelation)),
-                "The provided WMM needs an 'acyclic(hb)' axiom to encode data races.");
-        logger.info("Encoding data-races");
-        SolverContext ctx = context.getSolverContext();
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
-
-        BooleanFormula enc = bmgr.makeFalse();
-        for(Thread t1 : program.getThreads()) {
-            for(Thread t2 : program.getThreads()) {
-                if(t1.getId() == t2.getId()) {
-                    continue;
-                }
-                for(Event e1 : t1.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.WRITE), FilterBasic.get(Tag.INIT)))) {
-                    MemEvent w = (MemEvent)e1;
-                    for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.INIT)))) {
-                        MemEvent m = (MemEvent)e2;
-                        if(w.hasFilter(Tag.RMW) && m.hasFilter(Tag.RMW)) {
-                            continue;
-                        }
-                        if(w.canRace() && m.canRace() && alias.mayAlias(w, m)) {
-                            BooleanFormula conflict = bmgr.and(context.execution(m, w), hb.encode(m, w),
-                                    context.sameAddress(w, m),
-                                    imgr.equal(context.clockVariable("hb", w),
-                                            imgr.add(context.clockVariable("hb", m), imgr.makeNumber(BigInteger.ONE))));
-                            enc = bmgr.or(enc, conflict);
-                        }
-                    }
-                }
-            }
-        }
-        // We use the SMT variable to extract from the model if the property was violated
-		enc = bmgr.equivalence(RACES.getSMTVariable(ctx), enc);
-		// No need to use the SMT variable if the formula is trivially false 
-        return bmgr.isFalse(enc) ? enc : bmgr.and(RACES.getSMTVariable(ctx), enc);
+        return specViolation;
     }
 
     private BooleanFormula encodeLastCoConstraints() {
@@ -312,4 +159,264 @@ public class PropertyEncoder implements Encoder {
     private BooleanFormula lastCoVar(Event write) {
         return context.getBooleanFormulaManager().makeVariable("co_last(" + write.getGlobalId() + ")");
     }
+
+    // ======================================================================
+    // ======================================================================
+    // ========================== Reachability ==============================
+    // ======================================================================
+    // ======================================================================
+
+    public BooleanFormula encodeAssertionViolations() {
+        logger.info("Encoding assertions");
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        // FIXME: Assert.encode already negates its meaning (it is true IFF the assertion fails)
+        //        This inversion is non-obvious and should not happen.
+        final BooleanFormula assertionEncoding = program.getAss().encode(context);
+        // We use the SMT variable to extract from the model if the property was violated
+        final BooleanFormula violationVariable = REACHABILITY.getSMTVariable(context);
+        return bmgr.and(violationVariable, bmgr.equivalence(violationVariable, assertionEncoding));
+    }
+
+    // ======================================================================
+    // ======================================================================
+    // ========================= CAT Properties  ============================
+    // ======================================================================
+    // ======================================================================
+
+    /*
+        CAT Properties are defined within the .cat model itself using flagged axioms.
+        CAUTION: A flagged axiom is considered a specification violation if it is satisfied!
+    */
+    public BooleanFormula encodeCATPropertyViolations() {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final EncodingContext ctx = this.context;
+        final Wmm memoryModel = this.memoryModel;
+        final List<Axiom> flaggedAxioms = memoryModel.getAxioms().stream()
+                .filter(Axiom::isFlagged).collect(Collectors.toList());
+
+        if (flaggedAxioms.isEmpty()) {
+            logger.info("No CAT properties specified in the WMM. Skipping encoding.");
+            return bmgr.makeFalse();
+        } else {
+            logger.info("Encoding CAT properties");
+        }
+
+        BooleanFormula axiomTracking = bmgr.makeTrue();
+        BooleanFormula atLeastOneViolation = bmgr.makeFalse();
+    	for(Axiom ax : flaggedAxioms) {
+            final BooleanFormula violationVariable = CAT.getSMTVariable(ax, ctx);
+			axiomTracking = bmgr.and(axiomTracking, bmgr.equivalence(violationVariable, ax.consistent(ctx)));
+			atLeastOneViolation = bmgr.or(atLeastOneViolation, violationVariable);
+    	}
+        return bmgr.and(atLeastOneViolation, axiomTracking);
+    }
+
+
+    // ======================================================================
+    // ======================================================================
+    // ============================ Data races ==============================
+    // ======================================================================
+    // ======================================================================
+
+    /*
+        This data race encoding is only valid for models with a defined "hb"-relation
+        Typically, this is only the case for SC/SVCOMP.
+        More general notions of data races (for e.g. weak models) can be defined as a flagged axiom
+        inside the .cat, just like C11 and LKMM do.
+    */
+    public BooleanFormula encodeDataRaces() {
+        logger.info("Encoding data races");
+
+        final Wmm memoryModel = this.memoryModel;
+        checkState(memoryModel.containsRelation("hb"),
+                "The provided WMM needs a happens-before relation 'hb' to encode data races.");
+        final Relation hbRelation = memoryModel.getRelation("hb");
+        checkState(memoryModel.getAxioms().stream().anyMatch(ax ->
+                        ax.isAcyclicity() && ax.getRelation().equals(hbRelation)),
+                "The provided WMM needs an 'acyclic(hb)' axiom to encode data races.");
+
+        final EncodingContext ctx = this.context;
+        final BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
+        final IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+        final EncodingContext.EdgeEncoder hbEncoder = ctx.edge(hbRelation);
+        final Program program = this.program;
+        final AliasAnalysis alias = this.alias;
+
+
+        BooleanFormula hasRace = bmgr.makeFalse();
+        for(Thread t1 : program.getThreads()) {
+            for(Thread t2 : program.getThreads()) {
+                if(t1 == t2) {
+                    continue;
+                }
+                for(Event e1 : t1.getCache().getEvents(FilterMinus.get(FilterBasic.get(WRITE), FilterBasic.get(INIT)))) {
+                    MemEvent w = (MemEvent)e1;
+                    if (!w.canRace()) {
+                        continue;
+                    }
+                    for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.MEMORY), FilterBasic.get(INIT)))) {
+                        MemEvent m = (MemEvent)e2;
+                        if((w.hasFilter(Tag.RMW) && m.hasFilter(Tag.RMW)) || !m.canRace() || !alias.mayAlias(m, w)) {
+                            continue;
+                        }
+
+                        final BooleanFormula isConflictingPair = bmgr.and(ctx.execution(m, w), ctx.sameAddress(m, w));
+                        final BooleanFormula isAdjacentInHb = bmgr.and(
+                                hbEncoder.encode(m, w), // In Hb
+                                imgr.equal( // Adjacent (We assume "w-hb->m" cause in a race the store can be assumed to be first)
+                                        ctx.clockVariable("hb", w),
+                                        imgr.add(ctx.clockVariable("hb", m), imgr.makeNumber(1))
+                                )
+                        );
+                        final BooleanFormula isRacingPair = bmgr.and(isConflictingPair, isAdjacentInHb);
+                        hasRace = bmgr.or(hasRace, isRacingPair);
+                    }
+                }
+            }
+        }
+        // We use the SMT variable to extract from the model if the property was violated
+        final BooleanFormula raceVariable = RACES.getSMTVariable(ctx);
+        return bmgr.and(raceVariable, bmgr.equivalence(raceVariable, hasRace));
+    }
+
+
+    // ======================================================================
+    // ======================================================================
+    // ============================= Liveness ===============================
+    // ======================================================================
+    // ======================================================================
+
+    public BooleanFormula encodeDeadlocks() {
+        logger.info("Encoding liveness");
+        return new LivenessEncoder().encodeDeadlocks();
+    }
+
+    /*
+        Encodes the liveness property.
+
+        We have a liveness violation in some execution if
+            - At least one thread is stuck inside a loop (*)
+            - All other threads are either stuck or terminated normally (**)
+
+        (*) A thread is stuck if it finishes a loop iteration
+            - without causing side-effects (e.g., visible stores)
+            - while reading only from co-maximal stores
+        => Without external help, a stuck thread will never be able to exit the loop
+
+        (**) A thread terminates normally IFF it terminates without
+            - triggering an assertion violation
+            - reaching a bound event caused by insufficient unrolling.
+
+        NOTE: The definition of "stuck" is underapproximate: there are cases where a thread can actually be
+        stuck inside a loop without satisfying the stated conditions (e.g., while producing side effects).
+        Reasoning about such cases is more involved.
+    */
+    private class LivenessEncoder {
+        // We assume a spin loop to consist of a tagged label and bound jump.
+        // Further, we assume that the spin loops are indeed correct, i.e., side-effect free
+        private class SpinLoop {
+            public final List<Load> containedLoads = new ArrayList<>();
+            // Execution of the <boundJump> means the loop performed a side-effect-free
+            // iteration without exiting. If such a jump is executed + all loads inside the loop
+            // were co-maximal, then we have a deadlock condition.
+            public CondJump boundJump;
+        }
+
+        public BooleanFormula encodeDeadlocks() {
+            final Program program = PropertyEncoder.this.program;
+            final EncodingContext context = PropertyEncoder.this.context;
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+
+            // Find spin loops of all threads
+            final Map<Thread, List<SpinLoop>> spinloopsMap = Maps.toMap(program.getThreads(), this::findSpinLoopsInThread);
+            // Compute "stuckness" encoding for all threads
+            final Map<Thread, BooleanFormula> isStuckMap = Maps.toMap(program.getThreads(),
+                    t -> this.generateStucknessEncoding(spinloopsMap.get(t), context));
+
+            // LivenessViolation <=> allStuckOrDone /\ atLeastOneStuck
+            BooleanFormula allStuckOrDone = bmgr.makeTrue();
+            BooleanFormula atLeastOneStuck = bmgr.makeFalse();
+            for (Thread thread : program.getThreads()) {
+                final BooleanFormula isStuck = isStuckMap.get(thread);
+                final BooleanFormula isProperlyTerminating = thread.getCache()
+                        .getEvents(FilterBasic.get(Tag.EARLYTERMINATION)).stream()
+                        .map(context::execution).map(bmgr::not).reduce(bmgr.makeTrue(), bmgr::and);
+
+                atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
+                allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, isProperlyTerminating));
+            }
+            // We use the SMT variable to extract from the model if the property was violated
+            final BooleanFormula deadlockVariable = LIVENESS.getSMTVariable(context);
+            final BooleanFormula hasLivenessViolation = bmgr.and(allStuckOrDone, atLeastOneStuck);
+
+            return  bmgr.and(deadlockVariable, bmgr.equivalence(deadlockVariable, hasLivenessViolation));
+        }
+
+        // Compute "stuckness": A thread is stuck if it reaches a spin loop bound event
+        // while only reading from co-maximal stores.
+        private BooleanFormula generateStucknessEncoding(List<SpinLoop> loops, EncodingContext context) {
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+            final RelationAnalysis ra = PropertyEncoder.this.ra;
+            final Relation rf = memoryModel.getRelation(RelationNameRepository.RF);
+            final EncodingContext.EdgeEncoder rfEncoder = context.edge(rf);
+            final TupleSet rfMaySet = ra.getKnowledge(rf).getMaySet();
+
+            if (loops.isEmpty()) {
+                return bmgr.makeFalse();
+            }
+
+            BooleanFormula isStuck = bmgr.makeFalse();
+            for (SpinLoop loop : loops) {
+                BooleanFormula allLoadsAreCoMaximal = bmgr.makeTrue();
+                for (Load load : loop.containedLoads) {
+                    final BooleanFormula readsCoMaximalStore = rfMaySet.getBySecond(load).stream()
+                            .map(rfEdge -> bmgr.and(rfEncoder.encode(rfEdge), lastCoVar(rfEdge.getFirst())))
+                            .reduce(bmgr.makeFalse(), bmgr::or);
+                    final BooleanFormula isCoMaximalLoad = bmgr.implication(context.execution(load), readsCoMaximalStore);
+                    allLoadsAreCoMaximal = bmgr.and(allLoadsAreCoMaximal, isCoMaximalLoad);
+                }
+                // Note that we assume (for now) that a SPINLOOP-tagged jump is executed only if the loop iteration
+                // was side-effect free.
+                final BooleanFormula isSideEffectFree = bmgr.and(context.execution(loop.boundJump), context.jumpCondition((CondJump) loop.boundJump));
+                isStuck = bmgr.or(isStuck, bmgr.and(isSideEffectFree, allLoadsAreCoMaximal));
+            }
+            return isStuck;
+        }
+
+        // TODO: This code is highly fragile with its assumptions on what
+        //  an unrolled spin loop looks like. We need to fix this.
+        //  It also fails on nested loops.
+        private List<SpinLoop> findSpinLoopsInThread(Thread thread) {
+            final List<Event> threadEvents = thread.getEvents();
+            final List<Event> spinStarts = threadEvents.stream()
+                    .filter(e -> e instanceof Label && e.is(Tag.SPINLOOP))
+                    .collect(Collectors.toList());
+
+            List<SpinLoop> spinLoops = new ArrayList<>();
+            List<Load> loads = new ArrayList<>();
+            for (Event cur : threadEvents) {
+                if (spinStarts.contains(cur)) {
+                    // A new loop started: we reset the load list
+                    loads = new ArrayList<>();
+                }
+                if (cur.is(Tag.READ)) {
+                    // Update
+                    loads.add((Load) cur);
+                }
+                if (cur.is(Tag.SPINLOOP) && !spinStarts.contains(cur)) {
+                    // We found one possible end of the loop
+                    // There might be others thus we keep the load list
+                    SpinLoop loop = new SpinLoop();
+                    loop.boundJump = (CondJump) cur;
+                    loop.containedLoads.addAll(loads);
+                    spinLoops.add(loop);
+                }
+            }
+
+            return spinLoops;
+        }
+    }
 }
+
+
+
