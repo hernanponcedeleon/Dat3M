@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
 import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBound;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
@@ -119,12 +120,9 @@ public class LoopUnrolling implements ProgramProcessor {
         int iterCounter = 0;
         while (++iterCounter <= bound) {
             if (iterCounter == bound) {
-                // Mark end of loop
-                loopBackJump.insertAfter(
-                        EventFactory.newStringAnnotation(String.format("// End of Loop: %s", loopBegin.getName())));
-
                 // Update loop iteration label
-                loopBegin.setName(String.format("%s%s%d", loopBegin.getName(), LOOP_ITERATION_SEPARATOR, iterCounter));
+                final String loopName = loopBegin.getName();
+                loopBegin.setName(String.format("%s%s%d", loopName, LOOP_ITERATION_SEPARATOR, iterCounter));
                 loopBegin.addFilters(Tag.NOOPT);
 
                 // This is the last iteration, so we replace the back jump by a bound event.
@@ -133,6 +131,11 @@ public class LoopUnrolling implements ProgramProcessor {
                 boundEvent.addFilters(loopBackJump.getFilters()); // Keep tags of original jump.
                 boundEvent.addFilters(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
                 loopBackJump.replaceBy(boundEvent);
+
+                // Mark end of loop
+                final Label endOfLoopMarker = EventFactory.newLabel(String.format("%s/bound", loopName));
+                endOfLoopMarker.addFilters(Tag.NOOPT);
+                boundEvent.getPredecessor().insertAfter(endOfLoopMarker);
 
             } else {
                 final Map<Event, Event> copyCtx = new HashMap<>();
