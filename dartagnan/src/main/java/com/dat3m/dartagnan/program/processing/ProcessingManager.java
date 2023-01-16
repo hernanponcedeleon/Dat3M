@@ -84,7 +84,7 @@ public class ProcessingManager implements ProgramProcessor {
                 LoopFormVerification.fromConfig(config),
                 Simplifier.fromConfig(config),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification") : null,
-        		FindSpinLoops.fromConfig(config),
+        		SimpleSpinLoopDetection.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
                 printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling") : null,
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,

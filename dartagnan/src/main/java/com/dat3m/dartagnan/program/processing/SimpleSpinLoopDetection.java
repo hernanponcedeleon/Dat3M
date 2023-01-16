@@ -23,17 +23,24 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class FindSpinLoops implements ProgramProcessor {
+/*
+    This pass finds and marks simple loops that are totally side effect free (spin loops).
+    It will also mark side-effect-full loops if they are annotated by a SpinStart event.
 
-    private static final Logger logger = LogManager.getLogger(FindSpinLoops.class);
+    The pass is unable to detect complex types of loops that may spin endlessly (i.e. run into a deadlock)
+    while producing side effects. It will also fail to mark loops with conditional side effects.
+ */
+public class SimpleSpinLoopDetection implements ProgramProcessor {
 
-    private FindSpinLoops() { }
+    private static final Logger logger = LogManager.getLogger(SimpleSpinLoopDetection.class);
 
-    public static FindSpinLoops newInstance() {
-        return new FindSpinLoops();
+    private SimpleSpinLoopDetection() { }
+
+    public static SimpleSpinLoopDetection newInstance() {
+        return new SimpleSpinLoopDetection();
     }
 
-    public static FindSpinLoops fromConfig(Configuration config) throws InvalidConfigurationException {
+    public static SimpleSpinLoopDetection fromConfig(Configuration config) throws InvalidConfigurationException {
         return newInstance();
     }
 
