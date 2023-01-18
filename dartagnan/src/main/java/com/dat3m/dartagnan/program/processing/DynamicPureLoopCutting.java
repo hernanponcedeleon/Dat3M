@@ -21,6 +21,8 @@ import com.google.common.base.Verify;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 
 import java.util.*;
@@ -37,6 +39,7 @@ import java.util.stream.IntStream;
  */
 public class DynamicPureLoopCutting implements ProgramProcessor {
 
+    private static final Logger logger = LogManager.getLogger(DynamicPureLoopCutting.class);
 
     public static DynamicPureLoopCutting fromConfig(Configuration config) {
         return new DynamicPureLoopCutting();
@@ -52,18 +55,59 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         private boolean isAlwaysSideEffectFull = false;
     }
 
+    private static class LogStats {
+        private final int numPotentialSpinLoops;
+        private final int numStaticSpinLoops;
+
+        private LogStats(int numPotentialSpinLoops, int numStaticSpinLoops) {
+            this.numPotentialSpinLoops = numPotentialSpinLoops;
+            this.numStaticSpinLoops = numStaticSpinLoops;
+        }
+
+        private LogStats add(LogStats stats) {
+            return new LogStats(this.numPotentialSpinLoops + stats.numPotentialSpinLoops,
+                    this.numStaticSpinLoops + stats.numStaticSpinLoops);
+        }
+    }
+
     @Override
     public void run(Program program) {
         Preconditions.checkArgument(program.isCompiled(),
                 "DynamicPureLoopCutting can only be run on compiled programs.");
 
+        LogStats stats = new LogStats(0, 0);
         final LoopAnalysis loopAnalysis = LoopAnalysis.newInstance(program);
         for (Thread thread : program.getThreads()) {
             final List<IterationData> iterationData = computeIterationDataList(thread, loopAnalysis);
             iterationData.forEach(this::reduceToDominatingSideEffects);
             iterationData.forEach(this::insertSideEffectChecks);
+            stats = stats.add(collectStats(iterationData));
         }
         program.clearCache(true);
+
+        // NOTE: We log "potential spin loops" as only those that are not also "static".
+        logger.info("Found {} static spin loops and {} potential spin loops.",
+                stats.numStaticSpinLoops, (stats.numPotentialSpinLoops - stats.numStaticSpinLoops));
+    }
+
+    private LogStats collectStats(List<IterationData> iterDataList) {
+        int numPotentialSpinLoops = 0;
+        int numStaticSpinLoops = 0;
+        Set<Integer> alreadyDetectedLoops = new HashSet<>(); // To avoid counting the same loop multiple times
+        for (IterationData data : iterDataList) {
+            if (!data.isAlwaysSideEffectFull) {
+                // Potential spinning iteration
+                final int uIdOfLoop = data.iterationInfo.getIterationStart().getUId();
+                if (alreadyDetectedLoops.add(uIdOfLoop)) {
+                    // A loop we did not count before
+                    numPotentialSpinLoops++;
+                    if (data.sideEffects.isEmpty()) {
+                        numStaticSpinLoops++;
+                    }
+                }
+            }
+        }
+        return new LogStats(numPotentialSpinLoops, numStaticSpinLoops);
     }
 
     private void insertSideEffectChecks(IterationData iter) {
