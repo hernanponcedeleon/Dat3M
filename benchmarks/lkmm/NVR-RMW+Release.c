@@ -5,8 +5,12 @@
 int x;
 atomic_t y;
 
-// FAIL: Non-value-returning RMWs do not contribute to release sequences in LKMM.
-// Hence the acq-read does not synchronize with the rel-write 
+// FAIL: Non-value-returning RMWs do not contribute to release 
+// sequences in the original version of LKMM (cat/lkmm-v00.cat).
+// Hence the acq-read does not synchronize with the rel-write there
+// and there the result should be FAIL.
+// However they do contribute in the later version (from cat/lkmm-v01 
+// onwards) and there the result should be PASS.
 
 void *run(void *arg)
 {
