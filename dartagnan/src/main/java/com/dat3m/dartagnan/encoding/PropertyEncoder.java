@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -70,7 +71,7 @@ public class PropertyEncoder implements Encoder {
     public BooleanFormula encodeBoundEventExec() {
         logger.info("Encoding bound events execution");
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        return program.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.BOUND), FilterBasic.get(Tag.SPINLOOP)))
+        return program.getCache().getEvents(FilterBasic.get(Tag.BOUND))
                 .stream().map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
     }
 
@@ -304,32 +305,36 @@ public class PropertyEncoder implements Encoder {
             - while reading only from co-maximal stores
         => Without external help, a stuck thread will never be able to exit the loop.
 
-        (**) A thread terminates normally IFF it terminates without
-            - triggering an assertion violation
-            - reaching a bound event caused by insufficient unrolling.
+        (**) A thread terminates normally IFF it does not terminate early (denoted by EARLYTERMINATION-tagged jumps)
+             due to e.g.,
+            - violating an assertion
+            - reaching the loop unrolling bound
+            - side-effect-free spinning
 
         NOTE: The definition of "stuck" is under-approximate: there are cases where a thread can actually be
         in a deadlock without satisfying the stated conditions (e.g., while producing side effects).
         Reasoning about such cases is more involved.
     */
     private class LivenessEncoder {
-        // We assume a spin loop to consist of a tagged label and bound jump.
-        // Further, we assume that the spin loops are indeed correct, i.e., side-effect free
-        private class SpinLoop {
+
+        private class SpinIteration {
             public final List<Load> containedLoads = new ArrayList<>();
             // Execution of the <boundJump> means the loop performed a side-effect-free
             // iteration without exiting. If such a jump is executed + all loads inside the loop
             // were co-maximal, then we have a deadlock condition.
-            public CondJump boundJump;
+            public final List<CondJump> spinningJumps = new ArrayList<>();
         }
 
         public BooleanFormula encodeDeadlocks() {
             final Program program = PropertyEncoder.this.program;
             final EncodingContext context = PropertyEncoder.this.context;
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+            final LoopAnalysis loopAnalysis = LoopAnalysis.newInstance(program);
+
 
             // Find spin loops of all threads
-            final Map<Thread, List<SpinLoop>> spinloopsMap = Maps.toMap(program.getThreads(), this::findSpinLoopsInThread);
+            final Map<Thread, List<SpinIteration>> spinloopsMap =
+                    Maps.toMap(program.getThreads(), t -> this.findSpinLoopsInThread(t, loopAnalysis));
             // Compute "stuckness" encoding for all threads
             final Map<Thread, BooleanFormula> isStuckMap = Maps.toMap(program.getThreads(),
                     t -> this.generateStucknessEncoding(spinloopsMap.get(t), context));
@@ -341,7 +346,9 @@ public class PropertyEncoder implements Encoder {
                 final BooleanFormula isStuck = isStuckMap.get(thread);
                 final BooleanFormula isTerminatingNormally = thread.getCache()
                         .getEvents(FilterBasic.get(Tag.EARLYTERMINATION)).stream()
-                        .map(context::execution).map(bmgr::not).reduce(bmgr.makeTrue(), bmgr::and);
+                        .map(CondJump.class::cast)
+                        .map(j -> bmgr.not(bmgr.and(context.execution(j), context.jumpCondition(j))))
+                        .reduce(bmgr.makeTrue(), bmgr::and);
 
                 atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
                 allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, isTerminatingNormally));
@@ -354,7 +361,7 @@ public class PropertyEncoder implements Encoder {
 
         // Compute "stuckness": A thread is stuck if it reaches a spin loop bound event
         // while only reading from co-maximal stores.
-        private BooleanFormula generateStucknessEncoding(List<SpinLoop> loops, EncodingContext context) {
+        private BooleanFormula generateStucknessEncoding(List<SpinIteration> loops, EncodingContext context) {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final RelationAnalysis ra = PropertyEncoder.this.ra;
             final Relation rf = memoryModel.getRelation(RelationNameRepository.RF);
@@ -366,7 +373,7 @@ public class PropertyEncoder implements Encoder {
             }
 
             BooleanFormula isStuck = bmgr.makeFalse();
-            for (SpinLoop loop : loops) {
+            for (SpinIteration loop : loops) {
                 BooleanFormula allLoadsAreCoMaximal = bmgr.makeTrue();
                 for (Load load : loop.containedLoads) {
                     final BooleanFormula readsCoMaximalStore = rfMaySet.getBySecond(load).stream()
@@ -377,43 +384,41 @@ public class PropertyEncoder implements Encoder {
                 }
                 // Note that we assume (for now) that a SPINLOOP-tagged jump is executed only if the loop iteration
                 // was side-effect free.
-                final BooleanFormula isSideEffectFree = bmgr.and(context.execution(loop.boundJump), context.jumpCondition((CondJump) loop.boundJump));
+                final BooleanFormula isSideEffectFree = loop.spinningJumps.stream()
+                        .map(j -> bmgr.and(context.execution(j), context.jumpCondition(j)))
+                        .reduce(bmgr.makeFalse(), bmgr::or);
                 isStuck = bmgr.or(isStuck, bmgr.and(isSideEffectFree, allLoadsAreCoMaximal));
             }
             return isStuck;
         }
 
-        // TODO: This code is highly fragile with its assumptions on what
-        //  an unrolled spin loop looks like. We need to fix this.
-        //  It also fails on nested loops.
-        private List<SpinLoop> findSpinLoopsInThread(Thread thread) {
-            final List<Event> threadEvents = thread.getEvents();
-            final List<Event> spinStarts = threadEvents.stream()
-                    .filter(e -> e instanceof Label && e.is(Tag.SPINLOOP))
-                    .collect(Collectors.toList());
+        private List<SpinIteration> findSpinLoopsInThread(Thread thread, LoopAnalysis loopAnalysis) {
+            final List<LoopAnalysis.LoopInfo> loops = loopAnalysis.getLoopsOfThread(thread);
+            final List<SpinIteration> spinIterations = new ArrayList<>();
 
-            List<SpinLoop> spinLoops = new ArrayList<>();
-            List<Load> loads = new ArrayList<>();
-            for (Event cur : threadEvents) {
-                if (spinStarts.contains(cur)) {
-                    // A new loop started: we reset the load list
-                    loads = new ArrayList<>();
-                }
-                if (cur.is(Tag.READ)) {
-                    // Update
-                    loads.add((Load) cur);
-                }
-                if (cur.is(Tag.SPINLOOP) && !spinStarts.contains(cur)) {
-                    // We found one possible end of the loop
-                    // There might be others thus we keep the load list
-                    SpinLoop loop = new SpinLoop();
-                    loop.boundJump = (CondJump) cur;
-                    loop.containedLoads.addAll(loads);
-                    spinLoops.add(loop);
+            for (LoopAnalysis.LoopInfo loop : loops) {
+                for (LoopAnalysis.LoopIterationInfo iter : loop.getIterations()) {
+                    final List<Event> iterBody = iter.computeBody();
+                    final List<CondJump> spinningJumps = iterBody.stream()
+                            .filter(e -> e instanceof CondJump && e.is(Tag.SPINLOOP))
+                            .map(CondJump.class::cast)
+                            .collect(Collectors.toList());
+
+                    if (!spinningJumps.isEmpty()) {
+                        final List<Load> loads = iterBody.stream()
+                                .filter(Load.class::isInstance)
+                                .map(Load.class::cast)
+                                .collect(Collectors.toList());
+
+                        final SpinIteration spinIter = new SpinIteration();
+                        spinIter.spinningJumps.addAll(spinningJumps);
+                        spinIter.containedLoads.addAll(loads);
+                        spinIterations.add(spinIter);
+                    }
                 }
             }
 
-            return spinLoops;
+            return spinIterations;
         }
     }
 }
