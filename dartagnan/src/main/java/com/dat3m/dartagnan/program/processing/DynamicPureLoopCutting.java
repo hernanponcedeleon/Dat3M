@@ -32,6 +32,8 @@ import java.util.stream.IntStream;
 /*
     This pass instruments loops that do not cause a side effect in an iteration to terminate, i.e., to avoid spinning.
     In other words, only the last loop iteration is allowed to be side-effect free.
+
+    NOTE: This pass is required to detect liveness violations.
  */
 public class DynamicPureLoopCutting implements ProgramProcessor {
 
