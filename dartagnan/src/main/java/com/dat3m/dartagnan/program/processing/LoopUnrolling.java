@@ -128,11 +128,10 @@ public class LoopUnrolling implements ProgramProcessor {
                 // This is the last iteration, so we replace the back jump by a bound event.
                 final Label threadExit = (Label) loopBackJump.getThread().getExit();
                 final CondJump boundEvent = EventFactory.newGoto(threadExit);
-                boundEvent.addFilters(loopBackJump.getFilters()); // Keep tags of original jump.
                 boundEvent.addFilters(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
                 loopBackJump.replaceBy(boundEvent);
 
-                // Mark end of loop
+                // Mark end of loop, so we can find it later again
                 final Label endOfLoopMarker = EventFactory.newLabel(String.format("%s/bound", loopName));
                 endOfLoopMarker.addFilters(Tag.NOOPT);
                 boundEvent.getPredecessor().insertAfter(endOfLoopMarker);

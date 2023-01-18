@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
@@ -31,39 +32,22 @@ import java.util.stream.IntStream;
 /*
     This pass instruments loops that do not cause a side effect in an iteration to terminate, i.e., to avoid spinning.
     In other words, only the last loop iteration is allowed to be side-effect free.
-
-    This pass is correct but has the following issues.
-    TODO:
-     (1) This dynamic termination of spinning loops is not considered in Liveness checking.
-     (2) The pass runs on already unrolled loops and instruments each iteration separately.
-         It would be better to let it transform not-yet-unrolled loops by inserting
-         the necessary checks. However, one has to be careful about handling nested loops correctly
-         because they cause cyclic control-flow within a loop which the current implementation
-         of "dominator trees" does not handle.
-     (3) There are more optimizations to do...
  */
 public class DynamicPureLoopCutting implements ProgramProcessor {
 
-    // Helper classes
-    static class Loop {
-        Thread thread;
-        int loopNumber = 0;
-        boolean hasAlwaysSideEffects = false;
-        final List<LoopIteration> iterations = new ArrayList<>();
-    }
-
-    static class LoopIteration {
-        Loop loop;
-        int iterationNumber;
-        Label startLabel;
-        // The following is only set for the non-last iteration
-        final List<Event> sideEffects = new ArrayList<>();
-        final List<Event> trueExitPoints = new ArrayList<>();
-        Label endLabel = null;
-    }
 
     public static DynamicPureLoopCutting fromConfig(Configuration config) {
         return new DynamicPureLoopCutting();
+    }
+
+    /*
+        We attach additional data to loop iterations for processing.
+     */
+    private static class IterationData {
+        private LoopAnalysis.LoopIterationInfo iterationInfo;
+        private final List<Event> sideEffects = new ArrayList<>();
+        private final List<Event> guaranteedExitPoints = new ArrayList<>();
+        private boolean isAlwaysSideEffectFull = false;
     }
 
     @Override
@@ -71,116 +55,74 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         Preconditions.checkArgument(program.isCompiled(),
                 "DynamicPureLoopCutting can only be run on compiled programs.");
 
+        final LoopAnalysis loopAnalysis = LoopAnalysis.newInstance(program);
         for (Thread thread : program.getThreads()) {
-            final List<Loop> loops = findLoops(thread);
-            loops.forEach(this::reduceToDominatingSideEffects);
-            loops.forEach(this::insertSideEffectChecks);
+            final List<IterationData> iterationData = computeIterationDataList(thread, loopAnalysis);
+            iterationData.forEach(this::reduceToDominatingSideEffects);
+            iterationData.forEach(this::insertSideEffectChecks);
         }
         program.clearCache(true);
     }
 
-    private void insertSideEffectChecks(Loop loop) {
-        if (!loop.hasAlwaysSideEffects) {
-            loop.iterations.subList(0, loop.iterations.size() - 1).forEach(this::insertSideEffectChecks);
+    private void insertSideEffectChecks(IterationData iter) {
+        if (iter.isAlwaysSideEffectFull) {
+            // No need to insert checks if the iteration is guaranteed to have side effects
+            return;
         }
-    }
+        final LoopAnalysis.LoopIterationInfo iterInfo = iter.iterationInfo;
+        final Thread thread = iterInfo.getContainingLoop().getThread();
+        final int loopNumber = iterInfo.getContainingLoop().getLoopNumber();
+        final int iterNumber = iterInfo.getIterationNumber();
+        final List<Event> sideEffects = iter.sideEffects;
 
-    private void insertSideEffectChecks(LoopIteration iter) {
-        Preconditions.checkNotNull(iter.endLabel);
-        final Thread thread = iter.loop.thread;
-        final int loopNumber = iter.loop.loopNumber;
-        final int iterNumber = iter.iterationNumber;
-
-        List<Register> dummyRegs = new ArrayList<>();
-        Event insertionPoint = iter.endLabel.getPredecessor();
-        for (int i = 0; i < iter.sideEffects.size(); i++) {
-            final Event sideEffect = iter.sideEffects.get(i);
-            final Register dummyReg = thread.newRegister(
+        final List<Register> trackingRegs = new ArrayList<>();
+        Event insertionPoint = iterInfo.getIterationEnd();
+        for (int i = 0; i < sideEffects.size(); i++) {
+            final Event sideEffect = sideEffects.get(i);
+            final Register trackingReg = thread.newRegister(
                     String.format("Loop%s_%s_%s", loopNumber, iterNumber, i),
                     GlobalSettings.ARCH_PRECISION);
-            dummyRegs.add(dummyReg);
+            trackingRegs.add(trackingReg);
 
-            final Event execCheck = EventFactory.newExecutionStatus(dummyReg, sideEffect);
+            final Event execCheck = EventFactory.newExecutionStatus(trackingReg, sideEffect);
             insertionPoint.insertAfter(execCheck);
             insertionPoint = execCheck;
         }
 
-        final BExpr atLeastOneSideEffect = dummyRegs.stream()
-                .map(reg -> (BExpr)new Atom(reg, COpBin.EQ, IValue.ZERO))
+        final BExpr atLeastOneSideEffect = trackingRegs.stream()
+                .map(reg -> (BExpr) new Atom(reg, COpBin.EQ, IValue.ZERO))
                 .reduce(BConst.FALSE, (x, y) -> new BExprBin(x, BOpBin.OR, y));
         final CondJump assumeSideEffect = EventFactory.newJumpUnless(atLeastOneSideEffect, (Label) thread.getExit());
-        assumeSideEffect.addFilters(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
-        // TODO: Is it sufficient to tag this jump as "SPINLOOP" to get proper spin loop detection?
+        assumeSideEffect.addFilters(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
         insertionPoint.insertAfter(assumeSideEffect);
     }
 
     // ============================= Actual logic =============================
 
-    // Compute all loops in a thread
-    private List<Loop> findLoops(Thread thread) {
-        final String iterNumberSeparator = LoopUnrolling.LOOP_ITERATION_SEPARATOR;
-
-        int loopCounter = 0;
-        final Map<String, Loop> labelName2LoopMap = new HashMap<>();
-        final List<Loop> loops = new ArrayList<>();
-        for (Event e : thread.getEvents()) {
-            if (!(e instanceof Label && ((Label)e).getName().lastIndexOf(iterNumberSeparator) >= 0)) {
-                // No loop label
-                continue;
-            }
-            final Label loopLabel = (Label) e;
-            final int iterNumberSeparatorIndex = loopLabel.getName().lastIndexOf(iterNumberSeparator);
-            final int iterNumber = Integer.parseInt(loopLabel.getName()
-                    .substring(iterNumberSeparatorIndex + iterNumberSeparator.length()));
-            final String loopName = loopLabel.getName().substring(0, iterNumberSeparatorIndex);
-
-            if (iterNumber == 1) {
-                final Loop loop = new Loop();
-                loop.thread = thread;
-                loop.loopNumber = loopCounter++;
-                labelName2LoopMap.put(loopName, loop);
-                loops.add(loop);
-            }
-            final Loop loop = labelName2LoopMap.get(loopName);
-            Verify.verifyNotNull(loop,
-                    "Found intermediate loop iteration {} before encountering loop beginning.", loopLabel.getName());
-            final LoopIteration iter = new LoopIteration();
-            iter.loop = loop;
-            iter.iterationNumber = iterNumber;
-            iter.startLabel = loopLabel;
-            if (!loop.iterations.isEmpty()) {
-                loop.iterations.get(loop.iterations.size() - 1).endLabel = iter.startLabel;
-            }
-            loop.iterations.add(iter);
-        }
-
-        loops.forEach(this::populateLoopSideEffectsAndExitPoints);
-        return loops;
+    private List<IterationData> computeIterationDataList(Thread thread, LoopAnalysis loopAnalysis) {
+        final List<IterationData> dataList = loopAnalysis.getLoopsOfThread(thread).stream()
+                    .flatMap(loop -> loop.getIterations().stream())
+                    .map(this::computeIterationData)
+                    .collect(Collectors.toList());
+        return dataList;
     }
 
-    private void populateLoopSideEffectsAndExitPoints(Loop loop) {
-        loop.iterations.subList(0, loop.iterations.size() - 1).forEach(this::populateLoopIteration);
-    }
-    private void populateLoopIteration(LoopIteration iteration) {
-        Preconditions.checkNotNull(iteration.endLabel);
-        final Label start = iteration.startLabel;
-        final Label end = iteration.endLabel;
+    private IterationData computeIterationData(LoopAnalysis.LoopIterationInfo iteration) {
+        final Event iterStart = iteration.getIterationStart();
+        final Event iterEnd = iteration.getIterationEnd();
 
-        iteration.sideEffects.addAll(collectSideEffects(start, end));
+        final IterationData data = new IterationData();
+        data.iterationInfo = iteration;
+        data.sideEffects.addAll(collectSideEffects(iterStart, iterEnd));
+        iteration.computeBody().stream()
+                .filter(CondJump.class::isInstance).map(CondJump.class::cast)
+                .filter(j -> j.isGoto() && j.getLabel().getGlobalId() > iterEnd.getGlobalId())
+                .forEach(data.guaranteedExitPoints::add);
 
-        Event cur = start;
-        while ((cur = cur.getSuccessor()) != end) {
-            if (cur instanceof CondJump) {
-                final CondJump jump = (CondJump) cur;
-                final Label jumpTarget = jump.getLabel();
-                if (jump.isGoto() && jumpTarget.getGlobalId() > end.getGlobalId()) {
-                    iteration.trueExitPoints.add(jump);
-                }
-            }
-        }
+        return data;
     }
 
-    private List<Event> collectSideEffects(Label iterStart, Label iterEnd) {
+    private List<Event> collectSideEffects(Event iterStart, Event iterEnd) {
         List<Event> sideEffects = new ArrayList<>();
         // Unsafe means the loop read from the registers before writing to them.
         Set<Register> unsafeRegisters = new HashSet<>();
@@ -188,7 +130,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         Set<Register> safeRegisters = new HashSet<>();
 
         Event cur = iterStart;
-        while ((cur = cur.getSuccessor()) != iterEnd) {
+        do {
             if (cur instanceof MemEvent) {
                 if (cur.is(Tag.WRITE)) {
                     sideEffects.add(cur); // Writes always cause side effects
@@ -215,31 +157,29 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
                     safeRegisters.add(writer.getResultRegister());
                 }
             }
-        }
+        } while ((cur = cur.getSuccessor()) != iterEnd.getSuccessor());
         return sideEffects;
     }
 
 
-    private void reduceToDominatingSideEffects(Loop loop) {
-        for (int i = 0; i < loop.iterations.size() - 1; i++) {
-            final LoopIteration iter = loop.iterations.get(i);
-            reduceToDominatingSideEffects(loop, iter);
-            if (loop.hasAlwaysSideEffects) {
-                break;
-            }
+    private void reduceToDominatingSideEffects(IterationData data) {
+        final LoopAnalysis.LoopIterationInfo iter = data.iterationInfo;
+        final Event start = iter.getIterationStart();
+        final Event end = iter.getIterationEnd();
+
+        if (start.is(Tag.SPINLOOP)) {
+            // If the iteration start is tagged as "SPINLOOP", then we treat the iteration
+            // as side effect free
+            data.isAlwaysSideEffectFull = false;
+            data.sideEffects.clear();
+            return;
         }
-    }
 
-    private void reduceToDominatingSideEffects(Loop loop, LoopIteration iter) {
-        final Label start = iter.startLabel;
-        final Label end = iter.endLabel;
-        final List<Event> iterEvents = start.getSuccessors().stream().takeWhile(e -> e != end).collect(Collectors.toList());
-        iterEvents.add(end);
-
+        final List<Event> iterBody = iter.computeBody();
         // to compute the pre-dominator tree ...
         final Map<Event, List<Event>> immPredMap = new HashMap<>();
-        immPredMap.put(iterEvents.get(0), List.of());
-        for (Event e : iterEvents.subList(1, iterEvents.size())) {
+        immPredMap.put(iterBody.get(0), List.of());
+        for (Event e : iterBody.subList(1, iterBody.size())) {
             final List<Event> preds = new ArrayList<>();
             final Event pred = e.getPredecessor();
             if (!(pred instanceof CondJump && ((CondJump)pred).isGoto())) {
@@ -252,10 +192,10 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         }
 
         // to compute the post-dominator tree ...
-        final List<Event> reversedOrderEvents = new ArrayList<>(Lists.reverse(iterEvents));
+        final List<Event> reversedOrderEvents = new ArrayList<>(Lists.reverse(iterBody));
         final Map<Event, List<Event>> immSuccMap = new HashMap<>();
         immSuccMap.put(reversedOrderEvents.get(0), List.of());
-        for (Event e : iterEvents) {
+        for (Event e : iterBody) {
             for (Event pred : immPredMap.get(e)) {
                 immSuccMap.computeIfAbsent(pred, key -> new ArrayList<>()).add(e);
             }
@@ -264,7 +204,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         // We delete all side effects that are guaranteed to lead to an exit point, i.e.,
         // those that never reach a subsequent iteration.
         reversedOrderEvents.forEach(e -> immSuccMap.putIfAbsent(e, List.of()));
-        List<Event> exitPoints = new ArrayList<>(iter.trueExitPoints);
+        List<Event> exitPoints = new ArrayList<>(data.guaranteedExitPoints);
         boolean changed = true;
         while (changed) {
             changed = !exitPoints.isEmpty();
@@ -278,33 +218,33 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         reversedOrderEvents.removeIf(e -> ! immSuccMap.containsKey(e));
 
 
-        final Map<Event, Event> preDominatorTree = computeDominatorTree(iterEvents, immPredMap::get);
+        final Map<Event, Event> preDominatorTree = computeDominatorTree(iterBody, immPredMap::get);
 
         {
             // Check if always side-effect-full
             // This is an approximation: If the end of the iteration is predominated by some side effect
             // then we always observe side effects.
             Event dom = end;
-            while ((dom = preDominatorTree.get(dom)) != start) {
-                if (iter.sideEffects.contains(dom)) {
+            do {
+                if (data.sideEffects.contains(dom)) {
                     // A special case where the loop is always side-effect-full
                     // There is no need to proceed further
-                    loop.hasAlwaysSideEffects = true;
+                    data.isAlwaysSideEffectFull = true;
                     return;
                 }
-            }
+            } while ((dom = preDominatorTree.get(dom)) != start);
         }
 
         // Remove all side effects that are guaranteed to exit the loop.
-        iter.sideEffects.removeIf(e -> !immSuccMap.containsKey(e));
+        data.sideEffects.removeIf(e -> !immSuccMap.containsKey(e));
 
         // Delete all pre-dominated side effects
-        for (final Event e : List.copyOf(iter.sideEffects)) {
+        for (final Event e : List.copyOf(data.sideEffects)) {
             Event dom = e;
             while ((dom = preDominatorTree.get(dom)) != start) {
                 assert dom != null;
-                if (iter.sideEffects.contains(dom)) {
-                    iter.sideEffects.remove(e);
+                if (data.sideEffects.contains(dom)) {
+                    data.sideEffects.remove(e);
                     break;
                 }
             }
@@ -312,12 +252,12 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
 
         // Delete all post-dominated side effects
         final Map<Event, Event> postDominatorTree = computeDominatorTree(reversedOrderEvents, immSuccMap::get);
-        for (final Event e : List.copyOf(iter.sideEffects)) {
+        for (final Event e : List.copyOf(data.sideEffects)) {
             Event dom = e;
             while ((dom = postDominatorTree.get(dom)) != end) {
                 assert dom != null;
-                if (iter.sideEffects.contains(dom)) {
-                    iter.sideEffects.remove(e);
+                if (data.sideEffects.contains(dom)) {
+                    data.sideEffects.remove(e);
                     break;
                 }
             }

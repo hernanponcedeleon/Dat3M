@@ -45,6 +45,20 @@ public class LoopAnalysis {
         public Event getIterationStart() { return iterBegin; }
         public Event getIterationEnd() { return iterEnd; }
         public int getIterationNumber() { return iterNumber; }
+        public boolean isLast() {
+            return this == containingLoop.getIterations().get(containingLoop.getIterations().size() - 1);
+        }
+
+        public List<Event> computeBody() {
+            final Event terminator = getIterationEnd().getSuccessor();
+
+            final List<Event> body = new ArrayList<>();
+            Event cur = getIterationStart();
+            do {
+                body.add(cur);
+            } while ((cur = cur.getSuccessor()) != terminator);
+            return body;
+        }
     }
 
     private static class LoopLabelInfo {
@@ -104,13 +118,13 @@ public class LoopAnalysis {
             final LoopInfo loopInfo = loopName2InfoMap.get(loopName);
             if (labelInfo.isBound) {
                 final LoopIterationInfo lastIter = loopInfo.loopIterationInfos.get(loopInfo.loopIterationInfos.size() - 1);
-                // We assume the bound-marker to be directly before the loop bounding event.
-                // We consider the bounding event to be part of the last iteration
-                lastIter.iterEnd = e.getSuccessor();
+                // We assume the bound marker to be directly before the loop bounding event.
+                // NOTE: We consider neither the bound marker nor the bounding event to be part of this iteration.
+                lastIter.iterEnd = e.getPredecessor();
             } else {
                 final LoopIterationInfo newIter = new LoopIterationInfo();
                 newIter.iterNumber = labelInfo.iterationIndex;
-                newIter.iterBegin = (Label)e;
+                newIter.iterBegin = e;
                 newIter.containingLoop = loopInfo;
                 loopInfo.loopIterationInfos.add(newIter);
                 Verify.verify(newIter.iterNumber == loopInfo.loopIterationInfos.size());
