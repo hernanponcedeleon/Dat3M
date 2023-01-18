@@ -19,9 +19,9 @@ import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class CLKMM extends AbstractCTest {
+public class CLKMMTest extends AbstractCTest {
 
-    public CLKMM(String name, Arch target, Result expected) {
+    public CLKMMTest(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
 
@@ -50,14 +50,17 @@ public class CLKMM extends AbstractCTest {
 	            {"LB+poacquireonce+pooncerelease", LKMM, PASS},
 	            {"LB+poonceonces", LKMM, FAIL},
                 {"MP+fencewbonceonce+fencermbonceonce", LKMM, PASS},
-                {"NVR-RMW+Release", LKMM, FAIL},
+                {"NVR-RMW+Release", LKMM, PASS},
                 {"rcu-gp20", LKMM, PASS},
                 {"rcu", LKMM, PASS},
                 {"rcu+ar-link-short0", LKMM, PASS},
                 {"rcu+ar-link0", LKMM, FAIL},
                 {"rcu+ar-link20", LKMM, PASS},
                 {"rcu-MP", LKMM, PASS},
-                {"qspinlock", LKMM, FAIL},
+                // this one fails with cat/lkmm-v00.cat
+                // but passes with cat/lkmm-vX.cat with X > 01
+                {"qspinlock", LKMM, PASS},
+                // this one passes even with cat/lkmm-v00.cat
                 {"qspinlock-fixed", LKMM, PASS}
 		});
     }
