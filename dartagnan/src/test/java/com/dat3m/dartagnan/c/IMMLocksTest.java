@@ -59,7 +59,7 @@ public class IMMLocksTest extends AbstractCTest {
             {"mutex-acq2rx_lock", IMM, FAIL},
             {"mutex-rel2rx_futex", IMM, UNKNOWN},
             {"mutex-rel2rx_unlock", IMM, FAIL},
-            {"spinlock", IMM, UNKNOWN},
+            {"spinlock", IMM, PASS},
             {"spinlock-acq2rx", IMM, FAIL},
             {"spinlock-rel2rx", IMM, FAIL},
             {"linuxrwlock", IMM, UNKNOWN},
@@ -72,7 +72,7 @@ public class IMMLocksTest extends AbstractCTest {
             {"mutex_musl-rel2rx_unlock", IMM, FAIL},
             // The actual result is PASS, but CAAT returns UNKNOWN
             // because we do not refine for the bound check 
-            {"seqlock", IMM, UNKNOWN},
+            {"seqlock", IMM, PASS},
 		});
     }
 
