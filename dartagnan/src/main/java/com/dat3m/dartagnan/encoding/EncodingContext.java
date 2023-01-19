@@ -160,21 +160,21 @@ public final class EncodingContext {
             BranchEquivalence.Class c = branchEquivalence.getEquivalenceClass(first);
             o1 = c;
             s1 = "cf";
-            i1 = c.getRepresentative().getCId();
+            i1 = c.getRepresentative().getGlobalId();
         } else {
             o1 = first;
             s1 = "exec";
-            i1 = first.getCId();
+            i1 = first.getGlobalId();
         }
         if (second.cfImpliesExec()) {
             BranchEquivalence.Class c = branchEquivalence.getEquivalenceClass(second);
             o2 = c;
             s2 = "cf";
-            i2 = c.getRepresentative().getCId();
+            i2 = c.getRepresentative().getGlobalId();
         } else {
             o2 = second;
             s2 = "exec";
-            i2 = second.getCId();
+            i2 = second.getGlobalId();
         }
         return executionPairs.computeIfAbsent(new UnorderedPair(o1, o2),
                 k -> booleanFormulaManager.makeVariable(s1 + i1 + s2 + i2));

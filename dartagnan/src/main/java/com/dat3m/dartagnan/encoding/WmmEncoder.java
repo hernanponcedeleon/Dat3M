@@ -444,13 +444,13 @@ public class WmmEncoder implements Encoder {
                     pairingCond.add(context.controlFlow(store));
                     for (Tuple t1 : mayIn.apply(store)) {
                         Event otherLoad = t1.getFirst();
-                        if (otherLoad.getCId() > load.getCId()) {
+                        if (otherLoad.getGlobalId() > load.getGlobalId()) {
                             pairingCond.add(bmgr.not(context.execution(otherLoad)));
                         }
                     }
                     for (Tuple t1 : mayOut.apply(load)) {
                         Event otherStore = t1.getSecond();
-                        if (otherStore.getCId() < store.getCId()) {
+                        if (otherStore.getGlobalId() < store.getGlobalId()) {
                             pairingCond.add(bmgr.not(context.controlFlow(otherStore)));
                         }
                     }
@@ -523,7 +523,7 @@ public class WmmEncoder implements Encoder {
                     continue;
                 }
                 int num = edges.size();
-                String rPrefix = "s(" + RF + ",E" + r.getCId() + ",";
+                String rPrefix = "s(" + RF + ",E" + r.getGlobalId() + ",";
                 BooleanFormula lastSeqVar = edges.get(0);
                 for (int i = 1; i < num; i++) {
                     BooleanFormula newSeqVar = bmgr.makeVariable(rPrefix + i + ")");
@@ -541,7 +541,7 @@ public class WmmEncoder implements Encoder {
             boolean idl = !context.useSATEncoding;
             List<MemEvent> allWrites = program.getEvents(MemEvent.class).stream()
                     .filter(e -> e.is(WRITE))
-                    .sorted(Comparator.comparingInt(Event::getCId))
+                    .sorted(Comparator.comparingInt(Event::getGlobalId))
                     .collect(toList());
             EncodingContext.EdgeEncoder edge = context.edge(co);
             RelationAnalysis.Knowledge k = ra.getKnowledge(co);
