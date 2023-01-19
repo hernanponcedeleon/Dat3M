@@ -78,10 +78,6 @@ public class TwoSolvers extends ModelChecker {
         prover1.addConstraint(encodeSymm);
         prover2.addConstraint(encodeSymm);
 
-        BooleanFormula executionPairs = context.encodeExecutionPairs();
-        prover1.addConstraint(executionPairs);
-        prover2.addConstraint(executionPairs);
-
         prover1.addConstraint(propertyEncoder.encodeSpecification());
 
         logger.info("Starting first solver.check()");
