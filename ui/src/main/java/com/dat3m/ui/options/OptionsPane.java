@@ -19,8 +19,6 @@ import java.util.Iterator;
 
 import static com.dat3m.ui.options.utils.Helper.solversOrderedValues;
 import static java.awt.FlowLayout.LEFT;
-import static java.lang.Math.min;
-import static java.lang.Math.round;
 import static javax.swing.BorderFactory.createTitledBorder;
 import static javax.swing.border.TitledBorder.CENTER;
 
