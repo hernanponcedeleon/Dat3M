@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -19,7 +18,6 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMFILE;
 
