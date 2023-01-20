@@ -76,7 +76,6 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             loops.forEach(this::reduceToDominatingSideEffects);
             loops.forEach(this::insertSideEffectChecks);
         }
-        program.clearCache(true);
     }
 
     private void insertSideEffectChecks(Loop loop) {

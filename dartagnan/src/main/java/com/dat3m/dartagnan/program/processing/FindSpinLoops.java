@@ -45,7 +45,6 @@ public class FindSpinLoops implements ProgramProcessor {
 
         final int numSpinLoops = program.getThreads().stream().mapToInt(this::detectAndMarkSpinLoops).sum();
         logger.info("# of spin loops: {}", numSpinLoops);
-        program.clearCache(true);
     }
 
 

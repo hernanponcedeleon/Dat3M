@@ -66,7 +66,6 @@ public class LoopUnrolling implements ProgramProcessor {
         final int defaultBound = this.bound;
         program.getEvents().forEach(e -> e.setUId(e.getGlobalId())); // Track ids before unrolling
         program.getThreads().forEach(thread -> unrollLoopsInThread(thread, defaultBound));
-        program.clearCache(true);
         program.markAsUnrolled(defaultBound);
         EventIdReassignment.newInstance().run(program); // Reassign ids because of newly created events
 

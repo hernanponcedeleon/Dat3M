@@ -61,10 +61,6 @@ public class Thread {
 		this.program = program;
 	}
 
-    //TODO remove
-    public void clearCache(){
-    }
-
     /**
      * Lists all registers of this thread.
      * @return
@@ -103,7 +99,6 @@ public class Thread {
         exit.setSuccessor(event);
         event.setThread(this);
         updateExit(event);
-        clearCache();
     }
 
     public void updateExit(Event event){
