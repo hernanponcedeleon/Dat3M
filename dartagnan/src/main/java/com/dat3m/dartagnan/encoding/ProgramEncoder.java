@@ -59,11 +59,6 @@ public class ProgramEncoder implements Encoder {
         return encoder;
     }
 
-    // ============================== Initialization ==============================
-
-    public void initializeEncoding(SolverContext ctx) {
-    }
-
     // ============================== Encoding ==============================
 
     public BooleanFormula encodeFullProgram() {

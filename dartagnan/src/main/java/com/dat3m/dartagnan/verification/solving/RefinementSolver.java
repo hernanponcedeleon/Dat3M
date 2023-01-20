@@ -130,10 +130,6 @@ public class RefinementSolver extends ModelChecker {
         // to compute the breaking order.
         SymmetryEncoder symmEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);
         WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
-        programEncoder.initializeEncoding(ctx);
-        propertyEncoder.initializeEncoding(ctx);
-        symmEncoder.initializeEncoding(ctx);
-        baselineEncoder.initializeEncoding(ctx);
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         WMMSolver solver = WMMSolver.withContext(context, cutRelations, task, analysisContext);

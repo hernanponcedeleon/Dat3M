@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 
@@ -226,8 +225,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	// Encoding
 	// -----------------------------------------------------------------------------------------------------------------
-
-	public void initializeEncoding(SolverContext ctx) { }
 
 	public void runLocalAnalysis(Program program, Context context) { }
 

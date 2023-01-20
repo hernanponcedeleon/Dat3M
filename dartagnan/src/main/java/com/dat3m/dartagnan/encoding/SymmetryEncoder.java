@@ -20,7 +20,6 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 import java.util.function.Function;
@@ -79,9 +78,6 @@ public class SymmetryEncoder implements Encoder {
     public static SymmetryEncoder withContext(EncodingContext context, Wmm memoryModel, Context analysisContext) throws InvalidConfigurationException {
         return new SymmetryEncoder(context, memoryModel, analysisContext, context.getTask().getConfig());
     }
-
-    @Override
-    public void initializeEncoding(SolverContext context) { }
 
     public BooleanFormula encodeFullSymmetryBreaking() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();

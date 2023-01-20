@@ -56,9 +56,6 @@ public class PropertyEncoder implements Encoder {
         return new PropertyEncoder(context);
     }
 
-    @Override
-    public void initializeEncoding(SolverContext context) { }
-
     public BooleanFormula encodeSpecification() {
         EnumSet<Property> property = context.getTask().getProperty();
     	BooleanFormulaManager bmgr = context.getBooleanFormulaManager();

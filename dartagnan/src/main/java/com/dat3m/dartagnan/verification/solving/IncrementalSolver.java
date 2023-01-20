@@ -53,11 +53,6 @@ public class IncrementalSolver extends ModelChecker {
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);
 
-        programEncoder.initializeEncoding(ctx);
-        propertyEncoder.initializeEncoding(ctx);
-        wmmEncoder.initializeEncoding(ctx);
-        symmetryEncoder.initializeEncoding(ctx);
-        
         logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
@@ -83,11 +78,11 @@ public class IncrementalSolver extends ModelChecker {
         }
         
         if(logger.isDebugEnabled()) {        	
-    		String smtStatistics = "\n ===== SMT Statistics ===== \n";
+    		StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics ===== \n");
     		for(String key : prover.getStatistics().keySet()) {
-    			smtStatistics += String.format("\t%s -> %s\n", key, prover.getStatistics().get(key));
+    			smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
     		}
-    		logger.debug(smtStatistics);
+    		logger.debug(smtStatistics.toString());
         }
 
         res = task.getProgram().getAss().getInvert() ? res.invert() : res;

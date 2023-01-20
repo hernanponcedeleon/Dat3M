@@ -85,10 +85,6 @@ public class WmmEncoder implements Encoder {
         return encoder;
     }
 
-    @Override
-    public void initializeEncoding(SolverContext ctx) {
-    }
-
     public BooleanFormula encodeFullMemoryModel() {
         return context.getBooleanFormulaManager().and(
                 encodeRelations(),
