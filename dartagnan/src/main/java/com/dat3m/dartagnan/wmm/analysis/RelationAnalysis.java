@@ -1286,7 +1286,6 @@ public class RelationAnalysis {
             Set<Tuple> d1 = new HashSet<>();
             Knowledge k0 = knowledgeMap.get(r0);
             Knowledge k1 = knowledgeMap.get(r1);
-            Map<Event, List<Event>> mustIn0 = mapReverse(k0.must);
             if (origin.equals(r1)) {
                 Map<Event, List<Event>> mayOut0 = enabled.isEmpty() ? Map.of() : map(k0.may);
                 Map<Event, List<Event>> mayOut1 = disabled.isEmpty() ? Map.of() : map(k1.may);
@@ -1333,7 +1332,7 @@ public class RelationAnalysis {
                 }
             }
             if (origin.equals(r0)) {
-                Map<Event, List<Event>> mayIn0 = mapReverse(k0.may);
+                Map<Event, List<Event>> mustIn0 = mapReverse(k0.must);
                 Map<Event, List<Event>> mayIn1 = mapReverse(k1.may);
                 Map<Event, List<Event>> mustOut1 = map(k1.must);
                 d1.addAll(intersection(disabled, k1.may));
