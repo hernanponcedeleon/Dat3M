@@ -109,16 +109,16 @@ public class RelationAnalysis {
         RelationAnalysis a = new RelationAnalysis(task, context, config);
         task.getConfig().inject(a);
         logger.info("{}: {}", ENABLE_RELATION_ANALYSIS, a.enable);
-        logger.info("{}: {}", ENABLE_MUST_SETS, a.enableMustSets);
-        logger.info("{}: {}", ENABLE_EXTENDED_RELATION_ANALYSIS, a.enableExtended);
         if (a.enableMustSets && !a.enable) {
             logger.warn("{} implies {}", ENABLE_MUST_SETS, ENABLE_RELATION_ANALYSIS);
-            a.enable = true;
+            a.enableMustSets = false;
         }
+        logger.info("{}: {}", ENABLE_MUST_SETS, a.enableMustSets);
         if (a.enableExtended && !a.enable) {
             logger.warn("{} implies {}", ENABLE_EXTENDED_RELATION_ANALYSIS, ENABLE_RELATION_ANALYSIS);
-            a.enable = true;
+            a.enableExtended = false;
         }
+        logger.info("{}: {}", ENABLE_EXTENDED_RELATION_ANALYSIS, a.enableExtended);
         long t0 = System.currentTimeMillis();
         a.run();
         long t1 = System.currentTimeMillis();
