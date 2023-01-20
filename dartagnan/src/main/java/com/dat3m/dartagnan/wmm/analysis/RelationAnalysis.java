@@ -40,6 +40,8 @@ import java.util.stream.Stream;
 import static com.dat3m.dartagnan.configuration.Arch.RISCV;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.Lists.reverse;
@@ -132,9 +134,13 @@ public class RelationAnalysis {
         verify(a.enableMustSets || a.knowledgeMap.values().stream().allMatch(k -> k.must.isEmpty()));
         logger.info("Number of may-tuples: {}", a.countMaySet());
         logger.info("Number of must-tuples: {}", a.countMustSet());
-        if (!a.mutex.isEmpty()) {
-            logger.warn("Number of mutually-exclusive tuples: {}", a.mutex.size());
-        }
+        logger.info("Number of mutually-exclusive tuples: {}", a.mutex.size());
+        Knowledge rf = a.knowledgeMap.get(task.getMemoryModel().getRelation(RF));
+        logger.info("Number of may-read-from-tuples: {}", rf.may.size());
+        logger.info("Number of must-read-from-tuples: {}", rf.must.size());
+        Knowledge co = a.knowledgeMap.get(task.getMemoryModel().getRelation(CO));
+        logger.info("Number of may-coherence-tuples: {}", co.may.size());
+        logger.info("Number of must-coherence-tuples: {}", co.must.size());
         return a;
     }
 
@@ -739,7 +745,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            logger.debug("may set size for memory order: " + may.size());
+            logger.debug("Initial may set size for memory order: {}", may.size());
             return new Knowledge(may, enableMustSets ? must : Set.of());
         }
         @Override
@@ -833,7 +839,7 @@ public class RelationAnalysis {
                 }
                 logger.debug("Atomic block optimization eliminated {} reads", sizeBefore - may.size());
             }
-            logger.debug("may set size for read-from: {}", may.size());
+            logger.debug("Initial may set size for read-from: {}", may.size());
             return new Knowledge(may, enableMustSets ? new HashSet<>() : Set.of());
         }
         @Override
