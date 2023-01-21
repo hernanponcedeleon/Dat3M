@@ -12,6 +12,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.program.processing.LoopUnrolling.*;
+
 /*
     This class provides information about Loops in the program.
     It can be used before and after LoopUnrolling.
@@ -31,7 +33,7 @@ public class LoopAnalysis {
         public Thread getThread() { return thread; }
         public String getName() { return loopName; }
         public int getLoopNumber() { return loopNumber; }
-        public boolean isUnrolled() { return this.isUnrolled; }
+        public boolean isUnrolled() { return isUnrolled; }
         public List<LoopIterationInfo> getIterations() { return loopIterationInfos; }
     }
 
@@ -50,9 +52,8 @@ public class LoopAnalysis {
         }
 
         public List<Event> computeBody() {
-            final Event terminator = getIterationEnd().getSuccessor();
-
             final List<Event> body = new ArrayList<>();
+            final Event terminator = getIterationEnd().getSuccessor();
             Event cur = getIterationStart();
             do {
                 body.add(cur);
@@ -67,6 +68,8 @@ public class LoopAnalysis {
         private int iterationIndex;
     }
 
+    // ---------------------------------------------------------
+
     private final Map<Thread, ImmutableList<LoopInfo>> thread2LoopsMap = new HashMap<>();
     public ImmutableList<LoopInfo> getLoopsOfThread(Thread thread) {
         return thread2LoopsMap.get(thread);
@@ -74,13 +77,13 @@ public class LoopAnalysis {
 
     private LoopAnalysis() {}
 
-
     public static LoopAnalysis newInstance(Program program) {
         final LoopAnalysis loopAnalysis = new LoopAnalysis();
         loopAnalysis.run(program);
         return loopAnalysis;
     }
 
+    // ---------------------------------------------------------
 
     private void run(Program program) {
         final Function<Thread, ImmutableList<LoopInfo>> loopFindingAlgo =
@@ -142,26 +145,24 @@ public class LoopAnalysis {
     // A loop-related label has the form
     // "origLabel.loop/bound OR origLabel.loop/itr_N"
     private LoopLabelInfo tryParseLoopLabel(Event eventToParse) {
-        if (!(eventToParse instanceof Label && ((Label)eventToParse).getName().contains(".loop"))) {
+        if (!(eventToParse instanceof Label && ((Label)eventToParse).getName().contains(LOOP_LABEL_IDENTIFIER))) {
             return null;
         }
 
         final Label label = (Label) eventToParse;
-        final String loopLabelSuffixSeparator = "/";
-        final int labelSuffixIndex = label.getName().lastIndexOf(loopLabelSuffixSeparator);
-        final String loopName = label.getName().substring(0, labelSuffixIndex);
-        final String labelSuffix = label.getName().substring(labelSuffixIndex + loopLabelSuffixSeparator.length());
+        final int labelInfoIndex = label.getName().lastIndexOf(LOOP_INFO_SEPARATOR);
+        final String loopName = label.getName().substring(0, labelInfoIndex);
+        final String labelInfo = label.getName().substring(labelInfoIndex + LOOP_INFO_SEPARATOR.length());
 
         final LoopLabelInfo info = new LoopLabelInfo();
         info.loopName = loopName;
-        if (labelSuffix.contains("bound")) {
+        if (labelInfo.contains(LOOP_INFO_BOUND_SUFFIX)) {
             info.isBound = true;
             info.iterationIndex = -1;
-        } else if (labelSuffix.contains("itr")) {
-            final String iterNumberSeparator = "_";
-            final int iterNumberSeparatorIndex = labelSuffix.lastIndexOf(iterNumberSeparator);
-            info.iterationIndex = Integer.parseInt(labelSuffix
-                    .substring(iterNumberSeparatorIndex + iterNumberSeparator.length()));
+        } else if (labelInfo.contains(LOOP_INFO_ITERATION_SUFFIX)) {
+            final int iterNumberInfoIndex = labelInfo.lastIndexOf(LOOP_INFO_ITERATION_SUFFIX);
+            info.iterationIndex = Integer.parseInt(labelInfo
+                    .substring(iterNumberInfoIndex + LOOP_INFO_ITERATION_SUFFIX.length()));
             info.isBound = false;
         } else {
             throw new IllegalArgumentException("Unrecognized loop label: " + label.getName());
@@ -198,5 +199,4 @@ public class LoopAnalysis {
         }
         return ImmutableList.copyOf(loops);
     }
-
 }

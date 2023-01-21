@@ -213,7 +213,6 @@ public class PropertyEncoder implements Encoder {
         return bmgr.and(atLeastOneViolation, axiomTracking);
     }
 
-
     // ======================================================================
     // ======================================================================
     // ============================ Data races ==============================
@@ -243,7 +242,6 @@ public class PropertyEncoder implements Encoder {
         final EncodingContext.EdgeEncoder hbEncoder = ctx.edge(hbRelation);
         final Program program = this.program;
         final AliasAnalysis alias = this.alias;
-
 
         BooleanFormula hasRace = bmgr.makeFalse();
         for(Thread t1 : program.getThreads()) {
@@ -280,7 +278,6 @@ public class PropertyEncoder implements Encoder {
         final BooleanFormula raceVariable = RACES.getSMTVariable(ctx);
         return bmgr.and(raceVariable, bmgr.equivalence(raceVariable, hasRace));
     }
-
 
     // ======================================================================
     // ======================================================================
@@ -330,7 +327,6 @@ public class PropertyEncoder implements Encoder {
             final EncodingContext context = PropertyEncoder.this.context;
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final LoopAnalysis loopAnalysis = LoopAnalysis.newInstance(program);
-
 
             // Find spin loops of all threads
             final Map<Thread, List<SpinIteration>> spinloopsMap =
@@ -422,6 +418,3 @@ public class PropertyEncoder implements Encoder {
         }
     }
 }
-
-
-

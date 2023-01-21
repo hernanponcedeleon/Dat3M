@@ -70,8 +70,6 @@ public class IMMLocksTest extends AbstractCTest {
             {"mutex_musl-acq2rx_lock", IMM, FAIL},
             {"mutex_musl-rel2rx_futex", IMM, UNKNOWN},
             {"mutex_musl-rel2rx_unlock", IMM, FAIL},
-            // The actual result is PASS, but CAAT returns UNKNOWN
-            // because we do not refine for the bound check 
             {"seqlock", IMM, PASS},
 		});
     }

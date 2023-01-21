@@ -55,17 +55,17 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         private boolean isAlwaysSideEffectFull = false;
     }
 
-    private static class LogStats {
+    private static class AnalysisStats {
         private final int numPotentialSpinLoops;
         private final int numStaticSpinLoops;
 
-        private LogStats(int numPotentialSpinLoops, int numStaticSpinLoops) {
+        private AnalysisStats(int numPotentialSpinLoops, int numStaticSpinLoops) {
             this.numPotentialSpinLoops = numPotentialSpinLoops;
             this.numStaticSpinLoops = numStaticSpinLoops;
         }
 
-        private LogStats add(LogStats stats) {
-            return new LogStats(this.numPotentialSpinLoops + stats.numPotentialSpinLoops,
+        private AnalysisStats add(AnalysisStats stats) {
+            return new AnalysisStats(this.numPotentialSpinLoops + stats.numPotentialSpinLoops,
                     this.numStaticSpinLoops + stats.numStaticSpinLoops);
         }
     }
@@ -75,7 +75,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         Preconditions.checkArgument(program.isCompiled(),
                 "DynamicPureLoopCutting can only be run on compiled programs.");
 
-        LogStats stats = new LogStats(0, 0);
+        AnalysisStats stats = new AnalysisStats(0, 0);
         final LoopAnalysis loopAnalysis = LoopAnalysis.newInstance(program);
         for (Thread thread : program.getThreads()) {
             final List<IterationData> iterationData = computeIterationDataList(thread, loopAnalysis);
@@ -90,7 +90,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
                 stats.numStaticSpinLoops, (stats.numPotentialSpinLoops - stats.numStaticSpinLoops));
     }
 
-    private LogStats collectStats(List<IterationData> iterDataList) {
+    private AnalysisStats collectStats(List<IterationData> iterDataList) {
         int numPotentialSpinLoops = 0;
         int numStaticSpinLoops = 0;
         Set<Integer> alreadyDetectedLoops = new HashSet<>(); // To avoid counting the same loop multiple times
@@ -107,7 +107,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
                 }
             }
         }
-        return new LogStats(numPotentialSpinLoops, numStaticSpinLoops);
+        return new AnalysisStats(numPotentialSpinLoops, numStaticSpinLoops);
     }
 
     private void insertSideEffectChecks(IterationData iter) {
@@ -207,6 +207,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         return sideEffects;
     }
 
+    // ----------------------- Dominator-related -----------------------
 
     private void reduceToDominatingSideEffects(IterationData data) {
         final LoopAnalysis.LoopIterationInfo iter = data.iterationInfo;
@@ -214,8 +215,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         final Event end = iter.getIterationEnd();
 
         if (start.is(Tag.SPINLOOP)) {
-            // If the iteration start is tagged as "SPINLOOP", then we treat the iteration
-            // as side effect free
+            // If the iteration start is tagged as "SPINLOOP", we treat the iteration as side effect free
             data.isAlwaysSideEffectFull = false;
             data.sideEffects.clear();
             return;
@@ -309,7 +309,6 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             }
         }
     }
-
 
     private Map<Event, Event> computeDominatorTree(List<Event> events, Function<Event, ? extends Collection<Event>> predsFunc) {
         Preconditions.checkNotNull(events);
