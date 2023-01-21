@@ -124,7 +124,10 @@ public class EventFactory {
         return new CondJump(cond, target);
     }
 
-    public static CondJump newJumpUnless(ExprInterface cond, Label target) {
+    public static CondJump newJumpUnless(BExpr cond, Label target) {
+        if (cond.isFalse()) {
+            return newGoto(target);
+        }
         return newJump(new BExprUn(BOpUn.NOT, cond), target);
     }
 

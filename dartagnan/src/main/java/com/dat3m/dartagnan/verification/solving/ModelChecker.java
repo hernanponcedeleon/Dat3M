@@ -125,11 +125,10 @@ public abstract class ModelChecker {
         program.setAss(ass);
     }
 
-    protected void logFlaggedPairs(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, Logger logger,
-            SolverContext sCtx) throws SolverException {
+    protected void logFlaggedPairs(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, Logger logger, EncodingContext ctx) throws SolverException {
         Model model = prover.getModel();
         for(Axiom ax : wmm.getAxioms()) {
-            if(ax.isFlagged() && TRUE.equals(model.evaluate(CAT.getSMTVariable(ax, sCtx)))) {
+            if(ax.isFlagged() && TRUE.equals(model.evaluate(CAT.getSMTVariable(ax, ctx)))) {
                 System.out.println("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
                 if(logger.isDebugEnabled()) {
                     StringBuilder violatingPairs = new StringBuilder("\n ===== The following pairs belong to the relation ===== \n");
