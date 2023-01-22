@@ -67,7 +67,7 @@ public class IncrementalSolver extends ModelChecker {
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
         logger.info("Starting push()");
         prover.push();
-        prover.addConstraint(propertyEncoder.encodeSpecificationViolations());
+        prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsat()) {
@@ -77,9 +77,7 @@ public class IncrementalSolver extends ModelChecker {
             res = prover.isUnsat()? PASS : UNKNOWN;
         } else {
         	res = FAIL;
-            if(!task.getProgram().getAss().getInvert()) {
-                logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, context);
-            }
+            logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, context);
         }
         
         if(logger.isDebugEnabled()) {        	
@@ -90,7 +88,8 @@ public class IncrementalSolver extends ModelChecker {
     		logger.debug(smtStatistics);
         }
 
-        res = task.getProgram().getAss().getInvert() ? res.invert() : res;
+        // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
+        res = task.getProgram().getSpecification().isSafetySpec() ? res : res.invert();
         logger.info("Verification finished with result " + res);
     }
 }

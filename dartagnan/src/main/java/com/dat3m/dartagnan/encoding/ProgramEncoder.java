@@ -192,8 +192,8 @@ public class ProgramEncoder implements Encoder {
     }
 
     public BooleanFormula encodeFilter() {
-    	return context.getTask().getProgram().getAssFilter() != null ?
-                context.getTask().getProgram().getAssFilter().encode(context) :
+    	return context.getTask().getProgram().getFilterSpecification() != null ?
+                context.getTask().getProgram().getFilterSpecification().encode(context) :
     			context.getBooleanFormulaManager().makeTrue();
     }
     

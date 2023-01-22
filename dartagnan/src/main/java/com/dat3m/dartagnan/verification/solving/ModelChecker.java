@@ -1,9 +1,6 @@
 package com.dat3m.dartagnan.verification.solving;
 
-import com.dat3m.dartagnan.asserts.AbstractAssert;
-import com.dat3m.dartagnan.asserts.AssertCompositeOr;
-import com.dat3m.dartagnan.asserts.AssertInline;
-import com.dat3m.dartagnan.asserts.AssertTrue;
+import com.dat3m.dartagnan.asserts.*;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
@@ -32,14 +29,13 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import java.util.List;
 import java.util.Optional;
 
 import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
-import static com.dat3m.dartagnan.configuration.Property.CAT;
+import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static java.lang.Boolean.TRUE;
 
 public abstract class ModelChecker {
@@ -50,7 +46,6 @@ public abstract class ModelChecker {
     public final Result getResult() {
         return res;
     }
-
     public EncodingContext getEncodingContext() {
         return context;
     }
@@ -66,8 +61,8 @@ public abstract class ModelChecker {
         ProcessingManager.fromConfig(config).run(program);
         // This is used to distinguish between Litmus tests (whose assertions are defined differently)
         // and C/Boogie tests.
-        if(program.getFormat()!=Program.SourceLanguage.LITMUS) {
-            updateAssertions(program);
+        if(program.getFormat() != Program.SourceLanguage.LITMUS) {
+            computeSpecificationFromProgramAssertions(program);
         }
     }
     public static void preprocessMemoryModel(VerificationTask task) throws InvalidConfigurationException {
@@ -113,22 +108,28 @@ public abstract class ModelChecker {
         analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
     }
 
-    private static void updateAssertions(Program program) {
+    private static void computeSpecificationFromProgramAssertions(Program program) {
+        // We generate a program-spec from the user-placed assertions inside the C/Boogie-code.
+        // For litmus tests, this function should not be called.
         List<Event> assertions = program.getCache().getEvents(FilterBasic.get(ASSERTION));
         AbstractAssert ass = new AssertTrue();
         if(!assertions.isEmpty()) {
             ass = new AssertInline((Local)assertions.get(0));
             for(int i = 1; i < assertions.size(); i++) {
-                ass = new AssertCompositeOr(ass, new AssertInline((Local)assertions.get(i)));
+                ass = new AssertCompositeAnd(ass, new AssertInline((Local)assertions.get(i)));
             }
         }
-        program.setAss(ass);
+        ass.setType(AbstractAssert.ASSERT_TYPE_FORALL);
+        program.setSpecification(ass);
     }
 
     protected void logFlaggedPairs(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, Logger logger, EncodingContext ctx) throws SolverException {
+        if (!ctx.getTask().getProperty().contains(CAT_SPEC)) {
+            return;
+        }
         Model model = prover.getModel();
         for(Axiom ax : wmm.getAxioms()) {
-            if(ax.isFlagged() && TRUE.equals(model.evaluate(CAT.getSMTVariable(ax, ctx)))) {
+            if(ax.isFlagged() && TRUE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
                 System.out.println("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
                 if(logger.isDebugEnabled()) {
                     StringBuilder violatingPairs = new StringBuilder("\n ===== The following pairs belong to the relation ===== \n");
@@ -140,4 +141,5 @@ public abstract class ModelChecker {
             }
         }
     }
+
 }

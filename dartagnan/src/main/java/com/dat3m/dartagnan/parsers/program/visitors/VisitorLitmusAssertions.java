@@ -34,13 +34,10 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
         AbstractAssert ass = ctx.assertion().accept(this);
         if(ctx.AssertionNot() != null) {
             ass.setType(AbstractAssert.ASSERT_TYPE_NOT_EXISTS);
-        } else if(ctx.AssertionExists() != null){
+        } else if(ctx.AssertionExists() != null || ctx.AssertionFinal() != null){
             ass.setType(AbstractAssert.ASSERT_TYPE_EXISTS);
         } else if(ctx.AssertionForall() != null){
-            ass = new AssertNot(ass);
             ass.setType(AbstractAssert.ASSERT_TYPE_FORALL);
-        } else if(ctx.AssertionFinal() != null){
-            ass.setType(AbstractAssert.ASSERT_TYPE_FINAL);
         } else {
             throw new ParsingException("Unrecognised assertion type");
         }

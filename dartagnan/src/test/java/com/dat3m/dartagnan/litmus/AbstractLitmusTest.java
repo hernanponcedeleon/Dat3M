@@ -83,7 +83,7 @@ public abstract class AbstractLitmusTest {
     }
 
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> Property.getDefault());
+        return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
     }
 
     protected Provider<Integer> getBoundProvider() {

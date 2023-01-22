@@ -53,8 +53,8 @@ public class ProgramBuilder {
             program.add(thread);
             thread.setProgram(program);
         }
-        program.setAss(ass);
-        program.setAssFilter(assFilter);
+        program.setSpecification(ass);
+        program.setFilterSpecification(assFilter);
         EventIdReassignment.newInstance().run(program);
         program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
         return program;

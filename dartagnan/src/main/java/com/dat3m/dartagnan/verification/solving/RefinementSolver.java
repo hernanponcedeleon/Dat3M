@@ -136,7 +136,7 @@ public class RefinementSolver extends ModelChecker {
         prover.addConstraint(symmEncoder.encodeFullSymmetryBreaking());
 
         prover.push();
-        prover.addConstraint(propertyEncoder.encodeSpecificationViolations());
+        prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
 
         //  ------ Just for statistics ------
         List<WMMSolver.Statistics> statList = new ArrayList<>();
@@ -267,7 +267,8 @@ public class RefinementSolver extends ModelChecker {
     		logger.debug(smtStatistics.toString());
         }
 
-        res = program.getAss().getInvert() ? res.invert() : res;
+        // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
+        res = program.getSpecification().isSafetySpec() ? res : res.invert();
         logger.info("Verification finished with result " + res);
     }
     // ======================= Helper Methods ======================

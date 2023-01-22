@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Local;
 import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,12 +19,13 @@ public class AssertInline extends AbstractAssert {
 
     @Override
     public BooleanFormula encode(EncodingContext ctx) {
-		return ctx.getBooleanFormulaManager().and(ctx.execution(e), ctx.equalZero(ctx.result(e)));
+        final BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
+		return bmgr.implication(ctx.execution(e), bmgr.not(ctx.equalZero(ctx.result(e))));
     }
 
     @Override
     public String toString(){
-        return "!" + e.getResultRegister();
+        return e.getResultRegister().toString();
     }
     
 	@Override

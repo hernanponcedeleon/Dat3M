@@ -135,7 +135,7 @@ public class Dartagnan extends BaseOptions {
                  ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
             {
                 ModelChecker modelChecker;
-                if(properties.contains(RACES)) {
+                if(properties.contains(DATARACEFREEDOM)) {
                 	if(properties.size() > 1) {
                     	System.out.println("Data race detection cannot be combined with other properties");
                     	System.exit(1);
@@ -177,11 +177,11 @@ public class Dartagnan extends BaseOptions {
             	}
 
             	boolean safetyViolationFound = false;
-            	if((result == FAIL && !p.getAss().getInvert()) || 
-            			(result == PASS && p.getAss().getInvert())) {
+            	if((result == FAIL && !p.getSpecification().isSafetySpec()) ||
+            			(result == PASS && p.getSpecification().isSafetySpec())) {
 					final EncodingContext encCtx = modelChecker.getEncodingContext();
 					printWarningIfThreadStartFailed(p, encCtx, prover);
-            		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(encCtx)))) {
+            		if(TRUE.equals(prover.getModel().evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
             			safetyViolationFound = true;
             			System.out.println("Safety violation found");
             		}
@@ -190,10 +190,10 @@ public class Dartagnan extends BaseOptions {
             		}
                 }
                 if (p.getFormat().equals(SourceLanguage.LITMUS)) {
-                    if (p.getAssFilter() != null) {
-                        System.out.println("Filter " + (p.getAssFilter()));
+                    if (p.getFilterSpecification() != null) {
+                        System.out.println("Filter " + (p.getFilterSpecification()));
                     }
-                    System.out.println("Condition " + p.getAss().toStringWithType());
+                    System.out.println("Condition " + p.getSpecification().toStringWithType());
                     System.out.println(safetyViolationFound ? "Ok" : "No");
                 } else {
                     System.out.println(result);                	
@@ -205,7 +205,7 @@ public class Dartagnan extends BaseOptions {
 					WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, result);
 	                // We only write witnesses for REACHABILITY (if the path to the original C file was given) 
 					// and if we are not doing witness validation
-	                if (properties.contains(REACHABILITY) && w.canBeBuilt() && !o.runValidator()) {
+	                if (properties.contains(PROGRAM_SPEC) && w.canBeBuilt() && !o.runValidator()) {
 						w.build().write();
 	                }
 				} catch(InvalidConfigurationException e) {

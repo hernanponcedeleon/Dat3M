@@ -43,11 +43,9 @@ public class Program {
 	public boolean isCompiled(){
         return isCompiled;
     }
-
     public boolean isUnrolled(){
         return unrollingBound > 0;
     }
-
     public int getUnrollingBound(){
         return unrollingBound;
     }
@@ -55,7 +53,6 @@ public class Program {
 	public String getName(){
         return name;
     }
-
 	public void setName(String name){
 	    this.name = name;
     }
@@ -63,7 +60,6 @@ public class Program {
 	public void setArch(Arch arch){
 	    this.arch = arch;
     }
-
 	public Arch getArch(){
 	    return arch;
     }
@@ -72,19 +68,17 @@ public class Program {
         return this.memory;
     }
 
-    public AbstractAssert getAss() {
+    public AbstractAssert getSpecification() {
         return ass;
     }
-
-    public void setAss(AbstractAssert ass) {
+    public void setSpecification(AbstractAssert ass) {
         this.ass = ass;
     }
 
-    public AbstractAssert getAssFilter() {
+    public AbstractAssert getFilterSpecification() {
         return assFilter;
     }
-
-    public void setAssFilter(AbstractAssert ass) {
+    public void setFilterSpecification(AbstractAssert ass) {
         this.assFilter = ass;
     }
 

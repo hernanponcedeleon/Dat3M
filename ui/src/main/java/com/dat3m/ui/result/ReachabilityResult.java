@@ -24,8 +24,8 @@ import org.sosy_lab.java_smt.api.SolverException;
 import java.util.Optional;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
-import static com.dat3m.dartagnan.configuration.Property.CAT;
-import static com.dat3m.dartagnan.configuration.Property.REACHABILITY;
+import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
+import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
@@ -118,17 +118,17 @@ public class ReachabilityResult {
 
     private void buildVerdict(Program p, Result result, ProverEnvironment prover, EncodingContext ctx) throws SolverException {
         StringBuilder sb = new StringBuilder();
-        Model model = (result == FAIL && !p.getAss().getInvert()) || (result == PASS && p.getAss().getInvert()) ? prover.getModel() : null;
+        Model model = (result == FAIL && !p.getSpecification().isSafetySpec()) || (result == PASS && p.getSpecification().isSafetySpec()) ? prover.getModel() : null;
     	for(Axiom ax : wmm.getAxioms()) {
-        	if(ax.isFlagged() && model != null && TRUE.equals(model.evaluate(CAT.getSMTVariable(ax, ctx)))) {
+        	if(ax.isFlagged() && model != null && TRUE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
         		sb.append("Flag ")
                         .append(Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()))
                         .append("\n");
         	}
     	}
 		// TODO We might want to output different messages once we allow to check LIVENESS from the UI
-		sb.append("Condition ").append(program.getAss().toStringWithType()).append("\n");
-		sb.append(program.getFormat().equals(LITMUS) ? (model != null && TRUE.equals(model.evaluate(REACHABILITY.getSMTVariable(ctx)))) ? "Ok" : "No" : result).append("\n");
+		sb.append("Condition ").append(program.getSpecification().toStringWithType()).append("\n");
+		sb.append(program.getFormat().equals(LITMUS) ? (model != null && TRUE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(ctx)))) ? "Ok" : "No" : result).append("\n");
 		if(model != null) {
 			model.close();			
 		}

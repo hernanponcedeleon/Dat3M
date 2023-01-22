@@ -7,38 +7,39 @@ import java.util.Optional;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 
 public enum Property implements OptionInterface {
-	REACHABILITY, RACES, LIVENESS, CAT;
+	PROGRAM_SPEC, 		// Litmus queries OR assertion safety in C-code
+	LIVENESS,			// Liveness property
+	CAT_SPEC,			// CAT-spec defined via flagged axioms in .cat file (~bug specification)
+	DATARACEFREEDOM; 	// Special option for data-races detection in SVCOMP only
 	
 	// Used to display in UI
     @Override
     public String toString() {
         switch(this){
-        	case REACHABILITY:
-        		return "Reachability";
-        	case RACES:
-        		return "Races";
+        	case PROGRAM_SPEC:
+        		return "Program specification";
+        	case DATARACEFREEDOM:
+        		return "Data-race freedom (SVCOMP only)";
 			case LIVENESS:
 				return "Liveness";
-			case CAT:
-				return "CAT properties";
+			case CAT_SPEC:
+				return "CAT specification";
 			default:
 				throw new UnsupportedOperationException("Unrecognized property: " + this);
         }
     }
 
 	public static EnumSet<Property> getDefault() {
-		return EnumSet.of(REACHABILITY, CAT);
+		return EnumSet.of(PROGRAM_SPEC, CAT_SPEC);
 	}
 
 	// Used to decide the order shown by the selector in the UI
 	public static Property[] orderedValues() {
-		Property[] order = { REACHABILITY, RACES, LIVENESS, CAT };
+		Property[] order = {PROGRAM_SPEC, LIVENESS, CAT_SPEC, DATARACEFREEDOM};
 		// Be sure no element is missing
 		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;
@@ -49,7 +50,7 @@ public enum Property implements OptionInterface {
 	}
 
 	public BooleanFormula getSMTVariable(Axiom ax, EncodingContext ctx) {
-		Preconditions.checkState(this == CAT);
+		Preconditions.checkState(this == CAT_SPEC);
 		return ctx.getBooleanFormulaManager()
 				.makeVariable("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
 	}

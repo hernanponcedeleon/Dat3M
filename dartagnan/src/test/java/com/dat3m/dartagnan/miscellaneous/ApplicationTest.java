@@ -15,35 +15,35 @@ public class ApplicationTest {
 
     @Test
     public void Two() throws Exception {
-    	Dartagnan.main(createAndFillOptions(REACHABILITY.asStringOption(), 
+    	Dartagnan.main(createAndFillOptions(PROGRAM_SPEC.asStringOption(),
     										TWO.asStringOption(),
     										Solvers.Z3.toString()));
     }
 
     @Test
     public void Assume() throws Exception {
-    	Dartagnan.main(createAndFillOptions(REACHABILITY.asStringOption(), 
+    	Dartagnan.main(createAndFillOptions(PROGRAM_SPEC.asStringOption(),
     										ASSUME.asStringOption(),
     										Solvers.Z3.toString()));
     }
 
     @Test
     public void Incremental() throws Exception {
-    	Dartagnan.main(createAndFillOptions(REACHABILITY.asStringOption(), 
+    	Dartagnan.main(createAndFillOptions(PROGRAM_SPEC.asStringOption(),
     										INCREMENTAL.asStringOption(),
     										Solvers.Z3.toString()));
     }
 
     @Test
     public void CAAT() throws Exception {
-    	Dartagnan.main(createAndFillOptions(REACHABILITY.asStringOption(), 
+    	Dartagnan.main(createAndFillOptions(PROGRAM_SPEC.asStringOption(),
     										CAAT.asStringOption(),
     										Solvers.Z3.toString()));
     }
 
     @Test
     public void Races() throws Exception {
-    	Dartagnan.main(createAndFillOptions(RACES.asStringOption(), 
+    	Dartagnan.main(createAndFillOptions(DATARACEFREEDOM.asStringOption(),
     										ASSUME.asStringOption(),
     										Solvers.Z3.toString()));
     }
@@ -97,14 +97,14 @@ public class ApplicationTest {
 
     @Test(expected = InvalidConfigurationException.class)
     public void UnsupportedMethod() throws Exception {
-    	Dartagnan.main(createAndFillOptions(REACHABILITY.asStringOption(), 
+    	Dartagnan.main(createAndFillOptions(PROGRAM_SPEC.asStringOption(),
     										"unsupported-method",
     										Solvers.Z3.toString()));
     }
 
     @Test(expected = InvalidConfigurationException.class)
     public void UnsupportedSolver() throws Exception {
-    	Dartagnan.main(createAndFillOptions(REACHABILITY.asStringOption(), 
+    	Dartagnan.main(createAndFillOptions(PROGRAM_SPEC.asStringOption(),
     										ASSUME.asStringOption(),
     										"unsupported-solver"));
     }
