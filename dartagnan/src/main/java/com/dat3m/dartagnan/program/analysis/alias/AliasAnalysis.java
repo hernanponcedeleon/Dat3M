@@ -33,8 +33,10 @@ public interface AliasAnalysis {
             default:
                 throw new UnsupportedOperationException("Alias method not recognized");
         }
+        a = new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, config));
 
-        return new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, config));
+        logger.info("Finished alias analysis");
+        return a;
     }
 
     @Options
