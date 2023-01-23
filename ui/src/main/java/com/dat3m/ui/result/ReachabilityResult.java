@@ -29,6 +29,7 @@ import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
+import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 
 public class ReachabilityResult {
@@ -118,20 +119,23 @@ public class ReachabilityResult {
 
     private void buildVerdict(Program p, Result result, ProverEnvironment prover, EncodingContext ctx) throws SolverException {
         StringBuilder sb = new StringBuilder();
-        Model model = (result == FAIL && !p.getSpecification().isSafetySpec()) || (result == PASS && p.getSpecification().isSafetySpec()) ? prover.getModel() : null;
-    	for(Axiom ax : wmm.getAxioms()) {
-        	if(ax.isFlagged() && model != null && TRUE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
-        		sb.append("Flag ")
-                        .append(Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()))
-                        .append("\n");
-        	}
-    	}
 		// TODO We might want to output different messages once we allow to check LIVENESS from the UI
 		sb.append("Condition ").append(program.getSpecification().toStringWithType()).append("\n");
-		sb.append(program.getFormat().equals(LITMUS) ? (model != null && TRUE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(ctx)))) ? "Ok" : "No" : result).append("\n");
-		if(model != null) {
-			model.close();			
-		}
+		sb.append(program.getFormat().equals(LITMUS) ? result == PASS ? "Ok" : "No" : result).append("\n");
+
+        if (result == FAIL && p.getSpecification().isSafetySpec()) {
+            //TODO: By default CAT properties are disabled now cause they are not compatible
+            // with every program spec. The UI doesn't allow specifying the property to check.
+            try (Model model = prover.getModel()) {
+                for (Axiom ax : wmm.getAxioms()) {
+                    if (ax.isFlagged() && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
+                        sb.append("Flag ")
+                                .append(Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()))
+                                .append("\n");
+                    }
+                }
+            }
+        }
         verdict = sb.toString();
     }
 

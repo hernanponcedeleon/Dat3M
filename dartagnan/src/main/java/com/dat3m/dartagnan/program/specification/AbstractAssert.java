@@ -28,7 +28,7 @@ public abstract class AbstractAssert {
     }
 
     public String toStringWithType(){
-        return type != null ? (type + "(" + this + ")") : toString();
+        return type != null ? (type + " (" + this + ")") : toString();
     }
 
     public abstract BooleanFormula encode(EncodingContext context);

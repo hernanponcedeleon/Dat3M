@@ -41,7 +41,7 @@ public enum Property implements OptionInterface {
     }
 
 	public static EnumSet<Property> getDefault() {
-		return EnumSet.of(PROGRAM_SPEC, CAT_SPEC);
+		return EnumSet.of(PROGRAM_SPEC);
 	}
 
 	// Used to decide the order shown by the selector in the UI

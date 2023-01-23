@@ -30,6 +30,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
@@ -181,17 +182,18 @@ public class Dartagnan extends BaseOptions {
 				final EncodingContext encCtx = modelChecker.getEncodingContext();
 				final boolean hasViolations = result == FAIL && p.getSpecification().isSafetySpec();
 				final boolean hasPositiveWitnesses = result == PASS && !p.getSpecification().isSafetySpec();
+				final Model model = (hasViolations || hasPositiveWitnesses) ? prover.getModel() : null;
 				if (hasViolations) {
 					printWarningIfThreadStartFailed(p, encCtx, prover);
-					if(FALSE.equals(prover.getModel().evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
+					if(FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
 						System.out.println("Program specification violation found");
 					}
-					if(FALSE.equals(prover.getModel().evaluate(LIVENESS.getSMTVariable(encCtx)))) {
+					if(FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
 						System.out.println("Liveness violation found");
 					}
 					// TODO: CAT specs?
 				} else if (hasPositiveWitnesses) {
-					if(TRUE.equals(prover.getModel().evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
+					if(TRUE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
 						// The check above is just a sanity check: the program spec has to be true
 						// because it is the only property that got encoded.
 						System.out.println("Program specification witness found.");
@@ -199,16 +201,16 @@ public class Dartagnan extends BaseOptions {
 				}
 
 				if (p.getFormat().equals(SourceLanguage.LITMUS)) {
-					// Litmus-specific output format that matches with Herd7
+					// Litmus-specific output format that matches with Herd7 (as good as it can)
 					if (p.getFilterSpecification() != null) {
 						System.out.println("Filter " + (p.getFilterSpecification().toStringWithType()));
 					}
 					System.out.println("Condition " + p.getSpecification().toStringWithType());
-					final String verdict =
-							TRUE.equals(prover.getModel().evaluate(PROGRAM_SPEC.getSMTVariable(encCtx))) ? "Ok" : "No";
-					// NOTE: If we check only for program spec of litmus tests, then we have "PASS <=> Ok"
-					System.out.println(verdict);
-					//TODO: add race detection?
+					System.out.println(result == PASS ? "Ok" : "No");
+					// NOTE: We cannot produce an output that matches herd7 when checking for both program spec and cat properties.
+					// This requires two SMT-queries because a single model is unlikely to witness/falsify both properties
+					// simultaneously.
+					//TODO: add output for race detection?
 				} else {
 					System.out.println(result);
 				}
