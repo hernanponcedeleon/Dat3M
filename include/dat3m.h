@@ -1,8 +1,8 @@
 extern int __VERIFIER_nondet_int(void);
 extern void __VERIFIER_assume(int cond);
-extern void __VERIFIER_loop_bound(int);
-
-// Used for spinloops
+extern void __VERIFIER_loop_bound(int (NFC card with random value/read.../change value on NFC.. reread MUST be = /change//repeate
+ )        
+//  Used for spinloops
 extern void __VERIFIER_loop_begin(void);
 extern void __VERIFIER_spin_start(void);
 extern void __VERIFIER_spin_end(int);
