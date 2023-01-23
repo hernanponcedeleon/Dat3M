@@ -5,6 +5,7 @@ import java.util.EnumSet;
 import java.util.Optional;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
@@ -14,7 +15,13 @@ public enum Property implements OptionInterface {
 	PROGRAM_SPEC, 		// Litmus queries OR assertion safety in C-code
 	LIVENESS,			// Liveness property
 	CAT_SPEC,			// CAT-spec defined via flagged axioms in .cat file (~bug specification)
-	DATARACEFREEDOM; 	// Special option for data-races detection in SVCOMP only
+	DATARACEFREEDOM; 	// Special option for data-race detection in SVCOMP only
+
+	public enum Type {
+		SAFETY,
+		REACHABILITY,
+		MIXED
+	}
 	
 	// Used to display in UI
     @Override
@@ -43,6 +50,20 @@ public enum Property implements OptionInterface {
 		// Be sure no element is missing
 		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;
+	}
+
+	public Type getType(VerificationTask context) {
+		if (this != PROGRAM_SPEC || context.getProgram().getSpecification().isSafetySpec()) {
+			return Type.SAFETY;
+		} else {
+			return Type.REACHABILITY;
+		}
+	}
+
+	public static Type getCombinedType(EnumSet<Property> properties, VerificationTask context) {
+		return properties.stream().map(p -> p.getType(context))
+				.reduce((x, y) -> x == y ? x : Type.MIXED)
+				.orElse(Type.SAFETY); // In the odd case that the properties are empty, we consider it a safety spec
 	}
 
 	public BooleanFormula getSMTVariable(EncodingContext ctx) {

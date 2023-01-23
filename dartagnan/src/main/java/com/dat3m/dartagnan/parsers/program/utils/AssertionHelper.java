@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
-import com.dat3m.dartagnan.asserts.AbstractAssert;
+import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsLexer;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
 import com.dat3m.dartagnan.parsers.program.visitors.VisitorLitmusAssertions;
@@ -23,6 +23,8 @@ public class AssertionHelper {
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
         LitmusAssertionsParser parser = new LitmusAssertionsParser(tokenStream);
         ParserRuleContext parserEntryPoint = parser.assertionFilter();
-        return parserEntryPoint.accept(new VisitorLitmusAssertions(programBuilder));
+        AbstractAssert filter = parserEntryPoint.accept(new VisitorLitmusAssertions(programBuilder));
+        filter.setType(AbstractAssert.ASSERT_TYPE_FORALL);
+        return filter;
     }
 }

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.asserts.AbstractAssert;
+import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -31,6 +31,7 @@ import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
@@ -38,8 +39,7 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
+
 public class PropertyEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(PropertyEncoder.class);
@@ -51,10 +51,35 @@ public class PropertyEncoder implements Encoder {
     private final AliasAnalysis alias;
     private final RelationAnalysis ra;
 
+    // We may want to make this configurable or just keep the option fixed.
+    private final boolean doWeakTracking = true;
+
+    /*
+        We use trackable formulas to find out why a disjunctive formula was satisfied:
+            - Consider Enc = (P or Q or R), where P, Q, and R are arbitrary formulas.
+            - In case of satisfaction of Enc, we want to track which of the 3 cases was true.
+            - We associate to each formula a tracking variable, V(P), V(Q), and V(R)
+            - We then encode "(V(P) or V(Q) or V(R)) and (V(P) <=> P) and (V(Q) <=> Q) and (V(R) <=> R).
+                - With "weak tracking", we encode an implication "V(P) => P" instead.
+            - In case of satisfaction, the variables will tell us which of the 3 formulas was true.
+
+       Since we encode a lot of potential violations, and we want to trace back which one lead to
+       our query being SAT, we use trackable formulas.
+     */
+    private static class TrackableFormula {
+        private final BooleanFormula trackingLiteral;
+        private final BooleanFormula trackedFormula;
+
+        public TrackableFormula(BooleanFormula trackingLit, BooleanFormula formula) {
+            this.trackingLiteral = trackingLit;
+            this.trackedFormula = formula;
+        }
+    }
+
     // =====================================================================
 
     private PropertyEncoder(EncodingContext c) {
-        checkArgument(c.getTask().getProgram().isCompiled(),
+        Preconditions.checkArgument(c.getTask().getProgram().isCompiled(),
                 "The program must get compiled first before its properties can be encoded.");
         context = c;
         program = c.getTask().getProgram();
@@ -79,13 +104,16 @@ public class PropertyEncoder implements Encoder {
     }
 
     public BooleanFormula encodeProperties(EnumSet<Property> properties) {
-        BooleanFormula encoding;
-        if (properties.contains(PROGRAM_SPEC) && !program.getSpecification().isSafetySpec()) {
-            encoding = encodePropertyWitnesses(properties);
-        } else {
-            encoding = encodePropertyViolations(properties);
+        Property.Type specType = Property.getCombinedType(properties, context.getTask());
+        if (specType == Property.Type.MIXED) {
+            final String error = String.format(
+                    "The set of properties %s are of mixed type (safety and reachability properties)." +
+                    "Cannot encode mixed properties into a single SMT-query.", properties);
+            throw new IllegalArgumentException(error);
         }
 
+        BooleanFormula encoding = (specType == Property.Type.SAFETY) ?
+                encodePropertyViolations(properties) : encodePropertyWitnesses(properties);
         if (program.getFormat().equals(LITMUS) || properties.contains(LIVENESS)) {
             // Both litmus assertions and liveness need to identify
             // the final stores to addresses.
@@ -97,20 +125,30 @@ public class PropertyEncoder implements Encoder {
     }
 
     private BooleanFormula encodePropertyViolations(EnumSet<Property> properties) {
+        final List<TrackableFormula> trackableViolationEncodings = new ArrayList<>();
+        if (properties.contains(LIVENESS)) {
+            trackableViolationEncodings.add(encodeDeadlocks());
+        }
+        if (properties.contains(DATARACEFREEDOM)) {
+            trackableViolationEncodings.add(encodeDataRaces());
+        }
+        if (properties.contains(CAT_SPEC)) {
+            trackableViolationEncodings.addAll(encodeCATSpecificationViolations());
+        }
+        if (properties.contains(PROGRAM_SPEC)) {
+            trackableViolationEncodings.add(encodeProgramSpecification());
+        }
+
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        // Weak tracking: "TrackingVar => TrackingEnc", strong tracking: "TrackingVar <=> TrackingEnc"
+        final BiFunction<BooleanFormula, BooleanFormula, BooleanFormula> trackingConnector =
+                doWeakTracking ? bmgr::implication : bmgr::equivalence;
+        final BooleanFormula trackedViolationEnc = bmgr.and(Lists.transform(trackableViolationEncodings,
+                vio -> trackingConnector.apply(vio.trackingLiteral, vio.trackedFormula)));
+        final BooleanFormula atLeastOneViolation = bmgr.or(Lists.transform(trackableViolationEncodings,
+                vio -> vio.trackingLiteral));
 
-        List<BooleanFormula> specVariables = new ArrayList<>();
-        final List<BooleanFormula> propertyEncodings = new ArrayList<>();
-        // Deadlocks
-        propertyEncodings.add(properties.contains(LIVENESS) ? encodeDeadlocks(specVariables) : bmgr.makeTrue());
-        // Data races (SVCOMP)
-        propertyEncodings.add(properties.contains(DATARACEFREEDOM) ? encodeDataRaces(specVariables) : bmgr.makeTrue());
-        // CAT spec violation
-        propertyEncodings.add(properties.contains(CAT_SPEC) ? encodeCATSpecificationViolations(specVariables) : bmgr.makeTrue());
-        // Program spec violation
-        propertyEncodings.add(properties.contains(PROGRAM_SPEC) ? encodeProgramSpecification(specVariables) : bmgr.makeTrue());
-
-        return bmgr.and(bmgr.and(propertyEncodings), bmgr.or(Lists.transform(specVariables, bmgr::not)));
+        return bmgr.and(atLeastOneViolation, trackedViolationEnc);
 
     }
 
@@ -122,11 +160,9 @@ public class PropertyEncoder implements Encoder {
         Preconditions.checkArgument(!program.getSpecification().isSafetySpec());
 
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        List<BooleanFormula> specVariables = new ArrayList<>();
-        List<BooleanFormula> propertyEncodings = new ArrayList<>();
-        propertyEncodings.add(encodeProgramSpecification(specVariables));
-        propertyEncodings.add(encodeLastCoConstraints());
-        return bmgr.and(bmgr.and(propertyEncodings), bmgr.or(specVariables));
+        final TrackableFormula progSpec = encodeProgramSpecification();
+        // NOTE: We have a single property to check, so the tracking becomes trivial.
+        return bmgr.and(progSpec.trackingLiteral, progSpec.trackedFormula);
     }
 
     private BooleanFormula encodeLastCoConstraints() {
@@ -195,16 +231,31 @@ public class PropertyEncoder implements Encoder {
     // ======================================================================
     // ======================================================================
 
-    public BooleanFormula encodeProgramSpecification(List<BooleanFormula> specVariables) {
+    private TrackableFormula encodeProgramSpecification() {
         logger.info("Encoding program specification");
         final AbstractAssert spec = program.getSpecification();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        // We can only perform existential queries to the SMT-engine, so we
-        // negate safety specs (which are universal queries) to search for a violation witness
-        final BooleanFormula specEncoding = spec.getType().equals(AbstractAssert.ASSERT_TYPE_FORALL) ? bmgr.not(spec.encode(context)) : spec.encode(context);
-        final BooleanFormula specLiteral = spec.isSafetySpec() ? bmgr.not(PROGRAM_SPEC.getSMTVariable(context)) : PROGRAM_SPEC.getSMTVariable(context);
-        specVariables.add(PROGRAM_SPEC.getSMTVariable(context));
-        return bmgr.implication(specLiteral, specEncoding);
+        // We can only perform existential queries to the SMT-engine, so for
+        // safety specs we need to query for a violation (= negation of the spec)
+        final BooleanFormula encoding;
+        final BooleanFormula trackingLiteral;
+        switch (spec.getType()) {
+            case AbstractAssert.ASSERT_TYPE_FORALL:
+                encoding = bmgr.not(spec.encode(context));
+                trackingLiteral = bmgr.not(PROGRAM_SPEC.getSMTVariable(context));
+                break;
+            case AbstractAssert.ASSERT_TYPE_NOT_EXISTS:
+                encoding = spec.encode(context);
+                trackingLiteral = bmgr.not(PROGRAM_SPEC.getSMTVariable(context));
+                break;
+            case AbstractAssert.ASSERT_TYPE_EXISTS:
+                encoding = spec.encode(context);
+                trackingLiteral = PROGRAM_SPEC.getSMTVariable(context);
+                break;
+            default:
+                throw new IllegalStateException("Unrecognized program specification: " + spec.toStringWithType());
+        }
+        return new TrackableFormula(trackingLiteral, encoding);
     }
 
     // ======================================================================
@@ -217,7 +268,7 @@ public class PropertyEncoder implements Encoder {
         CAT Properties are defined within the .cat model itself using flagged axioms.
         CAUTION: A flagged axiom is considered a specification violation if it is satisfied!
     */
-    public BooleanFormula encodeCATSpecificationViolations(List<BooleanFormula> specVariables) {
+    public List<TrackableFormula> encodeCATSpecificationViolations() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final EncodingContext ctx = this.context;
         final Wmm memoryModel = this.memoryModel;
@@ -226,18 +277,15 @@ public class PropertyEncoder implements Encoder {
 
         if (flaggedAxioms.isEmpty()) {
             logger.info("No CAT specification in the WMM. Skipping encoding.");
-            return bmgr.makeTrue();
+            return List.of();
         } else {
             logger.info("Encoding CAT specification");
         }
 
-        BooleanFormula axiomTracking = bmgr.makeTrue();
-    	for(Axiom ax : flaggedAxioms) {
-            final BooleanFormula specVar = CAT_SPEC.getSMTVariable(ax, ctx);
-			axiomTracking = bmgr.and(axiomTracking, bmgr.implication(bmgr.not(specVar), ax.consistent(ctx)));
-            specVariables.add(specVar);
-    	}
-        return axiomTracking;
+        final List<TrackableFormula> specViolations = flaggedAxioms.stream()
+                .map(ax -> new TrackableFormula(bmgr.not(CAT_SPEC.getSMTVariable(ax, ctx)), ax.consistent(ctx)))
+                .collect(Collectors.toList());
+        return specViolations;
     }
 
     // ======================================================================
@@ -252,14 +300,14 @@ public class PropertyEncoder implements Encoder {
         More general notions of data races (for e.g. weak models) can be defined as a flagged axiom
         inside the .cat, just like C11 and LKMM do.
     */
-    public BooleanFormula encodeDataRaces(List<BooleanFormula> specVariables) {
+    public TrackableFormula encodeDataRaces() {
         logger.info("Encoding data races");
 
         final Wmm memoryModel = this.memoryModel;
-        checkState(memoryModel.containsRelation("hb"),
+        Preconditions.checkState(memoryModel.containsRelation("hb"),
                 "The provided WMM needs a happens-before relation 'hb' to encode data races.");
         final Relation hbRelation = memoryModel.getRelation("hb");
-        checkState(memoryModel.getAxioms().stream().anyMatch(ax ->
+        Preconditions.checkState(memoryModel.getAxioms().stream().anyMatch(ax ->
                         ax.isAcyclicity() && ax.getRelation().equals(hbRelation)),
                 "The provided WMM needs an 'acyclic(hb)' axiom to encode data races.");
 
@@ -301,9 +349,7 @@ public class PropertyEncoder implements Encoder {
                 }
             }
         }
-        final BooleanFormula specVariable = DATARACEFREEDOM.getSMTVariable(ctx);
-        specVariables.add(specVariable);
-        return bmgr.implication(bmgr.not(specVariable), hasRace);
+        return new TrackableFormula(bmgr.not(DATARACEFREEDOM.getSMTVariable(ctx)), hasRace);
     }
 
     // ======================================================================
@@ -312,9 +358,9 @@ public class PropertyEncoder implements Encoder {
     // ======================================================================
     // ======================================================================
 
-    public BooleanFormula encodeDeadlocks(List<BooleanFormula> specVariables) {
+    private TrackableFormula encodeDeadlocks() {
         logger.info("Encoding dead locks");
-        return new LivenessEncoder().encodeDeadlocks(specVariables);
+        return new LivenessEncoder().encodeDeadlocks();
     }
 
     /*
@@ -349,7 +395,7 @@ public class PropertyEncoder implements Encoder {
             public final List<CondJump> spinningJumps = new ArrayList<>();
         }
 
-        public BooleanFormula encodeDeadlocks(List<BooleanFormula> specVariables) {
+        public TrackableFormula encodeDeadlocks() {
             final Program program = PropertyEncoder.this.program;
             final EncodingContext context = PropertyEncoder.this.context;
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
@@ -377,10 +423,8 @@ public class PropertyEncoder implements Encoder {
                 allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, isTerminatingNormally));
             }
 
-            final BooleanFormula specVariable = LIVENESS.getSMTVariable(context);
-            specVariables.add(specVariable);
             final BooleanFormula hasLivenessViolation = bmgr.and(allStuckOrDone, atLeastOneStuck);
-            return bmgr.implication(bmgr.not(specVariable), hasLivenessViolation);
+            return new TrackableFormula(bmgr.not(LIVENESS.getSMTVariable(context)), hasLivenessViolation);
         }
 
         // Compute "stuckness": A thread is stuck if it reaches a spin loop bound event

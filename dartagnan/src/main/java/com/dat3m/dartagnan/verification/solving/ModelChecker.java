@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.verification.solving;
 
-import com.dat3m.dartagnan.asserts.*;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
@@ -11,6 +10,10 @@ import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.specification.AbstractAssert;
+import com.dat3m.dartagnan.program.specification.AssertCompositeAnd;
+import com.dat3m.dartagnan.program.specification.AssertInline;
+import com.dat3m.dartagnan.program.specification.AssertTrue;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.filter.FilterBasic;

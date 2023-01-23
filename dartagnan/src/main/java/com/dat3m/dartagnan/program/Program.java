@@ -1,22 +1,25 @@
 package com.dat3m.dartagnan.program;
 
 
-import com.dat3m.dartagnan.asserts.AbstractAssert;
+import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.event.EventCache;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.memory.Memory;
+import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Program {
 
+    public enum SourceLanguage { LITMUS, BOOGIE; }
+
     private String name;
-	private AbstractAssert ass;
-    private AbstractAssert assFilter;
+	private AbstractAssert spec;
+    private AbstractAssert filterSpec; // Acts like "assume" statements, filtering out executions
 	private final List<Thread> threads;
 	private final Memory memory;
 	private Arch arch;
@@ -69,17 +72,18 @@ public class Program {
     }
 
     public AbstractAssert getSpecification() {
-        return ass;
+        return spec;
     }
-    public void setSpecification(AbstractAssert ass) {
-        this.ass = ass;
+    public void setSpecification(AbstractAssert spec) {
+        this.spec = spec;
     }
 
     public AbstractAssert getFilterSpecification() {
-        return assFilter;
+        return filterSpec;
     }
-    public void setFilterSpecification(AbstractAssert ass) {
-        this.assFilter = ass;
+    public void setFilterSpecification(AbstractAssert spec) {
+        Preconditions.checkArgument(spec == null || AbstractAssert.ASSERT_TYPE_FORALL.equals(spec.getType()));
+        this.filterSpec = spec;
     }
 
     public void add(Thread t) {
@@ -136,6 +140,4 @@ public class Program {
         isCompiled = true;
         return true;
     }
-    
-    public enum SourceLanguage {LITMUS, BOOGIE;}
 }

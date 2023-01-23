@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.asserts;
+package com.dat3m.dartagnan.program.specification;
 
 import java.util.ArrayList;
 import java.util.List;

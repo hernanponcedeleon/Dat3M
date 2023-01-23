@@ -2,13 +2,13 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import java.math.BigInteger;
 
-import com.dat3m.dartagnan.asserts.*;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.specification.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.Location;
 import org.antlr.v4.runtime.tree.TerminalNode;

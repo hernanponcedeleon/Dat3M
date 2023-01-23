@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.verification.solving;
 
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
@@ -92,7 +93,7 @@ public class AssumeSolver extends ModelChecker {
         }
 
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
-        res = task.getProgram().getSpecification().isSafetySpec() ? res : res.invert();
+        res = Property.getCombinedType(task.getProperty(), task) == Property.Type.SAFETY ? res : res.invert();
         logger.info("Verification finished with result " + res);
     }
 }
