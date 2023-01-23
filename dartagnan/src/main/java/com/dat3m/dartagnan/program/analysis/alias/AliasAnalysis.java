@@ -35,7 +35,7 @@ public interface AliasAnalysis {
         }
         a = new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, config));
 
-        logger.info("Finished alias analysis");
+        logger.info("Finished Alias Analysis");
         return a;
     }
 
