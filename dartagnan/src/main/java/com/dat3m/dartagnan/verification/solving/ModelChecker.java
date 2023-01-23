@@ -39,7 +39,7 @@ import java.util.Optional;
 
 import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
-import static java.lang.Boolean.TRUE;
+import static java.lang.Boolean.FALSE;
 
 public abstract class ModelChecker {
 
@@ -115,15 +115,15 @@ public abstract class ModelChecker {
         // We generate a program-spec from the user-placed assertions inside the C/Boogie-code.
         // For litmus tests, this function should not be called.
         List<Event> assertions = program.getCache().getEvents(FilterBasic.get(ASSERTION));
-        AbstractAssert ass = new AssertTrue();
+        AbstractAssert spec = new AssertTrue();
         if(!assertions.isEmpty()) {
-            ass = new AssertInline((Local)assertions.get(0));
+            spec = new AssertInline((Local)assertions.get(0));
             for(int i = 1; i < assertions.size(); i++) {
-                ass = new AssertCompositeAnd(ass, new AssertInline((Local)assertions.get(i)));
+                spec = new AssertCompositeAnd(spec, new AssertInline((Local)assertions.get(i)));
             }
         }
-        ass.setType(AbstractAssert.ASSERT_TYPE_FORALL);
-        program.setSpecification(ass);
+        spec.setType(AbstractAssert.ASSERT_TYPE_FORALL);
+        program.setSpecification(spec);
     }
 
     protected void logFlaggedPairs(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, Logger logger, EncodingContext ctx) throws SolverException {
@@ -132,7 +132,7 @@ public abstract class ModelChecker {
         }
         Model model = prover.getModel();
         for(Axiom ax : wmm.getAxioms()) {
-            if(ax.isFlagged() && TRUE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
+            if(ax.isFlagged() && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
                 System.out.println("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
                 if(logger.isDebugEnabled()) {
                     StringBuilder violatingPairs = new StringBuilder("\n ===== The following pairs belong to the relation ===== \n");

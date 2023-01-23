@@ -48,6 +48,7 @@ import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
+import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.valueOf;
 
@@ -176,40 +177,56 @@ public class Dartagnan extends BaseOptions {
     				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name, csc.getCallStackMapping());        		
             	}
 
-            	boolean safetyViolationFound = false;
-            	if((result == FAIL && !p.getSpecification().isSafetySpec()) ||
-            			(result == PASS && p.getSpecification().isSafetySpec())) {
-					final EncodingContext encCtx = modelChecker.getEncodingContext();
+				// ----------------- Generate output of verification result -----------------
+				final EncodingContext encCtx = modelChecker.getEncodingContext();
+				final boolean hasViolations = result == FAIL && p.getSpecification().isSafetySpec();
+				final boolean hasPositiveWitnesses = result == PASS && !p.getSpecification().isSafetySpec();
+				if (hasViolations) {
 					printWarningIfThreadStartFailed(p, encCtx, prover);
-            		if(TRUE.equals(prover.getModel().evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
-            			safetyViolationFound = true;
-            			System.out.println("Safety violation found");
-            		}
-            		if(TRUE.equals(prover.getModel().evaluate(LIVENESS.getSMTVariable(encCtx)))) {
-            			System.out.println("Liveness violation found");
-            		}
-                }
-                if (p.getFormat().equals(SourceLanguage.LITMUS)) {
-                    if (p.getFilterSpecification() != null) {
-                        System.out.println("Filter " + (p.getFilterSpecification()));
-                    }
-                    System.out.println("Condition " + p.getSpecification().toStringWithType());
-                    System.out.println(safetyViolationFound ? "Ok" : "No");
-                } else {
-                    System.out.println(result);                	
-                }
+					if(FALSE.equals(prover.getModel().evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
+						System.out.println("Program specification violation found");
+					}
+					if(FALSE.equals(prover.getModel().evaluate(LIVENESS.getSMTVariable(encCtx)))) {
+						System.out.println("Liveness violation found");
+					}
+					// TODO: CAT specs?
+				} else if (hasPositiveWitnesses) {
+					if(TRUE.equals(prover.getModel().evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
+						// The check above is just a sanity check: the program spec has to be true
+						// because it is the only property that got encoded.
+						System.out.println("Program specification witness found.");
+					}
+				}
+
+				if (p.getFormat().equals(SourceLanguage.LITMUS)) {
+					// Litmus-specific output format that matches with Herd7
+					if (p.getFilterSpecification() != null) {
+						System.out.println("Filter " + (p.getFilterSpecification().toStringWithType()));
+					}
+					System.out.println("Condition " + p.getSpecification().toStringWithType());
+					final String verdict =
+							TRUE.equals(prover.getModel().evaluate(PROGRAM_SPEC.getSMTVariable(encCtx))) ? "Ok" : "No";
+					// NOTE: If we check only for program spec of litmus tests, then we have "PASS <=> Ok"
+					System.out.println(verdict);
+					//TODO: add race detection?
+				} else {
+					System.out.println(result);
+				}
+
 				long endTime = System.currentTimeMillis();
 				System.out.println("Total verification time(ms): " +  (endTime - startTime));
 
-				try {
-					WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, result);
-	                // We only write witnesses for REACHABILITY (if the path to the original C file was given) 
-					// and if we are not doing witness validation
-	                if (properties.contains(PROGRAM_SPEC) && w.canBeBuilt() && !o.runValidator()) {
-						w.build().write();
-	                }
-				} catch(InvalidConfigurationException e) {
-					logger.warn(e.getMessage());
+				if ((hasViolations || hasPositiveWitnesses) && properties.contains(PROGRAM_SPEC) && !o.runValidator()) {
+					// We only write witnesses if we are not doing witness validation
+					try {
+						WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, result);
+						if (w.canBeBuilt()) {
+							//  We can only write witnesses if the path to the original C file was given.
+							w.build().write();
+						}
+					} catch (InvalidConfigurationException e) {
+						logger.warn(e.getMessage());
+					}
 				}
             }
         } catch (InterruptedException e){
@@ -227,9 +244,9 @@ public class Dartagnan extends BaseOptions {
 		for(Event e : p.getCache().getEvents(FilterBasic.get(Tag.STARTLOAD))) {
 			if(BigInteger.ZERO.equals(prover.getModel().evaluate(encoder.value((Load) e)))) {
 				// This msg should be displayed even if the logging is off
-				System.out.println(String.format(
-						"[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true",
-						e.getThread().getId(), OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS));
+				System.out.printf(
+						"[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true%n",
+						e.getThread().getId(), OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS);
 				break;
 			}
 		}

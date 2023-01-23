@@ -130,8 +130,9 @@ public class RefinementSolver extends ModelChecker {
         WMMSolver solver = WMMSolver.withContext(context, cutRelations, task, analysisContext);
         Refiner refiner = new Refiner(analysisContext);
         CAATSolver.Status status = INCONSISTENT;
+        Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
-        logger.info("Starting encoding using " + ctx.getVersion());
+                logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
         prover.addConstraint(symmEncoder.encodeFullSymmetryBreaking());
@@ -221,10 +222,12 @@ public class RefinementSolver extends ModelChecker {
                     message = "CAAT Solver was inconclusive (bug?).";
                     break;
                 case CONSISTENT:
-                    message = "Violation verified.";
+                    message = propertyType == Property.Type.SAFETY ?
+                            "Specification violation found." : "Specification witness found.";
                     break;
                 case INCONSISTENT:
-                    message = "Bounded specification proven.";
+                    message = propertyType == Property.Type.SAFETY ?
+                            "Bounded specification proven." : "Bounded specification falsified.";
                     break;
                 default:
                     throw new IllegalStateException("Unknown result type returned by CAAT Solver.");
@@ -269,7 +272,7 @@ public class RefinementSolver extends ModelChecker {
         }
 
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
-        res = Property.getCombinedType(task.getProperty(), task) == Property.Type.SAFETY ? res : res.invert();
+        res = propertyType == Property.Type.SAFETY ? res : res.invert();
         logger.info("Verification finished with result " + res);
     }
     // ======================= Helper Methods ======================
