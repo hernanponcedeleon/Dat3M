@@ -105,6 +105,7 @@ public class Compilation implements ProgramProcessor {
         program.getEvents().forEach(e -> e.setCId(e.getGlobalId()));
         program.getThreads().forEach(thread -> this.compileThread(thread, visitor));
         program.setArch(target);
+        program.clearCache(true);
         program.markAsCompiled();
         EventIdReassignment.newInstance().run(program); // Reassign ids
 

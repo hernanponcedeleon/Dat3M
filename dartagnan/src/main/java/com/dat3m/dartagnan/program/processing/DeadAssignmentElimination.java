@@ -40,7 +40,10 @@ public class DeadAssignmentElimination implements ProgramProcessor {
 
         for (Thread t : program.getThreads()) {
             eliminateDeadAssignments(program, t);
+            t.clearCache();
         }
+        program.clearCache(false);
+
         logger.info("#Events after DSE: " + program.getEvents().size());
     }
 

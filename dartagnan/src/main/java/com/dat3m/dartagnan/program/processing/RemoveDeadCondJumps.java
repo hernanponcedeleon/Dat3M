@@ -39,6 +39,7 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
 
         logger.info(String.format("#Events before %s: %s", getClass().getSimpleName(), + program.getEvents().size()));
         program.getThreads().forEach(this::eliminateDeadCondJumps);
+        program.clearCache(true);
         logger.info(String.format("#Events after %s: %s", getClass().getSimpleName(), + program.getEvents().size()));
     }
 

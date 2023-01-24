@@ -44,6 +44,7 @@ public class ComplexBlockSplitting implements ProgramProcessor {
         final int numBlockSplittings = program.getThreads().stream().mapToInt(this::run).sum();
 
         logger.info("Split {} complex blocks.", numBlockSplittings);
+        program.clearCache(true);
         EventIdReassignment.newInstance().run(program);
     }
 

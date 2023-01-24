@@ -35,6 +35,7 @@ public class UnreachableCodeElimination implements ProgramProcessor {
 
         logger.info("#Events before DCE: " + program.getEvents().size());
         program.getThreads().forEach(this::eliminateDeadCode);
+        program.clearCache(true);
         logger.info("#Events after DCE: " + program.getEvents().size());
     }
 

@@ -62,6 +62,7 @@ public class SymmetryReduction implements ProgramProcessor {
                         e.delete();
                     }
                 }
+                t.clearCache();
             }
         }
 

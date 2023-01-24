@@ -122,7 +122,8 @@ public class ConstantPropagation implements ProgramProcessor {
         }
 
         thread.updateExit(thread.getEntry());
-    }
+        thread.clearCache();
+	}
 
 	// TODO Once we have a lattice class this should be moved there.
 	private ExprInterface evaluate(ExprInterface input, Map<Register, ExprInterface> map) {

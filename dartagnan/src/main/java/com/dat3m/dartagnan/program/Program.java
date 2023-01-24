@@ -89,6 +89,14 @@ public class Program {
 		threads.add(t);
 	}
 
+    public void clearCache(boolean clearThreadCaches){
+        if (clearThreadCaches) {
+            for (Thread t : threads) {
+                t.clearCache();
+            }
+        }
+    }
+
     public List<Thread> getThreads() {
         return threads;
     }
