@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.base.Preconditions;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -20,6 +21,7 @@ public class Thread {
 
     private final Map<String, Register> registers;
     private int dummyCount = 0;
+    final List<Event> eventCache = new ArrayList<>();
 
     public Thread(String name, int id, Event entry){
     	Preconditions.checkArgument(id >= 0, "Invalid thread ID");
@@ -48,8 +50,19 @@ public class Thread {
         return id;
     }
 
+    /**
+     * Effectively returns {@code getEntry().getSuccessors()}.
+     * @return {@code successor}-ordered complete list of all events in this thread.
+     */
     public List<Event> getEvents() {
-        return entry.getSuccessors();
+        updateCache();
+        return List.copyOf(eventCache);
+    }
+
+    void updateCache() {
+        if (eventCache.isEmpty()) {
+            eventCache.addAll(entry.getSuccessors());
+        }
     }
 
 	public Program getProgram() {
@@ -61,8 +74,14 @@ public class Thread {
 		this.program = program;
 	}
 
-    //TODO remove
-    public void clearCache(){
+    /**
+     * Resets the list of {@code successor}-ordered events in this thread.
+     * This method is not thread-safe.
+     * @see #getEvents()
+     */
+    public void clearCache() {
+        eventCache.clear();
+        eventCache.addAll(entry.getSuccessors());
     }
 
     /**

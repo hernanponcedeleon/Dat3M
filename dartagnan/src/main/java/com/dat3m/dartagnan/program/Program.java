@@ -21,6 +21,7 @@ public class Program {
     private int unrollingBound = 0;
     private boolean isCompiled;
     private SourceLanguage format;
+    private final List<Event> eventCache = new ArrayList<>();
 
     public Program(Memory memory, SourceLanguage format){
         this("", memory, format);
@@ -89,12 +90,20 @@ public class Program {
 		threads.add(t);
 	}
 
-    public void clearCache(boolean clearThreadCaches){
+    /**
+     * Recomputes the {@code thread}-and-{@code successor}-ordered list of events in this program.
+     * Called after a manipulation on this program has finished.
+     * This method is not thread-safe.
+     * @param clearThreadCaches Also calls {@link Thread#clearCache()} for all threads.
+     * @see #getEvents()
+     */
+    public void clearCache(boolean clearThreadCaches) {
         if (clearThreadCaches) {
             for (Thread t : threads) {
                 t.clearCache();
             }
         }
+        eventCache.clear();
     }
 
     public List<Thread> getThreads() {
@@ -104,25 +113,32 @@ public class Program {
     /**
      * Iterates all events in this program.
      *
-     * @return {@code cId}-ordered complete sequence of all events in this program.
+     * @return {@code thread}-and-{@code successor}-ordered complete sequence of all events in this program.
      */
 	public List<Event> getEvents() {
-        List<Event> events = new ArrayList<>();
-		for (Thread t : threads) {
-			events.addAll(t.getEvents());
-		}
-		return events;
+        updateCache();
+		return List.copyOf(eventCache);
 	}
 
     /**
      * Iterates a subset of events in this program.
      *
      * @param cls Class of events to be selected.
-     * @return {@code cId}-ordered complete sequence of all events of class {@code cls} in this program.
+     * @return {@code thread}-and-{@code successor}-ordered complete sequence of all events of class {@code cls} in this program.
      * @param <T> Desired subclass of {@link Event}.
      */
     public <T extends Event> List<T> getEvents(Class<T> cls) {
-        return getEvents().stream().filter(cls::isInstance).map(cls::cast).collect(Collectors.toList());
+        updateCache();
+        return eventCache.stream().filter(cls::isInstance).map(cls::cast).collect(Collectors.toList());
+    }
+
+    private void updateCache() {
+        if (eventCache.isEmpty()) {
+            for (Thread t : threads) {
+                t.updateCache();
+                eventCache.addAll(t.eventCache);
+            }
+        }
     }
 
     // Unrolling
