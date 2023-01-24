@@ -78,7 +78,13 @@ public final class EncodingContext {
         logger.info("{}: {}", IDL_TO_SAT, context.useSATEncoding);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
         context.initialize();
-        logger.info("{}", new Acyclic.Statistics(task.getMemoryModel().getAxioms(), analysisContext));
+        if (logger.isInfoEnabled()) {
+            logger.info("Number of encoded tuples for acyclicity: {}",
+                    task.getMemoryModel().getAxioms().stream()
+                            .filter(Acyclic.class::isInstance)
+                            .mapToInt(a -> ((Acyclic) a).getEncodeTupleSetSize(analysisContext))
+                            .sum());
+        }
         return context;
     }
 
