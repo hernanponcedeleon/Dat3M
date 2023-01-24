@@ -37,9 +37,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static java.util.Collections.emptyList;
+import static org.junit.Assert.assertTrue;
 
 public abstract class AbstractCompilationTest {
 
@@ -129,14 +132,20 @@ public abstract class AbstractCompilationTest {
     	// The following have RCU features that hardware models do not support
     	FilterAbstract rcu = FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_LOCK), 
     			FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_UNLOCK), FilterBasic.get(Tag.Linux.RCU_SYNC)));
-    	
-    	Result expected = getCompilationBreakers().contains(path) ? Result.FAIL : Result.PASS;
-    	
+
     	if(task1Provider.get().getProgram().getCache().getEvents(rcu).isEmpty()) {
             IncrementalSolver s1 = IncrementalSolver.run(context1Provider.get(), prover1Provider.get(), task1Provider.get());
-        	if(s1.getResult().equals(Result.PASS)) {
+        	if(!s1.hasModel()) {
+                // We found no model showing a specific behaviour (either positively or negatively),
+                // so the compiled code should also not exhibit that behaviour, unless we
+                // know the compilation is broken
+                boolean compilationIsBroken = getCompilationBreakers().contains(path);
+                final Result expected = compilationIsBroken ? s1.getResult().invert() : s1.getResult();
                 IncrementalSolver s2 = IncrementalSolver.run(context2Provider.get(), prover2Provider.get(), task2Provider.get());
         		assertEquals(expected, s2.getResult());
+
+                // We could also check if the second solver has a model, instead of comparing results.
+                //assertEquals(s2.hasModel(), compilationIsBroken);
         	}
     	}
     }

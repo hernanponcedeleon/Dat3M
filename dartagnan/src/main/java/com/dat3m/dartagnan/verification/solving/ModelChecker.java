@@ -39,6 +39,8 @@ import java.util.Optional;
 
 import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 import static java.lang.Boolean.FALSE;
 
 public abstract class ModelChecker {
@@ -51,6 +53,13 @@ public abstract class ModelChecker {
     }
     public EncodingContext getEncodingContext() {
         return context;
+    }
+
+    public boolean hasModel() {
+        final Program program = context.getTask().getProgram();
+        final boolean hasViolations = res == FAIL && program.getSpecification().isSafetySpec();
+        final boolean hasPositiveWitnesses = res == PASS && !program.getSpecification().isSafetySpec();
+        return (hasViolations || hasPositiveWitnesses);
     }
 
     /**

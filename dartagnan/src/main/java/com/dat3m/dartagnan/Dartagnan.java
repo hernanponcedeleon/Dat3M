@@ -200,14 +200,10 @@ public class Dartagnan extends BaseOptions {
 
 	private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker) {
 		// ------------------ Generate Witness, if possible ------------------
-		final Program p = task.getProgram();
 		final EnumSet<Property> properties = task.getProperty();
-		final Result result = modelChecker.getResult();
-		final boolean hasViolations = result == FAIL && p.getSpecification().isSafetySpec();
-		final boolean hasPositiveWitnesses = result == PASS && !p.getSpecification().isSafetySpec();
-		if ((hasViolations || hasPositiveWitnesses) && properties.contains(PROGRAM_SPEC)) {
+		if (modelChecker.hasModel() && properties.contains(PROGRAM_SPEC)) {
 			try {
-				WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, result);
+				WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, modelChecker.getResult());
 				if (w.canBeBuilt()) {
 					//  We can only write witnesses if the path to the original C file was given.
 					w.build().write();
@@ -223,9 +219,9 @@ public class Dartagnan extends BaseOptions {
 		final Program p = task.getProgram();
 		final Result result = modelChecker.getResult();
 		final EncodingContext encCtx = modelChecker.getEncodingContext();
-		final boolean hasViolations = result == FAIL && p.getSpecification().isSafetySpec();
-		final boolean hasPositiveWitnesses = result == PASS && !p.getSpecification().isSafetySpec();
-		final Model model = (hasViolations || hasPositiveWitnesses) ? prover.getModel() : null;
+		final Model model = modelChecker.hasModel() ? prover.getModel() : null;
+		final boolean hasViolations = result == FAIL && (model != null);
+		final boolean hasPositiveWitnesses = result == PASS && (model != null);
 
 		StringBuilder summary = new StringBuilder();
 

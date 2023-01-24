@@ -54,8 +54,7 @@ public class SimpleSpinLoopDetection implements ProgramProcessor {
         Preconditions.checkArgument(!program.isUnrolled(),
                 getClass().getSimpleName() + " should be performed before unrolling.");
 
-        final int numSpinLoops = program.getThreads().stream().mapToInt(this::detectAndMarkSpinLoops).sum();
-        logger.info("Statically detected # of spin loops: {}", numSpinLoops);
+        program.getThreads().forEach(this::detectAndMarkSpinLoops);
         program.clearCache(true);
     }
 
