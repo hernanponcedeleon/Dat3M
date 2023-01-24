@@ -1,5 +1,6 @@
 package com.dat3m.ui.result;
 
+import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
@@ -86,7 +87,6 @@ public class ReachabilityResult {
                         options.getSolver());
                      ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
 
-
                     switch (options.getMethod()) {
                         case INCREMENTAL:
                             modelChecker = IncrementalSolver.run(ctx, prover, task);
@@ -107,7 +107,7 @@ public class ReachabilityResult {
                     }
                     // Verification ended, we can interrupt the timeout Thread
                     t.interrupt();
-                    buildVerdict(program, modelChecker.getResult(), prover, modelChecker.getEncodingContext());
+                    verdict = Dartagnan.generateResultSummary(task, prover, modelChecker);
                 }
             } catch (InterruptedException e){
             	verdict = "TIMEOUT";
@@ -115,28 +115,6 @@ public class ReachabilityResult {
             	verdict = "ERROR: " + e.getMessage();
             }
         }
-    }
-
-    private void buildVerdict(Program p, Result result, ProverEnvironment prover, EncodingContext ctx) throws SolverException {
-        StringBuilder sb = new StringBuilder();
-		// TODO We might want to output different messages once we allow to check LIVENESS from the UI
-		sb.append("Condition ").append(program.getSpecification().toStringWithType()).append("\n");
-		sb.append(program.getFormat().equals(LITMUS) ? result == PASS ? "Ok" : "No" : result).append("\n");
-
-        if (result == FAIL && p.getSpecification().isSafetySpec()) {
-            //TODO: By default CAT properties are disabled now cause they are not compatible
-            // with every program spec. The UI doesn't allow specifying the property to check.
-            try (Model model = prover.getModel()) {
-                for (Axiom ax : wmm.getAxioms()) {
-                    if (ax.isFlagged() && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
-                        sb.append("Flag ")
-                                .append(Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()))
-                                .append("\n");
-                    }
-                }
-            }
-        }
-        verdict = sb.toString();
     }
 
     private boolean validate(){

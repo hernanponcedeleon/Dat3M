@@ -21,6 +21,7 @@ import com.dat3m.dartagnan.verification.solving.*;
 import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,9 +39,8 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
@@ -78,20 +78,20 @@ public class Dartagnan extends BaseOptions {
     	String[] argKeyword = Arrays.stream(args)
 				.filter(s->s.startsWith("-"))
 				.toArray(String[]::new);
-		Configuration config = Configuration.fromCmdLineArguments(argKeyword); // TODO: We don't parse configs yet
+		Configuration config = Configuration.fromCmdLineArguments(argKeyword);
 		Dartagnan o = new Dartagnan(config);
 
 		if(Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(a::endsWith))) {
 			throw new IllegalArgumentException("Input program not given or format not recognized");
 		}
-		// get() is guaranteed to success
+		// get() is guaranteed to succeed
 		File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith)).findFirst().get());
 		logger.info("Program path: " + fileProgram);
 
 		if(Arrays.stream(args).noneMatch(a -> a.endsWith(".cat"))) {
 			throw new IllegalArgumentException("CAT model not given or format not recognized");
 		}
-		// get() is guaranteed to success		
+		// get() is guaranteed to succeed
 		File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst().get());		
 		logger.info("CAT file path: " + fileModel);	
         
@@ -144,7 +144,7 @@ public class Dartagnan extends BaseOptions {
                 	}
                 	modelChecker = DataRaceSolver.run(ctx, prover, task);
                 } else {
-                	// Property is either LIVENESS and/or REACHABILITY
+                	// Property is either PROGRAM_SPEC, LIVENESS, or CAT_SPEC
                 	switch (o.getMethod()) {
                 		case TWO:
                 			try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
@@ -178,59 +178,15 @@ public class Dartagnan extends BaseOptions {
     				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name, csc.getCallStackMapping());        		
             	}
 
-				// ----------------- Generate output of verification result -----------------
-				final EncodingContext encCtx = modelChecker.getEncodingContext();
-				final boolean hasViolations = result == FAIL && p.getSpecification().isSafetySpec();
-				final boolean hasPositiveWitnesses = result == PASS && !p.getSpecification().isSafetySpec();
-				final Model model = (hasViolations || hasPositiveWitnesses) ? prover.getModel() : null;
-				if (hasViolations) {
-					printWarningIfThreadStartFailed(p, encCtx, prover);
-					if(FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
-						System.out.println("Program specification violation found");
-					}
-					if(FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
-						System.out.println("Liveness violation found");
-					}
-					// TODO: CAT specs?
-				} else if (hasPositiveWitnesses) {
-					if(TRUE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
-						// The check above is just a sanity check: the program spec has to be true
-						// because it is the only property that got encoded.
-						System.out.println("Program specification witness found.");
-					}
-				}
-
-				if (p.getFormat().equals(SourceLanguage.LITMUS)) {
-					// Litmus-specific output format that matches with Herd7 (as good as it can)
-					if (p.getFilterSpecification() != null) {
-						System.out.println("Filter " + (p.getFilterSpecification().toStringWithType()));
-					}
-					System.out.println("Condition " + p.getSpecification().toStringWithType());
-					System.out.println(result == PASS ? "Ok" : "No");
-					// NOTE: We cannot produce an output that matches herd7 when checking for both program spec and cat properties.
-					// This requires two SMT-queries because a single model is unlikely to witness/falsify both properties
-					// simultaneously.
-					//TODO: add output for race detection?
-				} else {
-					System.out.println(result);
-				}
-
 				long endTime = System.currentTimeMillis();
+				System.out.print(generateResultSummary(task, prover, modelChecker));
 				System.out.println("Total verification time(ms): " +  (endTime - startTime));
 
-				if ((hasViolations || hasPositiveWitnesses) && properties.contains(PROGRAM_SPEC) && !o.runValidator()) {
-					// We only write witnesses if we are not doing witness validation
-					try {
-						WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, result);
-						if (w.canBeBuilt()) {
-							//  We can only write witnesses if the path to the original C file was given.
-							w.build().write();
-						}
-					} catch (InvalidConfigurationException e) {
-						logger.warn(e.getMessage());
-					}
+				if (!o.runValidator()) {
+					// We only generate witnesses if we are not validating one.
+					generateWitnessIfAble(task, prover, modelChecker);
 				}
-            }
+			}
         } catch (InterruptedException e){
         	logger.warn("Timeout elapsed. The SMT solver was stopped");
         	System.out.println("TIMEOUT");
@@ -241,6 +197,105 @@ public class Dartagnan extends BaseOptions {
         	System.exit(1);
         }
     }
+
+	private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker) {
+		// ------------------ Generate Witness, if possible ------------------
+		final Program p = task.getProgram();
+		final EnumSet<Property> properties = task.getProperty();
+		final Result result = modelChecker.getResult();
+		final boolean hasViolations = result == FAIL && p.getSpecification().isSafetySpec();
+		final boolean hasPositiveWitnesses = result == PASS && !p.getSpecification().isSafetySpec();
+		if ((hasViolations || hasPositiveWitnesses) && properties.contains(PROGRAM_SPEC)) {
+			try {
+				WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, result);
+				if (w.canBeBuilt()) {
+					//  We can only write witnesses if the path to the original C file was given.
+					w.build().write();
+				}
+			} catch (InvalidConfigurationException e) {
+				logger.warn(e.getMessage());
+			}
+		}
+	}
+
+	public static String generateResultSummary(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker) throws SolverException {
+		// ----------------- Generate output of verification result -----------------
+		final Program p = task.getProgram();
+		final Result result = modelChecker.getResult();
+		final EncodingContext encCtx = modelChecker.getEncodingContext();
+		final boolean hasViolations = result == FAIL && p.getSpecification().isSafetySpec();
+		final boolean hasPositiveWitnesses = result == PASS && !p.getSpecification().isSafetySpec();
+		final Model model = (hasViolations || hasPositiveWitnesses) ? prover.getModel() : null;
+
+		StringBuilder summary = new StringBuilder();
+
+		if (p.getFormat().equals(SourceLanguage.BOOGIE)) {
+			if (hasViolations) {
+				printWarningIfThreadStartFailed(p, encCtx, prover);
+				if(FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
+					summary.append("Program specification violation found").append("\n");
+				}
+				if(FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
+					summary.append("Liveness violation found").append("\n");
+				}
+				final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
+						.filter(Axiom::isFlagged)
+						.filter(ax -> FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
+						.collect(Collectors.toList());
+				if (!violatedCATSpecs.isEmpty()) {
+					summary.append("CAT specification violation found").append("\n");
+				}
+				for (Axiom violatedAx : violatedCATSpecs) {
+					summary.append("flag ")
+							.append(Optional.ofNullable(violatedAx.getName()).orElse(violatedAx.getNameOrTerm()))
+							.append("\n");
+				}
+			} else if (hasPositiveWitnesses) {
+				if(TRUE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
+					// The check above is just a sanity check: the program spec has to be true
+					// because it is the only property that got encoded.
+					summary.append("Program specification witness found.").append("\n");
+				}
+			}
+			summary.append(result).append("\n");
+		} else {
+			// Litmus-specific output format that matches with Herd7 (as good as it can)
+			if (p.getFilterSpecification() != null) {
+				summary.append("Filter ").append(p.getFilterSpecification().toStringWithType()).append("\n");
+			}
+
+			// NOTE: We cannot produce an output that matches herd7 when checking for both program spec and cat properties.
+			// This requires two SMT-queries because a single model is unlikely to witness/falsify both properties
+			// simultaneously.
+			// Instead, if we check for multiple safety properties, we find the first one and
+			// generate output based on its type (Program spec OR CAT property)
+
+			if (hasPositiveWitnesses || !hasViolations) {
+				// We have a positive witness or no violations, then the program must be ok.
+				// NOTE: We also treat the UNKNOWN case as positive, assuming that
+				// looping litmus tests are unusual.
+				summary.append("Condition ").append(p.getSpecification().toStringWithType()).append("\n");
+				summary.append("Ok").append("\n");
+			} else {
+				if (FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
+					// Program spec violated
+					summary.append("Condition ").append(p.getSpecification().toStringWithType()).append("\n");
+					summary.append("No").append("\n");
+				} else {
+					final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
+							.filter(Axiom::isFlagged)
+							.filter(ax -> FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
+							.collect(Collectors.toList());
+					for (Axiom violatedAx : violatedCATSpecs) {
+						summary.append("flag ")
+								.append(Optional.ofNullable(violatedAx.getName()).orElse(violatedAx.getNameOrTerm()))
+								.append("\n");
+					}
+				}
+			}
+		}
+		return summary.toString();
+	}
 
 	private static void printWarningIfThreadStartFailed(Program p, EncodingContext encoder, ProverEnvironment prover) throws SolverException {
 		for(Event e : p.getCache().getEvents(FilterBasic.get(Tag.STARTLOAD))) {
