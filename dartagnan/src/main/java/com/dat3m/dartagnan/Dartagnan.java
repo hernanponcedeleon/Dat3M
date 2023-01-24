@@ -234,6 +234,7 @@ public class Dartagnan extends BaseOptions {
 				printWarningIfThreadStartFailed(p, encCtx, prover);
 				if(FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
 					summary.append("Program specification violation found").append("\n");
+					summary.append("Spec: ").append(p.getSpecification().toStringWithType()).append("\n");
 				}
 				if(FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
 					summary.append("Liveness violation found").append("\n");
@@ -244,11 +245,11 @@ public class Dartagnan extends BaseOptions {
 						.collect(Collectors.toList());
 				if (!violatedCATSpecs.isEmpty()) {
 					summary.append("CAT specification violation found").append("\n");
-				}
-				for (Axiom violatedAx : violatedCATSpecs) {
-					summary.append("flag ")
-							.append(Optional.ofNullable(violatedAx.getName()).orElse(violatedAx.getNameOrTerm()))
-							.append("\n");
+					for (Axiom violatedAx : violatedCATSpecs) {
+						summary.append("flag ")
+								.append(Optional.ofNullable(violatedAx.getName()).orElse(violatedAx.getNameOrTerm()))
+								.append("\n");
+					}
 				}
 			} else if (hasPositiveWitnesses) {
 				if(TRUE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
