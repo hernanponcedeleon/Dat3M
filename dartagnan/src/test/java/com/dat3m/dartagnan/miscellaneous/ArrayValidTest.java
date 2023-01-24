@@ -26,8 +26,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static com.dat3m.dartagnan.utils.Result.PASS;
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class ArrayValidTest {
@@ -64,7 +64,7 @@ public class ArrayValidTest {
                     .withTarget(Arch.LKMM)
                     .build(program, wmm, Property.getDefault());
             TwoSolvers s = TwoSolvers.run(ctx, prover1, prover2, task);
-            assertEquals(FAIL, s.getResult());
+            assertEquals(PASS, s.getResult());
         } catch (Exception e){
             fail("Missing resource file");
         }

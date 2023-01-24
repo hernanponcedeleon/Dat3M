@@ -17,6 +17,7 @@ public enum Property implements OptionInterface {
 	CAT_SPEC,			// CAT-spec defined via flagged axioms in .cat file (~bug specification)
 	DATARACEFREEDOM; 	// Special option for data-race detection in SVCOMP only
 
+
 	public enum Type {
 		SAFETY,
 		REACHABILITY,
@@ -39,6 +40,13 @@ public enum Property implements OptionInterface {
 				throw new UnsupportedOperationException("Unrecognized property: " + this);
         }
     }
+
+	@Override
+	public String asStringOption() {
+		return this.name().toLowerCase();
+	}
+
+
 
 	public static EnumSet<Property> getDefault() {
 		return EnumSet.of(PROGRAM_SPEC);
