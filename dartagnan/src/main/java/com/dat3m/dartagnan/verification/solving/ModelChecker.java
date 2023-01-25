@@ -137,20 +137,19 @@ public abstract class ModelChecker {
     }
 
     protected void logFlaggedPairs(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, Logger logger, EncodingContext ctx) throws SolverException {
-        if (!ctx.getTask().getProperty().contains(CAT_SPEC)) {
+        if (!logger.isDebugEnabled() || !ctx.getTask().getProperty().contains(CAT_SPEC)) {
             return;
         }
         Model model = prover.getModel();
         for(Axiom ax : wmm.getAxioms()) {
             if(ax.isFlagged() && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
-                System.out.println("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
-                if(logger.isDebugEnabled()) {
-                    StringBuilder violatingPairs = new StringBuilder("\n ===== The following pairs belong to the relation ===== \n");
-                    for(Tuple tuple : encoder.getTuples(ax.getRelation(), model)) {
-                        violatingPairs.append("\t").append(tuple.getFirst().getCId()).append(" -> ").append(tuple.getSecond().getCId());
-                    }
-                    logger.debug(violatingPairs.toString());
+                logger.debug("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
+                StringBuilder violatingPairs = new StringBuilder("\n ===== The following pairs belong to the relation ===== \n");
+                for(Tuple tuple : encoder.getTuples(ax.getRelation(), model)) {
+                    violatingPairs.append("\t").append(tuple.getFirst().getGlobalId())
+                            .append(" -> ").append(tuple.getSecond().getGlobalId());
                 }
+                logger.debug(violatingPairs.toString());
             }
         }
     }

@@ -241,7 +241,7 @@ public class Dartagnan extends BaseOptions {
 				if (!violatedCATSpecs.isEmpty()) {
 					summary.append("CAT specification violation found").append("\n");
 					for (Axiom violatedAx : violatedCATSpecs) {
-						summary.append("flag ")
+						summary.append("Flag ")
 								.append(Optional.ofNullable(violatedAx.getName()).orElse(violatedAx.getNameOrTerm()))
 								.append("\n");
 					}
@@ -266,13 +266,13 @@ public class Dartagnan extends BaseOptions {
 			// Instead, if we check for multiple safety properties, we find the first one and
 			// generate output based on its type (Program spec OR CAT property)
 
-			if (hasPositiveWitnesses || !hasViolations) {
+			if (hasPositiveWitnesses) {
 				// We have a positive witness or no violations, then the program must be ok.
 				// NOTE: We also treat the UNKNOWN case as positive, assuming that
 				// looping litmus tests are unusual.
 				summary.append("Condition ").append(p.getSpecification().toStringWithType()).append("\n");
 				summary.append("Ok").append("\n");
-			} else {
+			} else if (hasViolations) {
 				if (FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
 					// Program spec violated
 					summary.append("Condition ").append(p.getSpecification().toStringWithType()).append("\n");
@@ -283,10 +283,17 @@ public class Dartagnan extends BaseOptions {
 							.filter(ax -> FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
 							.collect(Collectors.toList());
 					for (Axiom violatedAx : violatedCATSpecs) {
-						summary.append("flag ")
+						summary.append("Flag ")
 								.append(Optional.ofNullable(violatedAx.getName()).orElse(violatedAx.getNameOrTerm()))
 								.append("\n");
 					}
+				}
+			} else {
+				// We have neither a witness nor a violation...
+				if (task.getProperty().contains(PROGRAM_SPEC)) {
+					// ... so if we checked for program spec, we print an Ok.
+					summary.append("Condition ").append(p.getSpecification().toStringWithType()).append("\n");
+					summary.append("Ok").append("\n");
 				}
 			}
 		}

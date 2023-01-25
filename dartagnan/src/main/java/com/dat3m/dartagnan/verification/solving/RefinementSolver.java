@@ -132,7 +132,7 @@ public class RefinementSolver extends ModelChecker {
         CAATSolver.Status status = INCONSISTENT;
         Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
-                logger.info("Starting encoding using " + ctx.getVersion());
+        logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
         prover.addConstraint(symmEncoder.encodeFullSymmetryBreaking());
