@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.verification.solving;
 
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
@@ -56,10 +57,10 @@ public abstract class ModelChecker {
     }
 
     public boolean hasModel() {
-        final Program program = context.getTask().getProgram();
-        final boolean hasViolations = res == FAIL && program.getSpecification().isSafetySpec();
-        final boolean hasPositiveWitnesses = res == PASS && !program.getSpecification().isSafetySpec();
-        return (hasViolations || hasPositiveWitnesses);
+        final Property.Type propType = Property.getCombinedType(context.getTask().getProperty(), context.getTask());
+        final boolean hasViolationWitnesses = res == FAIL && propType == Property.Type.SAFETY;
+        final boolean hasPositiveWitnesses = res == PASS && propType == Property.Type.REACHABILITY;
+        return (hasViolationWitnesses || hasPositiveWitnesses);
     }
 
     /**

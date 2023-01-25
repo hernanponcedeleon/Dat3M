@@ -168,8 +168,7 @@ public class Dartagnan extends BaseOptions {
                 // Verification ended, we can interrupt the timeout Thread
                 t.interrupt();
 
-				Result result = modelChecker.getResult();
-            	if(result.equals(FAIL) && o.generateGraphviz()) {
+            	if(modelChecker.hasModel() && o.generateGraphviz()) {
                 	ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
                 	m.initialize(prover.getModel());
 					CallStackComputation csc = CallStackComputation.fromConfig(config);
@@ -230,7 +229,7 @@ public class Dartagnan extends BaseOptions {
 				printWarningIfThreadStartFailed(p, encCtx, prover);
 				if(FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
 					summary.append("Program specification violation found").append("\n");
-					summary.append("Spec: ").append(p.getSpecification().toStringWithType()).append("\n");
+					summary.append("User assertion: ").append(p.getSpecification().toStringWithType()).append("\n");
 				}
 				if(FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
 					summary.append("Liveness violation found").append("\n");
