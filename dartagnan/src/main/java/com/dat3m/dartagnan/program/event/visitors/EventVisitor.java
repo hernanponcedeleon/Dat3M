@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmAbstractRMW;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmFence;
@@ -71,19 +70,12 @@ public interface EventVisitor<T> {
 	default T visitLKMMFence(LKMMFence e) { return visitFence(e); }
 	default T visitLKMMLoad(LKMMLoad e) { return visitLoad(e); }
 	default T visitLKMMStore(LKMMStore e) { return visitStore(e); }
-	
-	// Linux Cond Events
-	default T visitFenceCond(FenceCond e) { return visitFence(e); }
-	default T visitRMWReadCond(RMWReadCond e) { return visitLoad(e); }
-	default T visitRMWReadCondCmp(RMWReadCondCmp e) { return visitRMWReadCond(e); }
-	default T visitRMWReadCondUnless(RMWReadCondUnless e) { return visitRMWReadCond(e); }
-	default T visitRMWStoreCond(RMWStoreCond e) { return visitRMWStore(e); }
 
 	// Linux Lock Events
-	default T visitLKMMLock(LKMMLock e) { return visitEvent(e); };
-	default T visitLKMMUnlock(LKMMUnlock e) { return visitStore(e); };
-	default T visitLKMMLockRead(LKMMLockRead e) { return visitLoad(e); };
-	default T visitLKMMLockWrite(LKMMLockWrite e) { return visitStore(e); };
+	default T visitLKMMLock(LKMMLock e) { return visitEvent(e); }
+	default T visitLKMMUnlock(LKMMUnlock e) { return visitStore(e); }
+	default T visitLKMMLockRead(LKMMLockRead e) { return visitLoad(e); }
+	default T visitLKMMLockWrite(LKMMLockWrite e) { return visitStore(e); }
 
 	// TSO Events
 	default T visitXchg(Xchg e) { return visitMemEvent(e); }
