@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
@@ -88,7 +89,7 @@ public class VisitorLKMM extends VisitorBase {
                     Linux.newMemoryBarrier(),
                     rmwLoad = newRMWLoad(dummy, address, Tag.Linux.MO_ONCE),
                     newAssume(new Atom(dummy, NEQ, cmp)),
-                    newRMWStore(rmwLoad, address, value, Tag.Linux.MO_ONCE),
+                    newRMWStore(rmwLoad, address, new IExprBin(dummy, IOpBin.PLUS, (IExpr) value), Tag.Linux.MO_ONCE),
                     Linux.newMemoryBarrier(),
                 end,
                 newLocal(resultRegister, new Atom(dummy, NEQ, cmp))
