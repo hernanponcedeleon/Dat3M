@@ -289,11 +289,14 @@ public class Dartagnan extends BaseOptions {
 					}
 				}
 			} else {
-				// We have neither a witness nor a violation...
-				if (task.getProperty().contains(PROGRAM_SPEC)) {
-					// ... so if we checked for program spec, we print an Ok.
+				// We have neither a witness nor a violation ...
+				if (result == UNKNOWN) {
+					// Sanity check: UNKNOWN is not an expected result for litmus tests
+					summary.append(result).append("\n");
+				} else if (task.getProperty().contains(PROGRAM_SPEC)) {
+					//... which can be good or bad (no witness = bad, not violation = good)
 					summary.append("Condition ").append(p.getSpecification().toStringWithType()).append("\n");
-					summary.append("Ok").append("\n");
+					summary.append(result == PASS ? "Ok" : "No").append("\n");
 				}
 			}
 		}
