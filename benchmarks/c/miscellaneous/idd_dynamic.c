@@ -14,9 +14,9 @@ void *thread_1(void *unused)
 	int s = atomic_load_explicit(&y, memory_order_relaxed);
 	int u = s;
 	if (r == 0) {
-        atomic_store_explicit(&z, 4, memory_order_relaxed); // To avoid LLVM generating a branchless instruction
-    	s = 42;
-    }
+		atomic_store_explicit(&z, 4, memory_order_relaxed); // To avoid LLVM generating a branchless instruction
+		s = 42;
+	}
 	atomic_store_explicit(&x, s, memory_order_relaxed); // May get reordered with load(&y)
 	assert (u != 42);
 	return NULL;
