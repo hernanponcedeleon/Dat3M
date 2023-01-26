@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.linux.cond.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
@@ -124,7 +123,10 @@ public class EventFactory {
         return new CondJump(cond, target);
     }
 
-    public static CondJump newJumpUnless(ExprInterface cond, Label target) {
+    public static CondJump newJumpUnless(BExpr cond, Label target) {
+        if (cond.isFalse()) {
+            return newGoto(target);
+        }
         return newJump(new BExprUn(BOpUn.NOT, cond), target);
     }
 
@@ -399,18 +401,6 @@ public class EventFactory {
         public static LKMMStore newLKMMStore(IExpr address, ExprInterface value, String mo) {
         	return new LKMMStore(address, value, mo);
         }
-        
-        public static RMWReadCondCmp newRMWReadCondCmp(Register reg, ExprInterface cmp, IExpr address, String atomic) {
-            return new RMWReadCondCmp(reg, cmp, address, atomic);
-        }
-
-        public static RMWReadCondUnless newRMWReadCondUnless(Register reg, ExprInterface cmp, IExpr address, String mo) {
-            return new RMWReadCondUnless(reg, cmp, address, mo);
-        }
-
-        public static RMWStoreCond newRMWStoreCond(RMWReadCond loadEvent, IExpr address, ExprInterface value, String mo) {
-            return new RMWStoreCond(loadEvent, address, value, mo);
-        }
 
         public static RMWAddUnless newRMWAddUnless(IExpr address, Register register, ExprInterface cmp, IExpr value) {
             return new RMWAddUnless(address, register, cmp, value);
@@ -440,20 +430,12 @@ public class EventFactory {
             return new RMWXchg(address, register, value, mo);
         }
 
-        public static FenceCond newConditionalBarrier(RMWReadCond loadEvent, String name) {
-            return new FenceCond(loadEvent, name);
-        }
-
         public static Fence newMemoryBarrier() {
             return new LKMMFence(Tag.Linux.MO_MB);
         }
 
         public static Fence newLKMMFence(String name) {
             return new LKMMFence(name);
-        }
-
-        public static Fence newConditionalMemoryBarrier(RMWReadCond loadEvent) {
-            return newConditionalBarrier(loadEvent, "Mb");
         }
 
         public static LKMMLockRead newLockRead(Register register, IExpr address) {

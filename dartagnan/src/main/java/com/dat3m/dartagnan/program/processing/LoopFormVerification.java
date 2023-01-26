@@ -64,7 +64,7 @@ public class LoopFormVerification implements ProgramProcessor {
 
             loopCounter++;
             final Label loopBegin = label;
-            loopBegin.setName(String.format("%s.loop", loopBegin.getName()));
+            loopBegin.setName(String.format("%s%s", loopBegin.getName(), LoopUnrolling.LOOP_LABEL_IDENTIFIER));
             loopBegin.addFilters(Tag.NOOPT);
 
             final CondJump uniqueBackJump = backJumps.get(0);

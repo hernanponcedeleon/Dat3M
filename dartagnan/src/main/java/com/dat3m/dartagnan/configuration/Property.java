@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Optional;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -41,14 +43,14 @@ public enum Property implements OptionInterface {
 		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;
 	}
-	
-	public BooleanFormula getSMTVariable(SolverContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return bmgr.makeVariable(this.toString());
+
+	public BooleanFormula getSMTVariable(EncodingContext ctx) {
+		return ctx.getBooleanFormulaManager().makeVariable(this.toString());
 	}
 
-	public BooleanFormula getSMTVariable(Axiom ax, SolverContext ctx) {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        return bmgr.makeVariable("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
+	public BooleanFormula getSMTVariable(Axiom ax, EncodingContext ctx) {
+		Preconditions.checkState(this == CAT);
+		return ctx.getBooleanFormulaManager()
+				.makeVariable("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
 	}
 }

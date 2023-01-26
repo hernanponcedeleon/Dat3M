@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBound;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.index.qual.PolyUpperBound;
 import org.sosy_lab.common.configuration.*;
 
 import java.util.*;
@@ -23,7 +24,10 @@ public class LoopUnrolling implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(LoopUnrolling.class);
 
-    public static final String LOOP_ITERATION_SEPARATOR = "/itr_";
+    public static final String LOOP_LABEL_IDENTIFIER = ".loop";
+    public static final String LOOP_INFO_SEPARATOR = "/";
+    public static final String LOOP_INFO_ITERATION_SUFFIX = "itr_";
+    public static final String LOOP_INFO_BOUND_SUFFIX = "bound";
 
     // =========================== Configurables ===========================
 
@@ -119,20 +123,21 @@ public class LoopUnrolling implements ProgramProcessor {
         int iterCounter = 0;
         while (++iterCounter <= bound) {
             if (iterCounter == bound) {
-                // Mark end of loop
-                loopBackJump.insertAfter(
-                        EventFactory.newStringAnnotation(String.format("// End of Loop: %s", loopBegin.getName())));
-
                 // Update loop iteration label
-                loopBegin.setName(String.format("%s%s%d", loopBegin.getName(), LOOP_ITERATION_SEPARATOR, iterCounter));
+                final String loopName = loopBegin.getName();
+                loopBegin.setName(String.format("%s%s%s%d", loopName, LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, iterCounter));
                 loopBegin.addFilters(Tag.NOOPT);
 
                 // This is the last iteration, so we replace the back jump by a bound event.
                 final Label threadExit = (Label) loopBackJump.getThread().getExit();
                 final CondJump boundEvent = EventFactory.newGoto(threadExit);
-                boundEvent.addFilters(loopBackJump.getFilters()); // Keep tags of original jump.
                 boundEvent.addFilters(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
                 loopBackJump.replaceBy(boundEvent);
+
+                // Mark end of loop, so we can find it later again
+                final Label endOfLoopMarker = EventFactory.newLabel(String.format("%s%s%s", loopName, LOOP_INFO_SEPARATOR, LOOP_INFO_BOUND_SUFFIX));
+                endOfLoopMarker.addFilters(Tag.NOOPT);
+                boundEvent.getPredecessor().insertAfter(endOfLoopMarker);
 
             } else {
                 final Map<Event, Event> copyCtx = new HashMap<>();
@@ -150,7 +155,7 @@ public class LoopUnrolling implements ProgramProcessor {
 
                 // Rename label of iteration.
                 final Label loopBeginCopy = ((Label)copyCtx.get(loopBegin));
-                loopBeginCopy.setName(String.format("%s%s%d", loopBegin.getName(), LOOP_ITERATION_SEPARATOR, iterCounter));
+                loopBeginCopy.setName(String.format("%s%s%s%d", loopBegin.getName(), LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, iterCounter));
                 loopBeginCopy.addFilters(Tag.NOOPT);
             }
         }

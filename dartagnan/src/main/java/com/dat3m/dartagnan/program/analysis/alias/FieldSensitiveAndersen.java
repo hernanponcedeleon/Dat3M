@@ -209,12 +209,19 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
         @Override
         public int hashCode() {
-            return base.hashCode() + Objects.hashCode(offset);
+            return 1201 * base.hashCode() + offset; // High factor to prevent overlapping hashcodes
         }
 
         @Override
         public boolean equals(Object o) {
-            return this == o || o instanceof Location && base.equals(((Location)o).base) && offset==((Location)o).offset;
+            if (this == o) {
+                return true;
+            } else if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            Location other = (Location) o;
+            // Can we check reference-equality on the MemoryObject?
+            return this.base.equals(other.base) && this.offset == other.offset;
         }
 
         @Override
@@ -224,13 +231,18 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     }
 
     private static List<Location> fields(Collection<Location> v, int offset, int alignment) {
-        return v.stream()
-                .flatMap(l->range(0,div(l.base.size(),alignment))
-                        .map(i->l.offset+offset+i*alignment)
-                        .filter(i->0<=i&&i<l.base.size())
-                        .mapToObj(i->new Location(l.base,i)))
-                .filter(l->0<=l.offset&&l.offset<l.base.size())
-                .collect(toList());
+        final List<Location> result = new ArrayList<>();
+        for (Location l : v) {
+            for (int i = 0; i < div(l.base.size(), alignment); i++) {
+                int mapped = l.offset + offset + i * alignment;
+                if ( 0 <= mapped && mapped < l.base.size()) {
+                    Location loc = new Location(l.base, mapped);
+                    result.add(loc);
+                }
+            }
+        }
+        return result;
+
     }
 
     private static int div(int p, int q) {
@@ -371,6 +383,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     }
 
     private void addAllAddresses(Object v, Collection<Location> s) {
+        // NOTE: This method is the most expensive of the whole computation
         if(addresses.computeIfAbsent(v, key -> new HashSet<>()).addAll(s)) {
             variables.add(v);
         }
