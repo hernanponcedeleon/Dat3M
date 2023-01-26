@@ -21,7 +21,7 @@ public class StdProcedures {
 			"devirtbounce",
 			"external_alloc",
 			"$alloc",
-			"__assert_rtn",
+			"__assert_rtn", // generated on MacOS
 			"assert_.i32",
 			"__assert_fail",
 			"$malloc",
@@ -55,11 +55,11 @@ public class StdProcedures {
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, tid));
 			return;
 		}
-		if(name.equals("__assert_fail")) {
+		if(name.equals("__assert_fail") || name.equals("__assert_rtn")) {
 			__assert_fail(visitor);
 			return;
 		}
-		if(name.equals("__assert_rtn") || name.equals("assert_.i32")) {
+		if(name.equals("assert_.i32")) {
 			__assert(visitor, ctx);
 			return;
 		}
