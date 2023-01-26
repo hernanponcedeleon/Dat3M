@@ -12,7 +12,7 @@ void *thread_1(void *unused)
 {
 	int r = atomic_load_explicit(&x, memory_order_relaxed);
 	int s = atomic_load_explicit(&y, memory_order_relaxed);
-    int u = s;
+	int u = s;
 	if (r == 0) {
         atomic_store_explicit(&z, 4, memory_order_relaxed); // To avoid LLVM generating a branchless instruction
     	s = 42;
