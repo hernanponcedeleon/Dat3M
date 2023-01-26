@@ -39,31 +39,32 @@ public class PthreadsProcedures {
 	public static void handlePthreadsFunctions(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
 		switch(name) {
-		case "pthread_create":
-			pthread_create(visitor, ctx);
-			break;
-		case "pthread_join":
-			// VisitorBoogie already took care of creating the join event
-			// when it parsed the previous load.
-			break;
-		case "pthread_cond_init":
-		case "pthread_cond_wait":
-		case "pthread_cond_signal":
-		case "pthread_cond_broadcast":
-		case "pthread_exit":
-		case "pthread_mutex_destroy":
-			break;
-		case "pthread_mutex_init":
-			mutexInit(visitor, ctx);
-			break;
-		case "pthread_mutex_lock":
-			mutexLock(visitor, ctx);
-			break;
-		case "pthread_mutex_unlock":
-			mutexUnlock(visitor, ctx);
-			break;
-		default:
-			throw new ParsingException(name + " cannot be handled");
+			case "pthread_create":
+				pthread_create(visitor, ctx);
+				break;
+			case "__pthread_join":
+			case "pthread_join":
+				// VisitorBoogie already took care of creating the join event
+				// when it parsed the previous load.
+				break;
+			case "pthread_cond_init":
+			case "pthread_cond_wait":
+			case "pthread_cond_signal":
+			case "pthread_cond_broadcast":
+			case "pthread_exit":
+			case "pthread_mutex_destroy":
+				break;
+			case "pthread_mutex_init":
+				mutexInit(visitor, ctx);
+				break;
+			case "pthread_mutex_lock":
+				mutexLock(visitor, ctx);
+				break;
+			case "pthread_mutex_unlock":
+				mutexUnlock(visitor, ctx);
+				break;
+			default:
+				throw new ParsingException(name + " cannot be handled");
 		}
 	}
 	
