@@ -71,7 +71,7 @@ public class VisitorLKMM extends VisitorBase {
 	@Override
 	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
         Register resultRegister = e.getResultRegister();
-		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         ExprInterface cmp = e.getCmp();
         ExprInterface value = e.getMemValue();
         IExpr address = e.getAddress();
@@ -93,17 +93,6 @@ public class VisitorLKMM extends VisitorBase {
                 end,
                 newLocal(resultRegister, new Atom(dummy, NEQ, cmp))
         );
-
-        //RMWReadCondUnless load = Linux.newRMWReadCondUnless(dummy, e.getCmp(), e.getAddress(), Tag.Linux.MO_ONCE);
-
-        /*return eventSequence(
-                Linux.newConditionalMemoryBarrier(load),
-                load,
-                Linux.newRMWStoreCond(load, e.getAddress(), new IExprBin(dummy, IOpBin.PLUS, (IExpr) e.getMemValue()), Tag.Linux.MO_ONCE),
-                newLocal(resultRegister, new Atom(dummy, NEQ, e.getCmp())),
-                Linux.newConditionalMemoryBarrier(load)
-        );*/
-
     }
 
 	@Override
