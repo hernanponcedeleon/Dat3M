@@ -15,7 +15,7 @@ void *thread3(void *arg)
     while ((elem = pop()) < 0) {}
     array[elem].value = idx;
     assert (array[elem].value == idx);
-    // push(elem); Liveness violation without the push
+    push(elem); // The push is not need for safety verification, but without it, the code does not terminate.
     return NULL;
 }
 
