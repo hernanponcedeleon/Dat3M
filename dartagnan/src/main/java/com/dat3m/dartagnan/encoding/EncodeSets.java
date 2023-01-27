@@ -11,12 +11,14 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-// Collections of relationships in a verification task that need to be constrained in an SMT-based verification.
+// Propagates relationships in a verification task that need to be constrained in an SMT-based verification.
 final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
 
     private final RelationAnalysis ra;
     List<Tuple> news;
-    Map<Relation, Function<Event, Collection<Tuple>>> outSetMap = new HashMap<>();
+    // Caches the collection of may sets in frequently-used relations
+    // for when those relations get multiple encode set updates in one runtime.
+    Map<Relation, Function<Event, Collection<Tuple>>> mayOutCache = new HashMap<>();
 
     EncodeSets(Context analysisContext) {
         ra = analysisContext.requires(RelationAnalysis.class);
@@ -59,7 +61,7 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
         final Set<Tuple> set2 = new HashSet<>();
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
         final RelationAnalysis.Knowledge k2 = ra.getKnowledge(r2);
-        final Function<Event, Collection<Tuple>> out = outSetMap.computeIfAbsent(r1, k -> k1.getMayOut());
+        final Function<Event, Collection<Tuple>> out = mayOutCache.computeIfAbsent(r1, k -> k1.getMayOut());
         for (Tuple t : news) {
             Event e = t.getSecond();
             for (Tuple t1 : out.apply(t.getFirst())) {
@@ -105,7 +107,7 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
     public Map<Relation, Stream<Tuple>> visitTransitiveClosure(Relation rel, Relation r1) {
         HashSet<Tuple> factors = new HashSet<>();
         final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rel);
-        final Function<Event, Collection<Tuple>> out = outSetMap.computeIfAbsent(r1, k -> k0.getMayOut());
+        final Function<Event, Collection<Tuple>> out = mayOutCache.computeIfAbsent(r1, k -> k0.getMayOut());
         for (Tuple t : news) {
             Event e = t.getSecond();
             for (Tuple t1 : out.apply(t.getFirst())) {
