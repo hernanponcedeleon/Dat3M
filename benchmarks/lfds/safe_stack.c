@@ -1,5 +1,5 @@
 #include <pthread.h>
-#include <safe_stack.h>
+#include "safe_stack.h"
 #include <assert.h>
 
 void *thread3(void *arg)
@@ -7,14 +7,15 @@ void *thread3(void *arg)
     intptr_t idx = ((intptr_t) arg);
 
     int elem;
-    while (elem = pop() < 0) {}
+    while ((elem = pop()) < 0) {}
     array[elem].value = idx;
     assert (array[elem].value == idx);
     push(elem);
 
-    while (pop() < 0) {}
+    while ((elem = pop()) < 0) {}
     array[elem].value = idx;
     assert (array[elem].value == idx);
+    // push(elem); Liveness violation without the push
     return NULL;
 }
 
