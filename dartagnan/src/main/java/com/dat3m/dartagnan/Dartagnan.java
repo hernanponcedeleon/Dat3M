@@ -178,12 +178,13 @@ public class Dartagnan extends BaseOptions {
             	boolean safetyViolationFound = false;
             	if((result == FAIL && !p.getAss().getInvert()) || 
             			(result == PASS && p.getAss().getInvert())) {
-					printWarningIfThreadStartFailed(p, modelChecker.getEncodingContext(), prover);
-            		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(ctx.getFormulaManager())))) {
+					final EncodingContext encCtx = modelChecker.getEncodingContext();
+					printWarningIfThreadStartFailed(p, encCtx, prover);
+            		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(encCtx)))) {
             			safetyViolationFound = true;
             			System.out.println("Safety violation found");
             		}
-            		if(TRUE.equals(prover.getModel().evaluate(LIVENESS.getSMTVariable(ctx.getFormulaManager())))) {
+            		if(TRUE.equals(prover.getModel().evaluate(LIVENESS.getSMTVariable(encCtx)))) {
             			System.out.println("Liveness violation found");
             		}
                 }

@@ -23,17 +23,28 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class FindSpinLoops implements ProgramProcessor {
+/*
+    This pass finds and marks simple loops that are totally side effect free (simple spin loops).
+    It will also mark side-effect-full loops if they are annotated by a SpinStart event
+    (we assume the user guarantees the correctness of the annotation)
 
-    private static final Logger logger = LogManager.getLogger(FindSpinLoops.class);
+    The pass is unable to detect complex types of loops that may spin endlessly (i.e. run into a deadlock)
+    while producing side effects. It will also fail to mark loops with conditional side effects.
 
-    private FindSpinLoops() { }
+    TODO: Instead of tagging labels as spinning and checking for that tag during loop unrolling
+          we could let this pass produce LoopBound-Annotations to guide the unrolling implicitly.
+ */
+public class SimpleSpinLoopDetection implements ProgramProcessor {
 
-    public static FindSpinLoops newInstance() {
-        return new FindSpinLoops();
+    private static final Logger logger = LogManager.getLogger(SimpleSpinLoopDetection.class);
+
+    private SimpleSpinLoopDetection() { }
+
+    public static SimpleSpinLoopDetection newInstance() {
+        return new SimpleSpinLoopDetection();
     }
 
-    public static FindSpinLoops fromConfig(Configuration config) throws InvalidConfigurationException {
+    public static SimpleSpinLoopDetection fromConfig(Configuration config) throws InvalidConfigurationException {
         return newInstance();
     }
 
@@ -44,7 +55,7 @@ public class FindSpinLoops implements ProgramProcessor {
                 getClass().getSimpleName() + " should be performed before unrolling.");
 
         final int numSpinLoops = program.getThreads().stream().mapToInt(this::detectAndMarkSpinLoops).sum();
-        logger.info("# of spin loops: {}", numSpinLoops);
+        logger.info("Statically detected # of spin loops: {}", numSpinLoops);
         program.clearCache(true);
     }
 

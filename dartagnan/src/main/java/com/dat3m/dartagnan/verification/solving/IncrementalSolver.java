@@ -62,7 +62,7 @@ public class IncrementalSolver extends ModelChecker {
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
         logger.info("Starting push()");
         prover.push();
-        prover.addConstraint(propertyEncoder.encodeSpecification());
+        prover.addConstraint(propertyEncoder.encodeSpecificationViolations());
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsat()) {
@@ -73,7 +73,7 @@ public class IncrementalSolver extends ModelChecker {
         } else {
         	res = FAIL;
             if(!task.getProgram().getAss().getInvert()) {
-                logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, ctx.getFormulaManager());
+                logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, context);
             }
         }
         

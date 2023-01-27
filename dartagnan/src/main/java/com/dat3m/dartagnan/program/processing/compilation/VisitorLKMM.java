@@ -2,15 +2,12 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWReadCondCmp;
-import com.dat3m.dartagnan.program.event.lang.linux.cond.RMWReadCondUnless;
 import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
@@ -32,17 +29,19 @@ public class VisitorLKMM extends VisitorBase {
 	
         @Override
         public List<Event> visitCreate(Create e) {
-                Store store = newStore(e.getAddress(), e.getMemValue(), Tag.Linux.MO_RELEASE);
-                store.addFilters(C11.PTHREAD);
+            Store store = newStore(e.getAddress(), e.getMemValue(), Tag.Linux.MO_RELEASE);
+            store.addFilters(C11.PTHREAD);
 
-                return eventSequence(
-                                store);
+            return eventSequence(
+                    store
+            );
         }
 
         @Override
         public List<Event> visitEnd(End e) {
-                return eventSequence(
-                                newStore(e.getAddress(), IValue.ZERO, Tag.Linux.MO_RELEASE));
+            return eventSequence(
+                    newStore(e.getAddress(), IValue.ZERO, Tag.Linux.MO_RELEASE)
+            );
         }
 
     @Override
@@ -52,7 +51,7 @@ public class VisitorLKMM extends VisitorBase {
         load.addFilters(C11.PTHREAD);
         
         return eventSequence(
-        		load,
+                load,
         		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
         );
 	}
@@ -64,8 +63,8 @@ public class VisitorLKMM extends VisitorBase {
         load.addFilters(Tag.STARTLOAD);
 
         return eventSequence(
-        		load,
-			super.visitStart(e),
+                load,
+			    super.visitStart(e),
         		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
         );
 	}
@@ -73,37 +72,55 @@ public class VisitorLKMM extends VisitorBase {
 	@Override
 	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
         Register resultRegister = e.getResultRegister();
-		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        RMWReadCondUnless load = Linux.newRMWReadCondUnless(dummy, e.getCmp(), e.getAddress(), Tag.Linux.MO_ONCE);
+        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+        ExprInterface cmp = e.getCmp();
+        ExprInterface value = e.getMemValue();
+        IExpr address = e.getAddress();
 
+        Label success = newLabel("RMW_success");
+        Label end = newLabel("RMW_end");
+        Load rmwLoad;
         return eventSequence(
-                Linux.newConditionalMemoryBarrier(load),
-                load,
-                Linux.newRMWStoreCond(load, e.getAddress(), new IExprBin(dummy, IOpBin.PLUS, (IExpr) e.getMemValue()), Tag.Linux.MO_ONCE),
-                newLocal(resultRegister, new Atom(dummy, NEQ, e.getCmp())),
-                Linux.newConditionalMemoryBarrier(load)
+                newJump(new BNonDet(resultRegister.getPrecision()), success),
+                    newLoad(dummy, address, Tag.Linux.MO_ONCE),
+                    newAssume(new Atom(dummy, EQ, cmp)),
+                    newGoto(end),
+                success, // RMW success branch
+                    Linux.newMemoryBarrier(),
+                    rmwLoad = newRMWLoad(dummy, address, Tag.Linux.MO_ONCE),
+                    newAssume(new Atom(dummy, NEQ, cmp)),
+                    newRMWStore(rmwLoad, address, new IExprBin(dummy, IOpBin.PLUS, (IExpr) value), Tag.Linux.MO_ONCE),
+                    Linux.newMemoryBarrier(),
+                end,
+                newLocal(resultRegister, new Atom(dummy, NEQ, cmp))
         );
-	}
+    }
 
 	@Override
 	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
-		Register resultRegister = e.getResultRegister();
-		ExprInterface cmp = e.getCmp();
-		ExprInterface value = e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        RMWReadCondCmp load = Linux.newRMWReadCondCmp(dummy, cmp, address, Tag.Linux.loadMO(mo));
-        Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newConditionalMemoryBarrier(load) : null;
-        Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? Linux.newConditionalMemoryBarrier(load) : null;
+        Register resultRegister = e.getResultRegister();
+        ExprInterface cmp = e.getCmp();
+        ExprInterface value = e.getMemValue();
+        IExpr address = e.getAddress();
+        String mo = e.getMo();
 
+        Label success = newLabel("CAS_success");
+        Label end = newLabel("CAS_end");
+        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+        Load casLoad;
         return eventSequence(
-                optionalMbBefore,
-                load,
-                Linux.newRMWStoreCond(load, address, value, Tag.Linux.storeMO(mo)),
-                newLocal(resultRegister, dummy),
-                optionalMbAfter
+                newJump(new BNonDet(resultRegister.getPrecision()), success),
+                    newLoad(dummy, address, Tag.Linux.MO_ONCE),
+                    newAssume(new Atom(dummy, NEQ, cmp)),
+                    newGoto(end),
+                success, // CAS success branch
+                    mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null,
+                    casLoad = newRMWLoad(dummy, address, Tag.Linux.loadMO(mo)),
+                    newAssume(new Atom(dummy, EQ, cmp)),
+                    newRMWStore(casLoad, address, value, Tag.Linux.storeMO(mo)),
+                    mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null,
+                end,
+                newLocal(resultRegister, dummy)
         );
 	}
 
@@ -152,7 +169,6 @@ public class VisitorLKMM extends VisitorBase {
 		Register dummy = e.getThread().newRegister(precision);
 		Load load = newRMWLoad(dummy, address, Tag.Linux.MO_ONCE);
 
-        //TODO: Are the memory barriers really unconditional?
         return eventSequence(
                 Linux.newMemoryBarrier(),
                 load,
@@ -207,9 +223,9 @@ public class VisitorLKMM extends VisitorBase {
 	@Override
 	public List<Event> visitLKMMLock(LKMMLock e) {
 		Register dummy = e.getThread().newRegister(GlobalSettings.ARCH_PRECISION);
-        // In litmus tests, spinlocks are guaranteed to success, i.e. its read part gets value 0
+        // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
 		Event middle = e.getThread().getProgram().getFormat().equals(LITMUS) ?
-				newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)) :
+				newAssume(new Atom(dummy, EQ, IValue.ZERO)) :
 				newJump(new Atom(dummy, NEQ, IValue.ZERO), (Label)e.getThread().getExit());
 		return eventSequence(
                 Linux.newLockRead(dummy, e.getLock()),

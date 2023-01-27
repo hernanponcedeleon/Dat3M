@@ -1,5 +1,6 @@
 package com.dat3m.ui.result;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -105,7 +106,7 @@ public class ReachabilityResult {
                     }
                     // Verification ended, we can interrupt the timeout Thread
                     t.interrupt();
-                    buildVerdict(program, modelChecker.getResult(), prover, ctx);
+                    buildVerdict(program, modelChecker.getResult(), prover, modelChecker.getEncodingContext());
                 }
             } catch (InterruptedException e){
             	verdict = "TIMEOUT";
@@ -115,7 +116,7 @@ public class ReachabilityResult {
         }
     }
 
-    private void buildVerdict(Program p, Result result, ProverEnvironment prover, SolverContext ctx) throws SolverException {
+    private void buildVerdict(Program p, Result result, ProverEnvironment prover, EncodingContext ctx) throws SolverException {
         StringBuilder sb = new StringBuilder();
         Model model = (result == FAIL && !p.getAss().getInvert()) || (result == PASS && p.getAss().getInvert()) ? prover.getModel() : null;
     	for(Axiom ax : wmm.getAxioms()) {

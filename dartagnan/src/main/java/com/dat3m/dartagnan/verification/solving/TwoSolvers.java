@@ -73,7 +73,7 @@ public class TwoSolvers extends ModelChecker {
         prover1.addConstraint(encodeSymm);
         prover2.addConstraint(encodeSymm);
 
-        prover1.addConstraint(propertyEncoder.encodeSpecification());
+        prover1.addConstraint(propertyEncoder.encodeSpecificationViolations());
 
         logger.info("Starting first solver.check()");
         if(prover1.isUnsat()) {
@@ -83,7 +83,7 @@ public class TwoSolvers extends ModelChecker {
         } else {
         	res = FAIL;
             if(!task.getProgram().getAss().getInvert()) {
-                logFlaggedPairs(memoryModel, wmmEncoder, prover1, logger, ctx.getFormulaManager());
+                logFlaggedPairs(memoryModel, wmmEncoder, prover1, logger, context);
             }
         }
 

@@ -23,8 +23,12 @@ public final class Tag {
     public static final String REG_WRITER   	= "rW";
     public static final String REG_READER   	= "rR";
     public static final String ASSERTION    	= "ASS";
+    // Marks the event that is reachable IFF a loop has not been fully unrolled.
     public static final String BOUND   			= "BOUND";
+    // Marks jumps that somehow terminate a thread earlier than "normally"
+    // This can be bound events, spinning events, assertion violations, etc.
     public static final String EARLYTERMINATION	= "EARLYTERMINATION";
+    // Marks jumps that terminate a thread due to spinning behaviour, i.e. side-effect-free loop iterations
     public static final String SPINLOOP   		= "SPINLOOP";
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
     public static final String NOOPT   			= "NOOPT";

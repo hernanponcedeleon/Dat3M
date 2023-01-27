@@ -82,15 +82,15 @@ public class CLocksTest extends AbstractCTest {
                 {"mutex-rel2rx_unlock", ARM8, FAIL},
                 {"mutex-rel2rx_unlock", POWER, FAIL},
     			{"mutex-rel2rx_unlock", RISCV, FAIL},
-                {"spinlock", TSO, UNKNOWN},
-                {"spinlock", ARM8, UNKNOWN},
-                {"spinlock", POWER, UNKNOWN},
-    			{"spinlock", RISCV, UNKNOWN},
-                {"spinlock-acq2rx", TSO, UNKNOWN},
+                {"spinlock", TSO, PASS},
+                {"spinlock", ARM8, PASS},
+                {"spinlock", POWER, PASS},
+    			{"spinlock", RISCV, PASS},
+                {"spinlock-acq2rx", TSO, PASS},
                 {"spinlock-acq2rx", ARM8, FAIL},
                 {"spinlock-acq2rx", POWER, FAIL},
     			{"spinlock-acq2rx", RISCV, FAIL},
-                {"spinlock-rel2rx", TSO, UNKNOWN},
+                {"spinlock-rel2rx", TSO, PASS},
                 {"spinlock-rel2rx", ARM8, FAIL},
                 {"spinlock-rel2rx", POWER, FAIL},
     			{"spinlock-rel2rx", RISCV, FAIL},
@@ -126,12 +126,10 @@ public class CLocksTest extends AbstractCTest {
                 {"mutex_musl-rel2rx_unlock", ARM8, FAIL},
                 {"mutex_musl-rel2rx_unlock", POWER, FAIL},
     			{"mutex_musl-rel2rx_unlock", RISCV, FAIL},
-                // The actual result is PASS, but CAAT returns UNKNOWN
-                // because we do not refine for the bound check 
-                {"seqlock", TSO, UNKNOWN},
-                {"seqlock", ARM8, UNKNOWN},
-                {"seqlock", POWER, UNKNOWN},
-    			{"seqlock", RISCV, UNKNOWN},
+                {"seqlock", TSO, PASS},
+                {"seqlock", ARM8, PASS},
+                {"seqlock", POWER, PASS},
+    			{"seqlock", RISCV, PASS},
 		});
     }
 
