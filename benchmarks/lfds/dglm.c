@@ -1,4 +1,4 @@
-#include <dglm.h>
+#include "dglm.h"
 #include <pthread.h>
 #include <assert.h>
 

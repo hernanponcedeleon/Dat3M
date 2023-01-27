@@ -1,4 +1,4 @@
-#include <ms.h>
+#include "ms.h"
 #include <pthread.h>
 
 #ifndef NTHREADS
