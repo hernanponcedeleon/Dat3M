@@ -4,7 +4,6 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Store;
 
 public class LKMMLockWrite extends Store {
