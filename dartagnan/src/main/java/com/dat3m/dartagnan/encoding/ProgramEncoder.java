@@ -106,7 +106,7 @@ public class ProgramEncoder implements Encoder {
                 }
             }
             enc.add(bmgr.equivalence(context.controlFlow(e), cfCond));
-            enc.addAll(e.encodeExec(context));
+            enc.add(e.encodeExec(context));
             pred = e;
         }
         return bmgr.and(enc);

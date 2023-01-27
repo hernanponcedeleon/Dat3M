@@ -11,8 +11,6 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
-import java.util.List;
-
 public class RMWStoreExclusive extends Store {
 
     public RMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean strong){
@@ -35,8 +33,8 @@ public class RMWStoreExclusive extends Store {
     }
 
     @Override
-    public List<BooleanFormula> encodeExec(EncodingContext ctx) {
-    	return List.of(ctx.getBooleanFormulaManager().implication(ctx.execution(this), ctx.controlFlow(this)));
+    public BooleanFormula encodeExec(EncodingContext ctx) {
+    	return ctx.getBooleanFormulaManager().implication(ctx.execution(this), ctx.controlFlow(this));
     }
 
     // Unrolling

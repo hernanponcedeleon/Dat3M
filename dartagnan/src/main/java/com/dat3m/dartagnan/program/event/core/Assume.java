@@ -10,9 +10,6 @@ import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Assume extends Event implements RegReaderData {
 
 	protected final ExprInterface expr;
@@ -45,11 +42,9 @@ public class Assume extends Event implements RegReaderData {
 	}
 
 	@Override
-	public List<BooleanFormula> encodeExec(EncodingContext ctx) {
+	public BooleanFormula encodeExec(EncodingContext ctx) {
 		BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
-		List<BooleanFormula> enc = new ArrayList<>(super.encodeExec(ctx));
-		enc.add(bmgr.implication(ctx.execution(this), expr.toBoolFormula(this, ctx.getFormulaManager())));
-		return enc;
+		return bmgr.and(super.encodeExec(ctx), bmgr.implication(ctx.execution(this), expr.toBoolFormula(this, ctx.getFormulaManager())));
 	}
 
 	// Unrolling

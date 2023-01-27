@@ -248,7 +248,7 @@ public class PropertyEncoder implements Encoder {
                         continue;
                     }
                     for(Event e2 : t2.getEvents()) {
-                        if (!e2.hasFilter(Tag.WRITE) || e2.hasFilter(Tag.INIT)) {
+                        if (!e2.hasFilter(Tag.MEMORY) || e2.hasFilter(Tag.INIT)) {
                             continue;
                         }
                         MemEvent m = (MemEvent)e2;

@@ -120,7 +120,7 @@ public class ReachabilityResult {
         StringBuilder sb = new StringBuilder();
         Model model = (result == FAIL && !p.getAss().getInvert()) || (result == PASS && p.getAss().getInvert()) ? prover.getModel() : null;
     	for(Axiom ax : wmm.getAxioms()) {
-        	if(ax.isFlagged() && model != null && TRUE.equals(model.evaluate(CAT.getSMTVariable(ax, ctx.getFormulaManager())))) {
+        	if(ax.isFlagged() && model != null && TRUE.equals(model.evaluate(CAT.getSMTVariable(ax, ctx)))) {
         		sb.append("Flag ")
                         .append(Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()))
                         .append("\n");
@@ -129,7 +129,7 @@ public class ReachabilityResult {
 		// TODO We might want to output different messages once we allow to check LIVENESS from the UI
 		sb.append("Condition ").append(program.getAss().toStringWithType()).append("\n");
 		sb.append(program.getFormat().equals(LITMUS) ?
-                model != null && TRUE.equals(model.evaluate(REACHABILITY.getSMTVariable(ctx.getFormulaManager()))) ?
+                model != null && TRUE.equals(model.evaluate(REACHABILITY.getSMTVariable(ctx))) ?
                         "Ok" : "No" : result)
                 .append("\n");
 		if(model != null) {

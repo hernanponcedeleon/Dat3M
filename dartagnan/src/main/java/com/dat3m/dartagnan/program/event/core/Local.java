@@ -11,9 +11,6 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Local extends Event implements RegWriter, RegReaderData {
 	
 	protected final Register register;
@@ -55,14 +52,14 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
 	@Override
-	public List<BooleanFormula> encodeExec(EncodingContext context) {
+	public BooleanFormula encodeExec(EncodingContext context) {
+		BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 		FormulaManager fmgr = context.getFormulaManager();
-		List<BooleanFormula> enc = new ArrayList<>(super.encodeExec(context));
+		BooleanFormula enc = super.encodeExec(context);
 		if(expr instanceof INonDet) {
-			enc.add(((INonDet)expr).encodeBounds(expr.toIntFormula(this, fmgr) instanceof BitvectorFormula, fmgr));
+			enc = bmgr.and(enc, ((INonDet)expr).encodeBounds(expr.toIntFormula(this, fmgr) instanceof BitvectorFormula, fmgr));
 		}
-		enc.add(context.equal(context.result(this), expr.toIntFormula(this, fmgr)));
-		return enc;
+		return bmgr.and(enc, context.equal(context.result(this), expr.toIntFormula(this, fmgr)));
 	}
 
 	// Unrolling

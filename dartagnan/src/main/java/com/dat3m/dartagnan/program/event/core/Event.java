@@ -233,12 +233,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		return true;
 	}
 
-	/**
-	 * Conditions related to the execution variable of this event.
-	 *
-	 * @return Executions of the associated program must meet all those assumptions.
-	 */
-	public Collection<BooleanFormula> encodeExec(EncodingContext ctx) {
-		return List.of();
+	public BooleanFormula encodeExec(EncodingContext ctx) {
+		return ctx.getBooleanFormulaManager().makeTrue();
 	}
 }
