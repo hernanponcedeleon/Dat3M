@@ -35,30 +35,24 @@ public class Simplifier implements ProgramProcessor {
         Preconditions.checkArgument(!program.isUnrolled(), "Simplifying should be performed before unrolling.");
 
         logger.info("pre-simplification: " + program.getEvents().size() + " events");
-        program.getThreads().stream().filter(this::simplify).forEach(Thread::clearCache);
-        program.clearCache(false);
+        for (Thread thread : program.getThreads()) {
+            simplify(thread);
+        }
         logger.info("post-simplification: " + program.getEvents().size() + " events");
     }
 
-    private boolean simplify(Thread t) {
-        boolean hasAnyChanges = false;
-
+    private void simplify(Thread t) {
         Event cur = t.getEntry();
         Event next;
         while ((next = cur.getSuccessor()) != null) {
-            if (simplifyEvent(next)) {
-                // Some simplifications are only applicable after others.
-                // Thus, we apply them iteratively until we reach a fixpoint.
-                hasAnyChanges = true;
-            } else {
+            // Some simplifications are only applicable after others.
+            // Thus, we apply them iteratively until we reach a fixpoint.
+            if (!simplifyEvent(next)) {
                 // If nothing has changed, we proceed to the next event
                 cur = next;
             }
         }
-
-        return hasAnyChanges;
     }
-
 
     private boolean simplifyEvent(Event next) {
         if (next.is(Tag.NOOPT)) {
@@ -101,9 +95,8 @@ public class Simplifier implements ProgramProcessor {
         // Check if we reached the return statement
         final Event successor = call.getSuccessor();
         if(successor instanceof FunRet && ((FunRet)successor).getFunctionName().equals(call.getFunctionName())) {
-            final Event ret = successor;
             call.delete();
-            ret.delete();
+            successor.delete();
             return true;
         }
         return false;

@@ -83,7 +83,6 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             iterationData.forEach(this::insertSideEffectChecks);
             stats = stats.add(collectStats(iterationData));
         }
-        program.clearCache(true);
 
         // NOTE: We log "potential spin loops" as only those that are not also "static".
         logger.info("Found {} static spin loops and {} potential spin loops.",
