@@ -1133,7 +1133,7 @@ public class RelationAnalysis {
             if (origin.equals(rel)) {
                 for (Relation o : operands) {
                     Set<Tuple> d = Arrays.stream(operands)
-                            .map(r -> origin.equals(r) ? disabled : knowledgeMap.get(r).must)
+                            .map(r -> o.equals(r) ? disabled : knowledgeMap.get(r).must)
                             .sorted(Comparator.comparingInt(Set::size))
                             .reduce(Sets::intersection)
                             .orElseThrow();
