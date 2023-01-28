@@ -28,7 +28,6 @@ import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_ENCODE_SETS;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Sets.difference;
-import static com.google.common.collect.Sets.intersection;
 
 @Options
 public class Acyclic extends Axiom {
@@ -182,7 +181,7 @@ public class Acyclic extends Axiom {
     }
 
     private Set<Tuple> getEncodeTupleSet(ExecutionAnalysis exec, RelationAnalysis ra) {
-        logger.trace("Computing encodeTupleSet for " + this);
+        logger.trace("Computing encodeTupleSet for {}", this);
         // ====== Construct [Event -> Successor] mapping ======
         Map<Event, Collection<Event>> succMap = new HashMap<>();
         final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
@@ -204,22 +203,21 @@ public class Acyclic extends Axiom {
             }
         }
 
-        logger.debug("encodeTupleSet size " + result.size());
+        logger.info("encodeTupleSet size: {}", result.size());
         if (reduceAcyclicityEncoding) {
-            Set<Tuple> obsolete = mustSetProducts(exec, ra.getKnowledge(rel));
-            //TODO skip this call
-            reduceWithMinSets(result, exec, ra);
-            Set<Tuple> copy = Set.copyOf(intersection(obsolete, result));
-            if (!copy.isEmpty()) {
-                logger.warn("missed {} tuples", copy.size());
-            }
+            Set<Tuple> obsolete = mustTransitiveClosure(exec, ra.getKnowledge(rel));
             result.removeAll(obsolete);
-            logger.debug("reduced encodeTupleSet size {}", result.size());
+            logger.info("reduced encodeTupleSet size: {}", result.size());
         }
         return result;
     }
 
-    private Set<Tuple> mustSetProducts(ExecutionAnalysis exec, RelationAnalysis.Knowledge k) {
+    // Under-approximates the must-set of the proper transitive closure.
+    // It is the smallest set that contains the binary composition of the must-set with itself with implied intermediates
+    // and is closed under that operation with the must-set.
+    // Basically, the clause {@code exec(x) and exec(z) implies before(x,z)} is obsolete,
+    // if the clauses {@code exec(x) implies before(x,y)} and {@code exec(z) implies before(y,z)} exist.
+    private static Set<Tuple> mustTransitiveClosure(ExecutionAnalysis exec, RelationAnalysis.Knowledge k) {
         Set<Tuple> result = new HashSet<>();
         Map<Event, List<Event>> map = new HashMap<>();
         Map<Event, List<Event>> mapInverse = new HashMap<>();
