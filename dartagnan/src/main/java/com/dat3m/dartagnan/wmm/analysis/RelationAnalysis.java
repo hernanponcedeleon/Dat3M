@@ -204,6 +204,7 @@ public class RelationAnalysis {
     }
 
     private void run() {
+        logger.trace("Start");
         Wmm memoryModel = task.getMemoryModel();
         Map<Relation, List<Definition>> dependents = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
@@ -225,6 +226,7 @@ public class RelationAnalysis {
         // ------------------------------------------------
         Propagator propagator = new Propagator();
         for (Set<DependencyGraph<Relation>.Node> scc : DependencyGraph.from(memoryModel.getRelations()).getSCCs()) {
+            logger.trace("Regular analysis for component {}", scc);
             Set<Relation> stratum = scc.stream().map(DependencyGraph.Node::getContent).collect(toSet());
             if (!enable && stratum.stream().noneMatch(Relation::isInternal)) {
                 continue;
@@ -241,6 +243,7 @@ public class RelationAnalysis {
             // repeat until convergence
             while (!qLocal.isEmpty()) {
                 Relation relation = qLocal.keySet().iterator().next();
+                logger.trace("Regular knowledge update for '{}'", relation);
                 Delta delta = knowledgeMap.get(relation).joinSet(qLocal.remove(relation));
                 if (delta.may.isEmpty() && delta.must.isEmpty()) {
                     continue;
@@ -249,6 +252,7 @@ public class RelationAnalysis {
                 propagator.may = delta.may;
                 propagator.must = delta.must;
                 for (Definition c : dependents.getOrDefault(relation, List.of())) {
+                    logger.trace("Regular propagation from '{}' to '{}'", relation, c);
                     Relation r = c.getDefinedRelation();
                     Delta d = c.accept(propagator);
                     verify(enableMustSets || d.must.isEmpty(),
@@ -260,6 +264,7 @@ public class RelationAnalysis {
             }
         }
         verify(!enable || qGlobal.isEmpty(), "knowledge buildup propagated downwards");
+        logger.trace("End");
     }
 
     public static final class Knowledge {
@@ -353,6 +358,7 @@ public class RelationAnalysis {
     }
 
     private void runExtended() {
+        logger.trace("Start");
         Wmm memoryModel = task.getMemoryModel();
         Map<Relation, List<Constraint>> dependents = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
@@ -381,6 +387,7 @@ public class RelationAnalysis {
         // repeat until convergence
         while (!q.isEmpty()) {
             Relation relation = q.keySet().iterator().next();
+            logger.trace("Extended knowledge update for '{}'", relation);
             Knowledge knowledge = knowledgeMap.get(relation);
             ExtendedDelta delta = knowledge.join(q.remove(relation));
             if (delta.disabled.isEmpty() && delta.enabled.isEmpty()) {
@@ -392,6 +399,7 @@ public class RelationAnalysis {
             Set<Tuple> disabled = propagator.disabled = delta.disabled;
             Set<Tuple> enabled = propagator.enabled = delta.enabled;
             for (Constraint c : dependents.getOrDefault(relation, List.of())) {
+                logger.trace("Extended propagation from '{}' to '{}'", relation, c);
                 for (Map.Entry<Relation, ExtendedDelta> e :
                         c.computeIncrementalKnowledgeClosure(
                                 relation, disabled, enabled, knowledgeMap, analysisContext).entrySet()) {
@@ -405,6 +413,7 @@ public class RelationAnalysis {
                 }
             }
         }
+        logger.trace("End");
     }
 
     public static final class Delta {

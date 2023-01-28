@@ -106,6 +106,7 @@ public class WmmEncoder implements Encoder {
         );
         RelationEncoder v = new RelationEncoder();
         for (Relation rel : depGraph.getNodeContents()) {
+            logger.trace("Encoding relation '{}'", rel);
             rel.getDefinition().accept(v);
         }
         return v.bmgr.and(v.enc);
@@ -120,6 +121,7 @@ public class WmmEncoder implements Encoder {
         List<BooleanFormula> enc = new ArrayList<>();
         for (Axiom a : memoryModel.getAxioms()) {
             if (!a.isFlagged()) {
+                logger.trace("Encoding axiom '{}'", a);
                 enc.addAll(a.consistent(context));
             }
         }
@@ -608,6 +610,7 @@ public class WmmEncoder implements Encoder {
     }
 
     private void initializeEncodeSets() {
+        logger.trace("Start");
         for (Relation r : context.getTask().getMemoryModel().getRelations()) {
             encodeSets.put(r, new HashSet<>());
         }
@@ -640,6 +643,7 @@ public class WmmEncoder implements Encoder {
         }
         while (!queue.isEmpty()) {
             Relation r = queue.keySet().iterator().next();
+            logger.trace("Update encode set of '{}'", r);
             Set<Tuple> s = encodeSets.get(r);
             List<Tuple> c = new ArrayList<>();
             for (Stream<Tuple> news : queue.remove(r)) {
@@ -652,5 +656,6 @@ public class WmmEncoder implements Encoder {
                 }
             }
         }
+        logger.trace("End");
     }
 }
