@@ -57,7 +57,8 @@ public class RelationAnalysis {
 
     private static final Logger logger = LogManager.getLogger(RelationAnalysis.class);
 
-    private static final Delta EMPTY = new Delta(Set.of(), Set.of());
+    private static final Set<Tuple> EMPTY_SET = new HashSet<>();
+    private static final Delta EMPTY = new Delta(EMPTY_SET, EMPTY_SET);
 
     private final VerificationTask task;
     private final Context analysisContext;
@@ -450,7 +451,7 @@ public class RelationAnalysis {
                         may.add(new Tuple(x, y));
                     }
                 }
-                defaultKnowledge = new Knowledge(may, Set.of());
+                defaultKnowledge = new Knowledge(may, EMPTY_SET);
             }
         }
         @Override
@@ -469,7 +470,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : Set.of());
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
         @Override
         public Knowledge visitIdentity(Relation rel, FilterAbstract set) {
@@ -479,7 +480,7 @@ public class RelationAnalysis {
                     must.add(new Tuple(e, e));
                 }
             }
-            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : Set.of());
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
         @Override
         public Knowledge visitExternal(Relation rel) {
@@ -499,7 +500,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : Set.of());
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
         @Override
         public Knowledge visitInternal(Relation rel) {
@@ -514,7 +515,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : Set.of());
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
         @Override
         public Knowledge visitProgramOrder(Relation rel, FilterAbstract type) {
@@ -531,7 +532,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : Set.of());
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
         @Override
         public Knowledge visitControl(Relation rel) {
@@ -560,7 +561,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : Set.of());
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
         @Override
         public Knowledge visitAddressDependency(Relation rel) {
@@ -600,7 +601,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(may, enableMustSets ? must : Set.of());
+            return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
         @Override
         public Knowledge visitCompareAndSwapDependency(Relation rel) {
@@ -611,7 +612,7 @@ public class RelationAnalysis {
                     must.add(new Tuple(e, e.getSuccessor()));
                 }
             }
-            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : Set.of());
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
         @Override
         public Knowledge visitCriticalSections(Relation rel) {
@@ -654,7 +655,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(may, enableMustSets ? must : Set.of());
+            return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
         @Override
         public Knowledge visitReadModifyWrites(Relation rel) {
@@ -719,7 +720,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(may, enableMustSets ? must : Set.of());
+            return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
         @Override
         public Knowledge visitCoherence(Relation rel) {
@@ -756,7 +757,7 @@ public class RelationAnalysis {
                 }
             }
             logger.debug("Initial may set size for memory order: {}", may.size());
-            return new Knowledge(may, enableMustSets ? must : Set.of());
+            return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
         @Override
         public Knowledge visitReadFrom(Relation rel) {
@@ -850,7 +851,7 @@ public class RelationAnalysis {
                 logger.debug("Atomic block optimization eliminated {} reads", sizeBefore - may.size());
             }
             logger.debug("Initial may set size for read-from: {}", may.size());
-            return new Knowledge(may, enableMustSets ? new HashSet<>() : Set.of());
+            return new Knowledge(may, enableMustSets ? new HashSet<>() : EMPTY_SET);
         }
         @Override
         public Knowledge visitSameAddress(Relation rel) {
@@ -869,7 +870,7 @@ public class RelationAnalysis {
                     must.add(t);
                 }
             }
-            return new Knowledge(may, enableMustSets ? must : Set.of());
+            return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
         private Knowledge visitDependency(String tag, Function<Event, Set<Register>> registers) {
             Set<Tuple> may = new HashSet<>();
@@ -908,7 +909,7 @@ public class RelationAnalysis {
                     must.add(t);
                 }
             }
-            return new Knowledge(may, enableMustSets ? must : Set.of());
+            return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
     }
 
@@ -919,7 +920,7 @@ public class RelationAnalysis {
         @Override
         public Delta visitUnion(Relation rel, Relation... operands) {
             if (Arrays.asList(operands).contains(source)) {
-                return new Delta(may, enableMustSets ? must : Set.of());
+                return new Delta(may, enableMustSets ? must : EMPTY_SET);
             }
             return EMPTY;
         }
@@ -942,7 +943,7 @@ public class RelationAnalysis {
                         Set.copyOf(maySet),
                         enableMustSets ?
                                 Set.copyOf(mustSet) :
-                                Set.of());
+                                EMPTY_SET);
         }
         @Override
         public Delta visitDifference(Relation rel, Relation r1, Relation r2) {
@@ -950,7 +951,7 @@ public class RelationAnalysis {
                 Knowledge k = knowledgeMap.get(r2);
                 return new Delta(
                         enableMustSets ? difference(may, k.must) : may,
-                        enableMustSets ? difference(must, k.may) : Set.of());
+                        enableMustSets ? difference(must, k.may) : EMPTY_SET);
             }
             // cannot handle updates from r2
             return EMPTY;
@@ -1044,7 +1045,7 @@ public class RelationAnalysis {
         @Override
         public Delta visitInverse(Relation rel, Relation r1) {
             if (r1.equals(source)) {
-                return new Delta(inverse(may), enableMustSets ? inverse(must) : Set.of());
+                return new Delta(inverse(may), enableMustSets ? inverse(must) : EMPTY_SET);
             }
             return EMPTY;
         }
@@ -1070,7 +1071,7 @@ public class RelationAnalysis {
                     current = next;
                 }
                 if (!enableMustSets) {
-                    return new Delta(maySet, Set.of());
+                    return new Delta(maySet, EMPTY_SET);
                 }
                 Set<Tuple> mustSet = new HashSet<>(must);
                 Map<Event, List<Event>> mustMap = map(k.must);
@@ -1112,7 +1113,7 @@ public class RelationAnalysis {
             Map<Relation, ExtendedDelta> map = new HashMap<>();
             if (origin.equals(rel)) {
                 for (Relation o : operands) {
-                    map.put(o, new ExtendedDelta(disabled, Set.of()));
+                    map.put(o, new ExtendedDelta(disabled, EMPTY_SET));
                 }
             }
             if (List.of(operands).contains(origin)) {
@@ -1156,7 +1157,7 @@ public class RelationAnalysis {
             Map<Relation, ExtendedDelta> map = new HashMap<>();
             if (origin.equals(r0)) {
                 map.put(r1, new ExtendedDelta(difference(disabled, knowledgeMap.get(r2).may), enabled));
-                //map.put(r2, new ExtendedDelta(Set.of(), intersection(disabled, knowledgeMap.get(r1).getMustSet())));
+                //map.put(r2, new ExtendedDelta(EMPTY_SET, intersection(disabled, knowledgeMap.get(r1).getMustSet())));
             }
             if (origin.equals(r1)) {
                 map.put(r0, new ExtendedDelta(disabled, difference(enabled, knowledgeMap.get(r2).may)));
@@ -1164,7 +1165,7 @@ public class RelationAnalysis {
             if (origin.equals(r2)) {
                 Knowledge k1 = knowledgeMap.get(r1);
                 map.put(r0, new ExtendedDelta(intersection(enabled, k1.may), intersection(disabled, k1.must)));
-                map.put(r1, new ExtendedDelta(difference(disabled, knowledgeMap.get(r0).may), Set.of()));
+                map.put(r1, new ExtendedDelta(difference(disabled, knowledgeMap.get(r0).may), EMPTY_SET));
             }
             return map;
         }
@@ -1284,7 +1285,7 @@ public class RelationAnalysis {
         @Override
         public Map<Relation, ExtendedDelta> visitInverse(Relation r0, Relation r1) {
             if (origin.equals(r0)) {
-                return Map.of(r1, new ExtendedDelta(inverse(disabled), Set.of()));
+                return Map.of(r1, new ExtendedDelta(inverse(disabled), EMPTY_SET));
             }
             if (origin.equals(r1)) {
                 return Map.of(r0, new ExtendedDelta(inverse(disabled), inverse(enabled)));
@@ -1401,7 +1402,7 @@ public class RelationAnalysis {
             }
             return Map.of(
                     r0, new ExtendedDelta(d0, e0),
-                    r1, new ExtendedDelta(d1, Set.of()));
+                    r1, new ExtendedDelta(d1, EMPTY_SET));
         }
 
         @Override
@@ -1416,7 +1417,7 @@ public class RelationAnalysis {
                     e.add(xy.getInverse());
                 }
             }
-            return Map.of(co, new ExtendedDelta(Set.of(), e));
+            return Map.of(co, new ExtendedDelta(EMPTY_SET, e));
         }
     }
 
