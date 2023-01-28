@@ -25,6 +25,7 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -924,20 +925,24 @@ public class RelationAnalysis {
         }
         @Override
         public Delta visitIntersection(Relation rel, Relation... operands) {
-            if (Arrays.asList(operands).contains(source)) {
-                return new Delta(
-                        may.stream()
-                                .filter(t -> Arrays.stream(operands)
-                                        .allMatch(r -> source.equals(r) || knowledgeMap.get(r).containsMay(t)))
-                                .collect(toSet()),
-                        enableMustSets ?
-                                must.stream()
-                                        .filter(t -> Arrays.stream(operands)
-                                                .allMatch(r -> source.equals(r) || knowledgeMap.get(r).containsMust(t)))
-                                        .collect(toSet()) :
-                                Set.of());
+            if (!Arrays.asList(operands).contains(source)) {
+                return EMPTY;
             }
-            return EMPTY;
+            Set<Tuple> maySet = Arrays.stream(operands)
+                    .map(r -> source.equals(r) ? may : knowledgeMap.get(r).may)
+                    .sorted(Comparator.comparingInt(Set::size))
+                    .reduce(Sets::intersection)
+                    .orElseThrow();
+            Set<Tuple> mustSet = Arrays.stream(operands)
+                    .map(r -> source.equals(r) ? must : knowledgeMap.get(r).must)
+                    .sorted(Comparator.comparingInt(Set::size))
+                    .reduce(Sets::intersection)
+                    .orElseThrow();
+            return new Delta(
+                        Set.copyOf(maySet),
+                        enableMustSets ?
+                                Set.copyOf(mustSet) :
+                                Set.of());
         }
         @Override
         public Delta visitDifference(Relation rel, Relation r1, Relation r2) {
@@ -1127,26 +1132,21 @@ public class RelationAnalysis {
             Map<Relation, ExtendedDelta> map = new HashMap<>();
             if (origin.equals(rel)) {
                 for (Relation o : operands) {
-                    map.putIfAbsent(o, new ExtendedDelta(new HashSet<>(), enabled));
-                }
-                for (Tuple t : disabled) {
-                    Relation[] r = Arrays.stream(operands)
-                            .filter(o -> !knowledgeMap.get(o).containsMust(t))
-                            .limit(2)
-                            .toArray(Relation[]::new);
-                    if (r.length == 1) {
-                        map.get(r[0]).disabled.add(t);
-                    }
+                    Set<Tuple> d = Arrays.stream(operands)
+                            .map(r -> origin.equals(r) ? disabled : knowledgeMap.get(r).must)
+                            .sorted(Comparator.comparingInt(Set::size))
+                            .reduce(Sets::intersection)
+                            .orElseThrow();
+                    map.putIfAbsent(o, new ExtendedDelta(Set.copyOf(d), enabled));
                 }
             }
             if (List.of(operands).contains(origin)) {
-                Set<Tuple> e = new HashSet<>();
-                for (Tuple t : enabled) {
-                    if (Arrays.stream(operands).allMatch(o -> knowledgeMap.get(o).containsMust(t))) {
-                        e.add(t);
-                    }
-                }
-                map.put(rel, new ExtendedDelta(disabled, e));
+                Set<Tuple> e = Arrays.stream(operands)
+                        .map(r -> origin.equals(r) ? enabled : knowledgeMap.get(r).must)
+                        .sorted(Comparator.comparingInt(Set::size))
+                        .reduce(Sets::intersection)
+                        .orElseThrow();
+                map.put(rel, new ExtendedDelta(disabled, Set.copyOf(e)));
             }
             return map;
         }
@@ -1208,12 +1208,14 @@ public class RelationAnalysis {
             }
             if (origin.equals(r1)) {
                 Map<Event, List<Event>> mayOut2 = map(k2.may);
+                Map<Event, List<Event>> mayIn2 = disabled.isEmpty() ? Map.of() : mapReverse(k2.may);
                 for (Tuple xy : disabled) {
                     Event x = xy.getFirst();
                     Event y = xy.getSecond();
+                    List<Event> alternatives = mayOut1.getOrDefault(x, List.of());
                     for (Event z : mayOut2.getOrDefault(y, List.of())) {
                         if (!exec.areMutuallyExclusive(x, z)
-                                && mayOut1.getOrDefault(x, List.of()).stream().noneMatch(e -> k2.containsMay(new Tuple(e, z)))) {
+                                && Collections.disjoint(alternatives, mayIn2.getOrDefault(z, List.of()))) {
                             d0.add(new Tuple(x, z));
                         }
                     }
@@ -1240,12 +1242,14 @@ public class RelationAnalysis {
             }
             if (origin.equals(r2)) {
                 Map<Event, List<Event>> mayIn1 = mapReverse(k1.may);
+                Map<Event, List<Event>> mayIn2 = disabled.isEmpty() ? Map.of() : mapReverse(k2.may);
                 for (Tuple xy : disabled) {
                     Event x = xy.getFirst();
                     Event y = xy.getSecond();
+                    List<Event> alternatives = mayIn2.getOrDefault(y, List.of());
                     for (Event w : mayIn1.getOrDefault(x, List.of())) {
                         if (!exec.areMutuallyExclusive(w, y)
-                                && mayOut1.getOrDefault(w, List.of()).stream().noneMatch(e -> k2.containsMay(new Tuple(e, y)))) {
+                                && Collections.disjoint(alternatives, mayOut1.getOrDefault(w, List.of()))) {
                             d0.add(new Tuple(w, y));
                         }
                     }
@@ -1296,13 +1300,15 @@ public class RelationAnalysis {
             Knowledge k0 = knowledgeMap.get(r0);
             Knowledge k1 = knowledgeMap.get(r1);
             if (origin.equals(r1)) {
-                Map<Event, List<Event>> mayOut0 = enabled.isEmpty() ? Map.of() : map(k0.may);
+                Map<Event, List<Event>> mayOut0 = map(k0.may);
                 Map<Event, List<Event>> mayOut1 = disabled.isEmpty() ? Map.of() : map(k1.may);
+                Map<Event, List<Event>> mayIn0 = disabled.isEmpty() ? Map.of() : mapReverse(k0.may);
                 for (Tuple xy : disabled) {
                     Event x = xy.getFirst();
                     Event y = xy.getSecond();
+                    List<Event> alternatives = mayOut1.getOrDefault(x, List.of());
                     if (k0.containsMay(xy)
-                            && mayOut1.getOrDefault(x, List.of()).stream().noneMatch(e -> k0.containsMay(new Tuple(e, y)))) {
+                            && Collections.disjoint(alternatives, mayIn0.getOrDefault(y, List.of()))) {
                         d0.add(xy);
                     }
                     if (xy.isLoop()) {
@@ -1311,7 +1317,7 @@ public class RelationAnalysis {
                     for (Event z : mayOut0.getOrDefault(y, List.of())) {
                         Tuple xz = new Tuple(x, z);
                         if (k0.containsMay(xz)
-                                && mayOut1.getOrDefault(x, List.of()).stream().noneMatch(e -> k0.containsMay(new Tuple(e, z)))) {
+                                && Collections.disjoint(alternatives, mayIn0.getOrDefault(z, List.of()))) {
                             d0.add(xz);
                         }
                     }
@@ -1341,9 +1347,9 @@ public class RelationAnalysis {
                 }
             }
             if (origin.equals(r0)) {
-                Map<Event, List<Event>> mustIn0 = mapReverse(k0.must);
-                Map<Event, List<Event>> mayIn1 = mapReverse(k1.may);
-                Map<Event, List<Event>> mustOut1 = map(k1.must);
+                Map<Event, List<Event>> mustIn0 = disabled.isEmpty() ? Map.of() : mapReverse(k0.must);
+                Map<Event, List<Event>> mayIn1 = enabled.isEmpty() ? Map.of() : mapReverse(k1.may);
+                Map<Event, List<Event>> mustOut1 = disabled.isEmpty() ? Map.of() : map(k1.must);
                 d1.addAll(intersection(disabled, k1.may));
                 for (Tuple xz : disabled) {
                     if (xz.isLoop()) {

@@ -181,7 +181,7 @@ public class Acyclic extends Axiom {
     }
 
     private Set<Tuple> getEncodeTupleSet(ExecutionAnalysis exec, RelationAnalysis ra) {
-        logger.trace("Computing encodeTupleSet for {}", this);
+        logger.info("Computing encodeTupleSet for {}", this);
         // ====== Construct [Event -> Successor] mapping ======
         Map<Event, Collection<Event>> succMap = new HashMap<>();
         final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
