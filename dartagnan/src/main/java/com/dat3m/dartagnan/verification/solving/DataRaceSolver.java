@@ -58,6 +58,7 @@ public class DataRaceSolver extends ModelChecker {
         logger.info("Starting encoding using " + ctx.getVersion());
 		prover.addConstraint(programEncoder.encodeFullProgram());
 		prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
+		prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 		prover.push();
 
 		prover.addConstraint(propertyEncoder.encodeDataRaces());
