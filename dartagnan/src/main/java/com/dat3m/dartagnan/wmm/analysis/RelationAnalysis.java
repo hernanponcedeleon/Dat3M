@@ -940,9 +940,9 @@ public class RelationAnalysis {
                     .reduce(Sets::intersection)
                     .orElseThrow();
             return new Delta(
-                        Set.copyOf(maySet),
+                        new HashSet<>(maySet),
                         enableMustSets ?
-                                Set.copyOf(mustSet) :
+                                new HashSet<>(mustSet) :
                                 EMPTY_SET);
         }
         @Override
@@ -1138,7 +1138,7 @@ public class RelationAnalysis {
                             .sorted(Comparator.comparingInt(Set::size))
                             .reduce(Sets::intersection)
                             .orElseThrow();
-                    map.putIfAbsent(o, new ExtendedDelta(Set.copyOf(d), enabled));
+                    map.putIfAbsent(o, new ExtendedDelta(new HashSet<>(d), enabled));
                 }
             }
             if (List.of(operands).contains(origin)) {
@@ -1147,7 +1147,7 @@ public class RelationAnalysis {
                         .sorted(Comparator.comparingInt(Set::size))
                         .reduce(Sets::intersection)
                         .orElseThrow();
-                map.put(rel, new ExtendedDelta(disabled, Set.copyOf(e)));
+                map.put(rel, new ExtendedDelta(disabled, new HashSet<>(e)));
             }
             return map;
         }
@@ -1210,10 +1210,12 @@ public class RelationAnalysis {
             if (origin.equals(r1)) {
                 Map<Event, List<Event>> mayOut2 = map(k2.may);
                 Map<Event, List<Event>> mayIn2 = disabled.isEmpty() ? Map.of() : mapReverse(k2.may);
+                Map<Event, Set<Event>> alternativesMap = new HashMap<>();
+                Function<Event, Set<Event>> newAlternatives = x -> new HashSet<>(mayOut1.getOrDefault(x, List.of()));
                 for (Tuple xy : disabled) {
                     Event x = xy.getFirst();
                     Event y = xy.getSecond();
-                    List<Event> alternatives = mayOut1.getOrDefault(x, List.of());
+                    Set<Event> alternatives = alternativesMap.computeIfAbsent(x, newAlternatives);
                     for (Event z : mayOut2.getOrDefault(y, List.of())) {
                         if (!exec.areMutuallyExclusive(x, z)
                                 && Collections.disjoint(alternatives, mayIn2.getOrDefault(z, List.of()))) {
@@ -1244,10 +1246,12 @@ public class RelationAnalysis {
             if (origin.equals(r2)) {
                 Map<Event, List<Event>> mayIn1 = mapReverse(k1.may);
                 Map<Event, List<Event>> mayIn2 = disabled.isEmpty() ? Map.of() : mapReverse(k2.may);
+                Map<Event, Set<Event>> alternativesMap = new HashMap<>();
+                Function<Event, Set<Event>> newAlternatives = y -> new HashSet<>(mayIn2.getOrDefault(y, List.of()));
                 for (Tuple xy : disabled) {
                     Event x = xy.getFirst();
                     Event y = xy.getSecond();
-                    List<Event> alternatives = mayIn2.getOrDefault(y, List.of());
+                    Set<Event> alternatives = alternativesMap.computeIfAbsent(y, newAlternatives);
                     for (Event w : mayIn1.getOrDefault(x, List.of())) {
                         if (!exec.areMutuallyExclusive(w, y)
                                 && Collections.disjoint(alternatives, mayOut1.getOrDefault(w, List.of()))) {
@@ -1304,10 +1308,12 @@ public class RelationAnalysis {
                 Map<Event, List<Event>> mayOut0 = map(k0.may);
                 Map<Event, List<Event>> mayOut1 = disabled.isEmpty() ? Map.of() : map(k1.may);
                 Map<Event, List<Event>> mayIn0 = disabled.isEmpty() ? Map.of() : mapReverse(k0.may);
+                Map<Event, Set<Event>> alternativesMap = new HashMap<>();
+                Function<Event, Set<Event>> newAlternatives = x -> new HashSet<>(mayOut1.getOrDefault(x, List.of()));
                 for (Tuple xy : disabled) {
                     Event x = xy.getFirst();
                     Event y = xy.getSecond();
-                    List<Event> alternatives = mayOut1.getOrDefault(x, List.of());
+                    Set<Event> alternatives = alternativesMap.computeIfAbsent(x, newAlternatives);
                     if (k0.containsMay(xy)
                             && Collections.disjoint(alternatives, mayIn0.getOrDefault(y, List.of()))) {
                         d0.add(xy);
@@ -1318,6 +1324,7 @@ public class RelationAnalysis {
                     for (Event z : mayOut0.getOrDefault(y, List.of())) {
                         Tuple xz = new Tuple(x, z);
                         if (k0.containsMay(xz)
+                                && !alternatives.contains(z)
                                 && Collections.disjoint(alternatives, mayIn0.getOrDefault(z, List.of()))) {
                             d0.add(xz);
                         }
