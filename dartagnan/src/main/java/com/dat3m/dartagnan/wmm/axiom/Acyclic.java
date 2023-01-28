@@ -205,19 +205,20 @@ public class Acyclic extends Axiom {
 
         logger.info("encodeTupleSet size: {}", result.size());
         if (reduceAcyclicityEncoding) {
-            Set<Tuple> obsolete = mustTransitiveClosure(exec, ra.getKnowledge(rel));
+            Set<Tuple> obsolete = transitivelyDerivableMustTuples(exec, ra.getKnowledge(rel));
             result.removeAll(obsolete);
             logger.info("reduced encodeTupleSet size: {}", result.size());
         }
         return result;
     }
 
-    // Under-approximates the must-set of the proper transitive closure.
+    // Under-approximates the must-set of (rel+ ; rel).
     // It is the smallest set that contains the binary composition of the must-set with itself with implied intermediates
     // and is closed under that operation with the must-set.
     // Basically, the clause {@code exec(x) and exec(z) implies before(x,z)} is obsolete,
     // if the clauses {@code exec(x) implies before(x,y)} and {@code exec(z) implies before(y,z)} exist.
-    private static Set<Tuple> mustTransitiveClosure(ExecutionAnalysis exec, RelationAnalysis.Knowledge k) {
+    // NOTE: Assumes that the must-set of rel+ is acyclic.
+    private static Set<Tuple> transitivelyDerivableMustTuples(ExecutionAnalysis exec, RelationAnalysis.Knowledge k) {
         Set<Tuple> result = new HashSet<>();
         Map<Event, List<Event>> map = new HashMap<>();
         Map<Event, List<Event>> mapInverse = new HashMap<>();
