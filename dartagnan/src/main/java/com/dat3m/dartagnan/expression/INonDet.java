@@ -119,7 +119,6 @@ public class INonDet extends IExpr {
 	
 	public BooleanFormula encodeBounds(boolean bp, FormulaManager m) {
 		BooleanFormulaManager bmgr = m.getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
 		long min = getMin();
 		long max = getMax();
 		if(bp) {
