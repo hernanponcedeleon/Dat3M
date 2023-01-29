@@ -16,48 +16,48 @@ import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStoreExclusiv
 
 public class UnrollExceptionsTest {
 
-	// These events cannot be unrolled. They are generated during compilation.
-	
+    // These events cannot be unrolled. They are generated during compilation.
+
     @Test(expected = ProgramProcessingException.class)
     public void RMWStore() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-    	pb.initThread(0);
+        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
+        pb.initThread(0);
         MemoryObject object = pb.getOrNewObject("X");
-		Label start = pb.getOrCreateLabel("loopStart");
-		pb.addChild(0, start);
+        Label start = pb.getOrCreateLabel("loopStart");
+        pb.addChild(0, start);
         Load load = EventFactory.newRMWLoad(pb.getOrCreateRegister(0, "r1", 32), object, "");
         pb.addChild(0, EventFactory.newRMWStore(load, object, IValue.ONE, ""));
-		pb.addChild(0, EventFactory.newGoto(start));
-    	LoopUnrolling processor = LoopUnrolling.newInstance();
-    	processor.setUnrollingBound(2);
-		processor.run(pb.build());
+        pb.addChild(0, EventFactory.newGoto(start));
+        LoopUnrolling processor = LoopUnrolling.newInstance();
+        processor.setUnrollingBound(2);
+        processor.run(pb.build());
     }
 
     @Test(expected = ProgramProcessingException.class)
     public void RMWStoreExclusive() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-    	pb.initThread(0);
-		Label start = pb.getOrCreateLabel("loopStart");
-		pb.addChild(0, start);
-    	pb.addChild(0, newRMWStoreExclusive(pb.getOrNewObject("X"), IValue.ONE, "", true));
-		pb.addChild(0, EventFactory.newGoto(start));
-    	LoopUnrolling processor = LoopUnrolling.newInstance();
-    	processor.setUnrollingBound(2);
-		processor.run(pb.build());
+        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
+        pb.initThread(0);
+        Label start = pb.getOrCreateLabel("loopStart");
+        pb.addChild(0, start);
+        pb.addChild(0, newRMWStoreExclusive(pb.getOrNewObject("X"), IValue.ONE, "", true));
+        pb.addChild(0, EventFactory.newGoto(start));
+        LoopUnrolling processor = LoopUnrolling.newInstance();
+        processor.setUnrollingBound(2);
+        processor.run(pb.build());
     }
 
     @Test(expected = ProgramProcessingException.class)
     public void ExecutionStatus() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-    	pb.initThread(0);
-		Label start = pb.getOrCreateLabel("loopStart");
-		pb.addChild(0, start);
+        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
+        pb.initThread(0);
+        Label start = pb.getOrCreateLabel("loopStart");
+        pb.addChild(0, start);
         MemoryObject object = pb.getOrNewObject("X");
         RMWStoreExclusive store = newRMWStoreExclusive(object, IValue.ONE, "");
-		pb.addChild(0, EventFactory.newExecutionStatus(pb.getOrCreateRegister(0, "r1", 32), store));
-		pb.addChild(0, EventFactory.newGoto(start));
-    	LoopUnrolling processor = LoopUnrolling.newInstance();
-    	processor.setUnrollingBound(2);
-		processor.run(pb.build());
+        pb.addChild(0, EventFactory.newExecutionStatus(pb.getOrCreateRegister(0, "r1", 32), store));
+        pb.addChild(0, EventFactory.newGoto(start));
+        LoopUnrolling processor = LoopUnrolling.newInstance();
+        processor.setUnrollingBound(2);
+        processor.run(pb.build());
     }
 }

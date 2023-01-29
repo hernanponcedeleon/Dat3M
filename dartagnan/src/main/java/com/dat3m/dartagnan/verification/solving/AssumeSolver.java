@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.verification.solving;
 
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
@@ -64,7 +65,7 @@ public class AssumeSolver extends ModelChecker {
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
-        BooleanFormula propertyEncoding = propertyEncoder.encodeSpecificationViolations();
+        BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperty());
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
         prover.addConstraint(assumedSpec);
         
@@ -75,9 +76,7 @@ public class AssumeSolver extends ModelChecker {
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
         } else {
             res = FAIL;
-            if(!task.getProgram().getAss().getInvert()) {
-                logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, context);
-            }
+            logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, context);
         }
 
         if(logger.isDebugEnabled()) {        	
@@ -88,7 +87,8 @@ public class AssumeSolver extends ModelChecker {
     		logger.debug(smtStatistics);
         }
 
-        res = task.getProgram().getAss().getInvert() ? res.invert() : res;
+        // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
+        res = Property.getCombinedType(task.getProperty(), task) == Property.Type.SAFETY ? res : res.invert();
         logger.info("Verification finished with result " + res);
     }
 }

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.verification.solving;
 
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -11,6 +12,8 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
+
+import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.utils.Result.*;
 
@@ -61,7 +64,7 @@ public class DataRaceSolver extends ModelChecker {
 		prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 		prover.push();
 
-		prover.addConstraint(propertyEncoder.encodeDataRaces());
+		prover.addConstraint(propertyEncoder.encodeProperties(EnumSet.of(Property.DATARACEFREEDOM)));
 
 		logger.info("Starting first solver.check()");
 		if(prover.isUnsat()) {

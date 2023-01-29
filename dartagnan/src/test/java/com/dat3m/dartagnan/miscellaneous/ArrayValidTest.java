@@ -25,7 +25,7 @@ import java.nio.file.Paths;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -56,16 +56,15 @@ public class ArrayValidTest {
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
-        {
+             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
                     .withSolverTimeout(60)
                     .withTarget(Arch.LKMM)
                     .build(program, wmm, Property.getDefault());
             TwoSolvers s = TwoSolvers.run(ctx, prover1, prover2, task);
-            assertEquals(FAIL, s.getResult());
-        } catch (Exception e){
+            assertEquals(PASS, s.getResult());
+        } catch (Exception e) {
             fail("Missing resource file");
         }
     }

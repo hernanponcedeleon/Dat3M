@@ -16,11 +16,14 @@ public class GitInfo {
 	static Properties properties = new Properties();
 	
 	public static void CreateGitInfo() throws IOException {
-        try (InputStream is = Dartagnan.class.getClassLoader()
+       try (InputStream is = Dartagnan.class.getClassLoader()
                 .getResourceAsStream("git.properties")) {
-            properties.load(is);
-            logger.info("Git branch: " + properties.getProperty("git.branch"));
-            logger.info("Git commit ID: " + properties.getProperty("git.commit.id"));
+		   if (is == null) {
+			   return;
+		   }
+		   properties.load(is);
+		   logger.info("Git branch: " + properties.getProperty("git.branch"));
+		   logger.info("Git commit ID: " + properties.getProperty("git.commit.id"));
         }
 	}	
 }

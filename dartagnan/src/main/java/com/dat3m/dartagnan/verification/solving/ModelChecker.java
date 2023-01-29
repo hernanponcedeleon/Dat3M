@@ -1,9 +1,6 @@
 package com.dat3m.dartagnan.verification.solving;
 
-import com.dat3m.dartagnan.asserts.AbstractAssert;
-import com.dat3m.dartagnan.asserts.AssertCompositeOr;
-import com.dat3m.dartagnan.asserts.AssertInline;
-import com.dat3m.dartagnan.asserts.AssertTrue;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
@@ -17,6 +14,10 @@ import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
+import com.dat3m.dartagnan.program.specification.AbstractAssert;
+import com.dat3m.dartagnan.program.specification.AssertCompositeAnd;
+import com.dat3m.dartagnan.program.specification.AssertInline;
+import com.dat3m.dartagnan.program.specification.AssertTrue;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -25,7 +26,6 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -36,9 +36,11 @@ import org.sosy_lab.java_smt.api.SolverException;
 import java.util.List;
 import java.util.Optional;
 
+import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
-import static com.dat3m.dartagnan.configuration.Property.CAT;
-import static java.lang.Boolean.TRUE;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
+import static java.lang.Boolean.FALSE;
 import static java.util.stream.Collectors.toList;
 
 public abstract class ModelChecker {
@@ -49,9 +51,15 @@ public abstract class ModelChecker {
     public final Result getResult() {
         return res;
     }
-
     public EncodingContext getEncodingContext() {
         return context;
+    }
+
+    public boolean hasModel() {
+        final Property.Type propType = Property.getCombinedType(context.getTask().getProperty(), context.getTask());
+        final boolean hasViolationWitnesses = res == FAIL && propType == Property.Type.SAFETY;
+        final boolean hasPositiveWitnesses = res == PASS && propType == Property.Type.REACHABILITY;
+        return (hasViolationWitnesses || hasPositiveWitnesses);
     }
 
     /**
@@ -65,8 +73,8 @@ public abstract class ModelChecker {
         ProcessingManager.fromConfig(config).run(program);
         // This is used to distinguish between Litmus tests (whose assertions are defined differently)
         // and C/Boogie tests.
-        if(program.getFormat()!=Program.SourceLanguage.LITMUS) {
-            updateAssertions(program);
+        if(program.getFormat() != Program.SourceLanguage.LITMUS) {
+            computeSpecificationFromProgramAssertions(program);
         }
     }
     public static void preprocessMemoryModel(VerificationTask task) throws InvalidConfigurationException {
@@ -112,31 +120,37 @@ public abstract class ModelChecker {
         analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
     }
 
-    private static void updateAssertions(Program program) {
+    private static void computeSpecificationFromProgramAssertions(Program program) {
+        // We generate a program-spec from the user-placed assertions inside the C/Boogie-code.
+        // For litmus tests, this function should not be called.
         List<Event> assertions = program.getEvents().stream().filter(e -> e.is(ASSERTION)).collect(toList());
-        AbstractAssert ass = new AssertTrue();
+        AbstractAssert spec = new AssertTrue();
         if(!assertions.isEmpty()) {
-            ass = new AssertInline((Local)assertions.get(0));
+            spec = new AssertInline((Local)assertions.get(0));
             for(int i = 1; i < assertions.size(); i++) {
-                ass = new AssertCompositeOr(ass, new AssertInline((Local)assertions.get(i)));
+                spec = new AssertCompositeAnd(spec, new AssertInline((Local)assertions.get(i)));
             }
         }
-        program.setAss(ass);
+        spec.setType(AbstractAssert.ASSERT_TYPE_FORALL);
+        program.setSpecification(spec);
     }
 
     protected void logFlaggedPairs(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, Logger logger, EncodingContext ctx) throws SolverException {
+        if (!logger.isDebugEnabled() || !ctx.getTask().getProperty().contains(CAT_SPEC)) {
+            return;
+        }
         Model model = prover.getModel();
         for(Axiom ax : wmm.getAxioms()) {
-            if(ax.isFlagged() && TRUE.equals(model.evaluate(CAT.getSMTVariable(ax, ctx)))) {
-                System.out.println("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
-                if(logger.isDebugEnabled()) {
-                    StringBuilder violatingPairs = new StringBuilder("\n ===== The following pairs belong to the relation ===== \n");
-                    for(Tuple tuple : encoder.getTuples(ax.getRelation(), model)) {
-                        violatingPairs.append("\t").append(tuple.getFirst().getCId()).append(" -> ").append(tuple.getSecond().getCId());
-                    }
-                    logger.debug(violatingPairs.toString());
+            if(ax.isFlagged() && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
+                logger.debug("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
+                StringBuilder violatingPairs = new StringBuilder("\n ===== The following pairs belong to the relation ===== \n");
+                for(Tuple tuple : encoder.getTuples(ax.getRelation(), model)) {
+                    violatingPairs.append("\t").append(tuple.getFirst().getGlobalId())
+                            .append(" -> ").append(tuple.getSecond().getGlobalId());
                 }
+                logger.debug(violatingPairs.toString());
             }
         }
     }
+
 }

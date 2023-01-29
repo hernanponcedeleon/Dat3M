@@ -23,7 +23,7 @@ public class SvCompTestLarge extends AbstractSvCompTest {
 
     @Parameterized.Parameters(name = "{index}: {0} bound={1}")
     public static Iterable<Object[]> data() throws IOException {
-        return Arrays.asList(new Object[][] {
+        return Arrays.asList(new Object[][]{
                 {"mix000_power.opt", 1},
                 {"mix000_pso.opt", 1},
                 {"mix000_rmo.opt", 1},

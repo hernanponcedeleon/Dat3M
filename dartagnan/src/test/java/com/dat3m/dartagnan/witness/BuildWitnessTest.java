@@ -29,38 +29,37 @@ public class BuildWitnessTest {
 
     @Test
     public void BuildWriteEncode() throws Exception {
-    	
-    	Configuration config = Configuration.builder().
-    			setOption(WITNESS_ORIGINAL_PROGRAM_PATH, ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bpl").
-    			setOption(BOUND, "1").
-    			build();
-    	
-    	Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bpl"));
-    	Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat"));
-    	VerificationTask task = VerificationTask.builder().withConfig(config).build(p, wmm, Property.getDefault());
-    	try (SolverContext ctx = TestHelper.createContext();
-    			ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
-    	{
-			IncrementalSolver modelChecker = IncrementalSolver.run(ctx, prover, task);
-    		Result res = modelChecker.getResult();
-    		WitnessBuilder witnessBuilder = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, res);
-    		config.inject(witnessBuilder);
-			WitnessGraph graph = witnessBuilder.build();
-    		File witnessFile = new File(System.getenv("DAT3M_OUTPUT") + "/lazy01-for-witness.graphml");
-    		// The file should not exist
-			assertFalse(witnessFile.exists());
-    		// Write to file
-    		graph.write();
-    		// The file should exist now
-			assertTrue(witnessFile.exists());
-			// Delete the file
-			witnessFile.delete();
-    		// Create encoding
-    		BooleanFormula enc = graph.encode(modelChecker.getEncodingContext());
-    		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-    		// Check the formula is not trivial
-			assertFalse(bmgr.isFalse(enc));
-			assertFalse(bmgr.isTrue(enc));
-    	}
+
+        Configuration config = Configuration.builder().
+                setOption(WITNESS_ORIGINAL_PROGRAM_PATH, ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bpl").
+                setOption(BOUND, "1").
+                build();
+
+        Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bpl"));
+        Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat"));
+        VerificationTask task = VerificationTask.builder().withConfig(config).build(p, wmm, Property.getDefault());
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+            IncrementalSolver modelChecker = IncrementalSolver.run(ctx, prover, task);
+            Result res = modelChecker.getResult();
+            WitnessBuilder witnessBuilder = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, res);
+            config.inject(witnessBuilder);
+            WitnessGraph graph = witnessBuilder.build();
+            File witnessFile = new File(System.getenv("DAT3M_OUTPUT") + "/lazy01-for-witness.graphml");
+            // The file should not exist
+            assertFalse(witnessFile.exists());
+            // Write to file
+            graph.write();
+            // The file should exist now
+            assertTrue(witnessFile.exists());
+            // Delete the file
+            witnessFile.delete();
+            // Create encoding
+            BooleanFormula enc = graph.encode(modelChecker.getEncodingContext());
+            BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+            // Check the formula is not trivial
+            assertFalse(bmgr.isFalse(enc));
+            assertFalse(bmgr.isTrue(enc));
+        }
     }
 }

@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.asserts;
+package com.dat3m.dartagnan.program.specification;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.LastValueInterface;

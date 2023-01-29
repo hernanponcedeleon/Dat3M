@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.verification.solving;
 
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -62,7 +63,7 @@ public class IncrementalSolver extends ModelChecker {
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
         logger.info("Starting push()");
         prover.push();
-        prover.addConstraint(propertyEncoder.encodeSpecificationViolations());
+        prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsat()) {
@@ -72,9 +73,7 @@ public class IncrementalSolver extends ModelChecker {
             res = prover.isUnsat()? PASS : UNKNOWN;
         } else {
         	res = FAIL;
-            if(!task.getProgram().getAss().getInvert()) {
-                logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, context);
-            }
+            logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, context);
         }
         
         if(logger.isDebugEnabled()) {        	
@@ -85,7 +84,8 @@ public class IncrementalSolver extends ModelChecker {
     		logger.debug(smtStatistics.toString());
         }
 
-        res = task.getProgram().getAss().getInvert() ? res.invert() : res;
+        // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
+        res = Property.getCombinedType(task.getProperty(), task) == Property.Type.SAFETY ? res : res.invert();
         logger.info("Verification finished with result " + res);
     }
 }

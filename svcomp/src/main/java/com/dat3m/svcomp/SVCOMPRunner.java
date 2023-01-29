@@ -39,9 +39,9 @@ public class SVCOMPRunner extends BaseOptions {
 	private void property(String p) {
 		//TODO process the property file instead of assuming its contents based of its name
 		if(p.contains("no-data-race")) {
-			property = Property.RACES;
+			property = Property.DATARACEFREEDOM;
 		} else if(p.contains("unreach-call")) {
-			property = Property.REACHABILITY;
+			property = Property.PROGRAM_SPEC;
 		} else {
 			throw new IllegalArgumentException("Unrecognized property " + p);
 		}

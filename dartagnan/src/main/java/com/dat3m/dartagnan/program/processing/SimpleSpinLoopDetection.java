@@ -13,8 +13,6 @@ import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.svcomp.SpinStart;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -36,8 +34,6 @@ import java.util.stream.Collectors;
  */
 public class SimpleSpinLoopDetection implements ProgramProcessor {
 
-    private static final Logger logger = LogManager.getLogger(SimpleSpinLoopDetection.class);
-
     private SimpleSpinLoopDetection() { }
 
     public static SimpleSpinLoopDetection newInstance() {
@@ -48,17 +44,15 @@ public class SimpleSpinLoopDetection implements ProgramProcessor {
         return newInstance();
     }
 
+    // --------------------------------------------------------------
 
     @Override
     public void run(Program program) {
         Preconditions.checkArgument(!program.isUnrolled(),
                 getClass().getSimpleName() + " should be performed before unrolling.");
 
-        final int numSpinLoops = program.getThreads().stream().mapToInt(this::detectAndMarkSpinLoops).sum();
-        logger.info("Statically detected # of spin loops: {}", numSpinLoops);
+        program.getThreads().forEach(this::detectAndMarkSpinLoops);
     }
-
-
     private int detectAndMarkSpinLoops(Thread thread) {
         final List<Label> unmarkedLabels = thread.getEvents().stream()
                 .filter(e -> e instanceof Label && !e.is(Tag.SPINLOOP))

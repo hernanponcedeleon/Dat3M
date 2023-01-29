@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.verification.solving;
 
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -73,7 +74,7 @@ public class TwoSolvers extends ModelChecker {
         prover1.addConstraint(encodeSymm);
         prover2.addConstraint(encodeSymm);
 
-        prover1.addConstraint(propertyEncoder.encodeSpecificationViolations());
+        prover1.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
 
         logger.info("Starting first solver.check()");
         if(prover1.isUnsat()) {
@@ -82,9 +83,7 @@ public class TwoSolvers extends ModelChecker {
             res = prover2.isUnsat() ? PASS : UNKNOWN;
         } else {
         	res = FAIL;
-            if(!task.getProgram().getAss().getInvert()) {
-                logFlaggedPairs(memoryModel, wmmEncoder, prover1, logger, context);
-            }
+            logFlaggedPairs(memoryModel, wmmEncoder, prover1, logger, context);
         }
 
 
@@ -96,7 +95,8 @@ public class TwoSolvers extends ModelChecker {
     		logger.debug(smtStatistics);
         }
 
-        res = task.getProgram().getAss().getInvert() ? res.invert() : res;
+        // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
+        res = Property.getCombinedType(task.getProperty(), task) == Property.Type.SAFETY ? res : res.invert();
         logger.info("Verification finished with result " + res);
     }
 }

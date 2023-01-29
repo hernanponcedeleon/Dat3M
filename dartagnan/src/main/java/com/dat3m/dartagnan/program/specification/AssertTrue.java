@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.asserts;
+package com.dat3m.dartagnan.program.specification;
 
 import java.util.Collections;
 import java.util.List;
@@ -12,8 +12,7 @@ public class AssertTrue extends AbstractAssert {
 
     @Override
     public BooleanFormula encode(EncodingContext ctx) {
-    	// We want the verification to succeed so it should be UNSAT
-        return ctx.getBooleanFormulaManager().makeFalse();
+        return ctx.getBooleanFormulaManager().makeTrue();
     }
 
     @Override

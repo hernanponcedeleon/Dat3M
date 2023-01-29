@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.compilation;
 
-import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -19,13 +19,13 @@ public class LKMMToRISCVTest extends AbstractCompilationTest {
         super(path);
     }
 
-	@Override
-	protected Provider<Arch> getSourceProvider() {
-		return () -> Arch.LKMM;
-	}
+    @Override
+    protected Provider<Arch> getSourceProvider() {
+        return () -> Arch.LKMM;
+    }
 
-	@Override
-	protected Provider<Arch> getTargetProvider() {
-		return () -> Arch.RISCV;
-	}
+    @Override
+    protected Provider<Arch> getTargetProvider() {
+        return () -> Arch.RISCV;
+    }
 }

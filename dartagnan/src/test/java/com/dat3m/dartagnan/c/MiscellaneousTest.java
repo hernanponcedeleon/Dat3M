@@ -34,22 +34,22 @@ public class MiscellaneousTest extends AbstractCTest {
         return 60000;
     }
 
-	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
+    @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
-    	return Arrays.asList(new Object[][]{
-	            {"idd_dynamic", ARM8, FAIL},
-		});
+        return Arrays.asList(new Object[][]{
+                {"idd_dynamic", ARM8, FAIL},
+        });
     }
 
     @Test
-	public void testAssume() throws Exception {
-		AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-		assertEquals(expected, s.getResult());
-	}
+    public void testAssume() throws Exception {
+        AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        assertEquals(expected, s.getResult());
+    }
 
     @Test
-	public void testRefinement() throws Exception {
-		RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-		assertEquals(expected, s.getResult());
-	}
+    public void testRefinement() throws Exception {
+        RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        assertEquals(expected, s.getResult());
+    }
 }

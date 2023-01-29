@@ -23,7 +23,7 @@ public class SvCompConcurrencyTest extends AbstractSvCompTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, bound={1}")
     public static Iterable<Object[]> data() throws IOException {
-        return Arrays.asList(new Object[][] {
+        return Arrays.asList(new Object[][]{
                 {"fib_bench-1", 6},
                 {"fib_bench-2", 6},
                 {"fib_bench_longer-1", 7},

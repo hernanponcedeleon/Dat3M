@@ -28,7 +28,7 @@ public class ResourceHelper {
                 while((str = reader.readLine()) != null){
                     String[] line = str.split(",");
                     if(line.length == 2){
-                        data.put(line[0], Integer.parseInt(line[1]) == 1 ? FAIL : PASS);
+                        data.put(line[0], Integer.parseInt(line[1]) == 1 ? PASS : FAIL);
                     }
                 }
                 expectedResults = ImmutableMap.copyOf(data);

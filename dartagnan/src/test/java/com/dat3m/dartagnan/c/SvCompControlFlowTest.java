@@ -30,7 +30,7 @@ public class SvCompControlFlowTest extends AbstractSvCompTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, bound={1}")
     public static Iterable<Object[]> data() throws IOException {
-        return Arrays.asList(new Object[][] {
+        return Arrays.asList(new Object[][]{
                 {"test_locks_5", 1},
                 {"test_locks_6", 1},
                 {"test_locks_7", 1},

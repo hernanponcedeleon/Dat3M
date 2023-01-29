@@ -1,12 +1,11 @@
 package com.dat3m.dartagnan.c;
 
+import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
-import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Property;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -15,14 +14,14 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
+import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.Result.*;
-import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class LivenessTest extends AbstractCTest {
-	
+
     public LivenessTest(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
@@ -42,33 +41,33 @@ public class LivenessTest extends AbstractCTest {
         return Provider.fromSupplier(() -> EnumSet.of(Property.LIVENESS));
     }
 
-	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
+    @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
-    	return Arrays.asList(new Object[][]{
-	            {"locks/ttas", TSO, UNKNOWN},
-	            {"locks/ttas", ARM8, UNKNOWN},
-	            {"locks/ttas", POWER, UNKNOWN},
-	            {"locks/ttas", RISCV, UNKNOWN},
-	            {"locks/ttas-acq2rx", TSO, UNKNOWN},
-	            {"locks/ttas-acq2rx", ARM8, UNKNOWN},
-	            {"locks/ttas-acq2rx", POWER, UNKNOWN},
-	            {"locks/ttas-acq2rx", RISCV, UNKNOWN},
-	            {"locks/ttas-rel2rx", TSO, UNKNOWN},
-	            {"locks/ttas-rel2rx", ARM8, UNKNOWN},
-	            {"locks/ttas-rel2rx", POWER, UNKNOWN},
-	            {"locks/ttas-rel2rx", RISCV, UNKNOWN},
-	            {"locks/ticketlock", TSO, PASS},
-	            {"locks/ticketlock", ARM8, PASS},
-	            {"locks/ticketlock", POWER, PASS},
-	            {"locks/ticketlock", RISCV, PASS},
-	            {"locks/ticketlock-acq2rx", TSO, PASS},
-	            {"locks/ticketlock-acq2rx", ARM8, PASS},
-	            {"locks/ticketlock-acq2rx", POWER, PASS},
-	            {"locks/ticketlock-acq2rx", RISCV, PASS},
-	            {"locks/ticketlock-rel2rx", TSO, PASS},
-	            {"locks/ticketlock-rel2rx", ARM8, PASS},
-	            {"locks/ticketlock-rel2rx", POWER, PASS},
-	            {"locks/ticketlock-rel2rx", RISCV, PASS},
+        return Arrays.asList(new Object[][]{
+                {"locks/ttas", TSO, UNKNOWN},
+                {"locks/ttas", ARM8, UNKNOWN},
+                {"locks/ttas", POWER, UNKNOWN},
+                {"locks/ttas", RISCV, UNKNOWN},
+                {"locks/ttas-acq2rx", TSO, UNKNOWN},
+                {"locks/ttas-acq2rx", ARM8, UNKNOWN},
+                {"locks/ttas-acq2rx", POWER, UNKNOWN},
+                {"locks/ttas-acq2rx", RISCV, UNKNOWN},
+                {"locks/ttas-rel2rx", TSO, UNKNOWN},
+                {"locks/ttas-rel2rx", ARM8, UNKNOWN},
+                {"locks/ttas-rel2rx", POWER, UNKNOWN},
+                {"locks/ttas-rel2rx", RISCV, UNKNOWN},
+                {"locks/ticketlock", TSO, PASS},
+                {"locks/ticketlock", ARM8, PASS},
+                {"locks/ticketlock", POWER, PASS},
+                {"locks/ticketlock", RISCV, PASS},
+                {"locks/ticketlock-acq2rx", TSO, PASS},
+                {"locks/ticketlock-acq2rx", ARM8, PASS},
+                {"locks/ticketlock-acq2rx", POWER, PASS},
+                {"locks/ticketlock-acq2rx", RISCV, PASS},
+                {"locks/ticketlock-rel2rx", TSO, PASS},
+                {"locks/ticketlock-rel2rx", ARM8, PASS},
+                {"locks/ticketlock-rel2rx", POWER, PASS},
+                {"locks/ticketlock-rel2rx", RISCV, PASS},
                 {"locks/mutex", TSO, UNKNOWN},
                 {"locks/mutex", ARM8, UNKNOWN},
                 {"locks/mutex", POWER, UNKNOWN},
@@ -141,13 +140,13 @@ public class LivenessTest extends AbstractCTest {
                 {"lkmm/qspinlock-liveness", ARM8, PASS},
                 {"lkmm/qspinlock-liveness", POWER, PASS},
                 {"lkmm/qspinlock-liveness", RISCV, PASS},
-		});
+        });
     }
 
     @Test
-	@CSVLogger.FileName("csv/refinement")
-	public void testRefinement() throws Exception {
-		RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-		assertEquals(expected, s.getResult());
-	}
+    @CSVLogger.FileName("csv/refinement")
+    public void testRefinement() throws Exception {
+        RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        assertEquals(expected, s.getResult());
+    }
 }

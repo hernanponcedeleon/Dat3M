@@ -31,47 +31,47 @@ public class ExceptionsTest {
 
     @Test(expected = MalformedProgramException.class)
     public void noThread() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-    	// Thread 1 does not exists
-    	pb.addChild(1, new Skip());
+        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
+        // Thread 1 does not exists
+        pb.addChild(1, new Skip());
     }
 
     @Test(expected = MalformedProgramException.class)
     public void RegisterAlreadyExist() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-    	pb.initThread(0);
-    	Thread t = pb.build().getThreads().get(0);
-    	t.newRegister("r1", -1);
-    	// Adding same register a second time
-    	t.newRegister("r1", -1);
+        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
+        pb.initThread(0);
+        Thread t = pb.build().getThreads().get(0);
+        t.newRegister("r1", -1);
+        // Adding same register a second time
+        t.newRegister("r1", -1);
     }
 
 
     @Test(expected = IllegalArgumentException.class)
     public void compileBeforeUnrollException() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-    	pb.initThread(0);
-    	// Program must be unrolled first
-    	Compilation.newInstance().run(pb.build());
+        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
+        pb.initThread(0);
+        // Program must be unrolled first
+        Compilation.newInstance().run(pb.build());
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void unrollBeforeReorderException() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-    	pb.initThread(0);
-    	Program p = pb.build();
-    	LoopUnrolling.newInstance().run(p);
-    	// Reordering cannot be called after unrolling
-    	BranchReordering.newInstance().run(p);
+        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
+        pb.initThread(0);
+        Program p = pb.build();
+        LoopUnrolling.newInstance().run(p);
+        // Reordering cannot be called after unrolling
+        BranchReordering.newInstance().run(p);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void analyzeBeforeCompileException() throws Exception {
-    	ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-    	pb.initThread(0);
-    	Program p = pb.build();
-		Configuration config = Configuration.defaultConfiguration();
-		// The program must be compiled before being able to construct an Encoder for it
+        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
+        pb.initThread(0);
+        Program p = pb.build();
+        Configuration config = Configuration.defaultConfiguration();
+        // The program must be compiled before being able to construct an Encoder for it
         BranchEquivalence.fromConfig(p, config);
     }
 
@@ -87,32 +87,30 @@ public class ExceptionsTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void diffPrecisionInt() throws Exception {
-    	// Both arguments should have same precision
-    	new IExprBin(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
+        // Both arguments should have same precision
+        new IExprBin(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
     }
 
     @Test(expected = RuntimeException.class)
     public void noModelBNonDet() throws Exception {
-	    try (SolverContext ctx = createContext();
-	    		ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
-	    {
+        try (SolverContext ctx = createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
             prover.isUnsat();
-	    	BNonDet nonDet = new BNonDet(32);
-	    	nonDet.getBoolValue(null, prover.getModel(), ctx.getFormulaManager());
-	    }
+            BNonDet nonDet = new BNonDet(32);
+            nonDet.getBoolValue(null, prover.getModel(), ctx.getFormulaManager());
+        }
     }
 
     @Test(expected = RuntimeException.class)
     public void noModelINonDet() throws Exception {
-	    try (SolverContext ctx = createContext();
-	    		ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
-	    {
+        try (SolverContext ctx = createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
             prover.isUnsat();
-	    	INonDet nonDet = new INonDet(INonDetTypes.INT, 32);
-	    	nonDet.getIntValue(null, prover.getModel(), ctx.getFormulaManager());
-	    }
+            INonDet nonDet = new INonDet(INonDetTypes.INT, 32);
+            nonDet.getIntValue(null, prover.getModel(), ctx.getFormulaManager());
+        }
     }
-    
+
     @Test(expected = NullPointerException.class)
     public void JumpWithNullLabel() throws Exception {
         EventFactory.newJump(BConst.FALSE, null);
@@ -122,24 +120,24 @@ public class ExceptionsTest {
     public void JumpWithNullExpr() throws Exception {
         EventFactory.newJump(null, EventFactory.newLabel("DUMMY"));
     }
-    
+
     @Test(expected = MalformedProgramException.class)
     public void AtomicEndWithoutBegin() throws Exception {
-    	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/AtomicEndWithoutBegin.bpl"));
+        new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/AtomicEndWithoutBegin.bpl"));
     }
 
     @Test(expected = MalformedProgramException.class)
     public void IllegalJump() throws Exception {
-    	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/IllegalJump.litmus"));
+        new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/IllegalJump.litmus"));
     }
 
     @Test(expected = IllegalStateException.class)
     public void LocationNotInitialized() throws Exception {
-    	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/LocationNotInitialized.litmus"));
+        new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/LocationNotInitialized.litmus"));
     }
 
     @Test(expected = IllegalStateException.class)
     public void RegisterNotInitialized() throws Exception {
-    	new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/RegisterNotInitialized.litmus"));
+        new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/RegisterNotInitialized.litmus"));
     }
 }

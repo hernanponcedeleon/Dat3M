@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.configuration.Baseline;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
@@ -135,6 +136,7 @@ public class RefinementSolver extends ModelChecker {
         WMMSolver solver = WMMSolver.withContext(context, cutRelations, task, analysisContext);
         Refiner refiner = new Refiner(analysisContext);
         CAATSolver.Status status = INCONSISTENT;
+        Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
         logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(programEncoder.encodeFullProgram());
@@ -142,7 +144,7 @@ public class RefinementSolver extends ModelChecker {
         prover.addConstraint(symmEncoder.encodeFullSymmetryBreaking());
 
         prover.push();
-        prover.addConstraint(propertyEncoder.encodeSpecificationViolations());
+        prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
 
         //  ------ Just for statistics ------
         List<WMMSolver.Statistics> statList = new ArrayList<>();
@@ -226,10 +228,12 @@ public class RefinementSolver extends ModelChecker {
                     message = "CAAT Solver was inconclusive (bug?).";
                     break;
                 case CONSISTENT:
-                    message = "Violation verified.";
+                    message = propertyType == Property.Type.SAFETY ?
+                            "Specification violation found." : "Specification witness found.";
                     break;
                 case INCONSISTENT:
-                    message = "Bounded specification proven.";
+                    message = propertyType == Property.Type.SAFETY ?
+                            "Bounded specification proven." : "Bounded specification falsified.";
                     break;
                 default:
                     throw new IllegalStateException("Unknown result type returned by CAAT Solver.");
@@ -273,7 +277,8 @@ public class RefinementSolver extends ModelChecker {
     		logger.debug(smtStatistics.toString());
         }
 
-        res = program.getAss().getInvert() ? res.invert() : res;
+        // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
+        res = propertyType == Property.Type.SAFETY ? res : res.invert();
         logger.info("Verification finished with result " + res);
     }
     // ======================= Helper Methods ======================
