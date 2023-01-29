@@ -1,5 +1,5 @@
 #include <pthread.h>
-#include <ttas.h>
+#include "ttas.h"
 #include <assert.h>
 
 #ifndef NTHREADS

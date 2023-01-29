@@ -2,9 +2,11 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterIntersection;
@@ -299,6 +301,38 @@ public class WmmEncoder implements Encoder {
             }
             return enc;
         }
+
+        @Override
+        public BooleanFormula visitInternalDataDependency(Relation idd) {
+            return visitDirectDependency(idd);
+        }
+
+        @Override
+        public BooleanFormula visitAddressDependency(Relation addrDirect) {
+            return visitDirectDependency(addrDirect);
+        }
+
+        private BooleanFormula visitDirectDependency(Relation r) {
+            List<BooleanFormula> enc = new ArrayList<>();
+            Dependency dep = context.getAnalysisContext().get(Dependency.class);
+            EncodingContext.EdgeEncoder edge = context.edge(r);
+            for (Tuple t : encodeSets.get(r)) {
+                Event writer = t.getFirst();
+                Event reader = t.getSecond();
+                if (!(writer instanceof RegWriter)) {
+                    enc.add(bmgr.not(edge.encode(t)));
+                } else {
+                    Dependency.State s = dep.of(reader, ((RegWriter) writer).getResultRegister());
+                    if (s.must.contains(writer)) {
+                        enc.add(bmgr.equivalence(edge.encode(t), context.execution(writer, reader)));
+                    } else if (!s.may.contains(writer)) {
+                        enc.add(bmgr.not(edge.encode(t)));
+                    }
+                }
+            }
+            return bmgr.and(enc);
+        }
+
         @Override
         public BooleanFormula visitCriticalSections(Relation rscs) {
             BooleanFormula enc = bmgr.makeTrue();

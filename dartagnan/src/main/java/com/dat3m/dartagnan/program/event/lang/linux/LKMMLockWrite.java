@@ -4,13 +4,12 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Store;
 
 public class LKMMLockWrite extends Store {
 
 	public LKMMLockWrite(IExpr lock) {
-		super(lock, IValue.ONE, Tag.Linux.MO_ONCE);
+		super(lock, IValue.ONE, Linux.MO_ONCE);
 		addFilters(RMW, Linux.LOCK_WRITE);
 	}
 

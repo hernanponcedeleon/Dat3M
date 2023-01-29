@@ -1,5 +1,5 @@
 #include <pthread.h>
-#include <ticketlock.h>
+#include "ticketlock.h"
 #include <assert.h>
 
 #ifndef NTHREADS

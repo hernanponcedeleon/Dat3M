@@ -1,5 +1,5 @@
 #include <pthread.h>
-#include <mutex_musl.h>
+#include "mutex_musl.h"
 #include <assert.h>
 
 #ifndef NTHREADS

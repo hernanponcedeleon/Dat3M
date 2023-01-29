@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBound;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.checkerframework.checker.index.qual.PolyUpperBound;
 import org.sosy_lab.common.configuration.*;
 
 import java.util.*;

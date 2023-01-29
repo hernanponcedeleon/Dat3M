@@ -1,4 +1,4 @@
-#include <treiber.h>
+#include "treiber.h"
 #include <pthread.h>
 #include <assert.h>
 

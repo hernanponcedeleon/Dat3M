@@ -1,5 +1,5 @@
 #include <pthread.h>
-#include <spinlock.h>
+#include "spinlock.h"
 #include <assert.h>
 
 #ifndef NTHREADS

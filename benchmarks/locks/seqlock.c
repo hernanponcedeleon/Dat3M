@@ -1,4 +1,4 @@
-#include <seqlock.h>
+#include "seqlock.h"
 #include <pthread.h>
 #include <assert.h>
 
