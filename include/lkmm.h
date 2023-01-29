@@ -59,7 +59,7 @@ extern int __LKMM_ATOMIC_OP_RETURN(int*, int, memory_order, operation);
 #define rcu_assign_pointer(p, v) smp_store_release(&(p), v)
 #define smp_store_mb(x, v)                    \
 do {                                \
-    WRITE_ONCE(&x, v, memory_order_relaxed);    \
+    WRITE_ONCE(x, v);    \
     smp_mb();                        \
 } while (0)
 
