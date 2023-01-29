@@ -18,29 +18,28 @@ public class BNonDet extends BExpr {
 	}
 	
     @Override
-    public Formula toIntFormula(Event e, SolverContext ctx) {
-    	FormulaManager fmgr = ctx.getFormulaManager();
+    public Formula toIntFormula(Event e, FormulaManager m) {
     	Formula e1, e2;
     	if( precision > 0) {
-    		BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+    		BitvectorFormulaManager bvmgr = m.getBitvectorFormulaManager();
 			e1 = bvmgr.makeBitvector(precision, BigInteger.ONE);
     		e2 = bvmgr.makeBitvector(precision, BigInteger.ZERO);
     	} else {
-    		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+    		IntegerFormulaManager imgr = m.getIntegerFormulaManager();
 			e1 = imgr.makeNumber(BigInteger.ONE);
     		e2 = imgr.makeNumber(BigInteger.ZERO);
     	}
-        return fmgr.getBooleanFormulaManager().ifThenElse(toBoolFormula(e, ctx), e1, e2);
+        return m.getBooleanFormulaManager().ifThenElse(toBoolFormula(e, m), e1, e2);
     }
 
 	@Override
-	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
-		return ctx.getFormulaManager().makeVariable(BooleanType, Integer.toString(hashCode()));
+	public BooleanFormula toBoolFormula(Event e, FormulaManager m) {
+		return m.makeVariable(BooleanType, Integer.toString(hashCode()));
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Model model, SolverContext ctx) {
-		Boolean value = model.evaluate(toBoolFormula(e, ctx));
+	public boolean getBoolValue(Event e, Model model, FormulaManager m) {
+		Boolean value = model.evaluate(toBoolFormula(e, m));
 		Verify.verify(value != null, "No value in the model for " + this);
 		return value;
 	}

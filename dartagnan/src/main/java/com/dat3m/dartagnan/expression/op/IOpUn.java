@@ -20,12 +20,9 @@ public enum IOpUn {
     	return this.equals(MINUS) ? "-" : "";
     }
 
-    public Formula encode(Formula e, SolverContext ctx) {
-		IntegerFormulaManager imgr;
-		BitvectorFormulaManager bvmgr;
-		
+    public Formula encode(Formula e, FormulaManager m) {
 		if(e instanceof IntegerFormula) {
-			imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+			IntegerFormulaManager imgr = m.getIntegerFormulaManager();
 			IntegerFormula i = (IntegerFormula)e;
 			switch(this) {
     		case MINUS:
@@ -35,20 +32,15 @@ public enum IOpUn {
     			return e; 
     		// ============ INT2BV ============
     		case INT2BV1:
-    			bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-    			return bvmgr.makeBitvector(1, i);
+    			return m.getBitvectorFormulaManager().makeBitvector(1, i);
     		case INT2BV8:
-    			bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-    			return bvmgr.makeBitvector(8, i);
+    			return m.getBitvectorFormulaManager().makeBitvector(8, i);
     		case INT2BV16:
-    			bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-    			return bvmgr.makeBitvector(16, i);
+    			return m.getBitvectorFormulaManager().makeBitvector(16, i);
     		case INT2BV32:
-    			bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-    			return bvmgr.makeBitvector(32, i);
+    			return m.getBitvectorFormulaManager().makeBitvector(32, i);
     		case INT2BV64:
-    			bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-   				return bvmgr.makeBitvector(64, i);
+   				return m.getBitvectorFormulaManager().makeBitvector(64, i);
         	// ============ TRUNC ============    		
     		case TRUNC6432:
     		case TRUNC6416:
@@ -86,7 +78,7 @@ public enum IOpUn {
 			}
 			throw new UnsupportedOperationException("Encoding of IOpUn operation " + this + " not supported on integer formulas.");
 		} else {
-			bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+			BitvectorFormulaManager bvmgr = m.getBitvectorFormulaManager();
 			BitvectorFormula bv = (BitvectorFormula)e;
 	    	switch(this) {
     		case MINUS:

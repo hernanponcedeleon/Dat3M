@@ -9,6 +9,7 @@ import org.sosy_lab.java_smt.api.*;
 
 import java.math.BigInteger;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
 import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
@@ -67,18 +68,16 @@ public class Register extends IExpr implements LastValueInterface {
     }
 
 	@Override
-	public Formula toIntFormula(Event e, SolverContext ctx) {
+	public Formula toIntFormula(Event e, FormulaManager m) {
 		String name = getName() + "(" + e.getGlobalId() + ")";
-		FormulaManager fmgr = ctx.getFormulaManager();
 		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
-		return fmgr.makeVariable(type, name);
+		return m.makeVariable(type, name);
 	}
 
-	public Formula toIntFormulaResult(Event e, SolverContext ctx) {
+	public Formula toIntFormulaResult(Event e, FormulaManager m) {
 		String name = getName() + "(" + e.getGlobalId() + "_result)";
-		FormulaManager fmgr = ctx.getFormulaManager();
 		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
-		return fmgr.makeVariable(type, name);
+		return m.makeVariable(type, name);
 	}
 
 	@Override
@@ -87,16 +86,15 @@ public class Register extends IExpr implements LastValueInterface {
 	}
 
 	@Override
-	public Formula getLastValueExpr(SolverContext ctx){
+	public Formula getLastValueExpr(FormulaManager m) {
 		String name = getName() + "_" + threadId + "_final";
-		FormulaManager fmgr = ctx.getFormulaManager();
 		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
-		return fmgr.makeVariable(type, name);
+		return m.makeVariable(type, name);
 	}
 
 	@Override
-	public BigInteger getIntValue(Event e, Model model, SolverContext ctx){
-		return new BigInteger(model.evaluate(toIntFormula(e, ctx)).toString());
+	public BigInteger getIntValue(Event e, Model model, FormulaManager m) {
+		return new BigInteger(checkNotNull(model.evaluate(toIntFormula(e, m))).toString());
 	}
 
 	@Override

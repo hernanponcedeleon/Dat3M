@@ -21,13 +21,6 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.definition.Composition;
-import com.dat3m.dartagnan.wmm.definition.Intersection;
-import com.dat3m.dartagnan.wmm.definition.Difference;
-import com.dat3m.dartagnan.wmm.definition.Union;
-import com.dat3m.dartagnan.wmm.definition.Inverse;
-import com.dat3m.dartagnan.wmm.definition.RangeIdentity;
-import com.dat3m.dartagnan.wmm.definition.TransitiveClosure;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
@@ -259,7 +252,7 @@ public class ExecutionGraph {
             graph = new LocationGraph();
         } else if (relClass == ProgramOrder.class) {
             graph = new ProgramOrderGraph();
-        } else if (relClass == MemoryOrder.class) {
+        } else if (relClass == Coherence.class) {
             graph = new CoherenceGraph();
         } else if (relClass == Inverse.class || relClass == TransitiveClosure.class || relClass == RangeIdentity.class) {
             RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));

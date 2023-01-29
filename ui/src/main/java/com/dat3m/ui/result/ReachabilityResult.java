@@ -128,7 +128,10 @@ public class ReachabilityResult {
     	}
 		// TODO We might want to output different messages once we allow to check LIVENESS from the UI
 		sb.append("Condition ").append(program.getAss().toStringWithType()).append("\n");
-		sb.append(program.getFormat().equals(LITMUS) ? (model != null && TRUE.equals(model.evaluate(REACHABILITY.getSMTVariable(ctx)))) ? "Ok" : "No" : result).append("\n");
+		sb.append(program.getFormat().equals(LITMUS) ?
+                model != null && TRUE.equals(model.evaluate(REACHABILITY.getSMTVariable(ctx))) ?
+                        "Ok" : "No" : result)
+                .append("\n");
 		if(model != null) {
 			model.close();			
 		}

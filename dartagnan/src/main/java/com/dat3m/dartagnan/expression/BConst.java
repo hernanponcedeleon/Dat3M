@@ -2,10 +2,7 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.event.core.Event;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.*;
 
 public class BConst extends BExpr {
 
@@ -19,8 +16,8 @@ public class BConst extends BExpr {
 	}
 
     @Override
-	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
-		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+	public BooleanFormula toBoolFormula(Event e, FormulaManager m) {
+		BooleanFormulaManager bmgr = m.getBooleanFormulaManager();
 		return value ? bmgr.makeTrue() : bmgr.makeFalse();
 	}
 
@@ -30,7 +27,7 @@ public class BConst extends BExpr {
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Model model, SolverContext ctx){
+	public boolean getBoolValue(Event e, Model model, FormulaManager m){
 		return value;
 	}
 

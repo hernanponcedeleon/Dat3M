@@ -15,9 +15,11 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.dat3m.dartagnan.wmm.Assumption;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.axiom.Empty;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
@@ -109,23 +111,27 @@ public class RefinementSolver extends ModelChecker {
         performStaticProgramAnalyses(task, analysisContext, config);
         Context baselineContext = Context.createCopyFrom(analysisContext);
         performStaticWmmAnalyses(task, analysisContext, config);
+        // Transfer knowledge from target model to baseline model
+        RelationAnalysis ra = analysisContext.requires(RelationAnalysis.class);
+        for (Relation baselineRelation : baselineModel.getRelations()) {
+            String name = baselineRelation.getNameOrTerm();
+            memoryModel.getRelations().stream()
+                    .filter(r -> name.equals(r.getNameOrTerm()))
+                    .map(ra::getKnowledge)
+                    .map(k -> new Assumption(baselineRelation, k.getMaySet(), k.getMustSet()))
+                    .forEach(baselineModel::addConstraint);
+        }
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
 
-        context = EncodingContext.of(baselineTask, baselineContext, ctx);
+        context = EncodingContext.of(baselineTask, baselineContext, ctx.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         // We use the original memory model for symmetry breaking because we need axioms
         // to compute the breaking order.
         SymmetryEncoder symmEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);
         WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
-        programEncoder.initializeEncoding(ctx);
-        propertyEncoder.initializeEncoding(ctx);
-        symmEncoder.initializeEncoding(ctx);
-        baselineEncoder.initializeEncoding(ctx);
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula globalRefinement = bmgr.makeTrue();
-
         WMMSolver solver = WMMSolver.withContext(context, cutRelations, task, analysisContext);
         Refiner refiner = new Refiner(analysisContext);
         CAATSolver.Status status = INCONSISTENT;
@@ -147,7 +153,7 @@ public class RefinementSolver extends ModelChecker {
         long totalCaatTime = 0;
         long totalRefiningTime = 0;
         //  ---------------------------------
-
+        List<BooleanFormula> globalRefinement = new ArrayList<>();
         logger.info("Refinement procedure started.");
         while (!prover.isUnsat()) {
         	if(iterationCount == 0 && logger.isDebugEnabled()) {
@@ -184,7 +190,7 @@ public class RefinementSolver extends ModelChecker {
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 BooleanFormula refinement = refiner.refine(reasons, context);
                 prover.addConstraint(refinement);
-                globalRefinement = bmgr.and(globalRefinement, refinement); // Track overall refinement progress
+                globalRefinement.add(refinement); // Track overall refinement progress
                 totalRefiningTime += (System.currentTimeMillis() - refineTime);
 
                 if (REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES) {
@@ -247,7 +253,7 @@ public class RefinementSolver extends ModelChecker {
             // Add back the constraints found during Refinement
             // TODO: We actually need to perform a second refinement to check for bound reachability
             //  This is needed for the seqlock.c benchmarks!
-            prover.addConstraint(globalRefinement);
+            prover.addConstraint(bmgr.and(globalRefinement));
             res = !prover.isUnsat() ? UNKNOWN : PASS;
             boundCheckTime = System.currentTimeMillis() - lastTime;
         } else {
@@ -289,7 +295,7 @@ public class RefinementSolver extends ModelChecker {
                     // in our Wmm but for CAAT they are derived from unary predicates!
                     logger.info("Found difference {}. Cutting rhs relation {}", rel, sec);
                     cutRelations.add(sec);
-                    baselineWmm.addAxiom(new ForceEncodeAxiom(getCopyOfRelation(sec, baselineWmm)));
+                    baselineWmm.addConstraint(new ForceEncodeAxiom(getCopyOfRelation(sec, baselineWmm)));
                 }
             }
         }
@@ -425,7 +431,7 @@ public class RefinementSolver extends ModelChecker {
         Relation rf = baseline.getRelation(RF);
         if(baselines.contains(Baseline.UNIPROC)) {
             // ---- acyclic(po-loc | com) ----
-            baseline.addAxiom(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
+            baseline.addConstraint(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
                     baseline.getRelation(POLOC),
                     rf,
                     baseline.getRelation(CO),
@@ -433,7 +439,7 @@ public class RefinementSolver extends ModelChecker {
         }
         if(baselines.contains(Baseline.NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
-            baseline.addAxiom(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
+            baseline.addConstraint(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
                     baseline.getRelation(CTRL),
                     baseline.getRelation(DATA),
                     baseline.getRelation(ADDR),
@@ -446,7 +452,7 @@ public class RefinementSolver extends ModelChecker {
             Relation fre = baseline.getRelation(FRE);
             Relation frecoe = baseline.addDefinition(new Composition(baseline.newRelation(), fre, coe));
             Relation rmwANDfrecoe = baseline.addDefinition(new Intersection(baseline.newRelation(), rmw, frecoe));
-            baseline.addAxiom(new Empty(rmwANDfrecoe));
+            baseline.addConstraint(new Empty(rmwANDfrecoe));
         }
         return baseline;
     }

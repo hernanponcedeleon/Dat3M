@@ -30,16 +30,15 @@ public class INonDet extends IExpr {
 	}
 	
 	@Override
-	public Formula toIntFormula(Event e, SolverContext ctx) {
+	public Formula toIntFormula(Event e, FormulaManager m) {
 		String name = Integer.toString(hashCode());
-		FormulaManager fmgr = ctx.getFormulaManager();
 		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
-		return fmgr.makeVariable(type, name);
+		return m.makeVariable(type, name);
 	}
 
 	@Override
-	public BigInteger getIntValue(Event e, Model model, SolverContext ctx) {
-		Object value = model.evaluate(toIntFormula(e, ctx));
+	public BigInteger getIntValue(Event e, Model model, FormulaManager m) {
+		Object value = model.evaluate(toIntFormula(e, m));
 		Verify.verify(value != null, "No value in the model for " + this);
 		return new BigInteger(value.toString());			
 	}
@@ -118,22 +117,21 @@ public class INonDet extends IExpr {
 		return precision;
 	}
 	
-	public BooleanFormula encodeBounds(boolean bp, SolverContext ctx) {
-		FormulaManager fmgr = ctx.getFormulaManager();
-		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
+	public BooleanFormula encodeBounds(boolean bp, FormulaManager m) {
+		BooleanFormulaManager bmgr = m.getBooleanFormulaManager();
 		long min = getMin();
 		long max = getMax();
 		if(bp) {
 			boolean signed = !(type.equals(UINT) || type.equals(ULONG) || type.equals(USHORT) || type.equals(UCHAR));
-			BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
-			enc = bmgr.and(enc, bvmgr.greaterOrEquals((BitvectorFormula) toIntFormula(null,ctx), bvmgr.makeBitvector(precision, min), signed));
-	        enc = bmgr.and(enc, bvmgr.lessOrEquals((BitvectorFormula) toIntFormula(null,ctx), bvmgr.makeBitvector(precision, max), signed));
+			BitvectorFormulaManager bvmgr = m.getBitvectorFormulaManager();
+			return bmgr.and(
+					bvmgr.greaterOrEquals((BitvectorFormula) toIntFormula(null, m), bvmgr.makeBitvector(precision, min), signed),
+	        		bvmgr.lessOrEquals((BitvectorFormula) toIntFormula(null, m), bvmgr.makeBitvector(precision, max), signed));
 		} else {
-			IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-			enc = bmgr.and(enc, imgr.greaterOrEquals((IntegerFormula) toIntFormula(null,ctx), imgr.makeNumber(min)));
-			enc = bmgr.and(enc, imgr.lessOrEquals((IntegerFormula) toIntFormula(null,ctx), imgr.makeNumber(max)));
+			IntegerFormulaManager imgr = m.getIntegerFormulaManager();
+			return bmgr.and(
+					imgr.greaterOrEquals((IntegerFormula) toIntFormula(null, m), imgr.makeNumber(min)),
+					imgr.lessOrEquals((IntegerFormula) toIntFormula(null, m), imgr.makeNumber(max)));
 		}
-		return enc;
 	}
 }

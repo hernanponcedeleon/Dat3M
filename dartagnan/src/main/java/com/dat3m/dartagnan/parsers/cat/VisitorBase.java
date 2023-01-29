@@ -52,7 +52,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
             if (ctx.NAME() != null) {
                 axiom.setName(ctx.NAME().toString());
             }
-            wmm.addAxiom(axiom);
+            wmm.addConstraint(axiom);
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
                  InvocationTargetException e) {
             throw new ParsingException(ctx.getText());

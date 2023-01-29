@@ -56,7 +56,6 @@ public class SimpleSpinLoopDetection implements ProgramProcessor {
 
         final int numSpinLoops = program.getThreads().stream().mapToInt(this::detectAndMarkSpinLoops).sum();
         logger.info("Statically detected # of spin loops: {}", numSpinLoops);
-        program.clearCache(true);
     }
 
 

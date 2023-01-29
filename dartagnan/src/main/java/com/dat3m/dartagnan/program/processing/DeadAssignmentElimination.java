@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,10 +40,7 @@ public class DeadAssignmentElimination implements ProgramProcessor {
 
         for (Thread t : program.getThreads()) {
             eliminateDeadAssignments(program, t);
-            t.clearCache();
         }
-        program.clearCache(false);
-
         logger.info("#Events after DSE: " + program.getEvents().size());
     }
 
@@ -54,7 +50,8 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         if(program.getAss() != null) {
             usedRegs.addAll(program.getAss().getRegs()); // for litmus tests
         }
-        program.getCache().getEvents(FilterBasic.get(ASSERTION)).stream()
+        program.getEvents().stream()
+                .filter(e -> e.is(ASSERTION))
                 .filter(RegWriter.class::isInstance)
                 .map(RegWriter.class::cast)
                 .map(RegWriter::getResultRegister)

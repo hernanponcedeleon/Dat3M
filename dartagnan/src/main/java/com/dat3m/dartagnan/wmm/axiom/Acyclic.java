@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -10,20 +9,36 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
+import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_ENCODE_SETS;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.Sets.difference;
+
+@Options
 public class Acyclic extends Axiom {
 
 	private static final Logger logger = LogManager.getLogger(Acyclic.class);
+
+    @Option(name = REDUCE_ACYCLICITY_ENCODE_SETS,
+            description = "Omit adding transitively implied relationships to the encode set of an acyclic relation." +
+                    " This option is only relevant if \"" + ENABLE_ACTIVE_SETS + "\" is set.",
+            secure = true)
+    private boolean reduceAcyclicityEncoding = true;
 
     public Acyclic(Relation rel, boolean negated, boolean flag) {
         super(rel, negated, flag);
@@ -34,15 +49,139 @@ public class Acyclic extends Axiom {
     }
 
     @Override
+    public void configure(Configuration config) throws InvalidConfigurationException {
+        config.inject(this);
+        logger.info("{}: {}", REDUCE_ACYCLICITY_ENCODE_SETS, reduceAcyclicityEncoding);
+    }
+
+    @Override
     public String toString() {
         return (negated ? "~" : "") + "acyclic " + rel.getNameOrTerm();
+    }
+
+    @Override
+    public Map<Relation, RelationAnalysis.ExtendedDelta> computeInitialKnowledgeClosure(
+            Map<Relation, RelationAnalysis.Knowledge> knowledgeMap,
+            Context analysisContext) {
+        long t0 = System.currentTimeMillis();
+        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
+        RelationAnalysis.Knowledge k = knowledgeMap.get(rel);
+        Set<Tuple> d = new HashSet<>();
+        for (Tuple t : k.getMaySet()) {
+            if (t.isLoop()) {
+                d.add(t);
+            }
+        }
+        for (Tuple t : k.getMustSet()) {
+            Tuple inverse = t.getInverse();
+            if (k.containsMay(inverse)) {
+                d.add(inverse);
+            }
+        }
+        Map<Event, List<Event>> mustOut = new HashMap<>();
+        for (Tuple t : k.getMustSet()) {
+            if (!t.isLoop()) {
+                mustOut.computeIfAbsent(t.getFirst(), x -> new ArrayList<>()).add(t.getSecond());
+            }
+        }
+        for (Collection<Tuple> next = k.getMustSet(); !next.isEmpty();) {
+            Collection<Tuple> current = next;
+            next = new ArrayList<>();
+            for (Tuple xy : current) {
+                if (xy.isLoop()) {
+                    continue;
+                }
+                Event x = xy.getFirst();
+                Event y = xy.getSecond();
+                boolean implied = exec.isImplied(x, y);
+                for (Event z : mustOut.getOrDefault(y, List.of())) {
+                    if ((implied || exec.isImplied(z, y)) && !exec.areMutuallyExclusive(x, z)) {
+                        Tuple zx = new Tuple(z, x);
+                        if (k.containsMay(zx) && d.add(zx)) {
+                            next.add(new Tuple(x, z));
+                        }
+                    }
+                }
+            }
+        }
+        logger.debug("disabled {} tuples in {}ms", d.size(), System.currentTimeMillis() - t0);
+        return Map.of(rel, new RelationAnalysis.ExtendedDelta(d, Set.of()));
+    }
+
+    @Override
+    public Map<Relation, RelationAnalysis.ExtendedDelta> computeIncrementalKnowledgeClosure(
+            Relation changed,
+            Set<Tuple> disabled,
+            Set<Tuple> enabled,
+            Map<Relation, RelationAnalysis.Knowledge> knowledgeMap,
+            Context analysisContext) {
+        checkArgument(changed == rel,
+                "misdirected knowledge propagation from relation %s to %s", changed, this);
+        long t0 = System.currentTimeMillis();
+        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
+        RelationAnalysis.Knowledge k = knowledgeMap.get(rel);
+        Set<Tuple> d = new HashSet<>();
+        for (Tuple t : enabled) {
+            Tuple inverse = t.getInverse();
+            if (k.containsMay(inverse)) {
+                d.add(inverse);
+            }
+        }
+        Map<Event, List<Event>> mustIn = new HashMap<>();
+        Map<Event, List<Event>> mustOut = new HashMap<>();
+        for (Tuple t : k.getMustSet()) {
+            if (!t.isLoop()) {
+                mustIn.computeIfAbsent(t.getSecond(), x -> new ArrayList<>()).add(t.getFirst());
+                mustOut.computeIfAbsent(t.getFirst(), x -> new ArrayList<>()).add(t.getSecond());
+            }
+        }
+        for (Collection<Tuple> next = enabled; !next.isEmpty();) {
+            Collection<Tuple> current = next;
+            next = new ArrayList<>();
+            for (Tuple xy : current) {
+                if (xy.isLoop()) {
+                    continue;
+                }
+                Event x = xy.getFirst();
+                Event y = xy.getSecond();
+                boolean implies = exec.isImplied(x, y);
+                boolean implied = exec.isImplied(y, x);
+                for (Event w : mustIn.getOrDefault(x, List.of())) {
+                    if ((implied || exec.isImplied(w, x)) && !exec.areMutuallyExclusive(w, y)) {
+                        Tuple yw = new Tuple(y, w);
+                        if (k.containsMay(yw) && d.add(yw)) {
+                            next.add(new Tuple(w, y));
+                        }
+                    }
+                }
+                for (Event z : mustOut.getOrDefault(y, List.of())) {
+                    if ((implies || exec.isImplied(z, y)) && !exec.areMutuallyExclusive(x, z)) {
+                        Tuple zx = new Tuple(z, x);
+                        if (k.containsMay(zx) && d.add(zx)) {
+                            next.add(new Tuple(x, z));
+                        }
+                    }
+                }
+            }
+        }
+        logger.debug("Disabled {} tuples in {}ms", d.size(), System.currentTimeMillis() - t0);
+        return Map.of(rel, new RelationAnalysis.ExtendedDelta(d, Set.of()));
     }
 
     @Override
     protected Set<Tuple> getEncodeTupleSet(Context analysisContext) {
         ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
         RelationAnalysis ra = analysisContext.get(RelationAnalysis.class);
-        logger.info("Computing encodeTupleSet for " + this);
+        RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
+        return difference(getEncodeTupleSet(exec, ra), k.getMustSet());
+    }
+
+    public int getEncodeTupleSetSize(Context analysisContext) {
+        return getEncodeTupleSet(analysisContext).size();
+    }
+
+    private Set<Tuple> getEncodeTupleSet(ExecutionAnalysis exec, RelationAnalysis ra) {
+        logger.info("Computing encodeTupleSet for {}", this);
         // ====== Construct [Event -> Successor] mapping ======
         Map<Event, Collection<Event>> succMap = new HashMap<>();
         final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
@@ -52,27 +191,72 @@ public class Acyclic extends Axiom {
 
         // ====== Compute SCCs ======
         DependencyGraph<Event> depGraph = DependencyGraph.from(succMap.keySet(), succMap);
-        TupleSet result = new TupleSet();
+        final Set<Tuple> result = new HashSet<>();
         for (Set<DependencyGraph<Event>.Node> scc : depGraph.getSCCs()) {
             for (DependencyGraph<Event>.Node node1 : scc) {
                 for (DependencyGraph<Event>.Node node2 : scc) {
                     Tuple t = new Tuple(node1.getContent(), node2.getContent());
-                    if (k.getMaySet().contains(t)) {
+                    if (k.containsMay(t)) {
                         result.add(t);
                     }
                 }
             }
         }
 
-        logger.info("encodeTupleSet size " + result.size());
-        if (GlobalSettings.REDUCE_ACYCLICITY_ENCODE_SETS) {
-            reduceWithMinSets(result, exec, ra);
-            logger.info("reduced encodeTupleSet size " + result.size());
+        logger.info("encodeTupleSet size: {}", result.size());
+        if (reduceAcyclicityEncoding) {
+            Set<Tuple> obsolete = transitivelyDerivableMustTuples(exec, ra.getKnowledge(rel));
+            result.removeAll(obsolete);
+            logger.info("reduced encodeTupleSet size: {}", result.size());
         }
         return result;
     }
 
-    private void reduceWithMinSets(TupleSet encodeSet, ExecutionAnalysis exec, RelationAnalysis ra) {
+    // Under-approximates the must-set of (rel+ ; rel).
+    // It is the smallest set that contains the binary composition of the must-set with itself with implied intermediates
+    // and is closed under that operation with the must-set.
+    // Basically, the clause {@code exec(x) and exec(z) implies before(x,z)} is obsolete,
+    // if the clauses {@code exec(x) implies before(x,y)} and {@code exec(z) implies before(y,z)} exist.
+    // NOTE: Assumes that the must-set of rel+ is acyclic.
+    private static Set<Tuple> transitivelyDerivableMustTuples(ExecutionAnalysis exec, RelationAnalysis.Knowledge k) {
+        Set<Tuple> result = new HashSet<>();
+        Map<Event, List<Event>> map = new HashMap<>();
+        Map<Event, List<Event>> mapInverse = new HashMap<>();
+        Collection<Tuple> current = k.getMustSet();
+        while (!current.isEmpty()) {
+            List<Tuple> next = new ArrayList<>();
+            for (Tuple tuple : current) {
+                map.computeIfAbsent(tuple.getFirst(), x -> new ArrayList<>()).add(tuple.getSecond());
+                mapInverse.computeIfAbsent(tuple.getSecond(), x -> new ArrayList<>()).add(tuple.getFirst());
+            }
+            for (Tuple xy : current) {
+                Event x = xy.getFirst();
+                Event y = xy.getSecond();
+                boolean implied = exec.isImplied(y, x);
+                boolean implies = exec.isImplied(x, y);
+                for (Event z : map.getOrDefault(y, List.of())) {
+                    if ((implies || exec.isImplied(z, y)) && !exec.areMutuallyExclusive(x, z)) {
+                        Tuple xz = new Tuple(x, z);
+                        if (result.add(xz)) {
+                            next.add(xz);
+                        }
+                    }
+                }
+                for (Event w : mapInverse.getOrDefault(x, List.of())) {
+                    if ((implied || exec.isImplied(w, x)) && !exec.areMutuallyExclusive(w, y)) {
+                        Tuple wy = new Tuple(w, y);
+                        if (result.add(wy)) {
+                            next.add(wy);
+                        }
+                    }
+                }
+            }
+            current = next;
+        }
+        return result;
+    }
+
+    private void reduceWithMinSets(Set<Tuple> encodeSet, ExecutionAnalysis exec, RelationAnalysis ra) {
         /*
             ASSUMPTION: MinSet is acyclic!
             IDEA:
@@ -91,33 +275,35 @@ public class Acyclic extends Axiom {
                       and b is implied by either a or c.
                     - It is possible to reduce must(rel) but that may give a less precise result.
          */
-        final TupleSet minSet = ra.getKnowledge(rel).getMustSet();
+        final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
 
         // (1) Approximate transitive closure of minSet (only gets computed when crossEdges are available)
-        List<Tuple> crossEdges = minSet.stream()
+        List<Tuple> crossEdges = k.getMustSet().stream()
                 .filter(t -> t.isCrossThread() && !t.getFirst().is(Tag.INIT))
                 .collect(Collectors.toList());
-        TupleSet transMinSet = crossEdges.isEmpty() ? minSet : new TupleSet(minSet);
+        logger.debug("cross-edges: {}", crossEdges.size());
+        Map<Event, Set<Event>> transMinSet = new HashMap<>();
+        for (Tuple t : k.getMustSet()) {
+            transMinSet.computeIfAbsent(t.getSecond(), x -> new HashSet<>()).add(t.getFirst());
+        }
+        final Function<Event, Collection<Tuple>> mustIn = k.getMustIn();
+        final Function<Event, Collection<Tuple>> mustOut = k.getMustOut();
         for (Tuple crossEdge : crossEdges) {
             Event e1 = crossEdge.getFirst();
             Event e2 = crossEdge.getSecond();
-
             List<Event> ingoing = new ArrayList<>();
             ingoing.add(e1); // ingoing events + self
-            minSet.getBySecond(e1).stream().map(Tuple::getFirst)
+            mustIn.apply(e1).stream().map(Tuple::getFirst)
                     .filter(e -> exec.isImplied(e, e1))
                     .forEach(ingoing::add);
-
-
             List<Event> outgoing = new ArrayList<>();
             outgoing.add(e2); // outgoing edges + self
-            minSet.getByFirst(e2).stream().map(Tuple::getSecond)
+            mustOut.apply(e2).stream().map(Tuple::getSecond)
                     .filter(e -> exec.isImplied(e, e2))
                     .forEach(outgoing::add);
-
             for (Event in : ingoing) {
                 for (Event out : outgoing) {
-                    transMinSet.add(new Tuple(in, out));
+                    transMinSet.computeIfAbsent(out, x -> new HashSet<>()).add(in);
                 }
             }
         }
@@ -125,68 +311,83 @@ public class Acyclic extends Axiom {
         // (2) Approximate reduction of transitive must-set: red(must(r)+).
         // Note: We reduce the transitive closure which may have more edges
         // that can be used to perform reduction
-        TupleSet reduct = TupleSet.approximateTransitiveMustReduction(exec, transMinSet);
+        // Approximative must-transitive reduction of minSet:
+        Set<Tuple> reduct = new HashSet<>();
+        DependencyGraph<Event> depGraph = DependencyGraph.from(transMinSet.keySet(), e -> transMinSet.getOrDefault(e, Set.of()));
+        for (DependencyGraph<Event>.Node start : depGraph.getNodes()) {
+            Event e1 = start.getContent();
+            List<DependencyGraph<Event>.Node> deps = start.getDependents();
+            for (int i = deps.size() - 1; i >= 0; i--) {
+                Event e3 = deps.get(i).getContent();
+                if (deps.subList(0, i).stream()
+                        .map(DependencyGraph.Node::getContent)
+                        .noneMatch(e2 -> (exec.isImplied(e1, e2) || exec.isImplied(e3, e2)) &&
+                                transMinSet.getOrDefault(e3, Set.of()).contains(e2))) {
+                    reduct.add(new Tuple(e1, e3));
+                }
+            }
+        }
 
         // Remove (must(r)+ \ red(must(r)+)
-        encodeSet.removeIf(t -> transMinSet.contains(t) && !reduct.contains(t));
+        encodeSet.removeIf(t -> transMinSet.getOrDefault(t.getSecond(), Set.of()).contains(t.getFirst()) && !reduct.contains(t));
     }
 
     @Override
-	public BooleanFormula consistent(EncodingContext context) {
-        Set<Tuple> toBeEncoded = getEncodeTupleSet(context.getAnalysisContext());
-        BooleanFormula enc;
-        if(negated) {
-            enc = inconsistentSAT(toBeEncoded, context); // There is no IDL-based encoding for inconsistency
-        } else {
-            enc = context.usesSATEncoding() ? consistentSAT(toBeEncoded, context) : consistentIDL(toBeEncoded, context);
-        }
-        return enc;
+	public List<BooleanFormula> consistent(EncodingContext context) {
+        ExecutionAnalysis exec = context.getAnalysisContext().get(ExecutionAnalysis.class);
+        RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
+        Set<Tuple> toBeEncoded = getEncodeTupleSet(exec, ra);
+        return negated ?
+                inconsistentSAT(toBeEncoded, context) : // There is no IDL-based encoding for inconsistency
+                context.usesSATEncoding() ?
+                        consistentSAT(toBeEncoded, context) :
+                        consistentIDL(toBeEncoded, context);
     }
 
-    private BooleanFormula inconsistentSAT(Set<Tuple> toBeEncoded, EncodingContext context) {
+    private List<BooleanFormula> inconsistentSAT(Set<Tuple> toBeEncoded, EncodingContext context) {
         final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         final Relation rel = this.rel;
-        BooleanFormula enc = bmgr.makeTrue();
-        BooleanFormula eventsInCycle = bmgr.makeFalse();
-        Map<Event, BooleanFormula> inMap = new HashMap<>();
-        Map<Event, BooleanFormula> outMap = new HashMap<>();
+        List<BooleanFormula> enc = new ArrayList<>();
+        List<BooleanFormula> eventsInCycle = new ArrayList<>();
+        Map<Event, List<BooleanFormula>> inMap = new HashMap<>();
+        Map<Event, List<BooleanFormula>> outMap = new HashMap<>();
         for(Tuple t : toBeEncoded) {
             BooleanFormula cycleVar = getSMTCycleVar(t, fmgr);
-            inMap.merge(t.getSecond(), cycleVar, bmgr::or);
-            outMap.merge(t.getFirst(), cycleVar, bmgr::or);
+            inMap.computeIfAbsent(t.getSecond(), k -> new ArrayList<>()).add(cycleVar);
+            outMap.computeIfAbsent(t.getFirst(), k -> new ArrayList<>()).add(cycleVar);
         }
         // We use Boolean variables which guess the edges and nodes constituting the cycle.
         final EncodingContext.EdgeEncoder edge = context.edge(rel);
         for (Event e : toBeEncoded.stream().map(Tuple::getFirst).collect(Collectors.toSet())) {
-            eventsInCycle = bmgr.or(eventsInCycle, cycleVar(e, fmgr));
+            eventsInCycle.add(cycleVar(e, fmgr));
             // We ensure that for every event in the cycle, there should be at least one incoming
             // edge and at least one outgoing edge that are also in the cycle.
-            enc = bmgr.and(enc, bmgr.implication(cycleVar(e, fmgr), bmgr.and(inMap.get(e), outMap.get(e))));
+            enc.add(bmgr.implication(cycleVar(e, fmgr), bmgr.and(bmgr.or(inMap.get(e)), bmgr.or(outMap.get(e)))));
             for (Tuple tuple : toBeEncoded) {
                 Event e1 = tuple.getFirst();
                 Event e2 = tuple.getSecond();
                 // If an edge is guessed to be in a cycle, the edge must belong to relation,
                 // and both events must also be guessed to be on the cycle.
-                enc = bmgr.and(enc, bmgr.implication(getSMTCycleVar(tuple, fmgr),
+                enc.add(bmgr.implication(getSMTCycleVar(tuple, fmgr),
                         bmgr.and(edge.encode(tuple), cycleVar(e1, fmgr), cycleVar(e2, fmgr))));
             }
         }
         // A cycle exists if there is an event in the cycle.
-        enc = bmgr.and(enc, eventsInCycle);
+        enc.add(bmgr.or(eventsInCycle));
         return enc;
     }
 
-    private BooleanFormula consistentIDL(Set<Tuple> toBeEncoded, EncodingContext context) {
+    private List<BooleanFormula> consistentIDL(Set<Tuple> toBeEncoded, EncodingContext context) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
         final Relation rel = this.rel;
         final String clockVarName = rel.getNameOrTerm();
 
-        BooleanFormula enc = bmgr.makeTrue();
+        List<BooleanFormula> enc = new ArrayList<>();
         final EncodingContext.EdgeEncoder edge = context.edge(rel);
         for (Tuple tuple : toBeEncoded) {
-            enc = bmgr.and(enc, bmgr.implication(edge.encode(tuple),
+            enc.add(bmgr.implication(edge.encode(tuple),
                     imgr.lessThan(
                             context.clockVariable(clockVarName, tuple.getFirst()),
                             context.clockVariable(clockVarName, tuple.getSecond()))));
@@ -195,7 +396,7 @@ public class Acyclic extends Axiom {
         return enc;
     }
 
-    private BooleanFormula consistentSAT(Set<Tuple> toBeEncoded, EncodingContext context) {
+    private List<BooleanFormula> consistentSAT(Set<Tuple> toBeEncoded, EncodingContext context) {
         // We use a vertex-elimination graph based encoding.
         final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
@@ -273,12 +474,12 @@ public class Acyclic extends Axiom {
 
         // --- Create encoding ---
         final Set<Tuple> minSet = ra.getKnowledge(rel).getMustSet();
-        BooleanFormula enc = bmgr.makeTrue();
+        List<BooleanFormula> enc = new ArrayList<>();
         final EncodingContext.EdgeEncoder edge = context.edge(rel);
         // Basic lifting
         for (Tuple t : toBeEncoded) {
             BooleanFormula cond = minSet.contains(t) ? context.execution(t.getFirst(), t.getSecond()) : edge.encode(t);
-            enc = bmgr.and(enc, bmgr.implication(cond, getSMTCycleVar(t, fmgr)));
+            enc.add(bmgr.implication(cond, getSMTCycleVar(t, fmgr)));
         }
 
         // Encode triangle rules
@@ -291,13 +492,13 @@ public class Acyclic extends Axiom {
                     context.execution(t3.getFirst(), t3.getSecond())
                     : bmgr.and(getSMTCycleVar(t1, fmgr), getSMTCycleVar(t2, fmgr));
 
-            enc = bmgr.and(enc, bmgr.implication(cond, getSMTCycleVar(t3, fmgr)));
+            enc.add(bmgr.implication(cond, getSMTCycleVar(t3, fmgr)));
         }
 
         //  --- Encode inconsistent assignments ---
         // Handle self-loops
         for (Event e : selfloops) {
-            enc = bmgr.and(enc, bmgr.not(edge.encode(new Tuple(e, e))));
+            enc.add(bmgr.not(edge.encode(new Tuple(e, e))));
         }
         // Handle remaining cycles
         for (int i = 0; i < varOrderings.size(); i++) {
@@ -305,7 +506,7 @@ public class Acyclic extends Axiom {
             for (Tuple t : out) {
                 if (varOrderings.indexOf(t.getSecond()) > i && vertEleInEdges.get(t.getSecond()).contains(t)) {
                     BooleanFormula cond = minSet.contains(t) ? bmgr.makeTrue() : getSMTCycleVar(t, fmgr);
-                    enc = bmgr.and(enc, bmgr.implication(cond, bmgr.not(getSMTCycleVar(t.getInverse(), fmgr))));
+                    enc.add(bmgr.implication(cond, bmgr.not(getSMTCycleVar(t.getInverse(), fmgr))));
                 }
             }
         }

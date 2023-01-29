@@ -7,12 +7,10 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,7 +20,6 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 import java.util.function.Function;
@@ -36,6 +33,7 @@ public class SymmetryEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(SymmetryEncoder.class);
 
+    private final Wmm memoryModel;
     private final EncodingContext context;
     private final List<Axiom> axioms;
     private final ThreadSymmetry symm;
@@ -59,6 +57,7 @@ public class SymmetryEncoder implements Encoder {
 
     private SymmetryEncoder(EncodingContext c, Wmm m, Context a, Configuration config) throws InvalidConfigurationException {
         context = c;
+        memoryModel = m;
         axioms = List.copyOf(m.getAxioms());
         symm = c.getAnalysisContext().requires(ThreadSymmetry.class);
         ra = a.requires(RelationAnalysis.class);
@@ -80,9 +79,6 @@ public class SymmetryEncoder implements Encoder {
         return new SymmetryEncoder(context, memoryModel, analysisContext, context.getTask().getConfig());
     }
 
-    @Override
-    public void initializeEncoding(SolverContext context) { }
-
     public BooleanFormula encodeFullSymmetryBreaking() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final Set<Tuple> maySet;
@@ -95,14 +91,14 @@ public class SymmetryEncoder implements Encoder {
                 edgeEncoder = t -> context.execution(t.getFirst(), t.getSecond());
                 break;
             default:
-                if (!context.getTask().getMemoryModel().containsRelation(symmBreakTarget)) {
+                Wmm baseline = context.getTask().getMemoryModel();
+                if (!baseline.containsRelation(symmBreakTarget) || !memoryModel.containsRelation(symmBreakTarget)) {
                     logger.warn("The wmm has no relation named {} to break symmetry on." +
                             " Symmetry breaking was disabled.", symmBreakTarget);
                     return bmgr.makeTrue();
                 }
-                Relation rel = context.getTask().getMemoryModel().getRelation(symmBreakTarget);
-                maySet = ra.getKnowledge(rel).getMaySet();
-                edgeEncoder = context.edge(rel);
+                maySet = ra.getKnowledge(memoryModel.getRelation(symmBreakTarget)).getMaySet();
+                edgeEncoder = context.edge(baseline.getRelation(symmBreakTarget));
         }
         return symm.getNonTrivialClasses().stream()
                 .map(symmClass -> encodeSymmetryBreakingOnClass(maySet, edgeEncoder, symmClass))
@@ -134,7 +130,7 @@ public class SymmetryEncoder implements Encoder {
         sort(t1Tuples);
 
         // Construct symmetric rows
-        BooleanFormula enc = bmgr.makeTrue();
+        List<BooleanFormula> enc = new ArrayList<>();
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
             Function<Event, Event> p = symm.createEventTransposition(t1, t2);
@@ -143,13 +139,12 @@ public class SymmetryEncoder implements Encoder {
             List<BooleanFormula> r1 = t1Tuples.stream().map(edge::encode).collect(Collectors.toList());
             List<BooleanFormula> r2 = t2Tuples.stream().map(edge::encode).collect(Collectors.toList());
             final String id = "_" + rep.getId() + "_" + i;
-            enc = bmgr.and(enc, encodeLexLeader(id, r2, r1, context)); // r1 >= r2
-
+            enc.add(encodeLexLeader(id, r2, r1, context)); // r1 >= r2
             t1 = t2;
             t1Tuples = t2Tuples;
         }
 
-        return enc;
+        return bmgr.and(enc);
     }
 
     private void sort(List<Tuple> row) {
@@ -169,16 +164,23 @@ public class SymmetryEncoder implements Encoder {
             outEvents.add(t.getSecond());
         }
 
+        final List<RelationAnalysis.Knowledge> knowledge = axioms.stream()
+                .map(a -> ra.getKnowledge(a.getRelation()))
+                .collect(Collectors.toList());
+        final List<Function<Event, Collection<Tuple>>> mustIn = knowledge.stream()
+                .map(RelationAnalysis.Knowledge::getMustIn)
+                .collect(Collectors.toList());
+        final List<Function<Event, Collection<Tuple>>> mustOut = knowledge.stream()
+                .map(RelationAnalysis.Knowledge::getMustOut)
+                .collect(Collectors.toList());
         final Map<Event, Integer> combInDegree = new HashMap<>(inEvents.size());
         final Map<Event, Integer> combOutDegree = new HashMap<>(outEvents.size());
         for (Event e : inEvents) {
-            int syncDeg = axioms.stream()
-                    .mapToInt(ax -> ra.getKnowledge(ax.getRelation()).getMustSet().getBySecond(e).size() + 1).max().orElse(0);
+            int syncDeg = mustIn.stream().mapToInt(m -> m.apply(e).size() + 1).max().orElse(0);
             combInDegree.put(e, syncDeg);
         }
         for (Event e : outEvents) {
-            int syncDec = axioms.stream()
-                    .mapToInt(ax -> ra.getKnowledge(ax.getRelation()).getMustSet().getByFirst(e).size() + 1).max().orElse(0);
+            int syncDec = mustOut.stream().mapToInt(m -> m.apply(e).size() + 1).max().orElse(0);
             combOutDegree.put(e, syncDec);
         }
 
@@ -214,31 +216,29 @@ public class SymmetryEncoder implements Encoder {
         // xi gets related to y(i-1) and yi
 
         BooleanFormula ylast = bmgr.makeVariable("y0" + suffix); // y(i-1)
-        BooleanFormula enc = bmgr.equivalence(ylast, bmgr.makeTrue());
+        List<BooleanFormula> enc = new ArrayList<>();
+        enc.add(ylast);
         // From x1 to x(n-1)
         for (int i = 1; i < size; i++) {
             BooleanFormula y = bmgr.makeVariable("y" + i + suffix); // yi
             BooleanFormula a = r1.get(i-1); // xi(r1)
             BooleanFormula b = r2.get(i-1); // xi(r2)
-            enc = bmgr.and(
-                    enc,
-                    bmgr.or(y, bmgr.not(ylast), bmgr.not(a)), // (see below)
-                    bmgr.or(y, bmgr.not(ylast), b),           // "y(i-1) implies ((xi(r1) >= xi(r2))  =>  yi)"
-                    bmgr.or(bmgr.not(ylast), bmgr.not(a), b)  // "y(i-1) implies (xi(r1) <= xi(r2))"
+            enc.add(bmgr.or(y, bmgr.not(ylast), bmgr.not(a))); // (see below)
+            enc.add(bmgr.or(y, bmgr.not(ylast), b));           // "y(i-1) implies ((xi(r1) >= xi(r2))  =>  yi)"
+            enc.add(bmgr.or(bmgr.not(ylast), bmgr.not(a), b)); // "y(i-1) implies (xi(r1) <= xi(r2))"
                     // NOTE: yi = TRUE means the prefixes (x1, x2, ..., xi) of the rows r1/r2 are equal
                     //       yi = FALSE means that no conditions are imposed on xi
                     // The first point, where y(i-1) is TRUE but yi is FALSE, is the breaking point
                     // where xi(r1) < xi(r2) holds (afterwards all yj (j >= i+1) are unconstrained and can be set to
                     // FALSE by the solver)
-            );
             ylast = y;
         }
         // Final iteration for xn is handled differently as there is no variable yn anymore.
         BooleanFormula a = r1.get(size-1);
         BooleanFormula b = r2.get(size-1);
-        enc = bmgr.and(enc, bmgr.or(bmgr.not(ylast), bmgr.not(a), b));
+        enc.add(bmgr.or(bmgr.not(ylast), bmgr.not(a), b));
 
-        return enc;
+        return bmgr.and(enc);
     }
 
     private Set<Tuple> cfSet() {
@@ -247,6 +247,6 @@ public class SymmetryEncoder implements Encoder {
                 .filter(c -> c != branchEq.getInitialClass() && c != branchEq.getUnreachableClass())
                 .map(EquivalenceClass::getRepresentative)
                 .map(rep -> new Tuple(rep, rep))
-                .collect(Collectors.toCollection(TupleSet::new));
+                .collect(Collectors.toSet());
     }
 }

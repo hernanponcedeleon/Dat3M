@@ -7,8 +7,6 @@ import java.util.Optional;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 

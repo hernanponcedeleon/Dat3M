@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.event.core.Event;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.FormulaManager;
 
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -108,20 +108,20 @@ public class MemoryObject extends IConst {
 
     /**
      * Encodes the final state of a location.
-     * @param ctx
+     * @param m
      * Builder of formulas.
      * @param offset
      * Non-negative number of fields before the target field.
      * @return
      * Variable associated with the value at the location after the execution ended.
      */
-    public Formula getLastMemValueExpr(SolverContext ctx, int offset) {
+    public Formula getLastMemValueExpr(FormulaManager m, int offset) {
         checkArgument(0<=offset && offset<size, "array index out of bounds");
         String name = String.format("last_val_at_memory_%d_%d",index,offset);
         if(ARCH_PRECISION > -1) {
-        	return ctx.getFormulaManager().getBitvectorFormulaManager().makeVariable(ARCH_PRECISION, name);
+        	return m.getBitvectorFormulaManager().makeVariable(ARCH_PRECISION, name);
         } else {
-        	return ctx.getFormulaManager().getIntegerFormulaManager().makeVariable(name);
+        	return m.getIntegerFormulaManager().makeVariable(name);
         }
     }
 
@@ -144,8 +144,8 @@ public class MemoryObject extends IConst {
     }
 
     @Override
-    public BooleanFormula toBoolFormula(Event e, SolverContext ctx){
-        return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
+    public BooleanFormula toBoolFormula(Event e, FormulaManager m) {
+        return m.getBooleanFormulaManager().makeTrue();
     }
 
     @Override

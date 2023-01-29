@@ -10,24 +10,23 @@ import java.math.BigInteger;
 public abstract class BExpr implements ExprInterface {
 
     @Override
-    public Formula toIntFormula(Event e, SolverContext ctx) {
-    	FormulaManager fmgr = ctx.getFormulaManager();
+    public Formula toIntFormula(Event e, FormulaManager m) {
         if(ARCH_PRECISION > -1) {
-        	BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
-    		return fmgr.getBooleanFormulaManager().ifThenElse(toBoolFormula(e, ctx), 
+        	BitvectorFormulaManager bvmgr = m.getBitvectorFormulaManager();
+    		return m.getBooleanFormulaManager().ifThenElse(toBoolFormula(e, m),
     				bvmgr.makeBitvector(ARCH_PRECISION, BigInteger.ONE), 
     				bvmgr.makeBitvector(ARCH_PRECISION, BigInteger.ZERO)); 
         } else {
-        	IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-    		return fmgr.getBooleanFormulaManager().ifThenElse(toBoolFormula(e, ctx), 
+        	IntegerFormulaManager imgr = m.getIntegerFormulaManager();
+    		return m.getBooleanFormulaManager().ifThenElse(toBoolFormula(e, m),
     				imgr.makeNumber(BigInteger.ONE), 
     				imgr.makeNumber(BigInteger.ZERO));        	
         }
     }
 
     @Override
-    public BigInteger getIntValue(Event e, Model model, SolverContext ctx){
-        return getBoolValue(e, model, ctx) ? BigInteger.ONE : BigInteger.ZERO;
+    public BigInteger getIntValue(Event e, Model model, FormulaManager m) {
+        return getBoolValue(e, model, m) ? BigInteger.ONE : BigInteger.ZERO;
     }
     
 	public boolean isTrue() {
