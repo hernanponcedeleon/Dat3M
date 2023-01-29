@@ -8,8 +8,6 @@ import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.filter.FilterMinus;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -17,7 +15,6 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -276,7 +273,7 @@ public class PropertyEncoder implements Encoder {
         }
 
         final List<TrackableFormula> specViolations = flaggedAxioms.stream()
-                .map(ax -> new TrackableFormula(bmgr.not(CAT_SPEC.getSMTVariable(ax, ctx)), ax.consistent(ctx)))
+                .map(ax -> new TrackableFormula(bmgr.not(CAT_SPEC.getSMTVariable(ax, ctx)), bmgr.and(ax.consistent(ctx))))
                 .collect(Collectors.toList());
         return specViolations;
     }

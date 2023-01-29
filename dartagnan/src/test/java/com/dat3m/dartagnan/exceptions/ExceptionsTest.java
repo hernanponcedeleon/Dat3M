@@ -97,7 +97,7 @@ public class ExceptionsTest {
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
             prover.isUnsat();
             BNonDet nonDet = new BNonDet(32);
-            nonDet.getBoolValue(null, prover.getModel(), ctx);
+            nonDet.getBoolValue(null, prover.getModel(), ctx.getFormulaManager());
         }
     }
 
@@ -107,7 +107,7 @@ public class ExceptionsTest {
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
             prover.isUnsat();
             INonDet nonDet = new INonDet(INonDetTypes.INT, 32);
-            nonDet.getIntValue(null, prover.getModel(), ctx);
+            nonDet.getIntValue(null, prover.getModel(), ctx.getFormulaManager());
         }
     }
 

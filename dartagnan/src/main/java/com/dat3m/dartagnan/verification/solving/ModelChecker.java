@@ -11,14 +11,13 @@ import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.program.specification.AssertCompositeAnd;
 import com.dat3m.dartagnan.program.specification.AssertInline;
 import com.dat3m.dartagnan.program.specification.AssertTrue;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -27,7 +26,6 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -38,11 +36,12 @@ import org.sosy_lab.java_smt.api.SolverException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
+import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static java.lang.Boolean.FALSE;
+import static java.util.stream.Collectors.toList;
 
 public abstract class ModelChecker {
 
