@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 
@@ -20,24 +19,23 @@ public abstract class IConst extends IExpr implements LastValueInterface {
     public abstract BigInteger getValue();
 
 	@Override
-    public Formula toIntFormula(Event e, SolverContext ctx) {
-		return toIntFormula(ctx);
+    public Formula toIntFormula(Event e, FormulaManager m) {
+		return toIntFormula(m);
 	}
 
-	public Formula toIntFormula(SolverContext ctx) {
-		FormulaManager fmgr = ctx.getFormulaManager();
+	public Formula toIntFormula(FormulaManager fmgr) {
 		return getPrecision() > 0
 				? fmgr.getBitvectorFormulaManager().makeBitvector(getPrecision(),getValue())
 				: fmgr.getIntegerFormulaManager().makeNumber(getValue());
 	}
 
 	@Override
-	public Formula getLastValueExpr(SolverContext ctx){
-		return toIntFormula(ctx);
+	public Formula getLastValueExpr(FormulaManager m) {
+		return toIntFormula(m);
 	}
 
 	@Override
-	public BigInteger getIntValue(Event e, Model model, SolverContext ctx){
+	public BigInteger getIntValue(Event e, Model model, FormulaManager m){
 		return getValue();
 	}
 

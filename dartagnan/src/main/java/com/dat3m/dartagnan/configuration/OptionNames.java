@@ -19,7 +19,9 @@ public class OptionNames {
 	public static final String C_TO_POWER_SCHEME = "compilation.cToPower";
 	
 	// Encoding Options
-	public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";
+	public static final String ENABLE_ACTIVE_SETS = "encoding.activeSets";
+	public static final String REDUCE_ACYCLICITY_ENCODE_SETS = "encoding.wmm.reduceAcyclicityEncodeSets";
+	public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";//TODO also influences RA
 	public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
 	public static final String INITIALIZE_REGISTERS = "encoding.initializeRegisters";
 	public static final String PRECISION = "encoding.precision";
@@ -38,6 +40,11 @@ public class OptionNames {
 	public static final String ALIAS_METHOD = "program.analysis.alias";
 	public static final String ALWAYS_SPLIT_ON_JUMPS = "program.analysis.cf.alwaysSplitOnJump";
 	public static final String MERGE_BRANCHES = "program.analysis.cf.mergeBranches";
+
+	// Memory Model Options
+	public static final String ENABLE_RELATION_ANALYSIS = "wmm.analysis.relationAnalysis";
+	public static final String ENABLE_MUST_SETS = "wmm.analysis.mustSets";
+	public static final String ENABLE_EXTENDED_RELATION_ANALYSIS = "wmm.analysis.extendedRelationAnalysis";
 
 	// Refinement Options
 	public static final String BASELINE = "refinement.baseline";

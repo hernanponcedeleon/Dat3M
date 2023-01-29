@@ -21,8 +21,9 @@ public interface AliasAnalysis {
 
     static AliasAnalysis fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
         Config c = new Config(config);
-		logger.info("Selected Alias Analysis: " + c.method);
+		logger.info("Selected alias analysis: " + c.method);
         AliasAnalysis a;
+        long t0 = System.currentTimeMillis();
     	switch (c.method) {
             case FIELD_SENSITIVE:
                 a = FieldSensitiveAndersen.fromConfig(program, config);
@@ -35,7 +36,8 @@ public interface AliasAnalysis {
         }
         a = new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, config));
 
-        logger.info("Finished Alias Analysis");
+        long t1 = System.currentTimeMillis();
+        logger.info("Finished alias analysis in {}ms", t1 - t0);
         return a;
     }
 

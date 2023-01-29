@@ -52,20 +52,16 @@ public class DataRaceSolver extends ModelChecker {
 		performStaticProgramAnalyses(task, analysisContext, config);
 		performStaticWmmAnalyses(task, analysisContext, config);
 
-		context = EncodingContext.of(task, analysisContext, ctx);
+		context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
 		ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
 		PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
 		WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
 		SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);
 
-		programEncoder.initializeEncoding(ctx);
-		propertyEncoder.initializeEncoding(ctx);
-		wmmEncoder.initializeEncoding(ctx);
-		symmetryEncoder.initializeEncoding(ctx);
-
-		logger.info("Starting encoding using " + ctx.getVersion());
+        logger.info("Starting encoding using " + ctx.getVersion());
 		prover.addConstraint(programEncoder.encodeFullProgram());
 		prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
+		prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 		prover.push();
 
 		prover.addConstraint(propertyEncoder.encodeProperties(EnumSet.of(Property.DATARACEFREEDOM)));

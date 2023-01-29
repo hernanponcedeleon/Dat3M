@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Verify.verify;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
@@ -197,7 +198,7 @@ public final class Dependency {
         final Register register;
         final Event event;
         Writer(Register r, Event e) {
-            register = Objects.requireNonNull(r);
+            register = checkNotNull(r);
             event = e;
         }
         @Override

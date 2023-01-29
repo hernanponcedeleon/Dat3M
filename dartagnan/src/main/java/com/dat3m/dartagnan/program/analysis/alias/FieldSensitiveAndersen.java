@@ -4,12 +4,10 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -63,10 +61,14 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     private FieldSensitiveAndersen(Program program) {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
-        for(Event e : program.getCache().getEvents(FilterBasic.get(Tag.MEMORY))) {
-            processLocs((MemEvent)e);
+        List<MemEvent> memEvents = program.getEvents().stream()
+                .filter(MemEvent.class::isInstance)
+                .map(MemEvent.class::cast)
+                .collect(toList());
+        for (MemEvent e : memEvents) {
+            processLocs(e);
         }
-        for(Event e : program.getCache().getEvents(FilterBasic.get(Tag.LOCAL))) {
+        for (Event e : program.getEvents()) {
             if(e instanceof Local) {
                 processRegs((Local)e);
             }
@@ -74,8 +76,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         while(!variables.isEmpty()) {
             algorithm(variables.poll());
         }
-        for(Event e : program.getCache().getEvents(FilterBasic.get(Tag.MEMORY))) {
-            processResults((MemEvent)e);
+        for (MemEvent e : memEvents) {
+            processResults(e);
         }
     }
 

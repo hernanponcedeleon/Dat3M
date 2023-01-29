@@ -49,7 +49,7 @@ public class Refiner {
         // set of permutations.
         HashSet<BooleanFormula> addedFormulas = new HashSet<>(); // To avoid adding duplicates
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        BooleanFormula refinement = bmgr.makeTrue();
+        List<BooleanFormula> refinement = new ArrayList<>();
         // For each symmetry permutation, we will create refinement clauses
         for (Function<Event, Event> perm : symmPermutations) {
             for (Conjunction<CoreLiteral> reason : coreReasons.getCubes()) {
@@ -64,11 +64,11 @@ public class Refiner {
                     }
                 }
                 if (addedFormulas.add(permutedClause)) {
-                    refinement = bmgr.and(refinement, permutedClause);
+                    refinement.add(permutedClause);
                 }
             }
         }
-        return refinement;
+        return bmgr.and(refinement);
     }
 
     // Computes a list of permutations allowed by the program.

@@ -9,16 +9,16 @@ import java.math.BigInteger;
 public abstract class IExpr implements Reducible {
 
     @Override
-	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
-		FormulaManager fmgr = ctx.getFormulaManager();
-		return toIntFormula(e, ctx) instanceof BitvectorFormula ? 
-				fmgr.getBitvectorFormulaManager().greaterThan((BitvectorFormula)toIntFormula(e, ctx), fmgr.getBitvectorFormulaManager().makeBitvector(getPrecision(), BigInteger.ZERO), false) :
-				fmgr.getIntegerFormulaManager().greaterThan((IntegerFormula)toIntFormula(e, ctx), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
+	public BooleanFormula toBoolFormula(Event e, FormulaManager m) {
+		Formula f = toIntFormula(e, m);
+		return f instanceof BitvectorFormula ?
+				m.getBitvectorFormulaManager().greaterThan((BitvectorFormula)f, m.getBitvectorFormulaManager().makeBitvector(getPrecision(), BigInteger.ZERO), false) :
+				m.getIntegerFormulaManager().greaterThan((IntegerFormula)f, m.getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
 	}
 
     @Override
-    public boolean getBoolValue(Event e, Model model, SolverContext ctx){
-        return getIntValue(e, model, ctx).signum() == 1;
+    public boolean getBoolValue(Event e, Model model, FormulaManager m) {
+        return getIntValue(e, model, m).signum() == 1;
     }
 
 	public IExpr getBase() {

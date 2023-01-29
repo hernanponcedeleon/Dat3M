@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,7 +41,6 @@ public final class EncodingContext {
     private final ExecutionAnalysis executionAnalysis;
     private final AliasAnalysis aliasAnalysis;
     private final RelationAnalysis relationAnalysis;
-    private final SolverContext solverContext;
     private final FormulaManager formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
 
@@ -61,24 +61,30 @@ public final class EncodingContext {
     private final Map<Event, Formula> values = new HashMap<>();
     private final Map<Event, Formula> results = new HashMap<>();
 
-    private EncodingContext(VerificationTask t, Context a, SolverContext s) {
+    private EncodingContext(VerificationTask t, Context a, FormulaManager m) {
         verificationTask = checkNotNull(t);
         analysisContext = checkNotNull(a);
         a.requires(BranchEquivalence.class);
         executionAnalysis = a.requires(ExecutionAnalysis.class);
         aliasAnalysis = a.requires(AliasAnalysis.class);
         relationAnalysis = a.requires(RelationAnalysis.class);
-        solverContext = checkNotNull(s);
-        formulaManager = s.getFormulaManager();
-        booleanFormulaManager = formulaManager.getBooleanFormulaManager();
+        formulaManager = m;
+        booleanFormulaManager = m.getBooleanFormulaManager();
     }
 
-    public static EncodingContext of(VerificationTask task, Context analysisContext, SolverContext solverContext) throws InvalidConfigurationException {
-        EncodingContext context = new EncodingContext(task, analysisContext, solverContext);
+    public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
+        EncodingContext context = new EncodingContext(task, analysisContext, formulaManager);
         task.getConfig().inject(context);
         logger.info("{}: {}", IDL_TO_SAT, context.useSATEncoding);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
         context.initialize();
+        if (logger.isInfoEnabled()) {
+            logger.info("Number of encoded tuples for acyclicity: {}",
+                    task.getMemoryModel().getAxioms().stream()
+                            .filter(Acyclic.class::isInstance)
+                            .mapToInt(a -> ((Acyclic) a).getEncodeTupleSetSize(analysisContext))
+                            .sum());
+        }
         return context;
     }
 
@@ -94,11 +100,6 @@ public final class EncodingContext {
         return analysisContext;
     }
 
-    @Deprecated
-    public SolverContext getSolverContext() {
-        return solverContext;
-    }
-
     public FormulaManager getFormulaManager() {
         return formulaManager;
     }
@@ -112,7 +113,7 @@ public final class EncodingContext {
     }
 
     public BooleanFormula jumpCondition(CondJump event) {
-        return event.getGuard().toBoolFormula(event, solverContext);
+        return event.getGuard().toBoolFormula(event, formulaManager);
     }
 
     public BooleanFormula execution(Event event) {
@@ -217,10 +218,10 @@ public final class EncodingContext {
         RelationAnalysis.Knowledge k = relationAnalysis.getKnowledge(relation);
         EdgeEncoder variable = relation.getDefinition().getEdgeVariableEncoder(this);
         return tuple -> {
-            if (!k.getMaySet().contains(tuple)) {
+            if (!k.containsMay(tuple)) {
                 return booleanFormulaManager.makeFalse();
             }
-            if (k.getMustSet().contains(tuple)) {
+            if (k.containsMust(tuple)) {
                 return execution(tuple.getFirst(), tuple.getSecond());
             }
             return variable.encode(tuple);
@@ -252,10 +253,10 @@ public final class EncodingContext {
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
             }
-            Formula r = e instanceof RegWriter ? ((RegWriter) e).getResultRegister().toIntFormulaResult(e, solverContext) : null;
+            Formula r = e instanceof RegWriter ? ((RegWriter) e).getResultRegister().toIntFormulaResult(e, formulaManager) : null;
             if (e instanceof MemEvent) {
-                addresses.put(e, ((MemEvent) e).getAddress().toIntFormula(e, solverContext));
-                values.put(e, e instanceof Load ? r : ((MemEvent) e).getMemValue().toIntFormula(e, solverContext));
+                addresses.put(e, ((MemEvent) e).getAddress().toIntFormula(e, formulaManager));
+                values.put(e, e instanceof Load ? r : ((MemEvent) e).getMemValue().toIntFormula(e, formulaManager));
             }
             if (r != null) {
                 results.put(e, r);

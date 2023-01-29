@@ -307,8 +307,8 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void printWarningIfThreadStartFailed(Program p, EncodingContext encoder, ProverEnvironment prover) throws SolverException {
-        for (Event e : p.getCache().getEvents(FilterBasic.get(Tag.STARTLOAD))) {
-            if (BigInteger.ZERO.equals(prover.getModel().evaluate(encoder.value((Load) e)))) {
+        for (Event e : p.getEvents()) {
+            if (e.is(Tag.STARTLOAD) && BigInteger.ZERO.equals(prover.getModel().evaluate(encoder.value((Load) e)))) {
                 // This msg should be displayed even if the logging is off
                 System.out.printf(
                         "[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true%n",

@@ -53,15 +53,13 @@ public class Local extends Event implements RegWriter, RegReaderData {
 
 	@Override
 	public BooleanFormula encodeExec(EncodingContext context) {
-		SolverContext ctx = context.getSolverContext();
 		BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-		
+		FormulaManager fmgr = context.getFormulaManager();
 		BooleanFormula enc = super.encodeExec(context);
 		if(expr instanceof INonDet) {
-			enc = bmgr.and(enc, ((INonDet)expr).encodeBounds(expr.toIntFormula(this, ctx) instanceof BitvectorFormula, ctx));
+			enc = bmgr.and(enc, ((INonDet)expr).encodeBounds(expr.toIntFormula(this, fmgr) instanceof BitvectorFormula, fmgr));
 		}
-
-		return bmgr.and(enc, context.equal(context.result(this), expr.toIntFormula(this, ctx)));
+		return bmgr.and(enc, context.equal(context.result(this), expr.toIntFormula(this, fmgr)));
 	}
 
 	// Unrolling

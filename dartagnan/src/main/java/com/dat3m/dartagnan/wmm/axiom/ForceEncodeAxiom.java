@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
+import java.util.List;
 import java.util.Set;
 
 /*
@@ -28,9 +29,9 @@ public class ForceEncodeAxiom extends Axiom {
     }
 
     @Override
-    public BooleanFormula consistent(EncodingContext ctx) {
+    public List<BooleanFormula> consistent(EncodingContext ctx) {
         BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
-		return negated ? bmgr.makeFalse() : bmgr.makeTrue();
+		return negated ? List.of(bmgr.makeFalse()) : List.of();
     }
 
     @Override

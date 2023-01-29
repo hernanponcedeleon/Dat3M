@@ -4,8 +4,8 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -18,7 +18,6 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMFILE;
 
@@ -78,15 +77,14 @@ public class WitnessGraph extends ElemWithAttributes {
 		Program program = context.getTask().getProgram();
 		BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 		IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
-		
-		BooleanFormula enc = bmgr.makeTrue();
+		List<BooleanFormula> enc = new ArrayList<>();
 		List<Event> previous = new ArrayList<>();
 		for(Edge edge : edges.stream().filter(Edge::hasCline).collect(Collectors.toList())) {
-			List<Event> events = program.getCache().getEvents(FilterBasic.get(MEMORY)).stream()
+			List<Event> events = program.getEvents(MemEvent.class).stream()
 					.filter(e -> e.getCLine() == edge.getCline())
 					.collect(Collectors.toList());
 			if(!previous.isEmpty() && !events.isEmpty()) {
-				enc = bmgr.and(enc, bmgr.or(Lists.cartesianProduct(previous, events).stream()
+				enc.add(bmgr.or(Lists.cartesianProduct(previous, events).stream()
 						.map(p -> context.edgeVariable("hb", p.get(0), p.get(1)))
 						.toArray(BooleanFormula[]::new)));
 			}
@@ -96,24 +94,22 @@ public class WitnessGraph extends ElemWithAttributes {
 			// FIXME: The reliance on "globalId" for matching is very fragile (see comment in WitnessBuilder)
 			if(edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(LOADEDVALUE.toString())) {
 				int id = Integer.parseInt(edge.getAttributed(EVENTID.toString()));
-				if(program.getCache().getEvents(FilterBasic.get(READ)).stream().anyMatch(e -> e.getGlobalId() == id)) {
-					Load load = (Load)program.getCache().getEvents(FilterBasic.get(READ)).stream()
-							.filter(e -> e.getGlobalId() == id).findFirst().get();
+				Optional<Load> load = program.getEvents(Load.class).stream().filter(e -> e.getGlobalId() == id).findFirst();
+				if (load.isPresent()) {
 					BigInteger value = new BigInteger(edge.getAttributed(LOADEDVALUE.toString()));
-					enc = bmgr.and(enc, context.equal(context.result(load), imgr.makeNumber(value)));
+					enc.add(context.equal(context.result(load.get()), imgr.makeNumber(value)));
 				}
 			}
 			if(edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(STOREDVALUE.toString())) {
 				int id = Integer.parseInt(edge.getAttributed(EVENTID.toString()));
-				if(program.getCache().getEvents(FilterBasic.get(WRITE)).stream().anyMatch(e -> e.getGlobalId() == id)) {
-					Store store = (Store)program.getCache().getEvents(FilterBasic.get(WRITE)).stream()
-							.filter(e -> e.getGlobalId() == id).findFirst().get();
+				Optional<Store> store = program.getEvents(Store.class).stream().filter(e -> e.getGlobalId() == id).findFirst();
+				if (store.isPresent()) {
 					BigInteger value = new BigInteger(edge.getAttributed(STOREDVALUE.toString()));
-					enc = bmgr.and(enc, context.equal(context.value(store), imgr.makeNumber(value)));
+					enc.add(context.equal(context.value(store.get()), imgr.makeNumber(value)));
 				}
 			}
 		}
-		return enc;
+		return bmgr.and(enc);
 	}
 	
 	public void write() {

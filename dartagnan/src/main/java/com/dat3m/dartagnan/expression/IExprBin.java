@@ -7,8 +7,8 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 
@@ -26,8 +26,8 @@ public class IExprBin extends IExpr {
     }
 
     @Override
-    public Formula toIntFormula(Event e, SolverContext ctx) {
-        return op.encode(lhs.toIntFormula(e, ctx), rhs.toIntFormula(e, ctx), ctx);
+    public Formula toIntFormula(Event e, FormulaManager m) {
+        return op.encode(lhs.toIntFormula(e, m), rhs.toIntFormula(e, m), m);
     }
 
     @Override
@@ -41,8 +41,8 @@ public class IExprBin extends IExpr {
     }
 
     @Override
-    public BigInteger getIntValue(Event e, Model model, SolverContext ctx){
-        return op.combine(lhs.getIntValue(e, model, ctx), rhs.getIntValue(e, model, ctx));
+    public BigInteger getIntValue(Event e, Model model, FormulaManager m) {
+        return op.combine(lhs.getIntValue(e, model, m), rhs.getIntValue(e, model, m));
     }
     
     @Override

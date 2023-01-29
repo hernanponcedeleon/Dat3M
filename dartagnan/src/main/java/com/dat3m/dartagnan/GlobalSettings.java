@@ -18,7 +18,6 @@ public class GlobalSettings {
     public static final boolean ATOMIC_AS_LOCK = false;
 
     // === Static analysis ===
-    public static final boolean REDUCE_ACYCLICITY_ENCODE_SETS = true;
     public static final boolean ALLOW_MULTIREADS = false; // Allows a read to have multiple rf-edges
 
     // ==== Refinement ====

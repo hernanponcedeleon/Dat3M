@@ -28,12 +28,11 @@ import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
-import static com.dat3m.dartagnan.program.event.Tag.INIT;
-import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 
 public class PropertyEncoder implements Encoder {
@@ -89,14 +88,11 @@ public class PropertyEncoder implements Encoder {
         return new PropertyEncoder(context);
     }
 
-    @Override
-    public void initializeEncoding(SolverContext context) { }
-
     public BooleanFormula encodeBoundEventExec() {
         logger.info("Encoding bound events execution");
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        return program.getCache().getEvents(FilterBasic.get(Tag.BOUND))
-                .stream().map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
+        return program.getEvents()
+                .stream().filter(e -> e.hasFilter(Tag.BOUND)).map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
     }
 
     public BooleanFormula encodeProperties(EnumSet<Property> properties) {
@@ -163,58 +159,59 @@ public class PropertyEncoder implements Encoder {
 
     private BooleanFormula encodeLastCoConstraints() {
         final Relation co = memoryModel.getRelation(CO);
-        final SolverContext ctx = context.getSolverContext();
+        final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final EncodingContext.EdgeEncoder coEncoder = context.edge(co);
-        final TupleSet maySet = ra.getKnowledge(co).getMaySet();
-        final TupleSet mustSet = ra.getKnowledge(co).getMustSet();
-        final List<Event> initEvents = program.getCache().getEvents(FilterBasic.get(INIT));
-        final List<Event> writes = program.getCache().getEvents(FilterBasic.get(WRITE));
+        final RelationAnalysis.Knowledge knowledge = ra.getKnowledge(co);
+        final List<Init> initEvents = program.getEvents(Init.class);
         final boolean doEncodeFinalAddressValues = program.getFormat() == LITMUS;
         // Find transitively implied coherences. We can use these to reduce the encoding.
         final Set<Tuple> transCo = ra.findTransitivelyImpliedCo(co);
         // Find all writes that are never last, i.e., those that will always have a co-successor.
-        final Set<Event> dominatedWrites = mustSet.stream()
+        final Set<Event> dominatedWrites = knowledge.getMustSet().stream()
                 .filter(t -> exec.isImplied(t.getFirst(), t.getSecond()))
                 .map(Tuple::getFirst).collect(Collectors.toSet());
 
         // ---- Construct encoding ----
-        BooleanFormula enc = bmgr.makeTrue();
-        for (Event writeEvent : writes) {
+        List<BooleanFormula> enc = new ArrayList<>();
+        final Function<Event, Collection<Tuple>> out = knowledge.getMayOut();
+        for (Event writeEvent : program.getEvents()) {
+            if (!writeEvent.is(Tag.WRITE)) {
+                continue;
+            }
             MemEvent w1 = (MemEvent) writeEvent;
             if (dominatedWrites.contains(w1)) {
-                enc = bmgr.and(enc, bmgr.not(lastCoVar(w1)));
+                enc.add(bmgr.not(lastCoVar(w1)));
                 continue;
             }
             BooleanFormula isLast = context.execution(w1);
             // ---- Find all possibly overwriting writes ----
-            for (Tuple coEdge : maySet.getByFirst(w1)) {
+            for (Tuple coEdge : out.apply(w1)) {
                 if (transCo.contains(coEdge)) {
                     // We can skip the co-edge (w1,w2), because there will be an intermediate write w3
                     // that already witnesses that w1 is not last.
                     continue;
                 }
                 Event w2 = coEdge.getSecond();
-                BooleanFormula isAfter = bmgr.not(mustSet.contains(coEdge) ? context.execution(w2) : coEncoder.encode(coEdge));
+                BooleanFormula isAfter = bmgr.not(knowledge.containsMust(coEdge) ? context.execution(w2) : coEncoder.encode(coEdge));
                 isLast = bmgr.and(isLast, isAfter);
             }
             BooleanFormula lastCoExpr = lastCoVar(w1);
-            enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, isLast));
+            enc.add(bmgr.equivalence(lastCoExpr, isLast));
             if (doEncodeFinalAddressValues) {
                 // ---- Encode final values of addresses ----
-                for (Event initEvent : initEvents) {
-                    Init init = (Init) initEvent;
+                for (Init init : initEvents) {
                     if (!alias.mayAlias(w1, init)) {
                         continue;
                     }
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
-                    Formula v2 = init.getBase().getLastMemValueExpr(ctx, init.getOffset());
+                    Formula v2 = init.getBase().getLastMemValueExpr(fmgr, init.getOffset());
                     BooleanFormula sameValue = context.equal(context.value(w1), v2);
-                    enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
+                    enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
             }
         }
-        return enc;
+        return bmgr.and(enc);
     }
 
     private BooleanFormula lastCoVar(Event write) {
@@ -320,12 +317,18 @@ public class PropertyEncoder implements Encoder {
                 if(t1 == t2) {
                     continue;
                 }
-                for(Event e1 : t1.getCache().getEvents(FilterMinus.get(FilterBasic.get(WRITE), FilterBasic.get(INIT)))) {
+                for (Event e1 : t1.getEvents()) {
+                    if (!e1.hasFilter(Tag.WRITE) || e1.hasFilter(Tag.INIT)) {
+                        continue;
+                    }
                     MemEvent w = (MemEvent)e1;
                     if (!w.canRace()) {
                         continue;
                     }
-                    for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(Tag.MEMORY), FilterBasic.get(INIT)))) {
+                    for(Event e2 : t2.getEvents()) {
+                        if (!e2.hasFilter(Tag.MEMORY) || e2.hasFilter(Tag.INIT)) {
+                            continue;
+                        }
                         MemEvent m = (MemEvent)e2;
                         if((w.hasFilter(Tag.RMW) && m.hasFilter(Tag.RMW)) || !m.canRace() || !alias.mayAlias(m, w)) {
                             continue;
@@ -409,8 +412,9 @@ public class PropertyEncoder implements Encoder {
             BooleanFormula atLeastOneStuck = bmgr.makeFalse();
             for (Thread thread : program.getThreads()) {
                 final BooleanFormula isStuck = isStuckMap.get(thread);
-                final BooleanFormula isTerminatingNormally = thread.getCache()
-                        .getEvents(FilterBasic.get(Tag.EARLYTERMINATION)).stream()
+                final BooleanFormula isTerminatingNormally = thread
+                        .getEvents().stream()
+                        .filter(e -> e.hasFilter(Tag.EARLYTERMINATION))
                         .map(CondJump.class::cast)
                         .map(j -> bmgr.not(bmgr.and(context.execution(j), context.jumpCondition(j))))
                         .reduce(bmgr.makeTrue(), bmgr::and);
@@ -430,7 +434,7 @@ public class PropertyEncoder implements Encoder {
             final RelationAnalysis ra = PropertyEncoder.this.ra;
             final Relation rf = memoryModel.getRelation(RelationNameRepository.RF);
             final EncodingContext.EdgeEncoder rfEncoder = context.edge(rf);
-            final TupleSet rfMaySet = ra.getKnowledge(rf).getMaySet();
+            final Function<Event, Collection<Tuple>> rfMayIn = ra.getKnowledge(rf).getMayIn();
 
             if (loops.isEmpty()) {
                 return bmgr.makeFalse();
@@ -440,7 +444,7 @@ public class PropertyEncoder implements Encoder {
             for (SpinIteration loop : loops) {
                 BooleanFormula allLoadsAreCoMaximal = bmgr.makeTrue();
                 for (Load load : loop.containedLoads) {
-                    final BooleanFormula readsCoMaximalStore = rfMaySet.getBySecond(load).stream()
+                    final BooleanFormula readsCoMaximalStore = rfMayIn.apply(load).stream()
                             .map(rfEdge -> bmgr.and(rfEncoder.encode(rfEdge), lastCoVar(rfEdge.getFirst())))
                             .reduce(bmgr.makeFalse(), bmgr::or);
                     final BooleanFormula isCoMaximalLoad = bmgr.implication(context.execution(load), readsCoMaximalStore);

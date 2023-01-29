@@ -55,7 +55,6 @@ public class SimpleSpinLoopDetection implements ProgramProcessor {
                 getClass().getSimpleName() + " should be performed before unrolling.");
 
         program.getThreads().forEach(this::detectAndMarkSpinLoops);
-        program.clearCache(true);
     }
 
 

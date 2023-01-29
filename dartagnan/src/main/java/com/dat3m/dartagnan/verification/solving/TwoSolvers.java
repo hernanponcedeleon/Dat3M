@@ -49,16 +49,11 @@ public class TwoSolvers extends ModelChecker {
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
 
-        context = EncodingContext.of(task, analysisContext, ctx);
+        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);
-
-        programEncoder.initializeEncoding(ctx);
-        propertyEncoder.initializeEncoding(ctx);
-        wmmEncoder.initializeEncoding(ctx);
-        symmetryEncoder.initializeEncoding(ctx);
 
         logger.info("Starting encoding using " + ctx.getVersion());
         BooleanFormula encodeProg = programEncoder.encodeFullProgram();

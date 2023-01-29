@@ -2,12 +2,10 @@ package com.dat3m.dartagnan.utils.printer;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
 
 public class Printer {
 
@@ -73,7 +71,7 @@ public class Printer {
         } catch (Exception e) {
             result.append("\n").append(thread.getName()).append("\n");        	
         }
-        for(Event e : thread.getCache().getEvents(FilterBasic.get(Tag.ANY))){
+        for (Event e : thread.getEvents()) {
             appendEvent(e);
         }
     }

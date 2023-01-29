@@ -1,10 +1,7 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
-import com.dat3m.dartagnan.program.event.EventCache;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.google.common.base.Preconditions;
 
 import java.util.Collection;
@@ -22,7 +19,6 @@ public class Thread {
 	protected Program program; // The program this thread belongs to
 
     private final Map<String, Register> registers;
-    private EventCache cache;
     private int dummyCount = 0;
 
     public Thread(String name, int id, Event entry){
@@ -52,15 +48,8 @@ public class Thread {
         return id;
     }
 
-    public EventCache getCache(){
-        if(cache == null){
-            cache = new EventCache(entry.getSuccessors());
-        }
-        return cache;
-    }
-
     public List<Event> getEvents() {
-        return getCache().getEvents(FilterBasic.get(Tag.ANY));
+        return entry.getSuccessors();
     }
 
 	public Program getProgram() {
@@ -71,11 +60,6 @@ public class Thread {
 		Preconditions.checkNotNull(program);
 		this.program = program;
 	}
-
-
-    public void clearCache(){
-        cache = null;
-    }
 
     /**
      * Lists all registers of this thread.
@@ -115,7 +99,6 @@ public class Thread {
         exit.setSuccessor(event);
         event.setThread(this);
         updateExit(event);
-        clearCache();
     }
 
     public void updateExit(Event event){
