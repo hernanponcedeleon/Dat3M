@@ -24,7 +24,7 @@ public enum Property implements OptionInterface {
     }
 
     // Used to display in UI
-    // @Override
+    @Override
     public String toString() {
         switch (this) {
             case PROGRAM_SPEC:
@@ -45,6 +45,25 @@ public enum Property implements OptionInterface {
         return this.name().toLowerCase();
     }
 
+    public Type getType(VerificationTask context) {
+        if (this == PROGRAM_SPEC && !context.getProgram().getSpecification().isSafetySpec()) {
+            return Type.REACHABILITY;
+        } else {
+            return Type.SAFETY;
+        }
+    }
+
+    public BooleanFormula getSMTVariable(EncodingContext ctx) {
+        return ctx.getBooleanFormulaManager().makeVariable(this.toString());
+    }
+
+    public BooleanFormula getSMTVariable(Axiom ax, EncodingContext ctx) {
+        Preconditions.checkState(this == CAT_SPEC);
+        return ctx.getBooleanFormulaManager()
+                .makeVariable("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
+    }
+
+    // ------------------------- Static -------------------------
 
     public static EnumSet<Property> getDefault() {
         return EnumSet.of(PROGRAM_SPEC);
@@ -58,27 +77,9 @@ public enum Property implements OptionInterface {
         return order;
     }
 
-    public Type getType(VerificationTask context) {
-        if (this == PROGRAM_SPEC && !context.getProgram().getSpecification().isSafetySpec()) {
-            return Type.REACHABILITY;
-        } else {
-            return Type.SAFETY;
-        }
-    }
-
     public static Type getCombinedType(EnumSet<Property> properties, VerificationTask context) {
         return properties.stream().map(p -> p.getType(context))
                 .reduce((x, y) -> x == y ? x : Type.MIXED)
                 .orElse(Type.SAFETY); // In the odd case that the properties are empty, we consider it a safety spec
-    }
-
-    public BooleanFormula getSMTVariable(EncodingContext ctx) {
-        return ctx.getBooleanFormulaManager().makeVariable(this.toString());
-    }
-
-    public BooleanFormula getSMTVariable(Axiom ax, EncodingContext ctx) {
-        Preconditions.checkState(this == CAT_SPEC);
-        return ctx.getBooleanFormulaManager()
-                .makeVariable("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
     }
 }
