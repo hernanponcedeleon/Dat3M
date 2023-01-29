@@ -57,22 +57,32 @@ extern int __LKMM_ATOMIC_OP_RETURN(int*, int, memory_order, operation);
 #define smp_store_release(p, v)  __LKMM_STORE(p, v, memory_order_release)
 #define rcu_dereference(p)       READ_ONCE(p)
 #define rcu_assign_pointer(p, v) smp_store_release(&(p), v)
-#define smp_store_mb(x, v)    \
-do {                          \
-    WRITE_ONCE(x, v);         \
-    smp_mb();                 \
+#define smp_store_mb(x, v)                    \
+do {                                \
+    WRITE_ONCE(&x, v, memory_order_relaxed);    \
+    smp_mb();                        \
 } while (0)
 
 /* Exchange */
-#define xchg(p, v) __LKMM_XCHG(p, v, mb);
-#define xchg_relaxed(p, v) __LKMM_XCHG(p, v, memory_order_relaxed)
-#define xchg_release(p, v) __LKMM_XCHG(p, v, memory_order_release)
-#define xchg_acquire(p, v) __LKMM_XCHG(p, v, memory_order_acquire)
+#define xchg(p, v)                      __LKMM_XCHG(p, v, mb);
+#define xchg_relaxed(p, v)              __LKMM_XCHG(p, v, memory_order_relaxed)
+#define xchg_release(p, v)              __LKMM_XCHG(p, v, memory_order_release)
+#define xchg_acquire(p, v)              __LKMM_XCHG(p, v, memory_order_acquire)
 
-#define cmpxchg(p, o, n) __LKMM_CMPXCHG(p, o, n, mb, mb)
-#define cmpxchg_relaxed(p, o, n) __LKMM_CMPXCHG(p, o, n, memory_order_relaxed, memory_order_relaxed)
-#define cmpxchg_acquire(p, o, n) __LKMM_CMPXCHG(p, o, n, memory_order_acquire, memory_order_acquire)
-#define cmpxchg_release(p, o, n) __LKMM_CMPXCHG(p, o, n, memory_order_release, memory_order_release)
+#define xchg_long(p, v)                 __LKMM_XCHG(p, v, mb);
+#define xchg_long_relaxed(p, v)         __LKMM_XCHG(p, v, memory_order_relaxed)
+#define xchg_long_release(p, v)         __LKMM_XCHG(p, v, memory_order_release)
+#define xchg_long_acquire(p, v)         __LKMM_XCHG(p, v, memory_order_acquire)
+
+#define cmpxchg(p, o, n)                __LKMM_CMPXCHG(p, o, n, mb, mb)
+#define cmpxchg_relaxed(p, o, n)        __LKMM_CMPXCHG(p, o, n, memory_order_relaxed, memory_order_relaxed)
+#define cmpxchg_acquire(p, o, n)        __LKMM_CMPXCHG(p, o, n, memory_order_acquire, memory_order_acquire)
+#define cmpxchg_release(p, o, n)        __LKMM_CMPXCHG(p, o, n, memory_order_release, memory_order_release)
+
+#define cmpxchg_long(p, o, n)           __LKMM_CMPXCHG(p, o, n, mb, mb)
+#define cmpxchg_long_relaxed(p, o, n)   __LKMM_CMPXCHG(p, o, n, memory_order_relaxed, memory_order_relaxed)
+#define cmpxchg_long_acquire(p, o, n)   __LKMM_CMPXCHG(p, o, n, memory_order_acquire, memory_order_acquire)
+#define cmpxchg_long_release(p, o, n)   __LKMM_CMPXCHG(p, o, n, memory_order_release, memory_order_release)
 
 /*******************************************************************************
  **                            ATOMIC OPERATIONS
@@ -92,90 +102,169 @@ typedef atomic64_t  atomic_long_t;
 #define ATOMIC_INIT(i) { (i) }
 
 /* Basic operations */
-#define atomic_read(v)   READ_ONCE((v)->counter)
-#define atomic_set(v, i) WRITE_ONCE(((v)->counter), (i))
-#define atomic_read_acquire(v)   smp_load_acquire(&(v)->counter)
-#define atomic_set_release(v, i) smp_store_release(&(v)->counter, (i))
+#define atomic_read(v)                        READ_ONCE((v)->counter)
+#define atomic_set(v, i)                      WRITE_ONCE(((v)->counter), (i))
+#define atomic_read_acquire(v)                smp_load_acquire(&(v)->counter)
+#define atomic_set_release(v, i)              smp_store_release(&(v)->counter, (i))
+
+#define atomic_long_read(v)                   READ_ONCE((v)->counter)
+#define atomic_long_set(v, i)                 WRITE_ONCE(((v)->counter), (i))
+#define atomic_long_read_acquire(v)           smp_load_acquire(&(v)->counter)
+#define atomic_long_set_release(v, i)         smp_store_release(&(v)->counter, (i))
 
 /* Non-value-returning atomics */
-#define atomic_add(i, v) __LKMM_ATOMIC_OP(&(v)->counter, i, op_add)
-#define atomic_sub(i, v) __LKMM_ATOMIC_OP(&(v)->counter, i, op_sub)
-#define atomic_inc(v) __LKMM_ATOMIC_OP(&(v)->counter, 1, op_add)
-#define atomic_dec(v) __LKMM_ATOMIC_OP(&(v)->counter, 1, op_sub)
-#define atomic_and(i, v) __LKMM_ATOMIC_OP(&(v)->counter, i, op_and)
-#define atomic_andnot(i, v) __LKMM_ATOMIC_OP(&(v)->counter, ~(i), op_and)
-#define atomic_or(i, v) __LKMM_ATOMIC_OP(&(v)->counter, i, op_or)
+#define atomic_add(i, v)                      __LKMM_ATOMIC_OP(&(v)->counter, i, op_add)
+#define atomic_sub(i, v)                      __LKMM_ATOMIC_OP(&(v)->counter, i, op_sub)
+#define atomic_inc(v)                         __LKMM_ATOMIC_OP(&(v)->counter, 1, op_add)
+#define atomic_dec(v)                         __LKMM_ATOMIC_OP(&(v)->counter, 1, op_sub)
+#define atomic_and(i, v)                      __LKMM_ATOMIC_OP(&(v)->counter, i, op_and)
+#define atomic_andnot(i, v)                   __LKMM_ATOMIC_OP(&(v)->counter, ~(i), op_and)
+#define atomic_or(i, v)                       __LKMM_ATOMIC_OP(&(v)->counter, i, op_or)
+
+#define atomic_long_add(i, v)                 __LKMM_ATOMIC_OP(&(v)->counter, i, op_add)
+#define atomic_long_sub(i, v)                 __LKMM_ATOMIC_OP(&(v)->counter, i, op_sub)
+#define atomic_long_inc(v)                    __LKMM_ATOMIC_OP(&(v)->counter, 1, op_add)
+#define atomic_long_dec(v)                    __LKMM_ATOMIC_OP(&(v)->counter, 1, op_sub)
+#define atomic_long_and(i, v)                 __LKMM_ATOMIC_OP(&(v)->counter, i, op_and)
+#define atomic_long_andnot(i, v)              __LKMM_ATOMIC_OP(&(v)->counter, ~(i), op_and)
+#define atomic_long_or(i, v)                  __LKMM_ATOMIC_OP(&(v)->counter, i, op_or)
 
 /* Value-returning atomics */
 
-#define atomic_fetch_add(i, v)  __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_add)
-#define atomic_fetch_add_relaxed(i, v) __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_add)
-#define atomic_fetch_add_acquire(i, v) __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_add)
-#define atomic_fetch_add_release(i, v) __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_add)
+#define atomic_fetch_add(i, v)                __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_add)
+#define atomic_fetch_add_relaxed(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_add)
+#define atomic_fetch_add_acquire(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_add)
+#define atomic_fetch_add_release(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_add)
 
-#define atomic_fetch_inc(v)         atomic_fetch_add(1, v)
-#define atomic_fetch_inc_relaxed(v) atomic_fetch_add_relaxed(1, v)
-#define atomic_fetch_inc_acquire(v) atomic_fetch_add_acquire(1, v)
-#define atomic_fetch_inc_release(v) atomic_fetch_add_release(1, v)
+#define atomic_long_fetch_add(i, v)           __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_add)
+#define atomic_long_fetch_add_relaxed(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_add)
+#define atomic_long_fetch_add_acquire(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_add)
+#define atomic_long_fetch_add_release(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_add)
 
-#define atomic_fetch_sub(i, v) __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_sub)
-#define atomic_fetch_sub_relaxed(i, v) __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_sub)
-#define atomic_fetch_sub_acquire(i, v) __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_sub)
-#define atomic_fetch_sub_release(i, v) __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_sub)
+#define atomic_fetch_inc(v)                   atomic_fetch_add(1, v)
+#define atomic_fetch_inc_relaxed(v)           atomic_fetch_add_relaxed(1, v)
+#define atomic_fetch_inc_acquire(v)           atomic_fetch_add_acquire(1, v)
+#define atomic_fetch_inc_release(v)           atomic_fetch_add_release(1, v)
 
-#define atomic_fetch_dec(v)         atomic_fetch_sub(1, v)
-#define atomic_fetch_dec_relaxed(v) atomic_fetch_sub_relaxed(1, v)
-#define atomic_fetch_dec_acquire(v) atomic_fetch_sub_acquire(1, v)
-#define atomic_fetch_dec_release(v) atomic_fetch_sub_release(1, v)
+#define atomic_long_fetch_inc(v)              atomic_long_fetch_add(1, v)
+#define atomic_long_fetch_inc_relaxed(v)      atomic_long_fetch_add_relaxed(1, v)
+#define atomic_long_fetch_inc_acquire(v)      atomic_long_fetch_add_acquire(1, v)
+#define atomic_long_fetch_inc_release(v)      atomic_long_fetch_add_release(1, v)
 
-#define atomic_fetch_and(i, v)  __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_and)
-#define atomic_fetch_and_relaxed(i, v) __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_and)
-#define atomic_fetch_and_acquire(i, v) __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_and)
-#define atomic_fetch_and_release(i, v) __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_and)
+#define atomic_fetch_sub(i, v)                __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_sub)
+#define atomic_fetch_sub_relaxed(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_sub)
+#define atomic_fetch_sub_acquire(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_sub)
+#define atomic_fetch_sub_release(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_sub)
 
-#define atomic_fetch_andnot(i, v)  atomic_fetch_and(~(i), v)
-#define atomic_fetch_andnot_relaxed(i, v) atomic_fetch_and_relaxed(~(i), v)
-#define atomic_fetch_andnot_acquire(i, v) atomic_fetch_and_acquire(~(i), v)
-#define atomic_fetch_andnot_release(i, v) atomic_fetch_and_release(~(i), v)
+#define atomic_long_fetch_sub(i, v)           __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_sub)
+#define atomic_long_fetch_sub_relaxed(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_sub)
+#define atomic_long_fetch_sub_acquire(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_sub)
+#define atomic_long_fetch_sub_release(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_sub)
 
-#define atomic_fetch_or(i, v)  __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_or)
-#define atomic_fetch_or_relaxed(i, v) __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_or)
-#define atomic_fetch_or_acquire(i, v) __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_or)
-#define atomic_fetch_or_release(i, v) __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_or)
+#define atomic_fetch_dec(v)                   atomic_fetch_sub(1, v)
+#define atomic_fetch_dec_relaxed(v)           atomic_fetch_sub_relaxed(1, v)
+#define atomic_fetch_dec_acquire(v)           atomic_fetch_sub_acquire(1, v)
+#define atomic_fetch_dec_release(v)           atomic_fetch_sub_release(1, v)
 
-#define atomic_add_return(i, v) __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, mb, op_add)
-#define atomic_add_return_relaxed(i, v) __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_relaxed, op_add)
-#define atomic_add_return_acquire(i, v) __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_acquire, op_add)
-#define atomic_add_return_release(i, v) __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_release, op_add)
+#define atomic_long_fetch_dec(v)              atomic_long_fetch_sub(1, v)
+#define atomic_long_fetch_dec_relaxed(v)      atomic_long_fetch_sub_relaxed(1, v)
+#define atomic_long_fetch_dec_acquire(v)      atomic_long_fetch_sub_acquire(1, v)
+#define atomic_long_fetch_dec_release(v)      atomic_long_fetch_sub_release(1, v)
 
-#define atomic_inc_return(v)         atomic_add_return(1, v)
-#define atomic_inc_return_relaxed(v) atomic_add_return_relaxed(1, v)
-#define atomic_inc_return_acquire(v) atomic_add_return_acquire(1, v)
-#define atomic_inc_return_release(v) atomic_add_return_release(1, v)
+#define atomic_fetch_and(i, v)                __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_and)
+#define atomic_fetch_and_relaxed(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_and)
+#define atomic_fetch_and_acquire(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_and)
+#define atomic_fetch_and_release(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_and)
 
-#define atomic_sub_return(i, v) __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, mb, op_sub)
-#define atomic_sub_return_relaxed(i, v) __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_relaxed, op_sub)
-#define atomic_sub_return_acquire(i, v) __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_acquire, op_sub)
-#define atomic_sub_return_release(i, v) __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_release, op_sub)
+#define atomic_long_fetch_and(i, v)           __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_and)
+#define atomic_long_fetch_and_relaxed(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_and)
+#define atomic_long_fetch_and_acquire(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_and)
+#define atomic_long_fetch_and_release(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_and)
 
-#define atomic_dec_return(v)         atomic_sub_return(1, v)
-#define atomic_dec_return_relaxed(v) atomic_sub_return_relaxed(1, v)
-#define atomic_dec_return_acquire(v) atomic_sub_return_acquire(1, v)
-#define atomic_dec_return_release(v) atomic_sub_return_release(1, v)
+#define atomic_fetch_andnot(i, v)             atomic_fetch_and(~(i), v)
+#define atomic_fetch_andnot_relaxed(i, v)     atomic_fetch_and_relaxed(~(i), v)
+#define atomic_fetch_andnot_acquire(i, v)     atomic_fetch_and_acquire(~(i), v)
+#define atomic_fetch_andnot_release(i, v)     atomic_fetch_and_release(~(i), v)
 
-#define atomic_xchg(x, i)         xchg(&(x)->counter, i)
-#define atomic_xchg_relaxed(x, i) xchg_relaxed(&(x)->counter, i)
-#define atomic_xchg_release(x, i) xchg_release(&(x)->counter, i)
-#define atomic_xchg_acquire(x, i) xchg_acquire(&(x)->counter, i)
-#define atomic_cmpxchg(x, o, n)         cmpxchg(&(x)->counter, o, n)
-#define atomic_cmpxchg_relaxed(x, o, n) cmpxchg_relaxed(&(x)->counter, o, n)
-#define atomic_cmpxchg_acquire(x, o, n) cmpxchg_acquire(&(x)->counter, o, n)
-#define atomic_cmpxchg_release(x, o, n) cmpxchg_release(&(x)->counter, o, n)
+#define atomic_long_fetch_andnot(i, v)          atomic_long_fetch_and(~(i), v)
+#define atomic_long_fetch_andnot_relaxed(i, v)  atomic_long_fetch_and_relaxed(~(i), v)
+#define atomic_long_fetch_andnot_acquire(i, v)  atomic_long_fetch_and_acquire(~(i), v)
+#define atomic_long_fetch_andnot_release(i, v)  atomic_long_fetch_and_release(~(i), v)
 
-#define atomic_sub_and_test(i, v) (atomic_sub_return(i, v) == 0)
-#define atomic_dec_and_test(v)    (atomic_dec_return(v) == 0)
-#define atomic_inc_and_test(v)    (atomic_inc_return(v) == 0)
-#define atomic_add_negative(i, v) (atomic_add_return(i, v) < 0)
+#define atomic_fetch_or(i, v)                 __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_or)
+#define atomic_fetch_or_relaxed(i, v)         __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_or)
+#define atomic_fetch_or_acquire(i, v)         __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_or)
+#define atomic_fetch_or_release(i, v)         __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_or)
+
+#define atomic_long_fetch_or(i, v)            __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_or)
+#define atomic_long_fetch_or_relaxed(i, v)    __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_or)
+#define atomic_long_fetch_or_acquire(i, v)    __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_or)
+#define atomic_long_fetch_or_release(i, v)    __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_or)
+
+#define atomic_add_return(i, v)               __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, mb, op_add)
+#define atomic_add_return_relaxed(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_relaxed, op_add)
+#define atomic_add_return_acquire(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_acquire, op_add)
+#define atomic_add_return_release(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_release, op_add)
+
+#define atomic_inc_return(v)                  atomic_add_return(1, v)
+#define atomic_inc_return_relaxed(v)          atomic_add_return_relaxed(1, v)
+#define atomic_inc_return_acquire(v)          atomic_add_return_acquire(1, v)
+#define atomic_inc_return_release(v)          atomic_add_return_release(1, v)
+
+#define atomic_long_inc_return(v)             atomic_long_add_return(1, v)
+#define atomic_long_inc_return_relaxed(v)     atomic_long_add_return_relaxed(1, v)
+#define atomic_long_inc_return_acquire(v)     atomic_long_add_return_acquire(1, v)
+#define atomic_long_inc_return_release(v)     atomic_long_add_return_release(1, v)
+
+#define atomic_sub_return(i, v)               __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, mb, op_sub)
+#define atomic_sub_return_relaxed(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_relaxed, op_sub)
+#define atomic_sub_return_acquire(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_acquire, op_sub)
+#define atomic_sub_return_release(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_release, op_sub)
+
+#define atomic_long_sub_return(i, v)          __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, mb, op_sub)
+#define atomic_long_sub_return_relaxed(i, v)  __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_relaxed, op_sub)
+#define atomic_long_sub_return_acquire(i, v)  __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_acquire, op_sub)
+#define atomic_long_sub_return_release(i, v)  __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_release, op_sub)
+
+#define atomic_dec_return(v)                  atomic_sub_return(1, v)
+#define atomic_dec_return_relaxed(v)          atomic_sub_return_relaxed(1, v)
+#define atomic_dec_return_acquire(v)          atomic_sub_return_acquire(1, v)
+#define atomic_dec_return_release(v)          atomic_sub_return_release(1, v)
+
+#define atomic_long_dec_return(v)             atomic_long_sub_return(1, v)
+#define atomic_long_dec_return_relaxed(v)     atomic_long_sub_return_relaxed(1, v)
+#define atomic_long_dec_return_acquire(v)     atomic_long_sub_return_acquire(1, v)
+#define atomic_long_dec_return_release(v)     atomic_long_sub_return_release(1, v)
+
+#define atomic_xchg(x, i)                     xchg(&(x)->counter, i)
+#define atomic_xchg_relaxed(x, i)             xchg_relaxed(&(x)->counter, i)
+#define atomic_xchg_release(x, i)             xchg_release(&(x)->counter, i)
+#define atomic_xchg_acquire(x, i)             xchg_acquire(&(x)->counter, i)
+
+#define atomic_long_xchg(x, i)                xchg_long(&(x)->counter, i)
+#define atomic_long_xchg_relaxed(x, i)        xchg_long_relaxed(&(x)->counter, i)
+#define atomic_long_xchg_release(x, i)        xchg_long_release(&(x)->counter, i)
+#define atomic_long_xchg_acquire(x, i)        xchg_long_acquire(&(x)->counter, i)
+
+#define atomic_cmpxchg(x, o, n)               cmpxchg(&(x)->counter, o, n)
+#define atomic_cmpxchg_relaxed(x, o, n)       cmpxchg_relaxed(&(x)->counter, o, n)
+#define atomic_cmpxchg_acquire(x, o, n)       cmpxchg_acquire(&(x)->counter, o, n)
+#define atomic_cmpxchg_release(x, o, n)       cmpxchg_release(&(x)->counter, o, n)
+
+#define atomic_long_cmpxchg(x, o, n)          cmpxchg_long(&(x)->counter, o, n)
+#define atomic_long_cmpxchg_relaxed(x, o, n)  cmpxchg_long_relaxed(&(x)->counter, o, n)
+#define atomic_long_cmpxchg_acquire(x, o, n)  cmpxchg_long_acquire(&(x)->counter, o, n)
+#define atomic_long_cmpxchg_release(x, o, n)  cmpxchg_long_release(&(x)->counter, o, n)
+
+#define atomic_sub_and_test(i, v)             (atomic_sub_return(i, v) == 0)
+#define atomic_dec_and_test(v)                (atomic_dec_return(v) == 0)
+#define atomic_inc_and_test(v)                (atomic_inc_return(v) == 0)
+#define atomic_add_negative(i, v)             (atomic_add_return(i, v) < 0)
+
+#define atomic_long_sub_and_test(i, v)        (atomic_long_sub_return(i, v) == 0)
+#define atomic_long_dec_and_test(v)           (atomic_long_dec_return(v) == 0)
+#define atomic_long_inc_and_test(v)           (atomic_long_inc_return(v) == 0)
+#define atomic_long_add_negative(i, v)        (atomic_long_add_return(i, v) < 0)
 
 /*******************************************************************************
  **                               SPINLOCKS
