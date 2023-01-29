@@ -36,20 +36,20 @@ public class CLKMMTest extends AbstractCTest {
         return 300000;
     }
 
-	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
+    @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
-		return Arrays.asList(new Object[][]{
-				{"2+2W+onces+locked", LKMM, PASS},
-				{"C-atomic-op-return-simple-02-2", LKMM, FAIL},
+        return Arrays.asList(new Object[][]{
+                {"2+2W+onces+locked", LKMM, PASS},
+                {"C-atomic-op-return-simple-02-2", LKMM, FAIL},
                 {"C-PaulEMcKenney-MP+o-r+ai-mb-o", LKMM, PASS},
                 {"C-RR-G+RR-G+RR-G+RR-G+RR-R+RR-R+RR-R", LKMM, PASS},
-				{"C-WWC+o-branch-o+o-branch-o", LKMM, FAIL},
-	            {"CoRR+poonce+Once", LKMM, PASS},
-	            {"CoRW+poonce+Once", LKMM, PASS},
-	            {"CoWR+poonceonce+Once", LKMM, PASS},
-	            {"LB+fencembonceonce+ctrlonceonce", LKMM, PASS},
-	            {"LB+poacquireonce+pooncerelease", LKMM, PASS},
-	            {"LB+poonceonces", LKMM, FAIL},
+                {"C-WWC+o-branch-o+o-branch-o", LKMM, FAIL},
+                {"CoRR+poonce+Once", LKMM, PASS},
+                {"CoRW+poonce+Once", LKMM, PASS},
+                {"CoWR+poonceonce+Once", LKMM, PASS},
+                {"LB+fencembonceonce+ctrlonceonce", LKMM, PASS},
+                {"LB+poacquireonce+pooncerelease", LKMM, PASS},
+                {"LB+poonceonces", LKMM, FAIL},
                 {"MP+fencewbonceonce+fencermbonceonce", LKMM, PASS},
                 {"NVR-RMW+Release", LKMM, PASS},
                 {"rcu-gp20", LKMM, PASS},
@@ -58,29 +58,29 @@ public class CLKMMTest extends AbstractCTest {
                 {"rcu+ar-link0", LKMM, FAIL},
                 {"rcu+ar-link20", LKMM, PASS},
                 {"rcu-MP", LKMM, PASS},
-				//TODO: The following two tests are temporarily disabled because they
-				// lead to mixed theory formulas (BV + IA) which can cause the solver to fail occasionally.
-				// We need to run these benchmarks in pure BV, which we cannot configure right now.
-				// --------------------
+                //TODO: The following two tests are temporarily disabled because they
+                // lead to mixed theory formulas (BV + IA) which can cause the solver to fail occasionally.
+                // We need to run these benchmarks in pure BV, which we cannot configure right now.
+                // --------------------
                 // this one fails with cat/lkmm-v00.cat
                 // but passes with cat/lkmm-vX.cat with X > 01
                 //{"qspinlock", LKMM, PASS},
                 // this one passes even with cat/lkmm-v00.cat
                 //{"qspinlock-fixed", LKMM, PASS}
-		});
+        });
     }
 
-	@Test
-	@CSVLogger.FileName("csv/assume")
-	public void testAssume() throws Exception {
-		AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-		assertEquals(expected, s.getResult());
-	}
+    @Test
+    @CSVLogger.FileName("csv/assume")
+    public void testAssume() throws Exception {
+        AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        assertEquals(expected, s.getResult());
+    }
 
-	@Test
-	@CSVLogger.FileName("csv/refinement")
-	public void testRefinement() throws Exception {
-		RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-		assertEquals(expected, s.getResult());
-	}
+    @Test
+    @CSVLogger.FileName("csv/refinement")
+    public void testRefinement() throws Exception {
+        RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        assertEquals(expected, s.getResult());
+    }
 }

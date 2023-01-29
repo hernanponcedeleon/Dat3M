@@ -1,22 +1,19 @@
 package com.dat3m.dartagnan.compilation;
 
+import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterUnion;
 import com.dat3m.dartagnan.utils.ResourceHelper;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.IncrementalSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
-
-import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Property;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -37,12 +34,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
-import static org.junit.Assert.assertEquals;
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static java.util.Collections.emptyList;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractCompilationTest {
 
@@ -55,9 +49,7 @@ public abstract class AbstractCompilationTest {
     }
 
     static Iterable<Object[]> buildLitmusTests(String litmusPath) throws IOException {
-    	
-    	Set<String> skip = ResourceHelper.getSkipSet();
-    	
+        Set<String> skip = ResourceHelper.getSkipSet();
         try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))) {
             return fileStream
                     .filter(Files::isRegularFile)
@@ -84,7 +76,7 @@ public abstract class AbstractCompilationTest {
     // List of tests that are known to show bugs in the compilation scheme and thus the expected result should be FAIL instead of PASS
     protected List<String> getCompilationBreakers() { return emptyList(); }
     protected Provider<Configuration> getConfigurationProvider() {
-		return Provider.fromSupplier(() -> Configuration.builder().setOption(INITIALIZE_REGISTERS, String.valueOf(DO_INITIALIZE_REGISTERS)).build());
+        return Provider.fromSupplier(() -> Configuration.builder().setOption(INITIALIZE_REGISTERS, String.valueOf(DO_INITIALIZE_REGISTERS)).build());
     }
     // ============================================================
 
@@ -96,7 +88,7 @@ public abstract class AbstractCompilationTest {
     protected final Provider<Program> program2Provider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmm1Provider = getSourceWmmProvider();
     protected final Provider<Wmm> wmm2Provider = getTargetWmmProvider();
-    protected final Provider<EnumSet<Property>> propertyProvider = Provider.fromSupplier(() -> Property.getDefault());
+    protected final Provider<EnumSet<Property>> propertyProvider = Provider.fromSupplier(Property::getDefault);
     protected final Provider<Configuration> configProvider = getConfigurationProvider();
     protected final Provider<VerificationTask> task1Provider = Providers.createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, () -> 1, configProvider);
     protected final Provider<VerificationTask> task2Provider = Providers.createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider,  () -> 1, configProvider);
@@ -125,28 +117,24 @@ public abstract class AbstractCompilationTest {
             .around(context1Provider)
             .around(context2Provider)
             .around(prover1Provider)
-    		.around(prover2Provider);
+            .around(prover2Provider);
 
     @Test
     public void testIncremental() throws Exception {
-    	// The following have RCU features that hardware models do not support
-    	FilterAbstract rcu = FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_LOCK), 
-    			FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_UNLOCK), FilterBasic.get(Tag.Linux.RCU_SYNC)));
+        // The following have RCU features that hardware models do not support
+        FilterAbstract rcu = FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_LOCK),
+                FilterUnion.get(FilterBasic.get(Tag.Linux.RCU_UNLOCK), FilterBasic.get(Tag.Linux.RCU_SYNC)));
 
-    	if(task1Provider.get().getProgram().getCache().getEvents(rcu).isEmpty()) {
+        if(task1Provider.get().getProgram().getCache().getEvents(rcu).isEmpty()) {
             IncrementalSolver s1 = IncrementalSolver.run(context1Provider.get(), prover1Provider.get(), task1Provider.get());
-        	if(!s1.hasModel()) {
+            if(!s1.hasModel()) {
                 // We found no model showing a specific behaviour (either positively or negatively),
                 // so the compiled code should also not exhibit that behaviour, unless we
                 // know the compilation is broken
                 boolean compilationIsBroken = getCompilationBreakers().contains(path);
-                final Result expected = compilationIsBroken ? s1.getResult().invert() : s1.getResult();
                 IncrementalSolver s2 = IncrementalSolver.run(context2Provider.get(), prover2Provider.get(), task2Provider.get());
-        		assertEquals(expected, s2.getResult());
-
-                // We could also check if the second solver has a model, instead of comparing results.
-                //assertEquals(s2.hasModel(), compilationIsBroken);
-        	}
-    	}
+                assertEquals(compilationIsBroken, s2.hasModel());
+            }
+        }
     }
 }

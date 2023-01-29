@@ -14,7 +14,6 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 @RunWith(Parameterized.class)
 public class SvCompLoopsTest extends AbstractSvCompTest {
 
-
     public SvCompLoopsTest(String name, int bound) {
         super(name, bound);
     }
@@ -31,7 +30,7 @@ public class SvCompLoopsTest extends AbstractSvCompTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, bound={1}")
     public static Iterable<Object[]> data() throws IOException {
-        return Arrays.asList(new Object[][] {
+        return Arrays.asList(new Object[][]{
                 {"array-1", 1},
                 {"array-2", 1},
                 {"count_up_down-1", 1},

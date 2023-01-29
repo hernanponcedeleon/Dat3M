@@ -1,10 +1,9 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import org.junit.Test;
-
-import com.dat3m.dartagnan.exception.MalformedProgramException;
 
 import java.io.File;
 import java.io.IOException;

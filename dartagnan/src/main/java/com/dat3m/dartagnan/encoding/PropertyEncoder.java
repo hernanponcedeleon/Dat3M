@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -11,6 +10,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.program.filter.FilterMinus;
+import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -24,11 +24,7 @@ import com.google.common.collect.Maps;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -107,7 +103,7 @@ public class PropertyEncoder implements Encoder {
         Property.Type specType = Property.getCombinedType(properties, context.getTask());
         if (specType == Property.Type.MIXED) {
             final String error = String.format(
-                    "The set of properties %s are of mixed type (safety and reachability properties)." +
+                    "The set of properties %s are of mixed type (safety and reachability properties). " +
                     "Cannot encode mixed properties into a single SMT-query.", properties);
             throw new IllegalArgumentException(error);
         }
@@ -423,8 +419,8 @@ public class PropertyEncoder implements Encoder {
                 allStuckOrDone = bmgr.and(allStuckOrDone, bmgr.or(isStuck, isTerminatingNormally));
             }
 
-            final BooleanFormula hasLivenessViolation = bmgr.and(allStuckOrDone, atLeastOneStuck);
-            return new TrackableFormula(bmgr.not(LIVENESS.getSMTVariable(context)), hasLivenessViolation);
+            final BooleanFormula hasDeadlock = bmgr.and(allStuckOrDone, atLeastOneStuck);
+            return new TrackableFormula(bmgr.not(LIVENESS.getSMTVariable(context)), hasDeadlock);
         }
 
         // Compute "stuckness": A thread is stuck if it reaches a spin loop bound event

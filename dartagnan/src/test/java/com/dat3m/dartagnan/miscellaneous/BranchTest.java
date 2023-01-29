@@ -54,7 +54,7 @@ public class BranchTest {
                     .collect(Collectors.toList());
         }
 
-        try(Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "branch/AARCH64/"))) {
+        try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "branch/AARCH64/"))) {
             data.addAll(fileStream.
                     filter(Files::isRegularFile)
                     .filter(f -> (f.toString().endsWith("litmus")))
@@ -94,8 +94,7 @@ public class BranchTest {
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
-        {
+             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
                     .withSolverTimeout(60)
@@ -103,7 +102,7 @@ public class BranchTest {
                     .build(program, wmm, Property.getDefault());
             TwoSolvers s = TwoSolvers.run(ctx, prover1, prover2, task);
             assertEquals(expected, s.getResult());
-        } catch (Exception e){
+        } catch (Exception e) {
             fail("Missing resource file");
         }
     }

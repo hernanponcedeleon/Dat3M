@@ -24,7 +24,7 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class C11LocksTest extends AbstractCTest {
-	
+
     public C11LocksTest(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
@@ -44,48 +44,48 @@ public class C11LocksTest extends AbstractCTest {
         return Provider.fromSupplier(() -> new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/c11.cat")));
     }
 
-	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
+    @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
-    	return Arrays.asList(new Object[][]{
-            {"ttas", C11, UNKNOWN},
-            {"ttas-acq2rx", C11, FAIL},
-            {"ttas-rel2rx", C11, FAIL},
-            {"ticketlock", C11, PASS},
-            {"ticketlock-acq2rx", C11, FAIL},
-            {"ticketlock-rel2rx", C11, FAIL},
-            {"mutex", C11, UNKNOWN},
-            {"mutex-acq2rx_futex", C11, UNKNOWN},
-            {"mutex-acq2rx_lock", C11, FAIL},
-            {"mutex-rel2rx_futex", C11, UNKNOWN},
-            {"mutex-rel2rx_unlock", C11, FAIL},
-            {"spinlock", C11, PASS},
-            {"spinlock-acq2rx", C11, FAIL},
-            {"spinlock-rel2rx", C11, FAIL},
-            // For most models the one below is safe (UNKNOWN)
-            // It could be the case for C11 is unsafe (because it is weaker)
-            // but we are not 100% sure about this
-            {"linuxrwlock", C11, FAIL},
-            {"mutex_musl", C11, UNKNOWN},
-            {"mutex_musl-acq2rx_futex", C11, UNKNOWN},
-            {"mutex_musl-acq2rx_lock", C11, FAIL},
-            {"mutex_musl-rel2rx_futex", C11, UNKNOWN},
-            {"mutex_musl-rel2rx_unlock", C11, FAIL},
-            {"seqlock", C11, PASS},
-		});
+        return Arrays.asList(new Object[][]{
+                {"ttas", C11, UNKNOWN},
+                {"ttas-acq2rx", C11, FAIL},
+                {"ttas-rel2rx", C11, FAIL},
+                {"ticketlock", C11, PASS},
+                {"ticketlock-acq2rx", C11, FAIL},
+                {"ticketlock-rel2rx", C11, FAIL},
+                {"mutex", C11, UNKNOWN},
+                {"mutex-acq2rx_futex", C11, UNKNOWN},
+                {"mutex-acq2rx_lock", C11, FAIL},
+                {"mutex-rel2rx_futex", C11, UNKNOWN},
+                {"mutex-rel2rx_unlock", C11, FAIL},
+                {"spinlock", C11, PASS},
+                {"spinlock-acq2rx", C11, FAIL},
+                {"spinlock-rel2rx", C11, FAIL},
+                // For most models the one below is safe (UNKNOWN)
+                // It could be the case for C11 is unsafe (because it is weaker)
+                // but we are not 100% sure about this
+                {"linuxrwlock", C11, FAIL},
+                {"mutex_musl", C11, UNKNOWN},
+                {"mutex_musl-acq2rx_futex", C11, UNKNOWN},
+                {"mutex_musl-acq2rx_lock", C11, FAIL},
+                {"mutex_musl-rel2rx_futex", C11, UNKNOWN},
+                {"mutex_musl-rel2rx_unlock", C11, FAIL},
+                {"seqlock", C11, PASS},
+        });
     }
 
-   @Test
-	@CSVLogger.FileName("csv/assume")
-	public void testAssume() throws Exception {
+    @Test
+    @CSVLogger.FileName("csv/assume")
+    public void testAssume() throws Exception {
         AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-		assertEquals(expected, s.getResult());
-	}
+        assertEquals(expected, s.getResult());
+    }
 
     // CAAT might not yet work for C11 
     // @Test
-	@CSVLogger.FileName("csv/refinement")
-	public void testRefinement() throws Exception {
+    @CSVLogger.FileName("csv/refinement")
+    public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());
-	}
+    }
 }

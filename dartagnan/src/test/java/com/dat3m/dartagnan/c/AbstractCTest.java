@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.c;
 
+import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
@@ -8,13 +10,6 @@ import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Property;
-
-import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
-
-import java.util.EnumSet;
-
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -23,6 +18,10 @@ import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.util.EnumSet;
+
+import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 
 public abstract class AbstractCTest {
 
@@ -39,7 +38,7 @@ public abstract class AbstractCTest {
     // =================== Modifiable behavior ====================
 
     protected Provider<String> getProgramPathProvider() {
-    	return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + name + ".bpl");
+        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + name + ".bpl");
     }
 
     protected abstract long getTimeout();

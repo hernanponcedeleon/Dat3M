@@ -39,9 +39,9 @@ public class LFDSTest extends AbstractCTest {
         return Provider.fromSupplier(() -> 2);
     }
 
-	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
+    @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
-		return Arrays.asList(new Object[][]{
+        return Arrays.asList(new Object[][]{
                 {"dglm", TSO, UNKNOWN},
                 {"dglm", ARM8, UNKNOWN},
                 {"dglm", POWER, UNKNOWN},
@@ -83,17 +83,17 @@ public class LFDSTest extends AbstractCTest {
         });
     }
 
-	//@Test
-	@CSVLogger.FileName("csv/assume")
-	public void testAssume() throws Exception {
+    //@Test
+    @CSVLogger.FileName("csv/assume")
+    public void testAssume() throws Exception {
         AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());
-	}
+    }
 
-	@Test
-	@CSVLogger.FileName("csv/refinement")
-	public void testRefinement() throws Exception {
+    @Test
+    @CSVLogger.FileName("csv/refinement")
+    public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());
-	}
+    }
 }

@@ -1,22 +1,22 @@
 package com.dat3m.dartagnan.compilation;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.configuration.Arch;
-
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.Configuration;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.TRAILING_SYNC;
-
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.C_TO_POWER_SCHEME;
+import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
+import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.TRAILING_SYNC;
 
 @RunWith(Parameterized.class)
 public class C11ToPPCTest extends AbstractCompilationTest {
@@ -47,10 +47,9 @@ public class C11ToPPCTest extends AbstractCompilationTest {
 
 	@Override
 	protected List<String> getCompilationBreakers() {
-		return Arrays.asList(
+		return Stream.of(
 				"manual/IRIW-sc-sc-acq-sc-acq-sc",
-				"manual/RWC-sc-acq-sc-sc-sc")
-		.stream().map(p -> ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/C11/" + p + ".litmus").collect(Collectors.toList());
+				"manual/RWC-sc-acq-sc-sc-sc").map(p -> ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/C11/" + p + ".litmus").collect(Collectors.toList());
 	}
 	
     protected Provider<Configuration> getConfigurationProvider() {

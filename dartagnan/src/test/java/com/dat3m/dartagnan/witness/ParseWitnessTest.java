@@ -13,13 +13,13 @@ public class ParseWitnessTest {
 
     @Test
     public void ParseExtend() throws IOException {
-		WitnessGraph witness = new ParserWitness().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "witness/witness.graphml"));
-		assertEquals(witness.getEdges().size(), witness.getNodes().size() - 1);
-		witness.addNode("END");
-		witness.getNode("N1");
-		Node n1 = witness.getNode("N1");
-		Node n2 = witness.getNode("END");
-		witness.addEdge(new Edge(n1, n2));
-		assertEquals(witness.getEdges().size(), witness.getNodes().size() - 1);
+        WitnessGraph witness = new ParserWitness().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "witness/witness.graphml"));
+        assertEquals(witness.getEdges().size(), witness.getNodes().size() - 1);
+        witness.addNode("END");
+        witness.getNode("N1");
+        Node n1 = witness.getNode("N1");
+        Node n2 = witness.getNode("END");
+        witness.addEdge(new Edge(n1, n2));
+        assertEquals(witness.getEdges().size(), witness.getNodes().size() - 1);
     }
 }

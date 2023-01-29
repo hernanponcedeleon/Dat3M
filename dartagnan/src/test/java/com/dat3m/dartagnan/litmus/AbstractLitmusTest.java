@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.litmus;
 
+import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
@@ -11,10 +13,6 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.verification.solving.TwoSolvers;
 import com.dat3m.dartagnan.wmm.Wmm;
-
-import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Property;
-
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,7 +35,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
-import static com.dat3m.dartagnan.utils.ResourceHelper.*;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getExpectedResults;
 import static com.google.common.io.Files.getNameWithoutExtension;
 import static org.junit.Assert.assertEquals;
 
@@ -90,7 +88,9 @@ public abstract class AbstractLitmusTest {
         return Provider.fromSupplier(() -> 1);
     }
 
-    protected long getTimeout() { return 10000; }
+    protected long getTimeout() {
+        return 10000;
+    }
 
     // ============================================================
 
@@ -107,7 +107,7 @@ public abstract class AbstractLitmusTest {
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
-    	getExpectedResults(arch).get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
+            getExpectedResults(arch).get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
     protected final Provider<Configuration> configProvider = Provider.fromSupplier(() -> Configuration.builder().setOption(INITIALIZE_REGISTERS, String.valueOf(DO_INITIALIZE_REGISTERS)).build());
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, configProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
@@ -138,12 +138,11 @@ public abstract class AbstractLitmusTest {
             .around(prover2Provider);
 
 
-
     @Test
     @CSVLogger.FileName("csv/two-solvers")
     public void test() throws Exception {
         TwoSolvers s = TwoSolvers.run(contextProvider.get(), proverProvider.get(), prover2Provider.get(), taskProvider.get());
-    	assertEquals(expected, s.getResult());
+        assertEquals(expected, s.getResult());
     }
 
     //@Test

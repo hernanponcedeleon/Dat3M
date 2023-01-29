@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.c;
 
+import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
@@ -12,10 +15,6 @@ import com.dat3m.dartagnan.verification.solving.IncrementalSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.verification.solving.TwoSolvers;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Property;
-
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,10 +25,10 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import java.util.EnumSet;
+
 import static com.dat3m.dartagnan.utils.ResourceHelper.readExpected;
 import static org.junit.Assert.assertEquals;
-
-import java.util.EnumSet;
 
 public abstract class AbstractSvCompTest {
 
@@ -45,7 +44,9 @@ public abstract class AbstractSvCompTest {
 
     protected abstract Provider<String> getProgramPathProvider();
 
-    protected long getTimeout() { return 180000; }
+    protected long getTimeout() {
+        return 180000;
+    }
 
     protected Provider<Integer> getBoundProvider() {
         return Provider.fromSupplier(() -> bound);
@@ -73,7 +74,7 @@ public abstract class AbstractSvCompTest {
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
-    	readExpected(filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf("-")) + ".yml", "unreach-call.prp"));
+            readExpected(filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf("-")) + ".yml", "unreach-call.prp"));
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, () -> Configuration.defaultConfiguration());
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);

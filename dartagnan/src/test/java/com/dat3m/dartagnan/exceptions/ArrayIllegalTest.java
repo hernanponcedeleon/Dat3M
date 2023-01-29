@@ -36,6 +36,6 @@ public class ArrayIllegalTest {
 
     @Test(expected = RuntimeException.class)
     public void test() throws Exception {
-    	new ProgramParser().parse(new File(path));
+        new ProgramParser().parse(new File(path));
     }
 }
