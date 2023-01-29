@@ -1,5 +1,5 @@
 #include <pthread.h>
-#include <cna.h>
+#include "cna.h"
 #include <assert.h>
  
 #ifndef NTHREADS

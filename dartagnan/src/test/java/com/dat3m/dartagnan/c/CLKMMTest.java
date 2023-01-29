@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.c;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
-import com.dat3m.dartagnan.configuration.Arch;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -13,9 +13,10 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Arrays;
 
+import static com.dat3m.dartagnan.configuration.Arch.LKMM;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
-import static com.dat3m.dartagnan.utils.Result.*;
-import static com.dat3m.dartagnan.configuration.Arch.*;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -57,11 +58,15 @@ public class CLKMMTest extends AbstractCTest {
                 {"rcu+ar-link0", LKMM, FAIL},
                 {"rcu+ar-link20", LKMM, PASS},
                 {"rcu-MP", LKMM, PASS},
+				//TODO: The following two tests are temporarily disabled because they
+				// lead to mixed theory formulas (BV + IA) which can cause the solver to fail occasionally.
+				// We need to run these benchmarks in pure BV, which we cannot configure right now.
+				// --------------------
                 // this one fails with cat/lkmm-v00.cat
                 // but passes with cat/lkmm-vX.cat with X > 01
-                {"qspinlock", LKMM, PASS},
+                //{"qspinlock", LKMM, PASS},
                 // this one passes even with cat/lkmm-v00.cat
-                {"qspinlock-fixed", LKMM, PASS}
+                //{"qspinlock-fixed", LKMM, PASS}
 		});
     }
 

@@ -1,14 +1,13 @@
 package com.dat3m.dartagnan.c;
 
+import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -17,10 +16,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
+import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.utils.ResourceHelper.CAT_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.Result.*;
-import static com.dat3m.dartagnan.configuration.Arch.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -71,8 +70,6 @@ public class C11LocksTest extends AbstractCTest {
             {"mutex_musl-acq2rx_lock", C11, FAIL},
             {"mutex_musl-rel2rx_futex", C11, UNKNOWN},
             {"mutex_musl-rel2rx_unlock", C11, FAIL},
-            // The actual result is PASS, but CAAT returns UNKNOWN
-            // because we do not refine for the bound check 
             {"seqlock", C11, PASS},
 		});
     }

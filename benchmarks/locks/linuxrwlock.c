@@ -1,5 +1,5 @@
 #include <pthread.h>
-#include <linuxrwlock.h>
+#include "linuxrwlock.h"
 #include <assert.h>
 
 #ifndef NRTHREADS
