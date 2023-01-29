@@ -363,15 +363,6 @@ public class RelationAnalysis {
         logger.trace("Start");
         Wmm memoryModel = task.getMemoryModel();
         Map<Relation, List<Constraint>> dependents = new HashMap<>();
-        for (Relation r : memoryModel.getRelations()) {
-            Definition d = r.getDefinition();
-            if (d == null) {
-                continue;
-            }
-            for (Relation x : d.getConstrainedRelations()) {
-                dependents.computeIfAbsent(x, k -> new ArrayList<>()).add(d);
-            }
-        }
         Map<Relation, List<ExtendedDelta>> q = new LinkedHashMap<>();
         for (Constraint c : memoryModel.getConstraints()) {
             if (c instanceof Axiom && ((Axiom) c).isFlagged()) {
