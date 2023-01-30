@@ -53,9 +53,9 @@ public abstract class AbstractLitmusTest {
         this.expected = expected;
     }
 
-    static Iterable<Object[]> buildLitmusTests(String litmusPath, String arch) throws IOException {
+    static Iterable<Object[]> buildLitmusTests(String litmusPath, String arch, String postfix) throws IOException {
         int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
-        Map<String, Result> expectationMap = ResourceHelper.getExpectedResults(arch);
+        Map<String, Result> expectationMap = ResourceHelper.getExpectedResults(arch, postfix);
         Set<String> skip = ResourceHelper.getSkipSet();
 
         try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))) {
@@ -92,6 +92,10 @@ public abstract class AbstractLitmusTest {
         return 10000;
     }
 
+    protected String getExpectedFilePostfix() {
+        return "";
+    }
+
     // ============================================================
 
 
@@ -107,7 +111,7 @@ public abstract class AbstractLitmusTest {
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
-            getExpectedResults(arch).get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
+            getExpectedResults(arch, getExpectedFilePostfix()).get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
     protected final Provider<Configuration> configProvider = Provider.fromSupplier(() -> Configuration.builder().setOption(INITIALIZE_REGISTERS, String.valueOf(DO_INITIALIZE_REGISTERS)).build());
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, configProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);

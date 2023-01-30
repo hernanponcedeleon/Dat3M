@@ -20,9 +20,9 @@ public class ResourceHelper {
     private static ImmutableMap<String, Result> expectedResults;
     private static ImmutableSet<String> skipSet;
 
-    public static ImmutableMap<String, Result> getExpectedResults(String arch) throws IOException {
+    public static ImmutableMap<String, Result> getExpectedResults(String arch, String postfix) throws IOException {
         if(expectedResults == null){
-            try (BufferedReader reader = new BufferedReader(new FileReader(TEST_RESOURCE_PATH + arch + "-expected.csv"))) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(TEST_RESOURCE_PATH + arch + postfix + "-expected.csv"))) {
                 HashMap<String, Result> data = new HashMap<>();
                 String str;
                 while((str = reader.readLine()) != null){
