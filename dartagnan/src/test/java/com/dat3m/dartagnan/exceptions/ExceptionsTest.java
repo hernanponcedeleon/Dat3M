@@ -14,8 +14,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.processing.BranchReordering;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
-import com.dat3m.dartagnan.program.processing.UnreachableCodeElimination;
-import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
@@ -46,17 +44,8 @@ public class ExceptionsTest {
         t.newRegister("r1", -1);
     }
 
-
     @Test(expected = IllegalArgumentException.class)
-    public void compileBeforeUnrollException() throws Exception {
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-        pb.initThread(0);
-        // Program must be unrolled first
-        Compilation.newInstance().run(pb.build());
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void unrollBeforeReorderException() throws Exception {
+    public void reorderAfterUnrollException() throws Exception {
         ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
         pb.initThread(0);
         Program p = pb.build();
@@ -66,23 +55,13 @@ public class ExceptionsTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void analyzeBeforeCompileException() throws Exception {
+    public void analyzeBeforeUnrollException() throws Exception {
         ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
         pb.initThread(0);
         Program p = pb.build();
         Configuration config = Configuration.defaultConfiguration();
-        // The program must be compiled before being able to construct an Encoder for it
+        // The program must be unrolled before being able to construct an Encoder for it
         BranchEquivalence.fromConfig(p, config);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void unrollBeforeDCEException() throws Exception {
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-        pb.initThread(0);
-        Program p = pb.build();
-        LoopUnrolling.newInstance().run(p);
-        // DCE cannot be called after unrolling
-        UnreachableCodeElimination.newInstance().run(p);
     }
 
     @Test(expected = IllegalArgumentException.class)
