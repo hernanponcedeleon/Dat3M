@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -52,7 +51,7 @@ public class IncrementalSolver extends ModelChecker {
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
-        SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);
+        SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 
         logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(programEncoder.encodeFullProgram());

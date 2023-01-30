@@ -129,7 +129,7 @@ public class RefinementSolver extends ModelChecker {
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         // We use the original memory model for symmetry breaking because we need axioms
         // to compute the breaking order.
-        SymmetryEncoder symmEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);
+        SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
         WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
@@ -141,7 +141,7 @@ public class RefinementSolver extends ModelChecker {
         logger.info("Starting encoding using " + ctx.getVersion());
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
-        prover.addConstraint(symmEncoder.encodeFullSymmetryBreaking());
+        prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 
         prover.push();
         prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
