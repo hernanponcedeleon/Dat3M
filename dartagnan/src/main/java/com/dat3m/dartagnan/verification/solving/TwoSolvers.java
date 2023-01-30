@@ -53,7 +53,7 @@ public class TwoSolvers extends ModelChecker {
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
-        SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context, memoryModel, analysisContext);
+        SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 
         logger.info("Starting encoding using " + ctx.getVersion());
         BooleanFormula encodeProg = programEncoder.encodeFullProgram();
