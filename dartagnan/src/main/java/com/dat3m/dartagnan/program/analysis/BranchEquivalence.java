@@ -129,7 +129,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     private BranchEquivalence(Program program, Configuration config) throws InvalidConfigurationException {
-        Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
+        Preconditions.checkArgument(program.isUnrolled(), "The program must be unrolled first.");
         this.program = program;
         config.inject(this);
 
