@@ -1,17 +1,19 @@
 package com.dat3m.dartagnan.program.event.core.rmw;
 
-import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
+import java.util.Map;
+
 public class RMWStore extends Store {
 
-    protected final Load loadEvent;
+    protected Load loadEvent;
 
     public RMWStore(Load loadEvent, IExpr address, ExprInterface value, String mo) {
         super(address, value, mo);
@@ -20,23 +22,31 @@ public class RMWStore extends Store {
         addFilters(Tag.RMW);
     }
 
-    public Load getLoadEvent(){
-        return loadEvent;
+    protected RMWStore(RMWStore other) {
+        super(other);
+        this.loadEvent = other.loadEvent;
     }
+
+    public Load getLoadEvent() { return loadEvent; }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-	public RMWStore getCopy(){
-        throw new ProgramProcessingException(getClass().getName() + " cannot be unrolled: event must be generated during compilation");
+    public RMWStore getCopy() {
+        return new RMWStore(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public void updateReferences(Map<Event, Event> updateMapping) {
+        this.loadEvent = (Load) updateMapping.getOrDefault(loadEvent, loadEvent);
+    }
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitRMWStore(this);
-	}
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitRMWStore(this);
+    }
 }

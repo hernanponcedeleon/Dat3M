@@ -36,7 +36,7 @@ public class Compilation implements ProgramProcessor {
     private Arch target = Arch.C11;
 
     public Arch getTarget() { return target; }
-    public void setTarget(Arch target) { this.target = target;}
+    public void setTarget(Arch target) { this.target = target; }
 
     @Option(name = USE_RC11_TO_ARCH_SCHEME,
             description = "Use the RC11 to Arch (Power/ARMv8) compilation scheme to forbid out-of-thin-air behaviours.",
@@ -80,14 +80,13 @@ public class Compilation implements ProgramProcessor {
             logger.warn("Skipped compilation: Program is already compiled to {}", program.getArch());
             return;
         }
-        Preconditions.checkArgument(program.isUnrolled(), "The program needs to be unrolled before compilation.");
 
         EventVisitor<List<Event>> visitor;
-        switch(target) {
-        	case C11:
-            	visitor = new VisitorC11(forceStart); break;
-        	case LKMM:
-        		visitor = new VisitorLKMM(forceStart); break;
+        switch (target) {
+            case C11:
+                visitor = new VisitorC11(forceStart); break;
+            case LKMM:
+                visitor = new VisitorLKMM(forceStart); break;
             case TSO:
                 visitor = new VisitorTso(forceStart); break;
             case POWER:
@@ -113,10 +112,10 @@ public class Compilation implements ProgramProcessor {
 
     private void compileThread(Thread thread, EventVisitor<List<Event>> visitor) {
 
-    	Event pred = thread.getEntry();
+        Event pred = thread.getEntry();
         Event toBeCompiled = pred.getSuccessor();
         while (toBeCompiled != null) {
-			List<Event> compiledEvents = toBeCompiled.accept(visitor);
+            List<Event> compiledEvents = toBeCompiled.accept(visitor);
             for (Event e : compiledEvents) {
                 e.copyMetadataFrom(toBeCompiled);
                 pred.setSuccessor(e);

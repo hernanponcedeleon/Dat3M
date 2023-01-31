@@ -27,19 +27,19 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean reduceSymmetry = false;
 
-    @Option(name= CONSTANT_PROPAGATION,
-        description="Performs constant propagation.",
-        secure=true)
-        private boolean constantPropagation = false;
+    @Option(name = CONSTANT_PROPAGATION,
+            description = "Performs constant propagation.",
+            secure = true)
+    private boolean constantPropagation = false;
 
-	@Option(name= DEAD_ASSIGNMENT_ELIMINATION,
-			description="Performs dead code elimination.",
-			secure=true)
-		private boolean dce = false;
+    @Option(name = DEAD_ASSIGNMENT_ELIMINATION,
+            description = "Performs dead code elimination.",
+            secure = true)
+    private boolean dce = false;
 
-    @Option(name= DYNAMIC_PURE_LOOP_CUTTING,
-            description="Instruments loops to terminate early when spinning.",
-            secure=true)
+    @Option(name = DYNAMIC_PURE_LOOP_CUTTING,
+            description = "Instruments loops to terminate early when spinning.",
+            secure = true)
     private boolean dynamicPureLoopCutting = true;
 
     // =================== Debugging options ===================
@@ -54,15 +54,15 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean printAfterSimplification = false;
 
-    @Option(name = PRINT_PROGRAM_AFTER_UNROLLING,
-            description = "Prints the program after unrolling.",
-            secure = true)
-    private boolean printAfterUnrolling = false;
-
     @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
             description = "Prints the program after compilation.",
             secure = true)
     private boolean printAfterCompilation = false;
+
+    @Option(name = PRINT_PROGRAM_AFTER_UNROLLING,
+            description = "Prints the program after unrolling.",
+            secure = true)
+    private boolean printAfterUnrolling = false;
 
     @Option(name = PRINT_PROGRAM_AFTER_PROCESSING,
             description = "Prints the program after all processing.",
@@ -84,14 +84,14 @@ public class ProcessingManager implements ProgramProcessor {
                 LoopFormVerification.fromConfig(config),
                 Simplifier.fromConfig(config),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification") : null,
-        		SimpleSpinLoopDetection.fromConfig(config),
+                Compilation.fromConfig(config),
+                printAfterCompilation ? DebugPrint.withHeader("After compilation") : null,
+                SimpleSpinLoopDetection.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
                 printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling") : null,
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                 RemoveDeadCondJumps.fromConfig(config),
-                Compilation.fromConfig(config),
-                printAfterCompilation ? DebugPrint.withHeader("After compilation") : null,
                 dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
                 EventIdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
