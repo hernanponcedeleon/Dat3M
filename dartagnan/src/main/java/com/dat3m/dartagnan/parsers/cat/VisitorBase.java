@@ -154,10 +154,11 @@ class VisitorBase extends CatBaseVisitor<Object> {
 
     @Override
     public Object visitExprIntersection(ExprIntersectionContext c) {
+        Optional<Relation> defRel = getAndResetRelationToBeDefined();
         Object o1 = c.e1.accept(this);
         Object o2 = c.e2.accept(this);
         if (o1 instanceof Relation) {
-            Relation r0 = getRelationToBeDefined().orElseGet(wmm::newRelation);
+            Relation r0 = defRel.orElseGet(wmm::newRelation);
             return addDefinition(new Intersection(r0, (Relation) o1, parseAsRelation(o2, c)));
         }
         return FilterIntersection.get(parseAsFilter(o1, c), parseAsFilter(o2, c));
@@ -177,10 +178,11 @@ class VisitorBase extends CatBaseVisitor<Object> {
 
     @Override
     public Object visitExprUnion(ExprUnionContext c) {
+        Optional<Relation> defRel = getAndResetRelationToBeDefined();
         Object o1 = c.e1.accept(this);
         Object o2 = c.e2.accept(this);
         if (o1 instanceof Relation) {
-            Relation r0 = getRelationToBeDefined().orElseGet(wmm::newRelation);
+            Relation r0 = defRel.orElseGet(wmm::newRelation);
             return addDefinition(new Union(r0, (Relation) o1, parseAsRelation(o2, c)));
         }
         return FilterUnion.get(parseAsFilter(o1, c), parseAsFilter(o2, c));
@@ -202,7 +204,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
 
     @Override
     public Relation visitExprComposition(ExprCompositionContext c) {
-        Relation r0 = getRelationToBeDefined().orElseGet(wmm::newRelation);
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
         Relation r1 = parseAsRelation(c.e1);
         Relation r2 = parseAsRelation(c.e2);
         return addDefinition(new Composition(r0, r1, r2));
@@ -311,7 +313,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         relationToBeDefined = rel;
     }
 
-    private Optional<Relation> getRelationToBeDefined() {
+    private Optional<Relation> getAndResetRelationToBeDefined() {
         Relation r = relationToBeDefined;
         relationToBeDefined = null;
         return Optional.ofNullable(r);
