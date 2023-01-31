@@ -53,6 +53,10 @@ public abstract class AbstractLitmusTest {
         this.expected = expected;
     }
 
+    static Iterable<Object[]> buildLitmusTests(String litmusPath, String arch) throws IOException {
+        return buildLitmusTests(litmusPath, arch, "");
+    }
+
     static Iterable<Object[]> buildLitmusTests(String litmusPath, String arch, String postfix) throws IOException {
         int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
         Map<String, Result> expectationMap = ResourceHelper.getExpectedResults(arch, postfix);
