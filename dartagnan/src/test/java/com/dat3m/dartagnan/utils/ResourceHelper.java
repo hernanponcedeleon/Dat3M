@@ -17,41 +17,32 @@ public class ResourceHelper {
     public static final String LITMUS_RESOURCE_PATH = "../";
     public static final String TEST_RESOURCE_PATH = "src/test/resources/";
 
-    private static ImmutableMap<String, Result> expectedResults;
-    private static ImmutableSet<String> skipSet;
-
     public static ImmutableMap<String, Result> getExpectedResults(String arch, String postfix) throws IOException {
-        if(expectedResults == null){
-            try (BufferedReader reader = new BufferedReader(new FileReader(TEST_RESOURCE_PATH + arch + postfix + "-expected.csv"))) {
-                HashMap<String, Result> data = new HashMap<>();
-                String str;
-                while((str = reader.readLine()) != null){
-                    String[] line = str.split(",");
-                    if(line.length == 2){
-                        data.put(line[0], Integer.parseInt(line[1]) == 1 ? PASS : FAIL);
-                    }
+        try (BufferedReader reader = new BufferedReader(new FileReader(TEST_RESOURCE_PATH + arch + postfix + "-expected.csv"))) {
+            HashMap<String, Result> data = new HashMap<>();
+            String str;
+            while((str = reader.readLine()) != null){
+                String[] line = str.split(",");
+                if(line.length == 2){
+                    data.put(line[0], Integer.parseInt(line[1]) == 1 ? PASS : FAIL);
                 }
-                expectedResults = ImmutableMap.copyOf(data);
             }
+            return ImmutableMap.copyOf(data);
         }
-        return expectedResults;
     }
 
     public static ImmutableSet<String> getSkipSet() throws IOException {
-        if(skipSet == null){
-            try (BufferedReader reader = new BufferedReader(new FileReader(TEST_RESOURCE_PATH + "dartagnan-skip.csv"))) {
-                Set<String> data = new HashSet<>();
-                String str;
-                while((str = reader.readLine()) != null){
-                	if(str.contains("//") || str.isBlank()) {
-                		continue;
-                	}
-                	data.add(LITMUS_RESOURCE_PATH + str);
+        try (BufferedReader reader = new BufferedReader(new FileReader(TEST_RESOURCE_PATH + "dartagnan-skip.csv"))) {
+            Set<String> data = new HashSet<>();
+            String str;
+            while((str = reader.readLine()) != null){
+            	if(str.contains("//") || str.isBlank()) {
+            		continue;
                 }
-                skipSet = ImmutableSet.copyOf(data);
+            	data.add(LITMUS_RESOURCE_PATH + str);
             }
+            return ImmutableSet.copyOf(data);
         }
-        return skipSet;
     }
 
     public static Result readExpected(String filepath, String property) {

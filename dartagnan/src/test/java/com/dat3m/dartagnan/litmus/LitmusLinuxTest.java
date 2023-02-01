@@ -28,7 +28,7 @@ public class LitmusLinuxTest extends AbstractLitmusTest {
         return Providers.createWmmFromName(() -> "linux-kernel");
     }
 
-    public LitmusLinuxTest(String path, String arch, Result expected) {
-        super(path, arch, expected);
+    public LitmusLinuxTest(String path, Result expected) {
+        super(path, expected);
     }
 }

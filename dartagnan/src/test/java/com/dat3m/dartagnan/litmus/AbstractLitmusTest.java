@@ -35,7 +35,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getExpectedResults;
 import static com.google.common.io.Files.getNameWithoutExtension;
 import static org.junit.Assert.assertEquals;
 
@@ -44,12 +43,11 @@ public abstract class AbstractLitmusTest {
     private static final boolean DO_INITIALIZE_REGISTERS = true;
 
     private String path;
-    private String arch;
     private final Result expected;
+    private static Map<String, Result> expectedResults;
 
-    AbstractLitmusTest(String path, String arch, Result expected) {
+    AbstractLitmusTest(String path, Result expected) {
         this.path = path;
-        this.arch = arch;
         this.expected = expected;
     }
 
@@ -59,7 +57,7 @@ public abstract class AbstractLitmusTest {
 
     static Iterable<Object[]> buildLitmusTests(String litmusPath, String arch, String postfix) throws IOException {
         int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
-        Map<String, Result> expectationMap = ResourceHelper.getExpectedResults(arch, postfix);
+        expectedResults = ResourceHelper.getExpectedResults(arch, postfix);
         Set<String> skip = ResourceHelper.getSkipSet();
 
         try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))) {
@@ -68,10 +66,10 @@ public abstract class AbstractLitmusTest {
                     .map(Path::toString)
                     .filter(f -> f.endsWith("litmus"))
                     .filter(f -> !skip.contains(f))
-                    .filter(f -> expectationMap.containsKey(f.substring(n)))
-                    .map(f -> new Object[]{f, expectationMap.get(f.substring(n))})
+                    .filter(f -> expectedResults.containsKey(f.substring(n)))
+                    .map(f -> new Object[]{f, expectedResults.get(f.substring(n))})
                     .collect(ArrayList::new,
-                            (l, f) -> l.add(new Object[]{f[0], arch, f[1]}), ArrayList::addAll);
+                            (l, f) -> l.add(new Object[]{f[0], f[1]}), ArrayList::addAll);
         }
     }
 
@@ -96,10 +94,6 @@ public abstract class AbstractLitmusTest {
         return 10000;
     }
 
-    protected String getExpectedFilePostfix() {
-        return "";
-    }
-
     // ============================================================
 
 
@@ -115,7 +109,7 @@ public abstract class AbstractLitmusTest {
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
-            getExpectedResults(arch, getExpectedFilePostfix()).get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
+        expectedResults.get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
     protected final Provider<Configuration> configProvider = Provider.fromSupplier(() -> Configuration.builder().setOption(INITIALIZE_REGISTERS, String.valueOf(DO_INITIALIZE_REGISTERS)).build());
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, configProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);

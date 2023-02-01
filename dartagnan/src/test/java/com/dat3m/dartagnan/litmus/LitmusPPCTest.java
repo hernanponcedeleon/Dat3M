@@ -21,8 +21,8 @@ public class LitmusPPCTest extends AbstractLitmusTest {
         return () -> Arch.POWER;
     }
 
-    public LitmusPPCTest(String path, String arch, Result expected) {
-        super(path, arch, expected);
+    public LitmusPPCTest(String path, Result expected) {
+        super(path, expected);
     }
 
 }

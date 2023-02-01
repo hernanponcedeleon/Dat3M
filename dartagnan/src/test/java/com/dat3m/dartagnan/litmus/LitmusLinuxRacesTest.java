@@ -35,12 +35,7 @@ public class LitmusLinuxRacesTest extends AbstractLitmusTest {
         return Provider.fromSupplier(() -> EnumSet.of(Property.CAT_SPEC));
     }
     
-    @Override
-    protected String getExpectedFilePostfix() {
-        return "-DR";
-    }
-
-    public LitmusLinuxRacesTest(String path, String arch, Result expected) {
-        super(path, arch, expected);
+    public LitmusLinuxRacesTest(String path, Result expected) {
+        super(path, expected);
     }
 }
