@@ -1,0 +1,33 @@
+C C-srcu-mb-5
+
+(*
+ * Result: Sometimes
+ *
+ * Between an srcu_read_unlock() and an smp_mb__after_srcu_read_unlock(),
+ * there is no ordering.
+ *)
+
+{}
+
+P0(int *x, int *y, struct srcu_struct *s)
+{
+	int r1;
+	int r2;
+
+	r1 = srcu_read_lock(s);
+	srcu_read_unlock(s, r1);
+	WRITE_ONCE(*x, 1);
+	smp_mb__after_srcu_read_unlock();
+	r2 = READ_ONCE(*y);
+}
+
+P1(int *x, int *y, struct srcu_struct *s)
+{
+	int r1;
+
+	WRITE_ONCE(*y, 1);
+	smp_mb();
+	r1 = READ_ONCE(*x);
+}
+
+exists (0:r2=0 /\ 1:r1=0)

@@ -1,0 +1,35 @@
+C C-srcu-observed-3
+
+(*
+ * Result: Never
+ *)
+
+{}
+
+P0(int *x, int *y, int *z, struct srcu_struct *s)
+{
+	int r1;
+
+	r1 = srcu_read_lock(s);
+	WRITE_ONCE(*y, 1);
+	WRITE_ONCE(*x, 1);
+	srcu_read_unlock(s, r1);
+}
+
+P1(int *x, int *y, int *z, struct srcu_struct *s)
+{
+	int r1;
+
+	r1 = READ_ONCE(*y);
+	synchronize_srcu(s);
+	WRITE_ONCE(*z, 1);
+}
+
+P2(int *x, int *y, int *z, struct srcu_struct *s)
+{
+	WRITE_ONCE(*z, 2);
+	smp_mb();
+	WRITE_ONCE(*x, 2);
+}
+
+exists (1:r1=1 /\ x=1 /\ z=2)

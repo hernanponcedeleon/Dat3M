@@ -1,0 +1,47 @@
+C C-srcu-observed-6
+
+(*
+ * Result: Sometimes
+ *
+ * The result is Never if any of the smp_mb() calls is uncommented.
+ * This demonstrates that LKMM does not model the synchronize_srcu()
+ * guarantee that each CPU does an smp_mb() between any pre-existing
+ * read-side critical section and the end of the corresponding grace period.
+ * Which is an acceptable omission, at least for the time being.
+ *)
+
+{}
+
+P0(int *a, int *b, int *c, int *d, struct srcu_struct *s)
+{
+	int r1;
+	int r2;
+	int r3;
+	int r4;
+
+	r1 = srcu_read_lock(s);
+	WRITE_ONCE(*b, 2);
+	r2 = READ_ONCE(*a);
+	// smp_mb();
+	srcu_read_unlock(s, r1);
+	// smp_mb();
+	r3 = READ_ONCE(*c);
+	// smp_mb();
+	r4 = READ_ONCE(*d);
+}
+
+P1(int *a, int *b, int *c, int *d, struct srcu_struct *s)
+{
+	WRITE_ONCE(*b, 1);
+	synchronize_srcu(s);
+	WRITE_ONCE(*c, 1);
+}
+
+P2(int *a, int *b, int *c, int *d, struct srcu_struct *s)
+{
+	WRITE_ONCE(*d, 1);
+	smp_mb();
+	WRITE_ONCE(*a, 1);
+}
+
+exists (0:r2=1 /\ 0:r3=1 /\ 0:r4=0 /\ b=1)
