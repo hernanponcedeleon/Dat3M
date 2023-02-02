@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.dat3m.dartagnan.program.filter.FilterMinus;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.definition.*;
@@ -270,8 +271,19 @@ public class Wmm {
             case CRIT:
                 return new CriticalSections(r);
             case SRCU_CRIT:
-                // TODO properly implement this
-                return new Empty(r);
+                Relation srcu_lock = addDefinition(new Identity(newRelation(), FilterBasic.get(Tag.Linux.SRCU_LOCK)));
+                Relation srcu_unlock = addDefinition(new Identity(newRelation(), FilterBasic.get(Tag.Linux.SRCU_UNLOCK)));
+                Relation not_srcu_unlock = addDefinition(new Identity(newRelation(), FilterMinus.get(FilterBasic.get(Tag.VISIBLE), FilterBasic.get(Tag.Linux.SRCU_UNLOCK))));
+                // let carry-srcu-data = (data ; [~ Srcu-unlock] ; rf)*
+                Relation base0 = addDefinition(new Composition(newRelation(), getRelation(DATA), not_srcu_unlock));
+                Relation base1 = addDefinition(new Composition(newRelation(), base0, getRelation(RF)));
+                Relation base2 = addDefinition(new TransitiveClosure(newRelation(), base1));
+                Relation carry_srcu_data = addDefinition(new Union(newRelation(), base2, getRelation(ID)));
+                // let srcu-rscs = ([Srcu-lock] ; carry-srcu-data ; data ; [Srcu-unlock]) & loc
+                Relation base3 = addDefinition(new Composition(newRelation(),  srcu_lock, carry_srcu_data));
+                Relation base4 = addDefinition(new Composition(newRelation(),  base3, getRelation(DATA)));
+                Relation base5 = addDefinition(new Composition(newRelation(),  base4, srcu_unlock));
+                return intersection(r, base5, getRelation(LOC));
             case IDD:
                 return new DirectDataDependency(r);
             case ADDRDIRECT:
