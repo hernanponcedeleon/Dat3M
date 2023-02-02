@@ -269,6 +269,9 @@ public class Wmm {
                 return new CompareAndSwapDependency(r);
             case CRIT:
                 return new CriticalSections(r);
+            case SRCU_CRIT:
+                // TODO properly implement this
+                return new Empty(r);
             case IDD:
                 return new DirectDataDependency(r);
             case ADDRDIRECT:

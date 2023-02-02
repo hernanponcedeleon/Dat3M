@@ -123,8 +123,7 @@ acyclic pb as propagation
 let rcu-gp = [Sync-rcu]		(* Compare with gp *)
 let srcu-gp = [Sync-srcu]
 let rcu-rscsi = rcu-rscs^-1
-// NOTE: We don't support SRCU
-let srcu-rscsi = 0
+let srcu-rscsi = srcu-rscs^-1
 
 (*
  * The synchronize_rcu() strong fence is special in that it can order not

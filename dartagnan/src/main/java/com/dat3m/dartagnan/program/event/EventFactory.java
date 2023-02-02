@@ -454,6 +454,10 @@ public class EventFactory {
             return new LKMMUnlock(address);
         }
 
+        public static SrcuSync newSrcuSync(IExpr address) {
+            return new SrcuSync(address);
+        }
+
     }
 
 

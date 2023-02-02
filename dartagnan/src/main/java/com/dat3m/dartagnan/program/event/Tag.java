@@ -163,6 +163,9 @@ public final class Tag {
         public static final String RCU_SYNC           = "Sync-rcu";
         public static final String RCU_LOCK           = "Rcu-lock";
         public static final String RCU_UNLOCK         = "Rcu-unlock";
+        public static final String SRCU_SYNC          = "Sync-srcu";
+        public static final String SRCU_LOCK          = "Srcu-lock";
+        public static final String SRCU_UNLOCK        = "Srcu-unlock";
         public static final String MO_MB              = "Mb";
         public static final String MO_RMB		      = "Rmb";
         public static final String MO_WMB		      = "Wmb";
