@@ -279,11 +279,12 @@ public class Wmm {
                 Relation base1 = addDefinition(new Composition(newRelation(), base0, getRelation(RF)));
                 Relation base2 = addDefinition(new TransitiveClosure(newRelation(), base1));
                 Relation carry_srcu_data = addDefinition(new Union(newRelation(), base2, getRelation(ID)));
-                // let srcu-rscs = ([Srcu-lock] ; carry-srcu-data ; data ; [Srcu-unlock]) & loc
-                Relation base3 = addDefinition(new Composition(newRelation(),  srcu_lock, carry_srcu_data));
-                Relation base4 = addDefinition(new Composition(newRelation(),  base3, getRelation(DATA)));
-                Relation base5 = addDefinition(new Composition(newRelation(),  base4, srcu_unlock));
-                return intersection(r, base5, getRelation(LOC));
+                // let pass-cookie = carry-srcu-data ; data
+                Relation pass_cookie = addDefinition(new Composition(newRelation(),  carry_srcu_data, getRelation(DATA)));
+                // let srcu-rscs = let srcu-rscs = ([Srcu-lock] ; pass-cookie ; [Srcu-unlock]) & loc
+                Relation base3 = addDefinition(new Composition(newRelation(),  srcu_lock, pass_cookie));
+                Relation base4 = addDefinition(new Composition(newRelation(),  base3, srcu_unlock));
+                return intersection(r, base4, getRelation(LOC));
             case IDD:
                 return new DirectDataDependency(r);
             case ADDRDIRECT:
