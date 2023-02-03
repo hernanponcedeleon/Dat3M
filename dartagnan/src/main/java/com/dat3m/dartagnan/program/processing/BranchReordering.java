@@ -68,7 +68,7 @@ public class BranchReordering implements ProgramProcessor {
         // We need to reassign Ids, because they do not match with the ordering of the code now.
         EventIdReassignment.newInstance().run(program);
         logger.info("Branches reordered");
-		logger.info("{}: {}", DETERMINISTIC_REORDERING, reorderDeterministically);
+        logger.info("{}: {}", DETERMINISTIC_REORDERING, reorderDeterministically);
     }
 
     private class ThreadReordering {

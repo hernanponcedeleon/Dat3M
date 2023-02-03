@@ -93,7 +93,7 @@ public abstract class Definition implements Constraint {
         default T visitReadFrom(Relation rf) { return visitDefinition(rf, List.of()); }
     }
 
-    static final class Undefined extends Definition {
+    public static final class Undefined extends Definition {
         Undefined(Relation r) {
             super(r, "undefined");
         }

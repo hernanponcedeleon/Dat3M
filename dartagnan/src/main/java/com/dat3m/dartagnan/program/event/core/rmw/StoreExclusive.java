@@ -12,24 +12,24 @@ public class StoreExclusive extends Store implements RegWriter {
 
     private final Register register;
 
-    public StoreExclusive(Register register, IExpr address, ExprInterface value, String mo){
+    public StoreExclusive(Register register, IExpr address, ExprInterface value, String mo) {
         super(address, value, mo);
         this.register = register;
         addFilters(Tag.EXCL, Tag.REG_WRITER);
     }
 
-    private StoreExclusive(StoreExclusive other){
+    private StoreExclusive(StoreExclusive other) {
         super(other);
         this.register = other.register;
     }
 
     @Override
-    public Register getResultRegister(){
+    public Register getResultRegister() {
         return register;
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return register + " <- store(*" + address + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")";
     }
 
@@ -37,15 +37,15 @@ public class StoreExclusive extends Store implements RegWriter {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public StoreExclusive getCopy(){
+    public StoreExclusive getCopy() {
         return new StoreExclusive(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitStoreExclusive(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitStoreExclusive(this);
+    }
 }

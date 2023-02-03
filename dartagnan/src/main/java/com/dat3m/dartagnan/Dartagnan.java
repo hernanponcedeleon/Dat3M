@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.program.analysis.CallStackComputation;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -216,6 +215,7 @@ public class Dartagnan extends BaseOptions {
     public static String generateResultSummary(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker) throws SolverException {
         // ----------------- Generate output of verification result -----------------
         final Program p = task.getProgram();
+        final EnumSet<Property> props = task.getProperty();
         final Result result = modelChecker.getResult();
         final EncodingContext encCtx = modelChecker.getEncodingContext();
         final Model model = modelChecker.hasModel() ? prover.getModel() : null;
@@ -227,16 +227,16 @@ public class Dartagnan extends BaseOptions {
         if (p.getFormat().equals(SourceLanguage.BOOGIE)) {
             if (hasViolations) {
                 printWarningIfThreadStartFailed(p, encCtx, prover);
-                if (FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
+                if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     summary.append("Program specification violation found").append("\n");
                     summary.append("User assertion: ").append(p.getSpecification().toStringWithType()).append("\n");
                 }
-                if (FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
+                if (props.contains(LIVENESS) && FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
                     summary.append("Liveness violation found").append("\n");
                 }
                 final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
                         .filter(Axiom::isFlagged)
-                        .filter(ax -> FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
+                        .filter(ax -> props.contains(CAT_SPEC) && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
                         .collect(Collectors.toList());
                 if (!violatedCATSpecs.isEmpty()) {
                     summary.append("CAT specification violation found").append("\n");
@@ -247,7 +247,7 @@ public class Dartagnan extends BaseOptions {
                     }
                 }
             } else if (hasPositiveWitnesses) {
-                if (TRUE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
+                if (props.contains(PROGRAM_SPEC) && TRUE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     // The check above is just a sanity check: the program spec has to be true
                     // because it is the only property that got encoded.
                     summary.append("Program specification witness found.").append("\n");
@@ -275,14 +275,14 @@ public class Dartagnan extends BaseOptions {
                 summary.append("Condition ").append(p.getSpecification().toStringWithType()).append("\n");
                 summary.append("Ok").append("\n");
             } else if (hasViolations) {
-                if (FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
+                if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     // Program spec violated
                     summary.append("Condition ").append(p.getSpecification().toStringWithType()).append("\n");
                     summary.append("No").append("\n");
                 } else {
                     final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
                             .filter(Axiom::isFlagged)
-                            .filter(ax -> FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
+                            .filter(ax -> props.contains(CAT_SPEC) && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
                             .collect(Collectors.toList());
                     for (Axiom violatedAx : violatedCATSpecs) {
                         summary.append("Flag ")

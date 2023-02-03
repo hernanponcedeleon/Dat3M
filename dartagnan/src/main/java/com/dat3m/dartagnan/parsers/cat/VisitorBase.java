@@ -1,36 +1,38 @@
 package com.dat3m.dartagnan.parsers.cat;
 
+import com.dat3m.dartagnan.exception.MalformedMemoryModelException;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
 import com.dat3m.dartagnan.parsers.CatParser.*;
-import com.dat3m.dartagnan.program.filter.FilterAbstract;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.filter.FilterIntersection;
-import com.dat3m.dartagnan.program.filter.FilterMinus;
-import com.dat3m.dartagnan.program.filter.FilterUnion;
+import com.dat3m.dartagnan.program.filter.*;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.google.common.base.VerifyException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ID;
-import static com.google.common.base.Verify.verify;
 
 class VisitorBase extends CatBaseVisitor<Object> {
 
     private final Wmm wmm;
+    // Maps names used on the lhs of definitions ("let name = relexpr") to the
+    // predicate they identify (either a Relation or a Filter).
     private final Map<String, Object> namespace = new HashMap<>();
-    private Relation current;
-    private String alias;
+    // Counts the number of occurrences of a name on the lhs of a definition
+    // This is used to give proper names to re-definitions
+    private final Map<String, Integer> nameOccurrenceCounter = new HashMap<>();
+    // Used to handle recursive definitions properly
+    private Relation relationToBeDefined;
+    // Used as optimization to avoid creating multiple relations with (structurally) identical definitions.
     private final Map<String, Relation> termMap = new HashMap<>();
 
     VisitorBase() {
@@ -46,7 +48,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
     @Override
     public Void visitAxiomDefinition(AxiomDefinitionContext ctx) {
         try {
-            Relation r = relation(ctx.e);
+            Relation r = parseAsRelation(ctx.e);
             Constructor<?> constructor = ctx.cls.getConstructor(Relation.class, boolean.class, boolean.class);
             Axiom axiom = (Axiom) constructor.newInstance(r, ctx.negate != null, ctx.flag != null);
             if (ctx.NAME() != null) {
@@ -60,41 +62,80 @@ class VisitorBase extends CatBaseVisitor<Object> {
         return null;
     }
 
+    private String createUniqueName(String name) {
+        if (namespace.containsKey(name) && !nameOccurrenceCounter.containsKey(name)) {
+            // If we have already seen the name, but not counted it yet, we do so now.
+            nameOccurrenceCounter.put(name, 1);
+        }
+
+        final int occurrenceNumber =  nameOccurrenceCounter.compute(name, (k, v) -> v == null ? 1 : v + 1);
+        // If it is the first time we encounter this name, we return it as is.
+        return occurrenceNumber == 1 ? name : name + "#" + occurrenceNumber;
+    }
+
     @Override
     public Void visitLetDefinition(LetDefinitionContext ctx) {
         String name = ctx.n.getText();
-        alias = name;
         Object definedPredicate = ctx.e.accept(this);
-        namespace.put(name, definedPredicate);
-        if (definedPredicate instanceof FilterAbstract) {
+        if (definedPredicate instanceof Relation) {
+            Relation rel = (Relation)definedPredicate;
+            String alias = createUniqueName(name);
+            wmm.addAlias(alias, rel);
+        } else if (definedPredicate instanceof FilterAbstract) {
             FilterAbstract filter = (FilterAbstract) definedPredicate;
-            filter.setName(name);
+            String alias = createUniqueName(name);
+            // NOTE: The support for re-defined filters is limited:
+            // The Wmm will recognize all aliases, but the filter itself has a single name,
+            // which we set to the most recent alias we used.
+            filter.setName(alias);
             wmm.addFilter(filter);
         }
+        namespace.put(name, definedPredicate);
         return null;
     }
 
     @Override
     public Void visitLetRecDefinition(LetRecDefinitionContext ctx) {
-        int size = ctx.letRecAndDefinition().size();
-        Relation[] recursiveGroup = new Relation[size + 1];
-        String name = ctx.n.getText();
-        recursiveGroup[0] = wmm.newRelation(name);
-        namespace.put(name, recursiveGroup[0]);
-        for (int i = 0; i < size; i++) {
-            name = ctx.letRecAndDefinition(i).n.getText();
-            recursiveGroup[i + 1] = wmm.newRelation(name);
-            namespace.put(name, recursiveGroup[i + 1]);
+        final int recSize = ctx.letRecAndDefinition().size() + 1;
+        final Relation[] recursiveGroup = new Relation[recSize];
+        final String[] lhsNames = new String[recSize];
+
+        // Create the recursive relations
+        for (int i = 0; i < recSize; i++) {
+            // First relation needs special treatment due to syntactic difference
+            final String relName = i == 0 ? ctx.n.getText() : ctx.letRecAndDefinition(i - 1).n.getText();
+            if (Arrays.asList(lhsNames).contains(relName)) {
+                final String errorMsg = String.format("Recursive definition defines '%s' multiple times", relName);
+                throw new MalformedMemoryModelException(errorMsg);
+            }
+            lhsNames[i] = relName;
+            recursiveGroup[i] = wmm.newRelation(createUniqueName(relName));
+            recursiveGroup[i].setRecursive();
+            namespace.put(relName, recursiveGroup[i]);
         }
-        for (Relation r : recursiveGroup) {
-            r.setRecursive();
+
+        // Parse recursive definitions
+        for (int i = 0; i < recSize; i++) {
+            final ExpressionContext rhs = i == 0 ? ctx.e : ctx.letRecAndDefinition(i - 1).e;
+            final Relation lhs = recursiveGroup[i];
+            setRelationToBeDefined(lhs);
+            final Relation parsedRhs = parseAsRelation(rhs);
+            if (parsedRhs.getDefinition() instanceof Definition.Undefined) {
+                // This should correspond to the degenerate case: "let rec r = r" which we could technically also
+                // simplify to "let r = 0", but we throw an exception for now.
+                final String errorMsg = String.format("Ill-defined definition in recursion: '%s = %s'",
+                        lhsNames[i], rhs.getText());
+                throw new MalformedMemoryModelException(errorMsg);
+            }
+            if (lhs.getDefinition() != parsedRhs.getDefinition()) {
+                // We have an odd case where a relation defined in the recursion is identical to some
+                // already defined relation, i.e., it is just an alias.
+                namespace.put(lhsNames[i], parsedRhs);
+                wmm.deleteRelation(lhs);
+                wmm.addAlias(lhs.getName().get(), parsedRhs);
+            }
         }
-        current = recursiveGroup[0];
-        relation(ctx.e);
-        for (int i = 0; i < size; i++) {
-            current = recursiveGroup[i + 1];
-            relation(ctx.letRecAndDefinition(i).e);
-        }
+        setRelationToBeDefined(null);
         return null;
     }
 
@@ -108,239 +149,192 @@ class VisitorBase extends CatBaseVisitor<Object> {
         String name = ctx.n.getText();
         Object predicate = namespace.computeIfAbsent(name,
                 k -> wmm.containsRelation(k) ? wmm.getRelation(k) : FilterBasic.get(k));
-        addCurrentName(predicate);
         return predicate;
     }
 
     @Override
     public Object visitExprIntersection(ExprIntersectionContext c) {
-        checkNoCurrentOrNoAlias(c);
-        Relation current = current();
-        String alias = alias();
+        Optional<Relation> defRel = getAndResetRelationToBeDefined();
         Object o1 = c.e1.accept(this);
         Object o2 = c.e2.accept(this);
         if (o1 instanceof Relation) {
-            Relation r0 = current != null ? current : newRelation(alias);
-            return addDefinition(new Intersection(r0, (Relation) o1, relation(o2, c)));
+            Relation r0 = defRel.orElseGet(wmm::newRelation);
+            return addDefinition(new Intersection(r0, (Relation) o1, parseAsRelation(o2, c)));
         }
-        return withAlias(alias, FilterIntersection.get(set(o1, c), set(o2, c)));
+        return FilterIntersection.get(parseAsFilter(o1, c), parseAsFilter(o2, c));
     }
 
     @Override
     public Object visitExprMinus(ExprMinusContext c) {
-        checkNoCurrent(c);
-        String alias = alias();
+        checkNoRecursion(c);
         Object o1 = c.e1.accept(this);
         Object o2 = c.e2.accept(this);
         if (o1 instanceof Relation) {
-            Relation r0 = newRelation(alias);
-            return addDefinition(new Difference(r0, (Relation) o1, relation(o2, c)));
+            Relation r0 = wmm.newRelation();
+            return addDefinition(new Difference(r0, (Relation) o1, parseAsRelation(o2, c)));
         }
-        return withAlias(alias, FilterMinus.get(set(o1, c), set(o2, c)));
+        return FilterMinus.get(parseAsFilter(o1, c), parseAsFilter(o2, c));
     }
 
     @Override
     public Object visitExprUnion(ExprUnionContext c) {
-        checkNoCurrentOrNoAlias(c);
-        Relation current = current();
-        String alias = alias();
+        Optional<Relation> defRel = getAndResetRelationToBeDefined();
         Object o1 = c.e1.accept(this);
         Object o2 = c.e2.accept(this);
         if (o1 instanceof Relation) {
-            Relation r0 = current != null ? current : newRelation(alias);
-            return addDefinition(new Union(r0, (Relation) o1, relation(o2, c)));
+            Relation r0 = defRel.orElseGet(wmm::newRelation);
+            return addDefinition(new Union(r0, (Relation) o1, parseAsRelation(o2, c)));
         }
-        return withAlias(alias, FilterUnion.get(set(o1, c), set(o2, c)));
+        return FilterUnion.get(parseAsFilter(o1, c), parseAsFilter(o2, c));
     }
 
     @Override
     public Object visitExprComplement(ExprComplementContext c) {
-        checkNoCurrent(c);
-        String alias = alias();
+        checkNoRecursion(c);
         Object o1 = c.e.accept(this);
         FilterBasic visible = FilterBasic.get(VISIBLE);
         if (o1 instanceof Relation) {
-            Relation r0 = newRelation(alias);
+            Relation r0 = wmm.newRelation();
             Relation all = wmm.newRelation();
             Relation r1 = wmm.addDefinition(new CartesianProduct(all, visible, visible));
             return addDefinition(new Difference(r0, r1, (Relation) o1));
         }
-        return withAlias(alias, FilterMinus.get(visible, set(o1, c)));
+        return FilterMinus.get(visible, parseAsFilter(o1, c));
     }
 
     @Override
     public Relation visitExprComposition(ExprCompositionContext c) {
-        checkNoCurrentOrNoAlias(c);
-        Relation r = current();
-        String a = alias();
-        Relation r0 = r != null ? r : newRelation(a);
-        Relation r1 = relation(c.e1);
-        Relation r2 = relation(c.e2);
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
+        Relation r1 = parseAsRelation(c.e1);
+        Relation r2 = parseAsRelation(c.e2);
         return addDefinition(new Composition(r0, r1, r2));
     }
 
     @Override
     public Relation visitExprInverse(ExprInverseContext c) {
-        checkNoCurrent(c);
-        Relation r0 = newRelation(alias());
-        Relation r1 = relation(c.e);
+        checkNoRecursion(c);
+        Relation r0 = wmm.newRelation();
+        Relation r1 = parseAsRelation(c.e);
         return addDefinition(new Inverse(r0, r1));
     }
 
     @Override
     public Relation visitExprTransitive(ExprTransitiveContext c) {
-        checkNoCurrent(c);
-        Relation r0 = newRelation(alias());
-        Relation r1 = relation(c.e);
+        checkNoRecursion(c);
+        Relation r0 = wmm.newRelation();
+        Relation r1 = parseAsRelation(c.e);
         return addDefinition(new TransitiveClosure(r0, r1));
     }
 
     @Override
     public Relation visitExprTransRef(ExprTransRefContext c) {
-        checkNoCurrent(c);
-        Relation r0 = newRelation(alias());
+        checkNoRecursion(c);
+        Relation r0 = wmm.newRelation();
         Relation r1 = wmm.newRelation();
         Relation r2 = wmm.getRelation(ID);
-        Relation r3 = relation(c.e);
+        Relation r3 = parseAsRelation(c.e);
         return addDefinition(new TransitiveClosure(r0, addDefinition(new Union(r1, r2, r3))));
     }
 
     @Override
     public Relation visitExprDomainIdentity(ExprDomainIdentityContext c) {
-        checkNoCurrent(c);
-        Relation r0 = newRelation(alias());
-        Relation r1 = relation(c.e);
+        checkNoRecursion(c);
+        Relation r0 = wmm.newRelation();
+        Relation r1 = parseAsRelation(c.e);
         return addDefinition(new DomainIdentity(r0, r1));
     }
 
     @Override
     public Relation visitExprRangeIdentity(ExprRangeIdentityContext c) {
-        checkNoCurrent(c);
-        Relation r0 = newRelation(alias());
-        Relation r1 = relation(c.e);
+        checkNoRecursion(c);
+        Relation r0 = wmm.newRelation();
+        Relation r1 = parseAsRelation(c.e);
         return addDefinition(new RangeIdentity(r0, r1));
     }
 
     @Override
     public Relation visitExprOptional(ExprOptionalContext c) {
-        checkNoCurrent(c);
-        Relation r0 = newRelation(alias());
-        Relation r1 = relation(c.e);
+        checkNoRecursion(c);
+        Relation r0 = wmm.newRelation();
+        Relation r1 = parseAsRelation(c.e);
         return addDefinition(new Union(r0, wmm.getRelation(ID), r1));
     }
 
     @Override
     public Relation visitExprIdentity(ExprIdentityContext c) {
-        checkNoCurrent(c);
-        Relation r0 = newRelation(alias());
-        FilterAbstract s1 = set(c.e);
+        checkNoRecursion(c);
+        Relation r0 = wmm.newRelation();
+        FilterAbstract s1 = parseAsFilter(c.e);
         return addDefinition(new Identity(r0, s1));
     }
 
     @Override
     public Relation visitExprCartesian(ExprCartesianContext c) {
-        checkNoCurrent(c);
-        Relation r0 = newRelation(alias());
-        FilterAbstract s1 = set(c.e1);
-        FilterAbstract s2 = set(c.e2);
+        checkNoRecursion(c);
+        Relation r0 = wmm.newRelation();
+        FilterAbstract s1 = parseAsFilter(c.e1);
+        FilterAbstract s2 = parseAsFilter(c.e2);
         return addDefinition(new CartesianProduct(r0, s1, s2));
     }
 
     @Override
     public Relation visitExprFencerel(ExprFencerelContext ctx) {
-        checkNoCurrent(ctx);
-        Relation r0 = newRelation(alias());
-        FilterAbstract s1 = set(ctx.e);
+        checkNoRecursion(ctx);
+        Relation r0 = wmm.newRelation();
+        FilterAbstract s1 = parseAsFilter(ctx.e);
         return addDefinition(new Fences(r0, s1));
     }
 
-    private void addCurrentName(Object o) {
-        if (alias == null) {
-            return;
+    // ============================ Utility ============================
+
+    private Relation addDefinition(Definition definition) {
+        Relation definedRelation = definition.getDefinedRelation();
+        String term = definition.getTerm();
+        Relation mappedRelation = termMap.get(definition.getTerm());
+        if (mappedRelation == null) {
+            // This is a new definition.
+            termMap.put(term, definedRelation);
+            return wmm.addDefinition(definition);
+        } else {
+            // We created an already existing definition, so we do not add this definition
+            // to the Wmm and instead delete the relation it is defining (redundantly)
+            wmm.deleteRelation(definedRelation);
+            return mappedRelation;
         }
-        if (o instanceof Relation) {
-            wmm.addAlias(alias, (Relation) o);
-        }
-        namespace.put(alias, o);
-        alias = null;
     }
 
-    private void checkNoCurrent(ExpressionContext c) {
-        if(current != null) {
+    private void checkNoRecursion(ExpressionContext c) {
+        if(relationToBeDefined != null) {
             throw new ParsingException("Unexpected recursive context at expression: " + c.getText());
         }
     }
 
-    private Relation current() {
-        Relation r = current;
-        current = null;
-        return r;
+    private void setRelationToBeDefined(Relation rel) {
+        relationToBeDefined = rel;
     }
 
-    private void checkNoCurrentOrNoAlias(ExpressionContext c) {
-        if (current != null && alias != null) {
-            // call getText only if necessary.
-            throw new VerifyException(String.format("Simultaneous let and let rec expression at \"%s\"", c.getText()));
-        }
+    private Optional<Relation> getAndResetRelationToBeDefined() {
+        Relation r = relationToBeDefined;
+        relationToBeDefined = null;
+        return Optional.ofNullable(r);
     }
 
-    private String alias() {
-        String a = alias;
-        alias = null;
-        return a;
+    private Relation parseAsRelation(ExpressionContext t) {
+        return parseAsRelation(t.accept(this), t);
     }
 
-    private FilterAbstract withAlias(String name, FilterAbstract filter) {
-        if (name != null) {
-            namespace.put(name, filter);
-        }
-        return filter;
-    }
-
-    private Relation newRelation(String name) {
-        if (name == null) {
-            return wmm.newRelation();
-        }
-        Relation newRelation = wmm.newRelation(name);
-        namespace.put(name, newRelation);
-        return newRelation;
-    }
-
-    private Relation addDefinition(Definition definition) {
-        String term = definition.getTerm();
-        Relation mappedRelation = termMap.get(term);
-        Relation definedRelation = definition.getDefinedRelation();
-        if (mappedRelation == null) {
-            termMap.put(term, definedRelation);
-            return wmm.addDefinition(definition);
-        }
-        Optional<String> name = definedRelation.getName();
-        wmm.deleteRelation(definedRelation);
-        if (name.isPresent()) {
-            Object v = namespace.put(name.get(), mappedRelation);
-            verify(v == definedRelation);
-            wmm.addAlias(name.get(), mappedRelation);
-        }
-        verify(!namespace.containsValue(definedRelation));
-        return mappedRelation;
-    }
-
-    private Relation relation(ExpressionContext t) {
-        return relation(t.accept(this), t);
-    }
-
-    private Relation relation(Object o, ExpressionContext t) {
+    private Relation parseAsRelation(Object o, ExpressionContext t) {
         if (o instanceof Relation) {
             return (Relation) o;
         }
         throw new ParsingException("Expected relation, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
     }
 
-    private FilterAbstract set(ExpressionContext t) {
-        return set(t.accept(this), t);
+    private FilterAbstract parseAsFilter(ExpressionContext t) {
+        return parseAsFilter(t.accept(this), t);
     }
 
-    private static FilterAbstract set(Object o, ExpressionContext t) {
+    private static FilterAbstract parseAsFilter(Object o, ExpressionContext t) {
         if (o instanceof FilterAbstract) {
             return (FilterAbstract) o;
         }

@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
-import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
@@ -35,7 +34,7 @@ public class SymmetryEncoder implements Encoder {
 
     private final Wmm memoryModel;
     private final EncodingContext context;
-    private final List<Axiom> axioms;
+    private final List<Axiom> acycAxioms;
     private final ThreadSymmetry symm;
     private final RelationAnalysis ra;
 
@@ -49,34 +48,38 @@ public class SymmetryEncoder implements Encoder {
 
     @Option(name = BREAK_SYMMETRY_BY_SYNC_DEGREE,
             description = "Orders the relation edges to break on based on their synchronization strength." +
-            "Only has impact if breaking symmetry on relations rather than control flow.",
+                    "Only has impact if breaking symmetry on relations rather than control flow.",
             secure = true)
     private boolean breakBySyncDegree = true;
 
     // =====================================================================
 
-    private SymmetryEncoder(EncodingContext c, Wmm m, Context a, Configuration config) throws InvalidConfigurationException {
+    private SymmetryEncoder(EncodingContext c, Configuration config) throws InvalidConfigurationException {
         context = c;
-        memoryModel = m;
-        axioms = List.copyOf(m.getAxioms());
+        memoryModel = c.getTask().getMemoryModel();
+        acycAxioms = memoryModel.getAxioms().stream().filter(Axiom::isAcyclicity).collect(Collectors.toList());
         symm = c.getAnalysisContext().requires(ThreadSymmetry.class);
-        ra = a.requires(RelationAnalysis.class);
+        ra = c.getAnalysisContext().requires(RelationAnalysis.class);
         config.inject(this);
 
         if (symmBreakTarget.isEmpty()) {
             logger.info("Symmetry breaking disabled.");
         } else if (symmBreakTarget.equals("_cf")) {
             logger.info("Breaking symmetry on control flow.");
-            a.requires(BranchEquivalence.class);
+            c.getAnalysisContext().requires(BranchEquivalence.class);
             this.breakBySyncDegree = false; // We cannot break by sync degree here
         } else {
             logger.info("Breaking symmetry on relation: " + symmBreakTarget);
+            if (breakBySyncDegree && acycAxioms.isEmpty()) {
+                breakBySyncDegree = false;
+                logger.info("Disabled breaking by sync degree: Memory model has no acyclicity axioms.");
+            }
             logger.info("Breaking by sync degree: " + breakBySyncDegree);
         }
     }
 
-    public static SymmetryEncoder withContext(EncodingContext context, Wmm memoryModel, Context analysisContext) throws InvalidConfigurationException {
-        return new SymmetryEncoder(context, memoryModel, analysisContext, context.getTask().getConfig());
+    public static SymmetryEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
+        return new SymmetryEncoder(context, context.getTask().getConfig());
     }
 
     public BooleanFormula encodeFullSymmetryBreaking() {
@@ -91,7 +94,7 @@ public class SymmetryEncoder implements Encoder {
                 edgeEncoder = t -> context.execution(t.getFirst(), t.getSecond());
                 break;
             default:
-                Wmm baseline = context.getTask().getMemoryModel();
+                Wmm baseline = this.memoryModel;
                 if (!baseline.containsRelation(symmBreakTarget) || !memoryModel.containsRelation(symmBreakTarget)) {
                     logger.warn("The wmm has no relation named {} to break symmetry on." +
                             " Symmetry breaking was disabled.", symmBreakTarget);
@@ -115,7 +118,7 @@ public class SymmetryEncoder implements Encoder {
         symmThreads.sort(Comparator.comparingInt(Thread::getId));
 
         // ===== Construct row =====
-        //IMPORTANT: Each thread writes to its own special location for the purpose of starting/terminating threads
+        // IMPORTANT: Each thread writes to its own special location for the purpose of starting/terminating threads
         // These need to get skipped.
         Thread t1 = symmThreads.get(0);
         List<Tuple> t1Tuples = new ArrayList<>();
@@ -164,7 +167,7 @@ public class SymmetryEncoder implements Encoder {
             outEvents.add(t.getSecond());
         }
 
-        final List<RelationAnalysis.Knowledge> knowledge = axioms.stream()
+        final List<RelationAnalysis.Knowledge> knowledge = acycAxioms.stream()
                 .map(a -> ra.getKnowledge(a.getRelation()))
                 .collect(Collectors.toList());
         final List<Function<Event, Collection<Tuple>>> mustIn = knowledge.stream()
@@ -173,23 +176,22 @@ public class SymmetryEncoder implements Encoder {
         final List<Function<Event, Collection<Tuple>>> mustOut = knowledge.stream()
                 .map(RelationAnalysis.Knowledge::getMustOut)
                 .collect(Collectors.toList());
-        final Map<Event, Integer> combInDegree = new HashMap<>(inEvents.size());
-        final Map<Event, Integer> combOutDegree = new HashMap<>(outEvents.size());
+        final Map<Event, Integer> combinedInDegree = new HashMap<>(inEvents.size());
+        final Map<Event, Integer> combinedOutDegree = new HashMap<>(outEvents.size());
         for (Event e : inEvents) {
             int syncDeg = mustIn.stream().mapToInt(m -> m.apply(e).size() + 1).max().orElse(0);
-            combInDegree.put(e, syncDeg);
+            combinedInDegree.put(e, syncDeg);
         }
         for (Event e : outEvents) {
             int syncDec = mustOut.stream().mapToInt(m -> m.apply(e).size() + 1).max().orElse(0);
-            combOutDegree.put(e, syncDec);
+            combinedOutDegree.put(e, syncDec);
         }
 
         // Sort by sync degrees
-        row.sort(Comparator.<Tuple>comparingInt(t -> combInDegree.get(t.getFirst()) * combOutDegree.get(t.getSecond())).reversed());
+        row.sort(Comparator.<Tuple>comparingInt(t -> combinedInDegree.get(t.getFirst()) * combinedOutDegree.get(t.getSecond())).reversed());
     }
 
     // ========================= Static utility ===========================
-
 
     /*
         Encodes that any assignment obeys "r1 <= r2" where the order is
@@ -206,7 +208,7 @@ public class SymmetryEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         // Return TRUE if there is nothing to encode
         if(r1.isEmpty()) {
-        	return bmgr.makeTrue();
+            return bmgr.makeTrue();
         }
         final int size = r1.size();
         final String suffix = "_" + uniqueIdent;

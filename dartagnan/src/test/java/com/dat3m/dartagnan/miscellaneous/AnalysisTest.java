@@ -79,12 +79,12 @@ public class AnalysisTest {
         context.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
         context.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, context, config));
         Dependency dep = Dependency.fromConfig(program, context, config);
-        Event me0 = findMatchingEventAfterCompilation(program, e0);
-        Event me1 = findMatchingEventAfterCompilation(program, e1);
-        Event me2 = findMatchingEventAfterCompilation(program, e2);
-        Event me3 = findMatchingEventAfterCompilation(program, e3);
-        Event me4 = findMatchingEventAfterCompilation(program, e4);
-        Event me5 = findMatchingEventAfterCompilation(program, e5);
+        Event me0 = findMatchingEventAfterProcessing(program, e0);
+        Event me1 = findMatchingEventAfterProcessing(program, e1);
+        Event me2 = findMatchingEventAfterProcessing(program, e2);
+        Event me3 = findMatchingEventAfterProcessing(program, e3);
+        Event me4 = findMatchingEventAfterProcessing(program, e4);
+        Event me5 = findMatchingEventAfterProcessing(program, e5);
         assertTrue(dep.of(me1, r0).initialized);
         assertList(dep.of(me1, r0).may, me0);
         assertList(dep.of(me1, r0).must, me0);
@@ -131,10 +131,10 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterCompilation(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterCompilation(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterCompilation(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterCompilation(program, e3);
+        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
+        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
+        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
+        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);//precisely no
         assertAlias(expect[1], a, me0, me2);
@@ -172,10 +172,10 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterCompilation(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterCompilation(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterCompilation(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterCompilation(program, e3);
+        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
+        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
+        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
+        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);
         assertAlias(expect[1], a, me0, me2);
@@ -218,10 +218,10 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterCompilation(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterCompilation(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterCompilation(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterCompilation(program, e3);
+        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
+        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
+        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
+        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);
         assertAlias(expect[1], a, me0, me2);
@@ -259,10 +259,10 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterCompilation(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterCompilation(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterCompilation(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterCompilation(program, e3);
+        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
+        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
+        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
+        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);
         assertAlias(expect[1], a, me0, me2);
@@ -303,10 +303,10 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterCompilation(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterCompilation(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterCompilation(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterCompilation(program, e3);
+        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
+        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
+        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
+        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);//precisely no
         assertAlias(expect[1], a, me0, me2);//precisely must
@@ -347,10 +347,10 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterCompilation(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterCompilation(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterCompilation(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterCompilation(program, e3);
+        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
+        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
+        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
+        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);//precisely no
         assertAlias(expect[1], a, me0, me2);//precisely must
@@ -411,7 +411,7 @@ public class AnalysisTest {
         assertArrayEquals(expected, results.toArray());
     }
 
-    private Event findMatchingEventAfterCompilation(Program p, Event orig) {
+    private Event findMatchingEventAfterProcessing(Program p, Event orig) {
         return p.getEvents().stream().filter(e -> e.getOId() == orig.getOId()).findFirst().get();
     }
 }

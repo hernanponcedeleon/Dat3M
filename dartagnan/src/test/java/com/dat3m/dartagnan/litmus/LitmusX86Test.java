@@ -21,7 +21,7 @@ public class LitmusX86Test extends AbstractLitmusTest {
         return () -> Arch.TSO;
     }
 
-    public LitmusX86Test(String path, String arch, Result expected) {
-        super(path, arch, expected);
+    public LitmusX86Test(String path, Result expected) {
+        super(path, expected);
     }
 }
