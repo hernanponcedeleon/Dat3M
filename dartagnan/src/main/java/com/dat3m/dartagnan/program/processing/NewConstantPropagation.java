@@ -142,7 +142,13 @@ public class NewConstantPropagation implements ProgramProcessor {
 
         @Override
         public ExprInterface visit(Register reg) {
-            return propagationMap.compute(reg, (k, v) -> v == null || v == TOP ? reg : v );
+            ExprInterface retVal = propagationMap.compute(reg, (k, v) -> v == null || v == TOP ? reg : v );
+            if (retVal instanceof BConst) {
+                // We only have integral registers, so we need to implicitly convert booleans to integers.
+                return retVal.equals(BConst.TRUE) ? IValue.ONE : IValue.ZERO;
+            } else {
+                return retVal;
+            }
         }
 
         @Override
