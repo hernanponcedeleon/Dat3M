@@ -2513,8 +2513,6 @@ litmus/LKMM/dart/C-re-03.litmus,1
 litmus/LKMM/dart/C-xchg-simple-01.litmus,0
 litmus/LKMM/dart/C-xchg-simple-02.litmus,1
 litmus/LKMM/dart/C-xchg-simple-03.litmus,0
-litmus/LKMM/dart/no-herd/C-bool-const-01.litmus,0
-litmus/LKMM/dart/no-herd/C-bool-const-02.litmus,1
 litmus/LKMM/lkml/Atomic-RMW+mb__after_atomic-is-stronger-than-acquire.litmus,0
 litmus/LKMM/lkml/DCL-broken.litmus,1
 litmus/LKMM/lkml/DCL-fixed.litmus,0
