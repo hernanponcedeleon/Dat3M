@@ -21,7 +21,7 @@ public class LISA_AARCH64_Test extends AbstractLitmusTest {
         return () -> Arch.ARM8;
     }
 
-    public LISA_AARCH64_Test(String path, String arch, Result expected) {
-        super(path, arch, expected);
+    public LISA_AARCH64_Test(String path, Result expected) {
+        super(path, expected);
     }
 }

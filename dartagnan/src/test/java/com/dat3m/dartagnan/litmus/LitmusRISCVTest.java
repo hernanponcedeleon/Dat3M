@@ -21,7 +21,7 @@ public class LitmusRISCVTest extends AbstractLitmusTest {
         return () -> Arch.RISCV;
     }
 
-    public LitmusRISCVTest(String path, String arch, Result expected) {
-        super(path, arch, expected);
+    public LitmusRISCVTest(String path, Result expected) {
+        super(path, expected);
     }
 }

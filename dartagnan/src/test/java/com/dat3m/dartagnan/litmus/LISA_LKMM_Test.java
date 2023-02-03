@@ -28,7 +28,7 @@ public class LISA_LKMM_Test extends AbstractLitmusTest {
         return Providers.createWmmFromName(() -> "linux-kernel");
     }
 
-    public LISA_LKMM_Test(String path, String arch, Result expected) {
-        super(path, arch, expected);
+    public LISA_LKMM_Test(String path, Result expected) {
+        super(path, expected);
     }
 }

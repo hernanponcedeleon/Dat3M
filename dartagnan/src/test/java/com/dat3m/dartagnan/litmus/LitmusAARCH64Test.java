@@ -21,8 +21,8 @@ public class LitmusAARCH64Test extends AbstractLitmusTest {
         return () -> Arch.ARM8;
     }
 
-    public LitmusAARCH64Test(String path, String arch, Result expected) {
-        super(path, arch, expected);
+    public LitmusAARCH64Test(String path, Result expected) {
+        super(path, expected);
     }
 
 }
