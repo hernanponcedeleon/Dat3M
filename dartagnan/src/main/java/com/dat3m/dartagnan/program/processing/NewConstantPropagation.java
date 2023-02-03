@@ -1,9 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.expression.BExpr;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
@@ -19,46 +17,85 @@ import java.util.Map;
 
 public class NewConstantPropagation implements ProgramProcessor {
 
-    private static final ExprInterface TOP = new IConst() {
-        @Override
-        public BigInteger getValue() { return null; }
+    private NewConstantPropagation() { }
 
-        @Override
-        public <T> T visit(ExpressionVisitor<T> visitor) { return null; }
-    };
+    public static NewConstantPropagation newInstance() {
+        return new NewConstantPropagation();
+    }
+
+    // ====================================================================================
 
     @Override
     public void run(Program program) {
-        Preconditions.checkArgument(program.isUnrolled());
+        Preconditions.checkArgument(program.isUnrolled(), "Constant propagation only works on unrolled programs");
+        program.getThreads().forEach(this::run);
     }
 
     private void run(Thread thread) {
+        final Map<Label, Map<Register, ExprInterface>> inflowMap = new HashMap<>();
+        final EventSimplifier simplifier = new EventSimplifier();
+
         Map<Register, ExprInterface> propagationMap = new HashMap<>();
-        Map<Label, Map<Register, ExprInterface>> inflowMap = new HashMap<>();
+        for (Event event : thread.getEvents()) {
+            simplifier.setPropagationMap(propagationMap);
+            event.accept(simplifier);
 
-        for (Event e : thread.getEvents()) {
+            if (event instanceof Local) {
+                final Local local = (Local) event;
+                final ExprInterface expr = local.getExpr();
+                final ExprInterface valueToPropagate = (expr instanceof IConst || expr instanceof BConst) ? expr : TOP;
+                propagationMap.put(local.getResultRegister(), valueToPropagate);
+            }
 
+            if (event instanceof CondJump && !((CondJump) event).isDead()) {
+                // Join current map with label-associated map
+                final CondJump jump = (CondJump) event;
+                final Map<Register, ExprInterface> finalPropagationMap = propagationMap;
+                inflowMap.compute(jump.getLabel(), (k, v) -> join(v != null ? v : Map.of(), finalPropagationMap));
+                if (jump.isGoto()) {
+                    // Reset map, because there is no direct control-flow to the next event
+                    propagationMap.clear();
+                }
+            }
+
+            if (event instanceof Label) {
+                propagationMap = join(propagationMap, inflowMap.getOrDefault(event, Map.of()));
+            }
 
         }
     }
 
+    private Map<Register, ExprInterface> join(Map<Register, ExprInterface> x, Map<Register, ExprInterface> y) {
+        Preconditions.checkNotNull(x);
+        Preconditions.checkNotNull(y);
 
+        Map<Register, ExprInterface> joined = new HashMap<>(x);
+        for(Map.Entry<Register, ExprInterface> entry : y.entrySet()) {
+            joined.merge(entry.getKey(), entry.getValue(), (v1, v2) -> v1.equals(v2) ? v1 : TOP);
+        }
+        return joined;
+    }
 
+    // ============================ Utility classes ============================
 
-
-    private static class ConstantPropagator extends ExprTransformer {
-
-        Map<Register, ExprInterface> propagationMap = new HashMap<>();
+    private static final ExprInterface TOP = new IConst() {
         @Override
-        public ExprInterface visit(Register reg) {
-            return propagationMap.compute(reg, (k, v) -> v == null || v == TOP ? reg : v );
+        public BigInteger getValue() { throw new UnsupportedOperationException(); }
+
+        @Override
+        public <T> T visit(ExpressionVisitor<T> visitor) { throw new UnsupportedOperationException(); }
+    };
+
+    /*
+        Simplifies the expressions of events by inserting known constant values,.
+     */
+    private static class EventSimplifier implements EventVisitor<Void> {
+
+        private final ConstantPropagator propagator = new ConstantPropagator();
+
+        public void setPropagationMap(Map<Register, ExprInterface> propagationMap) {
+            this.propagator.propagationMap = propagationMap;
         }
-    }
-
-
-    private class Simplifier implements EventVisitor<Void> {
-
-        ConstantPropagator propagator = new ConstantPropagator();
 
         @Override
         public Void visitEvent(Event e) {
@@ -85,9 +122,101 @@ public class NewConstantPropagation implements ProgramProcessor {
 
         @Override
         public Void visitStore(Store e) {
-            e.setMemValue(e.getAddress().visit(propagator));
+            e.setMemValue(e.getMemValue().visit(propagator));
             return visitMemEvent(e);
         }
+    }
+
+
+    /*
+        A simple expression transformer that
+            - replaces regs by constant values (if known)
+            - simplifies constant (sub)expressions to a single constant
+        It does NOT
+            - use associativity to find more constant subexpressions
+            - simplify trivial expressions like "x == x" or "0*x" to avoid eliminating any dependencies
+     */
+    private static class ConstantPropagator extends ExprTransformer {
+
+        private Map<Register, ExprInterface> propagationMap = new HashMap<>();
+
+        @Override
+        public ExprInterface visit(Register reg) {
+            return propagationMap.compute(reg, (k, v) -> v == null || v == TOP ? reg : v );
+        }
+
+        @Override
+        public ExprInterface visit(Atom atom) {
+            ExprInterface lhs = atom.getLHS().visit(this);
+            ExprInterface rhs = atom.getRHS().visit(this);
+            if (lhs instanceof BConst) {
+                lhs = lhs.equals(BConst.TRUE) ? IValue.ONE : IValue.ZERO;
+            }
+            if (rhs instanceof BConst) {
+                rhs = rhs.equals(BConst.TRUE) ? IValue.ONE : IValue.ZERO;
+            }
+            if (lhs instanceof IValue && rhs instanceof IValue) {
+                IValue left = (IValue) lhs;
+                IValue right = (IValue) rhs;
+                return atom.getOp().combine(left.getValue(), right.getValue()) ? BConst.TRUE : BConst.FALSE;
+            } else {
+                return new Atom(lhs, atom.getOp(), rhs);
+            }
+        }
+
+        @Override
+        public BExpr visit(BExprBin bBin) {
+            ExprInterface lhs = bBin.getLHS().visit(this);
+            ExprInterface rhs = bBin.getRHS().visit(this);
+            if (lhs instanceof BConst && rhs instanceof BConst) {
+                BConst left = (BConst) lhs;
+                BConst right = (BConst) rhs;
+                return bBin.getOp().combine(left.getValue(), right.getValue()) ? BConst.TRUE : BConst.FALSE;
+            } else {
+                return new BExprBin(lhs, bBin.getOp(), rhs);
+            }
+        }
+
+        @Override
+        public BExpr visit(BExprUn bUn) {
+            ExprInterface inner = bUn.getInner().visit(this);
+            if (inner instanceof BConst) {
+                return bUn.getOp().combine(((BConst) inner).getValue()) ? BConst.TRUE : BConst.FALSE;
+            } else {
+                return new BExprUn(bUn.getOp(), inner);
+            }
+        }
+
+        @Override
+        public IExpr visit(IExprBin iBin) {
+            IExpr lhs = (IExpr) iBin.getLHS().visit(this);
+            IExpr rhs = (IExpr) iBin.getRHS().visit(this);
+            if (lhs instanceof IValue && rhs instanceof IValue) {
+                IValue left = (IValue) lhs;
+                IValue right = (IValue) rhs;
+                return new IValue(iBin.getOp().combine(left.getValue(), right.getValue()), left.getPrecision());
+            } else {
+                return new IExprBin(lhs, iBin.getOp(), rhs);
+            }
+        }
+
+        @Override
+        public IExpr visit(IExprUn iUn) {
+            IExpr inner = (IExpr) iUn.getInner().visit(this);
+            if (inner instanceof IValue && iUn.getOp() == IOpUn.MINUS) {
+                // We only optimize negation but no casting operations.
+                return new IValue(((IValue) inner).getValue().negate(), inner.getPrecision());
+            } else {
+                return new IExprUn(iUn.getOp(), inner);
+            }
+        }
+
+        @Override
+        public ExprInterface visit(IfExpr ifExpr) {
+            // We do not optimize ITEs to avoid messing up data dependencies
+            return super.visit(ifExpr);
+        }
+
     }
 
 }

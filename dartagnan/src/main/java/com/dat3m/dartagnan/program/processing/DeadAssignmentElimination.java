@@ -46,20 +46,24 @@ public class DeadAssignmentElimination implements ProgramProcessor {
 
     private void eliminateDeadAssignments(Program program, Thread thread) {
         Set<Register> usedRegs = new HashSet<>();
-        // Registers that are used by other threads and assertions cannot be removed
         if(program.getSpecification() != null) {
             usedRegs.addAll(program.getSpecification().getRegs()); // for litmus tests
         }
-        program.getEvents().stream()
+        // Registers that are used by assertions or other threads cannot be removed
+        final List<Event> programEvents = program.getEvents();
+        programEvents.stream()
                 .filter(e -> e.is(ASSERTION))
-                .filter(RegWriter.class::isInstance)
-                .map(RegWriter.class::cast)
+                .filter(RegWriter.class::isInstance).map(RegWriter.class::cast)
                 .map(RegWriter::getResultRegister)
                 .forEach(usedRegs::add);
-        program.getEvents().stream()
-                .filter(o -> !o.getThread().equals(thread))
-                .filter(RegReaderData.class::isInstance)
-                .forEach(o -> usedRegs.addAll(((RegReaderData)o).getDataRegs()));
+        programEvents.stream()
+                .filter(e -> !e.getThread().equals(thread))
+                .filter(RegReaderData.class::isInstance).map(RegReaderData.class::cast)
+                .forEach(e -> usedRegs.addAll(e.getDataRegs()));
+        programEvents.stream()
+                .filter(e -> !e.getThread().equals(thread))
+                .filter(MemEvent.class::isInstance).map(MemEvent.class::cast)
+                .forEach(e -> usedRegs.addAll(e.getAddress().getRegs()));
 
 
         // Compute events to be removed (removal is delayed)
