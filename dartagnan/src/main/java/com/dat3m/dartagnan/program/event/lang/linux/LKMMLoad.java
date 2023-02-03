@@ -17,9 +17,6 @@ public class LKMMLoad extends Load {
 		if(mo.equals(Tag.Linux.MO_ONCE)) {
 			return resultRegister + " := READ_ONCE(" + address + ")\t### LKMM";
 		}
-		if(mo.equals(Tag.Linux.SRCU_LOCK)) {
-			return resultRegister + " := srcu_read_lock(" + address + ")\t### LKMM";
-		}
         return super.toString();
     }
 

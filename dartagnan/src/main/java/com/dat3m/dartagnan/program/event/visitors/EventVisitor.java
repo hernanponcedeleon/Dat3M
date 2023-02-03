@@ -69,7 +69,7 @@ public interface EventVisitor<T> {
 	default T visitLKMMLockRead(LKMMLockRead e) { return visitLoad(e); }
 	default T visitLKMMLockWrite(LKMMLockWrite e) { return visitStore(e); }
 
-	// Linux SRUC Events
+	// Linux SRCU Events
 	default T visitSruSync(SrcuSync e) { return visitMemEvent(e); }
 
 	// TSO Events

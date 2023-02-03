@@ -17,9 +17,6 @@ public class LKMMStore extends Store {
 		if(mo.equals(Tag.Linux.MO_ONCE)) {
 			return "STORE_ONCE(" + address + ", " + value + ")\t### LKMM";
 		}
-		if(mo.equals(Tag.Linux.SRCU_UNLOCK)) {
-			return "srcu_read_unlock(" + address + ", " + value + ")\t### LKMM";
-		}
         return super.toString();
     }
 
