@@ -28,7 +28,7 @@ public class LitmusRC11Test extends AbstractLitmusTest {
         return Providers.createWmmFromName(() -> "rc11");
     }
 
-    public LitmusRC11Test(String path, String arch, Result expected) {
-        super(path, arch, expected);
+    public LitmusRC11Test(String path, Result expected) {
+        super(path, expected);
     }
 }

@@ -21,7 +21,7 @@ public class LISA_X86_Test extends AbstractLitmusTest {
         return () -> Arch.TSO;
     }
 
-    public LISA_X86_Test(String path, String arch, Result expected) {
-        super(path, arch, expected);
+    public LISA_X86_Test(String path, Result expected) {
+        super(path, expected);
     }
 }
