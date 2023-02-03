@@ -5072,7 +5072,7 @@ litmus/LKMM/tree/CoRR+poonceonce+Once.litmus,0
 litmus/LKMM/tree/CoRW+poonceonce+Once.litmus,0
 litmus/LKMM/tree/CoWR+poonceonce+Once.litmus,0
 litmus/LKMM/tree/CoWW+poonceonce.litmus,0
-litmus/LKMM/tree/dep_plain.litmus,1
+litmus/LKMM/tree/dep_plain.litmus,0
 litmus/LKMM/tree/IRIW+fencembonceonces+OnceOnce.litmus,0
 litmus/LKMM/tree/IRIW+poonceonces+OnceOnce.litmus,1
 litmus/LKMM/tree/ISA2+pooncelock+pooncelock+pombonce.litmus,0
