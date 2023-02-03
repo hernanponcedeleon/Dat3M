@@ -95,6 +95,8 @@ RcuAssignPointer           :   'rcu_assign_pointer';
 SrcuReadLock                :   'srcu_read_lock';
 SrcuReadUnlock              :   'srcu_read_unlock';
 SrcuSync                    :   'synchronize_srcu';
+SrcuDownRead                :   'srcu_down_read';
+SrcuUpRead                  :   'srcu_up_read';
 
 SpinTrylock                :   'spin_trylock';
 SpiIsLocked                :   'spin_is_locked';

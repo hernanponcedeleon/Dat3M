@@ -126,6 +126,7 @@ re locals [IOpBin op, String mo]
         | AtomicRead        LPar address = re RPar {$mo = Linux.MO_ONCE;}
         | RcuDereference    LPar Ast? address = re RPar {$mo = Linux.MO_ONCE;}
         | SrcuReadLock      LPar address = re RPar {$mo = Linux.SRCU_LOCK;}
+        | SrcuDownRead      LPar address = re RPar {$mo = Linux.SRCU_LOCK;}
         | SmpLoadAcquire    LPar address = re RPar {$mo = Linux.MO_ACQUIRE;})                                           # reLoad
 
     |   ReadOnce LPar Ast address = re RPar {$mo = Linux.MO_ONCE;}                                                      # reReadOnce
@@ -157,6 +158,7 @@ nre locals [IOpBin op, String mo, String name]
         | SmpStoreRelease   LPar address = re Comma value = re RPar {$mo = Linux.MO_RELEASE;}
         | SmpStoreMb        LPar address = re Comma value = re RPar {$mo = Linux.MO_MB;}
         | SrcuReadUnlock    LPar address = re Comma value = re RPar {$mo = Linux.SRCU_UNLOCK;}
+        | SrcuUpRead        LPar address = re Comma value = re RPar {$mo = Linux.SRCU_UNLOCK;}
         | RcuAssignPointer  LPar Ast? address = re Comma value = re RPar {$mo = Linux.MO_RELEASE;})                     # nreStore
 
     |   WriteOnce LPar Ast address = re Comma value = re RPar {$mo = Linux.MO_ONCE;}                                    # nreWriteOnce
