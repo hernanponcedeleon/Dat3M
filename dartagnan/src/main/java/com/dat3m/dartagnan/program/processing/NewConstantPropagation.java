@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
@@ -45,6 +46,9 @@ public class NewConstantPropagation implements ProgramProcessor {
                 final ExprInterface expr = local.getExpr();
                 final ExprInterface valueToPropagate = (expr instanceof IConst || expr instanceof BConst) ? expr : TOP;
                 propagationMap.put(local.getResultRegister(), valueToPropagate);
+            } else if (event instanceof RegWriter) {
+                // We treat all other register writers as non-constant
+                propagationMap.put(((RegWriter) event).getResultRegister(), TOP);
             }
 
             if (event instanceof CondJump && !((CondJump) event).isDead()) {

@@ -47,7 +47,9 @@ public class DeadAssignmentElimination implements ProgramProcessor {
     private void eliminateDeadAssignments(Program program, Thread thread) {
         Set<Register> usedRegs = new HashSet<>();
         if(program.getSpecification() != null) {
-            usedRegs.addAll(program.getSpecification().getRegs()); // for litmus tests
+            // for litmus tests
+            usedRegs.addAll(program.getFilterSpecification().getRegs());
+            usedRegs.addAll(program.getSpecification().getRegs());
         }
         // Registers that are used by assertions or other threads cannot be removed
         final List<Event> programEvents = program.getEvents();
