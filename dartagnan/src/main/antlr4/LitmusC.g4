@@ -181,6 +181,7 @@ nre locals [IOpBin op, String mo, String name]
         | FenceSmpMbAfterAtomic LPar RPar {$name = Linux.AFTER_ATOMIC;}
         | FenceSmpMbAfterSpinLock LPar RPar {$name = Linux.AFTER_SPINLOCK;}
         | FenceSmpMbAfterUnlockLock LPar RPar {$name = Linux.AFTER_UNLOCK_LOCK;}
+        | FenceSmpMbAfterSrcuReadUnlock LPar RPar {$name = Linux.AFTER_SRCU_READ_UNLOCK;}
         | RcuReadLock LPar RPar {$name = Linux.RCU_LOCK;}
         | RcuReadUnlock LPar RPar {$name = Linux.RCU_UNLOCK;}
         | (RcuSync | RcuSyncExpedited) LPar RPar {$name = Linux.RCU_SYNC;})                                             # nreFence
