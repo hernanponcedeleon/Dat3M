@@ -12,7 +12,7 @@ public class GlobalSettings {
     // === Encoding ===
 	// This has to be in sync with whatever smack generated for references, 
 	// i.e. if type ref = X, then ARCH_PRECISION = X (or -1 if type = intX). 
-    public static final int ARCH_PRECISION = 64;
+    public static final int ARCH_PRECISION = -1;
 
     // === Parsing ===
     public static final boolean ATOMIC_AS_LOCK = false;
