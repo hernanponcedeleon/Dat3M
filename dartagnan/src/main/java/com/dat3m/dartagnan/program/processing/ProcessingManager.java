@@ -89,10 +89,10 @@ public class ProcessingManager implements ProgramProcessor {
                 SimpleSpinLoopDetection.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
                 printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling") : null,
+                dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
                 constantPropagation ? NewConstantPropagation.newInstance() : null,
                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                 RemoveDeadCondJumps.fromConfig(config),
-                dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
                 EventIdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing") : null
