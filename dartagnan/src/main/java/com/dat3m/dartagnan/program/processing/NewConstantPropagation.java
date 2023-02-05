@@ -223,8 +223,14 @@ public class NewConstantPropagation implements ProgramProcessor {
 
         @Override
         public ExprInterface visit(IfExpr ifExpr) {
-            // We do not optimize ITEs to avoid messing up data dependencies
-            return super.visit(ifExpr);
+            BExpr guard = (BExpr) ifExpr.getGuard().visit(this);
+            IExpr trueBranch = (IExpr) ifExpr.getTrueBranch().visit(this);
+            IExpr falseBranch = (IExpr) ifExpr.getFalseBranch().visit(this);
+            if (guard instanceof BConst && trueBranch instanceof IValue && falseBranch instanceof IValue) {
+                // We optimize ITEs only if all subexpressions are constant to avoid messing up data dependencies
+                return guard.equals(BConst.TRUE) ? trueBranch : falseBranch;
+            }
+            return new IfExpr(guard, trueBranch, falseBranch);
         }
 
     }
