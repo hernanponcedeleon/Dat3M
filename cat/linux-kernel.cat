@@ -20,17 +20,21 @@
 
 include "lock.cat"
 
+(* Compute matching pairs of nested Srcu-lock and Srcu-unlock *)
+let carry-srcu-data = (data ; [~ Srcu-unlock] ; rf)*
+let pass-cookie = carry-srcu-data ; data
+let srcu-rscs = ([Srcu-lock] ; pass-cookie ; [Srcu-unlock]) & loc
+
 (* Compute marked and plain memory accesses *)
 let Marked = (~M) | IW | Once | Release | Acquire | (RMW & R) | (RMW & W) |
-        LKR | LKW | UL | LF | RL | RU
+		LKR | LKW | UL | LF | RL | RU | Srcu-lock | Srcu-unlock
 let Plain = M \ Marked
 
-(* Redefine dependencies to include dependencies carried
-* through unmarked accesses *)
-let carry-dep = (data ; rfi)*
-let cd-addr = carry-dep ; addr
-let cd-ctrl = carry-dep ; ctrl
-let cd-data = carry-dep ; data
+(* Redefine dependencies to include those carried through plain accesses *)
+let carry-dep = (data ; [~ Srcu-unlock] ; rfi)*
+let addr = carry-dep ; addr
+let ctrl = carry-dep ; ctrl
+let data = carry-dep ; data
 
 (*******************)
 (* Basic relations *)
@@ -49,8 +53,20 @@ let mb = ([M] ; fencerel(Mb) ; [M]) |
 	([M] ; fencerel(Before-atomic) ; [RMW] ; po? ; [M]) |
 	([M] ; po? ; [RMW] ; fencerel(After-atomic) ; [M]) |
 	([M] ; po? ; [LKW] ; fencerel(After-spinlock) ; [M]) |
-	([M] ; po ; [UL] ; (co | po) ; [LKW] ;
-		fencerel(After-unlock-lock) ; [M])
+(*
+ * Note: The po-unlock-lock-po relation only passes the lock to the direct
+ * successor, perhaps giving the impression that the ordering of the
+ * smp_mb__after_unlock_lock() fence only affects a single lock handover.
+ * However, in a longer sequence of lock handovers, the implicit
+ * A-cumulative release fences of lock-release ensure that any stores that
+ * propagate to one of the involved CPUs before it hands over the lock to
+ * the next CPU will also propagate to the final CPU handing over the lock
+ * to the CPU that executes the fence.  Therefore, all those stores are
+ * also affected by the fence.
+ *)
+	([M] ; po-unlock-lock-po ;
+		[After-unlock-lock] ; po ; [M]) |
+	([M] ; po? ; [Srcu-unlock] ; fencerel(After-srcu-read-unlock) ; [M])
 let gp = po ; [Sync-rcu | Sync-srcu] ; po?
 let strong-fence = mb | gp
 
@@ -77,11 +93,11 @@ empty rmw & (fre ; coe) as atomic
 (**********************************)
 
 (* Preserved Program Order *)
-let dep = cd-addr | cd-data
-let rwdep = (dep | cd-ctrl) ; [W]
+let dep = addr | data
+let rwdep = (dep | ctrl) ; [W]
 let overwrite = co | fr
-let to-w = rwdep | (overwrite & int) | (cd-addr ; [Plain] ; wmb)
-let to-r = cd-addr | (dep ; [Marked] ; rfi)
+let to-w = rwdep | (overwrite & int) | (addr ; [Plain] ; wmb)
+let to-r = addr | (dep ; [Marked] ; rfi)
 let ppo = to-r | to-w | fence | (po-unlock-lock-po & int)
 
 (* Propagation: Ordering from release operations and strong fences. *)
@@ -123,8 +139,7 @@ acyclic pb as propagation
 let rcu-gp = [Sync-rcu]		(* Compare with gp *)
 let srcu-gp = [Sync-srcu]
 let rcu-rscsi = rcu-rscs^-1
-// NOTE: We don't support SRCU
-let srcu-rscsi = 0
+let srcu-rscsi = srcu-rscs^-1
 
 (*
  * The synchronize_rcu() strong fence is special in that it can order not
@@ -184,10 +199,10 @@ let vis = cumul-fence* ; rfe? ; [Marked] ;
 	((strong-fence ; [Marked] ; xbstar) | (xbstar & int))
 
 (* Boundaries for lifetimes of plain accesses *)
-let w-pre-bounded = [Marked] ; (cd-addr | fence)?
-let r-pre-bounded = [Marked] ; (cd-addr | nonrw-fence |
+let w-pre-bounded = [Marked] ; (addr | fence)?
+let r-pre-bounded = [Marked] ; (addr | nonrw-fence |
 	([R4rmb] ; fencerel(Rmb) ; [~Noreturn]))?
-let w-post-bounded = fence? ; rmw-sequence
+let w-post-bounded = fence? ; [Marked] ; rmw-sequence
 let r-post-bounded = (nonrw-fence | ([~Noreturn] ; fencerel(Rmb) ; [R4rmb]))? ;
 	[Marked]
 

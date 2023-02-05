@@ -504,6 +504,11 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     	return programBuilder.addChild(currentThread, EventFactory.Linux.newUnlock(getAddress(ctx.address)));
     }
 
+	@Override
+    public Object visitNreSrcuSync(LitmusCParser.NreSrcuSyncContext ctx) {
+        return programBuilder.addChild(currentThread, EventFactory.Linux.newSrcuSync(getAddress(ctx.address)));
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Utils
 

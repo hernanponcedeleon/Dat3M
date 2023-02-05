@@ -1,0 +1,36 @@
+C C-srcu-nest-4
+
+(*
+ * Result: Flag srcu-bad-nesting
+ *
+ * This demonstrates erroneous matching of a single srcu_read_lock()
+ * with multiple srcu_read_unlock() instances.
+ *)
+
+{}
+
+P0(int *x, int *y, struct srcu_struct *s1, struct srcu_struct *s2)
+{
+	int r1;
+	int r2;
+	int r3;
+	int r4;
+
+	r3 = srcu_read_lock(s1);
+	r2 = READ_ONCE(*y);
+	r4 = srcu_read_lock(s2);
+	srcu_read_unlock(s1, r3);
+	srcu_read_unlock(s1, r3);
+	r1 = READ_ONCE(*x);
+	srcu_read_unlock(s2, r4);
+}
+
+P1(int *x, int *y, struct srcu_struct *s2)
+{
+	WRITE_ONCE(*y, 1);
+	synchronize_srcu(s2);
+	WRITE_ONCE(*x, 1);
+}
+
+locations [0:r1]
+exists (0:r1=1 /\ 0:r2=0)
