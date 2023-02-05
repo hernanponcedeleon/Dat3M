@@ -25,11 +25,17 @@ let Marked = (~M) | IW | Once | Release | Acquire | (RMW & R) | (RMW & W) |
 		LKR | LKW | UL | LF | RL | RU | Srcu-lock | Srcu-unlock
 let Plain = M \ Marked
 
+(* Compute matching pairs of nested Srcu-lock and Srcu-unlock *)
+let carry-srcu-data = (data ; [~ Srcu-unlock] ; rf)*
+let pass-cookie = carry-srcu-data ; data
+let srcu-rscs = ([Srcu-lock] ; pass-cookie ; [Srcu-unlock]) & loc
+
 (* Redefine dependencies to include those carried through plain accesses *)
 let carry-dep = (data ; [~ Srcu-unlock] ; rfi)*
 let addr = carry-dep ; addr
 let ctrl = carry-dep ; ctrl
 let data = carry-dep ; data
+
 (*******************)
 (* Basic relations *)
 (*******************)

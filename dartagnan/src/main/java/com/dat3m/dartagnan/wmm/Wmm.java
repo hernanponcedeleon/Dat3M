@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.wmm;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
-import com.dat3m.dartagnan.program.filter.FilterMinus;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.definition.*;
@@ -270,24 +269,6 @@ public class Wmm {
                 return new CompareAndSwapDependency(r);
             case CRIT:
                 return new CriticalSections(r);
-            case SRCU_CRIT:
-                Relation srcu_lock = addDefinition(new Identity(newRelation("[Srcu-lock]"), FilterBasic.get(Tag.Linux.SRCU_LOCK)));
-                Relation srcu_unlock = addDefinition(new Identity(newRelation("[Srcu-unlock]"), FilterBasic.get(Tag.Linux.SRCU_UNLOCK)));
-                Relation not_srcu_unlock = addDefinition(new Identity(newRelation("[~ Srcu-unlock]"), 
-                        FilterMinus.get(FilterBasic.get(Tag.VISIBLE), FilterBasic.get(Tag.Linux.SRCU_UNLOCK))));
-                // let carry-srcu-data = (data ; [~ Srcu-unlock] ; rf)*
-                Relation base0 = addDefinition(new Composition(newRelation(), getRelation(DATA), not_srcu_unlock));
-                Relation base1 = addDefinition(new Composition(newRelation(), base0, getRelation(RF)));
-                Relation base2 = addDefinition(new TransitiveClosure(newRelation(), base1));
-                Relation carry_srcu_data = addDefinition(new Union(newRelation("carry_srcu_data"), base2, getRelation(ID)));
-                // getRelation(DATA) returns the original data relation and not the redefined one.
-                // However this is not a problem because the bell file in the kernel defines srcu-rscs before redefining data
-                // let pass-cookie = carry-srcu-data ; data
-                Relation pass_cookie = addDefinition(new Composition(newRelation("pass-cookie"),  carry_srcu_data, getRelation(DATA)));
-                // let srcu-rscs = ([Srcu-lock] ; pass-cookie ; [Srcu-unlock]) & loc
-                Relation base3 = addDefinition(new Composition(newRelation(),  srcu_lock, pass_cookie));
-                Relation base4 = addDefinition(new Composition(newRelation(),  base3, srcu_unlock));
-                return intersection(r, base4, getRelation(LOC));
             case IDD:
                 return new DirectDataDependency(r);
             case ADDRDIRECT:
