@@ -1,313 +1,264 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpUn;
-import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
+import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
-import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.lang.catomic.AtomicCmpXchg;
-import com.dat3m.dartagnan.program.event.lang.catomic.AtomicLoad;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Verify;
+import com.google.common.base.Predicate;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.math.BigInteger;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.dat3m.dartagnan.expression.op.IOpUn.BV2INT;
-import static com.dat3m.dartagnan.expression.op.IOpUn.BV2UINT;
+import static com.dat3m.dartagnan.configuration.OptionNames.CONSTANT_PROPAGATION;
+import static com.dat3m.dartagnan.configuration.OptionNames.PROPAGATE_COPY_ASSIGNMENTS;
 
+@Options
 public class ConstantPropagation implements ProgramProcessor {
-	
-    // =========================== Configurables ===========================
 
-    // =====================================================================
+    @Option(name = PROPAGATE_COPY_ASSIGNMENTS,
+            description = "Propagates copy assignments of the form 'reg2 := reg1' to eliminate " +
+                    "intermediate register 'reg2'. Can only be active if " + CONSTANT_PROPAGATION + " is enabled.",
+            secure = true)
+    private boolean propagateCopyAssignments = false;
 
-	// Represents the top element of our lattice
-	private static final IConst TOP = new IConst() {
-		@Override
-		public BigInteger getValue() { return BigInteger.ZERO; }
-		@Override
-		public String toString() { return "T"; }
-		@Override
-		public int getPrecision() { return -1;}
-		@Override
-		public <T> T visit(ExpressionVisitor<T> visitor) { throw new UnsupportedOperationException(); }
-	};
+    // ====================================================================================
 
     private ConstantPropagation() { }
-
-    public static ConstantPropagation fromConfig(Configuration config) throws InvalidConfigurationException {
-        return newInstance();
-    }
 
     public static ConstantPropagation newInstance() {
         return new ConstantPropagation();
     }
 
+    public static ConstantPropagation fromConfig(Configuration config) throws InvalidConfigurationException {
+        ConstantPropagation instance = newInstance();
+        config.inject(instance);
+        return instance;
+    }
+
+    // ====================================================================================
+
     @Override
     public void run(Program program) {
-        Preconditions.checkArgument(program.isUnrolled(), "The program needs to be unrolled before constant propagation.");
-        Preconditions.checkArgument(!program.isCompiled(), "Constant propagation needs to be run before compilation.");
-        for(Thread thread : program.getThreads()) {
-            run(thread);
+        Preconditions.checkArgument(program.isUnrolled(), "Constant propagation only works on unrolled programs");
+        program.getThreads().forEach(this::run);
+    }
+
+    private void run(Thread thread) {
+        final EventSimplifier simplifier = new EventSimplifier();
+        final Predicate<ExprInterface> checkDoPropagate = propagateCopyAssignments ?
+                (expr -> expr instanceof IConst || expr instanceof BConst || expr instanceof Register)
+                : (expr -> expr instanceof IConst || expr instanceof BConst);
+
+        Map<Label, Map<Register, ExprInterface>> inflowMap = new HashMap<>();
+        Map<Register, ExprInterface> propagationMap = new HashMap<>();
+        for (Event event : thread.getEvents()) {
+            simplifier.setPropagationMap(propagationMap);
+            event.accept(simplifier);
+
+            if (event instanceof Local) {
+                final Local local = (Local) event;
+                final ExprInterface expr = local.getExpr();
+                final ExprInterface valueToPropagate = checkDoPropagate.apply(expr) ? expr : TOP;
+                propagationMap.put(local.getResultRegister(), valueToPropagate);
+            } else if (event instanceof RegWriter) {
+                // We treat all other register writers as non-constant
+                propagationMap.put(((RegWriter) event).getResultRegister(), TOP);
+            }
+
+            if (event instanceof CondJump && !((CondJump) event).isDead()) {
+                // Join current map with label-associated map
+                final CondJump jump = (CondJump) event;
+                final Map<Register, ExprInterface> finalPropagationMap = propagationMap;
+                inflowMap.compute(jump.getLabel(), (k, v) -> join(v != null ? v : Map.of(), finalPropagationMap));
+                if (jump.isGoto()) {
+                    // Reset map, because there is no direct control-flow to the next event
+                    propagationMap.clear();
+                }
+            }
+
+            if (event instanceof Label) {
+                propagationMap = join(propagationMap, inflowMap.getOrDefault(event, Map.of()));
+            }
+
         }
     }
 
-	private void run(Thread thread) {
-		
-	    Map<Register, ExprInterface> propagationMap = new HashMap<>();
-	    Map<Label, Map<Register, ExprInterface>> label2PropagationMap = new HashMap<>();
-	    
-        Event pred = thread.getEntry();
-        Event current = pred.getSuccessor();
+    private Map<Register, ExprInterface> join(Map<Register, ExprInterface> x, Map<Register, ExprInterface> y) {
+        Preconditions.checkNotNull(x);
+        Preconditions.checkNotNull(y);
 
-        while (current != null) {
-			boolean resetPropMap = false;
-        	// Compute information to propagate. It cannot be computed before-hand
-        	// because registers can be overwritten, thus the event creation has 
-        	// to be done immediately after computing the information.
-        	// For RegWriters interacting with memory, we assign TOP
-			// (we actually use the result register that is unconstrained
-			// but like this the solver keeps relations between variables)
-        	if(current instanceof RegWriter) {
-        		RegWriter rw = (RegWriter)current;
-        		propagationMap.put(rw.getResultRegister(), rw.getResultRegister());
-        	}
-        	// For Locals, we update
-        	if(current instanceof Local) {
-        		Local l = (Local)current;
-        		// We cannot update the map with the evaluation if the resultRegister is also in the RHS
-        		if(!l.getExpr().getRegs().contains(l.getResultRegister())) {
-                	ExprInterface value = evaluate(l.getExpr(), propagationMap);
-                	if(value == TOP && l.getExpr() instanceof Register) {
-                		// Even if we do not know the concrete value, Registers have a constant value
-                		// thus we add them to the map to achieve more propagations
-                		propagationMap.put(l.getResultRegister(), l.getExpr());
-                	} else {
-                		propagationMap.put(l.getResultRegister(), value);	
-                	}
-        		}
-        	}
-        	if(current instanceof CondJump) {
-				CondJump jump = (CondJump)current;
-        		label2PropagationMap.put(jump.getLabel(), merge(propagationMap, label2PropagationMap.getOrDefault(jump.getLabel(), Collections.emptyMap())));
-				resetPropMap = jump.isGoto(); // A goto will cause the current map to not propagate to the successor
-        	} else if(current instanceof Label) {
-				// Merge current map with all possible jumps that target this label
-        		propagationMap = merge(propagationMap, label2PropagationMap.getOrDefault(current, Collections.emptyMap()));
-        	}
+        Map<Register, ExprInterface> joined = new HashMap<>(x);
+        for(Map.Entry<Register, ExprInterface> entry : y.entrySet()) {
+            joined.merge(entry.getKey(), entry.getValue(), (v1, v2) -> v1.equals(v2) ? v1 : TOP);
+        }
+        return joined;
+    }
 
-        	if(!current.is(Tag.NOOPT)) {
-            	current.accept(new ConstantPropagationVisitor(propagationMap));
-        	}
-            current = current.getSuccessor();
+    // ============================ Utility classes ============================
 
-			if (resetPropMap) {
-				propagationMap.clear();
-			}
+    private static final ExprInterface TOP = new IConst() {
+        @Override
+        public BigInteger getValue() { throw new UnsupportedOperationException(); }
+
+        @Override
+        public <T> T visit(ExpressionVisitor<T> visitor) { throw new UnsupportedOperationException(); }
+    };
+
+    /*
+        Simplifies the expressions of events by inserting known constant values.
+     */
+    private static class EventSimplifier implements EventVisitor<Void> {
+
+        private final ConstantPropagator propagator = new ConstantPropagator();
+
+        public void setPropagationMap(Map<Register, ExprInterface> propagationMap) {
+            this.propagator.propagationMap = propagationMap;
         }
 
-        thread.updateExit(thread.getEntry());
+        @Override
+        public Void visitEvent(Event e) {
+            return null;
+        }
+
+        @Override
+        public Void visitCondJump(CondJump e) {
+            e.setGuard((BExpr) e.getGuard().visit(propagator));
+            return null;
+        }
+
+        @Override
+        public Void visitLocal(Local e) {
+            e.setExpr(e.getExpr().visit(propagator));
+            return null;
+        }
+
+        @Override
+        public Void visitMemEvent(MemEvent e) {
+            e.setAddress((IExpr)e.getAddress().visit(propagator));
+            return null;
+        }
+
+        @Override
+        public Void visitStore(Store e) {
+            e.setMemValue(e.getMemValue().visit(propagator));
+            return visitMemEvent(e);
+        }
     }
 
-	// TODO Once we have a lattice class this should be moved there.
-	private ExprInterface evaluate(ExprInterface input, Map<Register, ExprInterface> map) {
-		ExprSimplifier simplifier = new ExprSimplifier();
 
-    	if(input instanceof INonDet || input instanceof BNonDet) {
-    		return TOP;
-    	}
-    	if(input instanceof IConst || input instanceof BConst) {
-    		return input;
-    	}
-    	if(input instanceof Register) {
-    		// When pthread create passes arguments, the new thread starts with a Local
-    		// where the RHS is a Register from the parent thread and thus we might not 
-    		// have the key in the map.
-			return map.getOrDefault(input, input);
-    	}
-    	if(input instanceof IExprUn) {
-    		IExprUn un = (IExprUn)input;
-    		IOpUn op = un.getOp();
-    		// These two can cause problems
-    		if(op.equals(BV2INT) || op.equals(BV2UINT)) {
-    			return input;
-    		}
-			IExpr inner = (IExpr) evaluate(un.getInner(), map);
-			return inner == TOP ? inner : new IExprUn(op, inner).visit(simplifier);
-    	}
-    	if(input instanceof IExprBin) {
-    		IExprBin bin = (IExprBin)input;
-    		IExpr lhs = (IExpr) evaluate(bin.getLHS(), map);
-			IExpr rhs = (IExpr) evaluate(bin.getRHS(), map);
-			return lhs == TOP || rhs == TOP ?
-					TOP :
-					new IExprBin(lhs, bin.getOp(), rhs).visit(simplifier);
-    	}
-    	if(input instanceof IfExpr) {
-    		IfExpr ife = (IfExpr)input;
-    		ExprInterface guard = evaluate(ife.getGuard(), map);
-    		IExpr tbranch = (IExpr) evaluate(ife.getTrueBranch(), map);
-			IExpr fbranch = (IExpr) evaluate(ife.getFalseBranch(), map);
-			return tbranch == TOP || fbranch == TOP || guard == TOP ?
-					TOP :
-					new IfExpr((BExpr) guard, tbranch, fbranch).visit(simplifier);
-    	}
-    	if(input instanceof Atom) {
-    		Atom atom = (Atom)input;
-    		ExprInterface lhs = evaluate(atom.getLHS(), map);
-    		ExprInterface rhs = evaluate(atom.getRHS(), map);
-			return (lhs == TOP | rhs == TOP) ? TOP : new Atom(lhs, atom.getOp(), rhs).visit(simplifier);
-    	}
-    	if(input instanceof BExprUn) {
-    		BExprUn un = (BExprUn)input;
-    		BOpUn op = un.getOp();
-    		ExprInterface inner = evaluate(un.getInner(), map);
-			return inner == TOP ? TOP : new BExprUn(op, inner).visit(simplifier);
-    	}
-    	if(input instanceof BExprBin) {
-    		BExprBin bin = (BExprBin)input;
-    		ExprInterface lhs = evaluate(bin.getLHS(), map);
-    		ExprInterface rhs = evaluate(bin.getRHS(), map);
-    		return (lhs == TOP | rhs == TOP) ? TOP : new BExprBin(lhs, bin.getOp(), rhs).visit(simplifier);
-    	}
-		throw new UnsupportedOperationException(String.format("Expression %s not supported", input));
-    }
-    
-    private Map<Register, ExprInterface> merge (Map<Register, ExprInterface> x, Map<Register, ExprInterface> y) {
-    	Preconditions.checkNotNull(x);
-    	Preconditions.checkNotNull(y);
+    /*
+        A simple expression transformer that
+            - replaces regs by constant values (if known)
+            - simplifies constant (sub)expressions to a single constant
+        It does NOT
+            - use associativity to find more constant subexpressions
+            - simplify trivial expressions like "x == x" or "0*x" to avoid eliminating any dependencies
+     */
+    private static class ConstantPropagator extends ExprTransformer {
 
-    	Map<Register, ExprInterface> merged = new HashMap<>(x);
-    	for(Map.Entry<Register, ExprInterface> entry : y.entrySet()) {
-			merged.merge(entry.getKey(), entry.getValue(), (v1, v2) -> v1.equals(v2) ? v1 : TOP);
-    	}
+        private Map<Register, ExprInterface> propagationMap = new HashMap<>();
 
-    	return merged;
-		
-    }
-    
-    private class ConstantPropagationVisitor implements EventVisitor<Event> {
+        @Override
+        public ExprInterface visit(Register reg) {
+            ExprInterface retVal = propagationMap.compute(reg, (k, v) -> v == null || v == TOP ? reg : v );
+            if (retVal instanceof BConst) {
+                // We only have integral registers, so we need to implicitly convert booleans to integers.
+                return retVal.equals(BConst.TRUE) ? IValue.ONE : IValue.ZERO;
+            } else {
+                return retVal;
+            }
+        }
 
-    	private final Map<Register, ExprInterface> map;
-    	
-    	protected ConstantPropagationVisitor(Map<Register, ExprInterface> map) {
-    		this.map = map;
-    	}
-    	
-    	@Override
-    	public Event visitEvent(Event e) {
-    		return e;
-    	};
-    	
-    	@Override
-    	public Event visitLoad(Load e) {
-    		setAddress(e);
-    		return e;
-    	};
-    	
-    	@Override
-    	public Event visitMemEvent(MemEvent e) {
-    		setAddress(e);
-    		setMemValue(e);
-    		return e;
-    	};
+        @Override
+        public ExprInterface visit(Atom atom) {
+            ExprInterface lhs = atom.getLHS().visit(this);
+            ExprInterface rhs = atom.getRHS().visit(this);
+            if (lhs instanceof BConst) {
+                lhs = lhs.equals(BConst.TRUE) ? IValue.ONE : IValue.ZERO;
+            }
+            if (rhs instanceof BConst) {
+                rhs = rhs.equals(BConst.TRUE) ? IValue.ONE : IValue.ZERO;
+            }
+            if (lhs instanceof IValue && rhs instanceof IValue) {
+                IValue left = (IValue) lhs;
+                IValue right = (IValue) rhs;
+                return atom.getOp().combine(left.getValue(), right.getValue()) ? BConst.TRUE : BConst.FALSE;
+            } else {
+                return new Atom(lhs, atom.getOp(), rhs);
+            }
+        }
 
-    	@Override
-    	public Event visitLocal(Local e) {
-    		ExprInterface oldExpr = e.getExpr();
-    		ExprInterface newExpr = evaluate(oldExpr, map);
-    		Verify.verifyNotNull(newExpr,
-    				"Expression %s got no value after constant propagation analysis", oldExpr);
-    		if(!(newExpr == TOP) && !e.is(Tag.ASSERTION)) {
-    			e.setExpr(newExpr);
-    		}
-    		return e;
-    	};
-    	
-    	@Override
-    	public Event visitCondJump(CondJump e) {
-    		ExprInterface oldGuard = e.getGuard();
-    		ExprInterface newGuard = evaluate(oldGuard, map);
-    		Verify.verifyNotNull(newGuard,
-    				"Expression %s got no value after constant propagation analysis", oldGuard);
-    		if(!(newGuard == TOP)) {
-    			e.setGuard((BExpr) newGuard);
-    		}
-    		return e;
-    	};
-    	
-    	@Override
-    	public Event visitXchg(Xchg e) {
-    		setAddress(e);
-    		return e;
-    	};
-    	
-    	@Override
-    	public Event visitRMW(RMW e) {
-    		setAddress(e);
-    		return e;
-    	};
-    	
-    	@Override
-    	public Event visitLlvmLoad(LlvmLoad e) {
-    		setAddress(e);
-    		return e;
-    	};
-    	
-    	@Override
-    	public Event visitAtomicLoad(AtomicLoad e) {
-    		setAddress(e);
-    		return e;
-    	};
-    	
-    	@Override
-    	public Event visitAtomicCmpXchg(AtomicCmpXchg e) {
-    		setAddress(e);
-    		setMemValue(e);
-    		IExpr oldExpectedAddr = e.getExpectedAddr();
-    		IExpr newExpectedAddr = (IExpr) evaluate(oldExpectedAddr, map);
-    		Verify.verifyNotNull(newExpectedAddr,
-    				"Expression %s got no value after constant propagation analysis", oldExpectedAddr);
-    		if(!(newExpectedAddr == TOP)) {
-    			e.setExpectedAddr(newExpectedAddr);
-    		}
-    		return e;
-    	}
-    	
-    	private void setAddress(MemEvent e) {
-    		IExpr oldAddress = e.getAddress();
-    		IExpr newAddress = (IExpr) evaluate(oldAddress, map);
-    		Verify.verifyNotNull(newAddress,
-    				"Expression %s got no value after constant propagation analysis", oldAddress);
-    		if(!(newAddress == TOP)) {
-    			e.setAddress(newAddress);
-    		}
-    	}
+        @Override
+        public BExpr visit(BExprBin bBin) {
+            ExprInterface lhs = bBin.getLHS().visit(this);
+            ExprInterface rhs = bBin.getRHS().visit(this);
+            if (lhs instanceof BConst && rhs instanceof BConst) {
+                BConst left = (BConst) lhs;
+                BConst right = (BConst) rhs;
+                return bBin.getOp().combine(left.getValue(), right.getValue()) ? BConst.TRUE : BConst.FALSE;
+            } else {
+                return new BExprBin(lhs, bBin.getOp(), rhs);
+            }
+        }
 
-    	private void setMemValue(MemEvent e) {
-    		ExprInterface oldValue = e.getMemValue();
-    		ExprInterface newValue = evaluate(oldValue, map);
-    		Verify.verifyNotNull(newValue,
-    				"Expression %s got no value after constant propagation analysis", oldValue);
-    		if(!(newValue == TOP)) {
-    			e.setMemValue(newValue);;
-    		}
-    	}
+        @Override
+        public BExpr visit(BExprUn bUn) {
+            ExprInterface inner = bUn.getInner().visit(this);
+            if (inner instanceof BConst) {
+                return bUn.getOp().combine(((BConst) inner).getValue()) ? BConst.TRUE : BConst.FALSE;
+            } else {
+                return new BExprUn(bUn.getOp(), inner);
+            }
+        }
+
+        @Override
+        public IExpr visit(IExprBin iBin) {
+            IExpr lhs = (IExpr) iBin.getLHS().visit(this);
+            IExpr rhs = (IExpr) iBin.getRHS().visit(this);
+            if (lhs instanceof IValue && rhs instanceof IValue) {
+                IValue left = (IValue) lhs;
+                IValue right = (IValue) rhs;
+                return new IValue(iBin.getOp().combine(left.getValue(), right.getValue()), left.getPrecision());
+            } else {
+                return new IExprBin(lhs, iBin.getOp(), rhs);
+            }
+        }
+
+        @Override
+        public IExpr visit(IExprUn iUn) {
+            IExpr inner = (IExpr) iUn.getInner().visit(this);
+            if (inner instanceof IValue && iUn.getOp() == IOpUn.MINUS) {
+                // We only optimize negation but no casting operations.
+                return new IValue(((IValue) inner).getValue().negate(), inner.getPrecision());
+            } else {
+                return new IExprUn(iUn.getOp(), inner);
+            }
+        }
+
+        @Override
+        public ExprInterface visit(IfExpr ifExpr) {
+            BExpr guard = (BExpr) ifExpr.getGuard().visit(this);
+            IExpr trueBranch = (IExpr) ifExpr.getTrueBranch().visit(this);
+            IExpr falseBranch = (IExpr) ifExpr.getFalseBranch().visit(this);
+            if (guard instanceof BConst && trueBranch instanceof IValue && falseBranch instanceof IValue) {
+                // We optimize ITEs only if all subexpressions are constant to avoid messing up data dependencies
+                return guard.equals(BConst.TRUE) ? trueBranch : falseBranch;
+            }
+            return new IfExpr(guard, trueBranch, falseBranch);
+        }
+
     }
 
 }

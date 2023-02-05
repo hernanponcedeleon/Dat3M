@@ -90,7 +90,7 @@ public class ProcessingManager implements ProgramProcessor {
                 LoopUnrolling.fromConfig(config),
                 printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling") : null,
                 dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
-                constantPropagation ? NewConstantPropagation.newInstance() : null,
+                constantPropagation ? ConstantPropagation.fromConfig(config) : null,
                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                 RemoveDeadCondJumps.fromConfig(config),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
