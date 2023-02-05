@@ -1,0 +1,36 @@
+C C-srcu-nest-7
+
+(*
+ * Result: Sometimes
+ *
+ * Non-nested overlapping SRCU read-side critical sections do not flatten
+ * or fuse.  They remain completely independent.
+ *)
+
+{}
+
+P0(int *x, int *y, struct srcu_struct *s)
+{
+	int r1;
+	int r2;
+
+	r1 = srcu_read_lock(s);
+	WRITE_ONCE(*x, 1);
+	r2 = srcu_read_lock(s);
+	srcu_read_unlock(s, r1);
+	WRITE_ONCE(*y, 1);
+	srcu_read_unlock(s, r2);
+}
+
+P1(int *x, int *y, struct srcu_struct *s)
+{
+	int r1;
+	int r2;
+
+	r1 = READ_ONCE(*x);
+	synchronize_srcu(s);
+	r2 = READ_ONCE(*y);
+}
+
+locations [0:r1;0:r2]
+exists (1:r1=1 /\ 1:r2=0)

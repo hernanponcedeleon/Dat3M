@@ -1,0 +1,71 @@
+C SRCU-63-A
+
+(*
+ * Result: Never
+ *)
+
+{
+}
+
+P0(int *x0, int *x1, struct srcu_struct *ssp1)
+{
+	int r0;
+	int r1;
+
+	r0 = srcu_read_lock(ssp1);
+	r1 = READ_ONCE(*x1); // SB, but intentionally reversed.
+	WRITE_ONCE(*x0, 1);
+	srcu_read_unlock(ssp1, r0);
+}
+
+P1(int *x1, int *x2, struct srcu_struct *ssp1)
+{
+	int r1;
+
+	WRITE_ONCE(*x1, 1);
+	synchronize_srcu(ssp1);
+	r1 = READ_ONCE(*x2);
+}
+
+P2(int *x2, int *x3, struct srcu_struct *ssp2)
+{
+	int r0;
+	int r1;
+
+	r0 = srcu_read_lock(ssp2);
+	r1 = READ_ONCE(*x3);
+	WRITE_ONCE(*x2, 1);
+	srcu_read_unlock(ssp2, r0);
+}
+
+P3(int *x3, int *x4, struct srcu_struct *ssp2)
+{
+	int r1;
+
+	WRITE_ONCE(*x3, 1);
+	synchronize_srcu(ssp2);
+	r1 = READ_ONCE(*x4);
+}
+
+P4(int *x4, int *x5, struct srcu_struct *ssp3)
+{
+	int r0;
+	int r1;
+
+	r0 = srcu_read_lock(ssp3);
+	r1 = READ_ONCE(*x5);
+	WRITE_ONCE(*x4, 1);
+	srcu_read_unlock(ssp3, r0);
+}
+
+P5(int *x5, int *x0, struct srcu_struct *ssp3)
+{
+	int r1;
+
+	WRITE_ONCE(*x5, 1);
+	synchronize_srcu(ssp3);
+	r1 = READ_ONCE(*x0);
+}
+
+exists
+(0:r1=0 /\ 1:r1=0 /\ 2:r1=0 /\ 3:r1=0 /\ 4:r1=0 /\ 5:r1=0)

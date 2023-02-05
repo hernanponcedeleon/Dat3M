@@ -16,7 +16,7 @@ public class LKMMLoad extends Load {
     public String toString() {
 		if(mo.equals(Tag.Linux.MO_ONCE)) {
 			return resultRegister + " := READ_ONCE(" + address + ")\t### LKMM";
-		}  
+		}
         return super.toString();
     }
 

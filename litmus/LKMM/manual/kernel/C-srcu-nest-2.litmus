@@ -1,0 +1,34 @@
+C C-srcu-nest-2
+
+(*
+ * Result: Never
+ *
+ * Example nesting.  LKMM should not complain.
+ *)
+
+{}
+
+P0(int *x, int *y, struct srcu_struct *s)
+{
+	int r1;
+	int r2;
+	int r3;
+	int r4;
+
+	r3 = srcu_read_lock(s);
+	r1 = READ_ONCE(*x);
+	r4 = srcu_read_lock(s);
+	r2 = READ_ONCE(*y);
+	srcu_read_unlock(s, r4);
+	srcu_read_unlock(s, r3);
+}
+
+P1(int *x, int *y, struct srcu_struct *s)
+{
+	WRITE_ONCE(*y, 1);
+	synchronize_srcu(s);
+	WRITE_ONCE(*x, 1);
+}
+
+locations [0:r1]
+exists (0:r1=1 /\ 0:r2=0)

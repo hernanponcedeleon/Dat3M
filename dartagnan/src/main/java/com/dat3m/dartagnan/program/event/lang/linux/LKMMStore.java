@@ -16,7 +16,7 @@ public class LKMMStore extends Store {
     public String toString() {
 		if(mo.equals(Tag.Linux.MO_ONCE)) {
 			return "STORE_ONCE(" + address + ", " + value + ")\t### LKMM";
-		}  
+		}
         return super.toString();
     }
 

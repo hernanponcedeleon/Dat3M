@@ -4,18 +4,10 @@ import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
-import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
-import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
+import com.dat3m.dartagnan.program.event.core.rmw.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmAbstractRMW;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmFence;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmRMW;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmXchg;
+import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
@@ -76,6 +68,9 @@ public interface EventVisitor<T> {
 	default T visitLKMMUnlock(LKMMUnlock e) { return visitStore(e); }
 	default T visitLKMMLockRead(LKMMLockRead e) { return visitLoad(e); }
 	default T visitLKMMLockWrite(LKMMLockWrite e) { return visitStore(e); }
+
+	// Linux SRCU Events
+	default T visitSruSync(SrcuSync e) { return visitMemEvent(e); }
 
 	// TSO Events
 	default T visitXchg(Xchg e) { return visitMemEvent(e); }

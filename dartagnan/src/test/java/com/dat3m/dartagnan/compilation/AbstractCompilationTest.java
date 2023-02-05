@@ -119,7 +119,7 @@ public abstract class AbstractCompilationTest {
 
     @Test
     public void testIncremental() throws Exception {
-    	if(task1Provider.get().getProgram().getEvents().stream().noneMatch(AbstractCompilationTest::isRcuOrLock)) {
+    	if(task1Provider.get().getProgram().getEvents().stream().noneMatch(AbstractCompilationTest::isRcuOrSrcu)) {
             IncrementalSolver s1 = IncrementalSolver.run(context1Provider.get(), prover1Provider.get(), task1Provider.get());
             if(!s1.hasModel()) {
                 // We found no model showing a specific behaviour (either positively or negatively),
@@ -132,10 +132,11 @@ public abstract class AbstractCompilationTest {
         }
     }
 
-    private static boolean isRcuOrLock(Event e) {
-        // The following have features (locks and RCU) that hardware models do not support
+    private static boolean isRcuOrSrcu(Event e) {
+        // The following have features (RCU and SRCU) that hardware models do not support
         return Stream.of(
-                Tag.Linux.RCU_LOCK, Tag.Linux.RCU_UNLOCK, Tag.Linux.RCU_SYNC)
+                Tag.Linux.RCU_LOCK, Tag.Linux.RCU_UNLOCK, Tag.Linux.RCU_SYNC,
+                Tag.Linux.SRCU_LOCK, Tag.Linux.SRCU_UNLOCK, Tag.Linux.SRCU_SYNC)
                 .anyMatch(e::is);
     }
 }

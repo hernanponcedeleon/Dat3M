@@ -1,0 +1,38 @@
+C C-srcu-observed-5
+
+(*
+ * Result: Never
+ *
+ * This is a version of C-srcu-observed-4.litmus with an smp_mb() that
+ * causes LKMM to forbid that litmus test's outcome.
+ *)
+
+{}
+
+P0(int *x, int *y, int *z, struct srcu_struct *s)
+{
+	int r1;
+
+	r1 = srcu_read_lock(s);
+	WRITE_ONCE(*y, 2);
+	WRITE_ONCE(*x, 1);
+	srcu_read_unlock(s, r1);
+}
+
+P1(int *x, int *y, int *z, struct srcu_struct *s)
+{
+	int r1;
+
+	WRITE_ONCE(*y, 1);
+	synchronize_srcu(s);
+	WRITE_ONCE(*z, 2);
+}
+
+P2(int *x, int *y, int *z, struct srcu_struct *s)
+{
+	WRITE_ONCE(*z, 1);
+	smp_mb();
+	WRITE_ONCE(*x, 2);
+}
+
+exists (x=1 /\ y=1 /\ z=1)
