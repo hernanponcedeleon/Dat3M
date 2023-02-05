@@ -31,7 +31,8 @@ enum Barriers = 'wmb (*smp_wmb*) ||
 		'before-atomic (*smp_mb__before_atomic*) ||
 		'after-atomic (*smp_mb__after_atomic*) ||
 		'after-spinlock (*smp_mb__after_spinlock*) ||
-		'after-unlock-lock (*smp_mb__after_unlock_lock*)
+		'after-unlock-lock (*smp_mb__after_unlock_lock*) ||
+		'after-srcu-read-unlock (*smp_mb__after_srcu_read_unlock*)
 instructions F[Barriers]
 
 (* SRCU *)
@@ -53,8 +54,8 @@ let rcu-rscs = let rec
 	in matched
 
 (* Validate nesting *)
-flag ~empty Rcu-lock \ domain(rcu-rscs) as unbalanced-rcu-lock
-flag ~empty Rcu-unlock \ range(rcu-rscs) as unbalanced-rcu-unlock
+flag ~empty Rcu-lock \ domain(rcu-rscs) as unmatched-rcu-lock
+flag ~empty Rcu-unlock \ range(rcu-rscs) as unmatched-rcu-unlock
 
 (* Compute matching pairs of nested Srcu-lock and Srcu-unlock *)
 let carry-srcu-data = (data ; [~ Srcu-unlock] ; rf)*
@@ -62,15 +63,15 @@ let pass-cookie = carry-srcu-data ; data
 let srcu-rscs = ([Srcu-lock] ; pass-cookie ; [Srcu-unlock]) & loc
 
 (* Validate nesting *)
-flag ~empty Srcu-lock \ domain(srcu-rscs) as unbalanced-srcu-lock
-flag ~empty Srcu-unlock \ range(srcu-rscs) as unbalanced-srcu-unlock
+flag ~empty Srcu-lock \ domain(srcu-rscs) as unmatched-srcu-lock
+flag ~empty Srcu-unlock \ range(srcu-rscs) as unmatched-srcu-unlock
 flag ~empty (srcu-rscs^-1 ; srcu-rscs) \ id as multiple-srcu-matches
 
 (* Check for use of synchronize_srcu() inside an RCU critical section *)
 flag ~empty rcu-rscs & (po ; [Sync-srcu] ; po) as invalid-sleep
 
 (* Validate SRCU dynamic match *)
-flag ~empty different-values(srcu-rscs) as bad-srcu-value-match
+flag ~empty different-values(srcu-rscs) as srcu-bad-value-match
 
 (*
  * Check that srcu cookies are only used for passing to srcu_read_unlock()
