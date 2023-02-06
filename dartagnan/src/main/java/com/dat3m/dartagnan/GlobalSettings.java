@@ -7,11 +7,11 @@ import org.apache.logging.log4j.Logger;
 public class GlobalSettings {
 
 
-	private static final Logger logger = LogManager.getLogger(GlobalSettings.class);
+    private static final Logger logger = LogManager.getLogger(GlobalSettings.class);
 
     // === Encoding ===
-	// This has to be in sync with whatever smack generated for references, 
-	// i.e. if type ref = X, then ARCH_PRECISION = X (or -1 if type = intX). 
+    // This has to be in sync with whatever smack generated for references,
+    // i.e. if type ref = X, then ARCH_PRECISION = X (or -1 if type = intX).
     public static final int ARCH_PRECISION = -1;
 
     // === Parsing ===
@@ -34,11 +34,11 @@ public class GlobalSettings {
 
     public static void LogGlobalSettings() {
         // General settings
-    	logger.info("ARCH_PRECISION: " + ARCH_PRECISION);
-    	logger.info("ATOMIC_AS_LOCK: " + ATOMIC_AS_LOCK);
+        logger.info("ARCH_PRECISION: " + ARCH_PRECISION);
+        logger.info("ATOMIC_AS_LOCK: " + ATOMIC_AS_LOCK);
 
-    	// Refinement settings
+        // Refinement settings
         logger.info("REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES: " + REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES);
-    	logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());
+        logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());
     }
 }

@@ -31,7 +31,7 @@ public class ConstantPropagation implements ProgramProcessor {
             description = "Propagates copy assignments of the form 'reg2 := reg1' to eliminate " +
                     "intermediate register 'reg2'. Can only be active if " + CONSTANT_PROPAGATION + " is enabled.",
             secure = true)
-    private boolean propagateCopyAssignments = false;
+    private boolean propagateCopyAssignments = true;
 
     // ====================================================================================
 
