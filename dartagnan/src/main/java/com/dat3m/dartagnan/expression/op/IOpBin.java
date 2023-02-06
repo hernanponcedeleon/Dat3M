@@ -3,11 +3,11 @@ package com.dat3m.dartagnan.expression.op;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
-import static java.util.Arrays.asList;
-
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
+
+import static java.util.Arrays.asList;
 
 public enum IOpBin {
     PLUS, MINUS, MULT, DIV, UDIV, MOD, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT, SREM, UREM;
@@ -197,8 +197,11 @@ public enum IOpBin {
             case L_SHIFT:
                 return a.shiftLeft(b.intValue());
             case R_SHIFT:
-            	// BigInteger do not support logical shift
-                throw new UnsupportedOperationException("Illegal operator " + this + " in IOpBin");
+                if (a.signum() < 0) {
+                    // BigInteger does not support logical shift on negative values
+                    throw new UnsupportedOperationException("No support for " + this + " on negative values.");
+                }
+                // For non-negative values, a logical shift is identical to a regular shift
             case AR_SHIFT:
                 return a.shiftRight(b.intValue());
         }

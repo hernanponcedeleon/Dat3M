@@ -11,12 +11,11 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-
 import org.antlr.v4.runtime.misc.Interval;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
-
 import java.math.BigInteger;
+
+import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
 
 public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
@@ -179,7 +178,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
 	@Override
 	public Object visitConstant(LitmusLISAParser.ConstantContext ctx) {
-		return new IValue(new BigInteger(ctx.getText()),-1);
+		return new IValue(new BigInteger(ctx.getText()),ARCH_PRECISION);
 	}
 
 	@Override

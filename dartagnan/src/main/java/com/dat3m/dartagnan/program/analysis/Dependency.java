@@ -32,30 +32,28 @@ public final class Dependency {
 
     private static final Logger logger = LogManager.getLogger(Dependency.class);
 
-    private final HashMap<Event,Map<Register,State>> map = new HashMap<>();
-    private final Map<Register,State> finalWriters = new HashMap<>();
+    private final HashMap<Event, Map<Register, State>> map = new HashMap<>();
+    private final Map<Register, State> finalWriters = new HashMap<>();
 
-    private Dependency() {}
+    private Dependency() {
+    }
 
     /**
      * Performs a dependency analysis on a program.
-     * @param program
-     * Instruction lists to be analyzed.
-     * @param analysisContext
-     * Collection of other analyses previously performed on {@code program}.
-     * Should include {@link ExecutionAnalysis}.
-     * @param config
-     * Mapping from keywords to values,
-     * further specifying the behavior of this analysis.
-     * See this class's list of options for details.
-     * @throws InvalidConfigurationException
-     * Some option was provided with an unsupported type.
+     *
+     * @param program         Instruction lists to be analyzed.
+     * @param analysisContext Collection of other analyses previously performed on {@code program}.
+     *                        Should include {@link ExecutionAnalysis}.
+     * @param config          Mapping from keywords to values,
+     *                        further specifying the behavior of this analysis.
+     *                        See this class's list of options for details.
+     * @throws InvalidConfigurationException Some option was provided with an unsupported type.
      */
     public static Dependency fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         logger.info("Analyze dependencies");
         ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
         Dependency result = new Dependency();
-        for(Thread t: program.getThreads()) {
+        for (Thread t : program.getThreads()) {
             result.process(t, exec);
         }
         return result;
@@ -63,71 +61,68 @@ public final class Dependency {
 
     /**
      * Queries the collection of providers for a variable, given a certain state of the program.
-     * @param reader
-     * Event containing some computation over values of the register space.
-     * @param register
-     * Thread-local program variable used by {@code reader}.
-     * @return
-     * Local result of this analysis.
+     *
+     * @param reader   Event containing some computation over values of the register space.
+     * @param register Thread-local program variable used by {@code reader}.
+     * @return Local result of this analysis.
      */
     public State of(Event reader, Register register) {
         return map.getOrDefault(reader, Map.of()).getOrDefault(register, new State(false, List.of(), List.of()));
     }
 
     /**
-     * @return
-     * Complete set of registers of the analyzed program,
+     * @return Complete set of registers of the analyzed program,
      * mapped to program-ordered list of writers.
      */
-    public Map<Register,State> finalWriters() {
+    public Map<Register, State> finalWriters() {
         return finalWriters;
     }
 
     /**
      * Complete set of possible relationships between register writers and register readers,
      * where a reader may receive the value that the writer produced.
-     * @return
-     * Grouped by reader, then result register.
+     *
+     * @return Grouped by reader, then result register.
      * Writers are program-ordered.
      */
-    public Collection<Map.Entry<Event,Map<Register,State>>> getAll() {
+    public Collection<Map.Entry<Event, Map<Register, State>>> getAll() {
         return map.entrySet();
     }
 
     private void process(Thread thread, ExecutionAnalysis exec) {
-        Map<Event,Set<Writer>> jumps = new HashMap<>();
+        Map<Event, Set<Writer>> jumps = new HashMap<>();
         Set<Writer> state = new HashSet<>();
-        for(Register register : thread.getRegisters()) {
-            state.add(new Writer(register,null));
+        for (Register register : thread.getRegisters()) {
+            state.add(new Writer(register, null));
         }
-        for(Event event : thread.getEvents()) {
+        for (Event event : thread.getEvents()) {
             //merge with incoming jumps
             Set<Writer> j = jumps.remove(event);
-            if(j != null) {
+            if (j != null) {
                 state.addAll(j);
             }
             //collecting dependencies, mixing 'data' and 'addr'
             Set<Register> registers = new HashSet<>();
-            if(event instanceof RegReaderData) {
+            if (event instanceof RegReaderData) {
                 registers.addAll(((RegReaderData) event).getDataRegs());
             }
-            if(event instanceof MemEvent) {
+            if (event instanceof MemEvent) {
                 registers.addAll(((MemEvent) event).getAddress().getRegs());
             }
-            if(!registers.isEmpty()) {
-                Map<Register,State> result = new HashMap<>();
-                for(Register register : registers) {
-                    if(register.getThreadId() == Register.NO_THREAD) {
+            if (!registers.isEmpty()) {
+                Map<Register, State> result = new HashMap<>();
+                for (Register register : registers) {
+                    if (register.getThreadId() == Register.NO_THREAD) {
                         continue;
                     }
                     State writers;
-                    if(register.getThreadId() != event.getThread().getId()) {
+                    if (register.getThreadId() != event.getThread().getId()) {
                         writers = finalWriters.get(register);
                         checkArgument(writers != null,
                                 "Helper thread %s should be listed after their creator thread %s.",
                                 thread.getId(),
                                 register.getThreadId());
-                        if(writers.may.size() != 1) {
+                        if (writers.may.size() != 1) {
                             logger.warn("Writers {} for inter-thread register {} read by event {} of thread {}",
                                     writers.may,
                                     register,
@@ -135,8 +130,8 @@ public final class Dependency {
                                     thread.getId());
                         }
                     } else {
-                        writers = process(state, register, exec);
-                        if(!writers.initialized) {
+                        writers = process(event, state, register, exec);
+                        if (!writers.initialized) {
                             logger.warn("Uninitialized register {} read by event {} of thread {}",
                                     register,
                                     event,
@@ -148,66 +143,70 @@ public final class Dependency {
                 map.put(event, result);
             }
             //update state, if changed by event
-            if(event instanceof RegWriter) {
+            if (event instanceof RegWriter) {
                 Register register = ((RegWriter) event).getResultRegister();
-                if(event.cfImpliesExec()) {
+                if (event.cfImpliesExec()) {
                     state.removeIf(e -> e.register.equals(register));
                 }
                 state.add(new Writer(register, event));
             }
             //copy state, if branching
-            if(event instanceof CondJump) {
+            if (event instanceof CondJump) {
                 jumps.computeIfAbsent(((CondJump) event).getLabel(), k -> new HashSet<>()).addAll(state);
-                if(((CondJump) event).isGoto()) {
+                if (((CondJump) event).isGoto()) {
                     state.clear();
                 }
             }
         }
-        if(!jumps.isEmpty()) {
+        if (!jumps.isEmpty()) {
             logger.warn("Thread {} contains jumps to removed labels {}",
                     thread.getId(),
                     jumps.keySet());
-            for(Set<Writer> j : jumps.values()) {
+            for (Set<Writer> j : jumps.values()) {
                 state.addAll(j);
             }
         }
-        for(Register register : thread.getRegisters()) {
-            finalWriters.put(register, process(state, register, exec));
+        for (Register register : thread.getRegisters()) {
+            finalWriters.put(register, process(null, state, register, exec));
         }
     }
 
-    private static State process(Set<Writer> state, Register register, ExecutionAnalysis exec) {
+    private static State process(Event reader, Set<Writer> state, Register register, ExecutionAnalysis exec) {
         List<Event> candidates = state.stream()
-        .filter(e -> e.register.equals(register))
-        .map(e -> e.event)
-        .collect(toList());
+                .filter(e -> e.register.equals(register))
+                .map(e -> e.event)
+                .filter(e -> reader == null || !exec.areMutuallyExclusive(reader, e))
+                .collect(toList());
         //NOTE if candidates is empty, the reader is unreachable
         List<Event> mays = candidates.stream()
-        .filter(Objects::nonNull)
-        .sorted(Comparator.comparingInt(Event::getGlobalId))
-        .collect(Collectors.toCollection(ArrayList::new));
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparingInt(Event::getGlobalId))
+                .collect(Collectors.toCollection(ArrayList::new));
         int end = mays.size();
         List<Event> musts = range(0, end)
-        .filter(i -> mays.subList(i + 1, end).stream().allMatch(j -> exec.areMutuallyExclusive(mays.get(i), j)))
-        .mapToObj(mays::get)
-        .collect(toList());
+                .filter(i -> mays.subList(i + 1, end).stream().allMatch(j -> exec.areMutuallyExclusive(mays.get(i), j)))
+                .mapToObj(mays::get)
+                .collect(toList());
         return new State(!candidates.contains(null), mays, musts);
     }
 
     private static final class Writer {
         final Register register;
         final Event event;
+
         Writer(Register r, Event e) {
             register = checkNotNull(r);
             event = e;
         }
+
         @Override
         public boolean equals(Object o) {
-            return this==o || o instanceof Writer
-            && (event == null
-                ? ((Writer) o).event == null && register.equals(((Writer) o).register)
-                : event.equals(((Writer) o).event));
+            return this == o || o instanceof Writer
+                    && (event == null
+                    ? ((Writer) o).event == null && register.equals(((Writer) o).register)
+                    : event.equals(((Writer) o).event));
         }
+
         @Override
         public int hashCode() {
             return (event == null ? register : event).hashCode();
@@ -239,7 +238,7 @@ public final class Dependency {
 
         private State(boolean initialized, List<Event> may, List<Event> must) {
             verify(new HashSet<>(may).containsAll(must), "Each must-writer must also be a may-writer.");
-            verify(may.isEmpty() || must.contains(may.get(may.size()-1)), "The last may-writer must also be a must-writer.");
+            verify(may.isEmpty() || must.contains(may.get(may.size() - 1)), "The last may-writer must also be a must-writer.");
             this.initialized = initialized;
             this.may = may;
             this.must = must;

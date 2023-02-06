@@ -20,8 +20,11 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class MiscellaneousTest extends AbstractCTest {
 
-    public MiscellaneousTest(String name, Arch target, Result expected) {
+    private final int bound;
+
+    public MiscellaneousTest(String name, Arch target, Result expected, int bound) {
         super(name, target, expected);
+        this.bound = bound;
     }
 
     @Override
@@ -30,14 +33,20 @@ public class MiscellaneousTest extends AbstractCTest {
     }
 
     @Override
+    protected Provider<Integer> getBoundProvider() {
+        return () -> bound;
+    }
+
+    @Override
     protected long getTimeout() {
-        return 60000;
+        return 10000;
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"idd_dynamic", ARM8, FAIL},
+                {"idd_dynamic", ARM8, FAIL, 1},
+                {"propagatableSideEffects", ARM8, FAIL, 3}
         });
     }
 
