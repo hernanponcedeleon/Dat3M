@@ -27,9 +27,9 @@ TARGET=$2
 
 if [ "$TARGET" == "POWER" ]; then
     ## Smaller instances for POWER
-    declare -a BENCHMARKS=( "locks/ttas-5" "locks/ticketlock-6" "locks/mutex-3" "locks/spinlock-5" "locks/linuxrwlock-3" "locks/mutex_musl-3" "lfds/safe_stack-3" "lfds/chase-lev-5" "lfds/dglm-3" "lfds/ms-3" "lfds/treiber-3" )
+    declare -a BENCHMARKS=( "locks/ttas" "locks/ticketlock" "locks/mutex" "locks/spinlock" "locks/linuxrwlock" "locks/mutex_musl" "lfds/safe_stack" "lfds/chase-lev" "lfds/dglm" "lfds/ms" "lfds/treiber" )
 else
-    declare -a BENCHMARKS=( "locks/ttas-5" "locks/ticketlock-6" "locks/mutex-4" "locks/spinlock-5" "locks/linuxrwlock-3" "locks/mutex_musl-4" "lfds/safe_stack-3" "lfds/chase-lev-5" "lfds/dglm-3" "lfds/ms-3" "lfds/treiber-3" )
+    declare -a BENCHMARKS=( "locks/ttas" "locks/ticketlock" "locks/mutex" "locks/spinlock" "locks/linuxrwlock" "locks/mutex_musl" "lfds/safe_stack" "lfds/chase-lev" "lfds/dglm" "lfds/ms" "lfds/treiber" )
 fi
 
 for METHOD in ${METHODS[@]}; do
@@ -53,7 +53,7 @@ for METHOD in ${METHODS[@]}; do
         echo benchmark, may-size, must-size, act-size, smt-vars, acyc-size, result, ra_time, xra_time, veri_time > $DAT3M_OUTPUT/csv/$TARGET-$TOOL.csv
 
         ## Run Dartagnan
-        DAT3M_OPTIONS="$DAT3M_HOME/cat/$CAT --target=$TARGET --method=$METHOD $XRA_OPT --encoding.symmetry.breakOn=rf --bound=2"
+        DAT3M_OPTIONS="$DAT3M_HOME/cat/$CAT --target=$TARGET --method=$METHOD $XRA_OPT --encoding.symmetry.breakOn=_cf --bound=2"
 
         for BENCHMARK in ${BENCHMARKS[@]}; do
 
@@ -65,18 +65,18 @@ for METHOD in ${METHODS[@]}; do
             fi
 
             ## safe_stack is unsafe and thus we run it several times to minimise time fluctuations
-            if [[ "$BENCHMARK" == "lfds/safe_stack-3" ]];
+            if [[ "$BENCHMARK" == "lfds/safe_stack" ]];
             then
                 start=`python3 -c 'import time; print(int(time.time() * 1000))'`
                 for i in 1 2 3
                 do
-                    OUTPUT=$(timeout $TIMEOUT java -DLOGNAME=$BENCHMARK -Xmx4g -jar dartagnan/target/dartagnan-3.1.0.jar $DAT3M_OPTIONS $BPL_PATH$BENCHMARK.bpl)
+                    OUTPUT=$(timeout $TIMEOUT java -DLOGNAME=$BENCHMARK -Xmx4g -jar dartagnan/target/dartagnan-3.1.1.jar $DAT3M_OPTIONS $BPL_PATH$BENCHMARK.bpl)
                 done
                 end=`python3 -c 'import time; print(int(time.time() * 1000))'`
                 VERI_TIME=$(($((end-start))/3))
             else
                 start=`python3 -c 'import time; print(int(time.time() * 1000))'`
-                OUTPUT=$(timeout $TIMEOUT java -DLOGNAME=$BENCHMARK -Xmx4g -jar dartagnan/target/dartagnan-3.1.0.jar $DAT3M_OPTIONS $BPL_PATH$BENCHMARK.bpl)
+                OUTPUT=$(timeout $TIMEOUT java -DLOGNAME=$BENCHMARK -Xmx4g -jar dartagnan/target/dartagnan-3.1.1.jar $DAT3M_OPTIONS $BPL_PATH$BENCHMARK.bpl)
                 end=`python3 -c 'import time; print(int(time.time() * 1000))'`
                 VERI_TIME=$((end-start))
             fi
