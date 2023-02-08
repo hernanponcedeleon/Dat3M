@@ -53,7 +53,7 @@ for METHOD in ${METHODS[@]}; do
         echo benchmark, may-size, must-size, act-size, smt-vars, acyc-size, result, ra_time, xra_time, veri_time > $DAT3M_OUTPUT/csv/$TARGET-$TOOL.csv
 
         ## Run Dartagnan
-        DAT3M_OPTIONS="$DAT3M_HOME/cat/$CAT --target=$TARGET --method=$METHOD $XRA_OPT --encoding.symmetry.breakOn=_cf --bound=2"
+        DAT3M_OPTIONS="$DAT3M_HOME/cat/$CAT --target=$TARGET --method=$METHOD $XRA_OPT --encoding.symmetry.breakOn=_cf --bound=2 --encoding.locallyConsistent=false"
 
         for BENCHMARK in ${BENCHMARKS[@]}; do
 
