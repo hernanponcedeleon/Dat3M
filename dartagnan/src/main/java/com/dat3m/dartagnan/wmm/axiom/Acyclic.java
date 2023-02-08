@@ -177,7 +177,7 @@ public class Acyclic extends Axiom {
     }
 
     public int getEncodeTupleSetSize(Context analysisContext) {
-        return getEncodeTupleSet(analysisContext).size();
+        return getEncodeTupleSet(analysisContext.get(ExecutionAnalysis.class), analysisContext.get(RelationAnalysis.class)).size();
     }
 
     private Set<Tuple> getEncodeTupleSet(ExecutionAnalysis exec, RelationAnalysis ra) {
