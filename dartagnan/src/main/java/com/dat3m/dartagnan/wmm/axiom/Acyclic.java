@@ -65,26 +65,26 @@ public class Acyclic extends Axiom {
             Context analysisContext) {
         long t0 = System.currentTimeMillis();
         ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-        RelationAnalysis.Knowledge k = knowledgeMap.get(rel);
-        Set<Tuple> d = new HashSet<>();
-        for (Tuple t : k.getMaySet()) {
+        RelationAnalysis.Knowledge knowledge = knowledgeMap.get(rel);
+        Set<Tuple> newDisabled = new HashSet<>();
+        for (Tuple t : knowledge.getMaySet()) {
             if (t.isLoop()) {
-                d.add(t);
+                newDisabled.add(t);
             }
         }
-        for (Tuple t : k.getMustSet()) {
+        for (Tuple t : knowledge.getMustSet()) {
             Tuple inverse = t.getInverse();
-            if (k.containsMay(inverse)) {
-                d.add(inverse);
+            if (knowledge.containsMay(inverse)) {
+                newDisabled.add(inverse);
             }
         }
         Map<Event, List<Event>> mustOut = new HashMap<>();
-        for (Tuple t : k.getMustSet()) {
+        for (Tuple t : knowledge.getMustSet()) {
             if (!t.isLoop()) {
                 mustOut.computeIfAbsent(t.getFirst(), x -> new ArrayList<>()).add(t.getSecond());
             }
         }
-        for (Collection<Tuple> next = k.getMustSet(); !next.isEmpty();) {
+        for (Collection<Tuple> next = knowledge.getMustSet(); !next.isEmpty();) {
             Collection<Tuple> current = next;
             next = new ArrayList<>();
             for (Tuple xy : current) {
@@ -97,15 +97,16 @@ public class Acyclic extends Axiom {
                 for (Event z : mustOut.getOrDefault(y, List.of())) {
                     if ((implied || exec.isImplied(z, y)) && !exec.areMutuallyExclusive(x, z)) {
                         Tuple zx = new Tuple(z, x);
-                        if (k.containsMay(zx) && d.add(zx)) {
+                        if (newDisabled.add(zx)) {
                             next.add(new Tuple(x, z));
                         }
                     }
                 }
             }
         }
-        logger.debug("disabled {} tuples in {}ms", d.size(), System.currentTimeMillis() - t0);
-        return Map.of(rel, new RelationAnalysis.ExtendedDelta(d, Set.of()));
+        newDisabled.retainAll(knowledge.getMaySet());
+        logger.debug("disabled {} tuples in {}ms", newDisabled.size(), System.currentTimeMillis() - t0);
+        return Map.of(rel, new RelationAnalysis.ExtendedDelta(newDisabled, Set.of()));
     }
 
     @Override
@@ -119,17 +120,17 @@ public class Acyclic extends Axiom {
                 "misdirected knowledge propagation from relation %s to %s", changed, this);
         long t0 = System.currentTimeMillis();
         ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-        RelationAnalysis.Knowledge k = knowledgeMap.get(rel);
-        Set<Tuple> d = new HashSet<>();
+        RelationAnalysis.Knowledge knowledge = knowledgeMap.get(rel);
+        Set<Tuple> newDisabled = new HashSet<>();
         for (Tuple t : enabled) {
             Tuple inverse = t.getInverse();
-            if (k.containsMay(inverse)) {
-                d.add(inverse);
+            if (knowledge.containsMay(inverse)) {
+                newDisabled.add(inverse);
             }
         }
         Map<Event, List<Event>> mustIn = new HashMap<>();
         Map<Event, List<Event>> mustOut = new HashMap<>();
-        for (Tuple t : k.getMustSet()) {
+        for (Tuple t : knowledge.getMustSet()) {
             if (!t.isLoop()) {
                 mustIn.computeIfAbsent(t.getSecond(), x -> new ArrayList<>()).add(t.getFirst());
                 mustOut.computeIfAbsent(t.getFirst(), x -> new ArrayList<>()).add(t.getSecond());
@@ -149,7 +150,7 @@ public class Acyclic extends Axiom {
                 for (Event w : mustIn.getOrDefault(x, List.of())) {
                     if ((implied || exec.isImplied(w, x)) && !exec.areMutuallyExclusive(w, y)) {
                         Tuple yw = new Tuple(y, w);
-                        if (k.containsMay(yw) && d.add(yw)) {
+                        if (newDisabled.add(yw)) {
                             next.add(new Tuple(w, y));
                         }
                     }
@@ -157,15 +158,16 @@ public class Acyclic extends Axiom {
                 for (Event z : mustOut.getOrDefault(y, List.of())) {
                     if ((implies || exec.isImplied(z, y)) && !exec.areMutuallyExclusive(x, z)) {
                         Tuple zx = new Tuple(z, x);
-                        if (k.containsMay(zx) && d.add(zx)) {
+                        if (newDisabled.add(zx)) {
                             next.add(new Tuple(x, z));
                         }
                     }
                 }
             }
         }
-        logger.debug("Disabled {} tuples in {}ms", d.size(), System.currentTimeMillis() - t0);
-        return Map.of(rel, new RelationAnalysis.ExtendedDelta(d, Set.of()));
+        newDisabled.retainAll(knowledge.getMaySet());
+        logger.debug("Disabled {} tuples in {}ms", newDisabled.size(), System.currentTimeMillis() - t0);
+        return Map.of(rel, new RelationAnalysis.ExtendedDelta(newDisabled, Set.of()));
     }
 
     @Override
