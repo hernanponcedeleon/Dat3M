@@ -82,17 +82,17 @@ class VisitorTso extends VisitorBase {
 
         @Override
         public List<Event> visitLlvmLoad(LlvmLoad e) {
-                return tagList(eventSequence(
-                                newLoad(e.getResultRegister(), e.getAddress(), "")));
+                return eventSequence(
+                                newLoad(e.getResultRegister(), e.getAddress(), ""));
         }
 
         @Override
         public List<Event> visitLlvmStore(LlvmStore e) {
                 Fence optionalMFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
 
-                return tagList(eventSequence(
+                return eventSequence(
                                 newStore(e.getAddress(), e.getMemValue(), ""),
-                                optionalMFence));
+                                optionalMFence);
         }
 
         @Override
@@ -207,8 +207,8 @@ class VisitorTso extends VisitorBase {
 
         @Override
         public List<Event> visitAtomicLoad(AtomicLoad e) {
-                return tagList(eventSequence(
-                                newLoad(e.getResultRegister(), e.getAddress(), e.getMo())));
+                return eventSequence(
+                                newLoad(e.getResultRegister(), e.getAddress(), e.getMo()));
         }
 
         @Override
@@ -216,9 +216,9 @@ class VisitorTso extends VisitorBase {
                 String mo = e.getMo();
                 Fence optionalMFence = mo.equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
 
-                return tagList(eventSequence(
+                return eventSequence(
                                 newStore(e.getAddress(), e.getMemValue(), mo),
-                                optionalMFence));
+                                optionalMFence);
         }
 
         @Override
