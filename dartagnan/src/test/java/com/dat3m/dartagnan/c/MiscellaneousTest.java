@@ -12,9 +12,9 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.configuration.Arch.ARM8;
+import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -46,7 +46,8 @@ public class MiscellaneousTest extends AbstractCTest {
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
                 {"idd_dynamic", ARM8, FAIL, 1},
-                {"propagatableSideEffects", ARM8, FAIL, 3}
+                {"propagatableSideEffects", ARM8, FAIL, 3},
+                {"SB-RMW", TSO, PASS, 3}
         });
     }
 
