@@ -1,6 +1,6 @@
 #!/bin/bash
  
-BPL_PATH=$DAT3M_HOME/dartagnan/src/test/resources/
+BENCH_PATH=$DAT3M_HOME/benchmarks/
 
 TIMEOUT=900
 
@@ -25,12 +25,7 @@ declare -a XRA_OPTS=( "$CAV19" "$XRA" "$XRA_ACY" )
 CAT=$1
 TARGET=$2
 
-if [ "$TARGET" == "POWER" ]; then
-    ## Smaller instances for POWER
-    declare -a BENCHMARKS=( "locks/ttas" "locks/ticketlock" "locks/mutex" "locks/spinlock" "locks/linuxrwlock" "locks/mutex_musl" "lfds/safe_stack" "lfds/chase-lev" "lfds/dglm" "lfds/ms" "lfds/treiber" )
-else
-    declare -a BENCHMARKS=( "locks/ttas" "locks/ticketlock" "locks/mutex" "locks/spinlock" "locks/linuxrwlock" "locks/mutex_musl" "lfds/safe_stack" "lfds/chase-lev" "lfds/dglm" "lfds/ms" "lfds/treiber" )
-fi
+declare -a BENCHMARKS=( "locks/ttas" "locks/ticketlock" "locks/mutex" "locks/spinlock" "locks/linuxrwlock" "locks/mutex_musl" "lfds/safe_stack" "lfds/chase-lev" "lfds/dglm" "lfds/ms" "lfds/treiber" )
 
 for METHOD in ${METHODS[@]}; do
     for XRA_OPT in "${XRA_OPTS[@]}"; do
@@ -57,6 +52,18 @@ for METHOD in ${METHODS[@]}; do
 
         for BENCHMARK in ${BENCHMARKS[@]}; do
 
+            ## Set number of threads
+            CFLAGS="-DNTHREADS=6"
+            if [[ "$BENCHMARK" == *"lfds/"* ]]; then
+                if [ "$TARGET" == "POWER" ]; then
+                    ## Smaller instances for POWER
+                    CFLAGS="-DNTHREADS=3"
+                else
+                    CFLAGS="-DNTHREADS=4"
+                fi
+            fi
+            export CFLAGS=$CFLAGS
+
             ## The SMT statistics go to different logs
             if [ "$METHOD" == "caat" ]; then
     	        SMT_LOG=$DAT3M_OUTPUT/logs/refinement.log
@@ -70,13 +77,13 @@ for METHOD in ${METHODS[@]}; do
                 start=`python3 -c 'import time; print(int(time.time() * 1000))'`
                 for i in 1 2 3
                 do
-                    OUTPUT=$(timeout $TIMEOUT java -DLOGNAME=$BENCHMARK -Xmx4g -jar dartagnan/target/dartagnan-3.1.1.jar $DAT3M_OPTIONS $BPL_PATH$BENCHMARK.bpl)
+                    OUTPUT=$(timeout $TIMEOUT java -DLOGNAME=$BENCHMARK -Xmx4g -jar dartagnan/target/dartagnan-3.1.1.jar $DAT3M_OPTIONS $BENCH_PATH$BENCHMARK.c)
                 done
                 end=`python3 -c 'import time; print(int(time.time() * 1000))'`
                 VERI_TIME=$(($((end-start))/3))
             else
                 start=`python3 -c 'import time; print(int(time.time() * 1000))'`
-                OUTPUT=$(timeout $TIMEOUT java -DLOGNAME=$BENCHMARK -Xmx4g -jar dartagnan/target/dartagnan-3.1.1.jar $DAT3M_OPTIONS $BPL_PATH$BENCHMARK.bpl)
+                OUTPUT=$(timeout $TIMEOUT java -DLOGNAME=$BENCHMARK -Xmx4g -jar dartagnan/target/dartagnan-3.1.1.jar $DAT3M_OPTIONS $BENCH_PATH$BENCHMARK.c)
                 end=`python3 -c 'import time; print(int(time.time() * 1000))'`
                 VERI_TIME=$((end-start))
             fi
