@@ -29,12 +29,11 @@ let ppo = [R];(deps | rfi)+;[W]                                                 
 let detour = (coe;rfe) & po                                                                     (* detour *)
 let psc = [F & SC];hb;eco;hb;[F & SC]                                                           (* partial SC fence order *)
 
+(* GenMC guarantees SC for IMM similar to how it is done in RC11 *)
 let pol = po \ loc
 let hbl = hb & loc
 let scb = po | pol; hb; pol | hbl | co | fr
 let pscb = ([SC] | [F & SC]; hb?); scb; ([SC] | hb? ; [F & SC])
-
-(* GenMC fuarantees SC for IMM similar to how it is done in RC11 *)
 acyclic psc | pscb as SC
 
 (* no OOTA *)
