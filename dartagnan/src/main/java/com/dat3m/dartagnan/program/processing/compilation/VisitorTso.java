@@ -28,12 +28,14 @@ class VisitorTso extends VisitorBase {
                 store.addFilters(C11.PTHREAD);
 
                 return tagList(eventSequence(
-                                store));
+                                store,
+                                X86.newMemoryFence()));
         }
 
         @Override
         public List<Event> visitEnd(End e) {
                 return tagList(eventSequence(
+                                // Nothing comes after an End event thus no need for a fence
                                 newStore(e.getAddress(), IValue.ZERO, "")));
         }
 
@@ -199,10 +201,10 @@ class VisitorTso extends VisitorBase {
                 String mo = e.getMo();
                 Load load = newRMWLoad(resultRegister, address, mo);
 
-                return eventSequence(
+                return tagList(eventSequence(
                                 load,
                                 newLocal(dummyReg, new IExprBin(resultRegister, e.getOp(), (IExpr) e.getMemValue())),
-                                newRMWStore(load, address, dummyReg, mo));
+                                newRMWStore(load, address, dummyReg, mo)));
         }
 
         @Override
