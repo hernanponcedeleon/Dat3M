@@ -60,7 +60,10 @@ public class IMMTest extends AbstractCTest {
                 {"paper-E3.9", IMM, PASS},
                 {"paper-E3.10", IMM, PASS},
                 {"paper-R2", IMM, PASS},
-                {"paper-R2-alt", IMM, PASS},
+                // IMM from the paper returns PASS in the test bewow.
+                // But since we follow the sw definition of RC11, the
+                // expected result is FAIL (confirmed by genMC) 
+                {"paper-R2-alt", IMM, FAIL},
         });
     }
 
