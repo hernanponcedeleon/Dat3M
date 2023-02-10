@@ -4,7 +4,8 @@
  * GenMC does not follow the published IMM model to the letter
  * https://github.com/MPI-SWS/genmc/issues/44
  * It also uses part of RC11 to deal with SC accesses
- * Viktor confirmed this is a faithfull model following GenMC's implementation
+ * According to Viktor Vafeiadis, this is a faithfull model 
+ * following GenMC's implementation
  *)
 
 (* coherence *)
