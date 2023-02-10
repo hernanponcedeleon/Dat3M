@@ -250,7 +250,6 @@ public final class Tag {
 
         public static String extractStoreMo(String cMo) {
         	switch(cMo) {
-        		case C11.MO_SC:
         		case C11.MO_ACQUIRE_RELEASE:
         			return C11.MO_RELEASE;
         		case C11.MO_ACQUIRE:
@@ -262,7 +261,6 @@ public final class Tag {
 
         public static String extractLoadMo(String cMo) {
         	switch(cMo) {
-    			case C11.MO_SC:
     			case C11.MO_ACQUIRE_RELEASE:
     				return C11.MO_ACQUIRE;
     			case C11.MO_RELEASE:

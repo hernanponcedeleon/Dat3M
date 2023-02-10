@@ -1,11 +1,19 @@
-(* CAT for IMM *)
+(* CAT for IMM (as implemented by GenMC) *)
+
+(*
+ * GenMC does not follow the published IMM model to the letter
+ * https://github.com/MPI-SWS/genmc/issues/44
+ * It also uses part of RC11 to deal with SC accesses
+ * According to Viktor Vafeiadis, this is a faithful model 
+ * following GenMC's implementation
+ *)
 
 (* coherence *)
-let rs = [W];po-loc;[W] | [W];(po-loc?;rf;rmw)*                                                 (* release sequence *)
-let release = ([W & REL] | [(F & REL) | (F & ACQ_REL) | (F & SC)];po);rs                        (* release prefix *)
-let sw = release;(rfi | po-loc?;rfe);([R & ACQ] | po;[(F & ACQ) | (F & ACQ_REL) | (F & SC)])    (* synchronizes with *)
-let hb = (po | sw)+                                                                             (* happens-before *)
-let eco = rf | co;(rf?) | fr;(rf?)                                                              (* extended coherence order *)
+let rs = [W];po-loc;[W] | [W];(po-loc?;rf;rmw)*                                                                                     (* release sequence *)
+(* GenMC uses the same sw definition as RC11 *)
+let sw = [(REL | ACQ_REL | SC)]; ([F]; po)?; rs; rf; [R & (RLX | REL | ACQ | ACQ_REL | SC)]; (po; [F])?; [(ACQ | ACQ_REL | SC)]     (* synchronizes with *)
+let hb = (po | sw)+                                                                                                                 (* happens-before *)
+let eco = rf | co;(rf?) | fr;(rf?)                                                                                                  (* extended coherence order *)
 
 irreflexive hb;(eco?)
 (* alternative *)
@@ -21,6 +29,13 @@ let deps = data | ctrl | addr;(po?) | casdep | [R & RMW];po                     
 let ppo = [R];(deps | rfi)+;[W]                                                                 (* preserved program order *)
 let detour = (coe;rfe) & po                                                                     (* detour *)
 let psc = [F & SC];hb;eco;hb;[F & SC]                                                           (* partial SC fence order *)
+
+(* GenMC guarantees SC for IMM similar to how it is done in RC11 *)
+let pol = po \ loc
+let hbl = hb & loc
+let scb = po | pol; hb; pol | hbl | co | fr
+let pscb = ([SC] | [F & SC]; hb?); scb; ([SC] | hb? ; [F & SC])
+acyclic psc | pscb as SC
 
 (* no OOTA *)
 let ar = rfe | bob | ppo | detour | psc | [W & STRONG];po;[W]
