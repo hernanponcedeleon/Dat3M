@@ -47,7 +47,8 @@ public class MiscellaneousTest extends AbstractCTest {
         return Arrays.asList(new Object[][]{
                 {"idd_dynamic", ARM8, FAIL, 1},
                 {"propagatableSideEffects", ARM8, FAIL, 3},
-                {"SB-RMW", TSO, PASS, 3}
+                {"SB-RMW", TSO, PASS, 1},
+                {"SB-RMW", IMM, PASS, 1}
         });
     }
 
