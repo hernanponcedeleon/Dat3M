@@ -55,25 +55,25 @@ for METHOD in ${METHODS[@]}; do
             ## Set number of threads
             case "$BENCHMARK" in
                 "locks/ttas" | "locks/ticketlock" | "locks/spinlock" | "lfds/chase-lev")
-                    if [ "$METHOD" == "caat" ] || [ "$TARGET" != "POWER" ]; then
+                    if [ "$METHOD" == "caat" ] && [ "$TARGET" != "POWER" ]; then
                         THREADS=7
                     else
-                        THREADS=6
+                        THREADS=5
                     fi;;
                 "locks/mutex" | "locks/mutex_musl")
-                    if [ "$METHOD" == "caat" ] || [ "$TARGET" != "POWER" ]; then
+                    if [ "$METHOD" == "caat" ] && [ "$TARGET" != "POWER" ]; then
                         THREADS=5
                     else
                         THREADS=3
                     fi;;
                 "locks/linuxrwlock")
-                    if [ "$METHOD" == "caat" ] || [ "$TARGET" != "POWER" ]; then
+                    if [ "$METHOD" == "caat" ] && [ "$TARGET" != "POWER" ]; then
                         THREADS=6
                     else
                         THREADS=4
                     fi;;
                 *)
-                    if [ "$METHOD" == "caat" ] || [ "$TARGET" != "POWER" ]; then
+                    if [ "$METHOD" == "caat" ] && [ "$TARGET" != "POWER" ]; then
                         THREADS=4
                     else
                         THREADS=3
