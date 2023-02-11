@@ -25,7 +25,7 @@ declare -a XRA_OPTS=( "$CAV19" "$XRA" "$XRA_ACY" )
 CAT=$1
 TARGET=$2
 
-declare -a BENCHMARKS=( "locks/ttas" "locks/ticketlock" "locks/mutex" "locks/spinlock" "locks/linuxrwlock" "locks/mutex_musl" "lfds/safe_stack" "lfds/chase-lev" "lfds/dglm" "lfds/ms" "lfds/treiber" )
+declare -a BENCHMARKS=( "locks/ttas" "locks/ticketlock" "locks/mutex" "locks/spinlock" "locks/linuxrwlock" "locks/mutex_musl" "lfds/chase-lev" "lfds/dglm" "lfds/ms" "lfds/treiber" )
 
 for METHOD in ${METHODS[@]}; do
     for XRA_OPT in "${XRA_OPTS[@]}"; do
@@ -45,7 +45,7 @@ for METHOD in ${METHODS[@]}; do
         fi
 
         ## Start CSV files
-        echo benchmark, may-size, must-size, act-size, smt-vars, acyc-size, result, ra_time, xra_time, veri_time > $DAT3M_OUTPUT/csv/$TARGET-$TOOL.csv
+        echo benchmark, threads, may-size, must-size, act-size, smt-vars, acyc-size, result, ra_time, xra_time, veri_time > $DAT3M_OUTPUT/csv/$TARGET-$TOOL.csv
 
         ## Run Dartagnan
         DAT3M_OPTIONS="$DAT3M_HOME/cat/$CAT --target=$TARGET --method=$METHOD $XRA_OPT --encoding.symmetry.breakOn=_cf --bound=2 --encoding.locallyConsistent=false"
@@ -53,16 +53,34 @@ for METHOD in ${METHODS[@]}; do
         for BENCHMARK in ${BENCHMARKS[@]}; do
 
             ## Set number of threads
-            CFLAGS="-DNTHREADS=6"
-            if [[ "$BENCHMARK" == *"lfds/"* ]]; then
-                if [ "$TARGET" == "POWER" ]; then
-                    ## Smaller instances for POWER
-                    CFLAGS="-DNTHREADS=3"
-                else
-                    CFLAGS="-DNTHREADS=4"
-                fi
-            fi
-            export CFLAGS=$CFLAGS
+            case "$BENCHMARK" in
+                "locks/ttas" | "locks/ticketlock" | "locks/spinlock" | "lfds/chase-lev")
+                    if [ "$METHOD" == "caat" ] || [ "$TARGET" != "POWER" ]; then
+                        THREADS=7
+                    else
+                        THREADS=6
+                    fi;;
+                "locks/mutex" | "locks/mutex_musl")
+                    if [ "$METHOD" == "caat" ] || [ "$TARGET" != "POWER" ]; then
+                        THREADS=5
+                    else
+                        THREADS=3
+                    fi;;
+                "locks/linuxrwlock")
+                    if [ "$METHOD" == "caat" ] || [ "$TARGET" != "POWER" ]; then
+                        THREADS=6
+                    else
+                        THREADS=4
+                    fi;;
+                *)
+                    if [ "$METHOD" == "caat" ] || [ "$TARGET" != "POWER" ]; then
+                        THREADS=4
+                    else
+                        THREADS=3
+                    fi;;
+            esac
+
+            export CFLAGS="-DNTHREADS="$THREADS
 
             ## The SMT statistics go to different logs
             if [ "$METHOD" == "caat" ]; then
@@ -71,22 +89,11 @@ for METHOD in ${METHODS[@]}; do
 	            SMT_LOG=$DAT3M_OUTPUT/logs/$BENCHMARK.log
             fi
 
-            ## safe_stack is unsafe and thus we run it several times to minimise time fluctuations
-            if [[ "$BENCHMARK" == "lfds/safe_stack" ]];
-            then
-                start=`python3 -c 'import time; print(int(time.time() * 1000))'`
-                for i in 1 2 3
-                do
-                    OUTPUT=$(timeout $TIMEOUT java -DLOGNAME=$BENCHMARK -Xmx4g -jar dartagnan/target/dartagnan-3.1.1.jar $DAT3M_OPTIONS $BENCH_PATH$BENCHMARK.c)
-                done
-                end=`python3 -c 'import time; print(int(time.time() * 1000))'`
-                VERI_TIME=$(($((end-start))/3))
-            else
-                start=`python3 -c 'import time; print(int(time.time() * 1000))'`
-                OUTPUT=$(timeout $TIMEOUT java -DLOGNAME=$BENCHMARK -Xmx4g -jar dartagnan/target/dartagnan-3.1.1.jar $DAT3M_OPTIONS $BENCH_PATH$BENCHMARK.c)
-                end=`python3 -c 'import time; print(int(time.time() * 1000))'`
-                VERI_TIME=$((end-start))
-            fi
+            start=`python3 -c 'import time; print(int(time.time() * 1000))'`
+            # echo $TARGET, $METHOD, $BENCHMARK, $THREADS
+            OUTPUT=$(timeout $TIMEOUT java -DLOGNAME=$BENCHMARK -Xmx4g -jar dartagnan/target/dartagnan-3.1.1.jar $DAT3M_OPTIONS $BENCH_PATH$BENCHMARK.c)
+            end=`python3 -c 'import time; print(int(time.time() * 1000))'`
+            VERI_TIME=$((end-start))
             
             ## May set size
             GREP=$(grep "Number of may-tuples" $DAT3M_OUTPUT/logs/$BENCHMARK.log | tail -1)
@@ -152,7 +159,7 @@ for METHOD in ${METHODS[@]}; do
             fi
 
             ## Save CSV
-            echo $BENCHMARK, $MAY_SET, $MUST_SET, $ACT_SET, $SMT_VARS, $ACYC, $RESULT, $RA_TIME, $XRA_TIME, $VERI_TIME >> $DAT3M_OUTPUT/csv/$TARGET-$TOOL.csv
+            echo $BENCHMARK, $THREADS, $MAY_SET, $MUST_SET, $ACT_SET, $SMT_VARS, $ACYC, $RESULT, $RA_TIME, $XRA_TIME, $VERI_TIME >> $DAT3M_OUTPUT/csv/$TARGET-$TOOL.csv
 
         done
     done
