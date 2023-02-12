@@ -2,7 +2,7 @@
  
 BENCH_PATH=$DAT3M_HOME/benchmarks/
 
-TIMEOUT=900
+TIMEOUT=3600
 
 DAT3M_FINISHED="Verification finished"
 DAT3M_FAIL="FAIL"
@@ -47,37 +47,23 @@ for METHOD in ${METHODS[@]}; do
         ## Start CSV files
         echo benchmark, threads, may-size, must-size, act-size, smt-vars, acyc-size, result, ra_time, xra_time, veri_time > $DAT3M_OUTPUT/csv/$TARGET-$TOOL.csv
 
-        ## Run Dartagnan
+        ## Options for Dartagnan
         DAT3M_OPTIONS="$DAT3M_HOME/cat/$CAT --target=$TARGET --method=$METHOD $XRA_OPT --encoding.symmetry.breakOn=_cf --bound=2 --encoding.locallyConsistent=false"
 
         for BENCHMARK in ${BENCHMARKS[@]}; do
 
             ## Set number of threads
             case "$BENCHMARK" in
-                "locks/ttas" | "locks/ticketlock" | "locks/spinlock" | "lfds/chase-lev")
-                    if [ "$METHOD" == "caat" ] && [ "$TARGET" != "POWER" ]; then
-                        THREADS=7
-                    else
-                        THREADS=5
-                    fi;;
-                "locks/mutex" | "locks/mutex_musl")
-                    if [ "$METHOD" == "caat" ] && [ "$TARGET" != "POWER" ]; then
-                        THREADS=5
-                    else
-                        THREADS=3
-                    fi;;
-                "locks/linuxrwlock")
-                    if [ "$METHOD" == "caat" ] && [ "$TARGET" != "POWER" ]; then
-                        THREADS=6
-                    else
-                        THREADS=4
-                    fi;;
+                "locks/ttas" | "locks/ticketlock" | "locks/spinlock")
+                    THREADS=6 ;;
+                "locks/linuxrwlock" | "lfds/chase-lev")
+                    THREADS=5 ;;
+                "locks/mutex" | "locks/mutex_musl" | "lfds/treiber")
+                    THREADS=4 ;;
+                "lfds/dglm" | "lfds/ms")
+                    THREADS=3 ;;
                 *)
-                    if [ "$METHOD" == "caat" ] && [ "$TARGET" != "POWER" ]; then
-                        THREADS=4
-                    else
-                        THREADS=3
-                    fi;;
+                    echo "Missing case for benchmark" $BENCHMARK ;;
             esac
 
             export CFLAGS="-DNTHREADS="$THREADS
@@ -89,8 +75,8 @@ for METHOD in ${METHODS[@]}; do
 	            SMT_LOG=$DAT3M_OUTPUT/logs/$BENCHMARK.log
             fi
 
+            ## Run Dartagnan
             start=`python3 -c 'import time; print(int(time.time() * 1000))'`
-            # echo $TARGET, $METHOD, $BENCHMARK, $THREADS
             OUTPUT=$(timeout $TIMEOUT java -DLOGNAME=$BENCHMARK -Xmx4g -jar dartagnan/target/dartagnan-3.1.1.jar $DAT3M_OPTIONS $BENCH_PATH$BENCHMARK.c)
             end=`python3 -c 'import time; print(int(time.time() * 1000))'`
             VERI_TIME=$((end-start))

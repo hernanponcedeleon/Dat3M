@@ -58,7 +58,7 @@ def convertMillis(millis):
     hours=(millis/(1000*60*60))%60
     ## Convert to string and add leading zero
     hours='0' + str(hours).split(".")[0] if hours < 10 else str(hours).split(".")[0]
-    return hours + 'hs ' + minutes + 'min ' + seconds
+    return hours + 'hs ' + minutes + 'min ' + seconds + 's'
 
 ## Create empty csv files for non existent ones
 for file in cFiles:
@@ -176,8 +176,8 @@ for a in arch:
     plt.yscale('log',base=2) 
     plt.tight_layout()
     plt.legend(loc='upper center', ncol=lncol)
-    plt.ylim(256, 3000000)
-    plt.axhline(y=900000, color='grey', linestyle='--')
+    plt.ylim(256, 15000000)
+    plt.axhline(y=3600000, color='grey', linestyle='--')
     plt.savefig(figurePath + mapping_title[a] + '-caat.png')
     plt.close()
 
@@ -196,7 +196,7 @@ for a in arch:
     plt.yscale('log',base=2) 
     plt.tight_layout()
     plt.legend(loc='upper center', ncol=lncol)
-    plt.ylim(256, 3000000)
-    plt.axhline(y=900000, color='grey', linestyle='--')
+    plt.ylim(256, 15000000)
+    plt.axhline(y=3600000, color='grey', linestyle='--')
     plt.savefig(figurePath + mapping_title[a] + '-assume.png')
     plt.close()
