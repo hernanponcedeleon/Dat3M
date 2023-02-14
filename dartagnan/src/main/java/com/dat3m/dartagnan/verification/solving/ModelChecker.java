@@ -145,8 +145,12 @@ public abstract class ModelChecker {
                 logger.debug("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
                 StringBuilder violatingPairs = new StringBuilder("\n ===== The following pairs belong to the relation ===== \n");
                 for(Tuple tuple : encoder.getTuples(ax.getRelation(), model)) {
-                    violatingPairs.append("\t").append(tuple.getFirst().getGlobalId())
-                            .append(" -> ").append(tuple.getSecond().getGlobalId());
+                    violatingPairs
+                        .append("\t").append(tuple.getFirst().getGlobalId())
+                        .append(" -> ").append(tuple.getSecond().getGlobalId())
+                        .append("\t(").append(tuple.getFirst().getSourceCodeFile()).append("#").append(tuple.getFirst().getCLine())
+                        .append(" -> ").append(tuple.getSecond().getSourceCodeFile()).append("#").append(tuple.getSecond().getCLine())
+                        .append(")\n");
                 }
                 logger.debug(violatingPairs.toString());
             }
