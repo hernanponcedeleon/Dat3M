@@ -29,6 +29,10 @@ public class ProgramBuilder {
 
     private final Map<Integer, Thread> threads = new HashMap<>();
 
+    private final Map<Integer, Integer> threadGPU = new HashMap<>();
+    private final Map<Integer, Integer> threadCTA = new HashMap<>();
+    private final Map<String, String> proxyMap = new HashMap<>();
+
     private final Map<String,MemoryObject> locations = new HashMap<>();
 
     private final Memory memory = new Memory();
@@ -93,6 +97,10 @@ public class ProgramBuilder {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Declarators
+
+    public void initProxyEqLoc(String proxy_address, String physical_address) {
+        proxyMap.put(proxy_address, physical_address);
+    }
 
     public void initLocEqLocPtr(String leftName, String rightName){
         initLocEqConst(leftName, getOrNewObject(rightName));
@@ -234,4 +242,28 @@ public class ProgramBuilder {
             }
         }
     }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // PTX
+    public void initScopedThread(String name, int id, int ctaID, int gpuID) {
+        initThread(name, id);
+        if(!threadCTA.containsKey(id)){
+            threadCTA.putIfAbsent(id, ctaID);
+        }
+        if(!threadGPU.containsKey(id)){
+            threadGPU.putIfAbsent(id, gpuID);
+        }
+    }
+
+    public void initScopedThread(int id, int ctaID, int gpuID) {
+        initScopedThread(String.valueOf(id), id, ctaID, gpuID);
+    }
+
+    public Event addScopedChild(int thread, Event child) {
+        Event event = addChild(thread, child);
+        event.addFilters(Tag.PTX.CTA + this.threadCTA.get(thread));
+        event.addFilters(Tag.PTX.GPU + this.threadGPU.get(thread));
+        return event;
+    }
+
 }

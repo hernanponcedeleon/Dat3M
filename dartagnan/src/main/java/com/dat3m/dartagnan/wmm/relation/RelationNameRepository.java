@@ -36,6 +36,7 @@ public class RelationNameRepository {
 	public static final String FRE = "fre";
 	public static final String FRI = "fri";	
 	public static final String MFENCE = "mfence";
+	public static final String PFENCE = "pfence"; // proxy fence
 	public static final String ISH = "ish";
 	public static final String ISB = "isb";
 	public static final String SYNC = "sync";
@@ -44,6 +45,9 @@ public class RelationNameRepository {
 	public static final String CTRLISYNC = "ctrlisync";
 	public static final String CTRLISB = "ctrlisb";
 	public static final String CASDEP = "casdep";
+	public static final String SR = "sr";
+	public static final String SC = "sc";
+	public static final String BARSYNC = "bar_sync";
 	// Any new string must be also added to method contains() below
 
 	public static final ImmutableSet<String> RELATION_NAMES;

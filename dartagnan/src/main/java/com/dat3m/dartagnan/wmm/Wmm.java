@@ -329,6 +329,8 @@ public class Wmm {
                 return intersection(r, getRelation(CTRL), getRelation(ISYNC));
             case CTRLISB:
                 return intersection(r, getRelation(CTRL), getRelation(ISB));
+            case SR:
+                return new SameScope(r);
             default:
                 throw new RuntimeException(name + "is part of RelationNameRepository but it has no associated relation.");
         }

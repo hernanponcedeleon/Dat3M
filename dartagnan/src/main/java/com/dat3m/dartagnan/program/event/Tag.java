@@ -270,4 +270,25 @@ public final class Tag {
         	}
         }
     }
+
+    // =============================================================================================
+    // =========================================== PTX =============================================
+    // =============================================================================================
+    public static final class PTX {
+        private PTX() {}
+
+        public static final String CTA = "CTA";
+        public static final String GPU = "GPU";
+        public static final String SYS = "SYS";
+
+        public static final String WEAK = "WEAK";
+        public static final String RLX = "RLX";
+        public static final String ACQ = "ACQ";
+        public static final String REL = "REL";
+
+        public static final String ACQ_REL = "ACQ_REL";
+        public static final String BAR_SYNC = "BAR_SYNC";
+
+        public static final String ALIAS = "alias";
+    }
 }

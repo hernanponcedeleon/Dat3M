@@ -6,12 +6,8 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
-import com.dat3m.dartagnan.program.event.core.IfAsJump;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
@@ -863,6 +859,26 @@ public class RelationAnalysis {
             }
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
+        @Override
+        public Knowledge visitSameScope(Relation rel) {
+            Set<Tuple> must = new HashSet<>();
+            Collection<Event> loadEvents = (List<Event>) (List<? extends Event>) program.getEvents(Load.class);
+            Collection<Event> storeEvents = (List<Event>) (List<? extends Event>) program.getEvents(Store.class);
+            Collection<Event> fenceEvents = (List<Event>) (List<? extends Event>) program.getEvents(Fence.class);
+            List<Event> events = new ArrayList<>();
+            events.addAll(loadEvents);
+            events.addAll(storeEvents);
+            events.addAll(fenceEvents);
+            for (Event e1 : events) {
+                for (Event e2 : events) {
+                    if (mustScope(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                        must.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+            return new Knowledge(must, new HashSet<>(must));
+        }
+
         private Knowledge visitDependency(String tag, Function<Event, Set<Register>> registers) {
             Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
@@ -901,6 +917,62 @@ public class RelationAnalysis {
                 }
             }
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
+        }
+
+        private boolean mustScope(Event first, Event second) {
+            Set<String> first_filters = first.getFilters();
+            Set<String> second_filters = second.getFilters();
+            if (getValidScope(first_filters) == Tag.PTX.SYS || getValidScope(second_filters) == Tag.PTX.SYS) {
+                return true;
+            }
+            if (onSameScope(first_filters, second_filters, Tag.PTX.GPU)) {
+                // on same GPU
+                if (onSameScope(first_filters, second_filters, Tag.PTX.CTA)) {
+                    // on same CTA
+                    return true;
+                }
+                // not on same CTA
+                if (getValidScope(first_filters) != Tag.PTX.CTA ||
+                        getValidScope(second_filters) != Tag.PTX.CTA) {
+                    return true;
+                } //else: two cta event on same GPU, diff cta
+            }
+            return false;
+        }
+        private String getValidScope(Set<String> filters) {
+            for (String filter: filters) {
+                if (filter.equals(Tag.PTX.GPU)) {
+                    return Tag.PTX.GPU;
+                }
+                if (filter.equals(Tag.PTX.CTA)) {
+                    return Tag.PTX.CTA;
+                }
+            }
+            return Tag.PTX.SYS;
+        }
+
+        private boolean onSameScope(Set<String> f1, Set<String> f2, String scope) {
+            if (getScopeID(f1, scope) != getScopeID(f2, scope)) {
+                return false;
+            }
+            if (getScopeID(f1, scope) == -1) {
+                return false;
+            }
+            return true;
+        }
+
+        private int getScopeID(Set<String> filters, String scope) {
+            // scope == CTA | GPU
+            int result = -1;
+            for (String filter: filters) {
+                if (filter.equals(scope)) {
+                    continue;
+                }
+                if (filter.contains(scope)) {
+                    result = Integer.parseInt(filter.replace(scope, ""));
+                }
+            }
+            return result;
         }
     }
 

@@ -1,0 +1,72 @@
+PTX
+(*java -jar dartagnan/target/dartagnan-3.1.1.jar cat/ptx.cat litmus/PTX/ISA.litmus --printer.afterSimplification=true --method=assume*)
+(*mvn clean install -DskipTests*)
+include "cos.cat"
+include "cross.cat"
+include "fences.cat"
+include "filters.cat"
+
+(*
+ *Library known term:
+ * po: program order, specifies instruction order in a thread after evaluating conditionals and unrolling loops.
+ * ctrl: control dependency relations, always start from read. (included in po)
+ * addr: address dependency relations, always start from read. (included in po)
+ * data: data    dependency relations, always start from read. (included in po)
+ * co: coherence order relation, representing the history of writes to each location. It is a total order over writes to the same location, starting with the initialising writes.
+ * coe: external coherence order.
+ * loc: contains all pairs of events that access the same location.
+ * fre: fr & ext, all the external from-reads.
+ * rfe: rf & ext, all the external read-from.
+ * ext: the external relation, containing pairs of events that belong to different threads.
+ * rmw: atomic operation read-modify-write
+ * M: W + R, event
+ * Implemented:
+ *  sr: (scope) the scope relation sr relating events that come from threads which reside within the same scope;
+ *  sc: refers to the fence-sc of paper
+ *  bar_sync: refers to the bar.sync of paper
+ * TODO: proxy.alias;
+ *)
+
+(*******************)
+(* PTX Basic Term *)
+(*******************)
+(* Events *)
+let strong-write = W & (RLX | REL)
+let strong-read = R & (RLX | ACQ)
+let strong-fence = F & ACQ_REL
+let strong-operation = strong-write | strong-read | strong-fence
+let morally-strong = po | [M]; loc | [strong-operation]; sr
+
+let bar_sync = [F & BAR_SYNC]; sr
+let sc = [strong-fence] ; sr; [strong-fence]
+
+let obs = (morally-strong & rf)+ (* | (obs; rmw; obs)*)
+let observation = (morally-strong & rf)+
+let release-pattern = ([strong-write]; po-loc?; [strong-write]) | ([strong-fence]; po; [strong-write])
+let acquire-pattern = ([strong-read]; po-loc?; [strong-read]) | ([strong-read]; po; [strong-fence])
+let sw = (morally-strong & (release-pattern; obs; acquire-pattern)) | bar_sync | sc
+let causality-base = (po?; sw; po?)+
+let causality = causality-base | (obs; (causality-base | po-loc))
+
+(******************************)
+(* PTX Memory Model Relations *)
+(******************************)
+
+(* Axiom 1 Coherence *)
+empty (([W]; causality; [W]) \ co)
+
+(* Axiom 2 FenceSC *)
+irreflexive (sc ; causality)
+
+(* Axiom 3 Atomicity *)
+empty (((morally-strong & fr); (morally-strong & co)) & rmw)
+
+(* Axiom 4 No-Thin-Air *)
+let dep = addr | data | ctrl
+acyclic (rf | dep)
+
+(* Axiom 5 SC-per-Location *)
+acyclic ((morally-strong & (rf | co | fr)) | po-loc)
+
+(* Axiom 6 Causality *)
+irreflexive((rf | fr) ; causality)
