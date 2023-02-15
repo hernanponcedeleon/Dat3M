@@ -119,7 +119,7 @@ public class VisitorLitmusPTX
     @Override
     public Object visitStoreWeakRegister(LitmusPTXParser.StoreWeakRegisterContext ctx){
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.location().getText(), ARCH_PRECISION);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
         return programBuilder.addScopedChild(mainThread, EventFactory.PTX.newTaggedStore(object, register, Tag.PTX.WEAK));
     }
 
@@ -134,7 +134,7 @@ public class VisitorLitmusPTX
     @Override
     public Object visitStoreRelaxedRegister(LitmusPTXParser.StoreRelaxedRegisterContext ctx){
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.location().getText(), ARCH_PRECISION);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
         return programBuilder.addScopedChild(mainThread,
                 EventFactory.PTX.newTaggedStore(object, register, ctx.scope().content, Tag.PTX.RLX));
     }
@@ -150,7 +150,7 @@ public class VisitorLitmusPTX
     @Override
     public Object visitStoreReleaseRegister(LitmusPTXParser.StoreReleaseRegisterContext ctx){
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.location().getText(), ARCH_PRECISION);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
         return programBuilder.addScopedChild(mainThread,
                 EventFactory.PTX.newTaggedStore(object, register, ctx.scope().content, Tag.PTX.REL));
     }
