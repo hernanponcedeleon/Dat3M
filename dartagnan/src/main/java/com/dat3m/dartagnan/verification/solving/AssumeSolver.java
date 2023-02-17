@@ -76,6 +76,7 @@ public class AssumeSolver extends ModelChecker {
         } else {
             res = FAIL;
             logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, context);
+            logProgramSpecViolation(task.getProgram(), prover, logger, context);
         }
 
         if(logger.isDebugEnabled()) {        	

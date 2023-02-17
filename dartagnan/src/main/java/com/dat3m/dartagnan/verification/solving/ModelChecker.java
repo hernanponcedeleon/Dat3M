@@ -36,11 +36,11 @@ import org.sosy_lab.java_smt.api.SolverException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
+import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
-import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.*;
 import static java.util.stream.Collectors.toList;
 
 public abstract class ModelChecker {
@@ -154,6 +154,25 @@ public abstract class ModelChecker {
                 }
                 logger.debug(violatingPairs.toString());
             }
+        }
+    }
+
+    protected void logProgramSpecViolation(Program program, ProverEnvironment prover, Logger logger, EncodingContext ctx) throws SolverException {
+        if (!logger.isDebugEnabled() || !ctx.getTask().getProperty().contains(PROGRAM_SPEC)) {
+            return;
+        }
+        Model model = prover.getModel();
+        if(FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(ctx)))) {
+            StringBuilder violatingPairs = new StringBuilder("\n ===== The following assertions are violated ===== \n");
+            for(Event e : program.getEvents(Local.class)) {
+                if(e.is(ASSERTION) && TRUE.equals(model.evaluate(ctx.execution(e)))) {
+                    violatingPairs
+                        .append("\t").append(e.getGlobalId())
+                        .append("\t(").append(e.getSourceCodeFile()).append("#").append(e.getCLine())
+                        .append(")\n");
+                }
+            }            
+            logger.debug(violatingPairs.toString());
         }
     }
 

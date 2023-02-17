@@ -84,6 +84,7 @@ public class TwoSolvers extends ModelChecker {
         } else {
         	res = FAIL;
             logFlaggedPairs(memoryModel, wmmEncoder, prover1, logger, context);
+            logProgramSpecViolation(task.getProgram(), prover1, logger, context);
         }
 
 
