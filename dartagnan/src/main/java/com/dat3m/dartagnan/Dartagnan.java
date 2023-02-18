@@ -230,7 +230,7 @@ public class Dartagnan extends BaseOptions {
             if (hasViolations) {
                 printWarningIfThreadStartFailed(p, encCtx, prover);
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
-                    summary.append(" ===== Program specification violation found ===== \n");
+                    summary.append("===== Program specification violation found =====\n");
                     for(Event e : p.getEvents(Local.class)) {
                         if(e.is(Tag.ASSERTION) && TRUE.equals(model.evaluate(encCtx.execution(e)))) {
                             summary
@@ -239,10 +239,10 @@ public class Dartagnan extends BaseOptions {
                                 .append(")\n");
                         }
                     }
-                    summary.append(" ================================================= \n");
+                    summary.append("=================================================\n");
                 }
                 if (props.contains(LIVENESS) && FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
-                    summary.append("============ Liveness violation found ============ \n");
+                    summary.append("============ Liveness violation found ============\n");
                     for(Event e : p.getEvents(Label.class)) {
                         if(e.is(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))) {
                             summary
@@ -251,17 +251,17 @@ public class Dartagnan extends BaseOptions {
                                 .append(")\n");
                         }
                     }
-                    summary.append(" ================================================= \n");
+                    summary.append("=================================================\n");
                 }
                 final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
                         .filter(Axiom::isFlagged)
                         .filter(ax -> props.contains(CAT_SPEC) && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
                         .collect(Collectors.toList());
                 if (!violatedCATSpecs.isEmpty()) {
-                    summary.append(" ======= CAT specification violation found ======= \n");
+                    summary.append("======= CAT specification violation found =======\n");
                     // Computed by the model checker since it needs access to the WmmEncoder
                     summary.append(modelChecker.getFlaggedPairsOutput());
-                    summary.append(" ================================================= \n");
+                    summary.append("=================================================\n");
                 }
             } else if (hasPositiveWitnesses) {
                 if (props.contains(PROGRAM_SPEC) && TRUE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
