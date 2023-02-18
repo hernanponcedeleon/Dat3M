@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.analysis.CallStackComputation;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -228,18 +229,26 @@ public class Dartagnan extends BaseOptions {
             if (hasViolations) {
                 printWarningIfThreadStartFailed(p, encCtx, prover);
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
-                    summary.append("Program specification violation found").append("\n");
-                    summary.append("User assertion: ").append(p.getSpecification().toStringWithType()).append("\n");
+                    summary.append(" ===== Program specification violation found ===== \n");
+                    for(Event e : p.getEvents(Local.class)) {
+                        if(e.is(Tag.ASSERTION) && TRUE.equals(model.evaluate(encCtx.execution(e)))) {
+                            summary
+                                .append("\t").append(e.getGlobalId())
+                                .append(":\t(").append(e.getSourceCodeFile()).append("#").append(e.getCLine())
+                                .append(")\n");
+                        }
+                    }
+                    summary.append(" ================================================= \n");
                 }
                 if (props.contains(LIVENESS) && FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
-                    summary.append("Liveness violation found").append("\n");
+                    summary.append(" ===== Liveness violation found ===== \n");
                 }
                 final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
                         .filter(Axiom::isFlagged)
                         .filter(ax -> props.contains(CAT_SPEC) && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
                         .collect(Collectors.toList());
                 if (!violatedCATSpecs.isEmpty()) {
-                    summary.append("CAT specification violation found").append("\n");
+                    summary.append(" ===== CAT specification violation found ===== \n");
                     for (Axiom violatedAx : violatedCATSpecs) {
                         summary.append("Flag ")
                                 .append(Optional.ofNullable(violatedAx.getName()).orElse(violatedAx.getNameOrTerm()))
@@ -251,7 +260,6 @@ public class Dartagnan extends BaseOptions {
                     // The check above is just a sanity check: the program spec has to be true
                     // because it is the only property that got encoded.
                     summary.append("Program specification witness found.").append("\n");
-                    summary.append("User assertion: ").append(p.getSpecification().toStringWithType()).append("\n");
                 }
             }
             summary.append(result).append("\n");

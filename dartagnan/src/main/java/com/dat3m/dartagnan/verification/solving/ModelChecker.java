@@ -157,23 +157,4 @@ public abstract class ModelChecker {
         }
     }
 
-    protected void logProgramSpecViolation(Program program, ProverEnvironment prover, Logger logger, EncodingContext ctx) throws SolverException {
-        if (!logger.isDebugEnabled() || !ctx.getTask().getProperty().contains(PROGRAM_SPEC)) {
-            return;
-        }
-        Model model = prover.getModel();
-        if(FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(ctx)))) {
-            StringBuilder violatingPairs = new StringBuilder("\n ===== The following assertions are violated ===== \n");
-            for(Event e : program.getEvents(Local.class)) {
-                if(e.is(ASSERTION) && TRUE.equals(model.evaluate(ctx.execution(e)))) {
-                    violatingPairs
-                        .append("\t").append(e.getGlobalId())
-                        .append("\t(").append(e.getSourceCodeFile()).append("#").append(e.getCLine())
-                        .append(")\n");
-                }
-            }            
-            logger.debug(violatingPairs.toString());
-        }
-    }
-
 }

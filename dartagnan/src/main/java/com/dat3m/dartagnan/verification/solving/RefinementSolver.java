@@ -262,7 +262,6 @@ public class RefinementSolver extends ModelChecker {
             boundCheckTime = System.currentTimeMillis() - lastTime;
         } else {
             res = FAIL;
-            logProgramSpecViolation(program, prover, logger, context);
         }
 
         if (logger.isInfoEnabled()) {
