@@ -242,6 +242,8 @@ public class Dartagnan extends BaseOptions {
                 }
                 if (props.contains(LIVENESS) && FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
                     summary.append(" ===== Liveness violation found ===== \n");
+                    // TODO
+                    summary.append(" ================================================= \n");
                 }
                 final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
                         .filter(Axiom::isFlagged)
@@ -249,11 +251,9 @@ public class Dartagnan extends BaseOptions {
                         .collect(Collectors.toList());
                 if (!violatedCATSpecs.isEmpty()) {
                     summary.append(" ===== CAT specification violation found ===== \n");
-                    for (Axiom violatedAx : violatedCATSpecs) {
-                        summary.append("Flag ")
-                                .append(Optional.ofNullable(violatedAx.getName()).orElse(violatedAx.getNameOrTerm()))
-                                .append("\n");
-                    }
+                    // Computed by the model checker since it needs access to the WmmEncoder
+                    summary.append(modelChecker.getFlaggedPairsOutput());
+                    summary.append(" ================================================= \n");
                 }
             } else if (hasPositiveWitnesses) {
                 if (props.contains(PROGRAM_SPEC) && TRUE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
