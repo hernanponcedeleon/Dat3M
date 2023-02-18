@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -154,6 +155,12 @@ public class ConstantPropagation implements ProgramProcessor {
         public Void visitStore(Store e) {
             e.setMemValue(e.getMemValue().visit(propagator));
             return visitMemEvent(e);
+        }
+
+        @Override
+        public Void visitMalloc(Malloc e) {
+            e.setSizeExpr((IExpr)e.getSizeExpr().visit(propagator));
+            return null;
         }
     }
 

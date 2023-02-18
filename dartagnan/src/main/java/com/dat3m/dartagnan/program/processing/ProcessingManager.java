@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -47,7 +46,7 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_BEFORE_PROCESSING,
             description = "Prints the program before any processing.",
             secure = true)
-    private boolean printBeforeProcessing = false;
+    private boolean printBeforeProcessing = true;
 
     @Option(name = PRINT_PROGRAM_AFTER_SIMPLIFICATION,
             description = "Prints the program after simplification.",
@@ -77,7 +76,6 @@ public class ProcessingManager implements ProgramProcessor {
 
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing") : null,
-                Memory.fixateMemoryValues(),
                 UnreachableCodeElimination.fromConfig(config),
                 ComplexBlockSplitting.newInstance(),
                 BranchReordering.fromConfig(config),
@@ -94,6 +92,7 @@ public class ProcessingManager implements ProgramProcessor {
                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                 RemoveDeadCondJumps.fromConfig(config),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
+                MemoryAllocation.newInstance(),
                 EventIdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing") : null
         ));

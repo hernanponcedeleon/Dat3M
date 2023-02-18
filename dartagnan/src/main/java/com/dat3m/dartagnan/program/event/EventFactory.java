@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
@@ -29,7 +30,8 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 public class EventFactory {
 
     // Static class
-    private EventFactory() {}
+    private EventFactory() {
+    }
 
     // =============================================================================================
     // ========================================= Utility ===========================================
@@ -52,7 +54,7 @@ public class EventFactory {
             if (obj instanceof Event) {
                 retVal.add((Event) obj);
             } else if (obj instanceof Collection<?>) {
-                retVal.addAll((Collection<? extends Event>)obj );
+                retVal.addAll((Collection<? extends Event>) obj);
             } else {
                 throw new IllegalArgumentException("Cannot parse " + obj.getClass() + " as event.");
             }
@@ -82,11 +84,11 @@ public class EventFactory {
     public static Fence newFenceOpt(String name, String opt) {
         Fence fence = new Fence(name + "." + opt);
         fence.addFilters(name);
-    	return fence;
+        return fence;
     }
 
     public static Init newInit(MemoryObject base, int offset) {
-        return new Init(base,offset);
+        return new Init(base, offset);
     }
 
     // ------------------------------------------ Local events ------------------------------------------
@@ -145,7 +147,7 @@ public class EventFactory {
     public static CondJump newFakeCtrlDep(Register reg, Label target) {
         CondJump jump = newJump(new Atom(reg, COpBin.EQ, reg), target);
         jump.addFilters(Tag.NOOPT);
-		return jump;
+        return jump;
     }
 
     public static Assume newAssume(ExprInterface expr) {
@@ -195,13 +197,14 @@ public class EventFactory {
     // =============================================================================================
 
     public static class Pthread {
-        private Pthread() {}
+        private Pthread() {
+        }
 
         public static Create newCreate(IExpr address, String routine) {
             return new Create(address, routine);
         }
 
-        public static End newEnd(IExpr address){
+        public static End newEnd(IExpr address) {
             return new End(address);
         }
 
@@ -231,7 +234,8 @@ public class EventFactory {
     // =============================================================================================
 
     public static class Atomic {
-        private Atomic() {}
+        private Atomic() {
+        }
 
         public static AtomicCmpXchg newCompareExchange(Register register, IExpr address, IExpr expectedAddr, IExpr desiredValue, String mo, boolean isStrong) {
             return new AtomicCmpXchg(register, address, expectedAddr, desiredValue, mo, isStrong);
@@ -274,7 +278,8 @@ public class EventFactory {
     // =============================================================================================
 
     public static class Llvm {
-        private Llvm() {}
+        private Llvm() {
+        }
 
         public static LlvmLoad newLoad(Register register, IExpr address, String mo) {
             return new LlvmLoad(register, address, mo);
@@ -307,11 +312,22 @@ public class EventFactory {
     }
 
     // =============================================================================================
+    // ========================================= Standard ==========================================
+    // =============================================================================================
+
+    public static class Std {
+        private Std() { }
+
+        public static Malloc newMalloc(Register resultReg, IExpr sizeExpr) { return new Malloc(resultReg, sizeExpr); }
+    }
+
+    // =============================================================================================
     // ========================================== Svcomp ===========================================
     // =============================================================================================
 
     public static class Svcomp {
-        private Svcomp() {}
+        private Svcomp() {
+        }
 
         public static BeginAtomic newBeginAtomic() {
             return new BeginAtomic();
@@ -334,7 +350,7 @@ public class EventFactory {
         }
 
         public static LoopBound newLoopBound(int bound) {
-        	return new LoopBound(bound);
+            return new LoopBound(bound);
         }
     }
 
@@ -343,10 +359,12 @@ public class EventFactory {
     // =============================================================================================
 
     public static class AArch64 {
-        private AArch64() {}
+        private AArch64() {
+        }
 
         public static class DMB {
-            private DMB() {}
+            private DMB() {
+            }
 
             public static Fence newBarrier() {
                 return newSYBarrier(); // Default barrier
@@ -362,7 +380,8 @@ public class EventFactory {
         }
 
         public static class DSB {
-            private DSB() {}
+            private DSB() {
+            }
 
             public static Fence newBarrier() {
                 return newSYBarrier(); // Default barrier
@@ -377,7 +396,7 @@ public class EventFactory {
             }
 
             public static Fence newISHLDBarrier() {
-                return new Fence ("DSB.ISHLD");
+                return new Fence("DSB.ISHLD");
             }
 
             public static Fence newISHSTBarrier() {
@@ -392,14 +411,15 @@ public class EventFactory {
     // =========================================== Linux ===========================================
     // =============================================================================================
     public static class Linux {
-        private Linux() {}
+        private Linux() {
+        }
 
         public static LKMMLoad newLKMMLoad(Register reg, IExpr address, String mo) {
-        	return new LKMMLoad(reg, address, mo);
+            return new LKMMLoad(reg, address, mo);
         }
-        
+
         public static LKMMStore newLKMMStore(IExpr address, ExprInterface value, String mo) {
-        	return new LKMMStore(address, value, mo);
+            return new LKMMStore(address, value, mo);
         }
 
         public static RMWAddUnless newRMWAddUnless(IExpr address, Register register, ExprInterface cmp, IExpr value) {
@@ -465,7 +485,8 @@ public class EventFactory {
     // ============================================ X86 ============================================
     // =============================================================================================
     public static class X86 {
-        private X86() {}
+        private X86() {
+        }
 
         public static Xchg newExchange(MemoryObject address, Register register) {
             return new Xchg(address, register);
@@ -481,7 +502,8 @@ public class EventFactory {
     // =========================================== RISCV ===========================================
     // =============================================================================================
     public static class RISCV {
-        private RISCV() {}
+        private RISCV() {
+        }
 
         public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
             RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong);
@@ -539,7 +561,8 @@ public class EventFactory {
     // =========================================== LISA ============================================
     // =============================================================================================
     public static class LISA {
-        private LISA() {}
+        private LISA() {
+        }
 
         public static RMW newRMW(IExpr address, Register register, IExpr value, String mo) {
             return new RMW(address, register, value, mo);
@@ -551,7 +574,8 @@ public class EventFactory {
     // =========================================== Power ===========================================
     // =============================================================================================
     public static class Power {
-        private Power() {}
+        private Power() {
+        }
 
         public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
             RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong);
