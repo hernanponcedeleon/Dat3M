@@ -38,7 +38,6 @@ public class MemoryAllocation implements ProgramProcessor {
             final Local local = EventFactory.newLocal(malloc.getResultRegister(), memoryObject);
             local.addFilters(Tag.Std.MALLOC);
             malloc.replaceBy(local);
-
         }
 
         createInits(program, memObjs);

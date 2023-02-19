@@ -318,7 +318,9 @@ public class EventFactory {
     public static class Std {
         private Std() { }
 
-        public static Malloc newMalloc(Register resultReg, IExpr sizeExpr) { return new Malloc(resultReg, sizeExpr); }
+        public static Malloc newMalloc(Register resultReg, IExpr sizeExpr) {
+            return new Malloc(resultReg, sizeExpr);
+        }
     }
 
     // =============================================================================================

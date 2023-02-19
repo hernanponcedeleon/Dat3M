@@ -168,7 +168,7 @@ public final class Tag {
         public static final String LOCK_WRITE               = "LKW";
         public static final String UNLOCK                   = "UL";
         public static final String LOCK_FAIL                = "UL"; // FIXME: Identical to UNLOCK?
-        public static final String READ_LOCKED              = "LF";
+        public static final String READ_LOCKED              = "LF"; // FIXME: This should probably be RF
         public static final String READ_UNLOCKED            = "RU";
         public static final String BEFORE_ATOMIC            = "Before-atomic";
         public static final String AFTER_ATOMIC             = "After-atomic";
