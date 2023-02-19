@@ -11,6 +11,12 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
+/*
+    NOTE: Although this event is no core event, it does not get compiled in the compilation pass.
+    Instead, it will get replaced by a dedicated memory allocation pass.
+    FIXME: Possibly make this event "core" due to the absence of compilation?
+           A better alternative would be to reuse 'Local' but with a malloc expression as its right-hand side.
+ */
 public class Malloc extends Event implements RegWriter, RegReaderData {
 
     protected final Register register;
@@ -43,7 +49,9 @@ public class Malloc extends Event implements RegWriter, RegReaderData {
     }
 
     @Override
-    public BooleanFormula encodeExec(EncodingContext context) { return context.getBooleanFormulaManager().makeTrue(); }
+    public BooleanFormula encodeExec(EncodingContext context) {
+        throw new UnsupportedOperationException("Cannot encode Malloc events.");
+    }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------

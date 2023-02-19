@@ -15,10 +15,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /*
-    Constructs for each malloc call a MemoryObject representing the result of the malloc call.
-    Furthermore, new Init events are constructed to initialize the malloc'd memory
-    (TODO: the memory is initialized to 0, but technically a non-deterministic value would be more appropriate)
-    Replaces the malloc calls with a local assignment that assigns the created MemoryObject to the result register.
+    This pass collects all Malloc events in the program and for each of them it:
+        (1) allocates a MemoryObject of appropriate size
+        (2) creates Init events that initialize the allocated memory
+            (TODO: If possible, only allocate subset of relevant init events)
+        (3) replaces the Malloc event with a local register assignment, assigning the newly created MemoryObject
  */
 public class MemoryAllocation implements ProgramProcessor {
 
@@ -29,17 +30,9 @@ public class MemoryAllocation implements ProgramProcessor {
     @Override
     public void run(Program program) {
 
-        List<MemoryObject> memObjs = new ArrayList<>();
+        final List<MemoryObject> memObjs = new ArrayList<>();
         for (Malloc malloc : program.getEvents(Malloc.class)) {
-            final int size;
-            try {
-                size = malloc.getSizeExpr().reduce().getValueAsInt();
-            } catch (Exception e) {
-                final String error = String.format("Variable-sized malloc '%s' is not supported", malloc);
-                throw new MalformedProgramException(error);
-            }
-
-            final MemoryObject memoryObject = program.getMemory().allocate(size);
+            final MemoryObject memoryObject = program.getMemory().allocate(getSize(malloc));
             memObjs.add(memoryObject);
 
             final Local local = EventFactory.newLocal(malloc.getResultRegister(), memoryObject);
@@ -52,11 +45,22 @@ public class MemoryAllocation implements ProgramProcessor {
         Memory.fixateMemoryValues().run(program);
     }
 
-    private void createInits(Program program, List<MemoryObject> memObjs) {
-        int nextThreadId = program.getThreads().size() + 1;
-        for(MemoryObject a : memObjs) {
-            for(int i = 0; i < a.size(); i++) {
-                final Event init = EventFactory.newInit(a, i);
+    private int getSize(Malloc malloc) {
+        try {
+            return malloc.getSizeExpr().reduce().getValueAsInt();
+        } catch (Exception e) {
+            final String error = String.format("Variable-sized malloc '%s' is not supported", malloc);
+            throw new MalformedProgramException(error);
+        }
+    }
+
+    private void createInits(Program program, List<MemoryObject> memoryObjects) {
+        final List<Thread> threads = program.getThreads();
+
+        int nextThreadId = threads.get(threads.size() - 1).getId() + 1;
+        for(MemoryObject memObj : memoryObjects) {
+            for(int i = 0; i < memObj.size(); i++) {
+                final Event init = EventFactory.newInit(memObj, i);
                 final Thread thread = new Thread(nextThreadId++, init);
 
                 program.add(thread);
