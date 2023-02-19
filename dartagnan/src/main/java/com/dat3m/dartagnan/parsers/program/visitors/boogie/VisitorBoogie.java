@@ -504,7 +504,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		// Since we "inline" procedures, label names might clash
 		// thus we use currentScope.getID() + ":"
 		String labelName = currentScope.getID() + ":" + ctx.children.get(0).getText();
-		Label label = programBuilder.getOrCreateLabel(labelName);
+		Label label = (Label)programBuilder.getOrCreateLabel(labelName)
+			.setCFileInformation(currentLine, sourceCodeFile);
         programBuilder.addChild(threadCount, label);
         currentLabel = label;
         return null;
