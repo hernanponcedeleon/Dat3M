@@ -243,9 +243,9 @@ public class Dartagnan extends BaseOptions {
                 }
                 if (props.contains(LIVENESS) && FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
                     summary.append("============ Liveness violation found ============\n");
-                    for(Event e : p.getEvents(CondJump.class)) {
+                    for(CondJump e : p.getEvents(CondJump.class)) {
                         if(e.is(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))
-                            && TRUE.equals(model.evaluate(encCtx.jumpCondition((CondJump)e)))) {
+                            && TRUE.equals(model.evaluate(encCtx.jumpCondition(e)))) {
                             summary
                                 .append("\t").append(e.getGlobalId())
                                 .append(":\t(").append(e.getSourceCodeFile()).append("#").append(e.getCLine())
