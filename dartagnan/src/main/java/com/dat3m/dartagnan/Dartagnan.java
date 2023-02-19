@@ -10,8 +10,8 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.analysis.CallStackComputation;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.utils.Result;
@@ -243,8 +243,9 @@ public class Dartagnan extends BaseOptions {
                 }
                 if (props.contains(LIVENESS) && FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
                     summary.append("============ Liveness violation found ============\n");
-                    for(Event e : p.getEvents(Label.class)) {
-                        if(e.is(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))) {
+                    for(Event e : p.getEvents(CondJump.class)) {
+                        if(e.is(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))
+                            && TRUE.equals(model.evaluate(encCtx.jumpCondition((CondJump)e)))) {
                             summary
                                 .append("\t").append(e.getGlobalId())
                                 .append(":\t(").append(e.getSourceCodeFile()).append("#").append(e.getCLine())

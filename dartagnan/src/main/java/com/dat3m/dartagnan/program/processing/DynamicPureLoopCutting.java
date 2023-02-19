@@ -139,6 +139,8 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
                 .reduce(BConst.FALSE, (x, y) -> new BExprBin(x, BOpBin.OR, y));
         final CondJump assumeSideEffect = EventFactory.newJumpUnless(atLeastOneSideEffect, (Label) thread.getExit());
         assumeSideEffect.addFilters(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
+        final Event spinloopStart = iterInfo.getIterationStart();
+        assumeSideEffect.setCFileInformation(spinloopStart.getCLine(), spinloopStart.getSourceCodeFile());
         insertionPoint.insertAfter(assumeSideEffect);
     }
 
