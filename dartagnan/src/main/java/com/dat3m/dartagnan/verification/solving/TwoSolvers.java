@@ -83,9 +83,8 @@ public class TwoSolvers extends ModelChecker {
             res = prover2.isUnsat() ? PASS : UNKNOWN;
         } else {
         	res = FAIL;
-            logFlaggedPairs(memoryModel, wmmEncoder, prover1, logger, context);
+            saveFlaggedPairsOutput(memoryModel, wmmEncoder, prover1, context);
         }
-
 
         if(logger.isDebugEnabled()) {
     		String smtStatistics = "\n ===== SMT Statistics ===== \n";
