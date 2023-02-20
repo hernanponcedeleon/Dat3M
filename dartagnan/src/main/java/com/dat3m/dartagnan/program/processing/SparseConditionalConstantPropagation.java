@@ -3,10 +3,10 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
@@ -18,15 +18,20 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.CONSTANT_PROPAGATION;
 import static com.dat3m.dartagnan.configuration.OptionNames.PROPAGATE_COPY_ASSIGNMENTS;
 
+/*
+    Sparse conditional constant propagation performs both CP and DCE simultaneously.
+    It is more precise than any sequence of simple CP/DCE passes.
+ */
 @Options
-public class ConstantPropagation implements ProgramProcessor {
+public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
     @Option(name = PROPAGATE_COPY_ASSIGNMENTS,
             description = "Propagates copy assignments of the form 'reg2 := reg1' to eliminate " +
@@ -36,14 +41,14 @@ public class ConstantPropagation implements ProgramProcessor {
 
     // ====================================================================================
 
-    private ConstantPropagation() { }
+    private SparseConditionalConstantPropagation() { }
 
-    public static ConstantPropagation newInstance() {
-        return new ConstantPropagation();
+    public static SparseConditionalConstantPropagation newInstance() {
+        return new SparseConditionalConstantPropagation();
     }
 
-    public static ConstantPropagation fromConfig(Configuration config) throws InvalidConfigurationException {
-        ConstantPropagation instance = newInstance();
+    public static SparseConditionalConstantPropagation fromConfig(Configuration config) throws InvalidConfigurationException {
+        SparseConditionalConstantPropagation instance = newInstance();
         config.inject(instance);
         return instance;
     }
@@ -52,7 +57,7 @@ public class ConstantPropagation implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        Preconditions.checkArgument(program.isUnrolled(), "Constant propagation only works on unrolled programs");
+        Preconditions.checkArgument(program.isUnrolled(), "Constant propagation only works on unrolled programs.");
         program.getThreads().forEach(this::run);
     }
 
@@ -62,37 +67,68 @@ public class ConstantPropagation implements ProgramProcessor {
                 (expr -> expr instanceof IConst || expr instanceof BConst || expr instanceof Register)
                 : (expr -> expr instanceof IConst || expr instanceof BConst);
 
+        Set<Event> reachableEvents = new HashSet<>();
         Map<Label, Map<Register, ExprInterface>> inflowMap = new HashMap<>();
+        // NOTE: An absent key represents the TOP value of our lattice (we start from TOP everywhere)
+        //       BOT is not represented as it is never produced (we only ever join non-BOT values and hence never produce BOT).
         Map<Register, ExprInterface> propagationMap = new HashMap<>();
-        for (Event event : thread.getEvents()) {
-            simplifier.setPropagationMap(propagationMap);
-            event.accept(simplifier);
+        boolean isDeadBranch = false;
 
-            if (event instanceof Local) {
-                final Local local = (Local) event;
-                final ExprInterface expr = local.getExpr();
-                final ExprInterface valueToPropagate = checkDoPropagate.apply(expr) ? expr : TOP;
-                propagationMap.put(local.getResultRegister(), valueToPropagate);
-            } else if (event instanceof RegWriter) {
-                // We treat all other register writers as non-constant
-                propagationMap.put(((RegWriter) event).getResultRegister(), TOP);
+        for (Event cur : thread.getEvents()) {
+
+            if (cur instanceof Label && inflowMap.containsKey(cur)) {
+                // Merge inflow and mark the branch as alive (since it has inflow)
+                propagationMap = isDeadBranch ? inflowMap.get(cur) : join(propagationMap, inflowMap.get(cur));
+                simplifier.setPropagationMap(propagationMap);
+                isDeadBranch = false;
             }
 
-            if (event instanceof CondJump && !((CondJump) event).isDead()) {
-                // Join current map with label-associated map
-                final CondJump jump = (CondJump) event;
-                final Map<Register, ExprInterface> finalPropagationMap = propagationMap;
-                inflowMap.compute(jump.getLabel(), (k, v) -> join(v != null ? v : Map.of(), finalPropagationMap));
-                if (jump.isGoto()) {
-                    // Reset map, because there is no direct control-flow to the next event
-                    propagationMap.clear();
+            if (!isDeadBranch) {
+                // We only simplify non-dead code
+                cur.accept(simplifier);
+                reachableEvents.add(cur);
+
+                if (cur instanceof Local) {
+                    final Local local = (Local) cur;
+                    final ExprInterface expr = local.getExpr();
+                    final ExprInterface valueToPropagate = checkDoPropagate.apply(expr) ? expr : null;
+                    propagationMap.compute(local.getResultRegister(), (k, v) -> valueToPropagate);
+                } else if (cur instanceof RegWriter) {
+                    // We treat all other register writers as non-constant
+                    propagationMap.remove(((RegWriter) cur).getResultRegister());
+                }
+
+                if (cur instanceof CondJump) {
+                    final CondJump jump = (CondJump) cur;
+                    final Label target = jump.getLabel();
+                    if (jump.isGoto()) {
+                        // The successor event is going to be dead (unless it is a label with other inflow).
+                        isDeadBranch = true;
+                        propagationMap.clear();
+                    }
+                    if (!jump.isDead()) {
+                        // Join current map with label-associated map
+                        final Map<Register, ExprInterface> finalPropagationMap = propagationMap;
+                        inflowMap.compute(target, (k, v) -> v == null ?
+                                new HashMap<>(finalPropagationMap) : join(v, finalPropagationMap));
+                    }
                 }
             }
 
-            if (event instanceof Label) {
-                propagationMap = join(propagationMap, inflowMap.getOrDefault(event, Map.of()));
-            }
+        }
 
+        // ---------- Remove dead code ----------
+        for (Event e : thread.getEvents()) {
+            if (reachableEvents.contains(e)) {
+                continue;
+            } else if (e instanceof Label && e.is(Tag.NOOPT)) {
+                // FIXME: This check is just to avoid deleting loop-related labels (especially the loop end marker)
+                //  because those are used to find unrolled loops.
+                //  There should be better ways that do not retain such dead code: for example, we could
+                //  move the loop end marker into the last non-dead iteration.
+                continue;
+            }
+            e.delete();
         }
     }
 
@@ -100,22 +136,12 @@ public class ConstantPropagation implements ProgramProcessor {
         Preconditions.checkNotNull(x);
         Preconditions.checkNotNull(y);
 
-        Map<Register, ExprInterface> joined = new HashMap<>(x);
-        for(Map.Entry<Register, ExprInterface> entry : y.entrySet()) {
-            joined.merge(entry.getKey(), entry.getValue(), (v1, v2) -> v1.equals(v2) ? v1 : TOP);
-        }
+        final Map<Register, ExprInterface> smallerMap = x.size() <= y.size() ? x : y;
+        final Map<Register, ExprInterface> largerMap = smallerMap == x ? y : x;
+        final Map<Register, ExprInterface> joined = new HashMap<>(smallerMap);
+        joined.entrySet().removeIf(entry -> entry.getValue() != largerMap.getOrDefault(entry.getKey(), null));
         return joined;
     }
-
-    // ============================ Utility classes ============================
-
-    private static final ExprInterface TOP = new IConst() {
-        @Override
-        public BigInteger getValue() { throw new UnsupportedOperationException(); }
-
-        @Override
-        public <T> T visit(ExpressionVisitor<T> visitor) { throw new UnsupportedOperationException(); }
-    };
 
     /*
         Simplifies the expressions of events by inserting known constant values.
@@ -179,7 +205,7 @@ public class ConstantPropagation implements ProgramProcessor {
 
         @Override
         public ExprInterface visit(Register reg) {
-            ExprInterface retVal = propagationMap.compute(reg, (k, v) -> v == null || v == TOP ? reg : v );
+            final ExprInterface retVal = propagationMap.getOrDefault(reg, reg);
             if (retVal instanceof BConst) {
                 // We only have integral registers, so we need to implicitly convert booleans to integers.
                 return retVal.equals(BConst.TRUE) ? IValue.ONE : IValue.ZERO;
