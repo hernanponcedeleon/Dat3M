@@ -72,18 +72,18 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         // NOTE: An absent key represents the TOP value of our lattice (we start from TOP everywhere)
         //       BOT is not represented as it is never produced (we only ever join non-BOT values and hence never produce BOT).
         Map<Register, ExprInterface> propagationMap = new HashMap<>();
-        boolean isDeadBranch = false;
+        boolean isTraversingDeadBranch = false;
 
         for (Event cur : thread.getEvents()) {
 
             if (cur instanceof Label && inflowMap.containsKey(cur)) {
                 // Merge inflow and mark the branch as alive (since it has inflow)
-                propagationMap = isDeadBranch ? inflowMap.get(cur) : join(propagationMap, inflowMap.get(cur));
-                simplifier.setPropagationMap(propagationMap);
-                isDeadBranch = false;
+                propagationMap = isTraversingDeadBranch ? inflowMap.get(cur) : join(propagationMap, inflowMap.get(cur));
+                isTraversingDeadBranch = false;
             }
 
-            if (!isDeadBranch) {
+            if (!isTraversingDeadBranch) {
+                simplifier.setPropagationMap(propagationMap);
                 // We only simplify non-dead code
                 cur.accept(simplifier);
                 reachableEvents.add(cur);
@@ -103,7 +103,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
                     final Label target = jump.getLabel();
                     if (jump.isGoto()) {
                         // The successor event is going to be dead (unless it is a label with other inflow).
-                        isDeadBranch = true;
+                        isTraversingDeadBranch = true;
                         propagationMap.clear();
                     }
                     if (!jump.isDead()) {
