@@ -922,7 +922,10 @@ public class RelationAnalysis {
         private boolean mustScope(Event first, Event second) {
             Set<String> first_filters = first.getFilters();
             Set<String> second_filters = second.getFilters();
-            if (getValidScope(first_filters) == Tag.PTX.SYS || getValidScope(second_filters) == Tag.PTX.SYS) {
+            if (getValidScope(first_filters) == null || getValidScope(second_filters) == null) {
+                return false;
+            }
+            if (getValidScope(first_filters).equals(Tag.PTX.SYS) || getValidScope(second_filters).equals(Tag.PTX.SYS)) {
                 return true;
             }
             if (onSameScope(first_filters, second_filters, Tag.PTX.GPU)) {
@@ -930,25 +933,26 @@ public class RelationAnalysis {
                 if (onSameScope(first_filters, second_filters, Tag.PTX.CTA)) {
                     // on same CTA
                     return true;
+                } else { // else: two cta event on same GPU, diff cta, true if either of them scope is GPU
+                    return getValidScope(first_filters).equals(PTX.GPU) ||
+                            getValidScope(second_filters).equals(PTX.GPU);
                 }
-                // not on same CTA
-                if (getValidScope(first_filters) != Tag.PTX.CTA ||
-                        getValidScope(second_filters) != Tag.PTX.CTA) {
-                    return true;
-                } //else: two cta event on same GPU, diff cta
             }
             return false;
         }
         private String getValidScope(Set<String> filters) {
             for (String filter: filters) {
-                if (filter.equals(Tag.PTX.GPU)) {
-                    return Tag.PTX.GPU;
-                }
                 if (filter.equals(Tag.PTX.CTA)) {
                     return Tag.PTX.CTA;
                 }
+                if (filter.equals(Tag.PTX.GPU)) {
+                    return Tag.PTX.GPU;
+                }
+                if (filter.equals(Tag.PTX.SYS)) {
+                    return Tag.PTX.SYS;
+                }
             }
-            return Tag.PTX.SYS;
+            return null;
         }
 
         private boolean onSameScope(Set<String> f1, Set<String> f2, String scope) {
