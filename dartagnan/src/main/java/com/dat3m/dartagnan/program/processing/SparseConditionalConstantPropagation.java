@@ -41,13 +41,15 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
     // ====================================================================================
 
-    private SparseConditionalConstantPropagation() { }
+    private SparseConditionalConstantPropagation() {
+    }
 
     public static SparseConditionalConstantPropagation newInstance() {
         return new SparseConditionalConstantPropagation();
     }
 
-    public static SparseConditionalConstantPropagation fromConfig(Configuration config) throws InvalidConfigurationException {
+    public static SparseConditionalConstantPropagation fromConfig(Configuration config)
+            throws InvalidConfigurationException {
         SparseConditionalConstantPropagation instance = newInstance();
         config.inject(instance);
         return instance;
@@ -63,14 +65,16 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
     private void run(Thread thread) {
         final EventSimplifier simplifier = new EventSimplifier();
-        final Predicate<ExprInterface> checkDoPropagate = propagateCopyAssignments ?
-                (expr -> expr instanceof IConst || expr instanceof BConst || expr instanceof Register)
+        final Predicate<ExprInterface> checkDoPropagate = propagateCopyAssignments
+                ? (expr -> expr instanceof IConst || expr instanceof BConst || expr instanceof Register)
                 : (expr -> expr instanceof IConst || expr instanceof BConst);
 
         Set<Event> reachableEvents = new HashSet<>();
         Map<Label, Map<Register, ExprInterface>> inflowMap = new HashMap<>();
-        // NOTE: An absent key represents the TOP value of our lattice (we start from TOP everywhere)
-        //       BOT is not represented as it is never produced (we only ever join non-BOT values and hence never produce BOT).
+        // NOTE: An absent key represents the TOP value of our lattice (we start from
+        // TOP everywhere)
+        // BOT is not represented as it is never produced (we only ever join non-BOT
+        // values and hence never produce BOT).
         Map<Register, ExprInterface> propagationMap = new HashMap<>();
         boolean isTraversingDeadBranch = false;
 
@@ -102,15 +106,16 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
                     final CondJump jump = (CondJump) cur;
                     final Label target = jump.getLabel();
                     if (jump.isGoto()) {
-                        // The successor event is going to be dead (unless it is a label with other inflow).
+                        // The successor event is going to be dead (unless it is a label with other
+                        // inflow).
                         isTraversingDeadBranch = true;
                         propagationMap.clear();
                     }
                     if (!jump.isDead()) {
                         // Join current map with label-associated map
                         final Map<Register, ExprInterface> finalPropagationMap = propagationMap;
-                        inflowMap.compute(target, (k, v) -> v == null ?
-                                new HashMap<>(finalPropagationMap) : join(v, finalPropagationMap));
+                        inflowMap.compute(target, (k, v) -> v == null ? new HashMap<>(finalPropagationMap)
+                                : join(v, finalPropagationMap));
                     }
                 }
             }
@@ -122,10 +127,12 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             if (reachableEvents.contains(e)) {
                 continue;
             } else if (e instanceof Label && e.is(Tag.NOOPT)) {
-                // FIXME: This check is just to avoid deleting loop-related labels (especially the loop end marker)
-                //  because those are used to find unrolled loops.
-                //  There should be better ways that do not retain such dead code: for example, we could
-                //  move the loop end marker into the last non-dead iteration.
+                // FIXME: This check is just to avoid deleting loop-related labels (especially
+                // the loop end marker)
+                // because those are used to find unrolled loops.
+                // There should be better ways that do not retain such dead code: for example,
+                // we could
+                // move the loop end marker into the last non-dead iteration.
                 continue;
             }
             e.delete();
@@ -144,7 +151,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
     }
 
     /*
-        Simplifies the expressions of events by inserting known constant values.
+     * Simplifies the expressions of events by inserting known constant values.
      */
     private static class EventSimplifier implements EventVisitor<Void> {
 
@@ -173,7 +180,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
         @Override
         public Void visitMemEvent(MemEvent e) {
-            e.setAddress((IExpr)e.getAddress().visit(propagator));
+            e.setAddress((IExpr) e.getAddress().visit(propagator));
             return null;
         }
 
@@ -185,19 +192,19 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
         @Override
         public Void visitMalloc(Malloc e) {
-            e.setSizeExpr((IExpr)e.getSizeExpr().visit(propagator));
+            e.setSizeExpr((IExpr) e.getSizeExpr().visit(propagator));
             return null;
         }
     }
 
-
     /*
-        A simple expression transformer that
-            - replaces regs by constant values (if known)
-            - simplifies constant (sub)expressions to a single constant
-        It does NOT
-            - use associativity to find more constant subexpressions
-            - simplify trivial expressions like "x == x" or "0*x" to avoid eliminating any dependencies
+     * A simple expression transformer that
+     * - replaces regs by constant values (if known)
+     * - simplifies constant (sub)expressions to a single constant
+     * It does NOT
+     * - use associativity to find more constant subexpressions
+     * - simplify trivial expressions like "x == x" or "0*x" to avoid eliminating
+     * any dependencies
      */
     private static class ConstantPropagator extends ExprTransformer {
 
@@ -207,7 +214,8 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         public ExprInterface visit(Register reg) {
             final ExprInterface retVal = propagationMap.getOrDefault(reg, reg);
             if (retVal instanceof BConst) {
-                // We only have integral registers, so we need to implicitly convert booleans to integers.
+                // We only have integral registers, so we need to implicitly convert booleans to
+                // integers.
                 return retVal.equals(BConst.TRUE) ? IValue.ONE : IValue.ZERO;
             } else {
                 return retVal;
@@ -273,8 +281,9 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         public IExpr visit(IExprUn iUn) {
             IExpr inner = (IExpr) iUn.getInner().visit(this);
             if (inner instanceof IValue && iUn.getOp() == IOpUn.MINUS) {
-                // We only optimize negation but no casting operations.
                 return new IValue(((IValue) inner).getValue().negate(), inner.getPrecision());
+            } else if (inner instanceof IValue && iUn.getOp() == IOpUn.CTLZ) {
+                return new IExprUn(iUn.getOp(), inner).reduce();
             } else {
                 return new IExprUn(iUn.getOp(), inner);
             }
@@ -286,7 +295,8 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             IExpr trueBranch = (IExpr) ifExpr.getTrueBranch().visit(this);
             IExpr falseBranch = (IExpr) ifExpr.getFalseBranch().visit(this);
             if (guard instanceof BConst && trueBranch instanceof IValue && falseBranch instanceof IValue) {
-                // We optimize ITEs only if all subexpressions are constant to avoid messing up data dependencies
+                // We optimize ITEs only if all subexpressions are constant to avoid messing up
+                // data dependencies
                 return guard.equals(BConst.TRUE) ? trueBranch : falseBranch;
             }
             return new IfExpr(guard, trueBranch, falseBranch);
