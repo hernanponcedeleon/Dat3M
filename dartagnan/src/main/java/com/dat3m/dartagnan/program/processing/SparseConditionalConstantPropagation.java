@@ -273,8 +273,9 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         public IExpr visit(IExprUn iUn) {
             IExpr inner = (IExpr) iUn.getInner().visit(this);
             if (inner instanceof IValue && iUn.getOp() == IOpUn.MINUS) {
-                // We only optimize negation but no casting operations.
                 return new IValue(((IValue) inner).getValue().negate(), inner.getPrecision());
+            } else if (inner instanceof IValue && iUn.getOp() == IOpUn.CTLZ) {
+                return new IExprUn(iUn.getOp(), inner).reduce();
             } else {
                 return new IExprUn(iUn.getOp(), inner);
             }

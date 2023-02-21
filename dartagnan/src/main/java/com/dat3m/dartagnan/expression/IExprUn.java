@@ -62,6 +62,19 @@ public class IExprUn extends IExpr {
 			case ZEXT18: case ZEXT116: case ZEXT132: case ZEXT164: case ZEXT816: case ZEXT832: case ZEXT864: case ZEXT1632: case ZEXT1664: case ZEXT3264: 
 			case SEXT18: case SEXT116: case SEXT132: case SEXT164: case SEXT816: case SEXT832: case SEXT864: case SEXT1632: case SEXT1664: case SEXT3264:
 				return inner;
+			case CTLZ:
+				int leading;
+				switch(inner.getPrecision()) {
+					case 32:
+						leading = Integer.numberOfLeadingZeros(inner.getValueAsInt());
+						break;
+					case 64:
+						leading = Long.numberOfLeadingZeros(inner.getValueAsInt());
+						break;
+					default:
+						throw new UnsupportedOperationException("Reduce not supported for " + this + " with precision " + inner.getPrecision());
+				}
+				return new IValue(BigInteger.valueOf(leading), inner.getPrecision());
 			default:
 		        throw new UnsupportedOperationException("Reduce not supported for " + this);				
         }

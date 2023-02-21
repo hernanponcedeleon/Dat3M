@@ -83,10 +83,10 @@ public enum IOpUn {
     		case SEXT1664:
     		case SEXT3264:
     			return e;
-			case CTLZ:
+			default:
+				// TODO add support for CTLZ. Right now we assume constant propagation gor rid of such instructions
 				throw new UnsupportedOperationException("Encoding of IOpUn operation " + this + " not supported on integer formulas.");
 			}
-			throw new UnsupportedOperationException("Encoding of IOpUn operation " + this + " not supported on integer formulas.");
 		} else {
 			BitvectorFormulaManager bvmgr = m.getBitvectorFormulaManager();
 			BitvectorFormula bv = (BitvectorFormula)e;
@@ -161,10 +161,10 @@ public enum IOpUn {
     			return bvmgr.extend(bv, 48, true);
     		case SEXT3264:
     			return bvmgr.extend(bv, 32, true);
-			case CTLZ:
+			default:
+				// TODO add support for CTLZ. Right now we assume constant propagation gor rid of such instructions
 				throw new UnsupportedOperationException("Encoding of IOpUn operation " + this + " not supported on bitvector formulas.");
 	    	}
-			throw new UnsupportedOperationException("Encoding of IOpUn operation " + this + " not supported on bitvector formulas.");
 		}
     }
 }
