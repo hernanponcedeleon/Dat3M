@@ -18,7 +18,7 @@ import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
-import com.dat3m.dartagnan.program.event.lang.std.Malloc;
+import com.dat3m.dartagnan.program.event.lang.std.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
@@ -320,6 +320,11 @@ public class EventFactory {
 
         public static Malloc newMalloc(Register resultReg, IExpr sizeExpr) {
             return new Malloc(resultReg, sizeExpr);
+        }
+
+        public static MemCpy newMemCpy(IExpr dst, IExpr src, IConst lenght) {
+            // TODO different steps
+            return new MemCpy(dst, src, lenght, 4);
         }
     }
 

@@ -93,6 +93,7 @@ public class ProcessingManager implements ProgramProcessor {
                 RemoveDeadCondJumps.fromConfig(config),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
                 MemoryAllocation.newInstance(),
+                MemCpyUnrolling.newInstance(),
                 EventIdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing") : null,
                 LogProgramStatistics.newInstance()

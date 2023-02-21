@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
@@ -28,7 +29,6 @@ public class StdProcedures {
             "malloc",
             "fopen",
             "free",
-            "memcpy",
             "$memcpy",
             "memset",
             "$memset",
@@ -70,8 +70,11 @@ public class StdProcedures {
             // TODO: Implement this
             return;
         }
-        if (name.startsWith("memcpy") | name.startsWith("$memcpy")) {
-            // TODO: Implement this
+        if (name.equals("$memcpy.i8")) {
+            IExpr dst = (IExpr)ctx.call_params().exprs().expr(2).accept(visitor);
+            IExpr src = (IExpr)ctx.call_params().exprs().expr(3).accept(visitor);
+            IConst length = (IConst)ctx.call_params().exprs().expr(4).accept(visitor);
+            visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Std.newMemCpy(dst, src, length));
             return;
         }
         if (name.startsWith("memset") || name.startsWith("$memset")) {

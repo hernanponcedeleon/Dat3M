@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
+import com.dat3m.dartagnan.program.event.lang.std.MemCpy;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -191,6 +192,12 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         @Override
         public Void visitMalloc(Malloc e) {
             e.setSizeExpr((IExpr) e.getSizeExpr().visit(propagator));
+            return null;
+        }
+
+        @Override
+        public Void visitMemCpy(MemCpy e) {
+            e.setLenght((IConst)e.getLenght().visit(propagator));
             return null;
         }
     }

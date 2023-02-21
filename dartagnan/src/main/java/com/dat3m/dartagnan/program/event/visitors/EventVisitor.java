@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
+import com.dat3m.dartagnan.program.event.lang.std.MemCpy;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 
@@ -105,4 +106,5 @@ public interface EventVisitor<T> {
 
 	// Std events
 	default T visitMalloc(Malloc e) { return visitEvent(e); }
+	default T visitMemCpy(MemCpy e) { return visitEvent(e); }
 }
