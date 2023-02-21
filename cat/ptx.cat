@@ -40,7 +40,7 @@ let morally-strong = po | ([M]; loc) | ([strong-operation]; sr)
 let bar_sync = [F & BAR_SYNC]; sr
 let sc = [strong-fence] ; sr; [strong-fence]
 
-let obs = (morally-strong & rf) // | (obs; rmw; obs)
+let rec obs = (morally-strong & rf) | (obs; rmw; obs)
 let release-pattern = ([W & REL]; po-loc?; [W]) | ([strong-fence]; po; [W])
 let acquire-pattern = ([R]; po-loc?; [W & ACQ]) | ([R]; po; [strong-fence])
 let sw = (morally-strong & (release-pattern; obs; acquire-pattern)) | bar_sync | sc

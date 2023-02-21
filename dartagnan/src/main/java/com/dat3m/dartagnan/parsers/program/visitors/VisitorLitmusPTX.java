@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.*;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
@@ -208,5 +209,49 @@ public class VisitorLitmusPTX
     public Object visitFenceBar(LitmusPTXParser.FenceBarContext ctx){
         return programBuilder.addScopedChild(mainThread,
                 EventFactory.PTX.newTaggedFence(Tag.PTX.BAR_SYNC, ctx.scope().content));
+    }
+
+    @Override
+    public Object visitAtomWeakConstant(LitmusPTXParser.AtomWeakConstantContext ctx) {
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
+        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+        IOpBin op = IOpBin.valueOf(ctx.operation().content);
+        String scope = ctx.scope().content;
+        return programBuilder.addScopedChild(mainThread,
+                EventFactory.PTX.newTaggedRMWOp(object, register, constant, op, Tag.PTX.WEAK, scope));
+    }
+
+    @Override
+    public Object visitAtomWeakRegister(LitmusPTXParser.AtomWeakRegisterContext ctx) {
+        Register register1 = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(0).getText(), ARCH_PRECISION);
+        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        Register register2 = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(1).getText(), ARCH_PRECISION);
+        IOpBin op = IOpBin.valueOf(ctx.operation().content);
+        String scope = ctx.scope().content;
+        return programBuilder.addScopedChild(mainThread,
+                EventFactory.PTX.newTaggedRMWOp(object, register1, register2, op, Tag.PTX.WEAK, scope));
+    }
+
+    @Override
+    public Object visitAtomAcqRelConstant(LitmusPTXParser.AtomAcqRelConstantContext ctx) {
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
+        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+        IOpBin op = IOpBin.valueOf(ctx.operation().content);
+        String scope = ctx.scope().content;
+        return programBuilder.addScopedChild(mainThread,
+                EventFactory.PTX.newTaggedRMWOp(object, register, constant, op, Tag.PTX.ACQ_REL, scope));
+    }
+
+    @Override
+    public Object visitAtomAcqRelRegister(LitmusPTXParser.AtomAcqRelRegisterContext ctx) {
+        Register register1 = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(0).getText(), ARCH_PRECISION);
+        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        Register register2 = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(1).getText(), ARCH_PRECISION);
+        IOpBin op = IOpBin.valueOf(ctx.operation().content);
+        String scope = ctx.scope().content;
+        return programBuilder.addScopedChild(mainThread,
+                EventFactory.PTX.newTaggedRMWOp(object, register1, register2, op, Tag.PTX.ACQ_REL, scope));
     }
 }

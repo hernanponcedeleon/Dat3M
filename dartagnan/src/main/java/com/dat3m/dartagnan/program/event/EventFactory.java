@@ -583,31 +583,38 @@ public class EventFactory {
         private PTX() {}
 
         public static Store newTaggedStore(IExpr address, ExprInterface value, String scope,  String tag) {
-            Store store = new Store(address, value, scope.toUpperCase()); // scope = CTA || GPU || SYS
+            Store store = new Store(address, value, scope); // scope = CTA || GPU || SYS
             store.addFilters(tag); // tag = REL || RLX
             return store;
         }
         public static Store newTaggedStore(IExpr address, ExprInterface value, String scope) {
-            Store store = new Store(address, value, scope.toUpperCase()); // scope = WEAK
+            Store store = new Store(address, value, scope); // scope = WEAK
             store.addFilters(Tag.PTX.SYS);
             return store;
         }
 
         public static Load newTaggedLoad(Register register, IExpr address, String scope, String tag) {
-            Load load = new Load(register, address, scope.toUpperCase()); // scope =  CTA || GPU || SYS
+            Load load = new Load(register, address, scope); // scope =  CTA || GPU || SYS
             load.addFilters(tag); // tag = ACQ || RLX
             return load;
         }
         public static Load newTaggedLoad(Register register, IExpr address, String scope) {
-            Load load = new Load(register, address, scope.toUpperCase()); // scope = WEAK
+            Load load = new Load(register, address, scope); // scope = WEAK
             load.addFilters(Tag.PTX.SYS);
             return load;
         }
 
         public static Fence newTaggedFence(String sem, String scope) {
             Fence fence = new Fence(sem); // sem = ACQ_REL || BAR_SYNC
-            fence.addFilters(scope.toUpperCase());
+            fence.addFilters(scope);
             return fence;
+        }
+
+        public static RMWOp newTaggedRMWOp(IExpr address, Register register, IExpr value,
+                                           IOpBin op, String sem, String scope) {
+            RMWOp rmw = new RMWOp(address, register, value, op);
+            rmw.addFilters(scope, sem);
+            return rmw;
         }
 
         //TODO

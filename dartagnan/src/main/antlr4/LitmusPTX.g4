@@ -74,6 +74,8 @@ instruction
     |   loadAcquire
     |   loadWeak
     |   fencePhysic
+    |   atomWeak
+    |   atomAcqRel
     ;
 
 storeWeak
@@ -168,10 +170,36 @@ fenceBar
     :   Fence Period BAR_SYNC Period scope
     ;
 
+atomWeak
+    :   atomWeakConstant
+    |   atomWeakRegister
+    ;
+
+atomWeakConstant
+    :   Atom Period Weak Period scope Period operation register Comma location Comma constant
+    ;
+
+atomWeakRegister
+    :   Atom Period Weak Period scope Period operation register Comma location Comma register
+    ;
+
+atomAcqRel
+    :   atomAcqRelConstant
+    |   atomAcqRelRegister
+    ;
+
+atomAcqRelConstant
+    :   Atom Period ACQ_REL Period scope Period operation register Comma location Comma constant
+    ;
+
+atomAcqRelRegister
+    :   Atom Period ACQ_REL Period scope Period operation register Comma location Comma register
+    ;
+
 scope returns [String content]
-    :   CTA {$content = "cta";}
-    |   GPU {$content = "gpu";}
-    |   SYS {$content = "sys";}
+    :   CTA {$content = "CTA";}
+    |   GPU {$content = "GPU";}
+    |   SYS {$content = "SYS";}
     ;
 
 location
@@ -180,6 +208,22 @@ location
 
 register
     :   Percent Identifier
+    ;
+
+operation returns [String content]
+    :   Plus {$content = "PLUS";}
+    |   Minus {$content = "MINUS";}
+    |   Mult {$content = "MULT";}
+    |   Div {$content = "DIV";}
+    |   Udiv {$content = "UDIV";}
+    |   Mod {$content = "MOD";}
+    |   SRem {$content = "SREM";}
+    |   URem {$content = "UREM";}
+    |   And {$content = "AND";}
+    |   Or {$content = "OR";}
+    |   Xor {$content = "XOR";}
+    |   L_Shift {$content = "L_SHIFT";}
+    |   R_Shift {$content = "R_SHIFT";}
     ;
 
 assertionValue
@@ -212,6 +256,22 @@ Fence   :   'fence';
 
 ACQ_REL :   'acq_rel';
 BAR_SYNC:   'bar_sync';
+
+Atom    :   'atom';
+
+Plus    :   'plus';
+Minus   :   'minus';
+Mult    :   'mult';
+Div     :   'div';
+Udiv    :   'udiv';
+Mod     :   'mod';
+SRem    :   's_rem';
+URem    :   'u_rem';
+And     :   'and';
+Or      :   'or';
+Xor     :   'xor';
+L_Shift :   'l_shift';
+R_Shift :   'r_shift';
 
 LitmusLanguage
     :   'PTX'

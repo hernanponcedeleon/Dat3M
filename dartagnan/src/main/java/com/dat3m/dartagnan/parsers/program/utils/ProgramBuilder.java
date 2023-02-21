@@ -17,10 +17,7 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -265,5 +262,4 @@ public class ProgramBuilder {
         event.addFilters(Tag.PTX.GPU + this.threadGPU.get(thread));
         return event;
     }
-
 }
