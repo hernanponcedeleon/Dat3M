@@ -18,10 +18,10 @@ public class IExprUn extends IExpr {
 	private final IExpr b;
 	private final IOpUn op;
 
-    public IExprUn(IOpUn op, IExpr b) {
-        this.b = b;
-        this.op = op;
-    }
+	public IExprUn(IOpUn op, IExpr b) {
+		this.b = b;
+		this.op = op;
+	}
 
 	public IOpUn getOp() {
 		return op;
@@ -38,22 +38,23 @@ public class IExprUn extends IExpr {
 
 	@Override
 	public BigInteger getIntValue(Event e, Model model, FormulaManager m) {
-        return b.getIntValue(e, model, m).negate();
+		return b.getIntValue(e, model, m).negate();
 	}
 
 	@Override
 	public ImmutableSet<Register> getRegs() {
-        return b.getRegs();
+		return b.getRegs();
 	}
-    @Override
-    public String toString() {
-        return "(" + op + b + ")";
-    }
 
-    @Override
+	@Override
+	public String toString() {
+		return "(" + op + b + ")";
+	}
+
+	@Override
 	public IConst reduce() {
 		IConst inner = b.reduce();
-        switch(op){
+		switch (op) {
 			case MINUS:
 			return new IValue(inner.getValue().negate(), b.getPrecision());
 			case BV2UINT: case BV2INT:
@@ -65,25 +66,26 @@ public class IExprUn extends IExpr {
 			case CTLZ:
 				int leading;
 				int precision = inner.getPrecision();
-				switch(precision) {
-				case 32:
-					leading = Integer.numberOfLeadingZeros(inner.getValueAsInt());
-					break;
-				case 64:
-					leading = Long.numberOfLeadingZeros(inner.getValueAsInt());
-					break;
-				default:
-					throw new UnsupportedOperationException("Reduce not supported for " + this + " with precision " + precision);
+				switch (precision) {
+					case 32:
+						leading = Integer.numberOfLeadingZeros(inner.getValueAsInt());
+						break;
+					case 64:
+						leading = Long.numberOfLeadingZeros(inner.getValueAsInt());
+						break;
+					default:
+						throw new UnsupportedOperationException(
+								"Reduce not supported for " + this + " with precision " + precision);
 				}
 				return new IValue(BigInteger.valueOf(leading), precision);
 			default:
-		        throw new UnsupportedOperationException("Reduce not supported for " + this);				
-        }
+				throw new UnsupportedOperationException("Reduce not supported for " + this);
+		}
 	}
 
 	@Override
 	public int getPrecision() {
-        switch(op){
+		switch (op) {
 			case MINUS:
 				return b.getPrecision();
 			case BV2UINT: case BV2INT:
@@ -99,10 +101,10 @@ public class IExprUn extends IExpr {
 			case INT2BV64: case ZEXT164: case ZEXT864: case ZEXT1664: case ZEXT3264: case SEXT164: case SEXT864: case SEXT1664: case SEXT3264:
 				return 64;
 			default:
-		        throw new UnsupportedOperationException("getPrecision not supported for " + this);				
-        }
+				throw new UnsupportedOperationException("getPrecision not supported for " + this);
+		}
 	}
-	
+
 	@Override
 	public <T> T visit(ExpressionVisitor<T> visitor) {
 		return visitor.visit(this);
@@ -115,8 +117,8 @@ public class IExprUn extends IExpr {
 
 	@Override
 	public boolean equals(Object obj) {
-    	if (obj == this) {
-    		return true;
+		if (obj == this) {
+			return true;
 		} else if (obj == null || obj.getClass() != getClass()) {
 			return false;
 		}
