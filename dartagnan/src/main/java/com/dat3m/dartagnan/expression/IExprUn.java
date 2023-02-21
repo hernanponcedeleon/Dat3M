@@ -64,17 +64,18 @@ public class IExprUn extends IExpr {
 				return inner;
 			case CTLZ:
 				int leading;
-				switch(inner.getPrecision()) {
-					case 32:
-						leading = Integer.numberOfLeadingZeros(inner.getValueAsInt());
-						break;
-					case 64:
-						leading = Long.numberOfLeadingZeros(inner.getValueAsInt());
-						break;
-					default:
-						throw new UnsupportedOperationException("Reduce not supported for " + this + " with precision " + inner.getPrecision());
+				int precision = inner.getPrecision();
+				switch(precision) {
+				case 32:
+					leading = Integer.numberOfLeadingZeros(inner.getValueAsInt());
+					break;
+				case 64:
+					leading = Long.numberOfLeadingZeros(inner.getValueAsInt());
+					break;
+				default:
+					throw new UnsupportedOperationException("Reduce not supported for " + this + " with precision " + precision);
 				}
-				return new IValue(BigInteger.valueOf(leading), inner.getPrecision());
+				return new IValue(BigInteger.valueOf(leading), precision);
 			default:
 		        throw new UnsupportedOperationException("Reduce not supported for " + this);				
         }

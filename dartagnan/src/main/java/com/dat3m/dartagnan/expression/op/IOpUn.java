@@ -19,12 +19,12 @@ public enum IOpUn {
     @Override
     public String toString() {
 		switch(this) {
-			case MINUS:
-				return "-";
-			case CTLZ:
-				return "ctlz ";
-			default:
-    			return "";
+		case MINUS:
+			return "-";
+		case CTLZ:
+			return "ctlz ";
+		default:
+    		return "";
 		}
 	}
 

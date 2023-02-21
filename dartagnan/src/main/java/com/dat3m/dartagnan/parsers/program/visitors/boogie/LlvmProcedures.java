@@ -130,10 +130,10 @@ public class LlvmProcedures {
 				cond = name.contains("max") ? new Atom(i1, COpBin.GTE, i2) : new Atom(i1, COpBin.LTE, i2);
 				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, new IfExpr(cond, i1, i2)))
 						.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-			return;
-				case "llvm.ctlz.i32":
-				case "llvm.ctlz.i64":
-			i1 = (IExpr)p0;
+				return;
+			case "llvm.ctlz.i32":
+			case "llvm.ctlz.i64":
+				i1 = (IExpr)p0;
 				i2 = (IExpr)p1;
 				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, new IExprUn(IOpUn.CTLZ, i1)))
 						.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
