@@ -13,7 +13,8 @@ public enum IOpUn {
     INT2BV1, INT2BV8, INT2BV16, INT2BV32, INT2BV64, 
     TRUNC6432, TRUNC6416,TRUNC648, TRUNC641, TRUNC3216, TRUNC328, TRUNC321, TRUNC168, TRUNC161, TRUNC81,    
     ZEXT18, ZEXT116, ZEXT132, ZEXT164, ZEXT816, ZEXT832, ZEXT864, ZEXT1632, ZEXT1664, ZEXT3264, 
-    SEXT18, SEXT116, SEXT132, SEXT164, SEXT816, SEXT832, SEXT864, SEXT1632, SEXT1664, SEXT3264;
+    SEXT18, SEXT116, SEXT132, SEXT164, SEXT816, SEXT832, SEXT864, SEXT1632, SEXT1664, SEXT3264,
+	CTLZ;
 	
     @Override
     public String toString() {
@@ -75,6 +76,8 @@ public enum IOpUn {
     		case SEXT1664:
     		case SEXT3264:
     			return e;
+			case CTLZ:
+				throw new UnsupportedOperationException("Encoding of IOpUn operation " + this + " not supported on integer formulas.");
 			}
 			throw new UnsupportedOperationException("Encoding of IOpUn operation " + this + " not supported on integer formulas.");
 		} else {
@@ -151,6 +154,8 @@ public enum IOpUn {
     			return bvmgr.extend(bv, 48, true);
     		case SEXT3264:
     			return bvmgr.extend(bv, 32, true);
+			case CTLZ:
+				throw new UnsupportedOperationException("Encoding of IOpUn operation " + this + " not supported on bitvector formulas.");
 	    	}
 			throw new UnsupportedOperationException("Encoding of IOpUn operation " + this + " not supported on bitvector formulas.");
 		}

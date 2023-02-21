@@ -5,9 +5,11 @@ import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.IExprUn;
 import com.dat3m.dartagnan.expression.IfExpr;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
@@ -34,7 +36,9 @@ public class LlvmProcedures {
 			"llvm.smax.i32",
 			"llvm.smax.i64",
 			"llvm.smin.i32",
-			"llvm.smin.i64"
+			"llvm.smin.i64",
+			"llvm.ctlz.i32",
+			"llvm.ctlz.i64"
 			);
 
 	public static void handleLlvmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -125,6 +129,13 @@ public class LlvmProcedures {
 				i2 = (IExpr)p1;
 				cond = name.contains("max") ? new Atom(i1, COpBin.GTE, i2) : new Atom(i1, COpBin.LTE, i2);
 				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, new IfExpr(cond, i1, i2)))
+						.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+			return;
+				case "llvm.ctlz.i32":
+				case "llvm.ctlz.i64":
+			i1 = (IExpr)p0;
+				i2 = (IExpr)p1;
+				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, new IExprUn(IOpUn.CTLZ, i1)))
 						.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 				return;
 			default:
