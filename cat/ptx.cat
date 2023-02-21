@@ -33,16 +33,16 @@ include "filters.cat"
 (* Events *)
 let strong-write = W & (RLX | REL)
 let strong-read = R & (RLX | ACQ)
-let strong-fence = F & ACQ_REL
-let strong-operation = strong-write | strong-read | strong-fence
-let morally-strong = po | ([M]; loc) | ([strong-operation]; sr)
+let strong-rmw = RMW & ACQ_REL
+let strong-operation = strong-write | strong-read | F | strong-rmw
+let morally-strong = po | ([M | RMW]; loc; [M | RMW]) | ([strong-operation]; sr; [strong-operation])
 
-let bar_sync = [F & BAR_SYNC]; sr
-let sc = [strong-fence] ; sr; [strong-fence]
+let bar_sync = [F & BAR_SYNC]; sr; [F & BAR_SYNC]
+let sc = [F & ACQ_REL] ; sr; [F & ACQ_REL]
 
 let rec obs = (morally-strong & rf) | (obs; rmw; obs)
-let release-pattern = ([W & REL]; po-loc?; [W]) | ([strong-fence]; po; [W])
-let acquire-pattern = ([R]; po-loc?; [W & ACQ]) | ([R]; po; [strong-fence])
+let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W]) | [W & REL]; loc | [RMW & ACQ_REL]; loc
+let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po; [F & ACQ_REL]) | [R & ACQ]; loc | [RMW & ACQ_REL]; loc
 let sw = (morally-strong & (release-pattern; obs; acquire-pattern)) | bar_sync | sc
 let causality-base = (po?; sw; po?)+
 let causality = causality-base | (obs; (causality-base | po-loc))
