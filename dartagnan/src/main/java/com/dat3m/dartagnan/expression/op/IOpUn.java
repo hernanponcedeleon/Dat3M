@@ -18,8 +18,15 @@ public enum IOpUn {
 	
     @Override
     public String toString() {
-    	return this.equals(MINUS) ? "-" : "";
-    }
+		switch(this) {
+			case MINUS:
+				return "-";
+			case CTLZ:
+				return "ctlz ";
+			default:
+    			return "";
+		}
+	}
 
     public Formula encode(Formula e, FormulaManager m) {
 		if(e instanceof IntegerFormula) {
