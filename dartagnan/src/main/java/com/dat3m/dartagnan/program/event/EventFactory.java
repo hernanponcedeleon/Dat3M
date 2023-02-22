@@ -322,9 +322,9 @@ public class EventFactory {
             return new Malloc(resultReg, sizeExpr);
         }
 
-        public static MemCpy newMemCpy(IExpr dst, IExpr src, IConst lenght) {
+        public static MemCpy newMemCpy(IExpr dst, IExpr src, IExpr lenght) {
             // TODO different steps
-            return new MemCpy(dst, src, lenght, 4);
+            return new MemCpy(dst, src, IValue.ONE, 4);
         }
     }
 

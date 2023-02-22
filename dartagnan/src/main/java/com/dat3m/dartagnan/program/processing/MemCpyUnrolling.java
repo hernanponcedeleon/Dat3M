@@ -3,9 +3,8 @@ package com.dat3m.dartagnan.program.processing;
 import java.math.BigInteger;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -29,7 +28,7 @@ public class MemCpyUnrolling implements ProgramProcessor {
             Event cur = e.getPredecessor();
             Event exit = e .getSuccessor();
             Thread thread = e.getThread();
-            for(int i = 0; i < (e.getLenght().getValueAsInt() / e.getStep()); i++) {
+            for(int i = 0; i < (getLenght(e) / e.getStep()); i++) {
                 IExpr offset = new IValue(BigInteger.valueOf(e.getStep() * i), e.getSrc().getPrecision());
                 Register r = thread.newRegister(GlobalSettings.ARCH_PRECISION);
                 Load load = EventFactory.newLoad(r, new IExprBin(e.getSrc(), IOpBin.PLUS, offset), "");
@@ -39,6 +38,15 @@ public class MemCpyUnrolling implements ProgramProcessor {
                 cur = store;
             }
             cur.setSuccessor(exit);
+        }
+    }
+
+    private int getLenght(MemCpy memcpy) {
+        try {
+            return memcpy.getLenght().reduce().getValueAsInt();
+        } catch (Exception e) {
+            final String error = String.format("Variable-lenght memcpy '%s' is not supported", memcpy);
+            throw new MalformedProgramException(error);
         }
     }
 

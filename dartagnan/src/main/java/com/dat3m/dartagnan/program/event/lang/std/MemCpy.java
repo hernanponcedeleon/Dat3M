@@ -19,10 +19,10 @@ public class MemCpy extends Event implements RegReaderData {
 
     protected final IExpr dst;
     protected final IExpr src;
-    protected IConst lenght;
+    protected IExpr lenght;
     protected final int step;
 
-    public MemCpy(IExpr dst, IExpr src, IConst lenght, int step) {
+    public MemCpy(IExpr dst, IExpr src, IExpr lenght, int step) {
         this.dst = dst;
         this.src = src;
         this.lenght = lenght;
@@ -40,8 +40,8 @@ public class MemCpy extends Event implements RegReaderData {
 
     public IExpr getDst() { return dst; }
     public IExpr getSrc() { return src; }
-    public IConst getLenght() { return lenght; }
-    public void setLenght(IConst lenght) { this.lenght = lenght; }
+    public IExpr getLenght() { return lenght; }
+    public void setLenght(IExpr lenght) { this.lenght = lenght; }
     public int getStep() { return step; }
 
     @Override

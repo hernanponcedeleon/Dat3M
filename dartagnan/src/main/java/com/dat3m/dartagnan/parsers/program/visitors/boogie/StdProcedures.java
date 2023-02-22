@@ -73,7 +73,7 @@ public class StdProcedures {
         if (name.equals("$memcpy.i8")) {
             IExpr dst = (IExpr)ctx.call_params().exprs().expr(2).accept(visitor);
             IExpr src = (IExpr)ctx.call_params().exprs().expr(3).accept(visitor);
-            IConst length = (IConst)ctx.call_params().exprs().expr(4).accept(visitor);
+            IExpr length = (IExpr)ctx.call_params().exprs().expr(4).accept(visitor);
             visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Std.newMemCpy(dst, src, length));
             return;
         }
