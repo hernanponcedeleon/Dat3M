@@ -17,7 +17,7 @@ import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 
 public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
@@ -58,19 +58,19 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusRISCVParser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION));
+        programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusRISCVParser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusRISCVParser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), ARCH_PRECISION);
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), getArchPrecision());
         return null;
     }
 
@@ -108,14 +108,14 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     
 	@Override
 	public Object visitLi(LitmusRISCVParser.LiContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
         return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
 	}
 	
 	@Override
 	public Object visitXor(LitmusRISCVParser.XorContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), getArchPrecision());
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.XOR, r3)));
@@ -124,7 +124,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	
 	@Override
 	public Object visitAnd(LitmusRISCVParser.AndContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), getArchPrecision());
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.AND, r3)));
@@ -133,7 +133,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	
 	@Override
 	public Object visitOr(LitmusRISCVParser.OrContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), getArchPrecision());
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.OR, r3)));
@@ -142,7 +142,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	
 	@Override
 	public Object visitAdd(LitmusRISCVParser.AddContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), getArchPrecision());
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.PLUS, r3)));
@@ -151,39 +151,39 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	
 	@Override
 	public Object visitXori(LitmusRISCVParser.XoriContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), getArchPrecision());
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.XOR, constant)));
 	}
 	
 	@Override
 	public Object visitAndi(LitmusRISCVParser.AndiContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), getArchPrecision());
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.AND, constant)));
 	}
 	
 	@Override
 	public Object visitOri(LitmusRISCVParser.OriContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
-        Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), getArchPrecision());
+        Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), getArchPrecision());
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.OR, constant)));
 	}
 
 	@Override
 	public Object visitAddi(LitmusRISCVParser.AddiContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
-        Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), getArchPrecision());
+        Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), getArchPrecision());
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.PLUS, constant)));
 	}
 
 	@Override
 	public Object visitLw(LitmusRISCVParser.LwContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), getArchPrecision());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         return programBuilder.addChild(mainThread, EventFactory.newLoad(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
 	}
@@ -197,15 +197,15 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	
 	@Override
 	public Object visitLr(LitmusRISCVParser.LrContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), getArchPrecision());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         return programBuilder.addChild(mainThread, EventFactory.newRMWLoadExclusive(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
 	}
 
 	@Override
 	public Object visitSc(LitmusRISCVParser.ScContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
-        Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), getArchPrecision());
+        Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), getArchPrecision());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
         return programBuilder.addChild(mainThread, EventFactory.newExclusiveStore(r1, ra, r2, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
 	}
@@ -218,8 +218,8 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	@Override
 	public Object visitBranchCond(LitmusRISCVParser.BranchCondContext ctx) {
         Label label = programBuilder.getOrCreateLabel(ctx.Label().getText());
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), ARCH_PRECISION);
-        Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), ARCH_PRECISION);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), getArchPrecision());
+        Register r2 = programBuilder.getOrCreateRegister(mainThread, ctx.register(1).getText(), getArchPrecision());
         Atom expr = new Atom(r1, ctx.cond().op, r2);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
 	}

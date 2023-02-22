@@ -222,7 +222,7 @@ public class VisitorLKMM extends VisitorBase {
 
 	@Override
 	public List<Event> visitLKMMLock(LKMMLock e) {
-		Register dummy = e.getThread().newRegister(GlobalSettings.ARCH_PRECISION);
+		Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
 		Event middle = e.getThread().getProgram().getFormat().equals(LITMUS) ?
 				newAssume(new Atom(dummy, EQ, IValue.ZERO)) :

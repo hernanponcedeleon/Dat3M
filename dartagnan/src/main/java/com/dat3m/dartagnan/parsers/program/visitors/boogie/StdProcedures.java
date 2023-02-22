@@ -11,7 +11,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 
 public class StdProcedures {
 
@@ -50,7 +50,7 @@ public class StdProcedures {
         if (name.equals("get_my_tid")) {
             String registerName = ctx.call_params().Ident(0).getText();
             Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
-            IValue tid = new IValue(BigInteger.valueOf(visitor.threadCount), ARCH_PRECISION);
+            IValue tid = new IValue(BigInteger.valueOf(visitor.threadCount), getArchPrecision());
             visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, tid));
             return;
         }

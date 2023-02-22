@@ -45,7 +45,7 @@ public class LlvmProcedures {
         List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 
         String regName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
-        Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName, GlobalSettings.ARCH_PRECISION);
+        Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName, GlobalSettings.getArchPrecision());
 
         Object p0 = params.get(0).accept(visitor);
         Object p1 = params.size() > 1 ? params.get(1).accept(visitor) : null;
@@ -85,8 +85,8 @@ public class LlvmProcedures {
                 // create such registers,
                 // then when calling "extractvalue" we can check if the member was properly
                 // initialized
-                Register oldValueRegister = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(0)", GlobalSettings.ARCH_PRECISION);
-                Register cmpRegister = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(1)", GlobalSettings.ARCH_PRECISION);
+                Register oldValueRegister = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(0)", GlobalSettings.getArchPrecision());
+                Register cmpRegister = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(1)", GlobalSettings.getArchPrecision());
                 // The compilation of Llvm.newCompareExchange will
                 // assign the correct values to the registers above
                 mo = C11.intToMo(((IConst) p3).getValueAsInt());

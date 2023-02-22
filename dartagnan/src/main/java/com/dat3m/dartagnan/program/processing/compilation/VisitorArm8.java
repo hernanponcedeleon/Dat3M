@@ -627,7 +627,7 @@ class VisitorArm8 extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
-        Register dummy = e.getThread().newRegister(GlobalSettings.ARCH_PRECISION);
+        Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
         // Spinlock events are guaranteed to succeed, i.e. we can use assumes
         // With this we miss a ctrl dependency, but this does not matter
         // because the load is an acquire one.

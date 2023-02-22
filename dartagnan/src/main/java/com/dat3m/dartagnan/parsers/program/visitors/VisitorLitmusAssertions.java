@@ -13,7 +13,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.Location;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.google.common.base.Preconditions.checkState;
 
 public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<AbstractAssert> {
@@ -73,7 +73,7 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
 
     private LastValueInterface acceptAssertionValue(LitmusAssertionsParser.AssertionValueContext ctx, boolean right) {
         if(ctx.constant() != null) {
-            return new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+            return new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
         }
         String name = ctx.varName().getText();
         if(ctx.threadId() != null) {
