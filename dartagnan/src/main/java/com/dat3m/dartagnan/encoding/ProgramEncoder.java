@@ -22,7 +22,7 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.*;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+import static com.dat3m.dartagnan.GlobalSettings.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.google.common.collect.Lists.reverse;
 
@@ -119,11 +119,11 @@ public class ProgramEncoder implements Encoder {
         final FormulaManager fmgr = context.getFormulaManager();
         
         BooleanFormula[] addrExprs;
-        if(ARCH_PRECISION > -1) {
+        if(getArchPrecision() > -1) {
         	final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
             addrExprs = memory.getObjects().stream()
                     .map(addr -> bvmgr.equal((BitvectorFormula)addr.toIntFormula(fmgr),
-                    		bvmgr.makeBitvector(ARCH_PRECISION, addr.getValue().intValue())))
+                    		bvmgr.makeBitvector(getArchPrecision(), addr.getValue().intValue())))
                     .toArray(BooleanFormula[]::new);        	
         } else {
             final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();

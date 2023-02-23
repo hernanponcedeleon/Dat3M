@@ -10,7 +10,7 @@ import org.sosy_lab.java_smt.api.FormulaManager;
 import java.math.BigInteger;
 import java.util.HashMap;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -118,8 +118,8 @@ public class MemoryObject extends IConst {
     public Formula getLastMemValueExpr(FormulaManager m, int offset) {
         checkArgument(0<=offset && offset<size, "array index out of bounds");
         String name = String.format("last_val_at_memory_%d_%d",index,offset);
-        if(ARCH_PRECISION > -1) {
-        	return m.getBitvectorFormulaManager().makeVariable(ARCH_PRECISION, name);
+        if(getArchPrecision() > -1) {
+        	return m.getBitvectorFormulaManager().makeVariable(getArchPrecision(), name);
         } else {
         	return m.getIntegerFormulaManager().makeVariable(name);
         }
@@ -140,7 +140,7 @@ public class MemoryObject extends IConst {
 
     @Override
     public int getPrecision() {
-        return ARCH_PRECISION;
+        return getArchPrecision();
     }
 
     @Override

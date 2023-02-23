@@ -697,7 +697,7 @@ class VisitorRISCV extends VisitorBase {
 
 	@Override
 	public List<Event> visitLKMMLock(LKMMLock e) {
-	Register dummy = e.getThread().newRegister(GlobalSettings.ARCH_PRECISION);
+	Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
     // From this "unofficial" source (there is no RISCV specific implementation in the kernel)
 	// 		https://github.com/westerndigitalcorporation/RISC-V-Linux/blob/master/linux/arch/riscv/include/asm/spinlock.h
 	// We replace AMO instructions with LL/SC

@@ -126,7 +126,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             final Event sideEffect = sideEffects.get(i);
             final Register trackingReg = thread.newRegister(
                     String.format("Loop%s_%s_%s", loopNumber, iterNumber, i),
-                    GlobalSettings.ARCH_PRECISION);
+                    GlobalSettings.getArchPrecision());
             trackingRegs.add(trackingReg);
 
             final Event execCheck = EventFactory.newExecutionStatus(trackingReg, sideEffect);

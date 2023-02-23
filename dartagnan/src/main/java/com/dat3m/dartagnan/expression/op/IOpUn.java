@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.expression.op;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+import static com.dat3m.dartagnan.GlobalSettings.*;
 
 import java.math.BigInteger;
 
@@ -95,10 +95,10 @@ public enum IOpUn {
                 case MINUS:
                     return bvmgr.negate(bv);
                 case BV2UINT:
-                    return ARCH_PRECISION > -1 ? bvmgr.extend(bv, ARCH_PRECISION - bvmgr.getLength(bv), false)
+                    return getArchPrecision() > -1 ? bvmgr.extend(bv, getArchPrecision() - bvmgr.getLength(bv), false)
                             : bvmgr.toIntegerFormula(bv, false);
                 case BV2INT:
-                    return ARCH_PRECISION > -1 ? bvmgr.extend(bv, ARCH_PRECISION - bvmgr.getLength(bv), true)
+                    return getArchPrecision() > -1 ? bvmgr.extend(bv, getArchPrecision() - bvmgr.getLength(bv), true)
                             : bvmgr.toIntegerFormula(bv, true);
                 // ============ INT2BV ============
                 case INT2BV1:

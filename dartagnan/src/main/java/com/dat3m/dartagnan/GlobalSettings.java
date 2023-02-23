@@ -1,18 +1,35 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.ARCH_PRECISION;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
+@Options
 public class GlobalSettings {
-
 
     private static final Logger logger = LogManager.getLogger(GlobalSettings.class);
 
-    // === Encoding ===
-    // This has to be in sync with whatever smack generated for references,
-    // i.e. if type ref = X, then ARCH_PRECISION = X (or -1 if type = intX).
-    public static final int ARCH_PRECISION = -1;
+    private GlobalSettings() {}
+
+    private static final GlobalSettings instance = new GlobalSettings();
+
+    @Option(name = ARCH_PRECISION,
+            description = "Integer encoding: use -1 for integer theory or X for bit-vectors with precision X.",
+            secure = true)
+    private int arch_precision = -1;
+
+    public static int getArchPrecision() { return instance.arch_precision; }
+
+    public static void configure(Configuration config) throws InvalidConfigurationException {
+       config.inject(instance);
+    }
 
     // === Parsing ===
     public static final boolean ATOMIC_AS_LOCK = false;
@@ -34,7 +51,7 @@ public class GlobalSettings {
 
     public static void LogGlobalSettings() {
         // General settings
-        logger.info("ARCH_PRECISION: " + ARCH_PRECISION);
+        logger.info("ARCH_PRECISION: " + getArchPrecision());
         logger.info("ATOMIC_AS_LOCK: " + ATOMIC_AS_LOCK);
 
         // Refinement settings

@@ -24,6 +24,7 @@ import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.collect.ImmutableSet;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.ShutdownManager;
@@ -74,13 +75,15 @@ public class Dartagnan extends BaseOptions {
         }
 
         CreateGitInfo();
-        LogGlobalSettings();
 
         String[] argKeyword = Arrays.stream(args)
                 .filter(s -> s.startsWith("-"))
                 .toArray(String[]::new);
         Configuration config = Configuration.fromCmdLineArguments(argKeyword);
         Dartagnan o = new Dartagnan(config);
+
+        GlobalSettings.configure(config);
+        LogGlobalSettings();
 
         if (Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(a::endsWith))) {
             throw new IllegalArgumentException("Input program not given or format not recognized");

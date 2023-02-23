@@ -946,7 +946,7 @@ public class VisitorPower extends VisitorBase {
 	
 	@Override
 	public List<Event> visitLKMMLock(LKMMLock e) {
-	Register dummy = e.getThread().newRegister(GlobalSettings.ARCH_PRECISION);
+	Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
 	Label label = newLabel("FakeDep");
     // Spinlock events are guaranteed to succeed, i.e. we can use assumes
 	return eventSequence(

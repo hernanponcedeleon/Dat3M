@@ -9,7 +9,7 @@ import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+import static com.dat3m.dartagnan.GlobalSettings.*;
 
 import java.math.BigInteger;
 
@@ -89,7 +89,7 @@ public class IExprUn extends IExpr {
             case MINUS:
                 return b.getPrecision();
             case BV2UINT: case BV2INT:
-                return ARCH_PRECISION;
+                return getArchPrecision();
             case INT2BV1: case TRUNC321: case TRUNC641: case TRUNC161: case TRUNC81:
                 return 1;
             case INT2BV8: case TRUNC648: case TRUNC328: case TRUNC168: case ZEXT18: case SEXT18:
