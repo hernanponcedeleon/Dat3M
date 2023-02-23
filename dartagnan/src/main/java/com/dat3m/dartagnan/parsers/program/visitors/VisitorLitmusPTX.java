@@ -200,58 +200,102 @@ public class VisitorLitmusPTX
     }
 
     @Override
-    public Object visitFenceSC(LitmusPTXParser.FenceSCContext ctx){
+    public Object visitFenceAcqRel(LitmusPTXParser.FenceAcqRelContext ctx){
         return programBuilder.addScopedChild(mainThread,
                 EventFactory.PTX.newTaggedFence(Tag.PTX.ACQ_REL, ctx.scope().content));
     }
 
     @Override
-    public Object visitFenceBar(LitmusPTXParser.FenceBarContext ctx){
+    public Object visitFenceSC(LitmusPTXParser.FenceSCContext ctx){
         return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedFence(Tag.PTX.BAR_SYNC, ctx.scope().content));
+                EventFactory.PTX.newTaggedFence(Tag.PTX.SC, ctx.scope().content));
     }
 
     @Override
-    public Object visitAtomWeakConstant(LitmusPTXParser.AtomWeakConstantContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
+    public Object visitAtomRelaxedConstant(LitmusPTXParser.AtomRelaxedConstantContext ctx) {
+        Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
         IOpBin op = IOpBin.valueOf(ctx.operation().content);
         String scope = ctx.scope().content;
         return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedRMWOp(object, register, constant, op, Tag.PTX.WEAK, scope));
+                EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, Tag.PTX.RLX, scope));
     }
 
     @Override
-    public Object visitAtomWeakRegister(LitmusPTXParser.AtomWeakRegisterContext ctx) {
-        Register register1 = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(0).getText(), ARCH_PRECISION);
+    public Object visitAtomRelaxedRegister(LitmusPTXParser.AtomRelaxedRegisterContext ctx) {
+        Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(0).getText(), ARCH_PRECISION);
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        Register register2 = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(1).getText(), ARCH_PRECISION);
+        Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(1).getText(), ARCH_PRECISION);
         IOpBin op = IOpBin.valueOf(ctx.operation().content);
         String scope = ctx.scope().content;
         return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedRMWOp(object, register1, register2, op, Tag.PTX.WEAK, scope));
+                EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, Tag.PTX.RLX, scope));
     }
 
     @Override
     public Object visitAtomAcqRelConstant(LitmusPTXParser.AtomAcqRelConstantContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
+        Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
         IOpBin op = IOpBin.valueOf(ctx.operation().content);
         String scope = ctx.scope().content;
         return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedRMWOp(object, register, constant, op, Tag.PTX.ACQ_REL, scope));
+                EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, Tag.PTX.ACQ_REL, scope));
     }
 
     @Override
     public Object visitAtomAcqRelRegister(LitmusPTXParser.AtomAcqRelRegisterContext ctx) {
-        Register register1 = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(0).getText(), ARCH_PRECISION);
+        Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(0).getText(), ARCH_PRECISION);
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        Register register2 = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(1).getText(), ARCH_PRECISION);
+        Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(1).getText(), ARCH_PRECISION);
         IOpBin op = IOpBin.valueOf(ctx.operation().content);
         String scope = ctx.scope().content;
         return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedRMWOp(object, register1, register2, op, Tag.PTX.ACQ_REL, scope));
+                EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, Tag.PTX.ACQ_REL, scope));
+    }
+
+    @Override
+    public Object visitRedRelaxedConstant(LitmusPTXParser.RedRelaxedConstantContext ctx) {
+        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+        IOpBin op = IOpBin.valueOf(ctx.operation().content);
+        String scope = ctx.scope().content;
+        Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, ARCH_PRECISION);
+        return programBuilder.addScopedChild(mainThread,
+                EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, Tag.PTX.RLX, scope));
+    }
+
+    @Override
+    public Object visitRedRelaxedRegister(LitmusPTXParser.RedRelaxedRegisterContext ctx) {
+        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
+        IOpBin op = IOpBin.valueOf(ctx.operation().content);
+        String scope = ctx.scope().content;
+        Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, ARCH_PRECISION);
+        return programBuilder.addScopedChild(mainThread,
+                EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, Tag.PTX.RLX, scope));
+    }
+
+    @Override
+    public Object visitRedAcqRelConstant(LitmusPTXParser.RedAcqRelConstantContext ctx) {
+        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+        IOpBin op = IOpBin.valueOf(ctx.operation().content);
+        String scope = ctx.scope().content;
+        Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, ARCH_PRECISION);
+        return programBuilder.addScopedChild(mainThread,
+                EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, Tag.PTX.ACQ_REL, scope));
+    }
+
+    @Override
+    public Object visitRedAcqRelRegister(LitmusPTXParser.RedAcqRelRegisterContext ctx) {
+        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
+        IOpBin op = IOpBin.valueOf(ctx.operation().content);
+        String scope = ctx.scope().content;
+        Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, ARCH_PRECISION);
+        return programBuilder.addScopedChild(mainThread,
+                EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, Tag.PTX.ACQ_REL, scope));
     }
 }

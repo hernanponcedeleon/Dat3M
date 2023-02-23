@@ -1,0 +1,13 @@
+PTX NoThinAir
+"No thin air"
+{
+P0:%r1=0;
+P1:%r2=0;
+x=0;
+y=0;
+}
+ P0@cta 0,gpu 0                   | P1@cta 1,gpu 0                   ;
+ ld.weak %r0, x                   | ld.weak %r1, y                   ;
+ st.weak y, %r0                   | st.weak x, %r1                   ;
+forall
+(x == 0 /\ y == 0)

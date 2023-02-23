@@ -287,9 +287,9 @@ public final class Tag {
         public static final String REL = "REL";
 
         public static final String ACQ_REL = "ACQ_REL";
-        public static final String BAR_SYNC = "BAR_SYNC";
+        public static final String SC = "SC";
 
-        public static final String ADD = "ADD";
+        public static final String ATOM = "ATOM";
 
         public static final String ALIAS = "alias";
     }

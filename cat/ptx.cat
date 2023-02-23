@@ -23,8 +23,7 @@ include "filters.cat"
  * Implemented:
  *  sr: (scope) the scope relation sr relating events that come from threads which reside within the same scope;
  *  sc: refers to the fence-sc of paper
- *  bar_sync: refers to the bar.sync of paper
- * TODO: proxy.alias;
+ * TODO: proxy.alias, surface, texture, bar;
  *)
 
 (*******************)
@@ -33,17 +32,16 @@ include "filters.cat"
 (* Events *)
 let strong-write = W & (RLX | REL)
 let strong-read = R & (RLX | ACQ)
-let strong-rmw = RMW & ACQ_REL
-let strong-operation = strong-write | strong-read | F | strong-rmw
-let morally-strong = po | ([M | RMW]; loc; [M | RMW]) | ([strong-operation]; sr; [strong-operation])
+let strong-m = strong-write | strong-read
+let strong-operation = strong-write | strong-read | F
+let morally-strong-fence = ([strong-operation]; sr; [F]) | ([F]; sr; [strong-operation])
+let morally-strong = po | ([strong-m]; (sr & loc); [strong-m]) | morally-strong-fence
 
-let bar_sync = [F & BAR_SYNC]; sr; [F & BAR_SYNC]
-let sc = [F & ACQ_REL] ; sr; [F & ACQ_REL]
-
+let sc = [F & SC] ; sr; [F & SC]
 let rec obs = (morally-strong & rf) | (obs; rmw; obs)
-let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W]) | [W & REL]; loc | [RMW & ACQ_REL]; loc
-let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po; [F & ACQ_REL]) | [R & ACQ]; loc | [RMW & ACQ_REL]; loc
-let sw = (morally-strong & (release-pattern; obs; acquire-pattern)) | bar_sync | sc
+let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
+let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
+let sw = (morally-strong & (release-pattern; obs; acquire-pattern)) | sc
 let causality-base = (po?; sw; po?)+
 let causality = causality-base | (obs; (causality-base | po-loc))
 

@@ -74,8 +74,10 @@ instruction
     |   loadAcquire
     |   loadWeak
     |   fencePhysic
-    |   atomWeak
+    |   atomRelaxed
     |   atomAcqRel
+    |   redRelaxed
+    |   redAcqRel
     ;
 
 storeWeak
@@ -158,29 +160,29 @@ loadAcquireLocation
     ;
 
 fencePhysic
-    :   fenceSC
-    |   fenceBar
+    :   fenceAcqRel
+    |   fenceSC
     ;
 
-fenceSC
+fenceAcqRel
     :   Fence Period ACQ_REL Period scope
     ;
 
-fenceBar
-    :   Fence Period BAR_SYNC Period scope
+fenceSC
+    :   Fence Period SC Period scope
     ;
 
-atomWeak
-    :   atomWeakConstant
-    |   atomWeakRegister
+atomRelaxed
+    :   atomRelaxedConstant
+    |   atomRelaxedRegister
     ;
 
-atomWeakConstant
-    :   Atom Period Weak Period scope Period operation register Comma location Comma constant
+atomRelaxedConstant
+    :   Atom Period Relaxed Period scope Period operation register Comma location Comma constant
     ;
 
-atomWeakRegister
-    :   Atom Period Weak Period scope Period operation register Comma location Comma register
+atomRelaxedRegister
+    :   Atom Period Relaxed Period scope Period operation register Comma location Comma register
     ;
 
 atomAcqRel
@@ -194,6 +196,32 @@ atomAcqRelConstant
 
 atomAcqRelRegister
     :   Atom Period ACQ_REL Period scope Period operation register Comma location Comma register
+    ;
+
+redRelaxed
+    :   redRelaxedConstant
+    |   redRelaxedRegister
+    ;
+
+redRelaxedConstant
+    :   Red Period Relaxed Period scope Period operation location Comma constant
+    ;
+
+redRelaxedRegister
+    :   Red Period Relaxed Period scope Period operation location Comma register
+    ;
+
+redAcqRel
+    :   redAcqRelConstant
+    |   redAcqRelRegister
+    ;
+
+redAcqRelConstant
+    :   Red Period ACQ_REL Period scope Period operation location Comma constant
+    ;
+
+redAcqRelRegister
+    :   Red Period ACQ_REL Period scope Period operation location Comma register
     ;
 
 scope returns [String content]
@@ -255,9 +283,10 @@ SYS :   'sys';
 Fence   :   'fence';
 
 ACQ_REL :   'acq_rel';
-BAR_SYNC:   'bar_sync';
+SC:   'sc';
 
 Atom    :   'atom';
+Red     :   'red';
 
 Plus    :   'plus';
 Minus   :   'minus';

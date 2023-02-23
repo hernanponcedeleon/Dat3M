@@ -610,11 +610,11 @@ public class EventFactory {
             return fence;
         }
 
-        public static RMWOp newTaggedRMWOp(IExpr address, Register register, IExpr value,
+        public static AtomicFetchOp newTaggedAtomOp(IExpr address, Register register, IExpr value,
                                            IOpBin op, String sem, String scope) {
-            RMWOp rmw = new RMWOp(address, register, value, op);
-            rmw.addFilters(scope, sem);
-            return rmw;
+            AtomicFetchOp atom = new AtomicFetchOp(register, address, value, op, sem);
+            atom.addFilters(scope);
+            return atom;
         }
 
         //TODO
