@@ -34,8 +34,9 @@ let strong-write = W & (RLX | REL)
 let strong-read = R & (RLX | ACQ)
 let strong-m = strong-write | strong-read
 let strong-operation = strong-write | strong-read | F
-let morally-strong-fence = ([strong-operation]; sr; [F]) | ([F]; sr; [strong-operation])
-let morally-strong = po | ([strong-m]; (sr & loc); [strong-m]) | morally-strong-fence
+let sr-fence = ([strong-operation]; sr; [F]) | ([F]; sr; [strong-operation]) | ([F]; sr; [F])
+let po-fence = ([strong-operation]; po; [F]) | ([F]; po; [strong-operation]) | ([F]; po; [F])
+let morally-strong = ([strong-m]; po-loc; [strong-m]) | ([strong-m]; (sr & loc); [strong-m]) | sr-fence | po-fence
 
 let sc = [F & SC] ; sr; [F & SC]
 let rec obs = (morally-strong & rf) | (obs; rmw; obs)
