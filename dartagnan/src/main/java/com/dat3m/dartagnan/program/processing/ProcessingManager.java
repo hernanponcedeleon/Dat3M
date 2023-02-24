@@ -94,7 +94,8 @@ public class ProcessingManager implements ProgramProcessor {
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
                 MemoryAllocation.newInstance(),
                 EventIdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
-                printAfterProcessing ? DebugPrint.withHeader("After processing") : null
+                printAfterProcessing ? DebugPrint.withHeader("After processing") : null,
+                LogProgramStatistics.newInstance()
         ));
         programProcessors.removeIf(Objects::isNull);
     }
