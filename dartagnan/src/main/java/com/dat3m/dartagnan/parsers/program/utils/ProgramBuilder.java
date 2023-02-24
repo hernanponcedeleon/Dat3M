@@ -46,9 +46,8 @@ public class ProgramBuilder {
     
     public Program build(){
         Program program = new Program(memory, format);
-        buildInitThreads();
         for(Thread thread : threads.values()){
-        	addChild(thread.getId(), getOrCreateLabel("END_OF_T" + thread.getId()));
+            addChild(thread.getId(), getOrCreateLabel("END_OF_T" + thread.getId()));
             validateLabels(thread);
             program.add(thread);
             thread.setProgram(program);
@@ -190,27 +189,6 @@ public class ProgramBuilder {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Private utility
-
-    private int nextThreadId(){
-        int maxId = -1;
-        for(int key : threads.keySet()){
-            maxId = Integer.max(maxId, key);
-        }
-        return maxId + 1;
-    }
-
-    private void buildInitThreads(){
-        int nextThreadId = nextThreadId();
-        for(MemoryObject memObj : memory.getObjects()) {
-            assert memObj.isStaticallyAllocated();
-            for (Integer field : memObj.getInitializedFields()) {
-                Event init = EventFactory.newInit(memObj, field);
-                Thread thread = new Thread(nextThreadId, init);
-                threads.put(nextThreadId,thread);
-                nextThreadId++;
-            }
-        }
-    }
 
     private void validateLabels(Thread thread) throws MalformedProgramException {
         Map<String, Label> threadLabels = new HashMap<>();
