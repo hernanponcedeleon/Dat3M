@@ -6,7 +6,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
 
 public class Memory {
 
@@ -19,9 +19,9 @@ public class Memory {
      * @return
      * Points to the created location.
      */
-    public MemoryObject allocate(int size) {
+    public MemoryObject allocate(int size, boolean isStatic) {
         Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
-        MemoryObject address = new MemoryObject(nextIndex++,size);
+        MemoryObject address = new MemoryObject(nextIndex++, size, isStatic);
         objects.add(address);
         return address;
     }

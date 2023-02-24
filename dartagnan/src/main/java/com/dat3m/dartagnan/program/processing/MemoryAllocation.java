@@ -32,7 +32,7 @@ public class MemoryAllocation implements ProgramProcessor {
 
         final List<MemoryObject> memObjs = new ArrayList<>();
         for (Malloc malloc : program.getEvents(Malloc.class)) {
-            final MemoryObject memoryObject = program.getMemory().allocate(getSize(malloc));
+            final MemoryObject memoryObject = program.getMemory().allocate(getSize(malloc), false);
             memObjs.add(memoryObject);
 
             final Local local = EventFactory.newLocal(malloc.getResultRegister(), memoryObject);
