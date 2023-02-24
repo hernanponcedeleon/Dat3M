@@ -1,8 +1,8 @@
 PTX RC
 "Release Consistency"
 {
-0:%r1=0;
-1:%r2=0;
+P0:%r1=0;
+P1:%r2=0;
 x=0;
 y=0;
 }

@@ -1,8 +1,9 @@
 PTX CoRR2
 "Coherence, Read-Read"
 {
-0:%r1=0; 0:%r2=0;
-1:%r1=0; 1:%r2=0;
+P0:%r1=0; P0:%r2=0;
+P1:%r1=0; P1:%r2=0;
+x=0;
 }
  P0@cta 0,gpu 0         | P1@cta 1,gpu 0          ;
  st.release.gpu x, 1    | ld.weak %r2, x          ;
