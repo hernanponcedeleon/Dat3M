@@ -263,7 +263,7 @@ public class VisitorLitmusPTX
         String scope = ctx.scope().content;
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, ARCH_PRECISION);
         return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, Tag.PTX.RLX, scope));
+                EventFactory.PTX.newTaggedRedOp(object, register_destination, constant, op, Tag.PTX.RLX, scope));
     }
 
     @Override
@@ -274,7 +274,7 @@ public class VisitorLitmusPTX
         String scope = ctx.scope().content;
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, ARCH_PRECISION);
         return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, Tag.PTX.RLX, scope));
+                EventFactory.PTX.newTaggedRedOp(object, register_destination, register_operand, op, Tag.PTX.RLX, scope));
     }
 
     @Override
@@ -285,7 +285,7 @@ public class VisitorLitmusPTX
         String scope = ctx.scope().content;
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, ARCH_PRECISION);
         return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, Tag.PTX.ACQ_REL, scope));
+                EventFactory.PTX.newTaggedRedOp(object, register_destination, constant, op, Tag.PTX.ACQ_REL, scope));
     }
 
     @Override
@@ -296,6 +296,6 @@ public class VisitorLitmusPTX
         String scope = ctx.scope().content;
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, ARCH_PRECISION);
         return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, Tag.PTX.ACQ_REL, scope));
+                EventFactory.PTX.newTaggedRedOp(object, register_destination, register_operand, op, Tag.PTX.ACQ_REL, scope));
     }
 }

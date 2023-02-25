@@ -610,11 +610,20 @@ public class EventFactory {
             return fence;
         }
 
-        public static AtomicFetchOp newTaggedAtomOp(IExpr address, Register register, IExpr value,
+        public static RMWFetchOp newTaggedAtomOp(IExpr address, Register register, IExpr value,
                                            IOpBin op, String sem, String scope) {
-            AtomicFetchOp atom = new AtomicFetchOp(register, address, value, op, sem);
+            RMWFetchOp atom = new RMWFetchOp(address, register, value, op, Tag.Linux.MO_MB);
             atom.addFilters(scope);
+            atom.addFilters(sem);
             return atom;
+        }
+
+        public static RMWOp newTaggedRedOp(IExpr address, Register register, IExpr value,
+                                                    IOpBin op, String sem, String scope) {
+            RMWOp red = new RMWOp(address, register, value, op);
+            red.addFilters(scope);
+            red.addFilters(sem);
+            return red;
         }
 
         //TODO
