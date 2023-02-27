@@ -4,7 +4,6 @@ import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import static com.dat3m.dartagnan.GlobalSettings.*;
-
 import java.math.BigInteger;
 
 public enum IOpUn {
@@ -29,8 +28,8 @@ public enum IOpUn {
     }
 
     public Formula encode(Formula e, FormulaManager m) {
+        IntegerFormulaManager imgr = m.getIntegerFormulaManager();
         if (e instanceof IntegerFormula) {
-            IntegerFormulaManager imgr = m.getIntegerFormulaManager();
             IntegerFormula i = (IntegerFormula) e;
             switch (this) {
                 case MINUS:
@@ -164,11 +163,23 @@ public enum IOpUn {
                     return bvmgr.extend(bv, 48, true);
                 case SEXT3264:
                     return bvmgr.extend(bv, 32, true);
+                case CTLZ:
+                    // enc = extract(bv, 63, 63) == 1 ? 0 : (1 + extract(bv, 62, 62) == 1 ? 0 : 1 + extract ...)
+                    IntegerFormula enc = imgr.makeNumber(0);
+                    for(int i = 0; i < bvmgr.getLength(bv) ; i++) {
+                        enc = ctlzEncodingAtIndex(i, bv, enc, m);
+                    }
+                    return enc;
                 default:
-                    // TODO add support for CTLZ. Right now we assume constant propagation gor rid
-                    // of such instructions
                     throw new UnsupportedOperationException("Encoding of IOpUn operation " + this + " not supported on bitvector formulas.");
             }
         }
+    }
+
+    private IntegerFormula ctlzEncodingAtIndex(int i, BitvectorFormula bv, IntegerFormula rest, FormulaManager m) {
+        IntegerFormulaManager imgr = m.getIntegerFormulaManager();
+        BitvectorFormulaManager bvmgr = m.getBitvectorFormulaManager();
+        IntegerFormula elseCase = i == 0 ? imgr.makeNumber(1) : imgr.add(imgr.makeNumber(1), rest);
+        return m.getBooleanFormulaManager().ifThenElse(bvmgr.equal(bvmgr.extract(bv, i, i), bvmgr.makeBitvector(1, 1)), imgr.makeNumber(0), elseCase);
     }
 }
