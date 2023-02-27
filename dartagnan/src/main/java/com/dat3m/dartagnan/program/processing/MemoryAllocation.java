@@ -56,12 +56,13 @@ public class MemoryAllocation implements ProgramProcessor {
 
         int nextThreadId = threads.get(threads.size() - 1).getId() + 1;
         for(MemoryObject memObj : program.getMemory().getObjects()) {
-            final Iterable<Integer> fieldsToInit;
-            if (!isLitmus && memObj.isStaticallyAllocated()) {
-                fieldsToInit = memObj.getInitializedFields();
-            } else {
-                fieldsToInit = IntStream.range(0, memObj.size()).boxed()::iterator;
-            }
+            // The last case "heuristically checks" if Smack generated initialization or not:
+            // we expect at least every 8 bytes to be initialized.
+            final boolean isStaticallyInitialized = !isLitmus
+                    && memObj.isStaticallyAllocated()
+                    && (memObj.getInitializedFields().size() >= memObj.size() / 8);
+            final Iterable<Integer> fieldsToInit = isStaticallyInitialized ?
+                    memObj.getInitializedFields() : IntStream.range(0, memObj.size()).boxed()::iterator;
 
             for(int i : fieldsToInit) {
                 final Event init = EventFactory.newInit(memObj, i);
