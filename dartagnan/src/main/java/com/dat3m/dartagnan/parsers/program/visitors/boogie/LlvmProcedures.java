@@ -35,8 +35,12 @@ public class LlvmProcedures {
             // Intrinsics
             "llvm.smax.i32",
             "llvm.smax.i64",
+            "llvm.umax.i32",
+            "llvm.umax.i64",
             "llvm.smin.i32",
             "llvm.smin.i64",
+            "llvm.umin.i32",
+            "llvm.umin.i64",
             "llvm.ctlz.i32",
             "llvm.ctlz.i64");
 
@@ -127,11 +131,22 @@ public class LlvmProcedures {
                 return;
             case "llvm.smax.i32":
             case "llvm.smax.i64":
-            case "llvm.smin.i32":
-            case "llvm.smin.i64":
+            case "llvm.umax.i32":
+            case "llvm.umax.i64":
                 i1 = (IExpr) p0;
                 i2 = (IExpr) p1;
-                cond = name.contains("max") ? new Atom(i1, COpBin.GTE, i2) : new Atom(i1, COpBin.LTE, i2);
+                cond = name.contains("smax") ? new Atom(i1, COpBin.GTE, i2) : new Atom(i1, COpBin.UGTE, i2);
+                visitor.programBuilder
+                        .addChild(visitor.threadCount, EventFactory.newLocal(reg, new IfExpr(cond, i1, i2)))
+                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+                return;
+            case "llvm.smin.i32":
+            case "llvm.smin.i64":
+            case "llvm.umin.i32":
+            case "llvm.umin.i64":
+                i1 = (IExpr) p0;
+                i2 = (IExpr) p1;
+                cond = name.contains("smin") ? new Atom(i1, COpBin.LTE, i2) : new Atom(i1, COpBin.ULTE, i2);
                 visitor.programBuilder
                         .addChild(visitor.threadCount, EventFactory.newLocal(reg, new IfExpr(cond, i1, i2)))
                         .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
