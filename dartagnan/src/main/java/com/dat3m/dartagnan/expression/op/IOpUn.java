@@ -28,8 +28,8 @@ public enum IOpUn {
     }
 
     public Formula encode(Formula e, FormulaManager m) {
-        IntegerFormulaManager imgr = m.getIntegerFormulaManager();
         if (e instanceof IntegerFormula) {
+            IntegerFormulaManager imgr = m.getIntegerFormulaManager();
             IntegerFormula i = (IntegerFormula) e;
             switch (this) {
                 case MINUS:
@@ -165,7 +165,7 @@ public enum IOpUn {
                     return bvmgr.extend(bv, 32, true);
                 case CTLZ:
                     // enc = extract(bv, 63, 63) == 1 ? 0 : (extract(bv, 62, 62) == 1 ? 1 : extract ... extract(bv, 0, 0) ? 63 : 64)
-                    IntegerFormula enc = imgr.makeNumber(bvmgr.getLength(bv));
+                    BitvectorFormula enc = bvmgr.makeBitvector(bvmgr.getLength(bv), bvmgr.getLength(bv));
                     for(int i = bvmgr.getLength(bv); i >= 0; i--) {
                         enc = ctlzEncodingAtIndex(i, bv, enc, m);
                     }
@@ -176,13 +176,12 @@ public enum IOpUn {
         }
     }
 
-    private IntegerFormula ctlzEncodingAtIndex(int i, BitvectorFormula bv, IntegerFormula rest, FormulaManager m) {
-        IntegerFormulaManager imgr = m.getIntegerFormulaManager();
+    private BitvectorFormula ctlzEncodingAtIndex(int i, BitvectorFormula bv, BitvectorFormula rest, FormulaManager m) {
         BitvectorFormulaManager bvmgr = m.getBitvectorFormulaManager();
         int bvLength = bvmgr.getLength(bv);
         if(i == bvLength) {
             return rest;
         }
-        return m.getBooleanFormulaManager().ifThenElse(bvmgr.equal(bvmgr.extract(bv, bvLength - (i + 1), bvLength - (i + 1)), bvmgr.makeBitvector(1, 1)), imgr.makeNumber(i), rest);
+        return m.getBooleanFormulaManager().ifThenElse(bvmgr.equal(bvmgr.extract(bv, bvLength - (i + 1), bvLength - (i + 1)), bvmgr.makeBitvector(1, 1)), bvmgr.makeBitvector(bvLength, i), rest);
     }
 }
