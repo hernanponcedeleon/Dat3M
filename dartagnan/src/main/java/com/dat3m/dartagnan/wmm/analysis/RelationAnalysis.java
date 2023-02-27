@@ -715,10 +715,13 @@ public class RelationAnalysis {
             List<Store> nonInitWrites = program.getEvents(Store.class);
             Set<Tuple> may = new HashSet<>();
             for (Event w1 : program.getEvents()) {
-                if (!w1.is(WRITE)) {
+                if (!w1.is(WRITE) || w1.is(PTX.WEAK)) {
                     continue;
                 }
                 for (MemEvent w2 : nonInitWrites) {
+                    if (w2.is(PTX.WEAK)) {
+                        continue;
+                    }
                     if (w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)
                             && alias.mayAlias((MemEvent) w1, w2)) {
                         may.add(new Tuple(w1, w2));

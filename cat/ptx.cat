@@ -22,20 +22,20 @@ include "filters.cat"
  * M: W + R, event
  * Implemented:
  *  sr: (scope) the scope relation sr relating events that come from threads which reside within the same scope;
- *  sc: refers to the fence-sc of paper
  * TODO: proxy.alias, surface, texture, bar;
  *)
 
 (*******************)
-(* PTX Basic Term *)
+(*  PTX Basic Term *)
 (*******************)
 (* Events *)
 let strong-write = W & (RLX | REL)
 let strong-read = R & (RLX | ACQ)
+let strong-m = strong-write | strong-read
 let strong-operation = strong-write | strong-read | F
 let sr-fence = ([strong-operation]; sr; [F]) | ([F]; sr; [strong-operation])
 let po-fence = ([strong-operation]; po; [F]) | ([F]; po; [strong-operation])
-let sr-m = ([strong-operation]; (sr & loc); [strong-operation])
+let sr-m = ([strong-m]; (sr & loc); [strong-m])
 let po-m = ([M]; po-loc; [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
 
