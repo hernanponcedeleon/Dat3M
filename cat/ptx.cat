@@ -33,7 +33,11 @@ include "filters.cat"
 let strong-write = W & (RLX | REL)
 let strong-read = R & (RLX | ACQ)
 let strong-operation = strong-write | strong-read | F
-let morally-strong = po | ([strong-operation]; sr; [strong-operation]) | loc
+let sr-fence = ([strong-operation]; sr; [F]) | ([F]; sr; [strong-operation])
+let po-fence = ([strong-operation]; po; [F]) | ([F]; po; [strong-operation])
+let sr-m = ([strong-operation]; (sr & loc); [strong-operation])
+let po-m = ([M]; po-loc; [M])
+let morally-strong = sr-fence | po-fence | sr-m | po-m
 
 let fence-sc = [F & SC] ; sr; [F & SC]
 let rec obs = (morally-strong & rf) | (obs; rmw; obs)
