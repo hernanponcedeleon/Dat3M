@@ -1,11 +1,11 @@
 PTX CoRR
 "Coherence, Read-Read"
 {
+x = 0;
 P0:%r1=0; P0:%r2=0;
-P1:%r1=0; P1:%r2=0;
 }
  P0@cta 0,gpu 0         | P1@cta 1,gpu 0          ;
  st.release.gpu x, 1    | ld.acquire.gpu %r1, x   ;
- ld.weak %r3, x         | ld.weak %r2, x          ;
+                        | ld.weak %r2, x          ;
 ~exists
 (P1:%r1 == 1 /\ P1:%r2 == 0)
