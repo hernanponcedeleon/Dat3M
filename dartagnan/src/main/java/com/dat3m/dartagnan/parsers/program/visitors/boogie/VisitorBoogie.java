@@ -113,7 +113,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			return true;
 		}
 		// We also ignore all kinds of strings for now.
-		if (varName.contains(".str")) {
+		if (varName.startsWith(".str")) {
 			return true;
 		}
 		return false;
