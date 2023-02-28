@@ -41,8 +41,8 @@ let morally-strong = sr-fence | po-fence | sr-m | po-m
 
 let fence-sc = [F & SC] ; sr; [F & SC]
 let rec obs = (morally-strong & rf) | (obs; rmw; obs)
-let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
-let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
+let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
+let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po; [F & ACQ_REL])
 let sw = (morally-strong & (release-pattern; obs; acquire-pattern)) | fence-sc
 let causality-base = (po?; sw; po?)+
 let causality = causality-base | (obs; (causality-base | po-loc))
