@@ -18,7 +18,15 @@ variableDeclarator
     ;
 
 variableDeclaratorLocation
-    :   location Equals constant
+    :   location Equals constant proxySpace
+    ;
+
+proxySpace
+    :
+    |   At Global Physically Aliases location
+    |   At Shared Physically Aliases location
+    |   At Texref Virtually Aliases location
+    |   At Surfref Virtually Aliases location
     ;
 
 variableDeclaratorRegister
@@ -67,162 +75,84 @@ instructionRow
     ;
 instruction
     :
-    |   storeRelaxed
-    |   storeRelease
-    |   storeWeak
-    |   loadRelaxed
-    |   loadAcquire
-    |   loadWeak
-    |   fencePhysic
-    |   atomRelaxed
-    |   atomAcqRel
-    |   redRelaxed
-    |   redAcqRel
+    |   storeInstruction
+    |   loadInstruction
+    |   fenceInstruction
+    |   atomInstruction
+    |   redInstruction
     ;
 
-storeWeak
-    :   storeWeakConstant
-    |   storeWeakRegister
+storeInstruction
+    :   storeConstant
+    |   storeRegister
     ;
 
-storeWeakConstant
-    :   Store Period Weak location Comma constant
+storeConstant
+    :   store Period sem (Period scope)? location Comma constant
     ;
 
-storeWeakRegister
-    :   Store Period Weak location Comma register
+storeRegister
+    :   store Period sem (Period scope)? location Comma register
     ;
 
-storeRelaxed
-    :   storeRelaxedConstant
-    |   storeRelaxedRegister
+loadInstruction
+    :   loadConstant
+    |   loadLocation
     ;
 
-storeRelaxedConstant
-    :   Store Period Relaxed Period scope location Comma constant
+loadConstant
+    :   load Period sem (Period scope)? register Comma constant
     ;
 
-storeRelaxedRegister
-    :   Store Period Relaxed Period scope location Comma register
-    ;
-
-storeRelease
-    :   storeReleaseConstant
-    |   storeReleaseRegister
-    ;
-
-storeReleaseConstant
-    :   Store Period Release Period scope location Comma constant
-    ;
-
-storeReleaseRegister
-    :   Store Period Release Period scope location Comma register
+loadLocation
+    :   load Period sem (Period scope)? register Comma location
     ;
 
 
-loadWeak
-    :   loadWeakConstant
-    |   loadWeakLocation
-    ;
-
-loadWeakConstant
-    :   Load Period Weak register Comma constant
-    ;
-
-loadWeakLocation
-    :   Load Period Weak register Comma location
-    ;
-
-loadRelaxed
-    :   loadRelaxedConstant
-    |   loadRelaxedLocation
-    ;
-
-loadRelaxedConstant
-    :   Load Period Relaxed Period scope register Comma constant
-    ;
-
-loadRelaxedLocation
-    :   Load Period Relaxed Period scope register Comma location
-    ;
-
-loadAcquire
-    :   loadAcquireConstant
-    |   loadAcquireLocation
-    ;
-
-loadAcquireConstant
-    :   Load Period Acquire Period scope register Comma constant
-    ;
-
-loadAcquireLocation
-    :   Load Period Acquire Period scope register Comma location
+fenceInstruction
+    :   fencePhysic
+    |   fenceProxy
+    |   fenceAlias
     ;
 
 fencePhysic
-    :   fenceAcqRel
-    |   fenceSC
+    :   Fence Period sem Period scope
     ;
 
-fenceAcqRel
-    :   Fence Period ACQ_REL Period scope
+fenceProxy
+    :   Fence Period proxy
     ;
 
-fenceSC
-    :   Fence Period SC Period scope
+fenceAlias
+    :   Fence Period Alias
     ;
 
-atomRelaxed
-    :   atomRelaxedConstant
-    |   atomRelaxedRegister
+atomInstruction
+    :   atomConstant
+    |   atomRegister
     ;
 
-atomRelaxedConstant
-    :   Atom Period Relaxed Period scope Period operation register Comma location Comma constant
+atomConstant
+    :   atom Period sem Period scope Period operation register Comma location Comma constant
     ;
 
-atomRelaxedRegister
-    :   Atom Period Relaxed Period scope Period operation register Comma location Comma register
+atomRegister
+    :   atom Period sem Period scope Period operation register Comma location Comma register
     ;
 
-atomAcqRel
-    :   atomAcqRelConstant
-    |   atomAcqRelRegister
+redInstruction
+    :   redConstant
+    |   redRegister
     ;
 
-atomAcqRelConstant
-    :   Atom Period ACQ_REL Period scope Period operation register Comma location Comma constant
+redConstant
+    :   red Period sem Period scope Period operation location Comma constant
     ;
 
-atomAcqRelRegister
-    :   Atom Period ACQ_REL Period scope Period operation register Comma location Comma register
+redRegister
+    :   red Period sem Period scope Period operation location Comma register
     ;
 
-redRelaxed
-    :   redRelaxedConstant
-    |   redRelaxedRegister
-    ;
-
-redRelaxedConstant
-    :   Red Period Relaxed Period scope Period operation location Comma constant
-    ;
-
-redRelaxedRegister
-    :   Red Period Relaxed Period scope Period operation location Comma register
-    ;
-
-redAcqRel
-    :   redAcqRelConstant
-    |   redAcqRelRegister
-    ;
-
-redAcqRelConstant
-    :   Red Period ACQ_REL Period scope Period operation location Comma constant
-    ;
-
-redAcqRelRegister
-    :   Red Period ACQ_REL Period scope Period operation location Comma register
-    ;
 
 scope returns [String content]
     :   CTA {$content = "CTA";}
@@ -268,8 +198,55 @@ gpuID returns [int id]
     :   t = DigitSequence {$id = Integer.parseInt($t.text);}
     ;
 
-Load    :   'ld';
-Store   :   'st';
+sem returns [String content]
+    :   Weak {$content = "WEAK";}
+    |   Relaxed {$content = "RLX";}
+    |   Acquire {$content = "ACQ";}
+    |   Release {$content = "REL";}
+    |   ACQ_REL {$content = "ACQ_REL";}
+    |   SC {$content = "SC";}
+    ;
+
+load returns [String content]
+    :   Load {$content = "LD";}
+    |   TextureLoad {$content = "TLD";}
+    |   SurfaceLoad {$content = "SULD";}
+    |   ConstantLoad {$content = "COLD";}
+    ;
+
+store returns [String content]
+    :   Store {$content = "ST";}
+    |   Sustore {$content = "SUST";}
+    ;
+
+atom returns [String content]
+    :   Atom {$content = "ATOM";}
+    |   SurfaceAtom {$content = "SUATOM";}
+    ;
+
+red returns [String content]
+    :   Red {$content = "RED";}
+    |   SurfaceRed {$content = "SURED";}
+    ;
+
+proxy returns [String content]
+    :   Surface {$content = "SURFACE";}
+    |   Texture {$content = "TEXTURE";}
+    ;
+
+Load            :   'ld';
+TextureLoad     :   'tld';
+SurfaceLoad     :   'suld';
+ConstantLoad    :   'cold';
+
+Store           :   'st';
+Sustore         :   'sust';
+
+Atom            :   'atom';
+SurfaceAtom     :   'suatom';
+
+Red             :   'red';
+SurfaceRed      :   'sured';
 
 Weak    :   'weak';
 Relaxed :   'relaxed';
@@ -285,9 +262,6 @@ Fence   :   'fence';
 ACQ_REL :   'acq_rel';
 SC:   'sc';
 
-Atom    :   'atom';
-Red     :   'red';
-
 Plus    :   'plus';
 Minus   :   'minus';
 Mult    :   'mult';
@@ -301,6 +275,18 @@ Or      :   'or';
 Xor     :   'xor';
 L_Shift :   'l_shift';
 R_Shift :   'r_shift';
+
+Global      :   'global';
+Shared      :   'shared';
+Texref      :   'textref';
+Surfref     :   'surfref';
+Physically  :   'physically';
+Virtually   :   'virtually';
+Aliases     :   'aliases';
+
+Alias       :   'alias';
+Surface     :   'surface';
+Texture     :   'texture';
 
 LitmusLanguage
     :   'PTX'
