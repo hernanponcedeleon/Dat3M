@@ -80,9 +80,9 @@ public class MemoryAllocation implements ProgramProcessor {
             // we expect at least every 8 bytes to be initialized.
             final boolean isStaticallyInitialized = !isLitmus
                     && memObj.isStaticallyAllocated()
-                    && (memObj.getInitializedFields().size() >= memObj.size() / 8);
+                    && (memObj.getStaticallyInitializedFields().size() >= memObj.size() / 8);
             final Iterable<Integer> fieldsToInit = isStaticallyInitialized ?
-                    memObj.getInitializedFields() : IntStream.range(0, memObj.size()).boxed()::iterator;
+                    memObj.getStaticallyInitializedFields() : IntStream.range(0, memObj.size()).boxed()::iterator;
 
             for(int i : fieldsToInit) {
                 final Event init = EventFactory.newInit(memObj, i);

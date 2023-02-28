@@ -17,6 +17,7 @@ import java.util.Set;
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Associated with an array of memory locations.
@@ -55,7 +56,8 @@ public class MemoryObject extends IConst {
     public boolean isDynamicallyAllocated() { return !isStatic; }
 
     // Should only be called for statically allocated objects.
-    public Set<Integer> getInitializedFields() {
+    public Set<Integer> getStaticallyInitializedFields() {
+        checkState(this.isStaticallyAllocated());
         return initialValues.keySet();
     }
 
