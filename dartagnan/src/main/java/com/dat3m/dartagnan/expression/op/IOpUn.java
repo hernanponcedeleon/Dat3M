@@ -4,7 +4,6 @@ import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import static com.dat3m.dartagnan.GlobalSettings.*;
-
 import java.math.BigInteger;
 
 public enum IOpUn {
@@ -164,9 +163,18 @@ public enum IOpUn {
                     return bvmgr.extend(bv, 48, true);
                 case SEXT3264:
                     return bvmgr.extend(bv, 32, true);
+                case CTLZ:
+                    // enc = extract(bv, 63, 63) == 1 ? 0 : (extract(bv, 62, 62) == 1 ? 1 : extract ... extract(bv, 0, 0) ? 63 : 64)
+                    int bvLength = bvmgr.getLength(bv);
+                    BitvectorFormula bv1 = bvmgr.makeBitvector(1, 1);
+                    BitvectorFormula enc = bvmgr.makeBitvector(bvLength, bvLength);
+                    for(int i = bvmgr.getLength(bv) - 1; i >= 0; i--) {
+                        BitvectorFormula bvi = bvmgr.makeBitvector(bvLength, i);
+                        BitvectorFormula bvbit = bvmgr.extract(bv, bvLength - (i + 1), bvLength - (i + 1));
+                        enc = m.getBooleanFormulaManager().ifThenElse(bvmgr.equal(bvbit, bv1), bvi, enc);
+                    }
+                    return enc;
                 default:
-                    // TODO add support for CTLZ. Right now we assume constant propagation gor rid
-                    // of such instructions
                     throw new UnsupportedOperationException("Encoding of IOpUn operation " + this + " not supported on bitvector formulas.");
             }
         }
