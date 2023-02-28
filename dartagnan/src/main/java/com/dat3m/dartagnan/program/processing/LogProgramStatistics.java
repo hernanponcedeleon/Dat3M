@@ -44,7 +44,11 @@ public class LogProgramStatistics implements ProgramProcessor {
             // TODO: Why do we do this?
         }
 
-        int addressSpaceSize = program.getMemory().getObjects().stream().mapToInt(MemoryObject::size).sum();
+        int staticAddressSpaceSize = program.getMemory().getObjects().stream()
+                .filter(MemoryObject::isStaticallyAllocated).mapToInt(MemoryObject::size).sum();
+        int dynamicAddressSpaceSize = program.getMemory().getObjects().stream()
+                .filter(MemoryObject::isDynamicallyAllocated).mapToInt(MemoryObject::size).sum();
+        int totalAddressSpaceSize = dynamicAddressSpaceSize + staticAddressSpaceSize;
 
         StringBuilder output = new StringBuilder();
         output.append("\n======== Program statistics ========").append("\n");
@@ -54,7 +58,9 @@ public class LogProgramStatistics implements ProgramProcessor {
                 .append("\t#Loads: ").append(loadCount).append("\n")
                 .append("\t#Fences: ").append(fenceCount).append("\n")
                 .append("\t#Init: ").append(initCount).append("\n")
-                .append("#Allocated bytes: ").append(addressSpaceSize).append("\n");
+                .append("#Allocated bytes: ").append(totalAddressSpaceSize).append("\n")
+                .append("\tStatically allocated: ").append(staticAddressSpaceSize).append("\n")
+                .append("\tDynamically allocated: ").append(dynamicAddressSpaceSize).append("\n");
         output.append("========================================");
         logger.info(output);
     }

@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
+import com.dat3m.dartagnan.program.processing.MemoryAllocation;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.verification.Context;
 import org.junit.Test;
@@ -74,6 +75,7 @@ public class AnalysisTest {
         Program program = b.build();
         LoopUnrolling.newInstance().run(program);
         Compilation.newInstance().run(program);
+        MemoryAllocation.newInstance().run(program);
         Configuration config = Configuration.defaultConfiguration();
         Context context = Context.create();
         context.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
@@ -130,6 +132,7 @@ public class AnalysisTest {
         b.addChild(0, e3);
 
         Program program = b.build();
+        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
         MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
@@ -171,6 +174,7 @@ public class AnalysisTest {
         b.addChild(0, e3);
 
         Program program = b.build();
+        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
         MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
@@ -217,6 +221,7 @@ public class AnalysisTest {
         b.addChild(0, l0);
 
         Program program = b.build();
+        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
         MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
@@ -258,6 +263,7 @@ public class AnalysisTest {
         b.addChild(0, e3);
 
         Program program = b.build();
+        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
         MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
