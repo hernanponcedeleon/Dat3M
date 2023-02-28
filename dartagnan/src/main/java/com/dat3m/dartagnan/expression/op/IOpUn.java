@@ -165,23 +165,18 @@ public enum IOpUn {
                     return bvmgr.extend(bv, 32, true);
                 case CTLZ:
                     // enc = extract(bv, 63, 63) == 1 ? 0 : (extract(bv, 62, 62) == 1 ? 1 : extract ... extract(bv, 0, 0) ? 63 : 64)
-                    BitvectorFormula enc = bvmgr.makeBitvector(bvmgr.getLength(bv), bvmgr.getLength(bv));
-                    for(int i = bvmgr.getLength(bv); i >= 0; i--) {
-                        enc = ctlzEncodingAtIndex(i, bv, enc, m);
+                    int bvLength = bvmgr.getLength(bv);
+                    BitvectorFormula bv1 = bvmgr.makeBitvector(1, 1);
+                    BitvectorFormula enc = bvmgr.makeBitvector(bvLength, bvLength);
+                    for(int i = bvmgr.getLength(bv) - 1; i >= 0; i--) {
+                        BitvectorFormula bvi = bvmgr.makeBitvector(bvLength, i);
+                        BitvectorFormula bvbit = bvmgr.extract(bv, bvLength - (i + 1), bvLength - (i + 1));
+                        enc = m.getBooleanFormulaManager().ifThenElse(bvmgr.equal(bvbit, bv1), bvi, enc);
                     }
                     return enc;
                 default:
                     throw new UnsupportedOperationException("Encoding of IOpUn operation " + this + " not supported on bitvector formulas.");
             }
         }
-    }
-
-    private BitvectorFormula ctlzEncodingAtIndex(int i, BitvectorFormula bv, BitvectorFormula rest, FormulaManager m) {
-        BitvectorFormulaManager bvmgr = m.getBitvectorFormulaManager();
-        int bvLength = bvmgr.getLength(bv);
-        if(i == bvLength) {
-            return rest;
-        }
-        return m.getBooleanFormulaManager().ifThenElse(bvmgr.equal(bvmgr.extract(bv, bvLength - (i + 1), bvLength - (i + 1)), bvmgr.makeBitvector(1, 1)), bvmgr.makeBitvector(bvLength, i), rest);
     }
 }
