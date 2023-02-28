@@ -63,10 +63,14 @@ public class MemoryAllocation implements ProgramProcessor {
         for(MemoryObject memObj : memory.getObjects()) {
             memObj.setAddress(nextAddr);
 
-            // nextAddr += memObjSize + ((-memObjSize) mod alignment)
+            // Compute next aligned address as follows:
+            //  nextAddr = curAddr + size + padding = k*alignment   // Alignment requirement
+            //  => padding = k*alignment - curAddr - size
+            //  => padding mod alignment = (-size) mod alignment    // k*alignment and curAddr are 0 mod alignment.
+            //  => padding = (-size) mod alignment                  // Because padding < alignment
             final BigInteger memObjSize = BigInteger.valueOf(memObj.size());
-            nextAddr = nextAddr.add(memObjSize)
-                    .add(memObjSize.negate().mod(alignment));
+            final BigInteger padding = memObjSize.negate().mod(alignment);
+            nextAddr = nextAddr.add(memObjSize).add(padding);
         }
     }
 
