@@ -59,6 +59,9 @@ public class MemoryObject extends IConst {
         return initialValues.keySet();
     }
 
+    public BigInteger getAddress() { return this.address; }
+    public void setAddress(BigInteger addr) { this.address = addr; }
+
     /**
      * @return Number of fields in this array.
      */

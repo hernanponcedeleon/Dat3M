@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -29,16 +30,18 @@ public class MemoryAllocation implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
+        processMallocs(program);
+        moveAndAlignMemoryObjects(program.getMemory());
+        createInitEvents(program);
+    }
 
+    private void processMallocs(Program program) {
         for (Malloc malloc : program.getEvents(Malloc.class)) {
-            final MemoryObject memoryObject = program.getMemory().allocate(getSize(malloc), false);
-            final Local local = EventFactory.newLocal(malloc.getResultRegister(), memoryObject);
+            final MemoryObject allocatedObject = program.getMemory().allocate(getSize(malloc), false);
+            final Local local = EventFactory.newLocal(malloc.getResultRegister(), allocatedObject);
             local.addFilters(Tag.Std.MALLOC);
             malloc.replaceBy(local);
         }
-
-        createInitEvents(program);
-        Memory.fixateMemoryValues().run(program);
     }
 
     private int getSize(Malloc malloc) {
@@ -47,6 +50,23 @@ public class MemoryAllocation implements ProgramProcessor {
         } catch (Exception e) {
             final String error = String.format("Variable-sized malloc '%s' is not supported", malloc);
             throw new MalformedProgramException(error);
+        }
+    }
+
+    public void moveAndAlignMemoryObjects(Memory memory) {
+        // Addresses are typically at least two byte aligned
+        //      https://stackoverflow.com/questions/23315939/why-2-lsbs-of-32-bit-arm-instruction-address-not-used
+        // Many algorithms rely on this assumption for correctness.
+        // Many objects have even stricter alignment requirements and need up to 8-byte alignment.
+        final BigInteger alignment = BigInteger.valueOf(8);
+        BigInteger nextAddr = alignment;
+        for(MemoryObject memObj : memory.getObjects()) {
+            memObj.setAddress(nextAddr);
+
+            // nextAddr += memObjSize + ((-memObjSize) mod alignment)
+            final BigInteger memObjSize = BigInteger.valueOf(memObj.size());
+            nextAddr = nextAddr.add(memObjSize)
+                    .add(memObjSize.negate().mod(alignment));
         }
     }
 
@@ -74,6 +94,5 @@ public class MemoryAllocation implements ProgramProcessor {
                 thread.updateExit(thread.getEntry());
             }
         }
-
     }
 }
