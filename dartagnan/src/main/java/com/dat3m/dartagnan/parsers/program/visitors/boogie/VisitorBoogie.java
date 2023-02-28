@@ -116,6 +116,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		if (varName.startsWith(".str")) {
 			return true;
 		}
+		// These are special strings containing function names.
+		if (varName.startsWith("__PRETTY_FUNCTION")) {
+			return true;
+		}
 		return false;
 	}
 	
