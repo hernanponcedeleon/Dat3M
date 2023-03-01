@@ -182,8 +182,8 @@ public class Dartagnan extends BaseOptions {
                     // we get some data flow information by observing the edge
                     // FR edges only give ordering information which is known if the pair is also in PO
                     // CO edges only give ordering information which is known if the pair is also in PO
-                    generateGraphvizFile(m, 1, (x, y) -> false, (x, y) -> x.getThread().equals(y.getThread()),
-                            (x, y) -> x.getThread().equals(y.getThread()), System.getenv("DAT3M_OUTPUT") + "/", name,
+                    generateGraphvizFile(m, 1, (x, y) -> true, (x, y) -> !x.getThread().equals(y.getThread()),
+                            (x, y) -> !x.getThread().equals(y.getThread()), System.getenv("DAT3M_OUTPUT") + "/", name,
                             csc.getCallStackMapping());
                 }
 

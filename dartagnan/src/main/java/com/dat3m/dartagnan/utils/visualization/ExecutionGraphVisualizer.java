@@ -35,9 +35,9 @@ public class ExecutionGraphVisualizer {
     private final Graphviz graphviz;
     private Map<Event, String> callStackMapping;
     // By default we do not filter anything
-    private BiPredicate<EventData, EventData> rfFilter = (x, y) -> false;
-    private BiPredicate<EventData, EventData> frFilter = (x, y) -> false;
-    private BiPredicate<EventData, EventData> coFilter = (x, y) -> false;
+    private BiPredicate<EventData, EventData> rfFilter = (x, y) -> true;
+    private BiPredicate<EventData, EventData> frFilter = (x, y) -> true;
+    private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
     private Map<BigInteger, IExpr> addresses = new HashMap<BigInteger, IExpr>();
 
     public ExecutionGraphVisualizer() {
@@ -97,7 +97,7 @@ public class ExecutionGraphVisualizer {
             EventData r = rw.getKey();
             EventData w = rw.getValue();
 
-            if (ignore(r) || ignore(w) || rfFilter.test(w, r)) {
+            if (ignore(r) || ignore(w) || !rfFilter.test(w, r)) {
                 continue;
             }
 
@@ -119,15 +119,11 @@ public class ExecutionGraphVisualizer {
                 continue;
             }
 
-            for (List<EventData> co : model.getCoherenceMap().values()) {
-                for (int i = 2; i < co.size(); i++) {
-                    // We skip the init writes
-                    EventData w1 = co.get(i - 1);
-                    EventData w2 = co.get(i);                    
-                    if (ignore(w1) || ignore(w2) || !w.equals(w1) || frFilter.test(r, w2)) {
-                        continue;
-                    }
-                    
+            List<EventData> co = model.getCoherenceMap().get(w.getAccessedAddress());
+            // Check if exists w2 : co(w, w2)
+            if(co.indexOf(w) + 1 < co.size()) {
+                EventData w2 = co.get(co.indexOf(w) + 1);
+                if (!ignore(w2) && frFilter.test(r, w2)) {
                     appendEdge(r, w2, model, "label=fr");
                 }
             }
@@ -146,7 +142,7 @@ public class ExecutionGraphVisualizer {
                 // We skip the init writes
                 EventData w1 = co.get(i - 1);
                 EventData w2 = co.get(i);
-                if (ignore(w1) || ignore(w2) || coFilter.test(w1, w2)) {
+                if (ignore(w1) || ignore(w2) || !coFilter.test(w1, w2)) {
                     continue;
                 }
                 appendEdge(w1, w2, model, "label=co");
