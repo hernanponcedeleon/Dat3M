@@ -34,8 +34,10 @@ public class ExecutionGraphVisualizer {
 	
     private final Graphviz graphviz;
     private Map<Event, String> callStackMapping;
-    private BiPredicate<EventData, EventData> rfFilter = (x, y) -> true;
-    private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
+    // By default we do not filter anything
+    private BiPredicate<EventData, EventData> rfFilter = (x, y) -> false;
+    private BiPredicate<EventData, EventData> frFilter = (x, y) -> false;
+    private BiPredicate<EventData, EventData> coFilter = (x, y) -> false;
     private Map<BigInteger, IExpr> addresses = new HashMap<BigInteger, IExpr>();
 
     public ExecutionGraphVisualizer() {
@@ -49,6 +51,11 @@ public class ExecutionGraphVisualizer {
 
     public ExecutionGraphVisualizer setReadFromFilter(BiPredicate<EventData, EventData> filter) {
         this.rfFilter = filter;
+        return this;
+    }
+
+    public ExecutionGraphVisualizer setFromReadFilter(BiPredicate<EventData, EventData> filter) {
+        this.frFilter = filter;
         return this;
     }
 
@@ -71,6 +78,7 @@ public class ExecutionGraphVisualizer {
         graphviz.append(String.format("label=\"%s\" \n", graphName));
         addAllThreadPos(model);
         addReadFrom(model);
+        addFromRead(model);
         addCoherence(model);
         graphviz.end();
         graphviz.generateOutput(writer);
@@ -84,12 +92,12 @@ public class ExecutionGraphVisualizer {
     private ExecutionGraphVisualizer addReadFrom(ExecutionModel model) {
 
         graphviz.beginSubgraph("ReadFrom");
-        graphviz.setEdgeAttributes("color=green"/*, "constraint=false"*/);
+        graphviz.setEdgeAttributes("color=green");
         for (Map.Entry<EventData, EventData> rw : model.getReadWriteMap().entrySet()) {
             EventData r = rw.getKey();
             EventData w = rw.getValue();
 
-            if (ignore(r) || ignore(w) || !rfFilter.test(w, r)) {
+            if (ignore(r) || ignore(w) || rfFilter.test(w, r)) {
                 continue;
             }
 
@@ -99,17 +107,46 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
+    private ExecutionGraphVisualizer addFromRead(ExecutionModel model) {
+
+        graphviz.beginSubgraph("FromRead");
+        graphviz.setEdgeAttributes("color=orange");
+        for (Map.Entry<EventData, EventData> rw : model.getReadWriteMap().entrySet()) {
+            EventData r = rw.getKey();
+            EventData w = rw.getValue();
+
+            if (ignore(r) || ignore(w)) {
+                continue;
+            }
+
+            for (List<EventData> co : model.getCoherenceMap().values()) {
+                for (int i = 2; i < co.size(); i++) {
+                    // We skip the init writes
+                    EventData w1 = co.get(i - 1);
+                    EventData w2 = co.get(i);                    
+                    if (ignore(w1) || ignore(w2) || !w.equals(w1) || frFilter.test(r, w2)) {
+                        continue;
+                    }
+                    
+                    appendEdge(r, w2, model, "label=fr");
+                }
+            }
+        }
+        graphviz.end();
+        return this;
+    }
+
     private ExecutionGraphVisualizer addCoherence(ExecutionModel model) {
 
         graphviz.beginSubgraph("Coherence");
-        graphviz.setEdgeAttributes("color=red"/*, "constraint=false"*/);
+        graphviz.setEdgeAttributes("color=red");
 
         for (List<EventData> co : model.getCoherenceMap().values()) {
             for (int i = 2; i < co.size(); i++) {
                 // We skip the init writes
                 EventData w1 = co.get(i - 1);
                 EventData w2 = co.get(i);
-                if (ignore(w1) || ignore(w2) || !coFilter.test(w1, w2)) {
+                if (ignore(w1) || ignore(w2) || coFilter.test(w1, w2)) {
                     continue;
                 }
                 appendEdge(w1, w2, model, "label=co");
@@ -192,15 +229,19 @@ public class ExecutionGraphVisualizer {
         graphviz.addEdge(eventToNode(a, model), eventToNode(b, model), options);
     }
     
-    public static void generateGraphvizFile(ExecutionModel model, int iterationCount, BiPredicate<EventData, EventData> edgeFilter, String directoryName, String fileNameBase, Map<Event, String> callStackMapping) {
+    public static void generateGraphvizFile(ExecutionModel model, int iterationCount,
+            BiPredicate<EventData, EventData> rfFilter, BiPredicate<EventData, EventData> frFilter,
+            BiPredicate<EventData, EventData> coFilter, String directoryName, String fileNameBase,
+            Map<Event, String> callStackMapping) {
         File fileVio = new File(directoryName + fileNameBase + ".dot");
         fileVio.getParentFile().mkdirs();
         try (FileWriter writer = new FileWriter(fileVio)) {
             // Create .dot file
             new ExecutionGraphVisualizer()
                     .setCallStackMapping(callStackMapping)
-                    .setReadFromFilter(edgeFilter)
-                    .setCoherenceFilter(edgeFilter)
+                    .setReadFromFilter(rfFilter)
+                    .setFromReadFilter(frFilter)
+                    .setCoherenceFilter(coFilter)
                     .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
 
             writer.flush();

@@ -178,7 +178,13 @@ public class Dartagnan extends BaseOptions {
                     CallStackComputation csc = CallStackComputation.fromConfig(config);
                     csc.run(p);
                     String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
-                    generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name, csc.getCallStackMapping());
+                    // RF edges give both ordering and data flow information, thus even when the pair is in PO
+                    // we get some data flow information by observing the edge
+                    // FR edges only give ordering information which is known if the pair is also in PO
+                    // CO edges only give ordering information which is known if the pair is also in PO
+                    generateGraphvizFile(m, 1, (x, y) -> false, (x, y) -> x.getThread().equals(y.getThread()),
+                            (x, y) -> x.getThread().equals(y.getThread()), System.getenv("DAT3M_OUTPUT") + "/", name,
+                            csc.getCallStackMapping());
                 }
 
                 long endTime = System.currentTimeMillis();
