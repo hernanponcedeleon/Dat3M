@@ -865,10 +865,12 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitSameScope(Relation rel) {
             Set<Tuple> must = new HashSet<>();
+            Collection<Event> initEvents = (List<Event>) (List<? extends Event>) program.getEvents(Init.class);
             Collection<Event> loadEvents = (List<Event>) (List<? extends Event>) program.getEvents(Load.class);
             Collection<Event> storeEvents = (List<Event>) (List<? extends Event>) program.getEvents(Store.class);
             Collection<Event> fenceEvents = (List<Event>) (List<? extends Event>) program.getEvents(Fence.class);
             List<Event> events = new ArrayList<>();
+            events.addAll(initEvents);
             events.addAll(loadEvents);
             events.addAll(storeEvents);
             events.addAll(fenceEvents);
@@ -926,7 +928,7 @@ public class RelationAnalysis {
             Set<String> first_filters = first.getFilters();
             Set<String> second_filters = second.getFilters();
             if (getValidScope(first_filters) == null || getValidScope(second_filters) == null) {
-                return false;
+                return true; // InitW
             }
             if (getValidScope(first_filters).equals(Tag.PTX.SYS) || getValidScope(second_filters).equals(Tag.PTX.SYS)) {
                 return true;

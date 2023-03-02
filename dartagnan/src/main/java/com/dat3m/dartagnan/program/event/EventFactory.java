@@ -582,24 +582,24 @@ public class EventFactory {
     public static class PTX {
         private PTX() {}
 
-        public static Store newTaggedStore(IExpr address, ExprInterface value, String scope,  String tag) {
-            Store store = new Store(address, value, scope); // scope = CTA || GPU || SYS
-            store.addFilters(tag); // tag = REL || RLX
+        public static Store newTaggedStore(IExpr address, ExprInterface value, String scope,  String sem) {
+            Store store = new Store(address, value, sem); // sem = REL || RLX
+            store.addFilters(scope); // scope = CTA || GPU || SYS
             return store;
         }
-        public static Store newTaggedStore(IExpr address, ExprInterface value, String scope) {
-            Store store = new Store(address, value, scope); // scope = WEAK
+        public static Store newTaggedStore(IExpr address, ExprInterface value, String sem) {
+            Store store = new Store(address, value, sem); // sem = WEAK
             store.addFilters(Tag.PTX.SYS);
             return store;
         }
 
-        public static Load newTaggedLoad(Register register, IExpr address, String scope, String tag) {
-            Load load = new Load(register, address, scope); // scope =  CTA || GPU || SYS
-            load.addFilters(tag); // tag = ACQ || RLX
+        public static Load newTaggedLoad(Register register, IExpr address, String scope, String sem) {
+            Load load = new Load(register, address, sem); // sem = ACQ || RLX
+            load.addFilters(scope); // scope =  CTA || GPU || SYS
             return load;
         }
-        public static Load newTaggedLoad(Register register, IExpr address, String scope) {
-            Load load = new Load(register, address, scope); // scope = WEAK
+        public static Load newTaggedLoad(Register register, IExpr address, String sem) {
+            Load load = new Load(register, address, sem); // sem = WEAK
             load.addFilters(Tag.PTX.SYS);
             return load;
         }

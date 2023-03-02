@@ -157,7 +157,7 @@ public class VisitorLitmusPTX
     public Object visitLoadWeakConstant(LitmusPTXParser.LoadWeakConstantContext ctx){
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
         IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
-        return programBuilder.addScopedChild(mainThread, EventFactory.PTX.newTaggedLoad(register, constant, Tag.PTX.WEAK));
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
     }
 
     @Override
@@ -171,8 +171,7 @@ public class VisitorLitmusPTX
     public Object visitLoadRelaxedConstant(LitmusPTXParser.LoadRelaxedConstantContext ctx){
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
         IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedLoad(register, constant, ctx.scope().content, Tag.PTX.RLX));
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
     }
 
     @Override
@@ -187,8 +186,7 @@ public class VisitorLitmusPTX
     public Object visitLoadAcquireConstant(LitmusPTXParser.LoadAcquireConstantContext ctx){
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
         IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedLoad(register, constant, ctx.scope().content, Tag.PTX.ACQ));
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
     }
 
     @Override
