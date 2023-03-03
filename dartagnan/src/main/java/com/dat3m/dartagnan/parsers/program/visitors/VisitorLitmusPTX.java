@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.*;
@@ -108,192 +109,159 @@ public class VisitorLitmusPTX
     }
 
     @Override
-    public Object visitStoreWeakConstant(LitmusPTXParser.StoreWeakConstantContext ctx){
+    public Object visitStoreConstant(LitmusPTXParser.StoreConstantContext ctx){
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
-        return programBuilder.addScopedChild(mainThread, EventFactory.PTX.newTaggedStore(object, constant, Tag.PTX.WEAK));
+        String sem = ctx.sem().content;
+        String scope;
+        if (sem.equals(Tag.PTX.WEAK)) {
+            if (ctx.scope() != null) {
+                throw new ParsingException("Weak store instruction doesn't need scope: " + ctx.scope().content);
+            }
+            scope = Tag.PTX.SYS;
+        } else if (sem.equals(Tag.PTX.REL) || sem.equals(Tag.PTX.RLX)) {
+            scope = ctx.scope().content;
+        } else {
+            throw new ParsingException("Store instruction doesn't support sem: " + ctx.sem().content);
+        }
+        return programBuilder.addScopedChild(mainThread, EventFactory.PTX.newTaggedStore(object, constant, sem, scope));
     }
 
-    @Override
-    public Object visitStoreWeakRegister(LitmusPTXParser.StoreWeakRegisterContext ctx){
+    public Object visitStoreRegister(LitmusPTXParser.StoreRegisterContext ctx){
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
-        return programBuilder.addScopedChild(mainThread, EventFactory.PTX.newTaggedStore(object, register, Tag.PTX.WEAK));
+        String sem = ctx.sem().content;
+        String scope;
+        if (sem.equals(Tag.PTX.WEAK)) {
+            if (ctx.scope() != null) {
+                throw new ParsingException("Weak store instruction doesn't need scope: " + ctx.scope().content);
+            }
+            scope = Tag.PTX.SYS;
+        } else if (sem.equals(Tag.PTX.REL) || sem.equals(Tag.PTX.RLX)) {
+            scope = ctx.scope().content;
+        } else {
+            throw new ParsingException("Store instruction doesn't support sem: " + ctx.sem().content);
+        }
+        return programBuilder.addScopedChild(mainThread, EventFactory.PTX.newTaggedStore(object, register, sem, scope));
     }
 
     @Override
-    public Object visitStoreRelaxedConstant(LitmusPTXParser.StoreRelaxedConstantContext ctx){
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedStore(object, constant, ctx.scope().content, Tag.PTX.RLX));
-    }
-
-    @Override
-    public Object visitStoreRelaxedRegister(LitmusPTXParser.StoreRelaxedRegisterContext ctx){
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedStore(object, register, ctx.scope().content, Tag.PTX.RLX));
-    }
-
-    @Override
-    public Object visitStoreReleaseConstant(LitmusPTXParser.StoreReleaseConstantContext ctx){
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedStore(object, constant, ctx.scope().content, Tag.PTX.REL));
-    }
-
-    @Override
-    public Object visitStoreReleaseRegister(LitmusPTXParser.StoreReleaseRegisterContext ctx){
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedStore(object, register, ctx.scope().content, Tag.PTX.REL));
-    }
-
-    @Override
-    public Object visitLoadWeakConstant(LitmusPTXParser.LoadWeakConstantContext ctx){
+    public Object visitLoadConstant(LitmusPTXParser.LoadConstantContext ctx){
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
         IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+        String sem = ctx.sem().content;
+        String scope;
+        if (sem.equals(Tag.PTX.WEAK)) {
+            if (ctx.scope() != null) {
+                throw new ParsingException("Weak load instruction doesn't need scope: " + ctx.scope().content);
+            }
+            scope = Tag.PTX.SYS;
+        } else if (sem.equals(Tag.PTX.ACQ) || sem.equals(Tag.PTX.RLX)) {
+            scope = ctx.scope().content;
+        } else {
+            throw new ParsingException("Load instruction doesn't support sem: " + ctx.sem().content);
+        }
         return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
     }
 
     @Override
-    public Object visitLoadWeakLocation(LitmusPTXParser.LoadWeakLocationContext ctx){
+    public Object visitLoadLocation(LitmusPTXParser.LoadLocationContext ctx){
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        return programBuilder.addScopedChild(mainThread, EventFactory.PTX.newTaggedLoad(register, object, Tag.PTX.WEAK));
-    }
-
-    @Override
-    public Object visitLoadRelaxedConstant(LitmusPTXParser.LoadRelaxedConstantContext ctx){
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
-    }
-
-    @Override
-    public Object visitLoadRelaxedLocation(LitmusPTXParser.LoadRelaxedLocationContext ctx){
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject location = programBuilder.getOrNewObject(ctx.location().getText());
+        String sem = ctx.sem().content;
+        String scope;
+        if (sem.equals(Tag.PTX.WEAK)) {
+            if (ctx.scope() != null) {
+                throw new ParsingException("Weak load instruction doesn't need scope: " + ctx.scope().content);
+            }
+            scope = Tag.PTX.SYS;
+        } else if (sem.equals(Tag.PTX.ACQ) || sem.equals(Tag.PTX.RLX)) {
+            scope = ctx.scope().content;
+        } else {
+            throw new ParsingException("Load instruction doesn't support sem: " + ctx.sem().content);
+        }
         return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedLoad(register, object, ctx.scope().content, Tag.PTX.RLX));
+                EventFactory.PTX.newTaggedLoad(register, location, sem, scope));
     }
 
     @Override
-    public Object visitLoadAcquireConstant(LitmusPTXParser.LoadAcquireConstantContext ctx){
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
-    }
-
-    @Override
-    public Object visitLoadAcquireLocation(LitmusPTXParser.LoadAcquireLocationContext ctx){
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedLoad(register, object, ctx.scope().content, Tag.PTX.ACQ));
-    }
-
-    @Override
-    public Object visitFenceAcqRel(LitmusPTXParser.FenceAcqRelContext ctx){
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedFence(Tag.PTX.ACQ_REL, ctx.scope().content));
-    }
-
-    @Override
-    public Object visitFenceSC(LitmusPTXParser.FenceSCContext ctx){
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedFence(Tag.PTX.SC, ctx.scope().content));
-    }
-
-    @Override
-    public Object visitAtomRelaxedConstant(LitmusPTXParser.AtomRelaxedConstantContext ctx) {
+    public Object visitAtomConstant(LitmusPTXParser.AtomConstantContext ctx) {
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
         IOpBin op = IOpBin.valueOf(ctx.operation().content);
-        String scope = ctx.scope().content;
+        String sem = ctx.sem().content;
+        String scope;
+        if (sem.equals(Tag.PTX.ACQ_REL) || sem.equals(Tag.PTX.RLX)) {
+            scope = ctx.scope().content;
+        } else {
+            throw new ParsingException("Atom instruction doesn't support sem: " + ctx.sem().content);
+        }
         return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, Tag.PTX.RLX, scope));
+                EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, sem, scope));
     }
 
     @Override
-    public Object visitAtomRelaxedRegister(LitmusPTXParser.AtomRelaxedRegisterContext ctx) {
+    public Object visitAtomRegister(LitmusPTXParser.AtomRegisterContext ctx) {
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(0).getText(), ARCH_PRECISION);
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(1).getText(), ARCH_PRECISION);
         IOpBin op = IOpBin.valueOf(ctx.operation().content);
-        String scope = ctx.scope().content;
+        String sem = ctx.sem().content;
+        String scope;
+        if (sem.equals(Tag.PTX.ACQ_REL) || sem.equals(Tag.PTX.RLX)) {
+            scope = ctx.scope().content;
+        } else {
+            throw new ParsingException("Atom instruction doesn't support sem: " + ctx.sem().content);
+        }
         return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, Tag.PTX.RLX, scope));
+                EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, sem, scope));
     }
 
     @Override
-    public Object visitAtomAcqRelConstant(LitmusPTXParser.AtomAcqRelConstantContext ctx) {
-        Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
+    public Object visitRedConstant(LitmusPTXParser.RedConstantContext ctx) {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
         IOpBin op = IOpBin.valueOf(ctx.operation().content);
-        String scope = ctx.scope().content;
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, Tag.PTX.ACQ_REL, scope));
-    }
-
-    @Override
-    public Object visitAtomAcqRelRegister(LitmusPTXParser.AtomAcqRelRegisterContext ctx) {
-        Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(0).getText(), ARCH_PRECISION);
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(1).getText(), ARCH_PRECISION);
-        IOpBin op = IOpBin.valueOf(ctx.operation().content);
-        String scope = ctx.scope().content;
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, Tag.PTX.ACQ_REL, scope));
-    }
-
-    @Override
-    public Object visitRedRelaxedConstant(LitmusPTXParser.RedRelaxedConstantContext ctx) {
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
-        IOpBin op = IOpBin.valueOf(ctx.operation().content);
-        String scope = ctx.scope().content;
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, ARCH_PRECISION);
+        String sem = ctx.sem().content;
+        String scope;
+        if (sem.equals(Tag.PTX.ACQ_REL) || sem.equals(Tag.PTX.RLX)) {
+            scope = ctx.scope().content;
+        } else {
+            throw new ParsingException("Red instruction doesn't support sem: " + ctx.sem().content);
+        }
         return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedRedOp(object, register_destination, constant, op, Tag.PTX.RLX, scope));
+                EventFactory.PTX.newTaggedRedOp(object, register_destination, constant, op, sem, scope));
     }
 
     @Override
-    public Object visitRedRelaxedRegister(LitmusPTXParser.RedRelaxedRegisterContext ctx) {
+    public Object visitRedRegister(LitmusPTXParser.RedRegisterContext ctx) {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
         IOpBin op = IOpBin.valueOf(ctx.operation().content);
-        String scope = ctx.scope().content;
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, ARCH_PRECISION);
+        String sem = ctx.sem().content;
+        String scope;
+        if (sem.equals(Tag.PTX.ACQ_REL) || sem.equals(Tag.PTX.RLX)) {
+            scope = ctx.scope().content;
+        } else {
+            throw new ParsingException("Red instruction doesn't support sem: " + ctx.sem().content);
+        }
         return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedRedOp(object, register_destination, register_operand, op, Tag.PTX.RLX, scope));
+                EventFactory.PTX.newTaggedRedOp(object, register_destination, register_operand, op, sem, scope));
     }
 
     @Override
-    public Object visitRedAcqRelConstant(LitmusPTXParser.RedAcqRelConstantContext ctx) {
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
-        IOpBin op = IOpBin.valueOf(ctx.operation().content);
-        String scope = ctx.scope().content;
-        Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, ARCH_PRECISION);
+    public Object visitFencePhysic(LitmusPTXParser.FencePhysicContext ctx){
+        String sem = ctx.sem().content;
+        String scope;
+        if (sem.equals(Tag.PTX.ACQ_REL) || sem.equals(Tag.PTX.SC)) {
+            scope = ctx.scope().content;
+        } else {
+            throw new ParsingException("Fence instruction doesn't support sem: " + ctx.sem().content);
+        }
         return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedRedOp(object, register_destination, constant, op, Tag.PTX.ACQ_REL, scope));
-    }
-
-    @Override
-    public Object visitRedAcqRelRegister(LitmusPTXParser.RedAcqRelRegisterContext ctx) {
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
-        IOpBin op = IOpBin.valueOf(ctx.operation().content);
-        String scope = ctx.scope().content;
-        Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, ARCH_PRECISION);
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedRedOp(object, register_destination, register_operand, op, Tag.PTX.ACQ_REL, scope));
+                EventFactory.PTX.newTaggedFence(sem, scope));
     }
 }

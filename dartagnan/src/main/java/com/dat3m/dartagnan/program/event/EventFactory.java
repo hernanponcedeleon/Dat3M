@@ -583,29 +583,19 @@ public class EventFactory {
         private PTX() {}
 
         public static Store newTaggedStore(IExpr address, ExprInterface value, String scope,  String sem) {
-            Store store = new Store(address, value, sem); // sem = REL || RLX
+            Store store = new Store(address, value, sem); // sem = REL || RLX || WEAK
             store.addFilters(scope); // scope = CTA || GPU || SYS
-            return store;
-        }
-        public static Store newTaggedStore(IExpr address, ExprInterface value, String sem) {
-            Store store = new Store(address, value, sem); // sem = WEAK
-            store.addFilters(Tag.PTX.SYS);
             return store;
         }
 
         public static Load newTaggedLoad(Register register, IExpr address, String scope, String sem) {
-            Load load = new Load(register, address, sem); // sem = ACQ || RLX
+            Load load = new Load(register, address, sem); // sem = ACQ || RLX || WEAK
             load.addFilters(scope); // scope =  CTA || GPU || SYS
-            return load;
-        }
-        public static Load newTaggedLoad(Register register, IExpr address, String sem) {
-            Load load = new Load(register, address, sem); // sem = WEAK
-            load.addFilters(Tag.PTX.SYS);
             return load;
         }
 
         public static Fence newTaggedFence(String sem, String scope) {
-            Fence fence = new Fence(sem); // sem = ACQ_REL || BAR_SYNC
+            Fence fence = new Fence(sem); // sem = ACQ_REL || SC
             fence.addFilters(scope);
             return fence;
         }
@@ -614,7 +604,7 @@ public class EventFactory {
                                            IOpBin op, String sem, String scope) {
             RMWFetchOp atom = new RMWFetchOp(address, register, value, op, Tag.Linux.MO_MB);
             atom.addFilters(scope);
-            atom.addFilters(sem);
+            atom.addFilters(sem); // sem = ACQ_REL || RLX
             return atom;
         }
 
@@ -622,7 +612,7 @@ public class EventFactory {
                                                     IOpBin op, String sem, String scope) {
             RMWOp red = new RMWOp(address, register, value, op);
             red.addFilters(scope);
-            red.addFilters(sem);
+            red.addFilters(sem); // sem = ACQ_REL || RLX
             return red;
         }
 
