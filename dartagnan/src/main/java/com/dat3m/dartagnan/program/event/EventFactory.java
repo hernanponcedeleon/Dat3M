@@ -615,11 +615,6 @@ public class EventFactory {
             red.addFilters(sem); // sem = ACQ_REL || RLX
             return red;
         }
-
-        //TODO
-        public static Fence newPTXProxyBarrier() {
-            return new Fence("PTX.PROXY");
-        }
     }
 
 }

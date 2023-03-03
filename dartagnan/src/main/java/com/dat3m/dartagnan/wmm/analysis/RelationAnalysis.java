@@ -719,7 +719,7 @@ public class RelationAnalysis {
                     continue;
                 }
                 for (MemEvent w2 : nonInitWrites) {
-                    if (w2.is(PTX.WEAK)) {
+                    if (!w1.is(INIT) && w2.is(PTX.WEAK)) {
                         continue;
                     }
                     if (w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)

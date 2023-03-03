@@ -1,11 +1,6 @@
 PTX
 (*java -jar dartagnan/target/dartagnan-3.1.1.jar cat/ptx.cat litmus/PTX/ISA.litmus --printer.afterSimplification=true --method=assume*)
 (*mvn clean install -DskipTests*)
-include "cos.cat"
-include "cross.cat"
-include "fences.cat"
-include "filters.cat"
-
 (*
  *Library known term:
  * po: program order, specifies instruction order in a thread after evaluating conditionals and unrolling loops.
