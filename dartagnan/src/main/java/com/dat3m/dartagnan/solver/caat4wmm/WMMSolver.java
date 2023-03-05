@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.solver.caat4wmm;
 
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
@@ -10,6 +11,7 @@ import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -19,6 +21,7 @@ import org.sosy_lab.java_smt.api.Model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /*
     This is our domain-specific bridging component that specializes the CAATSolver to the WMM setting.
@@ -63,6 +66,8 @@ public class WMMSolver {
         Statistics stats = result.stats;
         stats.modelExtractionTime = extractTime;
         stats.modelSize = executionGraph.getDomain().size();
+        stats.executedEvents = executionGraph.getDomain().getElements().stream().map(EventData::getEvent)
+                .collect(Collectors.toSet());
 
         if (result.getStatus() == CAATSolver.Status.INCONSISTENT) {
             // ============== Compute Core reasons ==============
@@ -119,6 +124,7 @@ public class WMMSolver {
         long modelExtractionTime;
         long coreReasonComputationTime;
         int modelSize;
+        Set<Event> executedEvents;
         int numComputedCoreReasons;
         int numComputedReducedCoreReasons;
 
@@ -128,6 +134,7 @@ public class WMMSolver {
         public long getCoreReasonComputationTime() { return coreReasonComputationTime; }
         public long getConsistencyCheckTime() { return caatStats.getConsistencyCheckTime(); }
         public int getModelSize() { return modelSize; }
+        public Set<Event> getExecutedEvents() { return executedEvents; }
         public int getNumComputedBaseReasons() { return caatStats.getNumComputedReasons(); }
         public int getNumComputedReducedBaseReasons() { return caatStats.getNumComputedReducedReasons(); }
         public int getNumComputedCoreReasons() { return numComputedCoreReasons; }
