@@ -4,12 +4,17 @@ import com.dat3m.dartagnan.configuration.Baseline;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
+import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
@@ -25,6 +30,7 @@ import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.axiom.Empty;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -35,14 +41,18 @@ import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
 import static com.dat3m.dartagnan.configuration.OptionNames.BASELINE;
+import static com.dat3m.dartagnan.configuration.OptionNames.COVERAGE;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONCLUSIVE;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+
+;
 
 /*
     Refinement is a custom solving procedure that starts from a weak memory model (possibly the empty model)
@@ -70,6 +80,12 @@ public class RefinementSolver extends ModelChecker {
             secure=true,
             toUppercase=true)
     private EnumSet<Baseline> baselines = EnumSet.noneOf(Baseline.class);
+
+    @Option(name=COVERAGE,
+            description="Prints the coverage report (this option requires --method=caat).",
+            secure=true,
+            toUppercase=true)
+    private boolean printCovReport = false;
 
     // ======================================================================
 
@@ -148,6 +164,7 @@ public class RefinementSolver extends ModelChecker {
 
         //  ------ Just for statistics ------
         List<WMMSolver.Statistics> statList = new ArrayList<>();
+        Set<Event> coveredEvents = new HashSet<>(); // For "coverage" report
         int iterationCount = 0;
         long lastTime = System.currentTimeMillis();
         long curTime;
@@ -158,13 +175,13 @@ public class RefinementSolver extends ModelChecker {
         List<BooleanFormula> globalRefinement = new ArrayList<>();
         logger.info("Refinement procedure started.");
         while (!prover.isUnsat()) {
-        	if(iterationCount == 0 && logger.isDebugEnabled()) {
-        		StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after first iteration) ===== \n");
-        		for(String key : prover.getStatistics().keySet()) {
-        			smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
-        		}
-        		logger.debug(smtStatistics.toString());
-        	}
+            if(iterationCount == 0 && logger.isDebugEnabled()) {
+                StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after first iteration) ===== \n");
+                for(String key : prover.getStatistics().keySet()) {
+                    smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
+                }
+                logger.debug(smtStatistics.toString());
+            }
             iterationCount++;
             curTime = System.currentTimeMillis();
             totalNativeSolvingTime += (curTime - lastTime);
@@ -184,6 +201,7 @@ public class RefinementSolver extends ModelChecker {
 
             WMMSolver.Statistics stats = solverResult.getStatistics();
             statList.add(stats);
+            coveredEvents.addAll(Lists.transform(solver.getExecution().getEventList(), EventData::getEvent));
             logger.debug("Refinement iteration:\n{}", stats);
 
             status = solverResult.getStatus();
@@ -220,7 +238,7 @@ public class RefinementSolver extends ModelChecker {
         logger.debug("Final solver iteration:\n" +
                         " ===== Final Iteration: {} =====\n" +
                         "Native Solving/Proof time(ms): {}", iterationCount, curTime - lastTime);
-		
+
         if (logger.isInfoEnabled()) {
             String message;
             switch (status) {
@@ -271,10 +289,14 @@ public class RefinementSolver extends ModelChecker {
 
         if(logger.isDebugEnabled()) {        	
             StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after final iteration) ===== \n");
-    		for(String key : prover.getStatistics().keySet()) {
-    			smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
-    		}
-    		logger.debug(smtStatistics.toString());
+            for(String key : prover.getStatistics().keySet()) {
+                smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
+            }
+            logger.debug(smtStatistics.toString());
+        }
+
+        if(printCovReport) {
+            System.out.println(generateCoverageReport(coveredEvents, program, analysisContext));
         }
 
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
@@ -398,6 +420,47 @@ public class RefinementSolver extends ModelChecker {
         }
 
         return message;
+    }
+
+    private static CharSequence generateCoverageReport(Set<Event> coveredEvents, Program program,
+            Context analysisContext) {
+        // We track symmetric events
+        final ThreadSymmetry symm = analysisContext.requires(ThreadSymmetry.class);
+
+        // Track covered events via oId
+        final Set<Integer> coveredOIds = new HashSet<>();
+        for (Event e : coveredEvents) {
+            if (e.getCLine() > 0) {
+                Event rep = symm.map(e, symm.getRepresentative(e.getThread()));
+                coveredOIds.add(rep.getOId());
+            }
+        }
+
+        final Set<Event> programEvents = program.getEvents(MemEvent.class).stream()
+                .filter(e -> e.getCLine() > 0).collect(Collectors.toSet());
+        final Set<String> messageSet = new TreeSet<>(); // TreeSet to keep strings in order
+        for (Event e : programEvents) {
+            EquivalenceClass<Thread> clazz = symm.getEquivalenceClass(e.getThread());
+            Event rep = symm.map(e, clazz.getRepresentative());
+            if (!coveredOIds.contains(rep.getOId())) {
+                // Events not executed in any violating execution
+                final String threads = clazz.stream().map(t -> "T" + t.getId())
+                        .collect(Collectors.joining(" / "));
+                messageSet.add(String.format("%s -> %s#%s", threads, e.getSourceCodeFile(), rep.getCLine()));
+            }
+        }
+
+        final long coveragePercentage = 100L - (messageSet.size() * 100L / programEvents.size());
+        final StringBuilder report = new StringBuilder()
+                .append("Property-based coverage: \n")
+                .append("\t-- Events executed by at least one property-violating execution (including inconsistent executions): ")
+                .append(coveragePercentage).append("% \n");
+        if (coveragePercentage < 100) {
+            report.append("\t-- Missing events: \n");
+            messageSet.forEach(s -> report.append("\t\t").append(s).append("\n"));
+        }
+
+        return report;
     }
 
     // This code is pure debugging code that will generate graphical representations
