@@ -370,7 +370,6 @@ public class RefinementSolver extends ModelChecker {
     private static CharSequence generateSummary(List<WMMSolver.Statistics> statList, int iterationCount,
                                                 long totalNativeSolvingTime, long totalCaatTime,
                                                 long totalRefiningTime, long boundCheckTime) {
-        
         long totalModelExtractTime = 0;
         long totalPopulationTime = 0;
         long totalConsistencyCheckTime = 0;
@@ -421,10 +420,7 @@ public class RefinementSolver extends ModelChecker {
         ThreadSymmetry symm = analysisContext.requires(ThreadSymmetry.class);
 
         Set<Event> executed = new HashSet<>();
-
-        for (WMMSolver.Statistics stats : statList) {
-            executed.addAll(stats.getExecutedEvents());
-        }
+        statList.stream().map(WMMSolver.Statistics::getExecutedEvents).forEach(executed::addAll);
 
         // Track executed events (via oId) wrt the source code file (keys of the map)
         Map<String, Set<Integer>> eMap = new HashMap<>();
