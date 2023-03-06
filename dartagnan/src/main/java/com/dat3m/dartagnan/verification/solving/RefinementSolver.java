@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
@@ -43,6 +42,7 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
 import static com.dat3m.dartagnan.configuration.OptionNames.BASELINE;
+import static com.dat3m.dartagnan.configuration.OptionNames.COVERAGE;;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONCLUSIVE;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
@@ -75,6 +75,12 @@ public class RefinementSolver extends ModelChecker {
             secure=true,
             toUppercase=true)
     private EnumSet<Baseline> baselines = EnumSet.noneOf(Baseline.class);
+
+    @Option(name=COVERAGE,
+            description="Prints the coverage report (this option requires --method=caat).",
+            secure=true,
+            toUppercase=true)
+    private boolean printCovReport = true;
 
     // ======================================================================
 
@@ -271,7 +277,7 @@ public class RefinementSolver extends ModelChecker {
 
         if (logger.isInfoEnabled()) {
             logger.info(generateSummary(statList, iterationCount, totalNativeSolvingTime,
-                    totalCaatTime, totalRefiningTime, boundCheckTime, program, analysisContext));
+                    totalCaatTime, totalRefiningTime, boundCheckTime));
         }
 
         if(logger.isDebugEnabled()) {        	
@@ -280,6 +286,10 @@ public class RefinementSolver extends ModelChecker {
     			smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
     		}
     		logger.debug(smtStatistics.toString());
+        }
+
+        if(printCovReport) {
+            System.out.println(generateCoverageReport(statList, program, analysisContext));
         }
 
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
@@ -359,10 +369,7 @@ public class RefinementSolver extends ModelChecker {
 
     private static CharSequence generateSummary(List<WMMSolver.Statistics> statList, int iterationCount,
                                                 long totalNativeSolvingTime, long totalCaatTime,
-                                                long totalRefiningTime, long boundCheckTime,
-                                                Program program, Context analysisContext) {
-        
-        ThreadSymmetry symm = analysisContext.requires(ThreadSymmetry.class);
+                                                long totalRefiningTime, long boundCheckTime) {
         
         long totalModelExtractTime = 0;
         long totalPopulationTime = 0;
@@ -373,7 +380,6 @@ public class RefinementSolver extends ModelChecker {
         long totalModelSize = 0;
         long minModelSize = Long.MAX_VALUE;
         long maxModelSize = Long.MIN_VALUE;
-        Set<Event> executed = new HashSet<>();
 
         for (WMMSolver.Statistics stats : statList) {
             totalModelExtractTime += stats.getModelExtractionTime();
@@ -386,39 +392,6 @@ public class RefinementSolver extends ModelChecker {
             totalModelSize += stats.getModelSize();
             minModelSize = Math.min(stats.getModelSize(), minModelSize);
             maxModelSize = Math.max(stats.getModelSize(), maxModelSize);
-
-            executed.addAll(stats.getExecutedEvents());
-        }
-
-        // Track executed events (via oId) wrt the source code file (keys of the map)
-        Map<String, Set<Integer>> eMap = new HashMap<>();
-        // Events not executed in any violating execution
-        // TreeSet to keep strings in order
-        Set<String> mSet = new TreeSet<>();
-
-        for(Event e : executed) {
-            // For symmetric threads, we only keep representatives
-            Event rep = symm.map(e, symm.getRepresentative(e.getThread()));
-            String k = e.getSourceCodeFile();
-            if(e.getCLine() > 0) {
-                // TreeSet to keep oIds in order
-                if(!eMap.containsKey(k)) {
-                    eMap.put(k, new TreeSet<>());
-                }
-                eMap.get(k).add(rep.getOId());
-            }
-        }
-
-        Set<Event> pEvents = program.getEvents(MemEvent.class).stream()
-                .filter(e -> e.getCLine() > 0).collect(Collectors.toSet());
-        for(Event e : pEvents) {
-            String k = e.getSourceCodeFile();
-            Thread clazz = symm.getRepresentative(e.getThread());
-            Event rep = symm.map(e, clazz);
-            String threads = symm.getEquivalenceClass(clazz).stream().map(t -> "T" + t.getId()).collect(Collectors.joining(" / "));
-            if (!eMap.getOrDefault(k, new TreeSet<>()).contains(rep.getOId())) {
-                mSet.add(String.format("%s -> %s#%s", threads, k, rep.getCLine()));
-            }
         }
 
         StringBuilder message = new StringBuilder().append("Summary").append("\n")
@@ -440,12 +413,59 @@ public class RefinementSolver extends ModelChecker {
                     .append("   -- Max model size (#events): ").append(maxModelSize).append("\n");
         }
 
+        return message;
+    }
+
+    private static CharSequence generateCoverageReport(List<WMMSolver.Statistics> statList, Program program,
+            Context analysisContext) {
+        ThreadSymmetry symm = analysisContext.requires(ThreadSymmetry.class);
+
+        Set<Event> executed = new HashSet<>();
+
+        for (WMMSolver.Statistics stats : statList) {
+            executed.addAll(stats.getExecutedEvents());
+        }
+
+        // Track executed events (via oId) wrt the source code file (keys of the map)
+        Map<String, Set<Integer>> eMap = new HashMap<>();
+        // Events not executed in any violating execution
+        // TreeSet to keep strings in order
+        Set<String> mSet = new TreeSet<>();
+
+        for (Event e : executed) {
+            // For symmetric threads, we only keep representatives
+            Event rep = symm.map(e, symm.getRepresentative(e.getThread()));
+            String k = e.getSourceCodeFile();
+            if (e.getCLine() > 0) {
+                // TreeSet to keep oIds in order
+                if (!eMap.containsKey(k)) {
+                    eMap.put(k, new TreeSet<>());
+                }
+                eMap.get(k).add(rep.getOId());
+            }
+        }
+
+        Set<Event> pEvents = program.getEvents(MemEvent.class).stream()
+                .filter(e -> e.getCLine() > 0).collect(Collectors.toSet());
+        for (Event e : pEvents) {
+            String k = e.getSourceCodeFile();
+            Thread clazz = symm.getRepresentative(e.getThread());
+            Event rep = symm.map(e, clazz);
+            String threads = symm.getEquivalenceClass(clazz).stream().map(t -> "T" + t.getId())
+                    .collect(Collectors.joining(" / "));
+            if (!eMap.getOrDefault(k, new TreeSet<>()).contains(rep.getOId())) {
+                mSet.add(String.format("%s -> %s#%s", threads, k, rep.getCLine()));
+            }
+        }
+
+        StringBuilder message = new StringBuilder();
         long cov = 100 - mSet.size() * 100 / pEvents.size();
-        message.append("Coverage: \n").append("   -- Events executed by at least one violating execution: ")
+        message.append("Property-based coverage: \n").append(
+                "   -- Events executed by at least one property-violating behavior (including inconsistent behaviors): ")
                 .append(cov).append("% \n");
-        if(cov < 100) {
+        if (cov < 100) {
             message.append("   -- Missing events: \n");
-            for(String s : mSet) {
+            for (String s : mSet) {
                 message.append("        ").append(s).append("\n");
             }
         }
