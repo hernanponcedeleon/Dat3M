@@ -130,6 +130,10 @@ public class CLocksTest extends AbstractCTest {
 				{"seqlock", ARM8, PASS},
 				{"seqlock", POWER, PASS},
 				{"seqlock", RISCV, PASS},
+                {"pthread_mutex", TSO, PASS},
+                {"pthread_mutex", ARM8, PASS},
+                {"pthread_mutex", POWER, PASS},
+                {"pthread_mutex", RISCV, PASS},
 		});
     }
 
