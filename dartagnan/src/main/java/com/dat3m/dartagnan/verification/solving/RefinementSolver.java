@@ -85,7 +85,7 @@ public class RefinementSolver extends ModelChecker {
             description="Prints the coverage report (this option requires --method=caat).",
             secure=true,
             toUppercase=true)
-    private boolean printCovReport = true;
+    private boolean printCovReport = false;
 
     // ======================================================================
 
