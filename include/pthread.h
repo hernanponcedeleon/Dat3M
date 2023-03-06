@@ -16,7 +16,7 @@ int pthread_mutex_unlock(pthread_mutex_t *mutex) {
     atomic_store_explicit(mutex, 0, memory_order_release);
     return 0;
 }
-extern int pthread_mutex_init(pthread_mutex_t *restrict mutex, const pthread_mutexattr_t *restrict attr) {
+int pthread_mutex_init(pthread_mutex_t *restrict mutex, const pthread_mutexattr_t *restrict attr) {
     atomic_store_explicit(mutex, 0, memory_order_release);
     return 0;
 }
