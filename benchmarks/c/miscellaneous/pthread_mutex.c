@@ -15,7 +15,7 @@ void *run(void *unused)
     pthread_mutex_lock(&m);
     sum++;
     pthread_mutex_unlock(&m);
-	return NULL;
+    return NULL;
 }
 
 int main()
