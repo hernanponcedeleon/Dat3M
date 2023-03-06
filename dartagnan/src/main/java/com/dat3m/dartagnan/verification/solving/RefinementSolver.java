@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
+import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
@@ -29,6 +30,7 @@ import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.axiom.Empty;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -40,14 +42,17 @@ import org.sosy_lab.java_smt.api.*;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
+
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
 import static com.dat3m.dartagnan.configuration.OptionNames.BASELINE;
-import static com.dat3m.dartagnan.configuration.OptionNames.COVERAGE;;
+import static com.dat3m.dartagnan.configuration.OptionNames.COVERAGE;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONCLUSIVE;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+
+;
 
 /*
     Refinement is a custom solving procedure that starts from a weak memory model (possibly the empty model)
@@ -159,6 +164,7 @@ public class RefinementSolver extends ModelChecker {
 
         //  ------ Just for statistics ------
         List<WMMSolver.Statistics> statList = new ArrayList<>();
+        Set<Event> coveredEvents = new HashSet<>(); // For "coverage" report
         int iterationCount = 0;
         long lastTime = System.currentTimeMillis();
         long curTime;
@@ -169,13 +175,13 @@ public class RefinementSolver extends ModelChecker {
         List<BooleanFormula> globalRefinement = new ArrayList<>();
         logger.info("Refinement procedure started.");
         while (!prover.isUnsat()) {
-        	if(iterationCount == 0 && logger.isDebugEnabled()) {
-        		StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after first iteration) ===== \n");
-        		for(String key : prover.getStatistics().keySet()) {
-        			smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
-        		}
-        		logger.debug(smtStatistics.toString());
-        	}
+            if(iterationCount == 0 && logger.isDebugEnabled()) {
+                StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after first iteration) ===== \n");
+                for(String key : prover.getStatistics().keySet()) {
+                    smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
+                }
+                logger.debug(smtStatistics.toString());
+            }
             iterationCount++;
             curTime = System.currentTimeMillis();
             totalNativeSolvingTime += (curTime - lastTime);
@@ -195,6 +201,7 @@ public class RefinementSolver extends ModelChecker {
 
             WMMSolver.Statistics stats = solverResult.getStatistics();
             statList.add(stats);
+            coveredEvents.addAll(Lists.transform(solver.getExecution().getEventList(), EventData::getEvent));
             logger.debug("Refinement iteration:\n{}", stats);
 
             status = solverResult.getStatus();
@@ -231,7 +238,7 @@ public class RefinementSolver extends ModelChecker {
         logger.debug("Final solver iteration:\n" +
                         " ===== Final Iteration: {} =====\n" +
                         "Native Solving/Proof time(ms): {}", iterationCount, curTime - lastTime);
-		
+
         if (logger.isInfoEnabled()) {
             String message;
             switch (status) {
@@ -282,14 +289,14 @@ public class RefinementSolver extends ModelChecker {
 
         if(logger.isDebugEnabled()) {        	
             StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after final iteration) ===== \n");
-    		for(String key : prover.getStatistics().keySet()) {
-    			smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
-    		}
-    		logger.debug(smtStatistics.toString());
+            for(String key : prover.getStatistics().keySet()) {
+                smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
+            }
+            logger.debug(smtStatistics.toString());
         }
 
         if(printCovReport) {
-            System.out.println(generateCoverageReport(statList, program, analysisContext));
+            System.out.println(generateCoverageReport(coveredEvents, program, analysisContext));
         }
 
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
@@ -415,58 +422,45 @@ public class RefinementSolver extends ModelChecker {
         return message;
     }
 
-    private static CharSequence generateCoverageReport(List<WMMSolver.Statistics> statList, Program program,
+    private static CharSequence generateCoverageReport(Set<Event> coveredEvents, Program program,
             Context analysisContext) {
-        ThreadSymmetry symm = analysisContext.requires(ThreadSymmetry.class);
+        // We track symmetric events
+        final ThreadSymmetry symm = analysisContext.requires(ThreadSymmetry.class);
 
-        Set<Event> executed = new HashSet<>();
-        statList.stream().map(WMMSolver.Statistics::getExecutedEvents).forEach(executed::addAll);
-
-        // Track executed events (via oId) wrt the source code file (keys of the map)
-        Map<String, Set<Integer>> eMap = new HashMap<>();
-        // Events not executed in any violating execution
-        // TreeSet to keep strings in order
-        Set<String> mSet = new TreeSet<>();
-
-        for (Event e : executed) {
-            // For symmetric threads, we only keep representatives
-            Event rep = symm.map(e, symm.getRepresentative(e.getThread()));
-            String k = e.getSourceCodeFile();
+        // Track covered events via oId
+        final Set<Integer> coveredOIds = new HashSet<>();
+        for (Event e : coveredEvents) {
             if (e.getCLine() > 0) {
-                // TreeSet to keep oIds in order
-                if (!eMap.containsKey(k)) {
-                    eMap.put(k, new TreeSet<>());
-                }
-                eMap.get(k).add(rep.getOId());
+                Event rep = symm.map(e, symm.getRepresentative(e.getThread()));
+                coveredOIds.add(rep.getOId());
             }
         }
 
-        Set<Event> pEvents = program.getEvents(MemEvent.class).stream()
+        final Set<Event> programEvents = program.getEvents(MemEvent.class).stream()
                 .filter(e -> e.getCLine() > 0).collect(Collectors.toSet());
-        for (Event e : pEvents) {
-            String k = e.getSourceCodeFile();
-            Thread clazz = symm.getRepresentative(e.getThread());
-            Event rep = symm.map(e, clazz);
-            String threads = symm.getEquivalenceClass(clazz).stream().map(t -> "T" + t.getId())
-                    .collect(Collectors.joining(" / "));
-            if (!eMap.getOrDefault(k, new TreeSet<>()).contains(rep.getOId())) {
-                mSet.add(String.format("%s -> %s#%s", threads, k, rep.getCLine()));
+        final Set<String> messageSet = new TreeSet<>(); // TreeSet to keep strings in order
+        for (Event e : programEvents) {
+            EquivalenceClass<Thread> clazz = symm.getEquivalenceClass(e.getThread());
+            Event rep = symm.map(e, clazz.getRepresentative());
+            if (!coveredOIds.contains(rep.getOId())) {
+                // Events not executed in any violating execution
+                final String threads = clazz.stream().map(t -> "T" + t.getId())
+                        .collect(Collectors.joining(" / "));
+                messageSet.add(String.format("%s -> %s#%s", threads, e.getSourceCodeFile(), rep.getCLine()));
             }
         }
 
-        StringBuilder message = new StringBuilder();
-        long cov = 100 - mSet.size() * 100 / pEvents.size();
-        message.append("Property-based coverage: \n").append(
-                "   -- Events executed by at least one property-violating behavior (including inconsistent behaviors): ")
-                .append(cov).append("% \n");
-        if (cov < 100) {
-            message.append("   -- Missing events: \n");
-            for (String s : mSet) {
-                message.append("        ").append(s).append("\n");
-            }
+        final long coveragePercentage = 100L - (messageSet.size() * 100L / programEvents.size());
+        final StringBuilder report = new StringBuilder()
+                .append("Property-based coverage: \n")
+                .append("\t-- Events executed by at least one property-violating execution (including inconsistent executions): ")
+                .append(coveragePercentage).append("% \n");
+        if (coveragePercentage < 100) {
+            report.append("\t-- Missing events: \n");
+            messageSet.forEach(s -> report.append("\t\t").append(s).append("\n"));
         }
 
-        return message;
+        return report;
     }
 
     // This code is pure debugging code that will generate graphical representations
