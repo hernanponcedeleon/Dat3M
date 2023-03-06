@@ -1,8 +1,12 @@
-extern int pthread_create(pthread_t *restrict thread,
+typedef unsigned long int pthread_t;
+typedef unsigned long int pthread_attr_t;
+typedef unsigned long int pthread_mutex_t;
+typedef unsigned long int pthread_mutexattr_t;
+
+int pthread_create(pthread_t *restrict thread,
                           const pthread_attr_t *restrict attr,
                           void *(*start_routine)(void *),
                           void *restrict arg);
-
 extern int pthread_join(pthread_t thread, void **retval);
 
 #ifdef USE_PTHREAD_MUTEX_IMPLEMENTATION
