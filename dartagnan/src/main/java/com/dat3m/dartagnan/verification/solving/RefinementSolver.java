@@ -40,8 +40,7 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
@@ -476,24 +475,21 @@ public class RefinementSolver extends ModelChecker {
             }
         }
 
-        // eventCoveragePercentage = 100 - (messageSet.size() * 100 / programEvents.size())
+        // When using the % symbol, the value multiplied by 100 before applying the format string. 
+        DecimalFormat df = new DecimalFormat("#.##%");
         // messageSet contains the missing ones, thus the 100 - X ...
-        final BigDecimal eventCoveragePercentage = BigDecimal.valueOf(100)
-                .subtract(BigDecimal.valueOf(messageSet.size()).multiply(BigDecimal.valueOf(100))
-                        .divide(BigDecimal.valueOf(programEvents.size()), RoundingMode.HALF_DOWN));
-        // branchCoveragePercentage = coveredBranches.size() * 100 / branches.size()
-        final BigDecimal branchCoveragePercentage = BigDecimal.valueOf(coveredBranches.size())
-                .multiply(BigDecimal.valueOf(100)).divide(BigDecimal.valueOf(branches.size()), RoundingMode.HALF_DOWN);
+        final double eventCoveragePercentage = 1d - (messageSet.size() * 1d / programEvents.size());
+        final double branchCoveragePercentage = coveredBranches.size() * 1d / branches.size();
 
         final StringBuilder report = new StringBuilder()
                 .append("Property-based coverage (executed by at least one property-violating execution, including inconsistent executions): \n")
                 .append("\t-- Events: ")
-                .append(eventCoveragePercentage).append("%")
-                .append(String.format(" (%s / %s)", programEvents.size() - messageSet.size(), programEvents.size()))
+                .append(String.format("%s (%s / %s)", df.format(eventCoveragePercentage),
+                        programEvents.size() - messageSet.size(), programEvents.size()))
                 .append("\n")
                 .append("\t-- Branches: ")
-                .append(branchCoveragePercentage).append("%")                
-                .append(String.format(" (%s / %s)", coveredBranches.size(), branches.size()))
+                .append(String.format("%s (%s / %s)", df.format(branchCoveragePercentage), coveredBranches.size(),
+                        branches.size()))
                 .append("\n");
         if (programEvents.size() != messageSet.size()) {
             report.append("\t-- Missing events: \n");
