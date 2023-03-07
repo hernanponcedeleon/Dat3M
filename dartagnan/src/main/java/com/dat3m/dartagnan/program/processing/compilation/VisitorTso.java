@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
@@ -23,6 +25,24 @@ class VisitorTso extends VisitorBase {
         }
 
         @Override
+        public List<Event> visitXchg(Xchg e) {
+                Register resultRegister = e.getResultRegister();
+                IExpr address = e.getAddress();
+
+                Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+                Load load = newRMWLoad(dummyReg, address, "");
+
+                return tagList(eventSequence(
+                                load,
+                                newRMWStore(load, address, resultRegister, ""),
+                                newLocal(resultRegister, dummyReg)));
+        }
+
+    // =============================================================================================
+    // ========================================= PTHREAD ===========================================
+    // =============================================================================================
+
+    @Override
         public List<Event> visitCreate(Create e) {
                 Store store = newStore(e.getAddress(), e.getMemValue(), "");
                 store.addFilters(C11.PTHREAD);
@@ -64,20 +84,31 @@ class VisitorTso extends VisitorBase {
                                                 (Label) e.getThread().getExit())));
         }
 
-        @Override
-        public List<Event> visitXchg(Xchg e) {
-                Register resultRegister = e.getResultRegister();
-                IExpr address = e.getAddress();
-
-                Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-                Load load = newRMWLoad(dummyReg, address, "");
-
-                return tagList(eventSequence(
-                                load,
-                                newRMWStore(load, address, resultRegister, ""),
-                                newLocal(resultRegister, dummyReg)));
+        public List<Event> visitInitLock(InitLock e) {
+            return eventSequence(
+                    newStore(e.getAddress(), e.getMemValue(), ""),
+                    X86.newMemoryFence());
         }
 
+        @Override
+        public List<Event> visitLock(Lock e) {
+            Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
+            // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
+            // use assumes. Nothing else is needed to guarantee acquire semantics in TSO.
+            Load load = newRMWLoad(dummy, e.getAddress(), "");
+            return eventSequence(
+                    load,
+                    newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)),
+                    newRMWStore(load, e.getAddress(), IValue.ONE, ""));
+        }
+
+        @Override
+        public List<Event> visitUnlock(Unlock e) {
+            return eventSequence(
+                    newStore(e.getAddress(), IValue.ZERO, ""),
+                    X86.newMemoryFence());
+        }
+        
         // =============================================================================================
         // =========================================== LLVM ============================================
         // =============================================================================================
