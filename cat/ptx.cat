@@ -1,33 +1,15 @@
 PTX
-(*java -jar dartagnan/target/dartagnan-3.1.1.jar cat/ptx.cat litmus/PTX/ISA.litmus --printer.afterSimplification=true --method=assume*)
-(*mvn clean install -DskipTests*)
-(*
- *Library known term:
- * po: program order, specifies instruction order in a thread after evaluating conditionals and unrolling loops.
- * ctrl: control dependency relations, always start from read. (included in po)
- * addr: address dependency relations, always start from read. (included in po)
- * data: data    dependency relations, always start from read. (included in po)
- * co: coherence order relation, representing the history of writes to each location. It is a total order over writes to the same location, starting with the initialising writes.
- * coe: external coherence order.
- * loc: contains all pairs of events that access the same location.
- * fre: fr & ext, all the external from-reads.
- * rfe: rf & ext, all the external read-from.
- * ext: the external relation, containing pairs of events that belong to different threads.
- * rmw: atomic operation read-modify-write
- * M: W + R, event
- * Implemented:
- *  sr: (scope) the scope relation sr relating events that come from threads which reside within the same scope;
- * TODO: proxy.alias, surface, texture, bar;
- *)
 
 (*******************)
-(*  PTX Basic Term *)
+(*  Auxiliaries *)
 (*******************)
 (* Events *)
-let strong-write = W & (RLX | REL)
+let strong-write = W & (RLX | REL | IW)
 let strong-read = R & (RLX | ACQ)
 let strong-m = strong-write | strong-read
 let strong-operation = strong-write | strong-read | F
+
+(* Relations *)
 let sr-fence = ([strong-operation]; sr; [F]) | ([F]; sr; [strong-operation])
 let po-fence = ([strong-operation]; po; [F]) | ([F]; po; [strong-operation])
 let sr-m = ([strong-m]; (sr & loc); [strong-m])
@@ -36,32 +18,32 @@ let morally-strong = sr-fence | po-fence | sr-m | po-m
 
 let fence-sc = [F & SC] ; sr; [F & SC]
 let rec obs = (morally-strong & rf) | (obs; rmw; obs)
-let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
-let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
-let sw = (morally-strong & (release-pattern; obs; acquire-pattern)) | fence-sc
-let causality-base = (po?; sw; po?)+
+let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
+let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po; [F & ACQ_REL])
+let sw = (release-pattern; obs; acquire-pattern) | fence-sc
+let causality-base = (po?; sw; po?)+ | po
 let causality = causality-base | (obs; (causality-base | po-loc))
 
 (******************************)
-(* PTX Memory Model Relations *)
+(* PTX Memory Model Axioms *)
 (******************************)
 
 (* Axiom 1 Coherence *)
-let causality-write = [W]; causality; [W]
-empty (causality-write \ co)
+let causality-write = [W]; (causality & loc); [W]
+empty (causality-write \ co) as axiom-Coherence
 
 (* Axiom 2 FenceSC *)
-irreflexive (fence-sc ; causality)
+irreflexive (fence-sc ; causality) as axiom-FenceSC
 
 (* Axiom 3 Atomicity *)
-empty (((morally-strong & fr); (morally-strong & co)) & rmw)
+empty (((morally-strong & fr); (morally-strong & co)) & rmw) as axiom-Atomicity
 
 (* Axiom 4 No-Thin-Air *)
 let dep = addr | data | ctrl
-acyclic (rf | dep)
+acyclic (rf | dep) as axiom-NoThinAir
 
 (* Axiom 5 SC-per-Location *)
-acyclic ((morally-strong & (rf | co | fr)) | po-loc)
+acyclic ((morally-strong & (rf | co | fr)) | po-loc) as axiom-ScPerLocation
 
 (* Axiom 6 Causality *)
-irreflexive((rf | fr) ; causality)
+irreflexive((rf | co | fr)?; causality) as axiom-Causality
