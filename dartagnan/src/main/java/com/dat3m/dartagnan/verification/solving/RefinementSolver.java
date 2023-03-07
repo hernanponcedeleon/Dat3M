@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -426,13 +427,17 @@ public class RefinementSolver extends ModelChecker {
             Context analysisContext) {
         // We track symmetric events
         final ThreadSymmetry symm = analysisContext.requires(ThreadSymmetry.class);
+        final BranchEquivalence cf = analysisContext.requires(BranchEquivalence.class);
 
-        // Track covered events via oId
+        // Track covered events and branches via oId
         final Set<Integer> coveredOIds = new HashSet<>();
+        final Set<Integer> coveredBranches = new HashSet<>();
         for (Event e : coveredEvents) {
             if (e.getCLine() > 0) {
-                Event rep = symm.map(e, symm.getRepresentative(e.getThread()));
-                coveredOIds.add(rep.getOId());
+                Event symmRep = symm.map(e, symm.getRepresentative(e.getThread()));
+                coveredOIds.add(symmRep.getOId());
+                Event cfRep = cf.getRepresentative(symmRep);
+                coveredBranches.add(cfRep.getOId());
             }
         }
 
@@ -450,12 +455,28 @@ public class RefinementSolver extends ModelChecker {
             }
         }
 
-        final long coveragePercentage = 100L - (messageSet.size() * 100L / programEvents.size());
+        final Set<Integer> branches = new HashSet<>();
+        for (Event e : programEvents) {
+            if (e.getCLine() > 0) {
+                Event symmRep = symm.map(e, symm.getRepresentative(e.getThread()));
+                // Since coveredEvents only containes MemEvents, we only count those branches containig at least one such event
+                if(cf.getEquivalenceClass(symmRep).stream().anyMatch(f -> f instanceof MemEvent)) {
+                    Event cfRep = cf.getRepresentative(symmRep);
+                    branches.add(cfRep.getOId());
+                }
+            }
+        }
+
+        // messageSet contains the missing ones, thus the 100L - X ...
+        final long eventCoveragePercentage = 100L - (messageSet.size() * 100L / programEvents.size());
+        final long branchCoveragePercentage = coveredBranches.size() * 100L / branches.size();
         final StringBuilder report = new StringBuilder()
-                .append("Property-based coverage: \n")
-                .append("\t-- Events executed by at least one property-violating execution (including inconsistent executions): ")
-                .append(coveragePercentage).append("% \n");
-        if (coveragePercentage < 100) {
+                .append("Property-based coverage (executed by at least one property-violating execution, including inconsistent executions)): \n")
+                .append("\t-- Events: ")
+                .append(eventCoveragePercentage).append("% \n")
+                .append("\t-- Branches: ")
+                .append(branchCoveragePercentage).append("% \n");
+        if (eventCoveragePercentage < 100) {
             report.append("\t-- Missing events: \n");
             messageSet.forEach(s -> report.append("\t\t").append(s).append("\n"));
         }
