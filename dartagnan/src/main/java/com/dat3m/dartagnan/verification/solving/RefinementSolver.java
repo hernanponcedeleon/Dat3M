@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -162,7 +163,7 @@ public class RefinementSolver extends ModelChecker {
         prover.push();
         prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
 
-        //  ------ Just for statistics ------
+        // ------ Just for statistics ------
         List<WMMSolver.Statistics> statList = new ArrayList<>();
         Set<Event> coveredEvents = new HashSet<>(); // For "coverage" report
         int iterationCount = 0;
@@ -171,13 +172,14 @@ public class RefinementSolver extends ModelChecker {
         long totalNativeSolvingTime = 0;
         long totalCaatTime = 0;
         long totalRefiningTime = 0;
-        //  ---------------------------------
+        // ---------------------------------
         List<BooleanFormula> globalRefinement = new ArrayList<>();
         logger.info("Refinement procedure started.");
         while (!prover.isUnsat()) {
-            if(iterationCount == 0 && logger.isDebugEnabled()) {
-                StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after first iteration) ===== \n");
-                for(String key : prover.getStatistics().keySet()) {
+            if (iterationCount == 0 && logger.isDebugEnabled()) {
+                StringBuilder smtStatistics = new StringBuilder(
+                        "\n ===== SMT Statistics (after first iteration) ===== \n");
+                for (String key : prover.getStatistics().keySet()) {
                     smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
                 }
                 logger.debug(smtStatistics.toString());
@@ -187,8 +189,8 @@ public class RefinementSolver extends ModelChecker {
             totalNativeSolvingTime += (curTime - lastTime);
 
             logger.debug("Solver iteration: \n" +
-                            " ===== Iteration: {} =====\n" +
-                            "Solving time(ms): {}", iterationCount, curTime - lastTime);
+                    " ===== Iteration: {} =====\n" +
+                    "Solving time(ms): {}", iterationCount, curTime - lastTime);
 
             curTime = System.currentTimeMillis();
             WMMSolver.Result solverResult;
@@ -236,8 +238,8 @@ public class RefinementSolver extends ModelChecker {
         totalNativeSolvingTime += (curTime - lastTime);
 
         logger.debug("Final solver iteration:\n" +
-                        " ===== Final Iteration: {} =====\n" +
-                        "Native Solving/Proof time(ms): {}", iterationCount, curTime - lastTime);
+                " ===== Final Iteration: {} =====\n" +
+                "Native Solving/Proof time(ms): {}", iterationCount, curTime - lastTime);
 
         if (logger.isInfoEnabled()) {
             String message;
@@ -246,12 +248,12 @@ public class RefinementSolver extends ModelChecker {
                     message = "CAAT Solver was inconclusive (bug?).";
                     break;
                 case CONSISTENT:
-                    message = propertyType == Property.Type.SAFETY ?
-                            "Specification violation found." : "Specification witness found.";
+                    message = propertyType == Property.Type.SAFETY ? "Specification violation found."
+                            : "Specification witness found.";
                     break;
                 case INCONSISTENT:
-                    message = propertyType == Property.Type.SAFETY ?
-                            "Bounded specification proven." : "Bounded specification falsified.";
+                    message = propertyType == Property.Type.SAFETY ? "Bounded specification proven."
+                            : "Bounded specification falsified.";
                     break;
                 default:
                     throw new IllegalStateException("Unknown result type returned by CAAT Solver.");
@@ -260,7 +262,8 @@ public class RefinementSolver extends ModelChecker {
         }
 
         if (status == INCONCLUSIVE) {
-            // CAATSolver got no result (should not be able to happen), so we cannot proceed further.
+            // CAATSolver got no result (should not be able to happen), so we cannot proceed
+            // further.
             res = UNKNOWN;
             return;
         }
@@ -274,7 +277,7 @@ public class RefinementSolver extends ModelChecker {
             prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             // Add back the constraints found during Refinement
             // TODO: We actually need to perform a second refinement to check for bound reachability
-            //  This is needed for the seqlock.c benchmarks!
+            // This is needed for the seqlock.c benchmarks!
             prover.addConstraint(bmgr.and(globalRefinement));
             res = !prover.isUnsat() ? UNKNOWN : PASS;
             boundCheckTime = System.currentTimeMillis() - lastTime;
@@ -287,27 +290,28 @@ public class RefinementSolver extends ModelChecker {
                     totalCaatTime, totalRefiningTime, boundCheckTime));
         }
 
-        if(logger.isDebugEnabled()) {        	
+        if (logger.isDebugEnabled()) {
             StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after final iteration) ===== \n");
-            for(String key : prover.getStatistics().keySet()) {
+            for (String key : prover.getStatistics().keySet()) {
                 smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
             }
             logger.debug(smtStatistics.toString());
         }
 
-        if(printCovReport) {
+        if (printCovReport) {
             System.out.println(generateCoverageReport(coveredEvents, program, analysisContext));
         }
 
-        // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
+        // For Safety specs, we have SAT=FAIL, but for reachability specs, we have
+        // SAT=PASS
         res = propertyType == Property.Type.SAFETY ? res : res.invert();
         logger.info("Verification finished with result " + res);
     }
     // ======================= Helper Methods ======================
 
-    // This method cuts off negated relations that are dependencies of some consistency axiom
-    // It ignores dependencies of flagged axioms, as those get eagarly encoded and can be completely
-    // ignored for Refinement.
+    // This method cuts off negated relations that are dependencies of some
+    // consistency axiom. It ignores dependencies of flagged axioms, as those get
+    // eagarly encoded and can be completely ignored for Refinement.
     private static Set<Relation> cutRelationDifferences(Wmm targetWmm, Wmm baselineWmm) {
         // TODO: Add support to move flagged axioms to the baselineWmm
         Set<Relation> cutRelations = new HashSet<>();
@@ -317,9 +321,10 @@ public class RefinementSolver extends ModelChecker {
         for (Relation rel : cutCandidates) {
             if (rel.getDefinition() instanceof Difference) {
                 Relation sec = ((Difference) rel.getDefinition()).complement;
-                if (!sec.getDependencies().isEmpty() || sec.getDefinition() instanceof Identity || sec.getDefinition() instanceof CartesianProduct) {
-                    // NOTE: The check for RelSetIdentity/RelCartesian is needed because they appear non-derived
-                    // in our Wmm but for CAAT they are derived from unary predicates!
+                if (!sec.getDependencies().isEmpty() || sec.getDefinition() instanceof Identity
+                        || sec.getDefinition() instanceof CartesianProduct) {
+                    // NOTE: The check for RelSetIdentity/RelCartesian is needed because they appear
+                    // non-derived in our Wmm but for CAAT they are derived from unary predicates!
                     logger.info("Found difference {}. Cutting rhs relation {}", rel, sec);
                     cutRelations.add(sec);
                     baselineWmm.addConstraint(new ForceEncodeAxiom(getCopyOfRelation(sec, baselineWmm)));
@@ -347,10 +352,12 @@ public class RefinementSolver extends ModelChecker {
     private static final class RelationCopier implements Definition.Visitor<Definition> {
         final Wmm targetModel;
         final Relation relation;
+
         RelationCopier(Wmm m, Relation r) {
             targetModel = m;
             relation = r;
         }
+
         @Override public Definition visitUnion(Relation r, Relation... o) { return new Union(relation, copy(o)); }
         @Override public Definition visitIntersection(Relation r, Relation... o) { return new Intersection(relation, copy(o)); }
         @Override public Definition visitDifference(Relation r, Relation r1, Relation r2) { return new Difference(relation, copy(r1), copy(r2)); }
@@ -362,6 +369,7 @@ public class RefinementSolver extends ModelChecker {
         @Override public Definition visitIdentity(Relation r, FilterAbstract filter) { return new Identity(relation, filter); }
         @Override public Definition visitProduct(Relation r, FilterAbstract f1, FilterAbstract f2) { return new CartesianProduct(relation, f1, f2); }
         @Override public Definition visitFences(Relation r, FilterAbstract type) { return new Fences(relation, type); }
+
         private Relation copy(Relation r) { return getCopyOfRelation(r, targetModel); }
         private Relation[] copy(Relation[] r) {
             Relation[] a = new Relation[r.length];
@@ -375,8 +383,8 @@ public class RefinementSolver extends ModelChecker {
     // -------------------- Printing -----------------------------
 
     private static CharSequence generateSummary(List<WMMSolver.Statistics> statList, int iterationCount,
-                                                long totalNativeSolvingTime, long totalCaatTime,
-                                                long totalRefiningTime, long boundCheckTime) {
+            long totalNativeSolvingTime, long totalCaatTime,
+            long totalRefiningTime, long boundCheckTime) {
         long totalModelExtractTime = 0;
         long totalPopulationTime = 0;
         long totalConsistencyCheckTime = 0;
@@ -415,7 +423,8 @@ public class RefinementSolver extends ModelChecker {
                 .append("   -- #Computed core reduced reasons: ").append(totalNumReducedReasons).append("\n");
         if (statList.size() > 0) {
             message.append("   -- Min model size (#events): ").append(minModelSize).append("\n")
-                    .append("   -- Average model size (#events): ").append(totalModelSize / statList.size()).append("\n")
+                    .append("   -- Average model size (#events): ").append(totalModelSize / statList.size())
+                    .append("\n")
                     .append("   -- Max model size (#events): ").append(maxModelSize).append("\n");
         }
 
@@ -426,13 +435,17 @@ public class RefinementSolver extends ModelChecker {
             Context analysisContext) {
         // We track symmetric events
         final ThreadSymmetry symm = analysisContext.requires(ThreadSymmetry.class);
+        final BranchEquivalence cf = analysisContext.requires(BranchEquivalence.class);
 
-        // Track covered events via oId
+        // Track covered events and branches via oId
         final Set<Integer> coveredOIds = new HashSet<>();
+        final Set<Integer> coveredBranches = new HashSet<>();
         for (Event e : coveredEvents) {
             if (e.getCLine() > 0) {
-                Event rep = symm.map(e, symm.getRepresentative(e.getThread()));
-                coveredOIds.add(rep.getOId());
+                Event symmRep = symm.map(e, symm.getRepresentative(e.getThread()));
+                coveredOIds.add(symmRep.getOId());
+                Event cfRep = cf.getRepresentative(symmRep);
+                coveredBranches.add(cfRep.getOId());
             }
         }
 
@@ -450,12 +463,29 @@ public class RefinementSolver extends ModelChecker {
             }
         }
 
-        final long coveragePercentage = 100L - (messageSet.size() * 100L / programEvents.size());
+        final Set<Integer> branches = new HashSet<>();
+        for (Event e : programEvents) {
+            if (e.getCLine() > 0) {
+                Event symmRep = symm.map(e, symm.getRepresentative(e.getThread()));
+                // Since coveredEvents only containes MemEvents, we only count those branches
+                // containig at least one such event
+                if (cf.getEquivalenceClass(symmRep).stream().anyMatch(f -> f instanceof MemEvent)) {
+                    Event cfRep = cf.getRepresentative(symmRep);
+                    branches.add(cfRep.getOId());
+                }
+            }
+        }
+
+        // messageSet contains the missing ones, thus the 100L - X ...
+        final long eventCoveragePercentage = 100L - (messageSet.size() * 100L / programEvents.size());
+        final long branchCoveragePercentage = coveredBranches.size() * 100L / branches.size();
         final StringBuilder report = new StringBuilder()
-                .append("Property-based coverage: \n")
-                .append("\t-- Events executed by at least one property-violating execution (including inconsistent executions): ")
-                .append(coveragePercentage).append("% \n");
-        if (coveragePercentage < 100) {
+                .append("Property-based coverage (executed by at least one property-violating execution, including inconsistent executions)): \n")
+                .append("\t-- Events: ")
+                .append(eventCoveragePercentage).append("% \n")
+                .append("\t-- Branches: ")
+                .append(branchCoveragePercentage).append("% \n");
+        if (eventCoveragePercentage < 100) {
             report.append("\t-- Missing events: \n");
             messageSet.forEach(s -> report.append("\t\t").append(s).append("\n"));
         }
@@ -466,8 +496,9 @@ public class RefinementSolver extends ModelChecker {
     // This code is pure debugging code that will generate graphical representations
     // of each refinement iteration.
     // Generate .dot files and .png files per iteration
-    private static void generateGraphvizFiles(VerificationTask task, ExecutionModel model, int iterationCount, DNF<CoreLiteral> reasons) {
-        //   =============== Visualization code ==================
+    private static void generateGraphvizFiles(VerificationTask task, ExecutionModel model, int iterationCount,
+            DNF<CoreLiteral> reasons) {
+        // =============== Visualization code ==================
         // The edgeFilter filters those co/rf that belong to some violation reason
         BiPredicate<EventData, EventData> edgeFilter = (e1, e2) -> {
             for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
@@ -486,7 +517,8 @@ public class RefinementSolver extends ModelChecker {
 
         String programName = task.getProgram().getName();
         programName = programName.substring(0, programName.lastIndexOf("."));
-        String directoryName = String.format("%s/refinement/%s-%s-debug/", System.getenv("DAT3M_OUTPUT"), programName, task.getProgram().getArch());
+        String directoryName = String.format("%s/refinement/%s-%s-debug/", System.getenv("DAT3M_OUTPUT"), programName,
+                task.getProgram().getArch());
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
         // File with reason edges only
         generateGraphvizFile(model, iterationCount, edgeFilter, edgeFilter, edgeFilter, directoryName, fileNameBase,
@@ -499,7 +531,7 @@ public class RefinementSolver extends ModelChecker {
     private Wmm createDefaultWmm() {
         Wmm baseline = new Wmm();
         Relation rf = baseline.getRelation(RF);
-        if(baselines.contains(Baseline.UNIPROC)) {
+        if (baselines.contains(Baseline.UNIPROC)) {
             // ---- acyclic(po-loc | com) ----
             baseline.addConstraint(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
                     baseline.getRelation(POLOC),
@@ -507,7 +539,7 @@ public class RefinementSolver extends ModelChecker {
                     baseline.getRelation(CO),
                     baseline.getRelation(FR)))));
         }
-        if(baselines.contains(Baseline.NO_OOTA)) {
+        if (baselines.contains(Baseline.NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
             baseline.addConstraint(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
                     baseline.getRelation(CTRL),
@@ -515,7 +547,7 @@ public class RefinementSolver extends ModelChecker {
                     baseline.getRelation(ADDR),
                     rf))));
         }
-        if(baselines.contains(Baseline.ATOMIC_RMW)) {
+        if (baselines.contains(Baseline.ATOMIC_RMW)) {
             // ---- empty (rmw & fre;coe) ----
             Relation rmw = baseline.getRelation(RMW);
             Relation coe = baseline.getRelation(COE);
