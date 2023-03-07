@@ -488,7 +488,7 @@ public class RefinementSolver extends ModelChecker {
                 .multiply(BigDecimal.valueOf(100)).divide(BigDecimal.valueOf(branches.size()), RoundingMode.HALF_DOWN);
 
         final StringBuilder report = new StringBuilder()
-                .append("Property-based coverage (executed by at least one property-violating execution, including inconsistent executions)): \n")
+                .append("Property-based coverage (executed by at least one property-violating execution, including inconsistent executions): \n")
                 .append("\t-- Events: ")
                 .append(eventCoveragePercentage).append("%")
                 .append(String.format(" (%s / %s)", programEvents.size() - messageSet.size(), programEvents.size()))
