@@ -40,6 +40,7 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
@@ -465,27 +466,32 @@ public class RefinementSolver extends ModelChecker {
 
         final Set<Integer> branches = new HashSet<>();
         for (Event e : programEvents) {
-            if (e.getCLine() > 0) {
-                Event symmRep = symm.map(e, symm.getRepresentative(e.getThread()));
-                // Since variable coveredEvents only contains MemEvents, we only count those
-                // branches containing at least one such event
-                if (cf.getEquivalenceClass(symmRep).stream().anyMatch(f -> f instanceof MemEvent)) {
-                    Event cfRep = cf.getRepresentative(symmRep);
-                    branches.add(cfRep.getOId());
-                }
+            Event symmRep = symm.map(e, symm.getRepresentative(e.getThread()));
+            // Since coveredEvents only containes MemEvents, we only count those branches
+            // containig at least one such event
+            if (cf.getEquivalenceClass(symmRep).stream().anyMatch(f -> f instanceof MemEvent)) {
+                Event cfRep = cf.getRepresentative(symmRep);
+                branches.add(cfRep.getOId());
             }
         }
 
-        // messageSet contains the missing ones, thus the 100L - X ...
-        final long eventCoveragePercentage = 100L - (messageSet.size() * 100L / programEvents.size());
-        final long branchCoveragePercentage = coveredBranches.size() * 100L / branches.size();
+        // When using the % symbol, the value multiplied by 100 before applying the format string. 
+        DecimalFormat df = new DecimalFormat("#.##%");
+        // messageSet contains the missing ones, thus the 100 - X ...
+        final double eventCoveragePercentage = 1d - (messageSet.size() * 1d / programEvents.size());
+        final double branchCoveragePercentage = coveredBranches.size() * 1d / branches.size();
+
         final StringBuilder report = new StringBuilder()
-                .append("Property-based coverage (executed by at least one property-violating execution, including inconsistent executions)): \n")
+                .append("Property-based coverage (executed by at least one property-violating execution, including inconsistent executions): \n")
                 .append("\t-- Events: ")
-                .append(eventCoveragePercentage).append("% \n")
+                .append(String.format("%s (%s / %s)", df.format(eventCoveragePercentage),
+                        programEvents.size() - messageSet.size(), programEvents.size()))
+                .append("\n")
                 .append("\t-- Branches: ")
-                .append(branchCoveragePercentage).append("% \n");
-        if (eventCoveragePercentage < 100) {
+                .append(String.format("%s (%s / %s)", df.format(branchCoveragePercentage), coveredBranches.size(),
+                        branches.size()))
+                .append("\n");
+        if (programEvents.size() != messageSet.size()) {
             report.append("\t-- Missing events: \n");
             messageSet.forEach(s -> report.append("\t\t").append(s).append("\n"));
         }
