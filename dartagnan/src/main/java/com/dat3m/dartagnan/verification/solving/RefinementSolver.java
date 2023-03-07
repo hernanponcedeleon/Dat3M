@@ -467,14 +467,12 @@ public class RefinementSolver extends ModelChecker {
 
         final Set<Integer> branches = new HashSet<>();
         for (Event e : programEvents) {
-            if (e.getCLine() > 0) {
-                Event symmRep = symm.map(e, symm.getRepresentative(e.getThread()));
-                // Since variable coveredEvents only contains MemEvents, we only count those
-                // branches containing at least one such event
-                if (cf.getEquivalenceClass(symmRep).stream().anyMatch(f -> f instanceof MemEvent)) {
-                    Event cfRep = cf.getRepresentative(symmRep);
-                    branches.add(cfRep.getOId());
-                }
+            Event symmRep = symm.map(e, symm.getRepresentative(e.getThread()));
+            // Since coveredEvents only containes MemEvents, we only count those branches
+            // containig at least one such event
+            if (cf.getEquivalenceClass(symmRep).stream().anyMatch(f -> f instanceof MemEvent)) {
+                Event cfRep = cf.getRepresentative(symmRep);
+                branches.add(cfRep.getOId());
             }
         }
 
