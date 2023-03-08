@@ -22,8 +22,8 @@ public class PrinterTest {
     public void PrintBpl1() throws Exception {
         Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench-1-O0.bpl"));
         assertNotNull(new Printer().print(p));
-        LoopUnrolling.newInstance().run(p);
         Compilation.newInstance().run(p);
+        LoopUnrolling.newInstance().run(p);
         assertNotNull(new Printer().print(p));
     }
 
@@ -31,8 +31,8 @@ public class PrinterTest {
     public void PrintBpl2() throws Exception {
         Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "locks/linuxrwlock.bpl"));
         assertNotNull(new Printer().print(p));
-        LoopUnrolling.newInstance().run(p);
         Compilation.newInstance().run(p);
+        LoopUnrolling.newInstance().run(p);
         assertNotNull(new Printer().print(p));
     }
 

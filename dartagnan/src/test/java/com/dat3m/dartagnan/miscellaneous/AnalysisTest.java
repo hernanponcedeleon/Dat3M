@@ -73,8 +73,8 @@ public class AnalysisTest {
         b.addChild(0, e5);
 
         Program program = b.build();
-        LoopUnrolling.newInstance().run(program);
         Compilation.newInstance().run(program);
+        LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         Configuration config = Configuration.defaultConfiguration();
         Context context = Context.create();
@@ -132,6 +132,8 @@ public class AnalysisTest {
         b.addChild(0, e3);
 
         Program program = b.build();
+        Compilation.newInstance().run(program);
+        LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
@@ -174,6 +176,8 @@ public class AnalysisTest {
         b.addChild(0, e3);
 
         Program program = b.build();
+        Compilation.newInstance().run(program);
+        LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
@@ -221,6 +225,8 @@ public class AnalysisTest {
         b.addChild(0, l0);
 
         Program program = b.build();
+        Compilation.newInstance().run(program);
+        LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
@@ -263,6 +269,8 @@ public class AnalysisTest {
         b.addChild(0, e3);
 
         Program program = b.build();
+        Compilation.newInstance().run(program);
+        LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
@@ -391,8 +399,8 @@ public class AnalysisTest {
     }
 
     private AliasAnalysis analyze(Program program, Alias method) throws InvalidConfigurationException {
-        LoopUnrolling.newInstance().run(program);
         Compilation.newInstance().run(program);
+        LoopUnrolling.newInstance().run(program);
         return AliasAnalysis.fromConfig(program, Configuration.builder().setOption(ALIAS_METHOD, method.asStringOption()).build());
     }
 
