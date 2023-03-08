@@ -17,23 +17,23 @@ let po-m = ([M]; po-loc; [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
 
 let fence-sc = [F & SC] ; sr; [F & SC]
-let rec obs = (morally-strong & rf) | (obs; rmw; obs)
-let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
-let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po; [F & ACQ_REL])
-let sw = (release-pattern; obs; acquire-pattern) | fence-sc
-let causality-base = (po?; sw; po?)+ | po
-let causality = causality-base | (obs; (causality-base | po-loc))
+let observation = (morally-strong & rf) | rmw
+let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po+; [W])
+let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po+; [F & ACQ_REL])
+let sw = (release-pattern; observation+; acquire-pattern) | fence-sc
+let cause-base = po*; (sw; po*)+ | po+
+let cause = observation?; (cause-base | po-loc)
 
 (******************************)
 (* PTX Memory Model Axioms *)
 (******************************)
 
 (* Axiom 1 Coherence *)
-let causality-write = [W]; (causality & loc); [W]
-empty (causality-write \ co) as axiom-Coherence
+let cause-write = [W]; (cause & loc); [W]
+empty (cause-write \ co) as axiom-Coherence
 
 (* Axiom 2 FenceSC *)
-irreflexive (fence-sc ; causality) as axiom-FenceSC
+irreflexive (fence-sc ; cause) as axiom-FenceSC
 
 (* Axiom 3 Atomicity *)
 empty (((morally-strong & fr); (morally-strong & co)) & rmw) as axiom-Atomicity
@@ -46,4 +46,4 @@ acyclic (rf | dep) as axiom-NoThinAir
 acyclic ((morally-strong & (rf | co | fr)) | po-loc) as axiom-ScPerLocation
 
 (* Axiom 6 Causality *)
-irreflexive((rf | co | fr)?; causality) as axiom-Causality
+irreflexive ((rf | co+ | fr )?; cause) as axiom-Causality
