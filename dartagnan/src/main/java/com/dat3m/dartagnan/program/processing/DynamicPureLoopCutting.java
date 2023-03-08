@@ -72,8 +72,11 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        Preconditions.checkArgument(program.isCompiled(),
-                "DynamicPureLoopCutting can only be run on compiled programs.");
+        // This is not a strong requirement, but if it is weaken, events created by this
+        // class do not need to get the corresponding uId. This check is in place to
+        // catch such situations.
+        Preconditions.checkArgument(program.isUnrolled(),
+                "DynamicPureLoopCutting can only be run on unrolled programs.");
 
         AnalysisStats stats = new AnalysisStats(0, 0);
         final LoopAnalysis loopAnalysis = LoopAnalysis.newInstance(program);
@@ -130,6 +133,11 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             trackingRegs.add(trackingReg);
 
             final Event execCheck = EventFactory.newExecutionStatus(trackingReg, sideEffect);
+            // DynamicPureLoopCutting is run after unrolling, thus we need to assign all
+            // three of oId, cId and uId.
+            execCheck.setOId(insertionPoint.getOId());
+            execCheck.setCId(insertionPoint.getCId());
+            execCheck.setUId(insertionPoint.getUId());
             insertionPoint.insertAfter(execCheck);
             insertionPoint = execCheck;
         }
@@ -141,6 +149,11 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         assumeSideEffect.addFilters(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
         final Event spinloopStart = iterInfo.getIterationStart();
         assumeSideEffect.setCFileInformation(spinloopStart.getCLine(), spinloopStart.getSourceCodeFilePath());
+        // DynamicPureLoopCutting is run after unrolling, thus we need to assign all
+        // three of oId, cId and uId.
+        assumeSideEffect.setOId(spinloopStart.getOId());
+        assumeSideEffect.setCId(spinloopStart.getCId());
+        assumeSideEffect.setUId(spinloopStart.getUId());
         insertionPoint.insertAfter(assumeSideEffect);
     }
 

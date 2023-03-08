@@ -62,6 +62,10 @@ public class LoopUnrolling implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
+        // This is not a strong requirement, but if it is weaken, events created by this
+        // class do not need to get the corresponding cId. This check is in place to
+        // catch such situations.
+        Preconditions.checkArgument(program.isCompiled(), "LoopUnrolling should be run after compilation.");
         if (program.isUnrolled()) {
             logger.warn("Skipped unrolling: Program is already unrolled.");
             return;
@@ -136,6 +140,13 @@ public class LoopUnrolling implements ProgramProcessor {
                 final Label endOfLoopMarker = EventFactory.newLabel(String.format("%s%s%s", loopName, LOOP_INFO_SEPARATOR, LOOP_INFO_BOUND_SUFFIX));
                 endOfLoopMarker.addFilters(Tag.NOOPT);
                 boundEvent.getPredecessor().insertAfter(endOfLoopMarker);
+
+                // Unrolling is currently run after compilation, thus we need to assign both oId and cId.
+                // The final step of run takes care of assigning uId.
+                for(Event e : Arrays.asList(threadExit, boundEvent, endOfLoopMarker)) {
+                    e.setOId(loopBackJump.getOId());
+                    e.setCId(loopBackJump.getCId());    
+                }
 
             } else {
                 final Map<Event, Event> copyCtx = new HashMap<>();
