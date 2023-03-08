@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.google.common.base.Preconditions;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,6 +43,9 @@ public class ComplexBlockSplitting implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
+        // This might not a strong requirement, but if it is weaken, then events created by
+        // this class need to not only get the corresponding oId, but also cId.
+        Preconditions.checkArgument(!program.isCompiled(), "ComplexBlockSplitting should be run before compilation.");
         final int numBlockSplittings = program.getThreads().stream().mapToInt(this::run).sum();
 
         logger.info("Split {} complex blocks.", numBlockSplittings);
@@ -61,6 +66,10 @@ public class ComplexBlockSplitting implements ProgramProcessor {
                     labelName2OccurrenceMap.compute(targetLabelName, (k, v) -> v == null ? 2 : v + 1));
             final Label blockLabel = EventFactory.newLabel(newLabelName);
             final CondJump gotoLabel = EventFactory.newGoto(blockLabel);
+
+            // ComplexBlockSplitting is run before compilation, thus we only need to assign oId
+            blockLabel.setOId(condJump.getOId());
+            gotoLabel.setOId(condJump.getOId());
 
             condJump.insertAfter(gotoLabel);
             gotoLabel.insertAfter(blockLabel);
