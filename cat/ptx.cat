@@ -20,9 +20,9 @@ let fence-sc = [F & SC] ; sr; [F & SC]
 let observation = (morally-strong & rf) | rmw
 let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po+; [W])
 let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po+; [F & ACQ_REL])
-let sw = (release-pattern; observation+; acquire-pattern) | fence-sc
-let cause-base = po*; (sw; po*)+ | po+
-let cause = observation?; (cause-base | po-loc)
+let sw = morally-strong & (release-pattern; observation+; acquire-pattern) | fence-sc
+let cause-base = (po?; sw; po?)+ | po
+let cause = cause-base | (observation; (cause-base | po-loc))
 
 (******************************)
 (* PTX Memory Model Axioms *)

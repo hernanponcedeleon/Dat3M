@@ -582,13 +582,13 @@ public class EventFactory {
     public static class PTX {
         private PTX() {}
 
-        public static Store newTaggedStore(IExpr address, ExprInterface value, String scope,  String sem) {
+        public static Store newTaggedStore(IExpr address, ExprInterface value, String sem,  String scope) {
             Store store = new Store(address, value, sem); // sem = REL || RLX || WEAK
             store.addFilters(scope); // scope = CTA || GPU || SYS
             return store;
         }
 
-        public static Load newTaggedLoad(Register register, IExpr address, String scope, String sem) {
+        public static Load newTaggedLoad(Register register, IExpr address, String sem, String scope) {
             Load load = new Load(register, address, sem); // sem = ACQ || RLX || WEAK
             load.addFilters(scope); // scope =  CTA || GPU || SYS
             return load;
