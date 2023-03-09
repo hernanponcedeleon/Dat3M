@@ -496,7 +496,7 @@ public class RefinementSolver extends ModelChecker {
                 .append(String.format("%s (%s / %s)", df.format(branchCoveragePercentage), coveredBranches.size(),
                         branches.size()))
                 .append("\n");
-        if (programEvents.size() != messageSet.size()) {
+            if (eventCoveragePercentage < 1d) {
             report.append("\t-- Missing events: \n");
             messageSet.forEach(s -> report.append("\t\t").append(s).append("\n"));
         }
