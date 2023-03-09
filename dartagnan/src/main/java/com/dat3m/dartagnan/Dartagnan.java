@@ -176,7 +176,7 @@ public class Dartagnan extends BaseOptions {
                     ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
                     m.initialize(prover.getModel());
                     CallStackComputation csc = CallStackComputation.fromConfig(config);
-                    csc.run(p);
+                    csc.run(p, "\\n");
                     String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
                     // RF edges give both ordering and data flow information, thus even when the pair is in PO
                     // we get some data flow information by observing the edge
@@ -237,15 +237,20 @@ public class Dartagnan extends BaseOptions {
 
         if (p.getFormat().equals(SourceLanguage.BOOGIE)) {
             if (hasViolations) {
+                CallStackComputation csc = CallStackComputation.newInstance();
+                csc.run(p, "");
+                Map<Event, String> callStackMapping = csc.getCallStackMapping();
                 printWarningIfThreadStartFailed(p, encCtx, prover);
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     summary.append("===== Program specification violation found =====\n");
                     for(Event e : p.getEvents(Local.class)) {
                         if(e.is(Tag.ASSERTION) && TRUE.equals(model.evaluate(encCtx.execution(e)))) {
                             summary
-                                .append("\t").append(e.getGlobalId())
-                                .append(":\t(").append(e.getSourceCodeFile()).append("#").append(e.getCLine())
-                                .append(")\n");
+                                    .append("\tE").append(e.getGlobalId())
+                                    .append(":\t")
+                                    .append(callStackMapping.containsKey(e) ? (callStackMapping.get(e) + " -> ") : "")
+                                    .append(e.getSourceCodeFile()).append("#").append(e.getCLine())
+                                    .append("\n");
                         }
                     }
                     summary.append("=================================================\n");
@@ -256,9 +261,11 @@ public class Dartagnan extends BaseOptions {
                         if(e.is(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))
                             && TRUE.equals(model.evaluate(encCtx.jumpCondition(e)))) {
                             summary
-                                .append("\t").append(e.getGlobalId())
-                                .append(":\t(").append(e.getSourceCodeFile()).append("#").append(e.getCLine())
-                                .append(")\n");
+                                    .append("\tE").append(e.getGlobalId())
+                                    .append(":\t")
+                                    .append(callStackMapping.containsKey(e) ? (callStackMapping.get(e) + " -> ") : "")
+                                    .append(e.getSourceCodeFile()).append("#").append(e.getCLine())
+                                    .append("\n");
                         }
                     }
                     summary.append("=================================================\n");

@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.CallStackComputation;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -450,6 +451,10 @@ public class RefinementSolver extends ModelChecker {
             }
         }
 
+        CallStackComputation csc = CallStackComputation.newInstance();
+        csc.run(program, "");
+        Map<Event, String> callStackMapping = csc.getCallStackMapping();
+
         final Set<Event> programEvents = program.getEvents(MemEvent.class).stream()
                 .filter(e -> e.getCLine() > 0).collect(Collectors.toSet());
         final Set<String> messageSet = new TreeSet<>(); // TreeSet to keep strings in order
@@ -460,7 +465,7 @@ public class RefinementSolver extends ModelChecker {
                 // Events not executed in any violating execution
                 final String threads = clazz.stream().map(t -> "T" + t.getId())
                         .collect(Collectors.joining(" / "));
-                messageSet.add(String.format("%s -> %s#%s", threads, e.getSourceCodeFile(), rep.getCLine()));
+                messageSet.add(String.format("%s: %s -> %s#%s", threads, callStackMapping.containsKey(rep) ? callStackMapping.get(rep): "", e.getSourceCodeFile(), rep.getCLine()));
             }
         }
 

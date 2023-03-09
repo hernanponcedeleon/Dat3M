@@ -210,14 +210,14 @@ public class ExecutionGraphVisualizer {
             mo = mo.isEmpty() ? mo : ", " + mo;
             tag = e.isWrite() ?
             		String.format("W(%s, %d%s)", address, value, mo) :
-            		String.format("%d = R(%s%s)", value, address, mo);
+            		String.format("%s = R(%s%s)", value, address, mo);
         }
-        return String.format("\"T%d:E%s (%s:L%d)\\n%s%s\"", 
+        return String.format("\"T%s:E%s\\n%s ->\n%s#%s\n%s\"", 
         				e.getThread().getId(), 
         				e.getEvent().getGlobalId(),
+                        callStackMapping.containsKey(e.getEvent()) ? callStackMapping.get(e.getEvent()) : "", 
         				e.getEvent().getSourceCodeFile(), 
         				e.getEvent().getCLine(),
-                        callStackMapping.containsKey(e.getEvent()) ? callStackMapping.get(e.getEvent()) + "\\n" : "", 
         				tag);
     }
 

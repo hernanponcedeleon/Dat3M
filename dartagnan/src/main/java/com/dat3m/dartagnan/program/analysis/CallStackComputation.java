@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
@@ -32,35 +33,42 @@ public class CallStackComputation  {
 		return callStackMapping;
 	}
 
-    public void run(Program program) {
+    public void run(Program program, String callsSeparator) {
 
         for(Thread thread : program.getThreads()) {
 			Stack<String> callStack = new Stack<>();
 			Event current = thread.getEntry();
 			while (current != null) {
-				if(current instanceof FunCall) {
+ 				if(current instanceof FunCall) {
 					FunCall call = (FunCall)current;
 					callStack.push(call.getFunctionName());
 				}
 				if(current instanceof FunRet) {
 					callStack.pop();
 				}
-				if(current instanceof MemEvent) {
-					callStackMapping.put(current, stackToString(callStack));
+                String stack = stackToString(callStack, callsSeparator);
+				if(current instanceof MemEvent && !stack.isEmpty()) {
+					callStackMapping.put(current, stack);
+				}
+				if(current.is(Tag.ASSERTION) && !stack.isEmpty()) {
+					callStackMapping.put(current, stack);
+				}
+				if(current.is(Tag.SPINLOOP) && !stack.isEmpty()) {
+					callStackMapping.put(current, stack);
 				}
 				current = current.getSuccessor();
 			}       
 		}
     }
 
-	private String stackToString(Stack<String> s) {
+	private String stackToString(Stack<String> s, String callsSeparator) {
 		StringBuilder strB = new StringBuilder();
 		Iterator<String> it = s.iterator();
 		while(it.hasNext()) {
 			String next = it.next();
 			strB.append(next);
 			if(it.hasNext()) {
-				strB.append(" -> \\n");
+				strB.append(" -> " + callsSeparator);
 			}
 		}
 		return strB.toString();

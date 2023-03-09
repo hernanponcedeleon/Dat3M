@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.CallStackComputation;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
@@ -33,6 +34,7 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
@@ -138,21 +140,28 @@ public abstract class ModelChecker {
         program.setSpecification(spec);
     }
 
-    protected void saveFlaggedPairsOutput(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, EncodingContext ctx) throws SolverException {
+    protected void saveFlaggedPairsOutput(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, EncodingContext ctx, Program program) throws SolverException {
         if (!ctx.getTask().getProperty().contains(CAT_SPEC)) {
             return;
         }
         Model model = prover.getModel();
         for(Axiom ax : wmm.getAxioms()) {
             if(ax.isFlagged() && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
+
+                CallStackComputation csc = CallStackComputation.newInstance();
+                csc.run(program, "");
+                Map<Event, String> callStackMapping = csc.getCallStackMapping();
+    
                 StringBuilder violatingPairs = new StringBuilder("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
                 for(Tuple tuple : encoder.getTuples(ax.getRelation(), model)) {
                     violatingPairs
-                        .append("\t").append(tuple.getFirst().getGlobalId())
-                        .append(" -> ").append(tuple.getSecond().getGlobalId())
-                        .append("\t(").append(tuple.getFirst().getSourceCodeFile()).append("#").append(tuple.getFirst().getCLine())
-                        .append(" -> ").append(tuple.getSecond().getSourceCodeFile()).append("#").append(tuple.getSecond().getCLine())
-                        .append(")\n");
+                        .append("\tE").append(tuple.getFirst().getGlobalId())
+                        .append(" / E").append(tuple.getSecond().getGlobalId())
+                        .append("\t").append(callStackMapping.containsKey(tuple.getFirst()) ? (callStackMapping.get(tuple.getFirst()) + " -> ") : "")
+                        .append(tuple.getFirst().getSourceCodeFile()).append("#").append(tuple.getFirst().getCLine())
+                        .append(" / ").append(callStackMapping.containsKey(tuple.getSecond()) ? (callStackMapping.get(tuple.getSecond()) + " -> ") : "")
+                        .append(tuple.getSecond().getSourceCodeFile()).append("#").append(tuple.getSecond().getCLine())
+                        .append("\n");
                 }
                 flaggedPairsOutput += violatingPairs.toString();
             }
