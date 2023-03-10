@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.analysis.CallStackComputation;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
@@ -444,12 +443,13 @@ public class RefinementSolver extends ModelChecker {
         final Set<Integer> coveredOIds = new HashSet<>();
         final Set<Integer> coveredBranches = new HashSet<>();
         for (Event e : coveredEvents) {
-            if (e.getCLine() > 0 && e.getOId() != 1) {
+            if (e.getCLine() > 0 && e.getOId() != -1) {
                 Event symmRep = symm.map(e, symm.getRepresentative(e.getThread()));
-                // e.getOId() != 1 guarantees symmRep.getOId() != 1
+                // e.getOId() != -1 guarantees symmRep.getOId() != -1
                 coveredOIds.add(symmRep.getOId());
-                // symmRep \in cf.getEquivalenceClass(symmRep), thus symmRep.getOId() != 1 guarantees findAny succeeds
-                Event cfRep = cf.getEquivalenceClass(symmRep).stream().filter(f -> f.getOId() != -1).findAny().get();
+                // symmRep \in cf.getEquivalenceClass(symmRep), thus symmRep.getOId() != -1 guarantees findFirst succeeds.
+                // We need to use findFirst which guarantees determinism.
+                Event cfRep = cf.getEquivalenceClass(symmRep).stream().filter(f -> f.getOId() != -1).findFirst().get();
                 coveredBranches.add(cfRep.getOId());
             }
         }
@@ -458,7 +458,7 @@ public class RefinementSolver extends ModelChecker {
         csc.run(program);
 
         final Set<Event> programEvents = program.getEvents(MemEvent.class).stream()
-                .filter(e -> e.getCLine() > 0 && e.getOId() != 1).collect(Collectors.toSet());
+                .filter(e -> e.getCLine() > 0 && e.getOId() != -1).collect(Collectors.toSet());
         final Set<String> messageSet = new TreeSet<>(); // TreeSet to keep strings in order
         for (Event e : programEvents) {
             EquivalenceClass<Thread> clazz = symm.getEquivalenceClass(e.getThread());
@@ -479,8 +479,9 @@ public class RefinementSolver extends ModelChecker {
             // Since coveredEvents only containes MemEvents, we only count those branches
             // containig at least one such event
             if (cf.getEquivalenceClass(symmRep).stream().anyMatch(f -> f instanceof MemEvent)) {
-                // symmRep \in cf.getEquivalenceClass(symmRep), thus symmRep.getOId() != 1 guarantees findAny succeeds
-                Event cfRep = cf.getEquivalenceClass(symmRep).stream().filter(f -> f.getOId() != -1).findAny().get();
+                // symmRep \in cf.getEquivalenceClass(symmRep), thus symmRep.getOId() != -1 guarantees findFirst succeeds.
+                // We need to use findFirst which guarantees determinism.
+                Event cfRep = cf.getEquivalenceClass(symmRep).stream().filter(f -> f.getOId() != -1).findFirst().get();
                 branches.add(cfRep.getOId());
             }
         }
