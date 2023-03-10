@@ -64,6 +64,12 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public int getCId() { return cId; }
 	public void setCId(int id) { this.cId = id; }
 
+    public void copyIds(Event other) {
+        this.oId = other.oId;
+        this.cId = other.cId;
+        this.uId = other.uId;
+    }
+
 	public int getCLine() {
 		return cLine;
 	}

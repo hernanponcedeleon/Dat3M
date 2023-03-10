@@ -43,9 +43,6 @@ public class ComplexBlockSplitting implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        // This might not a strong requirement, but if it is weaken, then events created by
-        // this class need to not only get the corresponding oId, but also cId.
-        Preconditions.checkArgument(!program.isCompiled(), "ComplexBlockSplitting should be run before compilation.");
         final int numBlockSplittings = program.getThreads().stream().mapToInt(this::run).sum();
 
         logger.info("Split {} complex blocks.", numBlockSplittings);
@@ -67,9 +64,8 @@ public class ComplexBlockSplitting implements ProgramProcessor {
             final Label blockLabel = EventFactory.newLabel(newLabelName);
             final CondJump gotoLabel = EventFactory.newGoto(blockLabel);
 
-            // ComplexBlockSplitting is run before compilation, thus we only need to assign oId
-            blockLabel.setOId(condJump.getOId());
-            gotoLabel.setOId(condJump.getOId());
+            blockLabel.copyIds(condJump);
+            gotoLabel.copyIds(condJump);
 
             condJump.insertAfter(gotoLabel);
             gotoLabel.insertAfter(blockLabel);

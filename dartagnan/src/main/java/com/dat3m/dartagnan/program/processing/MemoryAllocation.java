@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.google.common.base.Preconditions;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -31,11 +30,6 @@ public class MemoryAllocation implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        // This is not a strong requirement, but if it is weaken, events created by this
-        // class do not need to get the corresponding uId. This check is in place to
-        // catch such situations.
-        Preconditions.checkArgument(program.isUnrolled(),
-                "MemoryAllocation can only be run on unrolled programs.");
         processMallocs(program);
         moveAndAlignMemoryObjects(program.getMemory());
         createInitEvents(program);
@@ -46,11 +40,7 @@ public class MemoryAllocation implements ProgramProcessor {
             final MemoryObject allocatedObject = program.getMemory().allocate(getSize(malloc), false);
             final Local local = EventFactory.newLocal(malloc.getResultRegister(), allocatedObject);
             local.addFilters(Tag.Std.MALLOC);
-            // MemoryAllocation is run after unrolling, thus we need to assign all
-            // three of oId, cId and uId.
-            local.setOId(malloc.getOId());
-            local.setCId(malloc.getCId());
-            local.setUId(malloc.getUId());
+            local.copyIds(malloc);
             malloc.replaceBy(local);
         }
     }
