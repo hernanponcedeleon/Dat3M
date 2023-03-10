@@ -250,7 +250,7 @@ public class Dartagnan extends BaseOptions {
                                     .append("\tE").append(e.getGlobalId())
                                     .append(":\t")
                                     .append(callStackMapping.containsKey(e) ? (csc.getStackAsString(e, "") + " -> ") : "")
-                                    .append(e.getSourceCodeFile()).append("#").append(e.getCLine())
+                                    .append(e.getSourceCodeFileName()).append("#").append(e.getCLine())
                                     .append("\n");
                         }
                     }
@@ -265,7 +265,7 @@ public class Dartagnan extends BaseOptions {
                                     .append("\tE").append(e.getGlobalId())
                                     .append(":\t")
                                     .append(callStackMapping.containsKey(e) ? (csc.getStackAsString(e, "") + " -> ") : "")
-                                    .append(e.getSourceCodeFile()).append("#").append(e.getCLine())
+                                    .append(e.getSourceCodeFileName()).append("#").append(e.getCLine())
                                     .append("\n");
                         }
                     }

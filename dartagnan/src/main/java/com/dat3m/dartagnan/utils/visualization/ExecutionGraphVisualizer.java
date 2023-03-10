@@ -216,7 +216,7 @@ public class ExecutionGraphVisualizer {
         				e.getThread().getId(), 
         				e.getEvent().getGlobalId(),
                         csc.getCallStackMapping().containsKey(e.getEvent()) ? (csc.getStackAsString(e.getEvent(), "\\n") + " -> \n") : "", 
-        				e.getEvent().getSourceCodeFile(), 
+        				e.getEvent().getSourceCodeFileName(), 
         				e.getEvent().getCLine(),
         				tag);
     }

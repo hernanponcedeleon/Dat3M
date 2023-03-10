@@ -159,9 +159,9 @@ public abstract class ModelChecker {
                         .append("\tE").append(tuple.getFirst().getGlobalId())
                         .append(" / E").append(tuple.getSecond().getGlobalId())
                         .append("\t").append(csc.getCallStackMapping().containsKey(tuple.getFirst()) ? (csc.getStackAsString(tuple.getFirst(), "") + " -> ") : "")
-                        .append(tuple.getFirst().getSourceCodeFile()).append("#").append(tuple.getFirst().getCLine())
+                        .append(tuple.getFirst().getSourceCodeFileName()).append("#").append(tuple.getFirst().getCLine())
                         .append(" / ").append(csc.getCallStackMapping().containsKey(tuple.getSecond()) ? (csc.getStackAsString(tuple.getSecond(), "") + " -> ") : "")
-                        .append(tuple.getSecond().getSourceCodeFile()).append("#").append(tuple.getSecond().getCLine())
+                        .append(tuple.getSecond().getSourceCodeFileName()).append("#").append(tuple.getSecond().getCLine())
                         .append("\n");
                 }
                 flaggedPairsOutput += violatingPairs.toString();

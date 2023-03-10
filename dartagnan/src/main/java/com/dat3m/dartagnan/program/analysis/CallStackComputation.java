@@ -63,7 +63,7 @@ public class CallStackComputation {
         Iterator<FunCall> it = callStackMapping.get(e).iterator();
         while (it.hasNext()) {
             FunCall next = it.next();
-            strB.append(String.format("%s (%s#%s)", next.getFunctionName(), next.getSourceCodeFile(), next.getCLine()));
+            strB.append(String.format("%s (%s#%s)", next.getFunctionName(), next.getSourceCodeFileName(), next.getCLine()));
             if (it.hasNext()) {
                 strB.append(" -> " + callsSeparator);
             }
