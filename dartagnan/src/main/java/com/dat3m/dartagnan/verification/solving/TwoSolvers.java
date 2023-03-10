@@ -83,7 +83,7 @@ public class TwoSolvers extends ModelChecker {
             res = prover2.isUnsat() ? PASS : UNKNOWN;
         } else {
         	res = FAIL;
-            saveFlaggedPairsOutput(memoryModel, wmmEncoder, prover1, context);
+            saveFlaggedPairsOutput(memoryModel, wmmEncoder, prover1, context, task.getProgram());
         }
 
         if(logger.isDebugEnabled()) {

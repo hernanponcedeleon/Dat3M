@@ -6,9 +6,11 @@ import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.CallStackComputation;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
@@ -450,6 +452,9 @@ public class RefinementSolver extends ModelChecker {
             }
         }
 
+        CallStackComputation csc = CallStackComputation.newInstance();
+        csc.run(program);
+
         final Set<Event> programEvents = program.getEvents(MemEvent.class).stream()
                 .filter(e -> e.getCLine() > 0).collect(Collectors.toSet());
         final Set<String> messageSet = new TreeSet<>(); // TreeSet to keep strings in order
@@ -460,7 +465,9 @@ public class RefinementSolver extends ModelChecker {
                 // Events not executed in any violating execution
                 final String threads = clazz.stream().map(t -> "T" + t.getId())
                         .collect(Collectors.joining(" / "));
-                messageSet.add(String.format("%s -> %s#%s", threads, e.getSourceCodeFile(), rep.getCLine()));
+                messageSet.add(String.format("%s: %s%s#%s", threads,
+                        csc.getCallStackMapping().containsKey(rep) ? (csc.getStackAsString(rep, "") + " -> ") : "",
+                        e.getSourceCodeFileName(), rep.getCLine()));
             }
         }
 
@@ -491,7 +498,7 @@ public class RefinementSolver extends ModelChecker {
                 .append(String.format("%s (%s / %s)", df.format(branchCoveragePercentage), coveredBranches.size(),
                         branches.size()))
                 .append("\n");
-        if (programEvents.size() != messageSet.size()) {
+            if (eventCoveragePercentage < 1d) {
             report.append("\t-- Missing events: \n");
             messageSet.forEach(s -> report.append("\t\t").append(s).append("\n"));
         }
@@ -528,10 +535,10 @@ public class RefinementSolver extends ModelChecker {
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
         // File with reason edges only
         generateGraphvizFile(model, iterationCount, edgeFilter, edgeFilter, edgeFilter, directoryName, fileNameBase,
-                new HashMap<>());
+                CallStackComputation.newInstance());
         // File with all edges
         generateGraphvizFile(model, iterationCount, (x, y) -> true, (x, y) -> true, (x, y) -> true, directoryName,
-                fileNameBase + "-full", new HashMap<>());
+                fileNameBase + "-full", CallStackComputation.newInstance());
     }
 
     private Wmm createDefaultWmm() {
