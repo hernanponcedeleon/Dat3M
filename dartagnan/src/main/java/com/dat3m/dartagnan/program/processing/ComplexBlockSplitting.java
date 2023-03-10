@@ -64,8 +64,8 @@ public class ComplexBlockSplitting implements ProgramProcessor {
             final Label blockLabel = EventFactory.newLabel(newLabelName);
             final CondJump gotoLabel = EventFactory.newGoto(blockLabel);
 
-            blockLabel.copyIds(condJump);
-            gotoLabel.copyIds(condJump);
+            blockLabel.copyMetadataFrom(condJump);
+            gotoLabel.copyMetadataFrom(condJump);
 
             condJump.insertAfter(gotoLabel);
             gotoLabel.insertAfter(blockLabel);
