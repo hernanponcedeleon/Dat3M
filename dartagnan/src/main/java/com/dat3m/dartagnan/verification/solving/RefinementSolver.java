@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.analysis.CallStackComputation;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
@@ -452,8 +453,7 @@ public class RefinementSolver extends ModelChecker {
         }
 
         CallStackComputation csc = CallStackComputation.newInstance();
-        csc.run(program, "");
-        Map<Event, String> callStackMapping = csc.getCallStackMapping();
+        csc.run(program);
 
         final Set<Event> programEvents = program.getEvents(MemEvent.class).stream()
                 .filter(e -> e.getCLine() > 0).collect(Collectors.toSet());
@@ -465,7 +465,7 @@ public class RefinementSolver extends ModelChecker {
                 // Events not executed in any violating execution
                 final String threads = clazz.stream().map(t -> "T" + t.getId())
                         .collect(Collectors.joining(" / "));
-                messageSet.add(String.format("%s: %s%s#%s", threads, callStackMapping.containsKey(rep) ? (callStackMapping.get(e) + " -> ") : "", e.getSourceCodeFile(), rep.getCLine()));
+                messageSet.add(String.format("%s: %s%s#%s", threads, csc.getCallStackMapping().containsKey(rep) ? (csc.getStackAsString(rep, "") + " -> ") : "", e.getSourceCodeFile(), rep.getCLine()));
             }
         }
 
@@ -533,10 +533,10 @@ public class RefinementSolver extends ModelChecker {
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
         // File with reason edges only
         generateGraphvizFile(model, iterationCount, edgeFilter, edgeFilter, edgeFilter, directoryName, fileNameBase,
-                new HashMap<>());
+                CallStackComputation.newInstance());
         // File with all edges
         generateGraphvizFile(model, iterationCount, (x, y) -> true, (x, y) -> true, (x, y) -> true, directoryName,
-                fileNameBase + "-full", new HashMap<>());
+                fileNameBase + "-full", CallStackComputation.newInstance());
     }
 
     private Wmm createDefaultWmm() {

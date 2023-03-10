@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.program.specification.AssertCompositeAnd;
@@ -36,6 +37,7 @@ import org.sosy_lab.java_smt.api.SolverException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Stack;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
@@ -149,17 +151,16 @@ public abstract class ModelChecker {
             if(ax.isFlagged() && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
 
                 CallStackComputation csc = CallStackComputation.newInstance();
-                csc.run(program, "");
-                Map<Event, String> callStackMapping = csc.getCallStackMapping();
+                csc.run(program);
     
                 StringBuilder violatingPairs = new StringBuilder("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
                 for(Tuple tuple : encoder.getTuples(ax.getRelation(), model)) {
                     violatingPairs
                         .append("\tE").append(tuple.getFirst().getGlobalId())
                         .append(" / E").append(tuple.getSecond().getGlobalId())
-                        .append("\t").append(callStackMapping.containsKey(tuple.getFirst()) ? (callStackMapping.get(tuple.getFirst()) + " -> ") : "")
+                        .append("\t").append(csc.getCallStackMapping().containsKey(tuple.getFirst()) ? (csc.getStackAsString(tuple.getFirst(), "") + " -> ") : "")
                         .append(tuple.getFirst().getSourceCodeFile()).append("#").append(tuple.getFirst().getCLine())
-                        .append(" / ").append(callStackMapping.containsKey(tuple.getSecond()) ? (callStackMapping.get(tuple.getSecond()) + " -> ") : "")
+                        .append(" / ").append(csc.getCallStackMapping().containsKey(tuple.getSecond()) ? (csc.getStackAsString(tuple.getSecond(), "") + " -> ") : "")
                         .append(tuple.getSecond().getSourceCodeFile()).append("#").append(tuple.getSecond().getCLine())
                         .append("\n");
                 }

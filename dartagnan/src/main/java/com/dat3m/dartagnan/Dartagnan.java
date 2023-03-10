@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -176,7 +177,7 @@ public class Dartagnan extends BaseOptions {
                     ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
                     m.initialize(prover.getModel());
                     CallStackComputation csc = CallStackComputation.fromConfig(config);
-                    csc.run(p, "\\n");
+                    csc.run(p);
                     String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
                     // RF edges give both ordering and data flow information, thus even when the pair is in PO
                     // we get some data flow information by observing the edge
@@ -184,7 +185,7 @@ public class Dartagnan extends BaseOptions {
                     // CO edges only give ordering information which is known if the pair is also in PO
                     generateGraphvizFile(m, 1, (x, y) -> true, (x, y) -> !x.getThread().equals(y.getThread()),
                             (x, y) -> !x.getThread().equals(y.getThread()), System.getenv("DAT3M_OUTPUT") + "/", name,
-                            csc.getCallStackMapping());
+                            csc);
                 }
 
                 long endTime = System.currentTimeMillis();
@@ -238,8 +239,8 @@ public class Dartagnan extends BaseOptions {
         if (p.getFormat().equals(SourceLanguage.BOOGIE)) {
             if (hasViolations) {
                 CallStackComputation csc = CallStackComputation.newInstance();
-                csc.run(p, "");
-                Map<Event, String> callStackMapping = csc.getCallStackMapping();
+                csc.run(p);
+                Map<Event, Stack<FunCall>> callStackMapping = csc.getCallStackMapping();
                 printWarningIfThreadStartFailed(p, encCtx, prover);
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     summary.append("===== Program specification violation found =====\n");
@@ -248,7 +249,7 @@ public class Dartagnan extends BaseOptions {
                             summary
                                     .append("\tE").append(e.getGlobalId())
                                     .append(":\t")
-                                    .append(callStackMapping.containsKey(e) ? (callStackMapping.get(e) + " -> ") : "")
+                                    .append(callStackMapping.containsKey(e) ? (csc.getStackAsString(e, "") + " -> ") : "")
                                     .append(e.getSourceCodeFile()).append("#").append(e.getCLine())
                                     .append("\n");
                         }
@@ -263,7 +264,7 @@ public class Dartagnan extends BaseOptions {
                             summary
                                     .append("\tE").append(e.getGlobalId())
                                     .append(":\t")
-                                    .append(callStackMapping.containsKey(e) ? (callStackMapping.get(e) + " -> ") : "")
+                                    .append(callStackMapping.containsKey(e) ? (csc.getStackAsString(e, "") + " -> ") : "")
                                     .append(e.getSourceCodeFile()).append("#").append(e.getCLine())
                                     .append("\n");
                         }
