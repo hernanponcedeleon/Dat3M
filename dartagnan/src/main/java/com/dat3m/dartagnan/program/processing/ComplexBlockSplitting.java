@@ -5,8 +5,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.google.common.base.Preconditions;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,9 +41,6 @@ public class ComplexBlockSplitting implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        // This might not a strong requirement, but if it is weaken, then events created by
-        // this class need to not only get the corresponding oId, but also cId.
-        Preconditions.checkArgument(!program.isCompiled(), "ComplexBlockSplitting should be run before compilation.");
         final int numBlockSplittings = program.getThreads().stream().mapToInt(this::run).sum();
 
         logger.info("Split {} complex blocks.", numBlockSplittings);
