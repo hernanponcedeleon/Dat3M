@@ -465,7 +465,7 @@ public class RefinementSolver extends ModelChecker {
                 // Events not executed in any violating execution
                 final String threads = clazz.stream().map(t -> "T" + t.getId())
                         .collect(Collectors.joining(" / "));
-                messageSet.add(String.format("%s: %s -> %s#%s", threads, callStackMapping.containsKey(rep) ? callStackMapping.get(rep): "", e.getSourceCodeFile(), rep.getCLine()));
+                messageSet.add(String.format("%s: %s%s#%s", threads, callStackMapping.containsKey(rep) ? (callStackMapping.get(e) + " -> ") : "", e.getSourceCodeFile(), rep.getCLine()));
             }
         }
 
