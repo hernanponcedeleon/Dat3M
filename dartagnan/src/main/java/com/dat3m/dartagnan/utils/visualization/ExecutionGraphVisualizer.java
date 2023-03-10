@@ -212,10 +212,10 @@ public class ExecutionGraphVisualizer {
             		String.format("W(%s, %d%s)", address, value, mo) :
             		String.format("%s = R(%s%s)", value, address, mo);
         }
-        return String.format("\"T%s:E%s\\n%s ->\n%s#%s\n%s\"", 
+        return String.format("\"T%s:E%s\\n%s%s#%s\n%s\"", 
         				e.getThread().getId(), 
         				e.getEvent().getGlobalId(),
-                        callStackMapping.containsKey(e.getEvent()) ? callStackMapping.get(e.getEvent()) : "", 
+                        callStackMapping.containsKey(e.getEvent()) ? (callStackMapping.get(e.getEvent()) + " -> \n") : "", 
         				e.getEvent().getSourceCodeFile(), 
         				e.getEvent().getCLine(),
         				tag);

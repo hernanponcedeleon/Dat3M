@@ -41,7 +41,7 @@ public class CallStackComputation  {
 			while (current != null) {
  				if(current instanceof FunCall) {
 					FunCall call = (FunCall)current;
-					callStack.push(call.getFunctionName());
+					callStack.push(String.format("%s (%s#%s)", call.getFunctionName(), call.getSourceCodeFile(), call.getCLine()));
 				}
 				if(current instanceof FunRet) {
 					callStack.pop();

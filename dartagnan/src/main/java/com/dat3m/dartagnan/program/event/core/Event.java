@@ -74,7 +74,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	public Event setCFileInformation(int line, String file) {
 		this.cLine = line;
-		this.sourceCodeFile = file;
+		this.sourceCodeFile = file.contains("/") ? file.substring(file.lastIndexOf("/") + 1) : file;
 		return this;
 	}
 
