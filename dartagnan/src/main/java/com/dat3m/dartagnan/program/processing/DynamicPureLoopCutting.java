@@ -140,7 +140,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         final CondJump assumeSideEffect = EventFactory.newJumpUnless(atLeastOneSideEffect, (Label) thread.getExit());
         assumeSideEffect.addFilters(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
         final Event spinloopStart = iterInfo.getIterationStart();
-        assumeSideEffect.setCFileInformation(spinloopStart.getCLine(), spinloopStart.getSourceCodeFilePath());
+        assumeSideEffect.copyMetadataFrom(spinloopStart);
         insertionPoint.insertAfter(assumeSideEffect);
     }
 

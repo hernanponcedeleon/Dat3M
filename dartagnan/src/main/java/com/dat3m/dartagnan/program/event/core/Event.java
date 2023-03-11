@@ -54,20 +54,23 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	public int getGlobalId() { return globalId; }
 	public void setGlobalId(int id) { this.globalId = id; }
+	public boolean hasGlobalId() { return globalId != -1; }
 
 	public int getOId() { return oId; }
 	public void setOId(int id) { this.oId = id; }
+	public boolean hasOId() { return oId != -1; }
 
 	public int getUId(){ return uId; }
 	public void setUId(int id) { this.uId = id; }
+	public boolean hasUId() { return uId != -1; }
 
 	public int getCId() { return cId; }
 	public void setCId(int id) { this.cId = id; }
+	public boolean hasCId() { return cId != -1; }
 
-	public int getCLine() {
-		return cLine;
-	}
-	
+	public int getCLine() { return cLine; }
+    public boolean hasCLine() { return cLine != -1; }
+
 	public String getSourceCodeFilePath() {
 		return sourceCodeFilePath ;
 	}
