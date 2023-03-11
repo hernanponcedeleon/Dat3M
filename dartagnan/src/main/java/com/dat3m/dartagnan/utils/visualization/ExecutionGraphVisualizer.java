@@ -85,7 +85,7 @@ public class ExecutionGraphVisualizer {
     }
 
     private boolean ignore(EventData e) {
-        return e.getEvent().getCLine() == -1 && !e.isInit();
+        return !e.getEvent().hasCLine() && !e.isInit();
     }
 
 
@@ -192,7 +192,7 @@ public class ExecutionGraphVisualizer {
     private String eventToNode(EventData e, ExecutionModel model) {
         if (e.isInit()) {
             return String.format("\"I(%s, %d)\"", addresses.get(e.getAccessedAddress()), e.getValue());
-        } else if (e.getEvent().getCLine() == -1) {
+        } else if (!e.getEvent().hasCLine()) {
             // Special write of each thread
             int threadSize = model.getThreadEventsMap().get(e.getThread()).size();
             if (e.getLocalId() <= threadSize / 2) {

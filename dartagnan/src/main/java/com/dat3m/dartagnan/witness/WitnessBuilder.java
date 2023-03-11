@@ -166,7 +166,7 @@ public class WitnessBuilder {
 	private List<Event> getSCExecutionOrder(Model model) {
 		List<Event> execEvents = new ArrayList<>();
 		// TODO: we recently added many cline to many events and this might affect the witness generation.
-		Predicate<Event> executedCEvents = e -> Boolean.TRUE.equals(model.evaluate(context.execution(e))) &&  e.getCLine() > - 1;
+		Predicate<Event> executedCEvents = e -> Boolean.TRUE.equals(model.evaluate(context.execution(e))) &&  e.hasCLine();
 		execEvents.addAll(context.getTask().getProgram().getEvents(Init.class).stream().filter(executedCEvents).collect(Collectors.toList()));
 		execEvents.addAll(context.getTask().getProgram().getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));
 		Map<Integer, List<Event>> map = new HashMap<>();
