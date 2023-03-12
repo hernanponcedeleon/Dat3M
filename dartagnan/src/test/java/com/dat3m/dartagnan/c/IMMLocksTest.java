@@ -70,6 +70,8 @@ public class IMMLocksTest extends AbstractCTest {
                 {"mutex_musl-rel2rx_futex", IMM, UNKNOWN},
                 {"mutex_musl-rel2rx_unlock", IMM, FAIL},
                 {"seqlock", IMM, PASS},
+                {"clh_mutex", IMM, UNKNOWN},
+                {"clh_mutex-acq2rx", IMM, FAIL},
         });
     }
 

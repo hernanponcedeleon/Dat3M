@@ -134,6 +134,14 @@ public class CLocksTest extends AbstractCTest {
                 {"pthread_mutex", ARM8, PASS},
                 {"pthread_mutex", POWER, PASS},
                 {"pthread_mutex", RISCV, PASS},
+                {"clh_mutex", TSO, UNKNOWN},
+                {"clh_mutex-acq2rx", TSO, UNKNOWN},
+                {"clh_mutex", ARM8, UNKNOWN},
+                {"clh_mutex-acq2rx", ARM8, FAIL},
+                {"clh_mutex", POWER, UNKNOWN},
+                {"clh_mutex-acq2rx", POWER, FAIL},
+                {"clh_mutex", RISCV, UNKNOWN},
+                {"clh_mutex-acq2rx", RISCV, FAIL},
 		});
     }
 
