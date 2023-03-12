@@ -88,7 +88,7 @@ typedef struct
 static clh_mutex_node_t * clh_mutex_create_node(int islocked)
 {
     clh_mutex_node_t * new_node = (clh_mutex_node_t *)malloc(sizeof(clh_mutex_node_t));
-    atomic_store_explicit(&new_node->succ_must_wait, islocked, memory_order_relaxed);
+    atomic_init(&new_node->succ_must_wait, islocked);
     return new_node;
 }
 
@@ -103,7 +103,7 @@ void clh_mutex_init(clh_mutex_t * self)
     // We create the first sentinel node unlocked, with islocked=0
     clh_mutex_node_t * node = clh_mutex_create_node(0);
     self->mynode = node;
-    atomic_store(&self->tail, node);
+    atomic_init(&self->tail, node);
 }
 
 
@@ -141,7 +141,7 @@ void clh_mutex_lock(clh_mutex_t * self)
 #endif
     if (prev_islocked) {
         while (prev_islocked) {
-            prev_islocked = atomic_load(&prev->succ_must_wait);
+            prev_islocked = atomic_load_explicit(&prev->succ_must_wait, memory_order_acquire);
         }
     }
     // This thread has acquired the lock on the mutex and it is now safe to
@@ -169,5 +169,5 @@ void clh_mutex_unlock(clh_mutex_t * self)
         // ERROR: This will occur if unlock() is called without a lock()
         return;
     }
-    atomic_store(&self->mynode->succ_must_wait, 0);
+    atomic_store_explicit(&self->mynode->succ_must_wait, 0, memory_order_release);
 }

@@ -43,7 +43,7 @@ const $MALLOC_TOP: ref;
 var $M.0: [ref] i8;
 
 // Memory address bounds
-axiom ($GLOBALS_BOTTOM == $sub.ref(0, 43672));
+axiom ($GLOBALS_BOTTOM == $sub.ref(0, 42640));
 axiom ($EXTERNS_BOTTOM == $add.ref($GLOBALS_BOTTOM, $sub.ref(0, 32768)));
 axiom ($MALLOC_TOP == 9223372036854775807);
 function {:inline} $isExternal(p: ref) returns (bool) { $slt.ref.bool(p, $EXTERNS_BOTTOM) }
@@ -1510,8 +1510,6 @@ procedure  clh_mutex_init($p0: ref)
   var $p1: ref;
   var $p2: ref;
   var $p3: ref;
-  var $p4: ref;
-  var $i5: i64;
 $bb0:
   assume {:sourceloc "benchmarks/locks/clh_mutex.h", 104, 31} true;
   assume {:verifier.code 0} true;
@@ -1524,18 +1522,12 @@ $bb0:
   assume {:sourceloc "benchmarks/locks/clh_mutex.h", 105, 18} true;
   assume {:verifier.code 0} true;
   $M.0 := $store.ref($M.0, $p2, $p1);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 106, 5} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 106, 24} true;
   assume {:verifier.code 0} true;
   $p3 := $add.ref($add.ref($p0, $mul.ref(0, 272)), $mul.ref(264, 1));
   assume {:sourceloc "benchmarks/locks/clh_mutex.h", 106, 5} true;
   assume {:verifier.code 0} true;
-  $p4 := $bitcast.ref.ref($p3);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 106, 5} true;
-  assume {:verifier.code 0} true;
-  $i5 := $p2i.ref.i64($p1);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 107, 1} true;
-  assume {:verifier.code 0} true;
-  call __llvm_atomic64_store($p4, $i5, 5);
+  $M.0 := $store.ref($M.0, $p3, $p1);
   assume {:sourceloc "benchmarks/locks/clh_mutex.h", 107, 1} true;
   assume {:verifier.code 0} true;
   $exn := false;
@@ -1562,39 +1554,33 @@ $bb0:
   assume {:sourceloc "benchmarks/locks/clh_mutex.h", 90, 35} true;
   assume {:verifier.code 0} true;
   $p2 := $bitcast.ref.ref($p1);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 91, 38} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 91, 28} true;
   assume {:verifier.code 0} true;
   $p3 := $add.ref($add.ref($p2, $mul.ref(0, 4)), $mul.ref(0, 1));
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 92, 12} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 91, 5} true;
   assume {:verifier.code 0} true;
-  call __llvm_atomic32_store($p3, $i0, 0);
+  $M.0 := $store.i32($M.0, $p3, $i0);
   assume {:sourceloc "benchmarks/locks/clh_mutex.h", 92, 5} true;
   assume {:verifier.code 0} true;
   $r := $p2;
   $exn := false;
   return;
 }
-const __llvm_atomic64_store: ref;
-axiom (__llvm_atomic64_store == $sub.ref(0, 12712));
-procedure  __llvm_atomic64_store($p0: ref, $i1: i64, $i2: i32);
 const malloc: ref;
-axiom (malloc == $sub.ref(0, 13744));
+axiom (malloc == $sub.ref(0, 12712));
 procedure  malloc($i0: i64)
   returns ($r: ref)
 {
   call $r := $malloc($i0);
 }
-const __llvm_atomic32_store: ref;
-axiom (__llvm_atomic32_store == $sub.ref(0, 14776));
-procedure  __llvm_atomic32_store($p0: ref, $i1: i32, $i2: i32);
 const free_: ref;
-axiom (free_ == $sub.ref(0, 15808));
+axiom (free_ == $sub.ref(0, 13744));
 procedure  free_($p0: ref)
 {
   call $free($p0);
 }
 const clh_mutex_lock: ref;
-axiom (clh_mutex_lock == $sub.ref(0, 16840));
+axiom (clh_mutex_lock == $sub.ref(0, 14776));
 procedure  clh_mutex_lock($p0: ref)
 {
   var $p1: ref;
@@ -1632,84 +1618,84 @@ $bb0:
   assume {:sourceloc "benchmarks/locks/clh_mutex.h", 133, 30} true;
   assume {:verifier.code 0} true;
   $p6 := $i2p.i64.ref($i5);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 137, 53} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 138, 53} true;
   assume {:verifier.code 0} true;
   $p7 := $add.ref($add.ref($p6, $mul.ref(0, 4)), $mul.ref(0, 1));
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 137, 25} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 138, 25} true;
   assume {:verifier.code 0} true;
   call $i8 := __llvm_atomic32_load($p7, 0);
   call {:cexpr "prev_islocked"} boogie_si_record_i32($i8);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 138, 9} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 142, 9} true;
   assume {:verifier.code 0} true;
   $i9 := $ne.i32($i8, 0);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 138, 9} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 142, 9} true;
   assume {:verifier.code 0} true;
   $i10 := $i8;
   assume {:branchcond $i9} true;
   goto $bb1, $bb3;
 $bb1:
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 138, 9} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 142, 9} true;
   assume {:verifier.code 0} true;
   assume ($i9 == 1);
   goto $bb2;
 $bb2:
   assume {:sourceloc "benchmarks/locks/clh_mutex.h", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 139, 9} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 143, 9} true;
   assume {:verifier.code 0} true;
   $i11 := $ne.i32($i10, 0);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 139, 9} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 143, 9} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i11} true;
   goto $bb5, $bb6;
 $bb3:
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 138, 9} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 142, 9} true;
   assume {:verifier.code 0} true;
   assume !(($i9 == 1));
   goto $bb4;
 $bb4:
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 145, 10} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 149, 10} true;
   assume {:verifier.code 0} true;
   $p13 := $bitcast.ref.ref($p6);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 145, 5} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 149, 5} true;
   assume {:verifier.code 0} true;
   call free_($p13);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 149, 11} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 153, 11} true;
   assume {:verifier.code 0} true;
   $p14 := $add.ref($add.ref($p0, $mul.ref(0, 272)), $mul.ref(0, 1));
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 149, 18} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 153, 18} true;
   assume {:verifier.code 0} true;
   $M.0 := $store.ref($M.0, $p14, $p1);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 150, 1} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 154, 1} true;
   assume {:verifier.code 0} true;
   $exn := false;
   return;
 $bb5:
   assume ($i11 == 1);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 140, 29} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 144, 29} true;
   assume {:verifier.code 0} true;
-  call $i12 := __llvm_atomic32_load($p7, 5);
+  call $i12 := __llvm_atomic32_load($p7, 2);
   call {:cexpr "prev_islocked"} boogie_si_record_i32($i12);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 139, 9} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 143, 9} true;
   assume {:verifier.code 0} true;
   $i10 := $i12;
   goto $bb2;
 $bb6:
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 139, 9} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 143, 9} true;
   assume {:verifier.code 0} true;
   assume !(($i11 == 1));
   goto $bb4;
 }
 const __llvm_atomic64_rmw: ref;
-axiom (__llvm_atomic64_rmw == $sub.ref(0, 17872));
+axiom (__llvm_atomic64_rmw == $sub.ref(0, 15808));
 procedure  __llvm_atomic64_rmw($p0: ref, $i1: i64, $i2: i32, $i3: i32)
   returns ($r: i64);
 const __llvm_atomic32_load: ref;
-axiom (__llvm_atomic32_load == $sub.ref(0, 18904));
+axiom (__llvm_atomic32_load == $sub.ref(0, 16840));
 procedure  __llvm_atomic32_load($p0: ref, $i1: i32)
   returns ($r: i32);
 const clh_mutex_unlock: ref;
-axiom (clh_mutex_unlock == $sub.ref(0, 19936));
+axiom (clh_mutex_unlock == $sub.ref(0, 17872));
 procedure  clh_mutex_unlock($p0: ref)
 {
   var $p1: ref;
@@ -1717,45 +1703,48 @@ procedure  clh_mutex_unlock($p0: ref)
   var $i3: i1;
   var $p4: ref;
 $bb0:
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 164, 15} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 168, 15} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 164, 15} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 168, 15} true;
   assume {:verifier.code 0} true;
   $p1 := $add.ref($add.ref($p0, $mul.ref(0, 272)), $mul.ref(0, 1));
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 164, 15} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 168, 15} true;
   assume {:verifier.code 0} true;
   $p2 := $load.ref($M.0, $p1);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 164, 22} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 168, 22} true;
   assume {:verifier.code 0} true;
   $i3 := $eq.ref($p2, $0.ref);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 164, 9} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 168, 9} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i3} true;
   goto $bb1, $bb3;
 $bb1:
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 164, 9} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 168, 9} true;
   assume {:verifier.code 0} true;
   assume ($i3 == 1);
   goto $bb2;
 $bb2:
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 169, 1} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 173, 1} true;
   assume {:verifier.code 0} true;
   $exn := false;
   return;
 $bb3:
   assume !(($i3 == 1));
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 168, 5} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 172, 42} true;
   assume {:verifier.code 0} true;
   $p4 := $add.ref($add.ref($p2, $mul.ref(0, 4)), $mul.ref(0, 1));
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 169, 1} true;
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 173, 1} true;
   assume {:verifier.code 0} true;
-  call __llvm_atomic32_store($p4, 0, 5);
-  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 169, 1} true;
+  call __llvm_atomic32_store($p4, 0, 3);
+  assume {:sourceloc "benchmarks/locks/clh_mutex.h", 173, 1} true;
   assume {:verifier.code 0} true;
   goto $bb2;
 }
+const __llvm_atomic32_store: ref;
+axiom (__llvm_atomic32_store == $sub.ref(0, 18904));
+procedure  __llvm_atomic32_store($p0: ref, $i1: i32, $i2: i32);
 const thread_n: ref;
-axiom (thread_n == $sub.ref(0, 20968));
+axiom (thread_n == $sub.ref(0, 19936));
 procedure  thread_n($p0: ref)
   returns ($r: ref)
 {
@@ -1822,10 +1811,10 @@ $bb2:
   assume false;
 }
 const __assert_fail: ref;
-axiom (__assert_fail == $sub.ref(0, 22000));
+axiom (__assert_fail == $sub.ref(0, 20968));
 procedure  __assert_fail($p0: ref, $p1: ref, $i2: i32, $p3: ref);
 const main: ref;
-axiom (main == $sub.ref(0, 23032));
+axiom (main == $sub.ref(0, 22000));
 procedure {:entrypoint} main()
   returns ($r: i32)
 {
@@ -1918,22 +1907,22 @@ $bb2:
   assume false;
 }
 const llvm.dbg.declare: ref;
-axiom (llvm.dbg.declare == $sub.ref(0, 24064));
+axiom (llvm.dbg.declare == $sub.ref(0, 23032));
 procedure  llvm.dbg.declare($p0: ref, $p1: ref, $p2: ref);
 const pthread_create: ref;
-axiom (pthread_create == $sub.ref(0, 25096));
+axiom (pthread_create == $sub.ref(0, 24064));
 procedure  pthread_create($p0: ref, $p1: ref, $p2: ref, $p3: ref)
   returns ($r: i32);
 const pthread_join: ref;
-axiom (pthread_join == $sub.ref(0, 26128));
+axiom (pthread_join == $sub.ref(0, 25096));
 procedure  pthread_join($i0: i64, $p1: ref)
   returns ($r: i32);
 const __SMACK_code: ref;
-axiom (__SMACK_code == $sub.ref(0, 27160));
+axiom (__SMACK_code == $sub.ref(0, 26128));
 procedure  __SMACK_code.ref($p0: ref);
 procedure  __SMACK_code.ref.i32($p0: ref, p.1: i32);
 const __VERIFIER_assume: ref;
-axiom (__VERIFIER_assume == $sub.ref(0, 28192));
+axiom (__VERIFIER_assume == $sub.ref(0, 27160));
 procedure  __VERIFIER_assume($i0: i32)
 {
 $bb0:
@@ -1952,7 +1941,7 @@ $bb0:
   return;
 }
 const __SMACK_dummy: ref;
-axiom (__SMACK_dummy == $sub.ref(0, 29224));
+axiom (__SMACK_dummy == $sub.ref(0, 28192));
 procedure  __SMACK_dummy($i0: i32)
 {
 $bb0:
@@ -1968,7 +1957,7 @@ $bb0:
   return;
 }
 const __SMACK_and32: ref;
-axiom (__SMACK_and32 == $sub.ref(0, 30256));
+axiom (__SMACK_and32 == $sub.ref(0, 29224));
 procedure  __SMACK_and32($i0: i32, $i1: i32)
   returns ($r: i32)
 {
@@ -9180,7 +9169,7 @@ $bb576:
   goto $bb570;
 }
 const __SMACK_and64: ref;
-axiom (__SMACK_and64 == $sub.ref(0, 31288));
+axiom (__SMACK_and64 == $sub.ref(0, 30256));
 procedure  __SMACK_and64($i0: i64, $i1: i64)
   returns ($r: i64)
 {
@@ -9213,7 +9202,7 @@ $bb0:
   return;
 }
 const __SMACK_and16: ref;
-axiom (__SMACK_and16 == $sub.ref(0, 32320));
+axiom (__SMACK_and16 == $sub.ref(0, 31288));
 procedure  __SMACK_and16($i0: i16, $i1: i16)
   returns ($r: i16)
 {
@@ -11873,7 +11862,7 @@ $bb144:
   goto $bb138;
 }
 const __SMACK_and8: ref;
-axiom (__SMACK_and8 == $sub.ref(0, 33352));
+axiom (__SMACK_and8 == $sub.ref(0, 32320));
 procedure  __SMACK_and8($i0: i8, $i1: i8)
   returns ($r: i8)
 {
@@ -13181,7 +13170,7 @@ $bb72:
   goto $bb66;
 }
 const __SMACK_or32: ref;
-axiom (__SMACK_or32 == $sub.ref(0, 34384));
+axiom (__SMACK_or32 == $sub.ref(0, 33352));
 procedure  __SMACK_or32($i0: i32, $i1: i32)
   returns ($r: i32)
 {
@@ -16297,7 +16286,7 @@ $bb192:
   goto $bb189;
 }
 const __SMACK_or64: ref;
-axiom (__SMACK_or64 == $sub.ref(0, 35416));
+axiom (__SMACK_or64 == $sub.ref(0, 34384));
 procedure  __SMACK_or64($i0: i64, $i1: i64)
   returns ($r: i64)
 {
@@ -16330,7 +16319,7 @@ $bb0:
   return;
 }
 const __SMACK_or16: ref;
-axiom (__SMACK_or16 == $sub.ref(0, 36448));
+axiom (__SMACK_or16 == $sub.ref(0, 35416));
 procedure  __SMACK_or16($i0: i16, $i1: i16)
   returns ($r: i16)
 {
@@ -16363,7 +16352,7 @@ $bb0:
   return;
 }
 const __SMACK_or8: ref;
-axiom (__SMACK_or8 == $sub.ref(0, 37480));
+axiom (__SMACK_or8 == $sub.ref(0, 36448));
 procedure  __SMACK_or8($i0: i8, $i1: i8)
   returns ($r: i8)
 {
@@ -16396,7 +16385,7 @@ $bb0:
   return;
 }
 const __SMACK_check_overflow: ref;
-axiom (__SMACK_check_overflow == $sub.ref(0, 38512));
+axiom (__SMACK_check_overflow == $sub.ref(0, 37480));
 procedure  __SMACK_check_overflow($i0: i32)
 {
 $bb0:
@@ -16415,7 +16404,7 @@ $bb0:
   return;
 }
 const __SMACK_loop_exit: ref;
-axiom (__SMACK_loop_exit == $sub.ref(0, 39544));
+axiom (__SMACK_loop_exit == $sub.ref(0, 38512));
 procedure  __SMACK_loop_exit()
 {
 $bb0:
@@ -16430,7 +16419,7 @@ $bb0:
   return;
 }
 const __SMACK_decls: ref;
-axiom (__SMACK_decls == $sub.ref(0, 40576));
+axiom (__SMACK_decls == $sub.ref(0, 39544));
 type $mop;
 procedure  boogie_si_record_mop(m: $mop);
 const $MOP: $mop;
@@ -16469,10 +16458,10 @@ modifies $CurrAddr;
 procedure  $free(p: ref);
 
 const __SMACK_top_decl: ref;
-axiom (__SMACK_top_decl == $sub.ref(0, 41608));
+axiom (__SMACK_top_decl == $sub.ref(0, 40576));
 procedure  __SMACK_top_decl.ref($p0: ref);
 const __SMACK_init_func_memory_model: ref;
-axiom (__SMACK_init_func_memory_model == $sub.ref(0, 42640));
+axiom (__SMACK_init_func_memory_model == $sub.ref(0, 41608));
 procedure  __SMACK_init_func_memory_model()
 {
 $bb0:
@@ -16487,7 +16476,7 @@ $bb0:
   return;
 }
 const __SMACK_static_init: ref;
-axiom (__SMACK_static_init == $sub.ref(0, 43672));
+axiom (__SMACK_static_init == $sub.ref(0, 42640));
 procedure  __SMACK_static_init()
 {
 $bb0:
