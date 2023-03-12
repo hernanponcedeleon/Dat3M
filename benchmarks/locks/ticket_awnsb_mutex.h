@@ -176,28 +176,28 @@ void ticket_awnsb_mutex_destroy(ticket_awnsb_mutex_t * self)
  */
 void ticket_awnsb_mutex_lock(ticket_awnsb_mutex_t * self)
 {
-    const long long ticket = atomic_fetch_add(&self->ingress, 1);
-    if (atomic_load(&self->egress) == ticket) return;
+    const long long ticket = atomic_fetch_add_explicit(&self->ingress, 1, memory_order_relaxed);
+    if (atomic_load_explicit(&self->egress, memory_order_acquire) == ticket) return;
     while (atomic_load_explicit(&self->egress, memory_order_relaxed) >= ticket-1) {
-        if (atomic_load(&self->egress) == ticket) return;
+        if (atomic_load_explicit(&self->egress, memory_order_acquire) == ticket) return;
     }
     // If there is no slot to wait, spin until there is
-    while (ticket-atomic_load(&self->egress) >= (self->maxArrayWaiters-1));
+    while (ticket-atomic_load_explicit(&self->egress, memory_order_relaxed) >= (self->maxArrayWaiters-1));
 
     // There is a spot for us on the array, so place our node there
     awnsb_node_t * wnode = &tlNode;
     // Reset lockIsMine from previous usages
     atomic_store_explicit(&wnode->lockIsMine, 0, memory_order_relaxed);
-    atomic_store(&self->waitersArray[(int)(ticket % self->maxArrayWaiters)], wnode);
+    atomic_store_explicit(&self->waitersArray[(int)(ticket % self->maxArrayWaiters)], wnode, memory_order_release);
 
-    if (atomic_load(&self->egress) < ticket-1) {
+    if (atomic_load_explicit(&self->egress, memory_order_relaxed) < ticket-1) {
         // Spin on lockIsMine
-        while (!atomic_load(&wnode->lockIsMine));
+        while (!atomic_load_explicit(&wnode->lockIsMine, memory_order_relaxed));
         atomic_store_explicit(&self->egress, ticket, memory_order_relaxed);
     } else {
         // Spin on both lockIsMine and egress
-        while (atomic_load(&self->egress) != ticket) {
-            if (atomic_load(&wnode->lockIsMine)) {
+        while (atomic_load_explicit(&self->egress, memory_order_acquire) != ticket) {
+            if (atomic_load_explicit(&wnode->lockIsMine, memory_order_acquire)) {
                 atomic_store_explicit(&self->egress, ticket, memory_order_relaxed);
                 return; // Lock acquired
             }
@@ -219,12 +219,12 @@ void ticket_awnsb_mutex_unlock(ticket_awnsb_mutex_t * self)
     // Clear up our entry in the array before releasing the lock.
     atomic_store_explicit(&self->waitersArray[(int)(ticket % self->maxArrayWaiters)], NULL, memory_order_relaxed);
     // We could do this load as relaxed per se but then the store on egress of -(ticket+1) could be re-ordered to be before, and we don't want that
-    awnsb_node_t * wnode = atomic_load(&self->waitersArray[(int)((ticket+1) % self->maxArrayWaiters)]);
+    awnsb_node_t * wnode = atomic_load_explicit(&self->waitersArray[(int)((ticket+1) % self->maxArrayWaiters)], memory_order_acquire);
     if (wnode != NULL) {
         // We saw the node in waitersArray
-        atomic_store(&wnode->lockIsMine, 1);
+        atomic_store_explicit(&wnode->lockIsMine, 1, memory_order_release);
     } else {
-        atomic_store(&self->egress, ticket+1);
+        atomic_store_explicit(&self->egress, ticket+1, memory_order_release);
     }
 }
 
