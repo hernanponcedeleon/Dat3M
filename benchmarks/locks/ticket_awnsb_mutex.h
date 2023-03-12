@@ -177,7 +177,11 @@ void ticket_awnsb_mutex_destroy(ticket_awnsb_mutex_t * self)
 void ticket_awnsb_mutex_lock(ticket_awnsb_mutex_t * self)
 {
     const long long ticket = atomic_fetch_add_explicit(&self->ingress, 1, memory_order_relaxed);
+#ifdef FAIL
+    if (atomic_load_explicit(&self->egress, memory_order_relaxed) == ticket) return;
+#else
     if (atomic_load_explicit(&self->egress, memory_order_acquire) == ticket) return;
+#endif
     while (atomic_load_explicit(&self->egress, memory_order_relaxed) >= ticket-1) {
         if (atomic_load_explicit(&self->egress, memory_order_acquire) == ticket) return;
     }
