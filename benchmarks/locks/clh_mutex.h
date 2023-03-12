@@ -134,7 +134,11 @@ void clh_mutex_lock(clh_mutex_t * self)
 
     // This thread's node is now in the queue, so wait until it is its turn
     // The original benchmark had a relaxed load, but this violates mutual exclusion
+#ifdef FAIL
     int prev_islocked = atomic_load_explicit(&prev->succ_must_wait, memory_order_relaxed);
+#else
+    int prev_islocked = atomic_load_explicit(&prev->succ_must_wait, memory_order_acquire);
+#endif
     if (prev_islocked) {
         while (prev_islocked) {
             prev_islocked = atomic_load(&prev->succ_must_wait);
