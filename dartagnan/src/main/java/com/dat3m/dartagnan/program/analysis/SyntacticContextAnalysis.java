@@ -86,8 +86,9 @@ public class SyntacticContextAnalysis {
             this.contextStack = contextStack;
         }
 
-        public Event getEvent() { return this.event;}
+        public Event getEvent() { return this.event; }
         public ImmutableList<Context> getContextStack() { return this.contextStack; }
+        public boolean hasContext() { return !contextStack.isEmpty(); }
 
         public <T extends Context> ImmutableList<T> getContextOfType(Class<T> contextClass) {
             final Stream<T> filteredContext = contextStack.stream()
@@ -97,8 +98,7 @@ public class SyntacticContextAnalysis {
 
         public String getContextString(boolean skipThreadContext) {
             final Predicate<Context> filter = skipThreadContext ? (ctx -> !(ctx instanceof ThreadContext)) : (ctx -> true);
-            return String.join(" -> ",
-                    Iterables.transform(contextStack.stream().filter(filter)::iterator, Context::toString));
+            return makeContextString(contextStack.stream().filter(filter)::iterator, " -> ");
         }
 
         @Override
@@ -115,7 +115,13 @@ public class SyntacticContextAnalysis {
 
     private final Map<Event, Info> infoMap = new HashMap<>();
 
-    public Info getContextInfo(Event ev) { return infoMap.get(ev); }
+    public Info getContextInfo(Event ev) {
+        Info retVal = infoMap.get(ev);
+        if (retVal == null) {
+            retVal = new Info(ev, ImmutableList.of());
+        }
+        return retVal;
+    }
 
     private SyntacticContextAnalysis() {}
 
@@ -123,6 +129,10 @@ public class SyntacticContextAnalysis {
         final SyntacticContextAnalysis analysis = new SyntacticContextAnalysis();
         analysis.run(program);
         return analysis;
+    }
+
+    public static SyntacticContextAnalysis getEmptyInstance() {
+        return new SyntacticContextAnalysis();
     }
 
     // ============================================================================
@@ -191,5 +201,9 @@ public class SyntacticContextAnalysis {
 
     public static String getSourceLocationString(Event ev) {
         return ev.hasCLine() ? String.format("@c#%s(%s)", ev.getCLine(), ev.getSourceCodeFileName()) : "@unknown";
+    }
+
+    public static <T extends Context> String makeContextString(Iterable<T> contextStack, String separator) {
+        return String.join(separator, Iterables.transform(contextStack, Context::toString));
     }
 }

@@ -8,13 +8,12 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
-import com.dat3m.dartagnan.program.analysis.CallStackComputation;
+import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -25,7 +24,6 @@ import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.collect.ImmutableSet;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.ShutdownManager;
@@ -49,6 +47,7 @@ import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.configuration.Property.*;
+import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
@@ -174,18 +173,17 @@ public class Dartagnan extends BaseOptions {
                 t.interrupt();
 
                 if (modelChecker.hasModel() && o.generateGraphviz()) {
-                    ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
+                    final ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
                     m.initialize(prover.getModel());
-                    CallStackComputation csc = CallStackComputation.fromConfig(config);
-                    csc.run(p);
-                    String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
+                    final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
+                    final String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
                     // RF edges give both ordering and data flow information, thus even when the pair is in PO
                     // we get some data flow information by observing the edge
                     // FR edges only give ordering information which is known if the pair is also in PO
                     // CO edges only give ordering information which is known if the pair is also in PO
                     generateGraphvizFile(m, 1, (x, y) -> true, (x, y) -> !x.getThread().equals(y.getThread()),
                             (x, y) -> !x.getThread().equals(y.getThread()), System.getenv("DAT3M_OUTPUT") + "/", name,
-                            csc);
+                            synContext);
                 }
 
                 long endTime = System.currentTimeMillis();
@@ -238,18 +236,19 @@ public class Dartagnan extends BaseOptions {
 
         if (p.getFormat().equals(SourceLanguage.BOOGIE)) {
             if (hasViolations) {
-                CallStackComputation csc = CallStackComputation.newInstance();
-                csc.run(p);
-                Map<Event, Stack<FunCall>> callStackMapping = csc.getCallStackMapping();
+
+                final SyntacticContextAnalysis synContext = newInstance(p);
                 printWarningIfThreadStartFailed(p, encCtx, prover);
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     summary.append("===== Program specification violation found =====\n");
                     for(Event e : p.getEvents(Local.class)) {
                         if(e.is(Tag.ASSERTION) && TRUE.equals(model.evaluate(encCtx.execution(e)))) {
+                            final String callStack = makeContextString(
+                                    synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
                             summary
                                     .append("\tE").append(e.getGlobalId())
                                     .append(":\t")
-                                    .append(callStackMapping.containsKey(e) ? (csc.getStackAsString(e, "") + " -> ") : "")
+                                    .append(callStack)
                                     .append(e.getSourceCodeFileName()).append("#").append(e.getCLine())
                                     .append("\n");
                         }
@@ -261,10 +260,13 @@ public class Dartagnan extends BaseOptions {
                     for(CondJump e : p.getEvents(CondJump.class)) {
                         if(e.is(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))
                             && TRUE.equals(model.evaluate(encCtx.jumpCondition(e)))) {
+                            final String callStack = makeContextString(
+                                    synContext.getContextInfo(e).getContextOfType(CallContext.class),
+                                    "");
                             summary
                                     .append("\tE").append(e.getGlobalId())
                                     .append(":\t")
-                                    .append(callStackMapping.containsKey(e) ? (csc.getStackAsString(e, "") + " -> ") : "")
+                                    .append(callStack)
                                     .append(e.getSourceCodeFileName()).append("#").append(e.getCLine())
                                     .append("\n");
                         }
