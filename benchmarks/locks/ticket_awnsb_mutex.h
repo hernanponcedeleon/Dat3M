@@ -116,6 +116,7 @@
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <errno.h>          // Needed by EBUSY
+#include <dat3m.h>
 
 #define DEFAULT_MAX_WAITERS  3
 
@@ -155,6 +156,7 @@ void ticket_awnsb_mutex_init(ticket_awnsb_mutex_t * self, int maxArrayWaiters)
     atomic_init(&self->egress, 0);
     self->maxArrayWaiters = maxArrayWaiters;
     self->waitersArray = (awnsb_node_t **)malloc(self->maxArrayWaiters*sizeof(awnsb_node_t *));
+    __VERIFIER_loop_bound(DEFAULT_MAX_WAITERS+1);
     for (int i = 0; i < self->maxArrayWaiters; i++) self->waitersArray[i] = ATOMIC_VAR_INIT(NULL);
 }
 
