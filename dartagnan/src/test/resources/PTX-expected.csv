@@ -5,8 +5,9 @@ litmus/PTX/Atom5.litmus,1
 litmus/PTX/CoRR1.litmus,1
 litmus/PTX/CoRR2.litmus,1
 litmus/PTX/CoRR3.litmus,1
+litmus/PTX/CoRR4.litmus,0
 litmus/PTX/CoRW2.litmus,1
-litmus/PTX/CoWR2.litmus,1
+litmus/PTX/CoWR2.litmus,0
 litmus/PTX/CoWW1.litmus,1
 litmus/PTX/Coherence1.litmus,1
 litmus/PTX/Coherence2.litmus,1
@@ -14,7 +15,7 @@ litmus/PTX/Coherence3.litmus,0
 litmus/PTX/MP1.litmus,1
 litmus/PTX/MP2.litmus,1
 litmus/PTX/MP3.litmus,1
-litmus/PTX/NoThinAir2.litmus,0
+litmus/PTX/NoThinAir2.litmus,1
 litmus/PTX/SB1.litmus,1
 litmus/PTX/SB2.litmus,1
 litmus/PTX/SB3.litmus,1

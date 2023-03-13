@@ -17,7 +17,7 @@ let po-m = ([M]; po-loc; [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
 
 let fence-sc = [F & SC] ; sr; [F & SC]
-let observation = (morally-strong & rf) | rmw
+let rec observation = (morally-strong & rf) | (observation; rmw; observation)
 let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po+; [W])
 let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po+; [F & ACQ_REL])
 let sw = morally-strong & (release-pattern; observation+; acquire-pattern) | fence-sc
@@ -46,4 +46,4 @@ acyclic (rf | dep) as axiom-NoThinAir
 acyclic ((morally-strong & (rf | co | fr)) | po-loc) as axiom-ScPerLocation
 
 (* Axiom 6 Causality *)
-irreflexive ((rf | co+ | fr )?; cause) as axiom-Causality
+irreflexive ((rf | fr ); cause) as axiom-Causality
