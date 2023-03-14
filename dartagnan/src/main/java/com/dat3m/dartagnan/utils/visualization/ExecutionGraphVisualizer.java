@@ -213,14 +213,12 @@ public class ExecutionGraphVisualizer {
                     String.format("W(%s, %d%s)", address, value, mo) :
                     String.format("%s = R(%s%s)", value, address, mo);
         }
-        final ImmutableList<CallContext> callStack =
-                synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class);
-        final String callStackString = !callStack.isEmpty() ?
-                makeContextString(callStack, " -> \\n") + " -> \\n" : "";
-        return String.format("\"T%s:E%s\\n%s%s#%s\n%s\"",
+        final String callStack = makeContextString(
+            synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");
+        return String.format("\"T%s:E%s\\n%s%s\n%s\"",
                 e.getThread().getId(),
                 e.getEvent().getGlobalId(),
-                callStackString,
+                callStack.isEmpty() ? callStack : callStack + " -> \\n",
                 getSourceLocationString(e.getEvent()),
                 tag);
     }
