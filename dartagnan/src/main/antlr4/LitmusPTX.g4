@@ -15,18 +15,11 @@ variableDeclarator
     |   variableDeclaratorRegister
     |   variableDeclaratorRegisterLocation
     |   variableDeclaratorLocationLocation
+    |   variableDeclaratorProxy
     ;
 
 variableDeclaratorLocation
-    :   location Equals constant proxySpace
-    ;
-
-proxySpace
-    :
-    |   At Global Physically Aliases location
-    |   At Shared Physically Aliases location
-    |   At Texref Virtually Aliases location
-    |   At Surfref Virtually Aliases location
+    :   location Equals constant
     ;
 
 variableDeclaratorRegister
@@ -40,6 +33,23 @@ variableDeclaratorRegisterLocation
 variableDeclaratorLocationLocation
     :   location Equals Amp? location
     ;
+
+variableDeclaratorProxy
+    :   location At proxyType virtuality Aliases location
+    ;
+
+proxyType returns [String content]
+    :   Global {$content = "GLOBAL";}
+    |   Shared {$content = "SHARED";}
+    |   Texref {$content = "TEXTREF";}
+    |   Surface {$content = "SURFACE";}
+    ;
+
+virtuality
+    :   Physically
+    |   Virtually
+    ;
+
 
 variableList
     :   Locations LBracket variable (Semi variable)* Semi? RBracket
@@ -112,7 +122,6 @@ loadLocation
 fenceInstruction
     :   fencePhysic
     |   fenceProxy
-    |   fenceAlias
     ;
 
 fencePhysic
@@ -120,11 +129,8 @@ fencePhysic
     ;
 
 fenceProxy
-    :   Fence Period proxy
-    ;
-
-fenceAlias
-    :   Fence Period Alias
+    :   Fence Period proxy Period proxyType
+    |   Fence Period proxy Period Alias
     ;
 
 atomInstruction

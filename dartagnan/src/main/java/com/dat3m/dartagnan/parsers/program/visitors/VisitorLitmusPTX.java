@@ -78,7 +78,11 @@ public class VisitorLitmusPTX
 
     // ----------------------------------------------------------------------------------------------------------------
     // Proxy declarator list
-    //TODO
+    @Override
+    public Object visitVariableDeclaratorProxy(LitmusPTXParser.VariableDeclaratorProxyContext ctx) {
+        programBuilder.initAliasProxy(ctx.location(0).getText(), ctx.location(1).getText(), ctx.proxyType().content);
+        return null;
+    }
 
     // ----------------------------------------------------------------------------------------------------------------
     // Thread declarator list (on top of instructions)

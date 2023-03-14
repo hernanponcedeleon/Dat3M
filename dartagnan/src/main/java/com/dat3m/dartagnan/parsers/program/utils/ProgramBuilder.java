@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
+import com.dat3m.dartagnan.program.memory.PtxMemoryObject;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.IConst;
@@ -17,10 +18,13 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 
-import java.util.*;
-
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.google.common.base.Preconditions.checkArgument;
+
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
 
 public class ProgramBuilder {
 
@@ -28,7 +32,6 @@ public class ProgramBuilder {
 
     private final Map<Integer, Integer> threadGPU = new HashMap<>();
     private final Map<Integer, Integer> threadCTA = new HashMap<>();
-    private final Map<String, String> proxyMap = new HashMap<>();
 
     private final Map<String,MemoryObject> locations = new HashMap<>();
 
@@ -94,11 +97,6 @@ public class ProgramBuilder {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Declarators
-
-    public void initProxyEqLoc(String proxy_address, String physical_address) {
-        proxyMap.put(proxy_address, physical_address);
-    }
-
     public void initLocEqLocPtr(String leftName, String rightName){
         initLocEqConst(leftName, getOrNewObject(rightName));
     }
@@ -261,5 +259,19 @@ public class ProgramBuilder {
         event.addFilters(Tag.PTX.CTA + this.threadCTA.get(thread));
         event.addFilters(Tag.PTX.GPU + this.threadGPU.get(thread));
         return event;
+    }
+
+    public PtxMemoryObject initAliasProxy(String leftName, String rightName, String proxyType){
+        MemoryObject rightLocation = getObject(rightName);
+        if (rightLocation == null) {
+            throw new MalformedProgramException("Alias to non-exist location: " + rightName);
+        }
+        PtxMemoryObject object = (PtxMemoryObject) locations.computeIfAbsent(leftName, k->memory.allocate(1));
+        object.setInitialValue(0,getInitialValue(rightName));
+        object.setCVar(leftName);
+        object.setAliasMemoryObject(rightLocation);
+        object.setProxyType(proxyType);
+        locations.put(leftName, object);
+        return object;
     }
 }
