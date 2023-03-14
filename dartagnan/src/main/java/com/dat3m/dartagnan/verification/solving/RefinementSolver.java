@@ -439,51 +439,34 @@ public class RefinementSolver extends ModelChecker {
         final ThreadSymmetry symm = analysisContext.requires(ThreadSymmetry.class);
         final BranchEquivalence cf = analysisContext.requires(BranchEquivalence.class);
 
-        // Track covered events and branches via oId
-        final Set<Integer> coveredOIds = new HashSet<>();
-        final Set<Integer> coveredBranches = new HashSet<>();
-        for (Event e : coveredEvents) {
-            if (e.hasCLine() && e.hasOId()) {
-                Event symmRep = symm.map(e, symm.getRepresentative(e.getThread()));
-                // e.getOId() != -1 guarantees symmRep.getOId() != -1
-                coveredOIds.add(symmRep.getOId());
-                // symmRep \in cf.getEquivalenceClass(symmRep), thus symmRep.getOId() != -1 guarantees findFirst succeeds.
-                // We need to use findFirst which guarantees determinism.
-                Event cfRep = cf.getEquivalenceClass(symmRep).stream().filter(f -> f.hasOId()).findFirst().get();
-                coveredBranches.add(cfRep.getOId());
-            }
-        }
-
         CallStackComputation csc = CallStackComputation.newInstance();
         csc.run(program);
 
         final Set<Event> programEvents = program.getEvents(MemEvent.class).stream()
                 .filter(e -> e.hasCLine() && e.hasOId()).collect(Collectors.toSet());
+
+        // Track (covered) events and branches via oId
+        final Set<Integer> branches = new HashSet<>();
+        final Set<Integer> coveredOIds = new HashSet<>();
+        final Set<Integer> coveredBranches = new HashSet<>();
+
+        // Events not executed in any violating execution
         final Set<String> messageSet = new TreeSet<>(); // TreeSet to keep strings in order
+
         for (Event e : programEvents) {
             EquivalenceClass<Thread> clazz = symm.getEquivalenceClass(e.getThread());
-            Event rep = symm.map(e, clazz.getRepresentative());
-            if (!coveredOIds.contains(rep.getOId())) {
-                // Events not executed in any violating execution
+            Event symmRep = symm.map(e, clazz.getRepresentative());
+            if(coveredEvents.contains(e)) {
+                coveredOIds.add(symmRep.getOId());
+                coveredBranches.add(cf.getRepresentative(symmRep).getOId());
+            } else {
                 final String threads = clazz.stream().map(t -> "T" + t.getId())
                         .collect(Collectors.joining(" / "));
                 messageSet.add(String.format("%s: %s%s#%s", threads,
-                        csc.getCallStackMapping().containsKey(rep) ? (csc.getStackAsString(rep, "") + " -> ") : "",
-                        e.getSourceCodeFileName(), rep.getCLine()));
+                        csc.getCallStackMapping().containsKey(symmRep) ? (csc.getStackAsString(symmRep, "") + " -> ") : "",
+                        e.getSourceCodeFileName(), symmRep.getCLine()));
             }
-        }
-
-        final Set<Integer> branches = new HashSet<>();
-        for (Event e : programEvents) {
-            Event symmRep = symm.map(e, symm.getRepresentative(e.getThread()));
-            // Since coveredEvents only containes MemEvents, we only count those branches
-            // containig at least one such event
-            if (cf.getEquivalenceClass(symmRep).stream().anyMatch(f -> f instanceof MemEvent)) {
-                // symmRep \in cf.getEquivalenceClass(symmRep), thus symmRep.getOId() != -1 guarantees findFirst succeeds.
-                // We need to use findFirst which guarantees determinism.
-                Event cfRep = cf.getEquivalenceClass(symmRep).stream().filter(f -> f.hasOId()).findFirst().get();
-                branches.add(cfRep.getOId());
-            }
+            branches.add(cf.getRepresentative(symmRep).getOId());
         }
 
         // When using the % symbol, the value multiplied by 100 before applying the format string. 
