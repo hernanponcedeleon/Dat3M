@@ -72,6 +72,8 @@ public class IMMLocksTest extends AbstractCTest {
                 {"seqlock", IMM, PASS},
                 {"clh_mutex", IMM, UNKNOWN},
                 {"clh_mutex-acq2rx", IMM, FAIL},
+                {"ticket_awnsb_mutex", IMM, PASS},
+                {"ticket_awnsb_mutex-acq2rx", IMM, FAIL},
         });
     }
 

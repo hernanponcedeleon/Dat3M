@@ -142,6 +142,14 @@ public class CLocksTest extends AbstractCTest {
                 {"clh_mutex-acq2rx", POWER, FAIL},
                 {"clh_mutex", RISCV, UNKNOWN},
                 {"clh_mutex-acq2rx", RISCV, FAIL},
+                {"ticket_awnsb_mutex", TSO, PASS},
+                {"ticket_awnsb_mutex-acq2rx", TSO, PASS},
+                {"ticket_awnsb_mutex", ARM8, PASS},
+                {"ticket_awnsb_mutex-acq2rx", ARM8, FAIL},
+                {"ticket_awnsb_mutex", POWER, PASS},
+                {"ticket_awnsb_mutex-acq2rx", POWER, FAIL},
+                {"ticket_awnsb_mutex", RISCV, PASS},
+                {"ticket_awnsb_mutex-acq2rx", RISCV, FAIL},
 		});
     }
 
