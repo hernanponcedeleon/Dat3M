@@ -248,8 +248,8 @@ public class Dartagnan extends BaseOptions {
                             summary
                                     .append("\tE").append(e.getGlobalId())
                                     .append(":\t")
-                                    .append(callStack)
-                                    .append(e.getSourceCodeFileName()).append("#").append(e.getCLine())
+                                    .append(callStack.isEmpty() ? callStack : callStack + " -> ")
+                                    .append(getSourceLocationString(e))
                                     .append("\n");
                         }
                     }
@@ -261,13 +261,12 @@ public class Dartagnan extends BaseOptions {
                         if(e.is(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))
                             && TRUE.equals(model.evaluate(encCtx.jumpCondition(e)))) {
                             final String callStack = makeContextString(
-                                    synContext.getContextInfo(e).getContextOfType(CallContext.class),
-                                    "");
+                                    synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
                             summary
                                     .append("\tE").append(e.getGlobalId())
                                     .append(":\t")
-                                    .append(callStack)
-                                    .append(e.getSourceCodeFileName()).append("#").append(e.getCLine())
+                                    .append(callStack.isEmpty() ? callStack : callStack + " -> ")
+                                    .append(getSourceLocationString(e))
                                     .append("\n");
                         }
                     }

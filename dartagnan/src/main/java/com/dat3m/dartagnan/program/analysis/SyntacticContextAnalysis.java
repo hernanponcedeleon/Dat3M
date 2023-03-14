@@ -205,7 +205,7 @@ public class SyntacticContextAnalysis {
     // ============================================================================
 
     public static String getSourceLocationString(Event ev) {
-        return ev.hasCLine() ? String.format("@c#%s(%s)", ev.getCLine(), ev.getSourceCodeFileName()) : "@unknown";
+        return ev.hasCLine() ? String.format("@%s#%s", ev.getSourceCodeFileName(), ev.getCLine()) : "@unknown";
     }
 
     public static <T extends Context> String makeContextString(Iterable<T> contextStack, String separator) {

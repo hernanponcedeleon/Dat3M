@@ -468,11 +468,11 @@ public class RefinementSolver extends ModelChecker {
                 // Events not executed in any violating execution
                 final String threads = clazz.stream().map(t -> "T" + t.getId())
                         .collect(Collectors.joining(" / "));
-                final ImmutableList<CallContext> callStack =
-                        synContext.getContextInfo(rep).getContextOfType(CallContext.class);
-                messageSet.add(String.format("%s: %s%s#%s", threads,
-                        makeContextString(callStack, " -> "),
-                        e.getSourceCodeFileName(), rep.getCLine()));
+                final String callStack = makeContextString(
+                            synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
+                messageSet.add(String.format("%s: %s%s", threads,
+                        callStack.isEmpty() ? callStack : callStack + " -> ",
+                        getSourceLocationString(rep)));
             }
         }
 
@@ -484,7 +484,7 @@ public class RefinementSolver extends ModelChecker {
             if (cf.getEquivalenceClass(symmRep).stream().anyMatch(f -> f instanceof MemEvent)) {
                 // symmRep \in cf.getEquivalenceClass(symmRep), thus symmRep.getOId() != -1 guarantees findFirst succeeds.
                 // We need to use findFirst which guarantees determinism.
-                Event cfRep = cf.getEquivalenceClass(symmRep).stream().filter(f -> f.hasOId()).findFirst().get();
+                Event cfRep = cf.getEquivalenceClass(symmRep).stream().filter(Event::hasOId).findFirst().get();
                 branches.add(cfRep.getOId());
             }
         }
