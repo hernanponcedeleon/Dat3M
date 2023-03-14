@@ -18,7 +18,15 @@ variableDeclarator
     ;
 
 variableDeclaratorLocation
-    :   location Equals constant
+    :   location Equals constant proxySpace
+    ;
+
+proxySpace
+    :
+    |   At Global Physically Aliases location
+    |   At Shared Physically Aliases location
+    |   At Texref Virtually Aliases location
+    |   At Surfref Virtually Aliases location
     ;
 
 variableDeclaratorRegister
@@ -103,10 +111,20 @@ loadLocation
 
 fenceInstruction
     :   fencePhysic
+    |   fenceProxy
+    |   fenceAlias
     ;
 
 fencePhysic
     :   Fence Period sem Period scope
+    ;
+
+fenceProxy
+    :   Fence Period proxy
+    ;
+
+fenceAlias
+    :   Fence Period Alias
     ;
 
 atomInstruction
@@ -191,24 +209,45 @@ sem returns [String content]
 
 load returns [String content]
     :   Load {$content = "LD";}
+    |   TextureLoad {$content = "TLD";}
+    |   SurfaceLoad {$content = "SULD";}
+    |   ConstantLoad {$content = "COLD";}
     ;
 
 store returns [String content]
     :   Store {$content = "ST";}
+    |   Sustore {$content = "SUST";}
     ;
 
 atom returns [String content]
     :   Atom {$content = "ATOM";}
+    |   SurfaceAtom {$content = "SUATOM";}
     ;
 
 red returns [String content]
     :   Red {$content = "RED";}
+    |   SurfaceRed {$content = "SURED";}
     ;
 
-Load    :   'ld';
-Store   :   'st';
-Atom    :   'atom';
-Red     :   'red';
+proxy returns [String content]
+    :   Surface {$content = "SURFACE";}
+    |   Texture {$content = "TEXTURE";}
+    ;
+
+Load            :   'ld';
+TextureLoad     :   'tld';
+SurfaceLoad     :   'suld';
+ConstantLoad    :   'cold';
+
+Store           :   'st';
+Sustore         :   'sust';
+
+Atom            :   'atom';
+SurfaceAtom     :   'suatom';
+
+Red             :   'red';
+SurfaceRed      :   'sured';
+
 Fence   :   'fence';
 
 CTA     :   'cta';
@@ -235,6 +274,18 @@ Or      :   'or';
 Xor     :   'xor';
 L_Shift :   'l_shift';
 R_Shift :   'r_shift';
+
+Global      :   'global';
+Shared      :   'shared';
+Texref      :   'textref';
+Surfref     :   'surfref';
+Physically  :   'physically';
+Virtually   :   'virtually';
+Aliases     :   'aliases';
+
+Alias       :   'alias';
+Surface     :   'surface';
+Texture     :   'texture';
 
 LitmusLanguage
     :   'PTX'
