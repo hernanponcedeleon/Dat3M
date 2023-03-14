@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
-import com.dat3m.dartagnan.program.analysis.CallStackComputation;
+import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -32,6 +32,7 @@ import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.axiom.Empty;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,6 +50,7 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
 import static com.dat3m.dartagnan.configuration.OptionNames.BASELINE;
 import static com.dat3m.dartagnan.configuration.OptionNames.COVERAGE;
+import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONCLUSIVE;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
@@ -449,13 +451,12 @@ public class RefinementSolver extends ModelChecker {
                 coveredOIds.add(symmRep.getOId());
                 // symmRep \in cf.getEquivalenceClass(symmRep), thus symmRep.getOId() != -1 guarantees findFirst succeeds.
                 // We need to use findFirst which guarantees determinism.
-                Event cfRep = cf.getEquivalenceClass(symmRep).stream().filter(f -> f.hasOId()).findFirst().get();
+                Event cfRep = cf.getEquivalenceClass(symmRep).stream().filter(Event::hasOId).findFirst().get();
                 coveredBranches.add(cfRep.getOId());
             }
         }
 
-        CallStackComputation csc = CallStackComputation.newInstance();
-        csc.run(program);
+        final SyntacticContextAnalysis synContext = newInstance(program);
 
         final Set<Event> programEvents = program.getEvents(MemEvent.class).stream()
                 .filter(e -> e.hasCLine() && e.hasOId()).collect(Collectors.toSet());
@@ -467,21 +468,23 @@ public class RefinementSolver extends ModelChecker {
                 // Events not executed in any violating execution
                 final String threads = clazz.stream().map(t -> "T" + t.getId())
                         .collect(Collectors.joining(" / "));
-                messageSet.add(String.format("%s: %s%s#%s", threads,
-                        csc.getCallStackMapping().containsKey(rep) ? (csc.getStackAsString(rep, "") + " -> ") : "",
-                        e.getSourceCodeFileName(), rep.getCLine()));
+                final String callStack = makeContextString(
+                            synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
+                messageSet.add(String.format("%s: %s%s", threads,
+                        callStack.isEmpty() ? callStack : callStack + " -> ",
+                        getSourceLocationString(rep)));
             }
         }
 
         final Set<Integer> branches = new HashSet<>();
         for (Event e : programEvents) {
             Event symmRep = symm.map(e, symm.getRepresentative(e.getThread()));
-            // Since coveredEvents only containes MemEvents, we only count those branches
-            // containig at least one such event
+            // Since coveredEvents only contains MemEvents, we only count those branches
+            // containing at least one such event
             if (cf.getEquivalenceClass(symmRep).stream().anyMatch(f -> f instanceof MemEvent)) {
                 // symmRep \in cf.getEquivalenceClass(symmRep), thus symmRep.getOId() != -1 guarantees findFirst succeeds.
                 // We need to use findFirst which guarantees determinism.
-                Event cfRep = cf.getEquivalenceClass(symmRep).stream().filter(f -> f.hasOId()).findFirst().get();
+                Event cfRep = cf.getEquivalenceClass(symmRep).stream().filter(Event::hasOId).findFirst().get();
                 branches.add(cfRep.getOId());
             }
         }
@@ -537,12 +540,13 @@ public class RefinementSolver extends ModelChecker {
         String directoryName = String.format("%s/refinement/%s-%s-debug/", System.getenv("DAT3M_OUTPUT"), programName,
                 task.getProgram().getArch());
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
+        final SyntacticContextAnalysis emptySynContext = getEmptyInstance();
         // File with reason edges only
         generateGraphvizFile(model, iterationCount, edgeFilter, edgeFilter, edgeFilter, directoryName, fileNameBase,
-                CallStackComputation.newInstance());
+                emptySynContext);
         // File with all edges
         generateGraphvizFile(model, iterationCount, (x, y) -> true, (x, y) -> true, (x, y) -> true, directoryName,
-                fileNameBase + "-full", CallStackComputation.newInstance());
+                fileNameBase + "-full", emptySynContext);
     }
 
     private Wmm createDefaultWmm() {
