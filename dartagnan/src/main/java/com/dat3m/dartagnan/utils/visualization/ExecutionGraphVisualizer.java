@@ -221,8 +221,7 @@ public class ExecutionGraphVisualizer {
                 e.getThread().getId(),
                 e.getEvent().getGlobalId(),
                 callStackString,
-                e.getEvent().getSourceCodeFileName(),
-                e.getEvent().getCLine(),
+                getSourceLocationString(e.getEvent()),
                 tag);
     }
 

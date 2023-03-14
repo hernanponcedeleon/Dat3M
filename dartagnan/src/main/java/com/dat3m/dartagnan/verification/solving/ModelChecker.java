@@ -158,9 +158,9 @@ public abstract class ModelChecker {
                         .append("\tE").append(tuple.getFirst().getGlobalId())
                         .append(" / E").append(tuple.getSecond().getGlobalId())
                         .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
-                        .append(tuple.getFirst().getSourceCodeFileName()).append("#").append(tuple.getFirst().getCLine())
+                        .append(getSourceLocationString(tuple.getFirst()))
                         .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
-                        .append(tuple.getSecond().getSourceCodeFileName()).append("#").append(tuple.getSecond().getCLine())
+                        .append(getSourceLocationString(tuple.getSecond()))
                         .append("\n");
                 }
                 flaggedPairsOutput += violatingPairs.toString();
