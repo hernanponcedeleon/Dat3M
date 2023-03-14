@@ -15,6 +15,11 @@ import java.util.Stack;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+/*
+    This analysis computes the "syntactic context" surrounding each event in the program.
+    The syntactic context of an event includes the executing thread, the call stack, and the iteration numbers
+    of surrounding loops.
+ */
 public class SyntacticContextAnalysis {
 
     // ============================================================================
