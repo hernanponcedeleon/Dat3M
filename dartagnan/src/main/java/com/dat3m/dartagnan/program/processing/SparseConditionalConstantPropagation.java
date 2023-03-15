@@ -197,7 +197,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
         @Override
         public Void visitMemCpy(MemCpy e) {
-            e.setLenght((IConst)e.getLenght().visit(propagator));
+            e.setBytes((IConst) e.getBytes().visit(propagator));
             return null;
         }
     }

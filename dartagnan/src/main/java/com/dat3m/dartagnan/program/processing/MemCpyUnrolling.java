@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -26,11 +25,10 @@ public class MemCpyUnrolling implements ProgramProcessor {
 
         for (MemCpy e : program.getEvents(MemCpy.class)) {
             Event cur = e.getPredecessor();
-            Event exit = e .getSuccessor();
-            Thread thread = e.getThread();
-            for(int i = 0; i < (getLenght(e) / e.getStep()); i++) {
-                IExpr offset = new IValue(BigInteger.valueOf(e.getStep() * i), e.getSrc().getPrecision());
-                Register r = thread.newRegister(GlobalSettings.ARCH_PRECISION);
+            final Event exit = e .getSuccessor();
+            for(int i = 0; i < getBytes(e); i++) {
+                IExpr offset = new IValue(BigInteger.valueOf(i), e.getSrc().getPrecision());
+                Register r = e.getThread().newRegister(GlobalSettings.getArchPrecision());
                 Load load = EventFactory.newLoad(r, new IExprBin(e.getSrc(), IOpBin.PLUS, offset), "");
                 cur.setSuccessor(load);
                 Store store = EventFactory.newStore(new IExprBin(e.getDst(), IOpBin.PLUS, offset), r, "");
@@ -41,9 +39,9 @@ public class MemCpyUnrolling implements ProgramProcessor {
         }
     }
 
-    private int getLenght(MemCpy memcpy) {
+    private int getBytes(MemCpy memcpy) {
         try {
-            return memcpy.getLenght().reduce().getValueAsInt();
+            return memcpy.getBytes().reduce().getValueAsInt();
         } catch (Exception e) {
             final String error = String.format("Variable-lenght memcpy '%s' is not supported", memcpy);
             throw new MalformedProgramException(error);

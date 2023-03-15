@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.std;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -19,14 +18,12 @@ public class MemCpy extends Event implements RegReaderData {
 
     protected final IExpr dst;
     protected final IExpr src;
-    protected IExpr lenght;
-    protected final int step;
+    protected IExpr bytes;
 
-    public MemCpy(IExpr dst, IExpr src, IExpr lenght, int step) {
+    public MemCpy(IExpr dst, IExpr src, IExpr bytes) {
         this.dst = dst;
         this.src = src;
-        this.lenght = lenght;
-        this.step = step;
+        this.bytes = bytes;
         addFilters(Tag.ANY, Tag.REG_READER);
     }
 
@@ -34,15 +31,13 @@ public class MemCpy extends Event implements RegReaderData {
         super(other);
         this.dst = other.dst;
         this.src = other.src;
-        this.lenght = other.lenght;
-        this.step = other.step;
+        this.bytes = other.bytes;
     }
 
     public IExpr getDst() { return dst; }
     public IExpr getSrc() { return src; }
-    public IExpr getLenght() { return lenght; }
-    public void setLenght(IExpr lenght) { this.lenght = lenght; }
-    public int getStep() { return step; }
+    public IExpr getBytes() { return bytes; }
+    public void setBytes(IExpr bytes) { this.bytes = bytes; }
 
     @Override
     public ImmutableSet<Register> getDataRegs() {
@@ -54,7 +49,7 @@ public class MemCpy extends Event implements RegReaderData {
 
     @Override
     public String toString() {
-        return String.format("memcpy(%s, %s, %s)", dst, src, lenght);
+        return String.format("memcpy(%s, %s, %s)", dst, src, bytes);
     }
 
     @Override
