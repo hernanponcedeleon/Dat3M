@@ -279,5 +279,12 @@ public final class Tag {
 
         public static final String ACQ_REL = "ACQ_REL";
         public static final String SC = "SC";
+
+
+        public static final String PROXY = "PROXY";
+        public static final String TEXTURE = "TEXTURE";
+        public static final String SURFACE = "SURFACE";
+        public static final String ALIAS = "ALIAS";
+
     }
 }

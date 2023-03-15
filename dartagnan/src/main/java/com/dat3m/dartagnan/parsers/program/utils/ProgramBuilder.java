@@ -250,7 +250,6 @@ public class ProgramBuilder {
         object.setCVar(leftName);
         object.setAliasMemoryObject(rightLocation);
         object.setProxyType(proxyType);
-        locations.put(leftName, object);
         return object;
     }
 }
