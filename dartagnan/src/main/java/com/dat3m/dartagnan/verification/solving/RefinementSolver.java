@@ -32,7 +32,6 @@ import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.axiom.Empty;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -441,52 +440,35 @@ public class RefinementSolver extends ModelChecker {
         final ThreadSymmetry symm = analysisContext.requires(ThreadSymmetry.class);
         final BranchEquivalence cf = analysisContext.requires(BranchEquivalence.class);
 
-        // Track covered events and branches via oId
-        final Set<Integer> coveredOIds = new HashSet<>();
-        final Set<Integer> coveredBranches = new HashSet<>();
-        for (Event e : coveredEvents) {
-            if (e.hasCLine() && e.hasOId()) {
-                Event symmRep = symm.map(e, symm.getRepresentative(e.getThread()));
-                // e.getOId() != -1 guarantees symmRep.getOId() != -1
-                coveredOIds.add(symmRep.getOId());
-                // symmRep \in cf.getEquivalenceClass(symmRep), thus symmRep.getOId() != -1 guarantees findFirst succeeds.
-                // We need to use findFirst which guarantees determinism.
-                Event cfRep = cf.getEquivalenceClass(symmRep).stream().filter(Event::hasOId).findFirst().get();
-                coveredBranches.add(cfRep.getOId());
-            }
-        }
-
-        final SyntacticContextAnalysis synContext = newInstance(program);
-
         final Set<Event> programEvents = program.getEvents(MemEvent.class).stream()
                 .filter(e -> e.hasCLine() && e.hasOId()).collect(Collectors.toSet());
+        
+        // Track (covered) events and branches via oId
+        final Set<Integer> branches = new HashSet<>();
+        final Set<Integer> coveredOIds = new HashSet<>();
+        final Set<Integer> coveredBranches = new HashSet<>();
+
+        // Events not executed in any violating execution
         final Set<String> messageSet = new TreeSet<>(); // TreeSet to keep strings in order
+        
+        final SyntacticContextAnalysis synContext = newInstance(program);
+
         for (Event e : programEvents) {
             EquivalenceClass<Thread> clazz = symm.getEquivalenceClass(e.getThread());
-            Event rep = symm.map(e, clazz.getRepresentative());
-            if (!coveredOIds.contains(rep.getOId())) {
-                // Events not executed in any violating execution
+            Event symmRep = symm.map(e, clazz.getRepresentative());
+            if(coveredEvents.contains(e)) {
+                coveredOIds.add(symmRep.getOId());
+                coveredBranches.add(cf.getRepresentative(symmRep).getOId());
+            } else {
                 final String threads = clazz.stream().map(t -> "T" + t.getId())
                         .collect(Collectors.joining(" / "));
                 final String callStack = makeContextString(
                             synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
                 messageSet.add(String.format("%s: %s%s", threads,
                         callStack.isEmpty() ? callStack : callStack + " -> ",
-                        getSourceLocationString(rep)));
+                        getSourceLocationString(symmRep)));
             }
-        }
-
-        final Set<Integer> branches = new HashSet<>();
-        for (Event e : programEvents) {
-            Event symmRep = symm.map(e, symm.getRepresentative(e.getThread()));
-            // Since coveredEvents only contains MemEvents, we only count those branches
-            // containing at least one such event
-            if (cf.getEquivalenceClass(symmRep).stream().anyMatch(f -> f instanceof MemEvent)) {
-                // symmRep \in cf.getEquivalenceClass(symmRep), thus symmRep.getOId() != -1 guarantees findFirst succeeds.
-                // We need to use findFirst which guarantees determinism.
-                Event cfRep = cf.getEquivalenceClass(symmRep).stream().filter(Event::hasOId).findFirst().get();
-                branches.add(cfRep.getOId());
-            }
+            branches.add(cf.getRepresentative(symmRep).getOId());
         }
 
         // When using the % symbol, the value multiplied by 100 before applying the format string. 
