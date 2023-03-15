@@ -20,7 +20,7 @@ import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 
 import org.antlr.v4.runtime.misc.Interval;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+import static com.dat3m.dartagnan.GlobalSettings.*;
 
 import java.math.BigInteger;
 
@@ -64,19 +64,19 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusAArch64Parser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION));
+        programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusAArch64Parser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register64().id, new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register64().id, new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusAArch64Parser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register64().id, ctx.location().getText(), ARCH_PRECISION);
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register64().id, ctx.location().getText(), getArchPrecision());
         return null;
     }
 
@@ -113,21 +113,21 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitMov(LitmusAArch64Parser.MovContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rD, ARCH_PRECISION);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rD, getArchPrecision());
         IExpr expr = ctx.expr32() != null ? (IExpr)ctx.expr32().accept(this) : (IExpr)ctx.expr64().accept(this);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(register, expr));
     }
 
     @Override
     public Object visitCmp(LitmusAArch64Parser.CmpContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rD, ARCH_PRECISION);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rD, getArchPrecision());
         IExpr expr = ctx.expr32() != null ? (IExpr)ctx.expr32().accept(this) : (IExpr)ctx.expr64().accept(this);
         return programBuilder.addChild(mainThread, EventFactory.newCompare(register, expr));
     }
 
     @Override
     public Object visitArithmetic(LitmusAArch64Parser.ArithmeticContext ctx) {
-        Register rD = programBuilder.getOrCreateRegister(mainThread, ctx.rD, ARCH_PRECISION);
+        Register rD = programBuilder.getOrCreateRegister(mainThread, ctx.rD, getArchPrecision());
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.rV);
         IExpr expr = ctx.expr32() != null ? (IExpr)ctx.expr32().accept(this) : (IExpr)ctx.expr64().accept(this);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(rD, new IExprBin(r1, ctx.arithmeticInstruction().op, expr)));
@@ -135,7 +135,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitLoad(LitmusAArch64Parser.LoadContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rD, ARCH_PRECISION);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rD, getArchPrecision());
         Register address = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
@@ -145,7 +145,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitLoadExclusive(LitmusAArch64Parser.LoadExclusiveContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rD, ARCH_PRECISION);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rD, getArchPrecision());
         Register address = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
@@ -156,7 +156,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitStore(LitmusAArch64Parser.StoreContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rV, ARCH_PRECISION);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rV, getArchPrecision());
         Register address = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
@@ -166,8 +166,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitStoreExclusive(LitmusAArch64Parser.StoreExclusiveContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rV, ARCH_PRECISION);
-        Register statusReg = programBuilder.getOrCreateRegister(mainThread, ctx.rS, ARCH_PRECISION);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rV, getArchPrecision());
+        Register statusReg = programBuilder.getOrCreateRegister(mainThread, ctx.rS, getArchPrecision());
         Register address = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
@@ -211,9 +211,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public IExpr visitExpressionRegister64(LitmusAArch64Parser.ExpressionRegister64Context ctx) {
-        IExpr expr = programBuilder.getOrCreateRegister(mainThread, ctx.register64().id, ARCH_PRECISION);
+        IExpr expr = programBuilder.getOrCreateRegister(mainThread, ctx.register64().id, getArchPrecision());
         if(ctx.shift() != null){
-            IValue val = new IValue(new BigInteger(ctx.shift().immediate().constant().getText()), ARCH_PRECISION);
+            IValue val = new IValue(new BigInteger(ctx.shift().immediate().constant().getText()), getArchPrecision());
             expr = new IExprBin(expr, ctx.shift().shiftOperator().op, val);
         }
         return expr;
@@ -221,9 +221,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public IExpr visitExpressionRegister32(LitmusAArch64Parser.ExpressionRegister32Context ctx) {
-        IExpr expr = programBuilder.getOrCreateRegister(mainThread, ctx.register32().id, ARCH_PRECISION);
+        IExpr expr = programBuilder.getOrCreateRegister(mainThread, ctx.register32().id, getArchPrecision());
         if(ctx.shift() != null){
-            IValue val = new IValue(new BigInteger(ctx.shift().immediate().constant().getText()), ARCH_PRECISION);
+            IValue val = new IValue(new BigInteger(ctx.shift().immediate().constant().getText()), getArchPrecision());
             expr = new IExprBin(expr, ctx.shift().shiftOperator().op, val);
         }
         return expr;
@@ -231,9 +231,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public IExpr visitExpressionImmediate(LitmusAArch64Parser.ExpressionImmediateContext ctx) {
-        IExpr expr = new IValue(new BigInteger(ctx.immediate().constant().getText()), ARCH_PRECISION);
+        IExpr expr = new IValue(new BigInteger(ctx.immediate().constant().getText()), getArchPrecision());
         if(ctx.shift() != null){
-            IValue val = new IValue(new BigInteger(ctx.shift().immediate().constant().getText()), ARCH_PRECISION);
+            IValue val = new IValue(new BigInteger(ctx.shift().immediate().constant().getText()), getArchPrecision());
             expr = new IExprBin(expr, ctx.shift().shiftOperator().op, val);
         }
         return expr;
@@ -242,14 +242,14 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public IExpr visitExpressionConversion(LitmusAArch64Parser.ExpressionConversionContext ctx) {
         // TODO: Implement when adding support for mixed-size accesses
-        return programBuilder.getOrCreateRegister(mainThread, ctx.register32().id, ARCH_PRECISION);
+        return programBuilder.getOrCreateRegister(mainThread, ctx.register32().id, getArchPrecision());
     }
 
     private Register visitOffset(LitmusAArch64Parser.OffsetContext ctx, Register register){
-        Register result = programBuilder.getOrCreateRegister(mainThread, null, ARCH_PRECISION);
+        Register result = programBuilder.getOrCreateRegister(mainThread, null, getArchPrecision());
         IExpr expr = ctx.immediate() == null
                 ? programBuilder.getOrErrorRegister(mainThread, ctx.expressionConversion().register32().id)
-                : new IValue(new BigInteger(ctx.immediate().constant().getText()), ARCH_PRECISION);
+                : new IValue(new BigInteger(ctx.immediate().constant().getText()), getArchPrecision());
         programBuilder.addChild(mainThread, EventFactory.newLocal(result, new IExprBin(register, IOpBin.PLUS, expr)));
         return result;
     }

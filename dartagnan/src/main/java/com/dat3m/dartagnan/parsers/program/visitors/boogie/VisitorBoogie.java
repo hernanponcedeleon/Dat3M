@@ -31,7 +31,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.parsers.program.boogie.LlvmFunctions.LLVMFUNCTIONS;
@@ -96,12 +96,31 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	protected BeginAtomic currentBeginAtomic = null;
 	protected Call_cmdContext atomicMode = null;
 	 
-	private ExprSimplifier exprSimplifier = new ExprSimplifier();
-	
-	private final List<String> smackDummyVariables = Arrays.asList("$M.0", "$exn", "$exnv", "$CurrAddr", "$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", "$0.ref", "$1.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global", "$CurrAddr");
+	private final ExprSimplifier exprSimplifier = new ExprSimplifier();
+
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
+	}
+
+	private final List<String> smackDummyVariables =
+			Arrays.asList("$M.0", "$exn", "$exnv", "$CurrAddr", "$GLOBALS_BOTTOM",
+			"$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl",
+			"$1024.ref", "$0.ref", "$1.ref", "env_value_str", "errno_global", "$CurrAddr");
+	private boolean doIgnoreVariable(String varName) {
+		// We ignore some smack-generated dummy variables
+		if (smackDummyVariables.contains(varName)) {
+			return true;
+		}
+		// We also ignore all kinds of strings for now.
+		if (varName.startsWith(".str")) {
+			return true;
+		}
+		// These are special strings containing function names.
+		if (varName.startsWith("__PRETTY_FUNCTION")) {
+			return true;
+		}
+		return false;
 	}
 	
     @Override
@@ -126,7 +145,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     		throw new ParsingException("Program shall have a main procedure");
     	}
 
-    	IExpr next = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + "ptrMain", ARCH_PRECISION);
+    	IExpr next = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + "ptrMain", getArchPrecision());
     	pool.add(next, "main", -1);
     	while(pool.canCreate()) {
     		next = pool.next();
@@ -150,7 +169,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         	for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
         		for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
         			String type = atiwC.typed_idents_where().typed_idents().type().getText();
-        			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : ARCH_PRECISION;
+        			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : getArchPrecision();
             		threadCallingValues.get(threadCount).add(programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText(), precision));
         		}
         	}
@@ -174,11 +193,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		for(ParseTree ident : ctx.typed_idents().idents().Ident()) {
 			String name = ident.getText();
 			String type = ctx.typed_idents().type().getText();
-			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : ARCH_PRECISION;
+			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : getArchPrecision();
 			if(ctx.getText().contains(":treadLocal")) {
 				threadLocalVariables.add(name);
 			}
-			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name)) {
+			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !doIgnoreVariable(name)) {
 				int size = ctx.getText().contains(":allocSize")
 					? Integer.parseInt(ctx.getText().split(":allocSize")[1].split("}")[0])
 					: 1;
@@ -202,7 +221,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         for(Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
             for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
                 String name = ident.getText();
-                if(!smackDummyVariables.contains(name)) {
+                if(!doIgnoreVariable(name)) {
                     programBuilder.newObject(name,1);
                 }
             }
@@ -215,7 +234,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
 				String name = ident.getText();
 				String type = atiwC.typed_idents_where().typed_idents().type().getText();
-				int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : ARCH_PRECISION;
+				int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : getArchPrecision();
 				if(constantsTypeMap.containsKey(name)) {
 	                throw new ParsingException("Variable " + name + " is already defined as a constant");
 				}
@@ -245,7 +264,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             if(threadCount != 1) {
                 // Used to allow execution of threads after they have been created (pthread_create)
 				IExpr pointer = pool.getPtrFromInt(threadCount);
-                Register reg = programBuilder.getOrCreateRegister(threadCount, null, ARCH_PRECISION);
+                Register reg = programBuilder.getOrCreateRegister(threadCount, null, getArchPrecision());
                 programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
             }
     	}
@@ -265,7 +284,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     				// To deal with references passed to created threads
     				if(index < callingValues.size()) {
     					String type = atiwC.typed_idents_where().typed_idents().type().getText();
-    					int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : ARCH_PRECISION;
+    					int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : getArchPrecision();
         				Register register = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText(), precision);
         				ExprInterface value = callingValues.get(index);
 						programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))
@@ -412,7 +431,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	        	continue;
 	        }		
 			String name = ctx.Ident(i).getText();
-	        if(smackDummyVariables.contains(name)) {
+	        if(doIgnoreVariable(name)) {
 	        	continue;
 	        }
 			if(constantsTypeMap.containsKey(name)) {
@@ -504,7 +523,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		// Since we "inline" procedures, label names might clash
 		// thus we use currentScope.getID() + ":"
 		String labelName = currentScope.getID() + ":" + ctx.children.get(0).getText();
-		Label label = programBuilder.getOrCreateLabel(labelName);
+		Label label = (Label)programBuilder.getOrCreateLabel(labelName)
+			.setCFileInformation(currentLine, sourceCodeFile);
         programBuilder.addChild(threadCount, label);
         currentLabel = label;
         return null;
@@ -668,7 +688,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			return ctx.expr(1).accept(this);
 		}
 		if(name.contains("$store.")) {
-			if(smackDummyVariables.contains(ctx.expr(1).getText())) {
+			if(doIgnoreVariable(ctx.expr(1).getText())) {
 				return null;
 			}
 			IExpr address = (IExpr)ctx.expr(1).accept(this);
@@ -745,7 +765,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
 	@Override
 	public Object visitInt_expr(Int_exprContext ctx) {
-		return new IValue(new BigInteger(ctx.getText()), ARCH_PRECISION);
+		return new IValue(new BigInteger(ctx.getText()), getArchPrecision());
 	}
 	
 	@Override

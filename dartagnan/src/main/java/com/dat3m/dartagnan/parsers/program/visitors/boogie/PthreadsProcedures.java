@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 
 public class PthreadsProcedures {
 	
@@ -86,7 +86,7 @@ public class PthreadsProcedures {
 		visitor.allocations.add(pointer);
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(pointer, threadName))
 				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), ARCH_PRECISION);
+		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), getArchPrecision());
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, IValue.ZERO));
 		}
 	
@@ -102,7 +102,7 @@ public class PthreadsProcedures {
 	
 	private static void mutexLock(VisitorBoogie visitor, Call_cmdContext ctx) {
 		ExprsContext lock = ctx.call_params().exprs();
-        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, ARCH_PRECISION);
+        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, getArchPrecision());
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
 		if(lockAddress != null) {
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newLock(lock.getText(), lockAddress, register))
@@ -112,7 +112,7 @@ public class PthreadsProcedures {
 	
 	private static void mutexUnlock(VisitorBoogie visitor, Call_cmdContext ctx) {
 		ExprsContext lock = ctx.call_params().exprs();
-        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, ARCH_PRECISION);
+        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, getArchPrecision());
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
 		if(lockAddress != null) {
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newUnlock(lock.getText(), lockAddress, register))

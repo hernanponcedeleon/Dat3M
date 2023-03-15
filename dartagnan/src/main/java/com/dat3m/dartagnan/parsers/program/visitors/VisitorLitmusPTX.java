@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
@@ -54,19 +54,19 @@ public class VisitorLitmusPTX
     // Variable declarator list
     @Override
     public Object visitVariableDeclaratorLocation(LitmusPTXParser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION));
+        programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusPTXParser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusPTXParser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), ARCH_PRECISION);
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), getArchPrecision());
         return null;
     }
 
@@ -115,7 +115,7 @@ public class VisitorLitmusPTX
     @Override
     public Object visitStoreConstant(LitmusPTXParser.StoreConstantContext ctx){
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
         String sem = ctx.sem().content;
         String scope;
         if (sem.equals(Tag.PTX.WEAK)) {
@@ -133,7 +133,7 @@ public class VisitorLitmusPTX
 
     public Object visitStoreRegister(LitmusPTXParser.StoreRegisterContext ctx){
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
         String sem = ctx.sem().content;
         String scope;
         if (sem.equals(Tag.PTX.WEAK)) {
@@ -151,8 +151,8 @@ public class VisitorLitmusPTX
 
     @Override
     public Object visitLoadConstant(LitmusPTXParser.LoadConstantContext ctx){
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
         String sem = ctx.sem().content;
         String scope;
         if (sem.equals(Tag.PTX.WEAK)) {
@@ -170,7 +170,7 @@ public class VisitorLitmusPTX
 
     @Override
     public Object visitLoadLocation(LitmusPTXParser.LoadLocationContext ctx){
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
         MemoryObject location = programBuilder.getOrNewObject(ctx.location().getText());
         String sem = ctx.sem().content;
         String scope;
@@ -190,9 +190,9 @@ public class VisitorLitmusPTX
 
     @Override
     public Object visitAtomConstant(LitmusPTXParser.AtomConstantContext ctx) {
-        Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
+        Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
         IOpBin op = IOpBin.valueOf(ctx.operation().content);
         String sem = ctx.sem().content;
         String scope;
@@ -207,9 +207,9 @@ public class VisitorLitmusPTX
 
     @Override
     public Object visitAtomRegister(LitmusPTXParser.AtomRegisterContext ctx) {
-        Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(0).getText(), ARCH_PRECISION);
+        Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(0).getText(), getArchPrecision());
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(1).getText(), ARCH_PRECISION);
+        Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(1).getText(), getArchPrecision());
         IOpBin op = IOpBin.valueOf(ctx.operation().content);
         String sem = ctx.sem().content;
         String scope;
@@ -225,9 +225,9 @@ public class VisitorLitmusPTX
     @Override
     public Object visitRedConstant(LitmusPTXParser.RedConstantContext ctx) {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), ARCH_PRECISION);
+        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
         IOpBin op = IOpBin.valueOf(ctx.operation().content);
-        Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, ARCH_PRECISION);
+        Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, getArchPrecision());
         String sem = ctx.sem().content;
         String scope;
         if (sem.equals(Tag.PTX.ACQ_REL) || sem.equals(Tag.PTX.RLX)) {
@@ -242,9 +242,9 @@ public class VisitorLitmusPTX
     @Override
     public Object visitRedRegister(LitmusPTXParser.RedRegisterContext ctx) {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), ARCH_PRECISION);
+        Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
         IOpBin op = IOpBin.valueOf(ctx.operation().content);
-        Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, ARCH_PRECISION);
+        Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, getArchPrecision());
         String sem = ctx.sem().content;
         String scope;
         if (sem.equals(Tag.PTX.ACQ_REL) || sem.equals(Tag.PTX.RLX)) {

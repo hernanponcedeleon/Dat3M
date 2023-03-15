@@ -10,7 +10,7 @@ public class Label extends Event {
 
     private String name;
     private final Set<CondJump> jumpSet;
-    
+
     public Label(String name){
         this.name = name;
         this.jumpSet = new HashSet<>();
@@ -18,7 +18,7 @@ public class Label extends Event {
     }
 
     protected Label(Label other){
-		super(other);
+        super(other);
         this.jumpSet = new HashSet<>();
         this.name = other.name;
     }
@@ -27,6 +27,14 @@ public class Label extends Event {
     public void setName(String name) { this.name = name;}
 
     public Set<CondJump> getJumpSet() { return jumpSet; }
+
+    @Override
+    public void delete() {
+        // We delete all jumps that target this label to avoid
+        // broken jumps.
+        getJumpSet().forEach(CondJump::delete);
+        super.delete();
+    }
 
     @Override
     public String toString(){
@@ -38,14 +46,14 @@ public class Label extends Event {
 
     @Override
     public Label getCopy(){
-    	return new Label(this);
+        return new Label(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
 		return visitor.visitLabel(this);
 	}
 }

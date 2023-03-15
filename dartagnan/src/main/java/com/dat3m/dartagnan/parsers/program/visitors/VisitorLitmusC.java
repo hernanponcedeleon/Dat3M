@@ -20,7 +20,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
 import java.math.BigInteger;
@@ -102,14 +102,14 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
         if(ctx.Ast() == null){
-            programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), ARCH_PRECISION);
+            programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), getArchPrecision());
         } else {
             String rightName = ctx.varName(1).getText();
             MemoryObject object = programBuilder.getObject(rightName);
             if(object != null){
                 programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), object);
             } else {
-                programBuilder.initRegEqLocVal(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), ARCH_PRECISION);
+                programBuilder.initRegEqLocVal(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), getArchPrecision());
             }
         }
         return null;
@@ -129,7 +129,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
                 List<IConst> values = new ArrayList<>();
                 for(LitmusCParser.ArrayElementContext elCtx : ctx.initArray().arrayElement()){
                     if(elCtx.constant() != null){
-                        values.add(new IValue(new BigInteger(elCtx.constant().getText()), ARCH_PRECISION));
+                        values.add(new IValue(new BigInteger(elCtx.constant().getText()), getArchPrecision()));
                     } else {
                         String varName = elCtx.varName().getText();
                         //see test/resources/arrays/ok/C-array-ok-17.litmus
@@ -185,7 +185,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
                         }
                     }
 				}
-                Register register = programBuilder.getOrCreateRegister(scope, name, ARCH_PRECISION);
+                Register register = programBuilder.getOrCreateRegister(scope, name, getArchPrecision());
                 programBuilder.addChild(currentThread, EventFactory.newLocal(register, object));
                 id++;
             }
@@ -408,7 +408,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public ExprInterface visitReConst(LitmusCParser.ReConstContext ctx){
         Register register = getReturnRegister(false);
-        IValue result = new IValue(new BigInteger(ctx.getText()), ARCH_PRECISION);
+        IValue result = new IValue(new BigInteger(ctx.getText()), getArchPrecision());
         return assignToReturnRegister(register, result);
     }
 
@@ -419,7 +419,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitNreAtomicOp(LitmusCParser.NreAtomicOpContext ctx){
     	IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
-        Register register = programBuilder.getOrCreateRegister(scope, null, ARCH_PRECISION);
+        Register register = programBuilder.getOrCreateRegister(scope, null, getArchPrecision());
         Event event = EventFactory.Linux.newRMWOp(getAddress(ctx.address), register, value, ctx.op);
         return programBuilder.addChild(currentThread, event);
     }
@@ -474,7 +474,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitNreRegDeclaration(LitmusCParser.NreRegDeclarationContext ctx){
         Register register = programBuilder.getRegister(scope, ctx.varName().getText());
         if(register == null){
-            register = programBuilder.getOrCreateRegister(scope, ctx.varName().getText(), ARCH_PRECISION);
+            register = programBuilder.getOrCreateRegister(scope, ctx.varName().getText(), getArchPrecision());
             if(ctx.re() != null){
                 returnRegister = register;
                 ctx.re().accept(this);
@@ -521,14 +521,14 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             }
             MemoryObject object = programBuilder.getObject(ctx.getText());
             if(object != null){
-                register = programBuilder.getOrCreateRegister(scope, null, ARCH_PRECISION);
+                register = programBuilder.getOrCreateRegister(scope, null, getArchPrecision());
                 programBuilder.addChild(currentThread, EventFactory.newLoad(register, object, C11.NONATOMIC));
                 return register;
             }
-            return programBuilder.getOrCreateRegister(scope, ctx.getText(), ARCH_PRECISION);
+            return programBuilder.getOrCreateRegister(scope, ctx.getText(), getArchPrecision());
         }
         MemoryObject object = programBuilder.getOrNewObject(ctx.getText());
-        Register register = programBuilder.getOrCreateRegister(scope, null, ARCH_PRECISION);
+        Register register = programBuilder.getOrCreateRegister(scope, null, getArchPrecision());
         programBuilder.addChild(currentThread, EventFactory.newLoad(register, object, C11.NONATOMIC));
         return register;
     }
@@ -542,13 +542,13 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     }
 
     private IExpr returnExpressionOrDefault(LitmusCParser.ReContext ctx, BigInteger defaultValue){
-        return ctx != null ? (IExpr)ctx.accept(this) : new IValue(defaultValue, ARCH_PRECISION);
+        return ctx != null ? (IExpr)ctx.accept(this) : new IValue(defaultValue, getArchPrecision());
     }
 
     private Register getReturnRegister(boolean createOnNull){
         Register register = returnRegister;
         if(register == null && createOnNull){
-            return programBuilder.getOrCreateRegister(scope, null, ARCH_PRECISION);
+            return programBuilder.getOrCreateRegister(scope, null, getArchPrecision());
         }
         returnRegister = null;
         return register;

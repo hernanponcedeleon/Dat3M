@@ -30,3 +30,10 @@ irreflexive (myrmw; eco) as coherencermw
 empty (myrmw & (fr; co)) as atomicity
 acyclic psc as SC
 acyclic (po | rf) as no-thin-air
+
+(* data_races *)
+// We treat initial events as non-atomic thus we need to explicit remove them
+let conflict = ext & ((((W * _) | (_ * W)) & loc) \ ((IW * _) | (_ * IW)))
+let race = conflict \ (A * A) \ hb \ (hb^-1) 
+
+flag ~empty race as racy 

@@ -72,7 +72,7 @@ public class IncrementalSolver extends ModelChecker {
             res = prover.isUnsat()? PASS : UNKNOWN;
         } else {
         	res = FAIL;
-            logFlaggedPairs(memoryModel, wmmEncoder, prover, logger, context);
+            saveFlaggedPairsOutput(memoryModel, wmmEncoder, prover, context);
         }
         
         if(logger.isDebugEnabled()) {        	

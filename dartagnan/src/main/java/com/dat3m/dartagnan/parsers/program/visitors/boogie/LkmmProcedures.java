@@ -31,7 +31,7 @@ public class LkmmProcedures {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
 		List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 
-		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), GlobalSettings.ARCH_PRECISION);
+		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), GlobalSettings.getArchPrecision());
 		
 		Object p0 = params.get(0).accept(visitor);
 		Object p1 = params.size() > 1 ? params.get(1).accept(visitor) : null;

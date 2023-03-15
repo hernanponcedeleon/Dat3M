@@ -126,7 +126,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             final Event sideEffect = sideEffects.get(i);
             final Register trackingReg = thread.newRegister(
                     String.format("Loop%s_%s_%s", loopNumber, iterNumber, i),
-                    GlobalSettings.ARCH_PRECISION);
+                    GlobalSettings.getArchPrecision());
             trackingRegs.add(trackingReg);
 
             final Event execCheck = EventFactory.newExecutionStatus(trackingReg, sideEffect);
@@ -139,6 +139,8 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
                 .reduce(BConst.FALSE, (x, y) -> new BExprBin(x, BOpBin.OR, y));
         final CondJump assumeSideEffect = EventFactory.newJumpUnless(atLeastOneSideEffect, (Label) thread.getExit());
         assumeSideEffect.addFilters(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
+        final Event spinloopStart = iterInfo.getIterationStart();
+        assumeSideEffect.setCFileInformation(spinloopStart.getCLine(), spinloopStart.getSourceCodeFile());
         insertionPoint.insertAfter(assumeSideEffect);
     }
 

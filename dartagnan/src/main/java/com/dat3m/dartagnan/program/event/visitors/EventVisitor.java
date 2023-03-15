@@ -4,11 +4,14 @@ import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
-import com.dat3m.dartagnan.program.event.core.rmw.*;
+import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
+import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 
@@ -42,7 +45,7 @@ public interface EventVisitor<T> {
 	default T visitLock(Lock e) { return visitMemEvent(e); }
 	default T visitStart(Start e) { return visitLoad(e); }
 	default T visitUnlock(Unlock e) { return visitMemEvent(e); }
-	
+
 	// RMW Events
 	default T visitRMWStore(RMWStore e) { return visitStore(e); }
 	default T visitRMWStoreExclusive(RMWStoreExclusive e) { return visitStore(e); }
@@ -99,4 +102,7 @@ public interface EventVisitor<T> {
 	// SVCOMP Events
 	default T visitBeginAtomic(BeginAtomic e) { return visitEvent(e); }
 	default T visitEndAtomic(EndAtomic e) { return visitEvent(e); }
+
+	// Std events
+	default T visitMalloc(Malloc e) { return visitEvent(e); }
 }

@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
+import com.dat3m.dartagnan.program.processing.MemoryAllocation;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.verification.Context;
 import org.junit.Test;
@@ -24,7 +25,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.math.BigInteger;
 import java.util.List;
 
-import static com.dat3m.dartagnan.GlobalSettings.ARCH_PRECISION;
+import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_INSENSITIVE;
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_SENSITIVE;
 import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_METHOD;
@@ -49,11 +50,11 @@ public class AnalysisTest {
     public void dependencyMustOverride() throws InvalidConfigurationException {
         ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
         b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", ARCH_PRECISION);
-        Register r1 = b.getOrCreateRegister(0, "r1", ARCH_PRECISION);
-        Register r2 = b.getOrCreateRegister(0, "r2", ARCH_PRECISION);
+        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
+        Register r1 = b.getOrCreateRegister(0, "r1", getArchPrecision());
+        Register r2 = b.getOrCreateRegister(0, "r2", getArchPrecision());
         Label alt = b.getOrCreateLabel("alt");
-        b.addChild(0, newJump(new BNonDet(ARCH_PRECISION), alt));
+        b.addChild(0, newJump(new BNonDet(getArchPrecision()), alt));
         Local e0 = newLocal(r0, value(1));
         b.addChild(0, e0);
         Local e1 = newLocal(r1, r0);
@@ -74,6 +75,7 @@ public class AnalysisTest {
         Program program = b.build();
         LoopUnrolling.newInstance().run(program);
         Compilation.newInstance().run(program);
+        MemoryAllocation.newInstance().run(program);
         Configuration config = Configuration.defaultConfiguration();
         Context context = Context.create();
         context.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
@@ -116,7 +118,7 @@ public class AnalysisTest {
         MemoryObject y = b.getOrNewObject("y");
 
         b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", ARCH_PRECISION);
+        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
         //this is undefined behavior in C11
         //the expression does not match a sum, but x occurs in it
         b.addChild(0, newLocal(r0, mult(x, 1)));
@@ -130,6 +132,7 @@ public class AnalysisTest {
         b.addChild(0, e3);
 
         Program program = b.build();
+        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
         MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
@@ -162,7 +165,7 @@ public class AnalysisTest {
         b.initThread(0);
         Store e0 = newStore(plus(x, 1));
         b.addChild(0, e0);
-        Register r0 = b.getOrCreateRegister(0, "r0", ARCH_PRECISION);
+        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
         Load e1 = newLoad(r0, x);
         b.addChild(0, e1);
         Store e2 = newStore(r0);
@@ -171,6 +174,7 @@ public class AnalysisTest {
         b.addChild(0, e3);
 
         Program program = b.build();
+        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
         MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
@@ -200,8 +204,8 @@ public class AnalysisTest {
         MemoryObject x = b.newObject("x", 3);
 
         b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", ARCH_PRECISION);
-        b.addChild(0, newLocal(r0, new INonDet(INonDetTypes.INT, ARCH_PRECISION)));
+        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
+        b.addChild(0, newLocal(r0, new INonDet(INonDetTypes.INT, getArchPrecision())));
         Label l0 = b.getOrCreateLabel("l0");
         b.addChild(0, newJump(new BExprBin(new Atom(r0, GT, ONE), BOpBin.OR, new Atom(r0, LT, ZERO)), l0));
         Store e0 = newStore(x);
@@ -210,13 +214,14 @@ public class AnalysisTest {
         b.addChild(0, e1);
         Store e2 = newStore(plus(x, 2));
         b.addChild(0, e2);
-        Register r1 = b.getOrCreateRegister(0, "r1", ARCH_PRECISION);
+        Register r1 = b.getOrCreateRegister(0, "r1", getArchPrecision());
         b.addChild(0, newLocal(r1, ZERO));
         Store e3 = newStore(new IExprBin(new IExprBin(x, PLUS, mult(r0, 2)), PLUS, mult(r1, 4)));
         b.addChild(0, e3);
         b.addChild(0, l0);
 
         Program program = b.build();
+        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
         MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
@@ -247,7 +252,7 @@ public class AnalysisTest {
         x.setInitialValue(0, x);
 
         b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", ARCH_PRECISION);
+        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
         Load e0 = newLoad(r0, x);
         b.addChild(0, e0);
         Store e1 = newStore(x, plus(r0, 1));
@@ -258,6 +263,7 @@ public class AnalysisTest {
         b.addChild(0, e3);
 
         Program program = b.build();
+        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
         MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
@@ -289,7 +295,7 @@ public class AnalysisTest {
         MemoryObject z = b.getOrNewObject("z");
 
         b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", ARCH_PRECISION);
+        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
         b.addChild(0, newLocal(r0, mult(x, 0)));
         b.addChild(0, newLocal(r0, y));
         Store e0 = newStore(r0);
@@ -333,7 +339,7 @@ public class AnalysisTest {
         MemoryObject z = b.getOrNewObject("z");
 
         b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", ARCH_PRECISION);
+        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
         b.addChild(0, newLocal(r0, y));
         Store e0 = newStore(r0);
         b.addChild(0, e0);
@@ -373,7 +379,7 @@ public class AnalysisTest {
     }
 
     private IValue value(long v) {
-        return new IValue(BigInteger.valueOf(v), ARCH_PRECISION);
+        return new IValue(BigInteger.valueOf(v), getArchPrecision());
     }
 
     private IExpr plus(IExpr lhs, long rhs) {

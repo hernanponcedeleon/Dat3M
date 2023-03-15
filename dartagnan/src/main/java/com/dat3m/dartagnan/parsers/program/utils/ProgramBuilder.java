@@ -50,9 +50,8 @@ public class ProgramBuilder {
     
     public Program build(){
         Program program = new Program(memory, format);
-        buildInitThreads();
         for(Thread thread : threads.values()){
-        	addChild(thread.getId(), getOrCreateLabel("END_OF_T" + thread.getId()));
+            addChild(thread.getId(), getOrCreateLabel("END_OF_T" + thread.getId()));
             validateLabels(thread);
             program.add(thread);
             thread.setProgram(program);
@@ -140,14 +139,14 @@ public class ProgramBuilder {
     }
 
     public MemoryObject getOrNewObject(String name) {
-        MemoryObject object = locations.computeIfAbsent(name,k->memory.allocate(1));
+        MemoryObject object = locations.computeIfAbsent(name, k -> memory.allocate(1, true));
         object.setCVar(name);
-		return object;
+        return object;
     }
 
     public MemoryObject newObject(String name, int size) {
         checkArgument(!locations.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
-        MemoryObject result = memory.allocate(size);
+        MemoryObject result = memory.allocate(size, true);
         locations.put(name,result);
         return result;
     }
@@ -193,26 +192,6 @@ public class ProgramBuilder {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Private utility
-
-    private int nextThreadId(){
-        int maxId = -1;
-        for(int key : threads.keySet()){
-            maxId = Integer.max(maxId, key);
-        }
-        return maxId + 1;
-    }
-
-    private void buildInitThreads(){
-        int nextThreadId = nextThreadId();
-        for(MemoryObject a : memory.getObjects()) {
-            for(int i = 0; i < a.size(); i++) {
-                Event e = EventFactory.newInit(a,i);
-                Thread thread = new Thread(nextThreadId,e);
-                threads.put(nextThreadId,thread);
-                nextThreadId++;
-            }
-        }
-    }
 
     private void validateLabels(Thread thread) throws MalformedProgramException {
         Map<String, Label> threadLabels = new HashMap<>();
@@ -266,7 +245,7 @@ public class ProgramBuilder {
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
-        PtxMemoryObject object = (PtxMemoryObject) locations.computeIfAbsent(leftName, k->memory.allocate(1));
+        PtxMemoryObject object = (PtxMemoryObject) locations.computeIfAbsent(leftName, k->memory.allocate(1, true));
         object.setInitialValue(0,getInitialValue(rightName));
         object.setCVar(leftName);
         object.setAliasMemoryObject(rightLocation);

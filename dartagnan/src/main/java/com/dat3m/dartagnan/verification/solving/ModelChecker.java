@@ -26,7 +26,6 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.Model;
@@ -36,23 +35,27 @@ import org.sosy_lab.java_smt.api.SolverException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
+import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
-import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.*;
 import static java.util.stream.Collectors.toList;
 
 public abstract class ModelChecker {
 
     protected Result res = Result.UNKNOWN;
     protected EncodingContext context;
+    private String flaggedPairsOutput = "";
 
     public final Result getResult() {
         return res;
     }
     public EncodingContext getEncodingContext() {
         return context;
+    }
+    public final String getFlaggedPairsOutput() {
+        return flaggedPairsOutput;
     }
 
     public boolean hasModel() {
@@ -135,20 +138,23 @@ public abstract class ModelChecker {
         program.setSpecification(spec);
     }
 
-    protected void logFlaggedPairs(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, Logger logger, EncodingContext ctx) throws SolverException {
-        if (!logger.isDebugEnabled() || !ctx.getTask().getProperty().contains(CAT_SPEC)) {
+    protected void saveFlaggedPairsOutput(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, EncodingContext ctx) throws SolverException {
+        if (!ctx.getTask().getProperty().contains(CAT_SPEC)) {
             return;
         }
         Model model = prover.getModel();
         for(Axiom ax : wmm.getAxioms()) {
             if(ax.isFlagged() && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
-                logger.debug("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
-                StringBuilder violatingPairs = new StringBuilder("\n ===== The following pairs belong to the relation ===== \n");
+                StringBuilder violatingPairs = new StringBuilder("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
                 for(Tuple tuple : encoder.getTuples(ax.getRelation(), model)) {
-                    violatingPairs.append("\t").append(tuple.getFirst().getGlobalId())
-                            .append(" -> ").append(tuple.getSecond().getGlobalId());
+                    violatingPairs
+                        .append("\t").append(tuple.getFirst().getGlobalId())
+                        .append(" -> ").append(tuple.getSecond().getGlobalId())
+                        .append("\t(").append(tuple.getFirst().getSourceCodeFile()).append("#").append(tuple.getFirst().getCLine())
+                        .append(" -> ").append(tuple.getSecond().getSourceCodeFile()).append("#").append(tuple.getSecond().getCLine())
+                        .append(")\n");
                 }
-                logger.debug(violatingPairs.toString());
+                flaggedPairsOutput += violatingPairs.toString();
             }
         }
     }
