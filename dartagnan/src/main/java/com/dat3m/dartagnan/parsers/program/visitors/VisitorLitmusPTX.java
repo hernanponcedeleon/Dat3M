@@ -20,12 +20,17 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.List;
 
 public class VisitorLitmusPTX
         extends LitmusPTXBaseVisitor<Object> {
     private final ProgramBuilder programBuilder;
     private int mainThread;
     private int threadCount = 0;
+
+    private HashMap<String, List<String>> proxyMap = new HashMap<>();
+    // key: variable name, value: proxy types. Add values as filters to relevant load
 
     public VisitorLitmusPTX(ProgramBuilder pb){
         this.programBuilder = pb;
@@ -60,6 +65,7 @@ public class VisitorLitmusPTX
     @Override
     public Object visitVariableDeclaratorLocation(LitmusPTXParser.VariableDeclaratorLocationContext ctx) {
         programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()));
+        proxyMap.putIfAbsent(ctx.location().getText(), List.of(Tag.PTX.GENERIC));
         return null;
     }
 
@@ -85,7 +91,8 @@ public class VisitorLitmusPTX
     // Proxy declarator list
     @Override
     public Object visitVariableDeclaratorProxy(LitmusPTXParser.VariableDeclaratorProxyContext ctx) {
-        programBuilder.initAliasProxy(ctx.location(0).getText(), ctx.location(1).getText(), ctx.proxyType().content);
+        programBuilder.initAliasProxy(ctx.location(0).getText(), ctx.location(1).getText());
+        proxyMap.putIfAbsent(ctx.location(0).getText(), List.of(ctx.proxyType().content));
         return null;
     }
 
@@ -135,6 +142,7 @@ public class VisitorLitmusPTX
         }
         Store store = EventFactory.PTX.newTaggedStore(object, constant, sem, scope);
         store.addFilters(ctx.store().storeProxy);
+        store.addFilters(Tag.PTX.CONSTANT);
         return programBuilder.addScopedChild(mainThread, store);
     }
 
@@ -214,6 +222,7 @@ public class VisitorLitmusPTX
         }
         RMWFetchOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, sem, scope);
         atom.addFilters(ctx.atom().atomProxy);
+        atom.addFilters(Tag.PTX.CONSTANT);
         return programBuilder.addScopedChild(mainThread, atom);
     }
 
@@ -250,6 +259,7 @@ public class VisitorLitmusPTX
         }
         RMWOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, constant, op, sem, scope);
         red.addFilters(ctx.red().redProxy);
+        red.addFilters(Tag.PTX.CONSTANT);
         return programBuilder.addScopedChild(mainThread, red);
     }
 

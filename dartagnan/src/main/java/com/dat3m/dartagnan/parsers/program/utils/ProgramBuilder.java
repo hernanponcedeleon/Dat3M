@@ -239,7 +239,7 @@ public class ProgramBuilder {
         return event;
     }
 
-    public MemoryObject initAliasProxy(String leftName, String rightName, String proxyType){
+    public MemoryObject initAliasProxy(String leftName, String rightName){
         // TODO: add proxyType to IW event?
         MemoryObject rightLocation = getObject(rightName);
         if (rightLocation == null) {
