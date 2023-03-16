@@ -289,11 +289,6 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
                 return new IValue(((IValue) inner).getValue().negate(), inner.getPrecision());
             } else if (inner instanceof IValue && iUn.getOp() == IOpUn.CTLZ) {
                 return new IExprUn(iUn.getOp(), inner).reduce();
-            } else if (inner instanceof IValue && (iUn.getOp().isZEXT() || iUn.getOp().isSEXT())) {
-                return new IValue(((IValue) inner).getValue(), iUn.getOp().getTgtPrecision()).reduce();
-            } else if (inner instanceof IValue && iUn.getOp().isTRUNC()) {
-                // TODO this is unsound
-                return new IValue(((IValue) inner).getValue(), iUn.getOp().getTgtPrecision()).reduce();
             } else {
                 return new IExprUn(iUn.getOp(), inner);
             }
