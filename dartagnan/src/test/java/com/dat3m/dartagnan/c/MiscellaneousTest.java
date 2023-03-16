@@ -48,7 +48,11 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"idd_dynamic", ARM8, FAIL, 1},
                 {"propagatableSideEffects", ARM8, FAIL, 3},
                 {"SB-RMW", TSO, PASS, 1},
-                {"SB-RMW", IMM, PASS, 1}
+                {"SB-RMW", IMM, PASS, 1},
+                {"memcpy_char", IMM, PASS, 1},
+                {"memcpy_int", IMM, PASS, 3},
+                {"memcpy_char_fail", IMM, FAIL, 1},
+                {"memcpy_int_fail", IMM, FAIL, 2},
         });
     }
 
