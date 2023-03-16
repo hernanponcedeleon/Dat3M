@@ -11,6 +11,11 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 
+import com.dat3m.dartagnan.program.event.core.Fence;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
+import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
@@ -128,9 +133,12 @@ public class VisitorLitmusPTX
         } else {
             throw new ParsingException("Store instruction doesn't support sem: " + ctx.sem().content);
         }
-        return programBuilder.addScopedChild(mainThread, EventFactory.PTX.newTaggedStore(object, constant, sem, scope));
+        Store store = EventFactory.PTX.newTaggedStore(object, constant, sem, scope);
+        store.addFilters(ctx.store().storeProxy);
+        return programBuilder.addScopedChild(mainThread, store);
     }
 
+    @Override
     public Object visitStoreRegister(LitmusPTXParser.StoreRegisterContext ctx){
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
@@ -146,7 +154,9 @@ public class VisitorLitmusPTX
         } else {
             throw new ParsingException("Store instruction doesn't support sem: " + ctx.sem().content);
         }
-        return programBuilder.addScopedChild(mainThread, EventFactory.PTX.newTaggedStore(object, register, sem, scope));
+        Store store = EventFactory.PTX.newTaggedStore(object, register, sem, scope);
+        store.addFilters(ctx.store().storeProxy);
+        return programBuilder.addScopedChild(mainThread, store);
     }
 
     @Override
@@ -184,8 +194,9 @@ public class VisitorLitmusPTX
         } else {
             throw new ParsingException("Load instruction doesn't support sem: " + ctx.sem().content);
         }
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedLoad(register, location, sem, scope));
+        Load load = EventFactory.PTX.newTaggedLoad(register, location, sem, scope);
+        load.addFilters(ctx.load().loadProxy); // TODO: ConstantLoad usage?
+        return programBuilder.addScopedChild(mainThread, load);
     }
 
     @Override
@@ -201,8 +212,9 @@ public class VisitorLitmusPTX
         } else {
             throw new ParsingException("Atom instruction doesn't support sem: " + ctx.sem().content);
         }
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, sem, scope));
+        RMWFetchOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, sem, scope);
+        atom.addFilters(ctx.atom().atomProxy);
+        return programBuilder.addScopedChild(mainThread, atom);
     }
 
     @Override
@@ -218,8 +230,9 @@ public class VisitorLitmusPTX
         } else {
             throw new ParsingException("Atom instruction doesn't support sem: " + ctx.sem().content);
         }
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, sem, scope));
+        RMWFetchOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, sem, scope);
+        atom.addFilters(ctx.atom().atomProxy);
+        return programBuilder.addScopedChild(mainThread, atom);
     }
 
     @Override
@@ -235,8 +248,9 @@ public class VisitorLitmusPTX
         } else {
             throw new ParsingException("Red instruction doesn't support sem: " + ctx.sem().content);
         }
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedRedOp(object, register_destination, constant, op, sem, scope));
+        RMWOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, constant, op, sem, scope);
+        red.addFilters(ctx.red().redProxy);
+        return programBuilder.addScopedChild(mainThread, red);
     }
 
     @Override
@@ -252,8 +266,9 @@ public class VisitorLitmusPTX
         } else {
             throw new ParsingException("Red instruction doesn't support sem: " + ctx.sem().content);
         }
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedRedOp(object, register_destination, register_operand, op, sem, scope));
+        RMWOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, register_operand, op, sem, scope);
+        red.addFilters(ctx.red().redProxy);
+        return programBuilder.addScopedChild(mainThread,red);
     }
 
     @Override
@@ -265,7 +280,25 @@ public class VisitorLitmusPTX
         } else {
             throw new ParsingException("Fence instruction doesn't support sem: " + ctx.sem().content);
         }
-        return programBuilder.addScopedChild(mainThread,
-                EventFactory.PTX.newTaggedFence(sem, scope));
+        Fence fence = EventFactory.PTX.newTaggedFence(sem, scope);
+        fence.addFilters(Tag.PTX.GENERIC);
+        return programBuilder.addScopedChild(mainThread, fence);
+    }
+
+    @Override
+    public Object visitFenceProxy(LitmusPTXParser.FenceProxyContext ctx) {
+        Fence fence = EventFactory.newFence(Tag.PTX.PROXY);
+        fence.addFilters(ctx.proxyType().content);
+        return programBuilder.addScopedChild(mainThread, fence);
+    }
+
+    @Override
+    public Object visitFenceAlias(LitmusPTXParser.FenceAliasContext ctx) {
+        Fence fence = EventFactory.newFence(Tag.PTX.PROXY);
+        fence.addFilters(Tag.PTX.ALIAS);
+        fence.addFilters(Tag.PTX.GENERIC);
+        fence.addFilters(Tag.PTX.TEXTURE);
+        fence.addFilters(Tag.PTX.SURFACE);
+        return programBuilder.addScopedChild(mainThread, fence);
     }
 }

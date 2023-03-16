@@ -39,9 +39,9 @@ variableDeclaratorProxy
     ;
 
 proxyType returns [String content]
-    :   Global {$content = "GLOBAL";}
+    :   Generic {$content = "GENERIC";}
     |   Shared {$content = "SHARED";}
-    |   Texref {$content = "TEXTREF";}
+    |   Texture {$content = "TEXTURE";}
     |   Surface {$content = "SURFACE";}
     ;
 
@@ -49,7 +49,6 @@ virtuality
     :   Physically
     |   Virtually
     ;
-
 
 variableList
     :   Locations LBracket variable (Semi variable)* Semi? RBracket
@@ -122,6 +121,7 @@ loadLocation
 fenceInstruction
     :   fencePhysic
     |   fenceProxy
+    |   fenceAlias
     ;
 
 fencePhysic
@@ -129,8 +129,11 @@ fencePhysic
     ;
 
 fenceProxy
-    :   Fence Period proxy Period proxyType
-    |   Fence Period proxy Period Alias
+    :   Fence Period Proxy Period proxyType
+    ;
+
+fenceAlias
+    :   Fence Period Proxy Period Alias
     ;
 
 atomInstruction
@@ -213,31 +216,26 @@ sem returns [String content]
     |   SC {$content = "SC";}
     ;
 
-load returns [String content]
-    :   Load {$content = "LD";}
-    |   TextureLoad {$content = "TLD";}
-    |   SurfaceLoad {$content = "SULD";}
-    |   ConstantLoad {$content = "COLD";}
+load returns [String loadProxy]
+    :   Load {$loadProxy = "GENERIC";}
+    |   TextureLoad {$loadProxy = "TEXTURE";}
+    |   SurfaceLoad {$loadProxy = "SURFACE";}
+    |   ConstantLoad {$loadProxy = "CONSTANT";}
     ;
 
-store returns [String content]
-    :   Store {$content = "ST";}
-    |   Sustore {$content = "SUST";}
+store returns [String storeProxy]
+    :   Store {$storeProxy = "GENERIC";}
+    |   Sustore {$storeProxy = "SURFACE";}
     ;
 
-atom returns [String content]
-    :   Atom {$content = "ATOM";}
-    |   SurfaceAtom {$content = "SUATOM";}
+atom returns [String atomProxy]
+    :   Atom {$atomProxy = "GENERIC";}
+    |   SurfaceAtom {$atomProxy = "SURFACE";}
     ;
 
-red returns [String content]
-    :   Red {$content = "RED";}
-    |   SurfaceRed {$content = "SURED";}
-    ;
-
-proxy returns [String content]
-    :   Surface {$content = "SURFACE";}
-    |   Texture {$content = "TEXTURE";}
+red returns [String redProxy]
+    :   Red {$redProxy = "GENERIC";}
+    |   SurfaceRed {$redProxy = "SURFACE";}
     ;
 
 Load            :   'ld';
@@ -281,17 +279,15 @@ Xor     :   'xor';
 L_Shift :   'l_shift';
 R_Shift :   'r_shift';
 
-Global      :   'global';
+Proxy       :   'proxy';
+Generic      :   'generic';
 Shared      :   'shared';
-Texref      :   'textref';
-Surfref     :   'surfref';
+Surface     :   'surface';
+Texture     :   'texture';
 Physically  :   'physically';
 Virtually   :   'virtually';
 Aliases     :   'aliases';
-
 Alias       :   'alias';
-Surface     :   'surface';
-Texture     :   'texture';
 
 LitmusLanguage
     :   'PTX'

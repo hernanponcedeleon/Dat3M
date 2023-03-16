@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
-import com.dat3m.dartagnan.program.memory.PtxMemoryObject;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.IConst;
@@ -240,16 +239,16 @@ public class ProgramBuilder {
         return event;
     }
 
-    public PtxMemoryObject initAliasProxy(String leftName, String rightName, String proxyType){
+    public MemoryObject initAliasProxy(String leftName, String rightName, String proxyType){
+        // TODO: add proxyType to IW event?
         MemoryObject rightLocation = getObject(rightName);
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
-        PtxMemoryObject object = (PtxMemoryObject) locations.computeIfAbsent(leftName, k->memory.allocate(1, true));
-        object.setInitialValue(0,getInitialValue(rightName));
+        MemoryObject object = locations.computeIfAbsent(leftName, k->memory.allocate(1, true));
         object.setCVar(leftName);
-        object.setAliasMemoryObject(rightLocation);
-        object.setProxyType(proxyType);
+        object.setInitialValue(0,rightLocation.getInitialValue(0));
+        object.setAddress(rightLocation.getAddress());
         return object;
     }
 }
