@@ -54,6 +54,22 @@ for METHOD in ${METHODS[@]}; do
             --refinement.baseline=no_oota --encoding.symmetry.breakOn=_cf --encoding.wmm.idl2sat=true \
             --modeling.threadCreateAlwaysSucceeds=true --modeling.precision=64 --encoding.locallyConsistent=false"
 
+            ## Set number of threads
+            case "$BENCHMARK" in
+                "locks/ttas" | "locks/ticketlock" | "locks/spinlock")
+                    THREADS=6 ;;
+                "locks/linuxrwlock" | "lfds/chase-lev")
+                    THREADS=5 ;;
+                "locks/mutex" | "locks/mutex_musl" | "lfds/treiber")
+                    THREADS=4 ;;
+                "lfds/dglm" | "lfds/ms")
+                    THREADS=3 ;;
+                *)
+                    echo "Missing case for benchmark" $BENCHMARK ;;
+            esac
+
+            export CFLAGS="-DNTHREADS="$THREADS
+
             ## The SMT statistics go to different logs
             if [ "$METHOD" == "caat" ]; then
  	            SMT_LOG=$DAT3M_OUTPUT/logs/refinement.log
