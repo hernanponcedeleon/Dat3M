@@ -286,7 +286,7 @@ public final class Tag {
         public static final String TEXTURE = "TEXTURE";
         public static final String SURFACE = "SURFACE";
         public static final String CONSTANT = "CONSTANT";
-        public static final String ALIAS = "ALIAS";
+        public static final String ALIAS = "ALIAS@";
 
     }
 }

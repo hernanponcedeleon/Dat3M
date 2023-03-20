@@ -66,7 +66,8 @@ public class VisitorLitmusPTX
     @Override
     public Object visitVariableDeclaratorLocation(LitmusPTXParser.VariableDeclaratorLocationContext ctx) {
         programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()));
-        proxyMap.putIfAbsent(ctx.location().getText(), new HashSet<>(Arrays.asList(Tag.PTX.GENERIC)));
+        String selfAlias = Tag.PTX.ALIAS + ctx.location().getText();
+        proxyMap.putIfAbsent(ctx.location().getText(), new HashSet<>(Arrays.asList(Tag.PTX.GENERIC, selfAlias)));
         return null;
     }
 
@@ -93,8 +94,9 @@ public class VisitorLitmusPTX
     @Override
     public Object visitVariableDeclaratorProxy(LitmusPTXParser.VariableDeclaratorProxyContext ctx) {
         programBuilder.initAliasProxy(ctx.location(0).getText(), ctx.location(1).getText());
+        String alias = Tag.PTX.ALIAS + ctx.location(0).getText();
         proxyMap.putIfAbsent(ctx.location(0).getText(),
-                new HashSet<>(Arrays.asList(ctx.proxyType().content, Tag.PTX.ALIAS)));
+                new HashSet<>(Arrays.asList(ctx.proxyType().content, alias)));
         return null;
     }
 
@@ -350,7 +352,6 @@ public class VisitorLitmusPTX
             throw new ParsingException("Fence instruction doesn't support sem: " + ctx.sem().content);
         }
         Fence fence = EventFactory.PTX.newTaggedFence(sem, scope);
-        fence.addFilters(Tag.PTX.GENERIC);
         return programBuilder.addScopedChild(mainThread, fence);
     }
 
@@ -364,7 +365,7 @@ public class VisitorLitmusPTX
     @Override
     public Object visitFenceAlias(LitmusPTXParser.FenceAliasContext ctx) {
         Fence fence = EventFactory.newFence(Tag.PTX.PROXY);
-        fence.addFilters(Tag.PTX.ALIAS);
+        fence.addFilters(Tag.PTX.GENERIC);
         return programBuilder.addScopedChild(mainThread, fence);
     }
 }
