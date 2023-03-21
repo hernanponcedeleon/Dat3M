@@ -39,10 +39,10 @@ variableDeclaratorProxy
     ;
 
 proxyType returns [String content]
-    :   Generic {$content = "GENERIC";}
-    |   Shared {$content = "SHARED";}
-    |   Texture {$content = "TEXTURE";}
-    |   Surface {$content = "SURFACE";}
+    :   Generic {$content = "GEN";}
+    |   Constant {$content = "CON";}
+    |   Texture {$content = "TEX";}
+    |   Surface {$content = "SURF";}
     ;
 
 virtuality
@@ -217,25 +217,25 @@ sem returns [String content]
     ;
 
 load returns [String loadProxy]
-    :   Load {$loadProxy = "GENERIC";}
-    |   TextureLoad {$loadProxy = "TEXTURE";}
-    |   SurfaceLoad {$loadProxy = "SURFACE";}
-    |   ConstantLoad {$loadProxy = "CONSTANT";}
+    :   Load {$loadProxy = "GEN";}
+    |   TextureLoad {$loadProxy = "TEX";}
+    |   SurfaceLoad {$loadProxy = "SUR";}
+    |   ConstantLoad {$loadProxy = "CON";}
     ;
 
 store returns [String storeProxy]
-    :   Store {$storeProxy = "GENERIC";}
-    |   Sustore {$storeProxy = "SURFACE";}
+    :   Store {$storeProxy = "GEN";}
+    |   Sustore {$storeProxy = "SUR";}
     ;
 
 atom returns [String atomProxy]
-    :   Atom {$atomProxy = "GENERIC";}
-    |   SurfaceAtom {$atomProxy = "SURFACE";}
+    :   Atom {$atomProxy = "GEN";}
+    |   SurfaceAtom {$atomProxy = "SUR";}
     ;
 
 red returns [String redProxy]
-    :   Red {$redProxy = "GENERIC";}
-    |   SurfaceRed {$redProxy = "SURFACE";}
+    :   Red {$redProxy = "GEN";}
+    |   SurfaceRed {$redProxy = "SUR";}
     ;
 
 Load            :   'ld';
@@ -280,8 +280,8 @@ L_Shift :   'l_shift';
 R_Shift :   'r_shift';
 
 Proxy       :   'proxy';
-Generic      :   'generic';
-Shared      :   'shared';
+Generic     :   'generic';
+Constant    :   'constant';
 Surface     :   'surface';
 Texture     :   'texture';
 Physically  :   'physically';

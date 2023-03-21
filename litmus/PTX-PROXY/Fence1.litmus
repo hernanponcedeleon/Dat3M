@@ -1,0 +1,13 @@
+PTX fence
+"A single thread example showing alias proxy fence usage"
+{
+rd1 = 0;
+rd2 @ generic virtually aliases rd1;
+P0:%r0=0;
+}
+ P0@cta 0,gpu 0                   ;
+ st.weak rd1, 42                  ;
+ fence.proxy.alias                ;
+ ld.weak %r0, rd2                 ;
+forall
+(P0:%r0 == 42)
