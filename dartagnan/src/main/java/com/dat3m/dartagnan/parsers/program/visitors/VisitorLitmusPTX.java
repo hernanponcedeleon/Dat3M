@@ -67,7 +67,7 @@ public class VisitorLitmusPTX
     public Object visitVariableDeclaratorLocation(LitmusPTXParser.VariableDeclaratorLocationContext ctx) {
         programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()));
         String selfAlias = Tag.PTX.ALIAS + ctx.location().getText();
-        proxyMap.putIfAbsent(ctx.location().getText(), new HashSet<>(Arrays.asList(Tag.PTX.GENERIC, selfAlias)));
+        proxyMap.putIfAbsent(ctx.location().getText(), new HashSet<>(Arrays.asList(Tag.PTX.GEN, selfAlias)));
         return null;
     }
 
@@ -146,12 +146,12 @@ public class VisitorLitmusPTX
         }
         Store store = EventFactory.PTX.newTaggedStore(object, constant, sem, scope);
         store.addFilters(ctx.store().storeProxy);
-        store.addFilters(Tag.PTX.CONSTANT);
+        store.addFilters(Tag.PTX.CON);
         if (proxyMap.containsKey(ctx.location().getText())) {
             HashSet<String> proxies = proxyMap.get(ctx.location().getText());
-            proxies.add(Tag.PTX.CONSTANT);
+            proxies.add(Tag.PTX.CON);
         } else {
-            HashSet<String> proxies = new HashSet<>(Arrays.asList(Tag.PTX.CONSTANT));
+            HashSet<String> proxies = new HashSet<>(Arrays.asList(Tag.PTX.CON));
             proxyMap.put(ctx.location().getText(), proxies);
         }
         return programBuilder.addScopedChild(mainThread, store);
@@ -365,7 +365,7 @@ public class VisitorLitmusPTX
     @Override
     public Object visitFenceAlias(LitmusPTXParser.FenceAliasContext ctx) {
         Fence fence = EventFactory.newFence(Tag.PTX.PROXY);
-        fence.addFilters(Tag.PTX.GENERIC);
+        fence.addFilters(Tag.PTX.GEN);
         return programBuilder.addScopedChild(mainThread, fence);
     }
 }

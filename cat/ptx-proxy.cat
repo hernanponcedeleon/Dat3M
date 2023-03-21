@@ -10,10 +10,10 @@ let strong-m = strong-write | strong-read
 let strong-operation = strong-write | strong-read | F
 
 (* Relations *)
-let sr-fence = ([strong-operation]; sr; [F]) | ([F]; sr; [strong-operation])
-let po-fence = ([strong-operation]; po; [F]) | ([F]; po; [strong-operation])
-let sr-m = ([strong-m]; (sr & loc); [strong-m])
-let po-m = ([M]; po-loc; [M])
+let sr-fence = ([strong-operation]; (sr & sp); [F]) | ([F]; (sr & sp); [strong-operation])
+let po-fence = ([strong-operation]; (po & sp); [F]) | ([F]; (po & sp); [strong-operation])
+let sr-m = ([strong-m]; (sr & sp & loc); [strong-m])
+let po-m = ([M]; (po & sp & loc); [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
 
 let fence-sc = [F & SC] ; sr; [F & SC]
@@ -21,8 +21,14 @@ let rec observation = (morally-strong & rf) | (observation; rmw; observation)
 let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po+; [W])
 let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po+; [F & ACQ_REL])
 let sw = morally-strong & (release-pattern; observation+; acquire-pattern) | fence-sc
-let cause-base = (po?; sw; po?)+
-let cause = cause-base | (observation; (cause-base | po-loc))
+let cause-base = (po?; (sw | po); po?)+
+
+let loc-gen = [GEN]; loc; [GEN]
+let loc-proxy = [CTA]; (loc & sr & sp); [CTA] // TODO: same thread block
+let loc-alias = ([F & ALIAS]; cause-base) | (cause-base; [F & ALIAS])
+let cause-proxy = cause-base & (loc-gen | loc-proxy | loc-alias)
+
+let cause = cause-proxy | (observation; cause-proxy)
 
 (******************************)
 (* PTX Memory Model Axioms *)

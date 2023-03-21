@@ -1018,14 +1018,14 @@ public class RelationAnalysis {
 
         private String getCache(Set<String> filters) {
             for (String filter: filters) {
-                if (filter.equals(Tag.PTX.TEXTURE)) {
-                    return Tag.PTX.TEXTURE;
+                if (filter.equals(Tag.PTX.TEX)) {
+                    return Tag.PTX.TEX;
                 }
-                if (filter.equals(Tag.PTX.SURFACE)) {
-                    return Tag.PTX.SURFACE;
+                if (filter.equals(Tag.PTX.SUR)) {
+                    return Tag.PTX.SUR;
                 }
-                if (filter.equals(Tag.PTX.GENERIC)) {
-                    return Tag.PTX.GENERIC;
+                if (filter.equals(Tag.PTX.GEN)) {
+                    return Tag.PTX.GEN;
                 }
             }
             return null;

@@ -273,19 +273,19 @@ public final class Tag {
         public static final String SYS = "SYS";
 
         public static final String WEAK = "WEAK";
-        public static final String RLX = "RLX";
-        public static final String ACQ = "ACQ";
-        public static final String REL = "REL";
+        public static final String RLX = "RLX"; // RELAXED
+        public static final String ACQ = "ACQ"; // ACQUIRE
+        public static final String REL = "REL"; // RELEASE
 
         public static final String ACQ_REL = "ACQ_REL";
         public static final String SC = "SC";
 
 
         public static final String PROXY = "PROXY";
-        public static final String GENERIC = "GENERIC";
-        public static final String TEXTURE = "TEXTURE";
-        public static final String SURFACE = "SURFACE";
-        public static final String CONSTANT = "CONSTANT";
+        public static final String GEN = "GEN"; // GENERIC
+        public static final String TEX = "TEX"; // TEXTURE
+        public static final String SUR = "SUR"; // SURFACE
+        public static final String CON = "CON"; // CONSTANT
         public static final String ALIAS = "ALIAS@";
 
     }
