@@ -1,6 +1,6 @@
 #!/bin/bash
  
-TIMEOUT=3600
+TIMEOUT=10800
 
 DAT3M_FINISHED="Verification finished"
 DAT3M_FAIL="FAIL"
@@ -17,8 +17,8 @@ CAV19="$OPT_RA=true $OPT_MUST=false $OPT_XRA=false $OPT_ACTIVE=true $OPT_RAE=fal
 XRA="$OPT_RA=true $OPT_MUST=true $OPT_XRA=true $OPT_ACTIVE=true $OPT_RAE=false" 
 XRA_ACY="$OPT_RA=true $OPT_MUST=true $OPT_XRA=true $OPT_ACTIVE=true $OPT_RAE=true" 
 
-declare -a METHODS=( "caat assume" )
-declare -a SOLVERS=( "yices2 z3 mathsat5" )
+declare -a METHODS=( "assume caat" )
+declare -a SOLVERS=( "yices2" )
 declare -a XRA_OPTS=( "$CAV19" "$XRA" "$XRA_ACY" )
 
 CAT=$1
@@ -50,25 +50,9 @@ for METHOD in ${METHODS[@]}; do
 
             ## Options for Dartagnan
             DAT3M_OPTIONS="$DAT3M_HOME/cat/$CAT --target=$TARGET --method=$METHOD --solver=$SOLVER $XRA_OPT \
-            --property=program_spec,liveness,cat_spec --bound=2 --program.processing.propagateCopyAssignments=false \
-            --refinement.baseline=no_oota --encoding.symmetry.breakOn=_cf --encoding.wmm.idl2sat=true \
+            --property=program_spec,liveness,cat_spec --program.processing.propagateCopyAssignments=false \
+            --encoding.symmetry.breakOn=_cf --bound=2 \
             --modeling.threadCreateAlwaysSucceeds=true --modeling.precision=64 --encoding.locallyConsistent=false"
-
-            ## Set number of threads
-            case "$BENCHMARK" in
-                "locks/ttas" | "locks/ticketlock" | "locks/spinlock")
-                    THREADS=6 ;;
-                "locks/linuxrwlock" | "lfds/chase-lev")
-                    THREADS=5 ;;
-                "locks/mutex" | "locks/mutex_musl" | "lfds/treiber")
-                    THREADS=4 ;;
-                "lfds/dglm" | "lfds/ms")
-                    THREADS=3 ;;
-                *)
-                    echo "Missing case for benchmark" $BENCHMARK ;;
-            esac
-
-            export CFLAGS="-DNTHREADS="$THREADS
 
             ## The SMT statistics go to different logs
             if [ "$METHOD" == "caat" ]; then
