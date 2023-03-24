@@ -945,42 +945,41 @@ public class RelationAnalysis {
         }
 
         private boolean mustScope(Event first, Event second) {
-            Set<String> first_filters = first.getFilters();
-            Set<String> second_filters = second.getFilters();
-            if (getValidScope(first_filters) == null || getValidScope(second_filters) == null) {
-                return true; // InitW
-            }
-            if (getValidScope(first_filters).equals(Tag.PTX.SYS) || getValidScope(second_filters).equals(Tag.PTX.SYS)) {
+            if (first.is(Tag.INIT) || second.is(Tag.INIT)) {
                 return true;
             }
-            if (onSameScope(first_filters, second_filters, Tag.PTX.GPU)) {
-                // on same GPU
-                if (onSameScope(first_filters, second_filters, Tag.PTX.CTA)) {
-                    // on same CTA
-                    return true;
-                } else { // else: two cta event on same GPU, diff cta, true if either of them scope is GPU
-                    return getValidScope(first_filters).equals(PTX.GPU) ||
-                            getValidScope(second_filters).equals(PTX.GPU);
-                }
+            String firstScope = getValidScope(first);
+            String secondScope = getValidScope(second);
+            if (!firstScope.equals(secondScope)) {
+                return false;
+            }
+            if (firstScope.equals(Tag.PTX.SYS)) {
+                return true;
+            } else if (firstScope.equals(Tag.PTX.GPU)) {
+                return onSameScope(first, second, Tag.PTX.GPU);
+            } else if (firstScope.equals(Tag.PTX.CTA)) {
+                boolean ctaEquality = onSameScope(first, second, Tag.PTX.CTA);
+                boolean gpuEquality = onSameScope(first, second, Tag.PTX.GPU);
+                return ctaEquality && gpuEquality;
             }
             return false;
         }
-        private String getValidScope(Set<String> filters) {
-            for (String filter: filters) {
-                if (filter.equals(Tag.PTX.CTA)) {
-                    return Tag.PTX.CTA;
-                }
-                if (filter.equals(Tag.PTX.GPU)) {
-                    return Tag.PTX.GPU;
-                }
-                if (filter.equals(Tag.PTX.SYS)) {
-                    return Tag.PTX.SYS;
-                }
+
+        private String getValidScope(Event event) {
+            if (event.is(Tag.PTX.SYS)) {
+                return Tag.PTX.SYS;
+            } else if (event.is(Tag.PTX.GPU)) {
+                return Tag.PTX.GPU;
+            } else if (event.is(Tag.PTX.CTA)) {
+                return Tag.PTX.CTA;
+            } else {
+                return null;
             }
-            return null;
         }
 
-        private boolean onSameScope(Set<String> f1, Set<String> f2, String scope) {
+        private boolean onSameScope(Event first, Event second, String scope) {
+            Set<String> f1 = first.getFilters();
+            Set<String> f2 = second.getFilters();
             if (getScopeID(f1, scope) != getScopeID(f2, scope)) {
                 return false;
             }

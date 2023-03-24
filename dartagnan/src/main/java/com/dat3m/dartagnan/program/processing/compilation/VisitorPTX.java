@@ -36,6 +36,8 @@ public class VisitorPTX extends VisitorBase{
         RMWStore store = newRMWStore(load, address, new IExprBin(dummy, e.getOp(), (IExpr) value), Tag.Linux.storeMO(mo));
 
         Set<String> scopeFilters = getScopeFilters(e);
+        optionalMbBefore.addFilters(scopeFilters);
+        optionalMbAfter.addFilters(scopeFilters);
         load.addFilters(scopeFilters);
         store.addFilters(scopeFilters);
         addSemFilters(e, load);
