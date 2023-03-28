@@ -10,10 +10,10 @@ let strong-m = strong-write | strong-read
 let strong-operation = strong-write | strong-read | F
 
 (* Relations *)
-let sr-fence = ([strong-operation]; (sr & sp); [F]) | ([F]; (sr & sp); [strong-operation])
-let po-fence = ([strong-operation]; (po & sp); [F]) | ([F]; (po & sp); [strong-operation])
-let sr-m = ([strong-m]; (sr & sp & loc); [strong-m])
-let po-m = ([M]; (po & sp & loc); [M])
+let sr-fence = ([strong-operation]; (sr & vloc); [F]) | ([F]; (sr & vloc); [strong-operation])
+let po-fence = ([strong-operation]; (po & vloc); [F]) | ([F]; (po & vloc); [strong-operation])
+let sr-m = ([strong-m]; (sr & vloc & loc); [strong-m])
+let po-m = ([M]; (po & vloc & loc); [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
 
 let fence-sc = [F & SC] ; sr; [F & SC]
@@ -21,13 +21,29 @@ let rec observation = (morally-strong & rf) | (observation; rmw; observation)
 let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po+; [W])
 let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po+; [F & ACQ_REL])
 let sw = morally-strong & (release-pattern; observation+; acquire-pattern) | fence-sc
-let cause-base = (po?; (sw | po); po?)+
+let cause-base = (po?; sw; po?)+ | po
 
-let loc-gen = [GEN]; loc; [GEN]
-let loc-proxy = [CTA]; (loc & sr & sp); [CTA] // TODO: same thread block
-let loc-alias = ([F & ALIAS]; cause-base) | (cause-base; [F & ALIAS])
-let cause-proxy = cause-base & (loc-gen | loc-proxy | loc-alias)
+(* Proxy-aware causality ordering *)
+let generic-proxy = [GEN]; [GEN]
+let surface-proxy = [SUR]; [SUR]
+let texture-proxy = [TEX]; [TEX]
+let constant-proxy = [CON]; [CON]
+let same-proxy = generic-proxy | surface-proxy | texture-proxy | constant-proxy
 
+let proxy-fence-m =  [F]; (same-proxy ); [M]
+let proxy-m-fence =  [M]; (same-proxy ); [F]
+
+let no-alias-fence = [GEN]; (vloc & cause-base); [GEN]
+let no-proxy-fence = vloc & cause-base & same-proxy
+let proxy-src-fence = (cause-base & proxy-m-fence); (cause-base & vloc); [GEN]
+let proxy-dst-fence = [GEN]; (cause-base & vloc); (cause-base & proxy-fence-m)
+let proxy-src-dst-fence = (cause-base & proxy-m-fence); (cause-base & vloc); (cause-base & proxy-fence-m)
+let proxy-alias-fence = loc & ([GEN]; (cause-base; [F & ALIAS]; cause-base); [GEN])
+let proxy-src-alias-fence = loc & ((cause-base & proxy-m-fence); (cause-base; [F & ALIAS]; cause-base); [GEN])
+let proxy-dst-alias-fence = loc & ([GEN]; (cause-base; [F & ALIAS]; cause-base); (cause-base & proxy-fence-m))
+let proxy-src-dst-alias-fence = loc & ((cause-base & proxy-m-fence); (cause-base; [F & ALIAS]; cause-base); (cause-base & proxy-fence-m))
+
+let cause-proxy = no-alias-fence | no-proxy-fence | proxy-src-fence | proxy-dst-fence | proxy-src-dst-fence | proxy-alias-fence | proxy-src-alias-fence | proxy-dst-alias-fence | proxy-src-dst-alias-fence
 let cause = cause-proxy | (observation; cause-proxy)
 
 (******************************)

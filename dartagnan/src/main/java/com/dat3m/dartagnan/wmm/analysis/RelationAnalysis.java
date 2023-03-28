@@ -885,18 +885,16 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitSameProxy(Relation rel) {
+        public Knowledge visitSameVirtualAddress(Relation rel) {
             Set<Tuple> must = new HashSet<>();
             Collection<Event> loadEvents = (List<Event>) (List<? extends Event>) program.getEvents(Load.class);
             Collection<Event> storeEvents = (List<Event>) (List<? extends Event>) program.getEvents(Store.class);
-            Collection<Event> fenceEvents = (List<Event>) (List<? extends Event>) program.getEvents(Fence.class);
             List<Event> events = new ArrayList<>();
             events.addAll(loadEvents);
             events.addAll(storeEvents);
-            events.addAll(fenceEvents);
             for (Event e1 : events) {
                 for (Event e2 : events) {
-                    if (mustProxy(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (mustVirtualAddress(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -950,6 +948,9 @@ public class RelationAnalysis {
             }
             String firstScope = getValidScope(first);
             String secondScope = getValidScope(second);
+            if (firstScope == null || secondScope == null) {
+                return false; // proxy fence
+            }
             if (!firstScope.equals(secondScope)) {
                 return false;
             }
@@ -1003,13 +1004,13 @@ public class RelationAnalysis {
             return result;
         }
 
-        private boolean mustProxy(Event first, Event second) {
+        private boolean mustVirtualAddress(Event first, Event second) {
             Set<String> first_filters = first.getFilters();
             Set<String> second_filters = second.getFilters();
             if (getCache(first_filters) != getCache(second_filters) ) {
                 return false; // not in different cache
             }
-            if (getAlias(first_filters).equals(getAlias(second_filters))) {
+            if (getVirtualAddress(first_filters).equals(getVirtualAddress(second_filters))) {
                 return true;
             }
             return false;
@@ -1029,10 +1030,10 @@ public class RelationAnalysis {
             }
             return null;
         }
-        private String getAlias(Set<String> filters) {
+        private String getVirtualAddress(Set<String> filters) {
             for (String filter: filters) {
-                if (filter.contains(Tag.PTX.ALIAS)) {
-                    String alias = filter.replace(Tag.PTX.ALIAS, "");
+                if (filter.contains(Tag.PTX.VIRTUAL)) {
+                    String alias = filter.replace(Tag.PTX.VIRTUAL, "");
                     return alias;
                 }
             }

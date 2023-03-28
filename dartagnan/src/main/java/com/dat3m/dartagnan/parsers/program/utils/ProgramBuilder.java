@@ -245,10 +245,7 @@ public class ProgramBuilder {
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
-        MemoryObject object = locations.computeIfAbsent(leftName, k->memory.allocate(1, true));
-        object.setCVar(leftName);
-        object.setInitialValue(0,rightLocation.getInitialValue(0));
-        object.setAddress(rightLocation.getAddress());
+        MemoryObject object = locations.computeIfAbsent(leftName, k->rightLocation);
         return object;
     }
 }

@@ -92,7 +92,7 @@ public abstract class Definition implements Constraint {
         default T visitSameAddress(Relation loc) { return visitDefinition(loc, List.of()); }
         default T visitReadFrom(Relation rf) { return visitDefinition(rf, List.of()); }
         default T visitSameScope(Relation sc) { return visitDefinition(sc, List.of()); }
-        default T visitSameProxy(Relation sp) { return visitDefinition(sp, List.of()); }
+        default T visitSameVirtualAddress(Relation vloc) { return visitDefinition(vloc, List.of()); }
     }
 
     public static final class Undefined extends Definition {
