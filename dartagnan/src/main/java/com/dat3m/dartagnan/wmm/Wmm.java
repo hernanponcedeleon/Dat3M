@@ -333,6 +333,8 @@ public class Wmm {
                 return new SameScope(r);
             case VLOC:
                 return new SameVirtualAlias(r);
+            case SCTA:
+                return new SameCTA(r);
             default:
                 throw new RuntimeException(name + "is part of RelationNameRepository but it has no associated relation.");
         }

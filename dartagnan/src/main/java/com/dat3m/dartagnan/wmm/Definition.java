@@ -93,6 +93,7 @@ public abstract class Definition implements Constraint {
         default T visitReadFrom(Relation rf) { return visitDefinition(rf, List.of()); }
         default T visitSameScope(Relation sc) { return visitDefinition(sc, List.of()); }
         default T visitSameVirtualAddress(Relation vloc) { return visitDefinition(vloc, List.of()); }
+        default T visitSameCTA(Relation scta) { return visitDefinition(scta, List.of()); }
     }
 
     public static final class Undefined extends Definition {

@@ -93,7 +93,7 @@ public class VisitorLitmusPTX
     // Proxy declarator list
     @Override
     public Object visitVariableDeclaratorProxy(LitmusPTXParser.VariableDeclaratorProxyContext ctx) {
-        programBuilder.initAliasProxy(ctx.location(0).getText(), ctx.location(1).getText());
+        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText());
         String virtualAddress = Tag.PTX.VIRTUAL + ctx.location(0).getText();
         proxyMap.putIfAbsent(ctx.location(0).getText(),
                 new HashSet<>(Arrays.asList(ctx.proxyType().content, virtualAddress)));

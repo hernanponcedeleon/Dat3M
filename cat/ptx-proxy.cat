@@ -24,24 +24,15 @@ let sw = morally-strong & (release-pattern; observation+; acquire-pattern) | fen
 let cause-base = (po?; sw; po?)+ | po
 
 (* Proxy-aware causality ordering *)
-let generic-proxy = [GEN]; [GEN]
-let surface-proxy = [SUR]; [SUR]
-let texture-proxy = [TEX]; [TEX]
-let constant-proxy = [CON]; [CON]
+let generic-proxy = GEN * GEN
+let surface-proxy = SUR * SUR
+let texture-proxy = TEX * TEX
+let constant-proxy = CON * CON
 let same-proxy = generic-proxy | surface-proxy | texture-proxy | constant-proxy
 
-let proxy-fence-m =  [F]; (same-proxy ); [M]
-let proxy-m-fence =  [M]; (same-proxy ); [F]
-
-let no-alias-fence = [GEN]; (vloc & cause-base); [GEN]
-let no-proxy-fence = vloc & cause-base & same-proxy
-let proxy-src-fence = (cause-base & proxy-m-fence); (cause-base & vloc); [GEN]
-let proxy-dst-fence = [GEN]; (cause-base & vloc); (cause-base & proxy-fence-m)
-let proxy-src-dst-fence = (cause-base & proxy-m-fence); (cause-base & vloc); (cause-base & proxy-fence-m)
-let proxy-alias-fence = loc & ([GEN]; (cause-base; [F & ALIAS]; cause-base); [GEN])
-let proxy-src-alias-fence = loc & ((cause-base & proxy-m-fence); (cause-base; [F & ALIAS]; cause-base); [GEN])
-let proxy-dst-alias-fence = loc & ([GEN]; (cause-base; [F & ALIAS]; cause-base); (cause-base & proxy-fence-m))
-let proxy-src-dst-alias-fence = loc & ((cause-base & proxy-m-fence); (cause-base; [F & ALIAS]; cause-base); (cause-base & proxy-fence-m))
+let generic-cause = [GEN]; (vloc & cause-base); [GEN]
+let scta-cause = same-proxy & vloc & scta
+let alias-cause = alias & ([GEN]; (cause-base; [F & ALIAS]; cause-base); [GEN])
 
 let cause-proxy = no-alias-fence | no-proxy-fence | proxy-src-fence | proxy-dst-fence | proxy-src-dst-fence | proxy-alias-fence | proxy-src-alias-fence | proxy-dst-alias-fence | proxy-src-dst-alias-fence
 let cause = cause-proxy | (observation; cause-proxy)

@@ -902,6 +902,26 @@ public class RelationAnalysis {
             return new Knowledge(must, new HashSet<>(must));
         }
 
+        @Override
+        public Knowledge visitSameCTA(Relation rel) {
+            Set<Tuple> must = new HashSet<>();
+            Collection<Event> loadEvents = (List<Event>) (List<? extends Event>) program.getEvents(Load.class);
+            Collection<Event> storeEvents = (List<Event>) (List<? extends Event>) program.getEvents(Store.class);
+            Collection<Event> fenceEvents = (List<Event>) (List<? extends Event>) program.getEvents(Fence.class);
+            List<Event> events = new ArrayList<>();
+            events.addAll(loadEvents);
+            events.addAll(storeEvents);
+            events.addAll(fenceEvents);
+            for (Event e1 : events) {
+                for (Event e2 : events) {
+                    if (onSameScope(e1, e2, Tag.PTX.CTA) && !exec.areMutuallyExclusive(e1, e2)) {
+                        must.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+            return new Knowledge(must, new HashSet<>(must));
+        }
+
         private Knowledge visitDependency(String tag, Function<Event, Set<Register>> registers) {
             Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
