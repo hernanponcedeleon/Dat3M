@@ -46,8 +46,8 @@ public class RelationNameRepository {
 	public static final String CTRLISB = "ctrlisb";
 	public static final String CASDEP = "casdep";
 	public static final String SR = "sr";
-	public static final String VLOC = "vloc";
 	public static final String SCTA = "scta";
+	public static final String ALIAS = "alias";
 	// Any new string must be also added to method contains() below
 
 	public static final ImmutableSet<String> RELATION_NAMES;

@@ -331,10 +331,10 @@ public class Wmm {
                 return intersection(r, getRelation(CTRL), getRelation(ISB));
             case SR:
                 return new SameScope(r);
-            case VLOC:
-                return new SameVirtualAlias(r);
             case SCTA:
                 return new SameCTA(r);
+            case ALIAS:
+                return new Alias(r);
             default:
                 throw new RuntimeException(name + "is part of RelationNameRepository but it has no associated relation.");
         }

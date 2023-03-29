@@ -287,7 +287,6 @@ public final class Tag {
         public static final String SUR = "SUR"; // SURFACE
         public static final String CON = "CON"; // CONSTANT
         public static final String ALIAS = "ALIAS";
-        public static final String VIRTUAL = "VIRTUAL@";
 
     }
 }

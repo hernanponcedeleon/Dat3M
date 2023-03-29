@@ -885,7 +885,7 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitSameVirtualAddress(Relation rel) {
+        public Knowledge visitAlias(Relation rel) {
             Set<Tuple> must = new HashSet<>();
             Collection<Event> loadEvents = (List<Event>) (List<? extends Event>) program.getEvents(Load.class);
             Collection<Event> storeEvents = (List<Event>) (List<? extends Event>) program.getEvents(Store.class);
@@ -894,7 +894,7 @@ public class RelationAnalysis {
             events.addAll(storeEvents);
             for (Event e1 : events) {
                 for (Event e2 : events) {
-                    if (mustVirtualAddress(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (getAlias(e1).equals(getAlias(e2)) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -1024,36 +1024,11 @@ public class RelationAnalysis {
             return result;
         }
 
-        private boolean mustVirtualAddress(Event first, Event second) {
-            Set<String> first_filters = first.getFilters();
-            Set<String> second_filters = second.getFilters();
-            if (getCache(first_filters) != getCache(second_filters) ) {
-                return false; // not in different cache
-            }
-            if (getVirtualAddress(first_filters).equals(getVirtualAddress(second_filters))) {
-                return true;
-            }
-            return false;
-        }
-
-        private String getCache(Set<String> filters) {
+        private String getAlias(Event e) {
+            Set<String> filters = e.getFilters();
             for (String filter: filters) {
-                if (filter.equals(Tag.PTX.TEX)) {
-                    return Tag.PTX.TEX;
-                }
-                if (filter.equals(Tag.PTX.SUR)) {
-                    return Tag.PTX.SUR;
-                }
-                if (filter.equals(Tag.PTX.GEN)) {
-                    return Tag.PTX.GEN;
-                }
-            }
-            return null;
-        }
-        private String getVirtualAddress(Set<String> filters) {
-            for (String filter: filters) {
-                if (filter.contains(Tag.PTX.VIRTUAL)) {
-                    String alias = filter.replace(Tag.PTX.VIRTUAL, "");
+                if (filter.contains(Tag.PTX.ALIAS)) {
+                    String alias = filter.replace(Tag.PTX.ALIAS, "");
                     return alias;
                 }
             }
