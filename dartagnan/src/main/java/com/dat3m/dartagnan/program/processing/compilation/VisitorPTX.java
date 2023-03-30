@@ -40,6 +40,11 @@ public class VisitorPTX extends VisitorBase{
         optionalMbAfter.addFilters(scopeFilters);
         load.addFilters(scopeFilters);
         store.addFilters(scopeFilters);
+        Set<String> proxyFilters = getProxyFilters(e);
+        optionalMbBefore.addFilters(proxyFilters);
+        optionalMbAfter.addFilters(proxyFilters);
+        load.addFilters(proxyFilters);
+        store.addFilters(proxyFilters);
         addSemFilters(e, load);
         addSemFilters(e, store);
 
@@ -66,6 +71,9 @@ public class VisitorPTX extends VisitorBase{
         Set<String> scopeFilters = getScopeFilters(e);
         load.addFilters(scopeFilters);
         store.addFilters(scopeFilters);
+        Set<String> proxyFilters = getProxyFilters(e);
+        load.addFilters(proxyFilters);
+        store.addFilters(proxyFilters);
         addSemFilters(e, load);
         addSemFilters(e, store);
 
@@ -100,6 +108,18 @@ public class VisitorPTX extends VisitorBase{
         } else if (e.is(Tag.PTX.RLX)) {
             store.addFilters(Tag.PTX.RLX);
         }
+    }
+
+    private Set<String> getProxyFilters(Event e) {
+        Set<String> filters = e.getFilters();
+        Set<String> scopeFilters = new HashSet<>();
+        for (String filter : filters) {
+            if (filter.equals(Tag.PTX.GEN) || filter.equals(Tag.PTX.TEX) || filter.equals(Tag.PTX.SUR)
+                    || filter.equals(Tag.PTX.CON) || filter.contains(Tag.PTX.ALIAS)) {
+                scopeFilters.add(filter);
+            }
+        }
+        return scopeFilters;
     }
 
 }
