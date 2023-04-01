@@ -12,6 +12,7 @@ import org.sosy_lab.java_smt.api.FormulaManager;
 
 import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
@@ -28,6 +29,16 @@ public class MemoryObject extends IConst {
     private int size;
     BigInteger address;
     private String cVar;
+    private HashSet<String> alias;
+    public HashSet<String> getAlias() {
+        return alias;
+    }
+
+    public void addAlias(String alias) {
+        this.alias.add(alias);
+    }
+
+
     // TODO
     // Right now we assume that either the whole object is atomic or it is not.
     // Generally, this is no necessarily true for structs, but right now we
@@ -42,6 +53,7 @@ public class MemoryObject extends IConst {
         this.index = index;
         this.size = size;
         this.isStatic = isStaticallyAllocated;
+        this.alias = new HashSet<>();
 
         if (isStaticallyAllocated) {
             // Static allocations are default-initialized

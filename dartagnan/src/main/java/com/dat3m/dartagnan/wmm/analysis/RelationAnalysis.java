@@ -865,12 +865,10 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitSameScope(Relation rel) {
             Set<Tuple> must = new HashSet<>();
-            Collection<Event> initEvents = (List<Event>) (List<? extends Event>) program.getEvents(Init.class);
             Collection<Event> loadEvents = (List<Event>) (List<? extends Event>) program.getEvents(Load.class);
             Collection<Event> storeEvents = (List<Event>) (List<? extends Event>) program.getEvents(Store.class);
             Collection<Event> fenceEvents = (List<Event>) (List<? extends Event>) program.getEvents(Fence.class);
             List<Event> events = new ArrayList<>();
-            events.addAll(initEvents);
             events.addAll(loadEvents);
             events.addAll(storeEvents);
             events.addAll(fenceEvents);
@@ -887,9 +885,11 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitAlias(Relation rel) {
             Set<Tuple> must = new HashSet<>();
+            Collection<Event> initEvents = (List<Event>) (List<? extends Event>) program.getEvents(Init.class);
             Collection<Event> loadEvents = (List<Event>) (List<? extends Event>) program.getEvents(Load.class);
             Collection<Event> storeEvents = (List<Event>) (List<? extends Event>) program.getEvents(Store.class);
             List<Event> events = new ArrayList<>();
+            events.addAll(initEvents);
             events.addAll(loadEvents);
             events.addAll(storeEvents);
             for (Event e1 : events) {
@@ -963,9 +963,6 @@ public class RelationAnalysis {
         }
 
         private boolean mustScope(Event first, Event second) {
-            if (first.is(Tag.INIT) || second.is(Tag.INIT)) {
-                return true;
-            }
             String firstScope = getValidScope(first);
             String secondScope = getValidScope(second);
             if (firstScope == null || secondScope == null) {
