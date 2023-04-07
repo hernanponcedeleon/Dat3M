@@ -132,7 +132,7 @@ for a in arch:
     stats.loc[mapping_method['caat-cav19'], 'may'] = str(current_df.iloc[:, 2].sum()).split(".")[0]
     stats.loc[mapping_method['caat-cav19'], 'must'] = str(current_df.iloc[:, 3].sum()).split(".")[0]
     stats.loc[mapping_method['caat-cav19'], 'unknown'] = str(current_df.iloc[:, 2].sum() - current_df.iloc[:, 3].sum()).split(".")[0]
-    stats.loc[mapping_method['caat-cav19'], 'act-set'] = str(current_df.iloc[:, 2].sum() - current_df.iloc[:, 3].sum()).split(".")[0]
+    stats.loc[mapping_method['caat-cav19'], 'act-set'] = str(current_df.iloc[:, 4].sum()).split(".")[0]
     stats.loc[mapping_method['caat-cav19'], 'smt-vars'] = str(current_df.iloc[:, 5].sum()).split(".")[0]
     stats.loc[mapping_method['caat-cav19'], 'acyc-size'] = str(current_df.iloc[:, 6].sum()).split(".")[0]
     stats.loc[mapping_method['caat-cav19'], 'veri-time'] = convertMillis(current_df.iloc[:, 10].sum())
@@ -144,7 +144,7 @@ for a in arch:
     stats.loc[mapping_method['caat-xra'], 'may'] = str(current_df.iloc[:, 2].sum()).split(".")[0]
     stats.loc[mapping_method['caat-xra'], 'must'] = str(current_df.iloc[:, 3].sum()).split(".")[0]
     stats.loc[mapping_method['caat-xra'], 'unknown'] = str(current_df.iloc[:, 2].sum() - current_df.iloc[:, 3].sum()).split(".")[0]
-    stats.loc[mapping_method['caat-xra'], 'act-set'] = str(current_df.iloc[:, 2].sum() - current_df.iloc[:, 3].sum()).split(".")[0]
+    stats.loc[mapping_method['caat-xra'], 'act-set'] = str(current_df.iloc[:, 4].sum()).split(".")[0]
     stats.loc[mapping_method['caat-xra'], 'smt-vars'] = str(current_df.iloc[:, 5].sum()).split(".")[0]
     stats.loc[mapping_method['caat-xra'], 'acyc-size'] = str(current_df.iloc[:, 6].sum()).split(".")[0]
     stats.loc[mapping_method['caat-xra'], 'veri-time'] = convertMillis(current_df.iloc[:, 10].sum())
