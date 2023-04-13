@@ -24,18 +24,17 @@ let sr-m = ([strong-m]; (sr & loc & same-proxy); [strong-m])
 let po-m = ([M]; (po & loc & same-proxy); [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
 
-let po-vloc = (alias+ | loc) & po
 let fence-sc = [F & SC] ; sr; [F & SC]
 let rec observation = (morally-strong & rf) | (observation; rmw; observation)
-let release-pattern = ([W & REL]; po-vloc?; [W]) | ([F & ACQ_REL]; po+; [W])
-let acquire-pattern = ([R]; po-vloc?; [R & ACQ]) | ([R]; po+; [F & ACQ_REL])
+let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po+; [W])
+let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po+; [F & ACQ_REL])
 let sw = morally-strong & (release-pattern; observation+; acquire-pattern) | fence-sc
 let cause-base = (po?; sw; po?)+ | po
 
 (* Proxy-aware causality ordering *)
 let generic-cause = [GEN]; (loc & cause-base); [GEN]
-let scta-cause = same-proxy & scta & loc & cause-base
-let alias-cause = loc & ([GEN]; (cause-base; [F & ALIAS]; cause-base); [GEN])
+let scta-cause = same-proxy & scta & alias & cause-base
+let alias-cause = (alias \ loc) & ([GEN]; (cause-base?; [F & ALIAS]; cause-base?); [GEN])
 
 let cause-proxy = generic-cause | scta-cause | alias-cause
 let cause = cause-proxy | (observation; cause-proxy)
@@ -43,7 +42,7 @@ let cause = cause-proxy | (observation; cause-proxy)
 (******************************)
 (*  PTX Memory Model Axioms   *)
 (******************************)
-let ifr = fr | ([R]; (loc | alias); [IW])
+let ifr = fr | ([R]; (alias \ loc); [W])
 
 (* Axiom 1 Coherence *)
 let cause-write = [W]; (cause & loc); [W]
@@ -60,7 +59,7 @@ let dep = addr | data | ctrl
 acyclic (rf | dep) as axiom-NoThinAir
 
 (* Axiom 5 SC-per-Location *)
-acyclic ((morally-strong & (rf | co | ifr)) | po-vloc) as axiom-ScPerLocation
+acyclic ((morally-strong & (rf | co | ifr)) | po-loc) as axiom-ScPerLocation
 
 (* Axiom 6 Causality *)
 irreflexive ((rf | ifr)?; cause) as axiom-Causality
