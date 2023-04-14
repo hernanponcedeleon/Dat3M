@@ -42,7 +42,7 @@ let cause = cause-proxy | (observation; cause-proxy)
 (******************************)
 (*  PTX Memory Model Axioms   *)
 (******************************)
-let ifr = fr | ([R]; (alias \ loc); [W])
+let alias-fr = fr | ([R]; (alias \ loc); [W])
 
 (* Axiom 1 Coherence *)
 let cause-write = [W]; (cause & loc); [W]
@@ -52,14 +52,14 @@ empty (cause-write \ co) as axiom-Coherence
 irreflexive (fence-sc ; cause) as axiom-FenceSC
 
 (* Axiom 3 Atomicity *)
-empty (((morally-strong & ifr); (morally-strong & co)) & rmw) as axiom-Atomicity
+empty (((morally-strong & alias-fr); (morally-strong & co)) & rmw) as axiom-Atomicity
 
 (* Axiom 4 No-Thin-Air *)
 let dep = addr | data | ctrl
 acyclic (rf | dep) as axiom-NoThinAir
 
 (* Axiom 5 SC-per-Location *)
-acyclic ((morally-strong & (rf | co | ifr)) | po-loc) as axiom-ScPerLocation
+acyclic ((morally-strong & (rf | co | alias-fr)) | po-loc) as axiom-ScPerLocation
 
 (* Axiom 6 Causality *)
-irreflexive ((rf | ifr)?; cause) as axiom-Causality
+irreflexive ((rf | alias-fr)?; cause) as axiom-Causality
