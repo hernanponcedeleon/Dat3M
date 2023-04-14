@@ -1,5 +1,5 @@
 PTX CoRR
-"Coherence, Read-Read"
+"Coherence, Read Read"
 {
 x = 0;
 P1:%r1=0; P1:%r2=0;

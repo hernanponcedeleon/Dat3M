@@ -1,5 +1,5 @@
 PTX CoWW
-"Coherence, Write-Write"
+"Coherence, Write Write"
 {
 x = 0;
 }

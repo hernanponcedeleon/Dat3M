@@ -1,5 +1,5 @@
 PTX CoWR
-"Coherence, Write-Read"
+"Coherence, Write Read"
 {
 x=0;
 P1:%r1=0;

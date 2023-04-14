@@ -1,5 +1,5 @@
 PTX atom
-"Atomicity of read-modify-write (RMW) operations"
+"Atomicity of Read Modify Write(RMW) operations"
 {
 P0:%r0=0;
 P1:%r1=0;

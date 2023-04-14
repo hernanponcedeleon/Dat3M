@@ -1,5 +1,5 @@
 PTX CoRW
-"Coherence, Read-Write"
+"Coherence, Read Write"
 {
 0:%r3=0;
 1:%r1=0;
