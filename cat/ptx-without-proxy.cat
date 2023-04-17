@@ -19,8 +19,8 @@ let morally-strong = sr-fence | po-fence | sr-m | po-m
 
 let fence-sc = [F & SC] ; sr; [F & SC]
 let rec observation = (morally-strong & rf) | (observation; rmw; observation)
-let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po+; [W])
-let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po+; [F & ACQ_REL])
+let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po+; [strong-write])
+let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po+; [F & ACQ_REL])
 let sw = morally-strong & (release-pattern; observation+; acquire-pattern) | fence-sc
 let cause-base = (po?; sw; po?)+
 let cause = cause-base | (observation; (cause-base | po-loc))

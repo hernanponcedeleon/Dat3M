@@ -6,7 +6,7 @@ x=0;
 y=0;
 }
  P0@cta 0,gpu 0 		| P1@cta 1,gpu 0		;
- ld.weak %r1, x  		| st.release.sys y, 4	;
- st.release.sys y, 3	| st.release.sys x, 5	;
+ ld.acquire.sys %r1, x  | st.release.sys y, 4	;
+ st.release.sys y, 3	| st.relaxed.sys x, 5	;
 exists
 (P0:%r1 == 5 /\ y == 4)

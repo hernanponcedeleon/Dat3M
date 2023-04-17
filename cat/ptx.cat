@@ -26,8 +26,8 @@ let morally-strong = sr-fence | po-fence | sr-m | po-m
 
 let fence-sc = [F & SC] ; sr; [F & SC]
 let rec observation = (morally-strong & rf) | (observation; rmw; observation)
-let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po+; [W])
-let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po+; [F & ACQ_REL])
+let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po+; [strong-write])
+let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po+; [F & ACQ_REL])
 let sw = morally-strong & (release-pattern; observation+; acquire-pattern) | fence-sc
 let cause-base = (po?; sw; po?)+ | po
 
@@ -63,5 +63,8 @@ acyclic ((morally-strong & (rf | co | alias-fr)) | po-loc) as axiom-ScPerLocatio
 
 (* Axiom 6 Causality *)
 irreflexive ((rf | alias-fr)?; cause) as axiom-Causality
-// Axiom6 on https://github.com/NVlabs/mixedproxy :
+
+// Definition of paper: A Formal Analysis of the NVIDIA PTX Memory Consistency Model (NVIDIA 2019)
+// let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
+// let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po; [F & ACQ_REL])
 // irreflexive ((rf | co | alias-fr)?; cause) as axiom-Causality
