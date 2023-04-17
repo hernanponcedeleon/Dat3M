@@ -35,7 +35,7 @@ variableDeclaratorLocationLocation
     ;
 
 variableDeclaratorProxy
-    :   location At proxyType virtuality Aliases location
+    :   location At proxyType Aliases location
     ;
 
 proxyType returns [String content]
@@ -43,11 +43,6 @@ proxyType returns [String content]
     |   Constant {$content = "CON";}
     |   Texture {$content = "TEX";}
     |   Surface {$content = "SURF";}
-    ;
-
-virtuality
-    :   Physically
-    |   Virtually
     ;
 
 variableList
@@ -284,8 +279,6 @@ Generic     :   'generic';
 Constant    :   'constant';
 Surface     :   'surface';
 Texture     :   'texture';
-Physically  :   'physically';
-Virtually   :   'virtually';
 Aliases     :   'aliases';
 Alias       :   'alias';
 

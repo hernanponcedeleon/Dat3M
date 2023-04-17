@@ -2,7 +2,7 @@ PTX fence
 "Two thread example with a constant proxy fence"
 {
 rd1 = 0;
-rd2 @ generic virtually aliases rd1;
+rd2 @ generic aliases rd1;
 rd4 = 0;
 P1:%r3=0;
 P1:%r5=0;

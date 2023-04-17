@@ -36,7 +36,6 @@ public class RelationNameRepository {
 	public static final String FRE = "fre";
 	public static final String FRI = "fri";	
 	public static final String MFENCE = "mfence";
-	public static final String PFENCE = "pfence"; // proxy fence
 	public static final String ISH = "ish";
 	public static final String ISB = "isb";
 	public static final String SYNC = "sync";

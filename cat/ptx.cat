@@ -64,4 +64,4 @@ acyclic ((morally-strong & (rf | co | alias-fr)) | po-loc) as axiom-ScPerLocatio
 (* Axiom 6 Causality *)
 irreflexive ((rf | alias-fr)?; cause) as axiom-Causality
 // Axiom6 on https://github.com/NVlabs/mixedproxy :
-// irreflexive ((rf | com | alias-fr)?; cause) as axiom-Causality
+// irreflexive ((rf | co | alias-fr)?; cause) as axiom-Causality
