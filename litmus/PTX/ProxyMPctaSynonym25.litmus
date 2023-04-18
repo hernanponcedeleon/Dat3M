@@ -11,8 +11,9 @@ P1:%r0=0;
 P1:%r1=0;
 }
  P0@cta 0,gpu 0                   |P1@cta 0,gpu 0                    ;
- st.weak x, 2                     |fence.proxy.alias                 ;
+ sust.weak c, 2                   |ld.acquire.gpu %r0, flag          ;
+ fence.proxy.surface              |fence.proxy.texture               ;
  fence.proxy.alias                |                                  ;
- st.release.cta flag, 1           |ld.weak %r1, y                    ;
+ st.release.cta flag, 1           |tld.weak %r1, t                   ;
 forall
-(P1:%r0 == 1 /\ P1:%r1 == 2) \/ (P1:%r0 != 1)
+(P1:%r0 == 1 /\ P1:%r1 == 2)
