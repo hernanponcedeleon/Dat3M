@@ -1,0 +1,13 @@
+PTX proxyfence
+"CoWR test with proxy"
+{
+x = 0;
+t @ texture aliases x;
+s @ surface aliases x;
+P0:%r0=0;
+}
+ P0@cta 0,gpu 0                   ;
+ sust.weak s, 1                   ;
+ suld.weak %r0, s                 ;
+forall
+(P0:%r0 == 1)

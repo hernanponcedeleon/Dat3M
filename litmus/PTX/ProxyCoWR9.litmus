@@ -1,0 +1,15 @@
+PTX proxyfence
+"CoWR test with proxy"
+{
+x = 0;
+t @ texture aliases x;
+s @ surface aliases x;
+P0:%r0=0;
+}
+ P0@cta 0,gpu 0                   ;
+ sust.weak s, 1                   ;
+ fence.proxy.texture              ;
+ fence.proxy.surface              ;
+ tld.weak %r0, t                  ;
+exists
+(P0:%r0 != 1)

@@ -42,7 +42,7 @@ proxyType returns [String content]
     :   Generic {$content = "GEN";}
     |   Constant {$content = "CON";}
     |   Texture {$content = "TEX";}
-    |   Surface {$content = "SURF";}
+    |   Surface {$content = "SUR";}
     ;
 
 variableList

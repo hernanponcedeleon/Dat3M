@@ -34,3 +34,13 @@ litmus/PTX/ProxyFence6.litmus,1
 litmus/PTX/CoTotal1.litmus,1
 litmus/PTX/CoTotal2.litmus,1
 litmus/PTX/ProxyMPctaSynonym.litmus,1
+litmus/PTX/ProxyCoWR1.litmus,1
+litmus/PTX/ProxyCoWR2.litmus,1
+litmus/PTX/ProxyCoWR3.litmus,1
+litmus/PTX/ProxyCoWR4.litmus,1
+litmus/PTX/ProxyCoWR5.litmus,1
+litmus/PTX/ProxyCoWR6.litmus,1
+litmus/PTX/ProxyCoWR7.litmus,1
+litmus/PTX/ProxyCoWR8.litmus,1
+litmus/PTX/ProxyCoWR9.litmus,1
+litmus/PTX/ProxyCoWR10.litmus,1
