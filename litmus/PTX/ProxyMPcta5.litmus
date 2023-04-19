@@ -12,5 +12,5 @@ P1:%r1=0;
  st.weak x, 2                     |ld.acquire.cta %r0, flag          ;
  fence.proxy.surface              |                                  ;
  st.release.cta flag, 1           |suld.weak %r1, s                  ;
-forall
-(P1:%r0 == 1 /\ P1:%r1 == 2)
+~exists
+(P1:%r0 == 1 /\ P1:%r1 != 2)

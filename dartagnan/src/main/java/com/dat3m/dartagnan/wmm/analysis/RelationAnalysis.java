@@ -885,11 +885,9 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitAlias(Relation rel) {
             Set<Tuple> must = new HashSet<>();
-            Collection<Event> initEvents = (List<Event>) (List<? extends Event>) program.getEvents(Init.class);
             Collection<Event> loadEvents = (List<Event>) (List<? extends Event>) program.getEvents(Load.class);
             Collection<Event> storeEvents = (List<Event>) (List<? extends Event>) program.getEvents(Store.class);
             List<Event> events = new ArrayList<>();
-            events.addAll(initEvents);
             events.addAll(loadEvents);
             events.addAll(storeEvents);
             for (Event e1 : events) {

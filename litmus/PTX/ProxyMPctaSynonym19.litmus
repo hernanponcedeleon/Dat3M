@@ -13,6 +13,6 @@ P1:%r1=0;
  P0@cta 0,gpu 0                   |P1@cta 0,gpu 0                    ;
  st.weak x, 2                     |ld.acquire.gpu %r0, flag          ;
  fence.proxy.alias                |                                  ;
- st.release.cta flag, 1           |ld.weak %r1, y                    ;
-forall
-(P1:%r0 == 1 /\ P1:%r1 == 2)
+ st.release.gpu flag, 1           |ld.weak %r1, y                    ;
+~exists
+(P1:%r0 == 1 /\ P1:%r1 != 2)
