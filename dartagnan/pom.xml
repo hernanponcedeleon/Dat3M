@@ -24,6 +24,11 @@
     <argLine>-Djava.library.path=${project.dependency.path}</argLine>
   </properties>
 
+  <!--
+  ###
+  Profile: Linux (default)
+  ###
+  -->
   <profiles>
     <profile>
       <activation>
@@ -321,13 +326,19 @@
       </build>
     </profile>
 
+    <!--
+      ###
+      Profile: MacOS X86
+      ###
+    -->
     <profile>
       <activation>
         <os>
           <family>mac</family>
+          <arch>x86</arch>
         </os>
       </activation>
-      <id>macos</id>
+      <id>macos-x86</id>
       <dependencies>
         <!-- Z3 dependencies (MacOS) -->
         <dependency>
@@ -393,6 +404,104 @@
       </build>
     </profile>
 
+
+    <!--
+      ###
+      Profile: MacOS Aarch64
+      NOTE:
+      For aarch64, the user has to manually download the correct Z3 binaries from Z3's repo,
+      and place them in some location like /Library/Java/Extensions/
+      ###
+    -->
+    <profile>
+      <activation>
+        <os>
+          <family>mac</family>
+          <arch>aarch64</arch>
+        </os>
+      </activation>
+      <id>macos-aarch64</id>
+      <dependencies>
+        <!-- FIXME: Add Z3 dependencies (MacOS, ARM) once they exist
+        <dependency>
+          <groupId>org.sosy-lab</groupId>
+          <artifactId>javasmt-solver-z3</artifactId>
+          <version>4.10.1</version>
+          <type>dylib</type>
+          <classifier>libz3</classifier>
+        </dependency>
+        <dependency>
+          <groupId>org.sosy-lab</groupId>
+          <artifactId>javasmt-solver-z3</artifactId>
+          <version>4.10.1</version>
+          <type>dylib</type>
+          <classifier>libz3java</classifier>
+        </dependency>
+        -->
+      </dependencies>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>3.1.1</version>
+            <executions>
+              <execution>
+                <id>copy</id>
+                <phase>initialize</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>copy-dependencies</id>
+                <phase>validate</phase>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <outputDirectory>${project.dependency.path}</outputDirectory>
+              <artifactItems>
+                <!-- FIXME: Add Z3 native libraries (MacOS, ARM) once they exist -->
+                <!--
+                  FIXME: Maven complains if this list is empty, so we add an artifact that is
+                   loaded already.
+                -->
+                <artifactItem>
+                    <groupId>org.sosy-lab</groupId>
+                    <artifactId>java-smt</artifactId>
+                    <version>3.14.2</version>
+                </artifactItem>
+                <!--<artifactItem>
+                  <groupId>org.sosy-lab</groupId>
+                  <artifactId>javasmt-solver-z3</artifactId>
+                  <type>dylib</type>
+                  <classifier>libz3java</classifier>
+                  <destFileName>libz3java.dylib</destFileName>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.sosy-lab</groupId>
+                  <artifactId>javasmt-solver-z3</artifactId>
+                  <type>dylib</type>
+                  <classifier>libz3</classifier>
+                  <destFileName>libz3.dylib</destFileName>
+                </artifactItem>-->
+              </artifactItems>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+
+    <!--
+      ###
+      Profile: Windows
+      ###
+    -->
     <profile>
       <activation>
         <os>
