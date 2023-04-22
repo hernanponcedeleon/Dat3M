@@ -20,9 +20,6 @@ public class Init extends MemEvent {
 		base = b;
 		offset = o;
 		addFilters(Tag.WRITE, Tag.INIT);
-		if (!b.getAlias().isEmpty()) {
-			addFilters(b.getAlias());
-		}
 	}
 
 	/**

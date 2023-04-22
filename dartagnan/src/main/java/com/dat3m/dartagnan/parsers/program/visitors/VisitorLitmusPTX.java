@@ -65,11 +65,10 @@ public class VisitorLitmusPTX
     // Variable declarator list
     @Override
     public Object visitVariableDeclaratorLocation(LitmusPTXParser.VariableDeclaratorLocationContext ctx) {
-        String selfVirtualAddress = Tag.PTX.ALIAS + ctx.location().getText();
-        programBuilder.initLocEqConstAlias(ctx.location().getText(),
-                new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()),
-                selfVirtualAddress, Tag.PTX.GEN);
-        proxyMap.putIfAbsent(ctx.location().getText(), new HashSet<>(Arrays.asList(Tag.PTX.GEN, selfVirtualAddress)));
+        String selfAlias = Tag.PTX.ALIAS + ctx.location().getText();
+        programBuilder.initLocEqConst(ctx.location().getText(),
+                new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()));
+        proxyMap.putIfAbsent(ctx.location().getText(), new HashSet<>(Arrays.asList(Tag.PTX.GEN, selfAlias)));
         return null;
     }
 
@@ -96,8 +95,8 @@ public class VisitorLitmusPTX
     @Override
     public Object visitVariableDeclaratorProxy(LitmusPTXParser.VariableDeclaratorProxyContext ctx) {
         String alias = Tag.PTX.ALIAS + ctx.location(1).getText();
-        programBuilder.initLocEqLocAlias(ctx.location(0).getText(), ctx.location(1).getText(), alias,
-                ctx.proxyType().content);
+        programBuilder.initLocEqLocAlias(ctx.location(0).getText(),
+                ctx.location(1).getText(), ctx.proxyType().content);
         proxyMap.putIfAbsent(ctx.location(0).getText(),
                 new HashSet<>(Arrays.asList(ctx.proxyType().content, alias)));
         return null;

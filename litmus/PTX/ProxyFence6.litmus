@@ -6,7 +6,7 @@ rd2 @ generic aliases rd1;
 P0:%r0=0;
 }
  P0@cta 0,gpu 0                   ;
- sust.weak rd1, 42                  ;
+ sust.weak rd1, 42                ;
  fence.proxy.surface              ;
  fence.proxy.constant             ;
  ld.weak %r3, rd2                 ;

@@ -335,6 +335,8 @@ public class Wmm {
                 return new SameCTA(r);
             case ALIAS:
                 return new Alias(r);
+            case DALIAS:
+                return new DAlias(r);
             default:
                 throw new RuntimeException(name + "is part of RelationNameRepository but it has no associated relation.");
         }

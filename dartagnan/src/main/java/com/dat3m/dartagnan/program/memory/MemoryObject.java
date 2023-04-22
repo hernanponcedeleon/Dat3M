@@ -12,7 +12,6 @@ import org.sosy_lab.java_smt.api.FormulaManager;
 
 import java.math.BigInteger;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
@@ -29,13 +28,13 @@ public class MemoryObject extends IConst {
     private int size;
     BigInteger address;
     private String cVar;
-    private HashSet<String> alias;
-    public HashSet<String> getAlias() {
+    private MemoryObject alias;
+    public MemoryObject getAlias() {
         return alias;
     }
 
-    public void addAlias(String alias) {
-        this.alias.add(alias);
+    public void setAlias(MemoryObject alias) {
+        this.alias = alias;
     }
 
 
@@ -53,7 +52,7 @@ public class MemoryObject extends IConst {
         this.index = index;
         this.size = size;
         this.isStatic = isStaticallyAllocated;
-        this.alias = new HashSet<>();
+        this.alias = this;
 
         if (isStaticallyAllocated) {
             // Static allocations are default-initialized

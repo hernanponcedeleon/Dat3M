@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -883,7 +884,7 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitAlias(Relation rel) {
+        public Knowledge visitDirectAlias(Relation rel) {
             Set<Tuple> must = new HashSet<>();
             Collection<Event> loadEvents = (List<Event>) (List<? extends Event>) program.getEvents(Load.class);
             Collection<Event> storeEvents = (List<Event>) (List<? extends Event>) program.getEvents(Store.class);
@@ -892,7 +893,25 @@ public class RelationAnalysis {
             events.addAll(storeEvents);
             for (Event e1 : events) {
                 for (Event e2 : events) {
-                    if (getAlias(e1).equals(getAlias(e2)) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (directAlias(e1).equals(directAlias(e2)) && !exec.areMutuallyExclusive(e1, e2)) {
+                        must.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+            return new Knowledge(must, new HashSet<>(must));
+        }
+
+        @Override
+        public Knowledge visitAlias(Relation rel) {
+            Set<Tuple> must = new HashSet<>();
+            Collection<MemEvent> loadEvents = (List<MemEvent>) (List<? extends Event>) program.getEvents(Load.class);
+            Collection<MemEvent> storeEvents = (List<MemEvent>) (List<? extends Event>) program.getEvents(Store.class);
+            List<MemEvent> events = new ArrayList<>();
+            events.addAll(loadEvents);
+            events.addAll(storeEvents);
+            for (MemEvent e1 : events) {
+                for (MemEvent e2 : events) {
+                    if (sameAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -1019,7 +1038,7 @@ public class RelationAnalysis {
             return result;
         }
 
-        private String getAlias(Event e) {
+        private String directAlias(Event e) {
             Set<String> filters = e.getFilters();
             for (String filter: filters) {
                 if (filter.contains(Tag.PTX.ALIAS)) {
@@ -1028,6 +1047,12 @@ public class RelationAnalysis {
                 }
             }
             return "";
+        }
+
+        private Boolean sameAlias(MemEvent e1, MemEvent e2) {
+            MemoryObject location1 = (MemoryObject) e1.getAddress();
+            MemoryObject location2 = (MemoryObject) e2.getAddress();
+            return location1.getAlias().equals(location2.getAlias());
         }
     }
 
