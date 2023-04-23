@@ -239,13 +239,6 @@ public class ProgramBuilder {
         return event;
     }
 
-//    public MemoryObject initLocEqConstAlias(String leftName, IConst iValue){
-//        MemoryObject object = locations.computeIfAbsent(leftName, k->memory.allocate(1, true));
-//        object.setCVar(leftName);
-//        object.setInitialValue(0,iValue);
-//        return object;
-//    }
-
     public MemoryObject initLocEqLocAlias(String leftName, String rightName, String proxyType){
         MemoryObject rightLocation = getObject(rightName);
         if (rightLocation == null) {
@@ -254,10 +247,7 @@ public class ProgramBuilder {
         MemoryObject object = locations.computeIfAbsent(leftName, k->memory.allocate(1, true));
         object.setCVar(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
-        if (!proxyType.equals(Tag.PTX.GEN)) {
-            object.setAlias(rightLocation);
-//            object.setAlias(rightLocation.getAlias());
-        }
+        object.setAlias(rightLocation);
         return object;
     }
 }

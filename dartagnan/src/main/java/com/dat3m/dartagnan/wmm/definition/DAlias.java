@@ -11,7 +11,7 @@ public class DAlias extends Definition {
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitAlias(definedRelation);
+        return v.visitDirectAlias(definedRelation);
     }
 
 }

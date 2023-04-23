@@ -884,24 +884,6 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitDirectAlias(Relation rel) {
-            Set<Tuple> must = new HashSet<>();
-            Collection<Event> loadEvents = (List<Event>) (List<? extends Event>) program.getEvents(Load.class);
-            Collection<Event> storeEvents = (List<Event>) (List<? extends Event>) program.getEvents(Store.class);
-            List<Event> events = new ArrayList<>();
-            events.addAll(loadEvents);
-            events.addAll(storeEvents);
-            for (Event e1 : events) {
-                for (Event e2 : events) {
-                    if (directAlias(e1).equals(directAlias(e2)) && !exec.areMutuallyExclusive(e1, e2)) {
-                        must.add(new Tuple(e1, e2));
-                    }
-                }
-            }
-            return new Knowledge(must, new HashSet<>(must));
-        }
-
-        @Override
         public Knowledge visitAlias(Relation rel) {
             Set<Tuple> must = new HashSet<>();
             Collection<MemEvent> loadEvents = (List<MemEvent>) (List<? extends Event>) program.getEvents(Load.class);
@@ -912,6 +894,24 @@ public class RelationAnalysis {
             for (MemEvent e1 : events) {
                 for (MemEvent e2 : events) {
                     if (sameAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                        must.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+            return new Knowledge(must, new HashSet<>(must));
+        }
+
+        @Override
+        public Knowledge visitDirectAlias(Relation rel) {
+            Set<Tuple> must = new HashSet<>();
+            Collection<MemEvent> loadEvents = (List<MemEvent>) (List<? extends Event>) program.getEvents(Load.class);
+            Collection<MemEvent> storeEvents = (List<MemEvent>) (List<? extends Event>) program.getEvents(Store.class);
+            List<MemEvent> events = new ArrayList<>();
+            events.addAll(loadEvents);
+            events.addAll(storeEvents);
+            for (MemEvent e1 : events) {
+                for (MemEvent e2 : events) {
+                    if (directAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -1038,21 +1038,42 @@ public class RelationAnalysis {
             return result;
         }
 
-        private String directAlias(Event e) {
-            Set<String> filters = e.getFilters();
-            for (String filter: filters) {
-                if (filter.contains(Tag.PTX.ALIAS)) {
-                    String alias = filter.replace(Tag.PTX.ALIAS, "");
-                    return alias;
-                }
+        private Boolean directAlias(MemEvent e1, MemEvent e2) {
+            MemoryObject location1 = (MemoryObject) e1.getAddress();
+            MemoryObject location2 = (MemoryObject) e2.getAddress();
+            if (location1.getAlias() != null && location1.getAlias().equals(location2)) {
+                return true;
+            } else if (location2.getAlias() != null && location2.getAlias().equals(location1)) {
+                return true;
             }
-            return "";
+            return false;
         }
 
         private Boolean sameAlias(MemEvent e1, MemEvent e2) {
             MemoryObject location1 = (MemoryObject) e1.getAddress();
             MemoryObject location2 = (MemoryObject) e2.getAddress();
-            return location1.getAlias().equals(location2.getAlias());
+            Set<MemoryObject> locationSet1 = new HashSet<>();
+            Set<MemoryObject> locationSet2 = new HashSet<>();
+            locationSet1.add(location1);
+            locationSet2.add(location2);
+            MemoryObject runner1 = location1.getAlias();
+            MemoryObject runner2 = location2.getAlias();
+            while (runner1 != null) {
+                locationSet1.add(runner1);
+                runner1 = runner1.getAlias();
+            }
+            while (runner2 != null) {
+                locationSet2.add(runner2);
+                runner2 = runner2.getAlias();
+            }
+            for (MemoryObject l1 : locationSet1) {
+                for (MemoryObject l2 : locationSet2) {
+                    if (l1.equals(l2)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     }
 

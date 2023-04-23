@@ -52,7 +52,7 @@ public class MemoryObject extends IConst {
         this.index = index;
         this.size = size;
         this.isStatic = isStaticallyAllocated;
-        this.alias = this;
+        this.alias = null;
 
         if (isStaticallyAllocated) {
             // Static allocations are default-initialized
