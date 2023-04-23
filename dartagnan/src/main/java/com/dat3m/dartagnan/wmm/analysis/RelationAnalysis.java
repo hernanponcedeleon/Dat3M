@@ -920,6 +920,24 @@ public class RelationAnalysis {
         }
 
         @Override
+        public Knowledge visitShadowAlias(Relation rel) {
+            Set<Tuple> must = new HashSet<>();
+            Collection<MemEvent> loadEvents = (List<MemEvent>) (List<? extends Event>) program.getEvents(Load.class);
+            Collection<MemEvent> storeEvents = (List<MemEvent>) (List<? extends Event>) program.getEvents(Store.class);
+            List<MemEvent> events = new ArrayList<>();
+            events.addAll(loadEvents);
+            events.addAll(storeEvents);
+            for (MemEvent e1 : events) {
+                for (MemEvent e2 : events) {
+                    if (shadowAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                        must.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+            return new Knowledge(must, new HashSet<>(must));
+        }
+
+        @Override
         public Knowledge visitSameCTA(Relation rel) {
             Set<Tuple> must = new HashSet<>();
             Collection<Event> loadEvents = (List<Event>) (List<? extends Event>) program.getEvents(Load.class);
@@ -1044,6 +1062,15 @@ public class RelationAnalysis {
             if (location1.getAlias() != null && location1.getAlias().equals(location2)) {
                 return true;
             } else if (location2.getAlias() != null && location2.getAlias().equals(location1)) {
+                return true;
+            }
+            return false;
+        }
+        private Boolean shadowAlias(MemEvent e1, MemEvent e2) {
+            MemoryObject location1 = (MemoryObject) e1.getAddress();
+            MemoryObject location2 = (MemoryObject) e2.getAddress();
+            if (location1.getShadowAlias() != null && location2.getShadowAlias() != null
+                    && location1.getShadowAlias().equals(location2.getShadowAlias())) {
                 return true;
             }
             return false;

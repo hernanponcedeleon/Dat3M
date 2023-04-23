@@ -248,6 +248,9 @@ public class ProgramBuilder {
         object.setCVar(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
         object.setAlias(rightLocation);
+        if (!proxyType.equals(Tag.PTX.GEN)) {
+            object.setShadowAliasAlias(rightLocation);
+        }
         return object;
     }
 }
