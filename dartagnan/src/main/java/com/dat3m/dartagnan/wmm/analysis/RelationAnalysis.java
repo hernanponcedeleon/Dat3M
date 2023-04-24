@@ -866,9 +866,9 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitSameScope(Relation rel) {
             Set<Tuple> must = new HashSet<>();
-            Collection<Event> loadEvents = (List<Event>) (List<? extends Event>) program.getEvents(Load.class);
-            Collection<Event> storeEvents = (List<Event>) (List<? extends Event>) program.getEvents(Store.class);
-            Collection<Event> fenceEvents = (List<Event>) (List<? extends Event>) program.getEvents(Fence.class);
+            List<Load> loadEvents = program.getEvents(Load.class);
+            List<Store> storeEvents = program.getEvents(Store.class);
+            List<Fence> fenceEvents = program.getEvents(Fence.class);
             List<Event> events = new ArrayList<>();
             events.addAll(loadEvents);
             events.addAll(storeEvents);
@@ -886,8 +886,8 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitAlias(Relation rel) {
             Set<Tuple> must = new HashSet<>();
-            Collection<MemEvent> loadEvents = (List<MemEvent>) (List<? extends Event>) program.getEvents(Load.class);
-            Collection<MemEvent> storeEvents = (List<MemEvent>) (List<? extends Event>) program.getEvents(Store.class);
+            List<Load> loadEvents = program.getEvents(Load.class);
+            List<Store> storeEvents = program.getEvents(Store.class);
             List<MemEvent> events = new ArrayList<>();
             events.addAll(loadEvents);
             events.addAll(storeEvents);
@@ -904,8 +904,8 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitDirectAlias(Relation rel) {
             Set<Tuple> must = new HashSet<>();
-            Collection<MemEvent> loadEvents = (List<MemEvent>) (List<? extends Event>) program.getEvents(Load.class);
-            Collection<MemEvent> storeEvents = (List<MemEvent>) (List<? extends Event>) program.getEvents(Store.class);
+            List<Load> loadEvents = program.getEvents(Load.class);
+            List<Store> storeEvents = program.getEvents(Store.class);
             List<MemEvent> events = new ArrayList<>();
             events.addAll(loadEvents);
             events.addAll(storeEvents);
@@ -922,8 +922,8 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitShadowAlias(Relation rel) {
             Set<Tuple> must = new HashSet<>();
-            Collection<MemEvent> loadEvents = (List<MemEvent>) (List<? extends Event>) program.getEvents(Load.class);
-            Collection<MemEvent> storeEvents = (List<MemEvent>) (List<? extends Event>) program.getEvents(Store.class);
+            List<Load> loadEvents = program.getEvents(Load.class);
+            List<Store> storeEvents = program.getEvents(Store.class);
             List<MemEvent> events = new ArrayList<>();
             events.addAll(loadEvents);
             events.addAll(storeEvents);
@@ -940,9 +940,9 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitSameCTA(Relation rel) {
             Set<Tuple> must = new HashSet<>();
-            Collection<Event> loadEvents = (List<Event>) (List<? extends Event>) program.getEvents(Load.class);
-            Collection<Event> storeEvents = (List<Event>) (List<? extends Event>) program.getEvents(Store.class);
-            Collection<Event> fenceEvents = (List<Event>) (List<? extends Event>) program.getEvents(Fence.class);
+            List<Load> loadEvents = program.getEvents(Load.class);
+            List<Store> storeEvents = program.getEvents(Store.class);
+            List<Fence> fenceEvents = program.getEvents(Fence.class);
             List<Event> events = new ArrayList<>();
             events.addAll(loadEvents);
             events.addAll(storeEvents);
