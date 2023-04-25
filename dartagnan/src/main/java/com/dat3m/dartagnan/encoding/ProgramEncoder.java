@@ -82,7 +82,6 @@ public class ProgramEncoder implements Encoder {
     }
 
     private BooleanFormula encodeThreadCF(Thread thread) {
-        final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 
         Map<Label, Set<CondJump>> labelJumpMap = new HashMap<>();
@@ -93,7 +92,7 @@ public class ProgramEncoder implements Encoder {
             BooleanFormula cfCond = pred == null ? bmgr.makeTrue() : context.controlFlow(pred);
             if (pred instanceof CondJump) {
                 CondJump jump = (CondJump) pred;
-                cfCond = bmgr.and(cfCond, bmgr.not(jump.getGuard().toBoolFormula(jump, fmgr)));
+                cfCond = bmgr.and(cfCond, bmgr.not(context.jumpCondition(jump)));
                 // NOTE: we need to register the actual jumps here, because the
                 // listener sets of labels is too large (it contains old copies)
                 labelJumpMap.computeIfAbsent(jump.getLabel(), key -> new HashSet<>()).add(jump);
@@ -144,13 +143,12 @@ public class ProgramEncoder implements Encoder {
      */
     public BooleanFormula encodeDependencies() {
         logger.info("Encoding dependencies");
-        final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         List<BooleanFormula> enc = new ArrayList<>();
         for(Map.Entry<Event,Map<Register, Dependency.State>> e : dep.getAll()) {
             final Event reader = e.getKey();
             for(Map.Entry<Register, Dependency.State> r : e.getValue().entrySet()) {
-                final Formula value = r.getKey().toIntFormula(reader, fmgr);
+                final Formula value = context.encodeIntegerExpression(reader, r.getKey());
                 final Dependency.State state = r.getValue();
                 List<BooleanFormula> overwrite = new ArrayList<>();
                 for(Event writer : reverse(state.may)) {

@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /*
 The ExecutionModel wraps a Model and extracts data from it in a more workable manner.
@@ -86,7 +87,7 @@ public class ExecutionModel {
     private Map<BigInteger, List<EventData>> coherenceMapView;
 
     private ExecutionModel(EncodingContext c) {
-        this.encodingContext = Preconditions.checkNotNull(c);
+        this.encodingContext = checkNotNull(c);
 
         eventList = new ArrayList<>(100);
         threadList = new ArrayList<>(getProgram().getThreads().size());
@@ -261,7 +262,7 @@ public class ExecutionModel {
             int atomicBegin = -1;
             int localId = 0;
             do {
-                if (!Boolean.TRUE.equals(model.evaluate(encodingContext.execution(e)))) {
+                if (!isTrue(encodingContext.execution(e))) {
                     e = e.getSuccessor();
                     continue;
                 }
@@ -282,7 +283,7 @@ public class ExecutionModel {
 
                 if (e instanceof CondJump) {
                     CondJump jump = (CondJump) e;
-                    if (jump.didJump(model, formulaManager)) {
+                    if (isTrue(encodingContext.jumpCondition(jump))) {
                         e = jump.getLabel();
                         continue;
                     }
@@ -326,7 +327,8 @@ public class ExecutionModel {
         data.setWasExecuted(true);
         if (data.isMemoryEvent()) {
             // ===== Memory Events =====
-        	BigInteger address = ((MemEvent) e).getAddress().getIntValue(e, model, formulaManager);
+            Object addressObject = checkNotNull(model.evaluate(encodingContext.address((MemEvent) e)));
+        	BigInteger address = new BigInteger(addressObject.toString());
             data.setAccessedAddress(address);
             if (!addressReadsMap.containsKey(address)) {
                 addressReadsMap.put(address, new HashSet<>());
@@ -337,7 +339,8 @@ public class ExecutionModel {
                 data.setValue(new BigInteger(model.evaluate(encodingContext.result((RegWriter) e)).toString()));
                 addressReadsMap.get(address).add(data);
             } else if (data.isWrite()) {
-                data.setValue(((MemEvent)e).getMemValue().getIntValue(e, model, formulaManager));
+                Object valueObject = checkNotNull(model.evaluate(encodingContext.value((MemEvent) e)));
+                data.setValue(new BigInteger(valueObject.toString()));
                 addressWritesMap.get(address).add(data);
                 writeReadsMap.put(data, new HashSet<>());
                 if (data.isInit()) {
@@ -354,7 +357,7 @@ public class ExecutionModel {
         } else if (data.isJump()) {
             // ===== Jumps =====
             // We override the meaning of execution here. A jump is executed IFF its condition was true.
-            data.setWasExecuted(((CondJump)e).didJump(model, formulaManager));
+            data.setWasExecuted(isTrue(encodingContext.jumpCondition((CondJump) e)));
         } else {
             //TODO: Maybe add some other events (e.g. assertions)
             // But for now all non-visible events are simply registered without
@@ -464,11 +467,10 @@ public class ExecutionModel {
             for (EventData read : addressedReads.getValue()) {
                 for (EventData write : addressWritesMap.get(address)) {
                     BooleanFormula rfExpr = rf.encode(write.getEvent(), read.getEvent());
-                    // The null check is important: Currently there are cases where no rf-edge between
+                    // The null check in isTrue is important: Currently there are cases where no rf-edge between
                     // init writes and loads get encoded (in case of arrays/structs). This is usually no problem,
                     // since in a well-initialized program, the init write should not be readable anyway.
-					Boolean rfVal = model.evaluate(rfExpr);
-					if (rfVal != null && rfVal) {
+					if (isTrue(rfExpr)) {
                         readWriteMap.put(read, write);
                         read.setReadFrom(write);
                         writeReadsMap.get(write).add(read);
@@ -493,7 +495,7 @@ public class ExecutionModel {
                 for (EventData w1 : writes) {
                     coEdges.put(w1, new ArrayList<>());
                     for (EventData w2 : writes) {
-                        if (Boolean.TRUE.equals(model.evaluate(co.encode(w1.getEvent(), w2.getEvent())))) {
+                        if (isTrue(co.encode(w1.getEvent(), w2.getEvent()))) {
                             coEdges.get(w1).add(w2);
                         }
                     }
@@ -517,5 +519,9 @@ public class ExecutionModel {
             coherenceMap.put(addr, Collections.unmodifiableList(coSortedWrites));
         }
 
+    }
+
+    private boolean isTrue(BooleanFormula formula) {
+        return Boolean.TRUE.equals(model.evaluate(formula));
     }
 }

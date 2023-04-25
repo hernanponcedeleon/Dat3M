@@ -5,8 +5,6 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.event.core.Event;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
 
@@ -151,11 +149,6 @@ public class MemoryObject extends IConst {
     @Override
     public int getPrecision() {
         return getArchPrecision();
-    }
-
-    @Override
-    public BooleanFormula toBoolFormula(Event e, FormulaManager m) {
-        return m.getBooleanFormulaManager().makeTrue();
     }
 
     @Override

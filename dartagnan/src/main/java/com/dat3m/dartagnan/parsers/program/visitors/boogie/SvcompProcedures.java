@@ -173,7 +173,7 @@ public class SvcompProcedures {
 		String registerName = ctx.call_params().Ident(0).getText();
 		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
 	    if(register != null){
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, new BNonDet(register.getPrecision())))
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, new BNonDet()))
 					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	    }
 	}

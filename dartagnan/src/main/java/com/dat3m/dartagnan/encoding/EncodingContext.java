@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
@@ -108,12 +109,20 @@ public final class EncodingContext {
         return booleanFormulaManager;
     }
 
+    public BooleanFormula encodeBooleanExpression(Event event, ExprInterface expression) {
+        return new ExpressionEncoder(formulaManager, event).encodeBoolean(expression);
+    }
+
+    public Formula encodeIntegerExpression(Event event, ExprInterface expression) {
+        return new ExpressionEncoder(formulaManager, event).encodeInteger(expression);
+    }
+
     public BooleanFormula controlFlow(Event event) {
         return controlFlowVariables.get(event);
     }
 
     public BooleanFormula jumpCondition(CondJump event) {
-        return event.getGuard().toBoolFormula(event, formulaManager);
+        return encodeBooleanExpression(event, event.getGuard());
     }
 
     public BooleanFormula execution(Event event) {
@@ -255,8 +264,8 @@ public final class EncodingContext {
             }
             Formula r = e instanceof RegWriter ? ((RegWriter) e).getResultRegister().toIntFormulaResult(e, formulaManager) : null;
             if (e instanceof MemEvent) {
-                addresses.put(e, ((MemEvent) e).getAddress().toIntFormula(e, formulaManager));
-                values.put(e, e instanceof Load ? r : ((MemEvent) e).getMemValue().toIntFormula(e, formulaManager));
+                addresses.put(e, encodeIntegerExpression(e, ((MemEvent) e).getAddress()));
+                values.put(e, e instanceof Load ? r : encodeIntegerExpression(e, ((MemEvent) e).getMemValue()));
             }
             if (r != null) {
                 results.put(e, r);

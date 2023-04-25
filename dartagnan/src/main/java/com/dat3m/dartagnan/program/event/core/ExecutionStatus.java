@@ -1,16 +1,15 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
 
-import java.math.BigInteger;
 import java.util.Map;
 
 public class ExecutionStatus extends Event implements RegWriter {
@@ -55,13 +54,13 @@ public class ExecutionStatus extends Event implements RegWriter {
     public BooleanFormula encodeExec(EncodingContext context) {
         FormulaManager fmgr = context.getFormulaManager();
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-
+        BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
         int precision = register.getPrecision();
         return bmgr.and(super.encodeExec(context),
                 bmgr.implication(context.execution(event),
                         context.equalZero(context.result(this))),
                 bmgr.or(context.execution(event),
-                        context.equal(context.result(this), new IValue(BigInteger.ONE, precision).toIntFormula(this, fmgr))));
+                        context.equal(context.result(this), bvmgr.makeBitvector(1, precision))));
     }
 
     // Unrolling
