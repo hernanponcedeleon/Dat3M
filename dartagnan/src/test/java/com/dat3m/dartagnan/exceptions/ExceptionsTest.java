@@ -17,13 +17,8 @@ import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
-
-import static com.dat3m.dartagnan.utils.TestHelper.createContext;
 
 public class ExceptionsTest {
 
@@ -68,26 +63,6 @@ public class ExceptionsTest {
     public void diffPrecisionInt() throws Exception {
         // Both arguments should have same precision
         new IExprBin(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
-    }
-
-    @Test(expected = RuntimeException.class)
-    public void noModelBNonDet() throws Exception {
-        try (SolverContext ctx = createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-            prover.isUnsat();
-            BNonDet nonDet = new BNonDet(32);
-            nonDet.getBoolValue(null, prover.getModel(), ctx.getFormulaManager());
-        }
-    }
-
-    @Test(expected = RuntimeException.class)
-    public void noModelINonDet() throws Exception {
-        try (SolverContext ctx = createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-            prover.isUnsat();
-            INonDet nonDet = new INonDet(INonDetTypes.INT, 32);
-            nonDet.getIntValue(null, prover.getModel(), ctx.getFormulaManager());
-        }
     }
 
     @Test(expected = NullPointerException.class)
