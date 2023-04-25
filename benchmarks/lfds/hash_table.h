@@ -2,8 +2,27 @@
 #include <assert.h>
 #include <stdbool.h>
 
-// A simple lock-free hash table as described in
-// https://preshing.com/20130605/the-worlds-simplest-lock-free-hash-table/
+/*
+ * A simple lock-free hash table as described in
+ * https://preshing.com/20130605/the-worlds-simplest-lock-free-hash-table/
+ 
+ * Think of each thread as having its own private copy of the shared array. 
+ * Modifications to the shared array will eventually propagate to each 
+ * thread’s private copy, but not necessarily in the same order that they 
+ * were written. Therefore, when get() examines each array entry, its 
+ * private copy of that entry may contain any of the following combinations:
+ 
+ * 1. (0, 0)        The end of the item list. The key passed to get() was not found.
+ * 2. (key, 0)      An item that has not yet been fully initialized by a parallel call 
+ *                  to set(). If the key matches the one passed to get(), 0 is returned, 
+ *                  which is fine.
+ * 3. (key, value)  A fully initialized, valid item in the collection.
+ * 4. (0, value)    Only possible if the stores performed by a single set() call got 
+ *                  reordered either by the compiler or the processor, and have not yet fully 
+ *                  propagated to this thread’s private copy. get() will treat this as the 
+ *                  end of the item list, which means the key passed to get() was not found, 
+ *                  which is fine.
+ */
 
 #ifndef SIZE
 #define SIZE 2

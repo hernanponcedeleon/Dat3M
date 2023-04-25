@@ -12,37 +12,44 @@
 
 #define NTHREADS (SETTERS + GETTERS)
 
-void *setter(void *arg)
+atomic_int x;
+int a,b;
+
+// The hash_table is resilient against memory reordering, but externally, the
+// caller may still need to enforce memory ordering using fence instructions. 
+// For example, if you publicize the availability of some data to other threads 
+// by storing a flag in the collection (MP pattern), you must place release 
+// semantics on that store by issuing a release fence immediately beforehand.
+
+void *thread_1(void *unused)
 {
-    uint32_t value = ((uint32_t) arg);
-	set(value, value);
-    return NULL;
+	atomic_store_explicit(&x, 1, memory_order_relaxed);
+#ifndef FAIL
+	atomic_thread_fence(memory_order_release);
+#endif
+	set(1, 1);
+	return NULL;
 }
 
-void *getter(void *arg)
+void *thread_2(void *unused)
 {
-    uint32_t value = ((uint32_t) arg);
-    uint32_t r = get(value);
-	assert(r == value || r == 0);
-    return NULL;
+	a = get(1);
+	atomic_thread_fence(memory_order_acquire);
+	b = atomic_load_explicit(&x, memory_order_relaxed);
+	return NULL;
 }
 
 int main()
 {
-    pthread_t t[NTHREADS];
+	pthread_t t1, t2;
 
-    init();
+	pthread_create(&t1, NULL, thread_1, NULL);
+	pthread_create(&t2, NULL, thread_2, NULL);
 
-    for (int i = 0; i < SETTERS; i++)
-        pthread_create(&t[i], 0, setter, (void *)i+1);
+	pthread_join(t1, NULL);
+	pthread_join(t2, NULL);
 
-    for (int i = 0; i < GETTERS; i++)
-        pthread_create(&t[SETTERS + i], 0, getter, (void *)i+1);
+	assert(!(a == 1 && b == 0));
 
-    for (int i = 0; i < NTHREADS; i++)
-        pthread_join(t[i], 0);
-
-    assert(count() == SETTERS);
-
-    return 0;
+	return 0;
 }
