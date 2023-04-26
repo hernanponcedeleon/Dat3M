@@ -38,11 +38,15 @@ struct Entry m_entries[SIZE];
 
 inline static uint32_t integerHash(uint32_t h)
 {
+    // Original hash function
 	// h ^= h >> 16;
 	// h *= 0x85ebca6b;
 	// h ^= h >> 13;
 	// h *= 0xc2b2ae35;
 	// h ^= h >> 16;
+
+    // The above causes problems to the SMT solver.
+    // Since this does not affect correctness, we simply use identity.
 	return h;
 }
 
