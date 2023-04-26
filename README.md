@@ -10,7 +10,7 @@
 Requirements
 ======
 * [Maven](https://maven.apache.org/)
-* [Java](https://openjdk.java.net/projects/jdk/16/) 8 or above
+* [Java](https://openjdk.java.net/projects/jdk/16/) 16 or above
 * [Smack](https://github.com/smackers/smack) 2.8.0 or above (only to verify C programs)
 * [Clang](https://clang.llvm.org) the concrete version depends on Smack (only to verify C programs)
 * [Atomic-replace](https://github.com/hernanponcedeleon/Dat3M/tree/master/llvm-passes/atomic-replace) library
