@@ -18,7 +18,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>16</maven.compiler.source>
     <maven.compiler.target>16</maven.compiler.target>
-    <maven.compiler.release>16</maven.compiler.release>
+    <!--<maven.compiler.release>16</maven.compiler.release>-->
     <project.dependency.relativepath>dependency</project.dependency.relativepath>
     <project.dependency.path>${project.build.directory}/${project.dependency.relativepath}</project.dependency.path>
     <argLine>-Djava.library.path=${project.dependency.path}</argLine>
