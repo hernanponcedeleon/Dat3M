@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -58,11 +59,74 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         return booleanFormulaManager.ifThenElse((BooleanFormula) formula, one, zero);
     }
 
+    static BooleanFormula encodeAtom(COpBin op, Formula lhs, Formula rhs, FormulaManager fmgr) {
+        BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+        if (lhs instanceof BooleanFormula && rhs instanceof BooleanFormula) {
+            BooleanFormula b1 = (BooleanFormula) lhs;
+            BooleanFormula b2 = (BooleanFormula) rhs;
+            switch (op) {
+                case EQ:
+                    return bmgr.equivalence(b1, b2);
+                case NEQ:
+                    return bmgr.not(bmgr.equivalence(b1, b2));
+                default:
+                    throw new UnsupportedOperationException("Encoding of COpBin operation" + op + " not supported on boolean formulas.");
+            }
+        }
+        if (lhs instanceof NumeralFormula.IntegerFormula && rhs instanceof NumeralFormula.IntegerFormula) {
+            IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+            NumeralFormula.IntegerFormula i1 = (NumeralFormula.IntegerFormula) lhs;
+            NumeralFormula.IntegerFormula i2 = (NumeralFormula.IntegerFormula) rhs;
+            switch (op) {
+                case EQ:
+                    return imgr.equal(i1, i2);
+                case NEQ:
+                    return bmgr.not(imgr.equal(i1, i2));
+                case LT:
+                case ULT:
+                    return imgr.lessThan(i1, i2);
+                case LTE:
+                case ULTE:
+                    return imgr.lessOrEquals(i1, i2);
+                case GT:
+                case UGT:
+                    return imgr.greaterThan(i1, i2);
+                case GTE:
+                case UGTE:
+                    return imgr.greaterOrEquals(i1, i2);
+            }
+        }
+        if (lhs instanceof BitvectorFormula && rhs instanceof BitvectorFormula) {
+            BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+            BitvectorFormula bv1 = (BitvectorFormula) lhs;
+            BitvectorFormula bv2 = (BitvectorFormula) rhs;
+            switch (op) {
+                case EQ:
+                    return bvmgr.equal(bv1, bv2);
+                case NEQ:
+                    return bmgr.not(bvmgr.equal(bv1, bv2));
+                case LT:
+                case ULT:
+                    return bvmgr.lessThan(bv1, bv2, op.equals(COpBin.LT));
+                case LTE:
+                case ULTE:
+                    return bvmgr.lessOrEquals(bv1, bv2, op.equals(COpBin.LTE));
+                case GT:
+                case UGT:
+                    return bvmgr.greaterThan(bv1, bv2, op.equals(COpBin.GT));
+                case GTE:
+                case UGTE:
+                    return bvmgr.greaterOrEquals(bv1, bv2, op.equals(COpBin.GTE));
+            }
+        }
+        throw new UnsupportedOperationException("Encoding not supported for COpBin: " + lhs + " " + op + " " + rhs);
+    }
+
     @Override
     public Formula visit(Atom atom) {
         Formula lhs = encodeInteger(atom.getLHS());
         Formula rhs = encodeInteger(atom.getRHS());
-        return atom.getOp().encode(lhs, rhs, formulaManager);
+        return encodeAtom(atom.getOp(), lhs, rhs, formulaManager);
     }
 
     @Override

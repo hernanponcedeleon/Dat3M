@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
@@ -115,6 +116,10 @@ public final class EncodingContext {
 
     public Formula encodeIntegerExpression(Event event, ExprInterface expression) {
         return new ExpressionEncoder(formulaManager, event).encodeInteger(expression);
+    }
+
+    public BooleanFormula encodeAtom(COpBin op, Formula lhs, Formula rhs) {
+        return ExpressionEncoder.encodeAtom(op, lhs, rhs, formulaManager);
     }
 
     public BooleanFormula controlFlow(Event event) {
