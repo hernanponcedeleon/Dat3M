@@ -335,7 +335,7 @@
       <activation>
         <os>
           <family>mac</family>
-          <arch>x86</arch>
+          <arch>x86_64</arch>
         </os>
       </activation>
       <id>macos-x86</id>
