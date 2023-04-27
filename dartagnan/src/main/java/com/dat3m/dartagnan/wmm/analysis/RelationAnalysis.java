@@ -195,11 +195,11 @@ public class RelationAnalysis {
             final MemEvent z = (MemEvent) t.getSecond();
             final boolean hasIntermediary = mustOut.apply(x).stream().map(Tuple::getSecond)
                             .anyMatch(y -> y != x && y != z &&
-                                    (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
+                                    (implies(y, x) || implies(y, z)) &&
                                     !k.containsMay(new Tuple(z, y))) ||
                     mustIn.apply(z).stream().map(Tuple::getFirst)
                             .anyMatch(y -> y != x && y != z &&
-                                    (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
+                                    (implies(y, x) || implies(y, z)) &&
                                     !k.containsMay(new Tuple(y, x)));
             if (hasIntermediary) {
                 transCo.add(t);
@@ -806,14 +806,14 @@ public class RelationAnalysis {
                         if (notExclusive(x, f)) {
                             continue;
                         }
-                        boolean implies = enableMustSets && exec.isImplied(x, f);
+                        boolean implies = enableMustSets && implies(f, x);
                         for (Event y : events.subList(i + 1, end)) {
                             if (exclusive(x, y) || exclusive(f, y)) {
                                 continue;
                             }
                             Tuple xy = new Tuple(x, y);
                             may.add(xy);
-                            if (implies || enableMustSets && exec.isImplied(y, f)) {
+                            if (implies || enableMustSets && implies(f, y)) {
                                 must.add(xy);
                             }
                         }
@@ -854,7 +854,7 @@ public class RelationAnalysis {
                                 exclusive(lock, unlock) ||
                                 Stream.concat(mustMap.getOrDefault(lock, Set.of()).stream(),
                                                 mustMap.getOrDefault(unlock, Set.of()).stream())
-                                        .anyMatch(e -> exec.isImplied(lock, e) || exec.isImplied(unlock, e))) {
+                                        .anyMatch(e -> implies(e, lock) || implies(e, unlock))) {
                             continue;
                         }
                         boolean noIntermediary = enableMustSets &&
@@ -917,7 +917,7 @@ public class RelationAnalysis {
                         continue;
                     }
                     int start = IntStream.iterate(end - 1, i -> i >= 0, i -> i - 1)
-                            .filter(i -> exec.isImplied(store, events.get(i)))
+                            .filter(i -> implies(events.get(i), store))
                             .findFirst().orElse(0);
                     List<Event> candidates = events.subList(start, end).stream()
                             .filter(notExclusive(store))
@@ -926,7 +926,7 @@ public class RelationAnalysis {
                     for (int i = 0; i < size; i++) {
                         Event load = candidates.get(i);
                         List<Event> intermediaries = candidates.subList(i + 1, size);
-                        if (!load.is(READ) || intermediaries.stream().anyMatch(e -> exec.isImplied(load, e))) {
+                        if (!load.is(READ) || intermediaries.stream().anyMatch(e -> implies(e, load))) {
                             continue;
                         }
                         Tuple tuple = new Tuple(load, store);
@@ -1020,7 +1020,7 @@ public class RelationAnalysis {
                         for (MemEvent w2 : possibleWrites.subList(i + 1, possibleWrites.size())) {
                             // w2 dominates w1 if it aliases with it and it is guaranteed to execute if either w1 or the read are
                             // executed
-                            if ((exec.isImplied(w1, w2) || exec.isImplied(read, w2))
+                            if ((implies(w2, w1) || implies(w2, read))
                                     && (alias.mustAlias(w1, w2) || alias.mustAlias(w2, read))) {
                                 deletedWrites.add(w1);
                                 break;
@@ -1061,7 +1061,7 @@ public class RelationAnalysis {
                         // then the read won't be able to read any external writes
                         boolean hasImpliedWrites = writes.stream()
                                 .anyMatch(w -> w.getGlobalId() < r.getGlobalId()
-                                        && exec.isImplied(r, w) && alias.mustAlias(r, w));
+                                        && implies(w, r) && alias.mustAlias(r, w));
                         if (hasImpliedWrites) {
                             may.removeIf(t -> t.getSecond() == r && t.isCrossThread());
                         }
@@ -1194,9 +1194,9 @@ public class RelationAnalysis {
                 for (Tuple t : enableMustSets ? must : Set.<Tuple>of()) {
                     Event e1 = t.getFirst();
                     Event e = t.getSecond();
-                    boolean implies = exec.isImplied(e1, e);
+                    boolean implies = implies(e, e1);
                     for (Event e2 : mustMap.getOrDefault(e, List.of())) {
-                        if ((implies || exec.isImplied(e2, e)) && notExclusive(e1, e2)) {
+                        if ((implies || implies(e, e2)) && notExclusive(e1, e2)) {
                             mustSet.add(new Tuple(e1, e2));
                         }
                     }
@@ -1217,9 +1217,9 @@ public class RelationAnalysis {
                 for (Tuple t : enableMustSets ? must : Set.<Tuple>of()) {
                     Event e2 = t.getSecond();
                     Event e = t.getFirst();
-                    boolean implies = exec.isImplied(e2, e);
+                    boolean implies = implies(e, e2);
                     for (Event e1 : mustMap.getOrDefault(e, List.of())) {
-                        if ((implies || exec.isImplied(e1, e)) && notExclusive(e1, e2)) {
+                        if ((implies || implies(e, e1)) && notExclusive(e1, e2)) {
                             mustSet.add(new Tuple(e1, e2));
                         }
                     }
@@ -1236,7 +1236,7 @@ public class RelationAnalysis {
                     maySet.add(new Tuple(t.getFirst(), t.getFirst()));
                 }
                 for (Tuple t : enableMustSets ? must : Set.<Tuple>of()) {
-                    if (exec.isImplied(t.getFirst(), t.getSecond())) {
+                    if (implies(t.getSecond(), t.getFirst())) {
                         mustSet.add(new Tuple(t.getFirst(), t.getFirst()));
                     }
                 }
@@ -1253,7 +1253,7 @@ public class RelationAnalysis {
                     maySet.add(new Tuple(t.getSecond(), t.getSecond()));
                 }
                 for (Tuple t : enableMustSets ? must : Set.<Tuple>of()) {
-                    if (exec.isImplied(t.getSecond(), t.getFirst())) {
+                    if (implies(t.getFirst(), t.getSecond())) {
                         mustSet.add(new Tuple(t.getSecond(), t.getSecond()));
                     }
                 }
@@ -1300,10 +1300,10 @@ public class RelationAnalysis {
                     for (Tuple tuple : current) {
                         Event e1 = tuple.getFirst();
                         Event e = tuple.getSecond();
-                        boolean implies = exec.isImplied(e1, e);
+                        boolean implies = implies(e, e1);
                         for (Event e2 : mustMap.getOrDefault(e, List.of())) {
                             Tuple t = new Tuple(e1, e2);
-                            if (!k.containsMust(t) && !mustSet.contains(t) && (implies || exec.isImplied(e2, e)) && notExclusive(e1, e2)) {
+                            if (!k.containsMust(t) && !mustSet.contains(t) && (implies || implies(e, e2)) && notExclusive(e1, e2)) {
                                 next.add(t);
                             }
                         }
@@ -1406,10 +1406,10 @@ public class RelationAnalysis {
                 for (Tuple xz : disabled) {
                     Event x = xz.getFirst();
                     Event z = xz.getSecond();
-                    boolean implies = exec.isImplied(x, z);
-                    boolean implied = exec.isImplied(z, x);
+                    boolean implies = implies(z, x);
+                    boolean implied = implies(x, z);
                     for (Event y : mustOut1.getOrDefault(x, List.of())) {
-                        if (implied || exec.isImplied(y, x)) {
+                        if (implied || implies(x, y)) {
                             Tuple yz = new Tuple(y, z);
                             if (k2.containsMay(yz)) {
                                 d2.add(yz);
@@ -1417,7 +1417,7 @@ public class RelationAnalysis {
                         }
                     }
                     for (Event y : mustIn2.getOrDefault(z, List.of())) {
-                        if (implies || exec.isImplied(y, z)) {
+                        if (implies || implies(z, y)) {
                             Tuple xy = new Tuple(x, y);
                             if (k1.containsMay(xy)) {
                                 d1.add(xy);
@@ -1445,18 +1445,18 @@ public class RelationAnalysis {
                 for (Tuple xy : enabled) {
                     Event x = xy.getFirst();
                     Event y = xy.getSecond();
-                    boolean implied = exec.isImplied(y, x);
-                    boolean implies = exec.isImplied(x, y);
+                    boolean implied = implies(x, y);
+                    boolean implies = implies(y, x);
                     for (Event z : mayOut2.getOrDefault(y, List.of())) {
                         if (exclusive(x, z)) {
                             continue;
                         }
                         Tuple xz = new Tuple(x, z);
                         Tuple yz = new Tuple(y, z);
-                        if ((implies || exec.isImplied(z, y)) && k2.containsMust(yz)) {
+                        if ((implies || implies(y, z)) && k2.containsMust(yz)) {
                             e0.add(xz);
                         }
-                        if ((implied || exec.isImplied(z, x)) && !k0.containsMay(xz)) {
+                        if ((implied || implies(x, z)) && !k0.containsMay(xz)) {
                             d2.add(yz);
                         }
                     }
@@ -1481,18 +1481,18 @@ public class RelationAnalysis {
                 for (Tuple xy : enabled) {
                     Event x = xy.getFirst();
                     Event y = xy.getSecond();
-                    boolean implied = exec.isImplied(y, x);
-                    boolean implies = exec.isImplied(x, y);
+                    boolean implied = implies(x, y);
+                    boolean implies = implies(y, x);
                     for (Event w : mayIn1.getOrDefault(x, List.of())) {
                         if (exclusive(w, y)) {
                             continue;
                         }
                         Tuple wx = new Tuple(w, x);
                         Tuple wy = new Tuple(w, y);
-                        if ((implied || exec.isImplied(w, x)) && k1.containsMust(wx)) {
+                        if ((implied || implies(x, w)) && k1.containsMust(wx)) {
                             e0.add(wy);
                         }
-                        if ((implies || exec.isImplied(w, y)) && !k0.containsMay(wy)) {
+                        if ((implies || implies(y, w)) && !k0.containsMay(wy)) {
                             d1.add(wx);
                         }
                     }
@@ -1556,18 +1556,18 @@ public class RelationAnalysis {
                     }
                     Event x = xy.getFirst();
                     Event y = xy.getSecond();
-                    boolean implied = exec.isImplied(y, x);
-                    boolean implies = exec.isImplied(x, y);
+                    boolean implied = implies(x, y);
+                    boolean implies = implies(y, x);
                     for (Event z : mayOut0.getOrDefault(y, List.of())) {
                         if (exclusive(x, z)) {
                             continue;
                         }
                         Tuple xz = new Tuple(x, z);
                         Tuple yz = new Tuple(y, z);
-                        if ((implies || exec.isImplied(z, y)) && k0.containsMust(yz)) {
+                        if ((implies || implies(y, z)) && k0.containsMust(yz)) {
                             e0.add(xz);
                         }
-                        if ((implied || exec.isImplied(z, x)) && !k0.containsMay(xz)) {
+                        if ((implied || implies(x, z)) && !k0.containsMay(xz)) {
                             d0.add(yz);
                         }
                     }
@@ -1584,10 +1584,10 @@ public class RelationAnalysis {
                     }
                     Event x = xz.getFirst();
                     Event z = xz.getSecond();
-                    boolean implied = exec.isImplied(z, x);
-                    boolean implies = exec.isImplied(x, z);
+                    boolean implied = implies(x, z);
+                    boolean implies = implies(z, x);
                     for (Event y : mustOut1.getOrDefault(x, List.of())) {
-                        if (implied || exec.isImplied(y, x)) {
+                        if (implied || implies(x, y)) {
                             Tuple yz = new Tuple(y, z);
                             if (k0.containsMay(yz)) {
                                 d0.add(yz);
@@ -1595,7 +1595,7 @@ public class RelationAnalysis {
                         }
                     }
                     for (Event y : mustIn0.getOrDefault(z, List.of())) {
-                        if (implies || exec.isImplied(y, z)) {
+                        if (implies || implies(z, y)) {
                             Tuple xy = new Tuple(x, y);
                             if (k1.containsMay(xy)) {
                                 d1.add(xy);
@@ -1609,18 +1609,18 @@ public class RelationAnalysis {
                     }
                     Event y = yz.getFirst();
                     Event z = yz.getSecond();
-                    boolean implied = exec.isImplied(z, y);
-                    boolean implies = exec.isImplied(y, z);
+                    boolean implied = implies(y, z);
+                    boolean implies = implies(z, y);
                     for (Event x : mayIn1.getOrDefault(y, List.of())) {
                         if (exclusive(x, z)) {
                             continue;
                         }
                         Tuple xy = new Tuple(x, y);
                         Tuple xz = new Tuple(x, z);
-                        if ((implied || exec.isImplied(x, y)) && k1.containsMust(xy)) {
+                        if ((implied || implies(y, x)) && k1.containsMust(xy)) {
                             e0.add(xz);
                         }
-                        if ((implies || exec.isImplied(x, z)) && !k0.containsMay(xz)) {
+                        if ((implies || implies(z, x)) && !k0.containsMay(xz)) {
                             d1.add(xy);
                         }
                     }
@@ -1713,6 +1713,10 @@ public class RelationAnalysis {
         for (Tuple t : set) {
             map.computeIfAbsent(t.getFirst(), x -> new ArrayList<>()).add(t.getSecond());
         }
+    }
+
+    private boolean implies(Event y, Event z) {
+        return exec.isImplied(z, y);
     }
 
     private boolean exclusive(Event first, Event second) {
