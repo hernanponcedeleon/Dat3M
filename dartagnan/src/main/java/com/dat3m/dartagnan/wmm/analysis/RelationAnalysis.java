@@ -351,12 +351,12 @@ public class RelationAnalysis {
             Set<Tuple> mustSet = must.isEmpty() || l.get(0).must == must ? must : new HashSet<>();
             for (Delta d : l) {
                 for (Tuple t : d.may) {
-                    if (may.add(t)) {
+                    if (!mayImplicit.contains(t) && may.add(t)) {
                         maySet.add(t);
                     }
                 }
                 for (Tuple t : d.must) {
-                    if (must.add(t)) {
+                    if (!mustImplicit.contains(t) && must.add(t)) {
                         mustSet.add(t);
                     }
                 }
@@ -369,12 +369,14 @@ public class RelationAnalysis {
             Set<Tuple> enableSet = new HashSet<>();
             for (ExtendedDelta d : l) {
                 for (Tuple t : Set.copyOf(d.disabled)) {
+                    checkState(!mayImplicit.contains(t),
+                            "Contradiction with implicit knowledge about tuple %s", t);
                     if (may.remove(t)) {
                         disableSet.add(t);
                     }
                 }
                 for (Tuple t : Set.copyOf(d.enabled)) {
-                    if (must.add(t)) {
+                    if (!mustImplicit.contains(t) && must.add(t)) {
                         enableSet.add(t);
                     }
                 }
