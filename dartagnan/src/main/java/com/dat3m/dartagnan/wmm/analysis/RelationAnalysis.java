@@ -572,7 +572,7 @@ public class RelationAnalysis {
             if (!domain.apply(event)) {
                 return List.of();
             }
-            return range.stream().filter(notExclusive(event)).collect(toList());
+            return range.stream().filter(notExclusive(event)).toList();
         }
 
         @Override
@@ -1870,8 +1870,8 @@ public class RelationAnalysis {
         }
     }
 
-    private boolean implies(Event y, Event z) {
-        return exec.isImplied(z, y);
+    private boolean implies(Event premised, Event concluded) {
+        return exec.isImplied(concluded, premised);
     }
 
     private boolean exclusive(Event first, Event second) {
