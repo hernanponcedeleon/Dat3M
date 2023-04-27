@@ -469,6 +469,11 @@ public class RelationAnalysis {
                     public int size() {
                         return events.size() * events.size();
                     }
+                    @Override
+                    public boolean contains(Object o) {
+                        // Assume both events are in this program.
+                        return o instanceof Tuple;
+                    }
                 };
                 Function<Event, Collection<Event>> full = e -> events;
                 Function<Event, Collection<Event>> empty = e -> Set.of();
@@ -479,19 +484,70 @@ public class RelationAnalysis {
         public Knowledge visitDefinition(Relation r, List<? extends Relation> d) {
             return defaultKnowledge != null && !r.isInternal() ? defaultKnowledge : new Knowledge(new HashSet<>(), new HashSet<>());
         }
+
+        private final class ProductSet extends AbstractSet<Tuple> {
+
+            private final FilterAbstract domain;
+            private final FilterAbstract range;
+            private final List<Event> domainEvents;
+            private final List<Event> rangeEvents;
+
+            private ProductSet(FilterAbstract d, FilterAbstract r, List<Event> domainEvents, List<Event> rangeEvents) {
+                domain = d;
+                range = r;
+                this.domainEvents = domainEvents;
+                this.rangeEvents = rangeEvents;
+            }
+
+            @Override
+            public Iterator<Tuple> iterator() {
+                return domainEvents.stream()
+                        .flatMap(x -> rangeEvents.stream()
+                                .filter(y -> !exec.areMutuallyExclusive(x, y))
+                                .map(y -> new Tuple(x, y)))
+                        .iterator();
+            }
+
+            @Override
+            public int size() {
+                return domainEvents.stream()
+                        .mapToInt(x -> (int) rangeEvents.stream()
+                                .filter(y -> !exec.areMutuallyExclusive(x, y))
+                                .count())
+                        .sum();
+            }
+
+            @Override
+            public boolean contains(Object o) {
+                if (!(o instanceof Tuple)) {
+                    return false;
+                }
+                Tuple tuple = (Tuple) o;
+                return domain.filter(tuple.getFirst()) &&
+                        range.filter(tuple.getSecond()) &&
+                        !exec.areMutuallyExclusive(tuple.getFirst(), tuple.getSecond());
+            }
+        }
+
+        private List<Event> getIfNotExcluded(Event event, List<Event> range, FilterAbstract domain) {
+            if (!domain.filter(event)) {
+                return List.of();
+            }
+            return range.stream()
+                    .filter(e -> !exec.areMutuallyExclusive(event, e))
+                    .collect(toList());
+        }
+
         @Override
         public Knowledge visitProduct(Relation rel, FilterAbstract domain, FilterAbstract range) {
-            Set<Tuple> must = new HashSet<>();
-            List<Event> l1 = program.getEvents().stream().filter(domain::filter).collect(toList());
-            List<Event> l2 = program.getEvents().stream().filter(range::filter).collect(toList());
-            for (Event e1 : l1) {
-                for (Event e2 : l2) {
-                    if (!exec.areMutuallyExclusive(e1, e2)) {
-                        must.add(new Tuple(e1, e2));
-                    }
-                }
-            }
-            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
+            List<Event> domainEvents = program.getEvents().stream().filter(domain::filter).collect(toList());
+            List<Event> rangeEvents = program.getEvents().stream().filter(range::filter).collect(toList());
+            Set<Tuple> set = new ProductSet(domain, range, domainEvents, rangeEvents);
+            Function<Event, Collection<Event>> mayIn = e -> getIfNotExcluded(e, domainEvents, range);
+            Function<Event, Collection<Event>> mayOut = e -> getIfNotExcluded(e, rangeEvents, domain);
+            Function<Event, Collection<Event>> mustIn = enableMustSets ? mayIn : e -> List.of();
+            Function<Event, Collection<Event>> mustOut = enableMustSets ? mayOut : e -> List.of();
+            return new Knowledge(set, enableMustSets ? set : EMPTY_SET, mayIn, mayOut, mustIn, mustOut);
         }
         @Override
         public Knowledge visitIdentity(Relation rel, FilterAbstract set) {
