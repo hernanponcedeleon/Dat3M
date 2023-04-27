@@ -626,20 +626,60 @@ public class RelationAnalysis {
             Function<Event, Collection<Event>> mustInOut = enableMustSets ? mayInOut : e -> Set.of();
             return new Knowledge(view, enableMustSets ? view : EMPTY_SET, mayInOut, mayInOut, mustInOut, mustInOut);
         }
-        @Override
-        public Knowledge visitInternal(Relation rel) {
-            Set<Tuple> must = new HashSet<>();
-            for (Thread t : program.getThreads()) {
-                List<Event> events = visibleEvents(t);
-                for (Event e1 : events) {
-                    for (Event e2 : events) {
-                        if (!exec.areMutuallyExclusive(e1, e2)) {
-                            must.add(new Tuple(e1, e2));
-                        }
+
+        private final class InternalSet extends AbstractSet<Tuple> {
+
+            @Override
+            public Iterator<Tuple> iterator() {
+                return program.getThreads().stream()
+                        .map(RelationAnalysis::visibleEvents)
+                        .flatMap(t -> t.stream()
+                                .flatMap(x -> t.stream()
+                                        .filter(y -> !exec.areMutuallyExclusive(x, y))
+                                        .map(y -> new Tuple(x ,y))))
+                        .iterator();
+            }
+
+            @Override
+            public int size() {
+                // Note that areMutuallyExclusive is symmetric
+                int sum = 0;
+                for (Thread thread : program.getThreads()) {
+                    List<Event> events = visibleEvents(thread);
+                    for (int i = 0; i < events.size(); i++) {
+                        Event event = events.get(i);
+                        long count = events.subList(0, i).stream().filter(e -> !exec.areMutuallyExclusive(event, e)).count();
+                        sum += 1 + 2 * (int) count;
                     }
                 }
+                return sum;
             }
-            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
+
+            @Override
+            public boolean contains(Object o) {
+                if (!(o instanceof Tuple)) {
+                    return false;
+                }
+                Tuple tuple = (Tuple) o;
+                return tuple.isSameThread() && !exec.areMutuallyExclusive(tuple.getFirst(), tuple.getSecond());
+            }
+        }
+
+        private List<Event> getInternal(Event x) {
+            if (!x.is(VISIBLE)) {
+                return List.of();
+            }
+            return x.getThread().getEvents().stream()
+                    .filter(y -> y.is(VISIBLE) && !exec.areMutuallyExclusive(x, y))
+                    .collect(toList());
+        }
+
+        @Override
+        public Knowledge visitInternal(Relation rel) {
+            Set<Tuple> view = new InternalSet();
+            Function<Event, Collection<Event>> may = this::getInternal;
+            Function<Event, Collection<Event>> must = enableMustSets ? may : e -> List.of();
+            return new Knowledge(view, enableMustSets ? view : EMPTY_SET, may, may, must, must);
         }
         @Override
         public Knowledge visitProgramOrder(Relation rel, FilterAbstract type) {
