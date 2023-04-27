@@ -25,6 +25,7 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.google.common.collect.Comparators;
 import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,6 +37,7 @@ import org.sosy_lab.common.configuration.Options;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Arch.RISCV;
@@ -44,13 +46,13 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.Lists.reverse;
 import static com.google.common.collect.Sets.difference;
 import static com.google.common.collect.Sets.intersection;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-import static java.util.stream.IntStream.iterate;
 
 @Options
 public class RelationAnalysis {
@@ -681,23 +683,77 @@ public class RelationAnalysis {
             Function<Event, Collection<Event>> must = enableMustSets ? may : e -> List.of();
             return new Knowledge(view, enableMustSets ? view : EMPTY_SET, may, may, must, must);
         }
-        @Override
-        public Knowledge visitProgramOrder(Relation rel, FilterAbstract type) {
-            Set<Tuple> must = new HashSet<>();
-            for (Thread t : program.getThreads()) {
-                List<Event> events = t.getEvents().stream().filter(type::filter).collect(toList());
-                for (int i = 0; i < events.size(); i++) {
-                    Event e1 = events.get(i);
-                    for (int j = i + 1; j < events.size(); j++) {
-                        Event e2 = events.get(j);
-                        if (!exec.areMutuallyExclusive(e1, e2)) {
-                            must.add(new Tuple(e1, e2));
-                        }
+
+        private final class ProgramOrderSet extends AbstractSet<Tuple> {
+
+            private final FilterAbstract domain;
+
+            private ProgramOrderSet(FilterAbstract d) {
+                domain = d;
+            }
+
+            @Override
+            public Iterator<Tuple> iterator() {
+                return program.getThreads().stream()
+                        .map(t -> t.getEvents().stream().filter(domain::filter).collect(toList()))
+                        .flatMap(t -> IntStream.range(0, t.size())
+                                .mapToObj(i -> t.subList(0, i).stream()
+                                        .filter(x -> !exec.areMutuallyExclusive(t.get(i), x))
+                                        .map(x -> new Tuple(x, t.get(i))))
+                                .flatMap(s -> s))
+                        .iterator();
+            }
+
+            @Override
+            public int size() {
+                int sum = 0;
+                for (Thread thread : program.getThreads()) {
+                    List<Event> events = visibleEvents(thread);
+                    for (int i = 0; i < events.size(); i++) {
+                        Event event = events.get(i);
+                        sum += (int) events.subList(0, i).stream().filter(e -> !exec.areMutuallyExclusive(event, e)).count();
                     }
                 }
+                return sum;
             }
-            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
+
+            @Override
+            public boolean contains(Object o) {
+                if (!(o instanceof Tuple)) {
+                    return false;
+                }
+                Tuple tuple = (Tuple) o;
+                return tuple.isForward() &&
+                        domain.filter(tuple.getFirst()) &&
+                        domain.filter(tuple.getSecond()) &&
+                        !exec.areMutuallyExclusive(tuple.getFirst(), tuple.getSecond());
+            }
         }
+
+        private List<Event> getProgramOrderedBefore(Event event) {
+            List<Event> events = event.getThread().getEvents();
+            return events.subList(0, getThreadIndex(event, events)).stream()
+                    .filter(other -> !exec.areMutuallyExclusive(event, other))
+                    .collect(toList());
+        }
+
+        private List<Event> getProgramOrderedAfter(Event event) {
+            List<Event> events = event.getThread().getEvents();
+            return events.subList(getThreadIndex(event, events) + 1, events.size()).stream()
+                    .filter(other -> !exec.areMutuallyExclusive(event, other))
+                    .collect(toList());
+        }
+
+        @Override
+        public Knowledge visitProgramOrder(Relation rel, FilterAbstract type) {
+            Set<Tuple> view = new ProgramOrderSet(type);
+            Function<Event, Collection<Event>> mayIn = this::getProgramOrderedBefore;
+            Function<Event, Collection<Event>> mayOut = this::getProgramOrderedAfter;
+            Function<Event, Collection<Event>> mustIn = enableMustSets ? mayIn : e -> List.of();
+            Function<Event, Collection<Event>> mustOut = enableMustSets ? mayOut : e -> List.of();
+            return new Knowledge(view, enableMustSets ? view : EMPTY_SET, mayIn, mayOut, mustIn, mustOut);
+        }
+
         @Override
         public Knowledge visitControl(Relation rel) {
             //TODO: We can restrict the codomain to visible events as the only usage of this Relation is in
@@ -861,7 +917,7 @@ public class RelationAnalysis {
                     if (!store.is(WRITE)) {
                         continue;
                     }
-                    int start = iterate(end - 1, i -> i >= 0, i -> i - 1)
+                    int start = IntStream.iterate(end - 1, i -> i >= 0, i -> i - 1)
                             .filter(i -> exec.isImplied(store, events.get(i)))
                             .findFirst().orElse(0);
                     List<Event> candidates = events.subList(start, end).stream()
@@ -1594,6 +1650,12 @@ public class RelationAnalysis {
 
     private static List<Event> visibleEvents(Thread t) {
         return t.getEvents().stream().filter(e -> e.is(VISIBLE)).collect(toList());
+    }
+
+    private static int getThreadIndex(Event event, List<Event> thread) {
+        checkState(Comparators.isInStrictOrder(thread, Comparator.naturalOrder()),
+                "Unordered thread %s" ,event.getThread().getId());
+        return Collections.binarySearch(thread, event);
     }
 
     private static Collection<Tuple> inOutSet(Collection<Tuple> explicits, Collection<Event> set, Event event, boolean in) {
