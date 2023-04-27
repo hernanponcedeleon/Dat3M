@@ -80,6 +80,15 @@ public class LFDSTest extends AbstractCTest {
                 // We only have two instances to make the CI faster
                 {"safe_stack", TSO, FAIL},
                 {"safe_stack", ARM8, FAIL},
+                {"hash_table", TSO, PASS},
+                {"hash_table", ARM8, PASS},
+                {"hash_table", POWER, PASS},
+                {"hash_table", RISCV, PASS},
+                // MP is correct under TSO
+                {"hash_table-fail", TSO, PASS},
+                {"hash_table-fail", ARM8, FAIL},
+                {"hash_table-fail", POWER, FAIL},
+                {"hash_table-fail", RISCV, FAIL},
         });
     }
 
