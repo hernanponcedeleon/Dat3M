@@ -456,14 +456,23 @@ public class RelationAnalysis {
             if (enable) {
                 defaultKnowledge = null;
             } else {
-                Set<Tuple> may = new HashSet<>();
                 List<Event> events = program.getEvents().stream().filter(e -> e.is(VISIBLE)).collect(toList());
-                for (Event x : events) {
-                    for (Event y : events) {
-                        may.add(new Tuple(x, y));
+                Set<Tuple> may = new AbstractSet<>() {
+                    @Override
+                    public Iterator<Tuple> iterator() {
+                        return events.stream()
+                                .flatMap(x -> events.stream()
+                                        .map(y -> new Tuple(x, y)))
+                                .iterator();
                     }
-                }
-                defaultKnowledge = new Knowledge(may, EMPTY_SET);
+                    @Override
+                    public int size() {
+                        return events.size() * events.size();
+                    }
+                };
+                Function<Event, Collection<Event>> full = e -> events;
+                Function<Event, Collection<Event>> empty = e -> Set.of();
+                defaultKnowledge = new Knowledge(may, EMPTY_SET, full, full, empty, empty);
             }
         }
         @Override
@@ -494,25 +503,72 @@ public class RelationAnalysis {
             }
             return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
+
+        private final class ExternalSet extends AbstractSet<Tuple> {
+
+            @Override
+            public Iterator<Tuple> iterator() {
+                // No test for exec.areMutuallyExclusive, since that currently does not span across threads.
+                // This stream-based approach might be more expensive than writing an own iterator.
+                List<Thread> threads = program.getThreads();
+                return threads.stream()
+                        .flatMap(t1 -> threads.stream()
+                                .filter(t2 -> !t1.equals(t2))
+                                .flatMap(t2 -> visibleEvents(t2).stream()
+                                        .flatMap(y -> visibleEvents(t1).stream()
+                                                .map(x -> new Tuple(x, y)))))
+                        .iterator();
+            }
+
+            @Override
+            public int size() {
+                int sum = 0;
+                int excluded = 0;
+                for (Thread thread : program.getThreads()) {
+                    int size = visibleEvents(thread).size();
+                    sum += size;
+                    excluded += size * size;
+                }
+                return sum * sum - excluded;
+            }
+
+            @Override
+            public boolean contains(Object o) {
+                // Assume both events are in this program.
+                return o instanceof Tuple && ((Tuple) o).isCrossThread();
+            }
+        }
+
+        private final class ExternalOutSet extends AbstractCollection<Event> {
+
+            private final Thread thread;
+
+            private ExternalOutSet(Event e) {
+                thread = e.getThread();
+            }
+
+            @Override
+            public Iterator<Event> iterator() {
+                // No test for exec.areMutuallyExclusive, since that currently does not span across threads.
+                return program.getThreads().stream().filter(t -> !thread.equals(t))
+                        .flatMap(t -> visibleEvents(t).stream())
+                        .iterator();
+            }
+
+            @Override
+            public int size() {
+                return program.getThreads().stream()
+                        .filter(t -> !thread.equals(t)).mapToInt(t -> visibleEvents(t).size())
+                        .sum();
+            }
+        }
+
         @Override
         public Knowledge visitExternal(Relation rel) {
-            Set<Tuple> must = new HashSet<>();
-            List<Thread> threads = program.getThreads();
-            for (int i = 0; i < threads.size(); i++) {
-                Thread t1 = threads.get(i);
-                List<Event> visible1 = visibleEvents(t1);
-                for (int j = i + 1; j < threads.size(); j++) {
-                    Thread t2 = threads.get(j);
-                    for (Event e2 : visibleEvents(t2)) {
-                        for (Event e1 : visible1) {
-                            // No test for exec.areMutuallyExclusive, since that currently does not span across threads
-                            must.add(new Tuple(e1, e2));
-                            must.add(new Tuple(e2, e1));
-                        }
-                    }
-                }
-            }
-            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
+            Set<Tuple> view = new ExternalSet();
+            Function<Event, Collection<Event>> mayInOut = ExternalOutSet::new;
+            Function<Event, Collection<Event>> mustInOut = enableMustSets ? mayInOut : e -> Set.of();
+            return new Knowledge(view, enableMustSets ? view : EMPTY_SET, mayInOut, mayInOut, mustInOut, mustInOut);
         }
         @Override
         public Knowledge visitInternal(Relation rel) {
