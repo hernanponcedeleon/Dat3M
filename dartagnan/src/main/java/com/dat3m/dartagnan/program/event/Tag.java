@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.event;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 public final class Tag {
     private Tag() { }
 
@@ -267,10 +270,12 @@ public final class Tag {
     // =============================================================================================
     public static final class PTX {
         private PTX() {}
+        public static final String PTX = "PTX";
 
         public static final String CTA = "CTA";
         public static final String GPU = "GPU";
         public static final String SYS = "SYS";
+        public static final String[] SCOPES = new String[]{SYS, GPU, CTA};
 
         public static final String WEAK = "WEAK";
         public static final String RLX = "RLX"; // RELAXED

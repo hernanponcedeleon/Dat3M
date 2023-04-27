@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
@@ -864,7 +863,7 @@ public class RelationAnalysis {
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
         @Override
-        public Knowledge visitSameScope(Relation rel) {
+        public Knowledge visitSameScope(Relation rel, ArrayList<String> scopes) {
             Set<Tuple> must = new HashSet<>();
             List<Load> loadEvents = program.getEvents(Load.class);
             List<Store> storeEvents = program.getEvents(Store.class);
@@ -875,7 +874,7 @@ public class RelationAnalysis {
             events.addAll(fenceEvents);
             for (Event e1 : events) {
                 for (Event e2 : events) {
-                    if (mustScope(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (mustSameScope(e1, e2, scopes) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -938,7 +937,7 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitSameCTA(Relation rel) {
+        public Knowledge visitSameSpecificScope(Relation rel, ArrayList<String> scopes, String specificScope) {
             Set<Tuple> must = new HashSet<>();
             List<Load> loadEvents = program.getEvents(Load.class);
             List<Store> storeEvents = program.getEvents(Store.class);
@@ -949,7 +948,7 @@ public class RelationAnalysis {
             events.addAll(fenceEvents);
             for (Event e1 : events) {
                 for (Event e2 : events) {
-                    if (onSameScope(e1, e2, Tag.PTX.CTA) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (sameHigherScope(e1, e2, scopes, specificScope) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -997,37 +996,36 @@ public class RelationAnalysis {
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
 
-        private boolean mustScope(Event first, Event second) {
-            String firstScope = getValidScope(first);
-            String secondScope = getValidScope(second);
+        private boolean mustSameScope(Event first, Event second, ArrayList<String> scopes) {
+            String firstScope = getValidScope(first, scopes);
+            String secondScope = getValidScope(second, scopes);
             if (firstScope == null || secondScope == null) {
                 return false; // proxy fence
             }
             if (!firstScope.equals(secondScope)) {
                 return false;
             }
-            if (firstScope.equals(Tag.PTX.SYS)) {
-                return true;
-            } else if (firstScope.equals(Tag.PTX.GPU)) {
-                return onSameScope(first, second, Tag.PTX.GPU);
-            } else if (firstScope.equals(Tag.PTX.CTA)) {
-                boolean ctaEquality = onSameScope(first, second, Tag.PTX.CTA);
-                boolean gpuEquality = onSameScope(first, second, Tag.PTX.GPU);
-                return ctaEquality && gpuEquality;
-            }
-            return false;
+            return sameHigherScope(first, second, scopes, firstScope);
         }
 
-        private String getValidScope(Event event) {
-            if (event.is(Tag.PTX.SYS)) {
-                return Tag.PTX.SYS;
-            } else if (event.is(Tag.PTX.GPU)) {
-                return Tag.PTX.GPU;
-            } else if (event.is(Tag.PTX.CTA)) {
-                return Tag.PTX.CTA;
-            } else {
-                return null;
+        private boolean sameHigherScope(Event first, Event second, ArrayList<String> scopes, String flag) {
+            int validIndex = scopes.indexOf(flag);
+            for (int i = 1; i <= validIndex; i++) {
+                String scope = scopes.get(i);
+                if (!onSameScope(first, second, scope)) {
+                    return false;
+                }
             }
+            return true;
+        }
+
+        private String getValidScope(Event event, ArrayList<String> scopes) {
+            for (String scope : scopes) {
+                if (event.is(scope)) {
+                    return scope;
+                }
+            }
+            return null;
         }
 
         private boolean onSameScope(Event first, Event second, String scope) {
@@ -1043,7 +1041,6 @@ public class RelationAnalysis {
         }
 
         private int getScopeID(Set<String> filters, String scope) {
-            // scope == CTA | GPU
             int result = -1;
             for (String filter: filters) {
                 if (filter.equals(scope)) {
