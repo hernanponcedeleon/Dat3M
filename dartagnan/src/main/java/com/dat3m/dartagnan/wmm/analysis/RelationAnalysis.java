@@ -36,6 +36,7 @@ import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -505,7 +506,7 @@ public class RelationAnalysis {
             public Iterator<Tuple> iterator() {
                 return domainEvents.stream()
                         .flatMap(x -> rangeEvents.stream()
-                                .filter(y -> !exec.areMutuallyExclusive(x, y))
+                                .filter(notExclusive(x))
                                 .map(y -> new Tuple(x, y)))
                         .iterator();
             }
@@ -514,7 +515,7 @@ public class RelationAnalysis {
             public int size() {
                 return domainEvents.stream()
                         .mapToInt(x -> (int) rangeEvents.stream()
-                                .filter(y -> !exec.areMutuallyExclusive(x, y))
+                                .filter(notExclusive(x))
                                 .count())
                         .sum();
             }
@@ -527,7 +528,7 @@ public class RelationAnalysis {
                 Tuple tuple = (Tuple) o;
                 return domain.filter(tuple.getFirst()) &&
                         range.filter(tuple.getSecond()) &&
-                        !exec.areMutuallyExclusive(tuple.getFirst(), tuple.getSecond());
+                        notExclusive(tuple);
             }
         }
 
@@ -535,9 +536,7 @@ public class RelationAnalysis {
             if (!domain.filter(event)) {
                 return List.of();
             }
-            return range.stream()
-                    .filter(e -> !exec.areMutuallyExclusive(event, e))
-                    .collect(toList());
+            return range.stream().filter(notExclusive(event)).collect(toList());
         }
 
         @Override
@@ -637,7 +636,7 @@ public class RelationAnalysis {
                         .map(RelationAnalysis::visibleEvents)
                         .flatMap(t -> t.stream()
                                 .flatMap(x -> t.stream()
-                                        .filter(y -> !exec.areMutuallyExclusive(x, y))
+                                        .filter(notExclusive(x))
                                         .map(y -> new Tuple(x ,y))))
                         .iterator();
             }
@@ -650,7 +649,7 @@ public class RelationAnalysis {
                     List<Event> events = visibleEvents(thread);
                     for (int i = 0; i < events.size(); i++) {
                         Event event = events.get(i);
-                        long count = events.subList(0, i).stream().filter(e -> !exec.areMutuallyExclusive(event, e)).count();
+                        long count = events.subList(0, i).stream().filter(notExclusive(event)).count();
                         sum += 1 + 2 * (int) count;
                     }
                 }
@@ -663,7 +662,7 @@ public class RelationAnalysis {
                     return false;
                 }
                 Tuple tuple = (Tuple) o;
-                return tuple.isSameThread() && !exec.areMutuallyExclusive(tuple.getFirst(), tuple.getSecond());
+                return tuple.isSameThread() && notExclusive(tuple);
             }
         }
 
@@ -672,7 +671,7 @@ public class RelationAnalysis {
                 return List.of();
             }
             return x.getThread().getEvents().stream()
-                    .filter(y -> y.is(VISIBLE) && !exec.areMutuallyExclusive(x, y))
+                    .filter(y -> y.is(VISIBLE) && notExclusive(x, y))
                     .collect(toList());
         }
 
@@ -698,7 +697,7 @@ public class RelationAnalysis {
                         .map(t -> t.getEvents().stream().filter(domain::filter).collect(toList()))
                         .flatMap(t -> IntStream.range(0, t.size())
                                 .mapToObj(i -> t.subList(0, i).stream()
-                                        .filter(x -> !exec.areMutuallyExclusive(t.get(i), x))
+                                        .filter(notExclusive(t.get(i)))
                                         .map(x -> new Tuple(x, t.get(i))))
                                 .flatMap(s -> s))
                         .iterator();
@@ -711,7 +710,7 @@ public class RelationAnalysis {
                     List<Event> events = visibleEvents(thread);
                     for (int i = 0; i < events.size(); i++) {
                         Event event = events.get(i);
-                        sum += (int) events.subList(0, i).stream().filter(e -> !exec.areMutuallyExclusive(event, e)).count();
+                        sum += (int) events.subList(0, i).stream().filter(notExclusive(event)).count();
                     }
                 }
                 return sum;
@@ -726,21 +725,21 @@ public class RelationAnalysis {
                 return tuple.isForward() &&
                         domain.filter(tuple.getFirst()) &&
                         domain.filter(tuple.getSecond()) &&
-                        !exec.areMutuallyExclusive(tuple.getFirst(), tuple.getSecond());
+                        notExclusive(tuple);
             }
         }
 
         private List<Event> getProgramOrderedBefore(Event event) {
             List<Event> events = event.getThread().getEvents();
             return events.subList(0, getThreadIndex(event, events)).stream()
-                    .filter(other -> !exec.areMutuallyExclusive(event, other))
+                    .filter(notExclusive(event))
                     .collect(toList());
         }
 
         private List<Event> getProgramOrderedAfter(Event event) {
             List<Event> events = event.getThread().getEvents();
             return events.subList(getThreadIndex(event, events) + 1, events.size()).stream()
-                    .filter(other -> !exec.areMutuallyExclusive(event, other))
+                    .filter(notExclusive(event))
                     .collect(toList());
         }
 
@@ -764,7 +763,7 @@ public class RelationAnalysis {
                 for (Event e1 : thread.getEvents()) {
                     if (e1.is(CMP)) {
                         for (Event e2 : ((IfAsJump) e1).getBranchesEvents()) {
-                            if (!exec.areMutuallyExclusive(e1, e2)) {
+                            if (notExclusive(e1, e2)) {
                                 must.add(new Tuple(e1, e2));
                             }
                         }
@@ -774,7 +773,7 @@ public class RelationAnalysis {
                 for (Event e1 : thread.getEvents()) {
                     if (e1.is(JUMP) && !e1.is(CMP) && !e1.is(IFI)) {
                         for (Event e2 : thread.getEvents()) {
-                            if (e1.getGlobalId() < e2.getGlobalId() && !exec.areMutuallyExclusive(e1, e2)) {
+                            if (e1.getGlobalId() < e2.getGlobalId() && notExclusive(e1, e2)) {
                                 must.add(new Tuple(e1, e2));
                             }
                         }
@@ -804,12 +803,12 @@ public class RelationAnalysis {
                         continue;
                     }
                     for (Event x : events.subList(0, i)) {
-                        if (exec.areMutuallyExclusive(x, f)) {
+                        if (notExclusive(x, f)) {
                             continue;
                         }
                         boolean implies = enableMustSets && exec.isImplied(x, f);
                         for (Event y : events.subList(i + 1, end)) {
-                            if (exec.areMutuallyExclusive(x, y) || exec.areMutuallyExclusive(f, y)) {
+                            if (exclusive(x, y) || exclusive(f, y)) {
                                 continue;
                             }
                             Tuple xy = new Tuple(x, y);
@@ -852,7 +851,7 @@ public class RelationAnalysis {
                     // iteration order assures that all intermediaries were already iterated
                     for (Event lock : locks) {
                         if (unlock.getGlobalId() < lock.getGlobalId() ||
-                                exec.areMutuallyExclusive(lock, unlock) ||
+                                exclusive(lock, unlock) ||
                                 Stream.concat(mustMap.getOrDefault(lock, Set.of()).stream(),
                                                 mustMap.getOrDefault(unlock, Set.of()).stream())
                                         .anyMatch(e -> exec.isImplied(lock, e) || exec.isImplied(unlock, e))) {
@@ -860,9 +859,9 @@ public class RelationAnalysis {
                         }
                         boolean noIntermediary = enableMustSets &&
                                 mayMap.getOrDefault(unlock, Set.of()).stream()
-                                        .allMatch(e -> exec.areMutuallyExclusive(lock, e)) &&
+                                        .allMatch(e -> exclusive(lock, e)) &&
                                 mayMap.getOrDefault(lock, Set.of()).stream()
-                                        .allMatch(e -> exec.areMutuallyExclusive(e, unlock));
+                                        .allMatch(e -> exclusive(e, unlock));
                         Tuple tuple = new Tuple(lock, unlock);
                         may.add(tuple);
                         mayMap.computeIfAbsent(lock, x -> new HashSet<>()).add(unlock);
@@ -899,7 +898,7 @@ public class RelationAnalysis {
                 for (int i = 0; i < block.size(); i++) {
                     Event e = block.get(i);
                     for (int j = i + 1; j < block.size(); j++) {
-                        if (!exec.areMutuallyExclusive(e, block.get(j))) {
+                        if (notExclusive(e, block.get(j))) {
                             must.add(new Tuple(e, block.get(j)));
                         }
                     }
@@ -921,7 +920,7 @@ public class RelationAnalysis {
                             .filter(i -> exec.isImplied(store, events.get(i)))
                             .findFirst().orElse(0);
                     List<Event> candidates = events.subList(start, end).stream()
-                            .filter(e -> !exec.areMutuallyExclusive(e, store))
+                            .filter(notExclusive(store))
                             .collect(toList());
                     int size = candidates.size();
                     for (int i = 0; i < size; i++) {
@@ -933,7 +932,7 @@ public class RelationAnalysis {
                         Tuple tuple = new Tuple(load, store);
                         may.add(tuple);
                         if (enableMustSets &&
-                                intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(load, e)) &&
+                                intermediaries.stream().allMatch(e -> exclusive(load, e)) &&
                                 (store.is(MATCHADDRESS) || alias.mustAlias((MemEvent) load, (MemEvent) store))) {
                             must.add(tuple);
                         }
@@ -952,7 +951,7 @@ public class RelationAnalysis {
                     continue;
                 }
                 for (MemEvent w2 : nonInitWrites) {
-                    if (w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)
+                    if (w1.getGlobalId() != w2.getGlobalId() && notExclusive(w1, w2)
                             && alias.mayAlias((MemEvent) w1, w2)) {
                         may.add(new Tuple(w1, w2));
                     }
@@ -989,7 +988,7 @@ public class RelationAnalysis {
                     continue;
                 }
                 for (Load e2 : loadEvents) {
-                    if (alias.mayAlias((MemEvent) e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (alias.mayAlias((MemEvent) e1, e2) && notExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
@@ -1079,7 +1078,7 @@ public class RelationAnalysis {
             List<MemEvent> events = program.getEvents(MemEvent.class);
             for (MemEvent e1 : events) {
                 for (MemEvent e2 : events) {
-                    if (alias.mayAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (alias.mayAlias(e1, e2) && notExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
@@ -1186,7 +1185,7 @@ public class RelationAnalysis {
                 for (Tuple t : may) {
                     Event e1 = t.getFirst();
                     for (Event e2 : mayMap.getOrDefault(t.getSecond(), List.of())) {
-                        if (!exec.areMutuallyExclusive(e1, e2)) {
+                        if (notExclusive(e1, e2)) {
                             maySet.add(new Tuple(e1, e2));
                         }
                     }
@@ -1197,7 +1196,7 @@ public class RelationAnalysis {
                     Event e = t.getSecond();
                     boolean implies = exec.isImplied(e1, e);
                     for (Event e2 : mustMap.getOrDefault(e, List.of())) {
-                        if ((implies || exec.isImplied(e2, e)) && !exec.areMutuallyExclusive(e1, e2)) {
+                        if ((implies || exec.isImplied(e2, e)) && notExclusive(e1, e2)) {
                             mustSet.add(new Tuple(e1, e2));
                         }
                     }
@@ -1209,7 +1208,7 @@ public class RelationAnalysis {
                 for (Tuple t : may) {
                     Event e2 = t.getSecond();
                     for (Event e1 : mayMap.getOrDefault(t.getFirst(), List.of())) {
-                        if (!exec.areMutuallyExclusive(e1, e2)) {
+                        if (notExclusive(e1, e2)) {
                             maySet.add(new Tuple(e1, e2));
                         }
                     }
@@ -1220,7 +1219,7 @@ public class RelationAnalysis {
                     Event e = t.getFirst();
                     boolean implies = exec.isImplied(e2, e);
                     for (Event e1 : mustMap.getOrDefault(e, List.of())) {
-                        if ((implies || exec.isImplied(e1, e)) && !exec.areMutuallyExclusive(e1, e2)) {
+                        if ((implies || exec.isImplied(e1, e)) && notExclusive(e1, e2)) {
                             mustSet.add(new Tuple(e1, e2));
                         }
                     }
@@ -1282,7 +1281,7 @@ public class RelationAnalysis {
                         Event e1 = tuple.getFirst();
                         for (Event e2 : mayMap.getOrDefault(tuple.getSecond(), List.of())) {
                             Tuple t = new Tuple(e1, e2);
-                            if (!k.containsMay(t) && !maySet.contains(t) && !exec.areMutuallyExclusive(e1, e2)) {
+                            if (!k.containsMay(t) && !maySet.contains(t) && notExclusive(e1, e2)) {
                                 next.add(t);
                             }
                         }
@@ -1304,7 +1303,7 @@ public class RelationAnalysis {
                         boolean implies = exec.isImplied(e1, e);
                         for (Event e2 : mustMap.getOrDefault(e, List.of())) {
                             Tuple t = new Tuple(e1, e2);
-                            if (!k.containsMust(t) && !mustSet.contains(t) && (implies || exec.isImplied(e2, e)) && !exec.areMutuallyExclusive(e1, e2)) {
+                            if (!k.containsMust(t) && !mustSet.contains(t) && (implies || exec.isImplied(e2, e)) && notExclusive(e1, e2)) {
                                 next.add(t);
                             }
                         }
@@ -1437,7 +1436,7 @@ public class RelationAnalysis {
                     Event y = xy.getSecond();
                     Set<Event> alternatives = alternativesMap.computeIfAbsent(x, newAlternatives);
                     for (Event z : mayOut2.getOrDefault(y, List.of())) {
-                        if (!exec.areMutuallyExclusive(x, z)
+                        if (notExclusive(x, z)
                                 && Collections.disjoint(alternatives, mayIn2.getOrDefault(z, List.of()))) {
                             d0.add(new Tuple(x, z));
                         }
@@ -1449,7 +1448,7 @@ public class RelationAnalysis {
                     boolean implied = exec.isImplied(y, x);
                     boolean implies = exec.isImplied(x, y);
                     for (Event z : mayOut2.getOrDefault(y, List.of())) {
-                        if (exec.areMutuallyExclusive(x, z)) {
+                        if (exclusive(x, z)) {
                             continue;
                         }
                         Tuple xz = new Tuple(x, z);
@@ -1473,7 +1472,7 @@ public class RelationAnalysis {
                     Event y = xy.getSecond();
                     Set<Event> alternatives = alternativesMap.computeIfAbsent(y, newAlternatives);
                     for (Event w : mayIn1.getOrDefault(x, List.of())) {
-                        if (!exec.areMutuallyExclusive(w, y)
+                        if (notExclusive(w, y)
                                 && Collections.disjoint(alternatives, mayOut1.getOrDefault(w, List.of()))) {
                             d0.add(new Tuple(w, y));
                         }
@@ -1485,7 +1484,7 @@ public class RelationAnalysis {
                     boolean implied = exec.isImplied(y, x);
                     boolean implies = exec.isImplied(x, y);
                     for (Event w : mayIn1.getOrDefault(x, List.of())) {
-                        if (exec.areMutuallyExclusive(w, y)) {
+                        if (exclusive(w, y)) {
                             continue;
                         }
                         Tuple wx = new Tuple(w, x);
@@ -1560,7 +1559,7 @@ public class RelationAnalysis {
                     boolean implied = exec.isImplied(y, x);
                     boolean implies = exec.isImplied(x, y);
                     for (Event z : mayOut0.getOrDefault(y, List.of())) {
-                        if (exec.areMutuallyExclusive(x, z)) {
+                        if (exclusive(x, z)) {
                             continue;
                         }
                         Tuple xz = new Tuple(x, z);
@@ -1613,7 +1612,7 @@ public class RelationAnalysis {
                     boolean implied = exec.isImplied(z, y);
                     boolean implies = exec.isImplied(y, z);
                     for (Event x : mayIn1.getOrDefault(y, List.of())) {
-                        if (exec.areMutuallyExclusive(x, z)) {
+                        if (exclusive(x, z)) {
                             continue;
                         }
                         Tuple xy = new Tuple(x, y);
@@ -1714,6 +1713,22 @@ public class RelationAnalysis {
         for (Tuple t : set) {
             map.computeIfAbsent(t.getFirst(), x -> new ArrayList<>()).add(t.getSecond());
         }
+    }
+
+    private boolean exclusive(Event first, Event second) {
+        return exec.areMutuallyExclusive(first, second);
+    }
+
+    private boolean notExclusive(Event first, Event second) {
+        return !exec.areMutuallyExclusive(first, second);
+    }
+
+    private boolean notExclusive(Tuple tuple) {
+        return !exec.areMutuallyExclusive(tuple.getFirst(), tuple.getSecond());
+    }
+
+    private Predicate<Event> notExclusive(Event first) {
+        return second -> !exec.areMutuallyExclusive(first, second);
     }
 
     private long countMaySet() {
