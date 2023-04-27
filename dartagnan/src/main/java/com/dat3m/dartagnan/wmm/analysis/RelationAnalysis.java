@@ -307,8 +307,8 @@ public class RelationAnalysis {
         private Knowledge(Set<Tuple> mayImplicit, Set<Tuple> mustImplicit,
                           Function<Event, Collection<Event>> mayIn, Function<Event, Collection<Event>> mayOut,
                           Function<Event, Collection<Event>> mustIn, Function<Event, Collection<Event>> mustOut) {
-            may = new HashSet<>();
-            must = new HashSet<>();
+            this.may = new HashSet<>();
+            this.must = new HashSet<>();
             this.mayImplicit = mayImplicit;
             this.mustImplicit = mustImplicit;
             this.mayIn = mayIn;
@@ -326,19 +326,11 @@ public class RelationAnalysis {
         }
 
         public Function<Event, Collection<Tuple>> getMayIn() {
-            final Map<Event, ArrayList<Tuple>> map = new HashMap<>();
-            for (final Tuple t : may) {
-                map.computeIfAbsent(t.getSecond(), k -> new ArrayList<>()).add(t);
-            }
-            return e -> inOutSet(map.getOrDefault(e, new ArrayList<>()), mayIn.apply(e), e, true);
+            return getIn(may, mayIn);
         }
 
         public Function<Event, Collection<Tuple>> getMayOut() {
-            final Map<Event, ArrayList<Tuple>> map = new HashMap<>();
-            for (final Tuple t : may) {
-                map.computeIfAbsent(t.getFirst(), k -> new ArrayList<>()).add(t);
-            }
-            return e -> inOutSet(map.getOrDefault(e, new ArrayList<>()), mayOut.apply(e), e, false);
+            return getOut(may, mayOut);
         }
 
         public Set<Tuple> getMustSet() {
@@ -350,24 +342,36 @@ public class RelationAnalysis {
         }
 
         public Function<Event, Collection<Tuple>> getMustIn() {
-            final Map<Event, ArrayList<Tuple>> map = new HashMap<>();
-            for (final Tuple t : must) {
-                map.computeIfAbsent(t.getSecond(), k -> new ArrayList<>()).add(t);
-            }
-            return e -> inOutSet(map.getOrDefault(e, new ArrayList<>()), mustIn.apply(e), e, true);
+            return getIn(must, mustIn);
         }
 
         public Function<Event, Collection<Tuple>> getMustOut() {
-            final Map<Event, Collection<Tuple>> map = new HashMap<>();
-            for (final Tuple t : must) {
+            return getOut(must, mustOut);
+        }
+
+        private static Function<Event, Collection<Tuple>> getIn(Set<Tuple> set, Function<Event, Collection<Event>> inFunction) {
+            final var map = new HashMap<Event, Collection<Tuple>>();
+            for (final Tuple t : set) {
+                map.computeIfAbsent(t.getSecond(), k -> new ArrayList<>()).add(t);
+            }
+            return e -> new InOutSet(map.getOrDefault(e, List.of()), inFunction.apply(e), e, true);
+        }
+
+        private static Function<Event, Collection<Tuple>> getOut(Set<Tuple> set, Function<Event, Collection<Event>> outFunction) {
+            final var map = new HashMap<Event, Collection<Tuple>>();
+            for (final Tuple t : set) {
                 map.computeIfAbsent(t.getFirst(), k -> new ArrayList<>()).add(t);
             }
-            return e -> inOutSet(map.getOrDefault(e, List.of()), mustOut.apply(e), e, false);
+            return e -> new InOutSet(map.getOrDefault(e, List.of()), outFunction.apply(e), e, false);
         }
 
         @Override
         public String toString() {
-            return "(may:" + may.size() + ", must:" + must.size() + ")";
+            if (may == must && mayImplicit == mustImplicit) {
+                return "(" + may.size() + (mayImplicit.isEmpty() ? "" : "+" + mayImplicit.size()) + "must)";
+            }
+            return "(" + may.size() + (mayImplicit.isEmpty() ? "" : "+" + mayImplicit.size()) + "may, " +
+                    must.size() + (mustImplicit.isEmpty() ? "" : "+" + mustImplicit.size()) + "must)";
         }
 
         private Delta joinSet(List<Delta> l) {
@@ -491,7 +495,7 @@ public class RelationAnalysis {
             if (enable) {
                 defaultKnowledge = null;
             } else {
-                List<Event> events = program.getThreadEvents().stream().filter(e -> e.hasTag(VISIBLE)).collect(toList());
+                List<Event> events = program.getThreadEvents().stream().filter(e -> e.hasTag(VISIBLE)).toList();
                 Set<Tuple> may = new AbstractSet<>() {
                     @Override
                     public Iterator<Tuple> iterator() {
@@ -920,7 +924,7 @@ public class RelationAnalysis {
 
             // Atomics blocks: BeginAtomic -> EndAtomic
             for (EndAtomic end : program.getThreadEvents(EndAtomic.class)) {
-                List<Event> block = end.getBlock().stream().filter(x -> x.hasTag(VISIBLE)).collect(toList());
+                List<Event> block = end.getBlock().stream().filter(x -> x.hasTag(VISIBLE)).toList();
                 for (int i = 0; i < block.size(); i++) {
                     Event e = block.get(i);
                     for (int j = i + 1; j < block.size(); j++) {
@@ -1797,34 +1801,43 @@ public class RelationAnalysis {
         return Collections.binarySearch(thread, event);
     }
 
-    private static Collection<Tuple> inOutSet(Collection<Tuple> explicits, Collection<Event> set, Event event, boolean in) {
-        return new AbstractCollection<>() {
-            @Override
-            public Iterator<Tuple> iterator() {
-                Iterator<Tuple> explicitIterator = explicits.iterator();
-                Iterator<Event> innerIterator = set.iterator();
-                return new Iterator<>() {
-                    @Override
-                    public boolean hasNext() {
-                        return explicitIterator.hasNext() || innerIterator.hasNext();
-                    }
+    private static final class InOutSet extends AbstractCollection<Tuple> {
+        private final Collection<Tuple> explicits;
+        private final Collection<Event> set;
+        private final Event event;
+        private final boolean in;
 
-                    @Override
-                    public Tuple next() {
-                        if (explicitIterator.hasNext()) {
-                            return explicitIterator.next();
-                        }
-                        Event other = innerIterator.next();
-                        return in ? new Tuple(other, event) : new Tuple(event, other);
-                    }
-                };
-            }
+        private InOutSet(Collection<Tuple> explicits, Collection<Event> set, Event event, boolean in) {
+            this.explicits = explicits;
+            this.set = set;
+            this.event = event;
+            this.in = in;
+        }
 
-            @Override
-            public int size() {
-                return explicits.size() + set.size();
-            }
-        };
+        @Override
+        public Iterator<Tuple> iterator() {
+            Iterator<Tuple> explicitIterator = explicits.iterator();
+            Iterator<Event> innerIterator = set.iterator();
+            return new Iterator<>() {
+                @Override
+                public boolean hasNext() {
+                    return explicitIterator.hasNext() || innerIterator.hasNext();
+                }
+                @Override
+                public Tuple next() {
+                    if (explicitIterator.hasNext()) {
+                        return explicitIterator.next();
+                    }
+                    Event other = innerIterator.next();
+                    return in ? new Tuple(other, event) : new Tuple(event, other);
+                }
+            };
+        }
+
+        @Override
+        public int size() {
+            return explicits.size() + set.size();
+        }
     }
 
     private static Set<Tuple> inverse(Set<Tuple> set) {
