@@ -60,6 +60,8 @@ public class IMMLFDSTest extends AbstractCTest {
                 {"chase-lev", IMM, PASS},
                 // These ones have an extra thief that violate the assertion
                 {"chase-lev-fail", IMM, FAIL},
+                {"hash_table", IMM, PASS},
+                {"hash_table-fail", IMM, FAIL},
         });
     }
 
