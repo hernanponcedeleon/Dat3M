@@ -43,7 +43,7 @@ const $MALLOC_TOP: ref;
 var $M.0: [ref] i8;
 
 // Memory address bounds
-axiom ($GLOBALS_BOTTOM == $sub.ref(0, 48696));
+axiom ($GLOBALS_BOTTOM == $sub.ref(0, 48684));
 axiom ($EXTERNS_BOTTOM == $add.ref($GLOBALS_BOTTOM, $sub.ref(0, 32768)));
 axiom ($MALLOC_TOP == 9223372036854775807);
 function {:inline} $isExternal(p: ref) returns (bool) { $slt.ref.bool(p, $EXTERNS_BOTTOM) }
@@ -1489,32 +1489,32 @@ function {:inline} $store.unsafe.float(M: [ref] i8, p: ref, f: float) returns ([
 function $extractvalue.float(p: ref, i: int) returns (float);
 const {:allocSize 16} {:count 2} m_entries: ref;
 axiom (m_entries == $sub.ref(0, 1040));
-const {:allocSize 12} {:count 3} data: ref;
-axiom (data == $sub.ref(0, 2076));
-const {:allocSize 12} {:count 3} read_flag: ref;
-axiom (read_flag == $sub.ref(0, 3112));
-const {:allocSize 12} {:count 3} read_data: ref;
-axiom (read_data == $sub.ref(0, 4148));
+const {:allocSize 8} {:count 2} data: ref;
+axiom (data == $sub.ref(0, 2072));
+const {:allocSize 8} {:count 2} read_flag: ref;
+axiom (read_flag == $sub.ref(0, 3104));
+const {:allocSize 8} {:count 2} read_data: ref;
+axiom (read_data == $sub.ref(0, 4136));
 const {:allocSize 9} .str: ref;
-axiom (.str == $sub.ref(0, 5181));
+axiom (.str == $sub.ref(0, 5169));
 const {:allocSize 51} {:count 51} .str.1: ref;
-axiom (.str.1 == $sub.ref(0, 6256));
+axiom (.str.1 == $sub.ref(0, 6244));
 const {:allocSize 29} {:count 29} __PRETTY_FUNCTION__.set: ref;
-axiom (__PRETTY_FUNCTION__.set == $sub.ref(0, 7309));
+axiom (__PRETTY_FUNCTION__.set == $sub.ref(0, 7297));
 const {:allocSize 11} {:count 11} .str.2: ref;
-axiom (.str.2 == $sub.ref(0, 8344));
+axiom (.str.2 == $sub.ref(0, 8332));
 const {:allocSize 23} {:count 23} __PRETTY_FUNCTION__.get: ref;
-axiom (__PRETTY_FUNCTION__.get == $sub.ref(0, 9391));
+axiom (__PRETTY_FUNCTION__.get == $sub.ref(0, 9379));
 const {:allocSize 42} {:count 42} .str.3: ref;
-axiom (.str.3 == $sub.ref(0, 10457));
+axiom (.str.3 == $sub.ref(0, 10445));
 const {:allocSize 51} {:count 51} .str.4: ref;
-axiom (.str.4 == $sub.ref(0, 11532));
+axiom (.str.4 == $sub.ref(0, 11520));
 const {:allocSize 11} {:count 11} __PRETTY_FUNCTION__.main: ref;
-axiom (__PRETTY_FUNCTION__.main == $sub.ref(0, 12567));
+axiom (__PRETTY_FUNCTION__.main == $sub.ref(0, 12555));
 const {:allocSize 17} {:count 17} .str.5: ref;
-axiom (.str.5 == $sub.ref(0, 13608));
+axiom (.str.5 == $sub.ref(0, 13596));
 const init: ref;
-axiom (init == $sub.ref(0, 14640));
+axiom (init == $sub.ref(0, 14628));
 procedure  init()
 {
 $bb0:
@@ -1538,10 +1538,10 @@ $bb0:
   return;
 }
 const llvm.dbg.value: ref;
-axiom (llvm.dbg.value == $sub.ref(0, 15672));
+axiom (llvm.dbg.value == $sub.ref(0, 15660));
 procedure  llvm.dbg.value($p0: ref, $p1: ref, $p2: ref);
 const set: ref;
-axiom (set == $sub.ref(0, 16704));
+axiom (set == $sub.ref(0, 16692));
 procedure  set($i0: i32, $i1: i32)
 {
   var $i2: i1;
@@ -1714,10 +1714,10 @@ $bb13:
   goto $bb10;
 }
 const __assert_fail: ref;
-axiom (__assert_fail == $sub.ref(0, 17736));
+axiom (__assert_fail == $sub.ref(0, 17724));
 procedure  __assert_fail($p0: ref, $p1: ref, $i2: i32, $p3: ref);
 const integerHash: ref;
-axiom (integerHash == $sub.ref(0, 18768));
+axiom (integerHash == $sub.ref(0, 18756));
 procedure  integerHash($i0: i32)
   returns ($r: i32)
 {
@@ -1732,18 +1732,18 @@ $bb0:
   return;
 }
 const __llvm_atomic32_load: ref;
-axiom (__llvm_atomic32_load == $sub.ref(0, 19800));
+axiom (__llvm_atomic32_load == $sub.ref(0, 19788));
 procedure  __llvm_atomic32_load($p0: ref, $i1: i32)
   returns ($r: i32);
 const __llvm_atomic32_cmpxchg: ref;
-axiom (__llvm_atomic32_cmpxchg == $sub.ref(0, 20832));
+axiom (__llvm_atomic32_cmpxchg == $sub.ref(0, 20820));
 procedure  __llvm_atomic32_cmpxchg($p0: ref, $i1: i32, $i2: i32, $i3: i32, $i4: i32)
   returns ($r: ref);
 const __llvm_atomic32_store: ref;
-axiom (__llvm_atomic32_store == $sub.ref(0, 21864));
+axiom (__llvm_atomic32_store == $sub.ref(0, 21852));
 procedure  __llvm_atomic32_store($p0: ref, $i1: i32, $i2: i32);
 const get: ref;
-axiom (get == $sub.ref(0, 22896));
+axiom (get == $sub.ref(0, 22884));
 procedure  get($i0: i32)
   returns ($r: i32)
 {
@@ -1861,7 +1861,7 @@ $bb8:
   goto $bb3;
 }
 const count: ref;
-axiom (count == $sub.ref(0, 23928));
+axiom (count == $sub.ref(0, 23916));
 procedure  count()
   returns ($r: i32)
 {
@@ -1958,7 +1958,7 @@ $bb6:
   return;
 }
 const thread_1: ref;
-axiom (thread_1 == $sub.ref(0, 24960));
+axiom (thread_1 == $sub.ref(0, 24948));
 procedure  thread_1($p0: ref)
   returns ($r: ref)
 {
@@ -1973,35 +1973,35 @@ $bb0:
   assume {:verifier.code 0} true;
   $i1 := $p2i.ref.i64($p0);
   call {:cexpr "idx"} boogie_si_record_i64($i1);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 23, 25} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 23, 28} true;
   assume {:verifier.code 0} true;
-  $p2 := $add.ref($add.ref(data, $mul.ref(0, 12)), $mul.ref($i1, 4));
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 25, 2} true;
+  $p2 := $add.ref($add.ref(data, $mul.ref(0, 8)), $mul.ref($i1, 4));
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 25, 5} true;
   assume {:verifier.code 0} true;
   call __llvm_atomic32_store($p2, 1, 0);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 28, 6} true;
-  assume {:verifier.code 0} true;
-  call __llvm_atomic_fence(3);
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 28, 9} true;
   assume {:verifier.code 0} true;
+  call __llvm_atomic_fence(3);
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 28, 13} true;
+  assume {:verifier.code 0} true;
   $i3 := $add.i64($i1, 1);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 28, 6} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 28, 9} true;
   assume {:verifier.code 0} true;
   $i4 := $trunc.i64.i32($i3);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 28, 2} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 28, 5} true;
   assume {:verifier.code 0} true;
   call set($i4, 1);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 29, 2} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 29, 5} true;
   assume {:verifier.code 0} true;
   $r := $0.ref;
   $exn := false;
   return;
 }
 const __llvm_atomic_fence: ref;
-axiom (__llvm_atomic_fence == $sub.ref(0, 25992));
+axiom (__llvm_atomic_fence == $sub.ref(0, 25980));
 procedure  __llvm_atomic_fence($i0: i32);
 const thread_2: ref;
-axiom (thread_2 == $sub.ref(0, 27024));
+axiom (thread_2 == $sub.ref(0, 27012));
 procedure  thread_2($p0: ref)
   returns ($r: ref)
 {
@@ -2020,44 +2020,44 @@ $bb0:
   assume {:verifier.code 0} true;
   $i1 := $p2i.ref.i64($p0);
   call {:cexpr "idx"} boogie_si_record_i64($i1);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 36, 26} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 36, 30} true;
   assume {:verifier.code 0} true;
   $i2 := $add.i64($i1, 1);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 36, 23} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 36, 26} true;
   assume {:verifier.code 0} true;
   $i3 := $trunc.i64.i32($i2);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 36, 19} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 36, 22} true;
   assume {:verifier.code 0} true;
   call $i4 := get($i3);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 36, 2} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 36, 5} true;
   assume {:verifier.code 0} true;
-  $p5 := $add.ref($add.ref(read_flag, $mul.ref(0, 12)), $mul.ref($i1, 4));
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 36, 17} true;
+  $p5 := $add.ref($add.ref(read_flag, $mul.ref(0, 8)), $mul.ref($i1, 4));
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 36, 20} true;
   assume {:verifier.code 0} true;
   $M.0 := $store.i32($M.0, $p5, $i4);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 38, 46} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 38, 49} true;
   assume {:verifier.code 0} true;
   call __llvm_atomic_fence(2);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 38, 41} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 38, 44} true;
   assume {:verifier.code 0} true;
-  $p6 := $add.ref($add.ref(data, $mul.ref(0, 12)), $mul.ref($i1, 4));
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 38, 19} true;
+  $p6 := $add.ref($add.ref(data, $mul.ref(0, 8)), $mul.ref($i1, 4));
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 38, 22} true;
   assume {:verifier.code 0} true;
   call $i7 := __llvm_atomic32_load($p6, 0);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 38, 2} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 38, 5} true;
   assume {:verifier.code 0} true;
-  $p8 := $add.ref($add.ref(read_data, $mul.ref(0, 12)), $mul.ref($i1, 4));
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 38, 17} true;
+  $p8 := $add.ref($add.ref(read_data, $mul.ref(0, 8)), $mul.ref($i1, 4));
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 38, 20} true;
   assume {:verifier.code 0} true;
   $M.0 := $store.i32($M.0, $p8, $i7);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 39, 2} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 39, 5} true;
   assume {:verifier.code 0} true;
   $r := $0.ref;
   $exn := false;
   return;
 }
 const main: ref;
-axiom (main == $sub.ref(0, 28056));
+axiom (main == $sub.ref(0, 28044));
 procedure {:entrypoint} main()
   returns ($r: i32)
 {
@@ -2070,226 +2070,163 @@ procedure {:entrypoint} main()
   var $i6: i32;
   var $p7: ref;
   var $i8: i32;
-  var $p9: ref;
+  var $i9: i64;
   var $i10: i32;
-  var $p11: ref;
+  var $i11: i64;
   var $i12: i32;
   var $i13: i64;
   var $i14: i32;
   var $i15: i64;
   var $i16: i32;
-  var $i17: i64;
-  var $i18: i32;
-  var $i19: i64;
-  var $i20: i32;
-  var $i21: i64;
+  var $i17: i32;
+  var $i18: i1;
+  var $i19: i32;
+  var $i20: i1;
+  var $i21: i1;
   var $i22: i32;
-  var $i23: i64;
+  var $i23: i1;
   var $i24: i32;
-  var $i25: i32;
+  var $i25: i1;
   var $i26: i1;
   var $i27: i32;
   var $i28: i1;
-  var $i29: i1;
-  var $i30: i32;
-  var $i31: i1;
-  var $i32: i32;
-  var $i33: i1;
-  var $i34: i1;
-  var $i35: i32;
-  var $i36: i1;
-  var $i37: i32;
-  var $i38: i1;
-  var $i39: i1;
-  var $i40: i32;
-  var $i41: i1;
 $bb0:
   call $initialize();
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 46, 5} true;
   assume {:verifier.code 0} true;
   call {:cexpr "smack:entry:main"} boogie_si_record_ref(main);
   assume {:verifier.code 0} true;
-  call $p0 := $alloc($mul.ref(48, $zext.i32.i64(1)));
+  call $p0 := $alloc($mul.ref(32, $zext.i32.i64(1)));
   assume true;
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 46, 5} true;
   assume {:verifier.code 0} true;
   call init();
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 49, 25} true;
   assume {:verifier.code 0} true;
-  $p1 := $add.ref($add.ref($p0, $mul.ref(0, 48)), $mul.ref(0, 8));
+  $p1 := $add.ref($add.ref($p0, $mul.ref(0, 32)), $mul.ref(0, 8));
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 49, 9} true;
   assume {:verifier.code 0} true;
   call $i2 := pthread_create($p1, $0.ref, thread_1, $0.ref);
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 49, 25} true;
   assume {:verifier.code 0} true;
-  $p3 := $add.ref($add.ref($p0, $mul.ref(0, 48)), $mul.ref(1, 8));
+  $p3 := $add.ref($add.ref($p0, $mul.ref(0, 32)), $mul.ref(1, 8));
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 49, 9} true;
   assume {:verifier.code 0} true;
   call $i4 := pthread_create($p3, $0.ref, thread_1, $i2p.i64.ref(1));
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 49, 25} true;
-  assume {:verifier.code 0} true;
-  $p5 := $add.ref($add.ref($p0, $mul.ref(0, 48)), $mul.ref(2, 8));
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 49, 9} true;
-  assume {:verifier.code 0} true;
-  call $i6 := pthread_create($p5, $0.ref, thread_1, $i2p.i64.ref(2));
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 52, 25} true;
   assume {:verifier.code 0} true;
-  $p7 := $add.ref($add.ref($p0, $mul.ref(0, 48)), $mul.ref(3, 8));
+  $p5 := $add.ref($add.ref($p0, $mul.ref(0, 32)), $mul.ref(2, 8));
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 52, 9} true;
   assume {:verifier.code 0} true;
-  call $i8 := pthread_create($p7, $0.ref, thread_2, $0.ref);
+  call $i6 := pthread_create($p5, $0.ref, thread_2, $0.ref);
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 52, 25} true;
   assume {:verifier.code 0} true;
-  $p9 := $add.ref($add.ref($p0, $mul.ref(0, 48)), $mul.ref(4, 8));
+  $p7 := $add.ref($add.ref($p0, $mul.ref(0, 32)), $mul.ref(3, 8));
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 52, 9} true;
   assume {:verifier.code 0} true;
-  call $i10 := pthread_create($p9, $0.ref, thread_2, $i2p.i64.ref(1));
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 52, 25} true;
-  assume {:verifier.code 0} true;
-  $p11 := $add.ref($add.ref($p0, $mul.ref(0, 48)), $mul.ref(5, 8));
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 52, 9} true;
-  assume {:verifier.code 0} true;
-  call $i12 := pthread_create($p11, $0.ref, thread_2, $i2p.i64.ref(2));
+  call $i8 := pthread_create($p7, $0.ref, thread_2, $i2p.i64.ref(1));
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 22} true;
   assume {:verifier.code 0} true;
-  $i13 := $load.i64($M.0, $p1);
+  $i9 := $load.i64($M.0, $p1);
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 9} true;
+  assume {:verifier.code 0} true;
+  call $i10 := pthread_join($i9, $0.ref);
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 22} true;
+  assume {:verifier.code 0} true;
+  $i11 := $load.i64($M.0, $p3);
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 9} true;
+  assume {:verifier.code 0} true;
+  call $i12 := pthread_join($i11, $0.ref);
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 22} true;
+  assume {:verifier.code 0} true;
+  $i13 := $load.i64($M.0, $p5);
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 9} true;
   assume {:verifier.code 0} true;
   call $i14 := pthread_join($i13, $0.ref);
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 22} true;
   assume {:verifier.code 0} true;
-  $i15 := $load.i64($M.0, $p3);
+  $i15 := $load.i64($M.0, $p7);
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 9} true;
   assume {:verifier.code 0} true;
   call $i16 := pthread_join($i15, $0.ref);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 22} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
-  $i17 := $load.i64($M.0, $p5);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 9} true;
+  $i17 := $load.i32($M.0, read_flag);
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
-  call $i18 := pthread_join($i17, $0.ref);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 22} true;
+  $i18 := $eq.i32($i17, 1);
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
-  $i19 := $load.i64($M.0, $p7);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 9} true;
+  $i19 := $load.i32($M.0, read_data);
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
-  call $i20 := pthread_join($i19, $0.ref);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 22} true;
+  $i20 := $eq.i32($i19, 0);
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
-  $i21 := $load.i64($M.0, $p9);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 9} true;
+  $i21 := (if ($i18 == 1) then $i20 else 0);
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
-  call $i22 := pthread_join($i21, $0.ref);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 22} true;
-  assume {:verifier.code 0} true;
-  $i23 := $load.i64($M.0, $p11);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 55, 9} true;
-  assume {:verifier.code 0} true;
-  call $i24 := pthread_join($i23, $0.ref);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
-  assume {:verifier.code 0} true;
-  $i25 := $load.i32($M.0, read_flag);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
-  assume {:verifier.code 0} true;
-  $i26 := $eq.i32($i25, 1);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
-  assume {:verifier.code 0} true;
-  $i27 := $load.i32($M.0, read_data);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
-  assume {:verifier.code 0} true;
-  $i28 := $eq.i32($i27, 0);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
-  assume {:verifier.code 0} true;
-  $i29 := (if ($i26 == 1) then $i28 else 0);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i29} true;
+  assume {:branchcond $i21} true;
   goto $bb1, $bb3;
 $bb1:
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
-  assume ($i29 == 1);
+  assume ($i21 == 1);
   goto $bb2;
 $bb2:
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
   call __assert_fail(.str.3, .str.4, 58, __PRETTY_FUNCTION__.main);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
   assume false;
 $bb3:
-  assume !(($i29 == 1));
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
+  assume !(($i21 == 1));
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
-  $i30 := $load.i32($M.0, $add.ref($add.ref(read_flag, $mul.ref(0, 12)), $mul.ref(1, 4)));
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
+  $i22 := $load.i32($M.0, $add.ref($add.ref(read_flag, $mul.ref(0, 8)), $mul.ref(1, 4)));
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
-  $i31 := $eq.i32($i30, 1);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
+  $i23 := $eq.i32($i22, 1);
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
-  $i32 := $load.i32($M.0, $add.ref($add.ref(read_data, $mul.ref(0, 12)), $mul.ref(1, 4)));
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
+  $i24 := $load.i32($M.0, $add.ref($add.ref(read_data, $mul.ref(0, 8)), $mul.ref(1, 4)));
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
-  $i33 := $eq.i32($i32, 0);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
+  $i25 := $eq.i32($i24, 0);
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
-  $i34 := (if ($i31 == 1) then $i33 else 0);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
+  $i26 := (if ($i23 == 1) then $i25 else 0);
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i34} true;
+  assume {:branchcond $i26} true;
   goto $bb4, $bb5;
 $bb4:
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 9} true;
   assume {:verifier.code 0} true;
-  assume ($i34 == 1);
+  assume ($i26 == 1);
   goto $bb2;
 $bb5:
-  assume !(($i34 == 1));
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
+  assume !(($i26 == 1));
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 60, 5} true;
   assume {:verifier.code 0} true;
-  $i35 := $load.i32($M.0, $add.ref($add.ref(read_flag, $mul.ref(0, 12)), $mul.ref(2, 4)));
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
+  call $i27 := count();
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 60, 5} true;
   assume {:verifier.code 0} true;
-  $i36 := $eq.i32($i35, 1);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
+  $i28 := $eq.i32($i27, 2);
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 60, 5} true;
   assume {:verifier.code 0} true;
-  $i37 := $load.i32($M.0, $add.ref($add.ref(read_data, $mul.ref(0, 12)), $mul.ref(2, 4)));
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
-  assume {:verifier.code 0} true;
-  $i38 := $eq.i32($i37, 0);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
-  assume {:verifier.code 0} true;
-  $i39 := (if ($i36 == 1) then $i38 else 0);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i39} true;
+  assume {:branchcond $i28} true;
   goto $bb6, $bb7;
 $bb6:
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 58, 6} true;
-  assume {:verifier.code 0} true;
-  assume ($i39 == 1);
-  goto $bb2;
-$bb7:
-  assume !(($i39 == 1));
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 60, 5} true;
-  assume {:verifier.code 0} true;
-  call $i40 := count();
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 60, 5} true;
-  assume {:verifier.code 0} true;
-  $i41 := $eq.i32($i40, 3);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 60, 5} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i41} true;
-  goto $bb8, $bb9;
-$bb8:
-  assume ($i41 == 1);
-  assume {:sourceloc "benchmarks/lfds/hash_table.c", 62, 2} true;
+  assume ($i28 == 1);
+  assume {:sourceloc "benchmarks/lfds/hash_table.c", 62, 5} true;
   assume {:verifier.code 0} true;
   $r := 0;
   $exn := false;
   return;
-$bb9:
-  assume !(($i41 == 1));
+$bb7:
+  assume !(($i28 == 1));
   assume {:sourceloc "benchmarks/lfds/hash_table.c", 60, 5} true;
   assume {:verifier.code 0} true;
   call __assert_fail(.str.5, .str.4, 60, __PRETTY_FUNCTION__.main);
@@ -2298,22 +2235,22 @@ $bb9:
   assume false;
 }
 const llvm.dbg.declare: ref;
-axiom (llvm.dbg.declare == $sub.ref(0, 29088));
+axiom (llvm.dbg.declare == $sub.ref(0, 29076));
 procedure  llvm.dbg.declare($p0: ref, $p1: ref, $p2: ref);
 const pthread_create: ref;
-axiom (pthread_create == $sub.ref(0, 30120));
+axiom (pthread_create == $sub.ref(0, 30108));
 procedure  pthread_create($p0: ref, $p1: ref, $p2: ref, $p3: ref)
   returns ($r: i32);
 const pthread_join: ref;
-axiom (pthread_join == $sub.ref(0, 31152));
+axiom (pthread_join == $sub.ref(0, 31140));
 procedure  pthread_join($i0: i64, $p1: ref)
   returns ($r: i32);
 const __SMACK_code: ref;
-axiom (__SMACK_code == $sub.ref(0, 32184));
+axiom (__SMACK_code == $sub.ref(0, 32172));
 procedure  __SMACK_code.ref($p0: ref);
 procedure  __SMACK_code.ref.i32($p0: ref, p.1: i32);
 const __VERIFIER_assume: ref;
-axiom (__VERIFIER_assume == $sub.ref(0, 33216));
+axiom (__VERIFIER_assume == $sub.ref(0, 33204));
 procedure  __VERIFIER_assume($i0: i32)
 {
 $bb0:
@@ -2332,7 +2269,7 @@ $bb0:
   return;
 }
 const __SMACK_dummy: ref;
-axiom (__SMACK_dummy == $sub.ref(0, 34248));
+axiom (__SMACK_dummy == $sub.ref(0, 34236));
 procedure  __SMACK_dummy($i0: i32)
 {
 $bb0:
@@ -2348,7 +2285,7 @@ $bb0:
   return;
 }
 const __SMACK_and32: ref;
-axiom (__SMACK_and32 == $sub.ref(0, 35280));
+axiom (__SMACK_and32 == $sub.ref(0, 35268));
 procedure  __SMACK_and32($i0: i32, $i1: i32)
   returns ($r: i32)
 {
@@ -9560,7 +9497,7 @@ $bb576:
   goto $bb570;
 }
 const __SMACK_and64: ref;
-axiom (__SMACK_and64 == $sub.ref(0, 36312));
+axiom (__SMACK_and64 == $sub.ref(0, 36300));
 procedure  __SMACK_and64($i0: i64, $i1: i64)
   returns ($r: i64)
 {
@@ -9593,7 +9530,7 @@ $bb0:
   return;
 }
 const __SMACK_and16: ref;
-axiom (__SMACK_and16 == $sub.ref(0, 37344));
+axiom (__SMACK_and16 == $sub.ref(0, 37332));
 procedure  __SMACK_and16($i0: i16, $i1: i16)
   returns ($r: i16)
 {
@@ -12253,7 +12190,7 @@ $bb144:
   goto $bb138;
 }
 const __SMACK_and8: ref;
-axiom (__SMACK_and8 == $sub.ref(0, 38376));
+axiom (__SMACK_and8 == $sub.ref(0, 38364));
 procedure  __SMACK_and8($i0: i8, $i1: i8)
   returns ($r: i8)
 {
@@ -13561,7 +13498,7 @@ $bb72:
   goto $bb66;
 }
 const __SMACK_or32: ref;
-axiom (__SMACK_or32 == $sub.ref(0, 39408));
+axiom (__SMACK_or32 == $sub.ref(0, 39396));
 procedure  __SMACK_or32($i0: i32, $i1: i32)
   returns ($r: i32)
 {
@@ -16677,7 +16614,7 @@ $bb192:
   goto $bb189;
 }
 const __SMACK_or64: ref;
-axiom (__SMACK_or64 == $sub.ref(0, 40440));
+axiom (__SMACK_or64 == $sub.ref(0, 40428));
 procedure  __SMACK_or64($i0: i64, $i1: i64)
   returns ($r: i64)
 {
@@ -16710,7 +16647,7 @@ $bb0:
   return;
 }
 const __SMACK_or16: ref;
-axiom (__SMACK_or16 == $sub.ref(0, 41472));
+axiom (__SMACK_or16 == $sub.ref(0, 41460));
 procedure  __SMACK_or16($i0: i16, $i1: i16)
   returns ($r: i16)
 {
@@ -16743,7 +16680,7 @@ $bb0:
   return;
 }
 const __SMACK_or8: ref;
-axiom (__SMACK_or8 == $sub.ref(0, 42504));
+axiom (__SMACK_or8 == $sub.ref(0, 42492));
 procedure  __SMACK_or8($i0: i8, $i1: i8)
   returns ($r: i8)
 {
@@ -16776,7 +16713,7 @@ $bb0:
   return;
 }
 const __SMACK_check_overflow: ref;
-axiom (__SMACK_check_overflow == $sub.ref(0, 43536));
+axiom (__SMACK_check_overflow == $sub.ref(0, 43524));
 procedure  __SMACK_check_overflow($i0: i32)
 {
 $bb0:
@@ -16795,7 +16732,7 @@ $bb0:
   return;
 }
 const __SMACK_loop_exit: ref;
-axiom (__SMACK_loop_exit == $sub.ref(0, 44568));
+axiom (__SMACK_loop_exit == $sub.ref(0, 44556));
 procedure  __SMACK_loop_exit()
 {
 $bb0:
@@ -16810,7 +16747,7 @@ $bb0:
   return;
 }
 const __SMACK_decls: ref;
-axiom (__SMACK_decls == $sub.ref(0, 45600));
+axiom (__SMACK_decls == $sub.ref(0, 45588));
 type $mop;
 procedure  boogie_si_record_mop(m: $mop);
 const $MOP: $mop;
@@ -16849,10 +16786,10 @@ modifies $CurrAddr;
 procedure  $free(p: ref);
 
 const __SMACK_top_decl: ref;
-axiom (__SMACK_top_decl == $sub.ref(0, 46632));
+axiom (__SMACK_top_decl == $sub.ref(0, 46620));
 procedure  __SMACK_top_decl.ref($p0: ref);
 const __SMACK_init_func_memory_model: ref;
-axiom (__SMACK_init_func_memory_model == $sub.ref(0, 47664));
+axiom (__SMACK_init_func_memory_model == $sub.ref(0, 47652));
 procedure  __SMACK_init_func_memory_model()
 {
 $bb0:
@@ -16867,16 +16804,14 @@ $bb0:
   return;
 }
 const __SMACK_static_init: ref;
-axiom (__SMACK_static_init == $sub.ref(0, 48696));
+axiom (__SMACK_static_init == $sub.ref(0, 48684));
 procedure  __SMACK_static_init()
 {
 $bb0:
   $M.0 := $store.i32($M.0, read_flag, 0);
-  $M.0 := $store.i32($M.0, $add.ref($add.ref(read_flag, $mul.ref(0, 12)), $mul.ref(1, 4)), 0);
-  $M.0 := $store.i32($M.0, $add.ref($add.ref(read_flag, $mul.ref(0, 12)), $mul.ref(2, 4)), 0);
+  $M.0 := $store.i32($M.0, $add.ref($add.ref(read_flag, $mul.ref(0, 8)), $mul.ref(1, 4)), 0);
   $M.0 := $store.i32($M.0, read_data, 0);
-  $M.0 := $store.i32($M.0, $add.ref($add.ref(read_data, $mul.ref(0, 12)), $mul.ref(1, 4)), 0);
-  $M.0 := $store.i32($M.0, $add.ref($add.ref(read_data, $mul.ref(0, 12)), $mul.ref(2, 4)), 0);
+  $M.0 := $store.i32($M.0, $add.ref($add.ref(read_data, $mul.ref(0, 8)), $mul.ref(1, 4)), 0);
   $exn := false;
   return;
 }
