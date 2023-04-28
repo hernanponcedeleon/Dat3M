@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static java.util.Arrays.asList;
@@ -15,16 +16,20 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     private final FormulaManager formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
-    private final IntegerFormulaManager integerFormulaManager;
-    private final BitvectorFormulaManager bitvectorFormulaManager;
     private final Event event;
 
     public ExpressionEncoder(FormulaManager formulaManager, Event event) {
         this.formulaManager = formulaManager;
-        booleanFormulaManager = formulaManager.getBooleanFormulaManager();
-        integerFormulaManager = formulaManager.getIntegerFormulaManager();
-        bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
+        this.booleanFormulaManager = formulaManager.getBooleanFormulaManager();
         this.event = event;
+    }
+
+    private IntegerFormulaManager integerFormulaManager() {
+        return formulaManager.getIntegerFormulaManager();
+    }
+
+    private BitvectorFormulaManager bitvectorFormulaManager() {
+        return formulaManager.getBitvectorFormulaManager();
     }
 
     public BooleanFormula encodeBoolean(ExprInterface expression) {
@@ -33,26 +38,31 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             return (BooleanFormula) formula;
         }
         if (formula instanceof BitvectorFormula) {
+            BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
             int length = bitvectorFormulaManager.getLength((BitvectorFormula) formula);
             BitvectorFormula zero = bitvectorFormulaManager.makeBitvector(length, 0);
             return bitvectorFormulaManager.greaterThan((BitvectorFormula) formula, zero, false);
         }
-        NumeralFormula.IntegerFormula zero = integerFormulaManager.makeNumber(0);
-        return integerFormulaManager.greaterThan((NumeralFormula.IntegerFormula) formula, zero);
+        assert formula instanceof IntegerFormula;
+        IntegerFormulaManager integerFormulaManager = integerFormulaManager();
+        IntegerFormula zero = integerFormulaManager.makeNumber(0);
+        return integerFormulaManager.greaterThan((IntegerFormula) formula, zero);
     }
 
     public Formula encodeInteger(ExprInterface expression) {
         Formula formula = expression.visit(this);
-        if (formula instanceof BitvectorFormula || formula instanceof NumeralFormula.IntegerFormula) {
+        if (formula instanceof BitvectorFormula || formula instanceof IntegerFormula) {
             return formula;
         }
         int precision = getArchPrecision();
         Formula one;
         Formula zero;
         if(precision > -1) {
+            BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
             one = bitvectorFormulaManager.makeBitvector(precision, 1);
             zero = bitvectorFormulaManager.makeBitvector(precision, 0);
         } else {
+            IntegerFormulaManager integerFormulaManager = integerFormulaManager();
             one = integerFormulaManager.makeNumber(1);
             zero = integerFormulaManager.makeNumber(0);
         }
@@ -73,10 +83,10 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                     throw new UnsupportedOperationException("Encoding of COpBin operation" + op + " not supported on boolean formulas.");
             }
         }
-        if (lhs instanceof NumeralFormula.IntegerFormula && rhs instanceof NumeralFormula.IntegerFormula) {
+        if (lhs instanceof IntegerFormula && rhs instanceof IntegerFormula) {
             IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-            NumeralFormula.IntegerFormula i1 = (NumeralFormula.IntegerFormula) lhs;
-            NumeralFormula.IntegerFormula i2 = (NumeralFormula.IntegerFormula) rhs;
+            IntegerFormula i1 = (IntegerFormula) lhs;
+            IntegerFormula i2 = (IntegerFormula) rhs;
             switch (op) {
                 case EQ:
                     return imgr.equal(i1, i2);
@@ -144,7 +154,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             case OR:
                 return booleanFormulaManager.or(lhs, rhs);
         }
-        throw new UnsupportedOperationException("Encoding of not supported for BOpBin " + bBin.getOp());
+        throw new UnsupportedOperationException("Encoding not supported for BOpBin " + bBin.getOp());
     }
 
     @Override
@@ -161,20 +171,19 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     @Override
     public Formula visit(IValue iValue) {
         return iValue.getPrecision() > 0
-                ? bitvectorFormulaManager.makeBitvector(iValue.getPrecision(), iValue.getValue())
-                : integerFormulaManager.makeNumber(iValue.getValue());
+                ? bitvectorFormulaManager().makeBitvector(iValue.getPrecision(), iValue.getValue())
+                : integerFormulaManager().makeNumber(iValue.getValue());
     }
 
     @Override
     public Formula visit(IExprBin iBin) {
         Formula lhs = encodeInteger(iBin.getLHS());
         Formula rhs = encodeInteger(iBin.getRHS());
-        // Some SMT solvers do not support certain theories.
-        // Calling the constructor of the manager in such solvers results in an Exception.
-        // Thus we initialize the manager inside the branches
-        if (lhs instanceof NumeralFormula.IntegerFormula && rhs instanceof NumeralFormula.IntegerFormula) {
-            NumeralFormula.IntegerFormula i1 = (NumeralFormula.IntegerFormula) lhs;
-            NumeralFormula.IntegerFormula i2 = (NumeralFormula.IntegerFormula) rhs;
+        if (lhs instanceof IntegerFormula && rhs instanceof IntegerFormula) {
+            IntegerFormula i1 = (IntegerFormula) lhs;
+            IntegerFormula i2 = (IntegerFormula) rhs;
+            BitvectorFormulaManager bitvectorFormulaManager;
+            IntegerFormulaManager integerFormulaManager = integerFormulaManager();
             switch (iBin.getOp()) {
                 case PLUS:
                     return integerFormulaManager.add(i1, i2);
@@ -188,22 +197,56 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 case MOD:
                     return integerFormulaManager.modulo(i1, i2);
                 case AND:
-                    return bitvectorFormulaManager.toIntegerFormula(bitvectorFormulaManager.and(bitvectorFormulaManager.makeBitvector(32, i1), bitvectorFormulaManager.makeBitvector(32, i2)), false);
+                    bitvectorFormulaManager = bitvectorFormulaManager();
+                    return bitvectorFormulaManager.toIntegerFormula(
+                            bitvectorFormulaManager.and(
+                                    bitvectorFormulaManager.makeBitvector(32, i1),
+                                    bitvectorFormulaManager.makeBitvector(32, i2)),
+                            false);
                 case OR:
-                    return bitvectorFormulaManager.toIntegerFormula(bitvectorFormulaManager.or(bitvectorFormulaManager.makeBitvector(32, i1), bitvectorFormulaManager.makeBitvector(32, i2)), false);
+                    bitvectorFormulaManager = bitvectorFormulaManager();
+                    return bitvectorFormulaManager.toIntegerFormula(
+                            bitvectorFormulaManager.or(
+                                    bitvectorFormulaManager.makeBitvector(32, i1),
+                                    bitvectorFormulaManager.makeBitvector(32, i2)),
+                            false);
                 case XOR:
-                    return bitvectorFormulaManager.toIntegerFormula(bitvectorFormulaManager.xor(bitvectorFormulaManager.makeBitvector(32, i1), bitvectorFormulaManager.makeBitvector(32, i2)), false);
+                    bitvectorFormulaManager = bitvectorFormulaManager();
+                    return bitvectorFormulaManager.toIntegerFormula(
+                            bitvectorFormulaManager.xor(
+                                    bitvectorFormulaManager.makeBitvector(32, i1),
+                                    bitvectorFormulaManager.makeBitvector(32, i2)),
+                            false);
                 case L_SHIFT:
-                    return bitvectorFormulaManager.toIntegerFormula(bitvectorFormulaManager.shiftLeft(bitvectorFormulaManager.makeBitvector(32, i1), bitvectorFormulaManager.makeBitvector(32, i2)), false);
+                    bitvectorFormulaManager = bitvectorFormulaManager();
+                    return bitvectorFormulaManager.toIntegerFormula(
+                            bitvectorFormulaManager.shiftLeft(
+                                    bitvectorFormulaManager.makeBitvector(32, i1),
+                                    bitvectorFormulaManager.makeBitvector(32, i2)),
+                            false);
                 case R_SHIFT:
-                    return bitvectorFormulaManager.toIntegerFormula(bitvectorFormulaManager.shiftRight(bitvectorFormulaManager.makeBitvector(32, i1), bitvectorFormulaManager.makeBitvector(32, i2), false), false);
+                    bitvectorFormulaManager = bitvectorFormulaManager();
+                    return bitvectorFormulaManager.toIntegerFormula(
+                            bitvectorFormulaManager.shiftRight(
+                                    bitvectorFormulaManager.makeBitvector(32, i1),
+                                    bitvectorFormulaManager.makeBitvector(32, i2),
+                                    false),
+                            false);
                 case AR_SHIFT:
-                    return bitvectorFormulaManager.toIntegerFormula(bitvectorFormulaManager.shiftRight(bitvectorFormulaManager.makeBitvector(32, i1), bitvectorFormulaManager.makeBitvector(32, i2), true), false);
+                    bitvectorFormulaManager = bitvectorFormulaManager();
+                    return bitvectorFormulaManager.toIntegerFormula(
+                            bitvectorFormulaManager.shiftRight(
+                                    bitvectorFormulaManager.makeBitvector(32, i1),
+                                    bitvectorFormulaManager.makeBitvector(32, i2),
+                                    true),
+                            false);
                 case SREM:
                 case UREM:
-                    NumeralFormula.IntegerFormula zero = integerFormulaManager.makeNumber(0);
-                    NumeralFormula.IntegerFormula modulo = integerFormulaManager.modulo(i1, i2);
-                    BooleanFormula cond = booleanFormulaManager.and(integerFormulaManager.distinct(asList(modulo, zero)), integerFormulaManager.lessThan(i1, zero));
+                    IntegerFormula zero = integerFormulaManager.makeNumber(0);
+                    IntegerFormula modulo = integerFormulaManager.modulo(i1, i2);
+                    BooleanFormula cond = booleanFormulaManager.and(
+                            integerFormulaManager.distinct(asList(modulo, zero)),
+                            integerFormulaManager.lessThan(i1, zero));
                     return booleanFormulaManager.ifThenElse(cond, integerFormulaManager.subtract(modulo, i2), modulo);
                 default:
                     throw new UnsupportedOperationException("Encoding of IOpBin operation " + iBin.getOp() + " not supported on integer formulas.");
@@ -211,6 +254,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         } else if (lhs instanceof BitvectorFormula && rhs instanceof BitvectorFormula) {
             BitvectorFormula bv1 = (BitvectorFormula) lhs;
             BitvectorFormula bv2 = (BitvectorFormula) rhs;
+            BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
             switch (iBin.getOp()) {
                 case PLUS:
                     return bitvectorFormulaManager.add(bv1, bv2);
@@ -259,25 +303,25 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     @Override
     public Formula visit(IExprUn iUn) {
         Formula inner = encodeInteger(iUn.getInner());
-        if (inner instanceof NumeralFormula.IntegerFormula) {
-            NumeralFormula.IntegerFormula i = (NumeralFormula.IntegerFormula) inner;
+        if (inner instanceof IntegerFormula) {
+            IntegerFormula i = (IntegerFormula) inner;
             switch (iUn.getOp()) {
                 case MINUS:
-                    return integerFormulaManager.subtract(integerFormulaManager.makeNumber(0), i);
+                    return integerFormulaManager().subtract(integerFormulaManager().makeNumber(0), i);
                 case BV2UINT:
                 case BV2INT:
                     return inner;
                 // ============ INT2BV ============
                 case INT2BV1:
-                    return bitvectorFormulaManager.makeBitvector(1, i);
+                    return bitvectorFormulaManager().makeBitvector(1, i);
                 case INT2BV8:
-                    return bitvectorFormulaManager.makeBitvector(8, i);
+                    return bitvectorFormulaManager().makeBitvector(8, i);
                 case INT2BV16:
-                    return bitvectorFormulaManager.makeBitvector(16, i);
+                    return bitvectorFormulaManager().makeBitvector(16, i);
                 case INT2BV32:
-                    return bitvectorFormulaManager.makeBitvector(32, i);
+                    return bitvectorFormulaManager().makeBitvector(32, i);
                 case INT2BV64:
-                    return bitvectorFormulaManager.makeBitvector(64, i);
+                    return bitvectorFormulaManager().makeBitvector(64, i);
                 // ============ TRUNC ============
                 case TRUNC6432:
                 case TRUNC6416:
@@ -313,12 +357,12 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 case SEXT3264:
                     return inner;
                 default:
-                    // TODO add support for CTLZ. Right now we assume constant propagation gor rid
-                    // of such instructions
+                    // TODO CTLZ. Right now we assume constant propagation got rid of such instructions
                     throw new UnsupportedOperationException("Encoding of IOpUn operation " + iUn.getOp() + " not supported on integer formulas.");
             }
         } else {
             BitvectorFormula bv = (BitvectorFormula) inner;
+            BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
             switch (iUn.getOp()) {
                 case MINUS:
                     return bitvectorFormulaManager.negate(bv);
@@ -421,24 +465,24 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     public Formula visit(INonDet iNonDet) {
         String name = Integer.toString(iNonDet.hashCode());
         if (iNonDet.getPrecision() < 0) {
-            return integerFormulaManager.makeVariable(name);
+            return integerFormulaManager().makeVariable(name);
         }
-        return bitvectorFormulaManager.makeVariable(iNonDet.getPrecision(), name);
+        return bitvectorFormulaManager().makeVariable(iNonDet.getPrecision(), name);
     }
 
     @Override
     public Formula visit(Register reg) {
         String name = reg.getName() + "(" + event.getGlobalId() + ")";
         if (reg.getPrecision() < 0) {
-            return integerFormulaManager.makeVariable(name);
+            return integerFormulaManager().makeVariable(name);
         }
-        return bitvectorFormulaManager.makeVariable(reg.getPrecision(), name);
+        return bitvectorFormulaManager().makeVariable(reg.getPrecision(), name);
     }
 
     @Override
     public Formula visit(MemoryObject address) {
         return address.getPrecision() > 0
-                ? bitvectorFormulaManager.makeBitvector(address.getPrecision(), address.getValue())
-                : integerFormulaManager.makeNumber(address.getValue());
+                ? bitvectorFormulaManager().makeBitvector(address.getPrecision(), address.getValue())
+                : integerFormulaManager().makeNumber(address.getValue());
     }
 }
