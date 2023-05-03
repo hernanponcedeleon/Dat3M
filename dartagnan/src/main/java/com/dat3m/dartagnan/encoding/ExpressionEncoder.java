@@ -476,7 +476,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(INonDet iNonDet) {
-        String name = Integer.toString(iNonDet.hashCode());
+        String name = iNonDet.getName();
         if (iNonDet.getPrecision() < 0) {
             return integerFormulaManager().makeVariable(name);
         }

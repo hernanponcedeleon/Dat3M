@@ -213,7 +213,7 @@ public class AnalysisTest {
 
         Thread thread = program.newThread("program2");
         Register r0 = thread.newRegister("r0", getArchPrecision());
-        thread.append(newLocal(r0, new INonDet(INonDetTypes.INT, getArchPrecision())));
+        thread.append(newLocal(r0, program.newConstant(getArchPrecision(), true, null, null)));
         Label l0 = EventFactory.newLabel("l0");
         thread.append(newJump(new BExprBin(new Atom(r0, GT, ONE), BOpBin.OR, new Atom(r0, LT, ZERO)), l0));
         Store e0 = newStore(x);

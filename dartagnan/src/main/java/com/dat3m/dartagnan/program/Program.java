@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program;
 
 
+import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.configuration.Arch;
@@ -8,7 +9,9 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.google.common.base.Preconditions;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -18,11 +21,12 @@ public class Program {
     public enum SourceLanguage { LITMUS, BOOGIE; }
 
     private String name;
-	private AbstractAssert spec;
+    private AbstractAssert spec;
     private AbstractAssert filterSpec; // Acts like "assume" statements, filtering out executions
-	private final List<Thread> threads;
-	private final Memory memory;
-	private Arch arch;
+    private final List<Thread> threads;
+    private final Memory memory;
+    private final Collection<INonDet> constants = new ArrayList<>();
+    private Arch arch;
     private int unrollingBound = 0;
     private boolean isCompiled;
     private SourceLanguage format;
@@ -35,18 +39,18 @@ public class Program {
         this("", memory, format);
     }
 
-	public Program (String name, Memory memory, SourceLanguage format) {
-		this.name = name;
-		this.memory = memory;
-		this.threads = new ArrayList<>();
-		this.format = format;
-	}
+    public Program (String name, Memory memory, SourceLanguage format) {
+        this.name = name;
+        this.memory = memory;
+        this.threads = new ArrayList<>();
+        this.format = format;
+    }
 
-	public SourceLanguage getFormat(){
+    public SourceLanguage getFormat(){
         return format;
     }
 
-	public boolean isCompiled(){
+    public boolean isCompiled(){
         return isCompiled;
     }
     public boolean isUnrolled(){
@@ -56,18 +60,27 @@ public class Program {
         return unrollingBound;
     }
 
-	public String getName(){
+    public String getName(){
         return name;
     }
-	public void setName(String name){
-	    this.name = name;
+
+    public void setName(String name){
+        this.name = name;
     }
 
-	public void setArch(Arch arch){
-	    this.arch = arch;
+    public void setArch(Arch arch){
+        this.arch = arch;
     }
-	public Arch getArch(){
-	    return arch;
+
+    public Arch getArch(){
+        return arch;
+    }
+
+    public INonDet newConstant(int precision, boolean signed, BigInteger min, BigInteger max) {
+        int id = constants.size();
+        INonDet constant = new INonDet(id, precision, signed, min, max);
+        constants.add(constant);
+        return constant;
     }
 
     public Memory getMemory(){
@@ -97,7 +110,7 @@ public class Program {
         //TODO assert unique name
         int id = threads.size();
         Thread thread = new Thread(this, name, id, entry);
-		threads.add(thread);
+        threads.add(thread);
         return thread;
     }
 
@@ -108,7 +121,7 @@ public class Program {
     public Thread getOrNewThread(String name) {
         Optional<Thread> fetched = getThread(name);
         return fetched.orElseGet(() -> newThread(name));
-	}
+    }
 
     public List<Thread> getThreads() {
         return threads;
@@ -119,13 +132,13 @@ public class Program {
      *
      * @return {@code cId}-ordered complete sequence of all events in this program.
      */
-	public List<Event> getEvents() {
+    public List<Event> getEvents() {
         List<Event> events = new ArrayList<>();
-		for (Thread t : threads) {
-			events.addAll(t.getEvents());
-		}
-		return events;
-	}
+        for (Thread t : threads) {
+            events.addAll(t.getEvents());
+        }
+        return events;
+    }
 
     /**
      * Iterates a subset of events in this program.
