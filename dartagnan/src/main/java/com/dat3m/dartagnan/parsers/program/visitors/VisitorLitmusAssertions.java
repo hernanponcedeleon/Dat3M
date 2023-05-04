@@ -7,21 +7,20 @@ import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.specification.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.Location;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
-import static com.google.common.base.Preconditions.checkState;
 
 public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<AbstractAssert> {
 
-    private final ProgramBuilder programBuilder;
+    private final Program program;
 
-    public VisitorLitmusAssertions(ProgramBuilder programBuilder){
-        this.programBuilder = programBuilder;
+    public VisitorLitmusAssertions(Program program) {
+        this.program = program;
     }
 
     @Override
@@ -77,10 +76,10 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
         }
         String name = ctx.varName().getText();
         if(ctx.threadId() != null) {
-            return programBuilder.getOrErrorRegister(ctx.threadId().id,name);
+            int id = ctx.threadId().id;
+            return program.getThread(Integer.toString(id)).orElseThrow().getRegister(name).orElseThrow();
         }
-        MemoryObject base = programBuilder.getObject(name);
-        checkState(base != null, "uninitialized location %s", name);
+        MemoryObject base = program.getMemory().getObject(name).orElseThrow();
         TerminalNode offset = ctx.DigitSequence();
         int o = offset == null ? 0 : Integer.parseInt(offset.getText());
         return right && offset == null ? base : new Location(name, base, o);

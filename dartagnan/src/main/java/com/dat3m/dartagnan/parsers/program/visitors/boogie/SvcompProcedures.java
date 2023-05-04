@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public class SvcompProcedures {
 
@@ -40,13 +41,13 @@ public class SvcompProcedures {
 				__VERIFIER_loop_bound(visitor, ctx);
 				break;
 			case "__VERIFIER_loop_begin":
-				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBegin());
+				visitor.thread.append(EventFactory.Svcomp.newLoopBegin());
 				break;
 			case "__VERIFIER_spin_start":
-				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newSpinStart());
+				visitor.thread.append(EventFactory.Svcomp.newSpinStart());
 				break;
 			case "__VERIFIER_spin_end":
-				visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newSpinEnd());
+				visitor.thread.append(EventFactory.Svcomp.newSpinEnd());
 				break;
 			case "__VERIFIER_assert":
 				visitor.addAssertion((IExpr)ctx.call_params().exprs().accept(visitor));
@@ -82,22 +83,22 @@ public class SvcompProcedures {
 
 	private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
     	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
-       	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newAssume(expr));
+       	visitor.thread.append(EventFactory.newAssume(expr));
 	}
-	
+
 	public static void __VERIFIER_atomic_begin(VisitorBoogie visitor) {
 		visitor.currentBeginAtomic = EventFactory.Svcomp.newBeginAtomic();
-		visitor.programBuilder.addChild(visitor.threadCount, visitor.currentBeginAtomic);	
+		visitor.thread.append(visitor.currentBeginAtomic);
 	}
-	
+
 	public static void __VERIFIER_atomic_end(VisitorBoogie visitor) {
 		if(visitor.currentBeginAtomic == null) {
             throw new MalformedProgramException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
 		}
-		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newEndAtomic(visitor.currentBeginAtomic));
+        visitor.thread.append(EventFactory.Svcomp.newEndAtomic(visitor.currentBeginAtomic));
 		visitor.currentBeginAtomic = null;
 	}
-	
+
 	private static void __VERIFIER_nondet(VisitorBoogie visitor, Call_cmdContext ctx, String name) {
 		INonDetTypes type = null;
 		switch (name) {
@@ -131,25 +132,20 @@ public class SvcompProcedures {
 				throw new ParsingException(name + " is not supported");
 		}
 		String registerName = ctx.call_params().Ident(0).getText();
-		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
-	    if(register != null){
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, new INonDet(type, register.getPrecision())))
-					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-	    }
+        Optional<Register> register = visitor.thread.getRegister(visitor.currentScope.getID() + ":" + registerName);
+        if (register.isPresent()) {
+            visitor.append(EventFactory.newLocal(register.get(), new INonDet(type, register.get().getPrecision())));
+        }
 	}
 
-	private static void __VERIFIER_nondet_bool(VisitorBoogie visitor, Call_cmdContext ctx) {
-		String registerName = ctx.call_params().Ident(0).getText();
-		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
-	    if(register != null){
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, new BNonDet()))
-					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-	    }
-	}
+    private static void __VERIFIER_nondet_bool(VisitorBoogie visitor, Call_cmdContext ctx) {
+        String registerName = ctx.call_params().Ident(0).getText();
+        Optional<Register> register = visitor.thread.getRegister(visitor.currentScope.getID() + ":" + registerName);
+        register.ifPresent(value -> visitor.append(EventFactory.newLocal(value, new BNonDet())));
+    }
 
 	private static void __VERIFIER_loop_bound(VisitorBoogie visitor, Call_cmdContext ctx) {
 		int bound = ((IExpr)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValueAsInt();
-		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBound(bound))
-				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-	}
+		visitor.append(EventFactory.Svcomp.newLoopBound(bound));
+    }
 }

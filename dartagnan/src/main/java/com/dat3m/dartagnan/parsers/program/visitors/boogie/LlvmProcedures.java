@@ -49,7 +49,7 @@ public class LlvmProcedures {
         List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 
         String regName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
-        Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName, GlobalSettings.getArchPrecision());
+        Register reg = visitor.thread.getOrNewRegister(regName, GlobalSettings.getArchPrecision());
 
         Object p0 = params.get(0).accept(visitor);
         Object p1 = params.size() > 1 ? params.get(1).accept(visitor) : null;
@@ -67,19 +67,16 @@ public class LlvmProcedures {
             case "__llvm_atomic32_load":
             case "__llvm_atomic64_load":
                 mo = C11.intToMo(((IConst) p1).getValueAsInt());
-                visitor.programBuilder.addChild(visitor.threadCount, Llvm.newLoad(reg, (IExpr) p0, mo))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+                visitor.append(Llvm.newLoad(reg, (IExpr) p0, mo));
                 return;
             case "__llvm_atomic32_store":
             case "__llvm_atomic64_store":
                 mo = C11.intToMo(((IConst) p2).getValueAsInt());
-                visitor.programBuilder.addChild(visitor.threadCount, Llvm.newStore((IExpr) p0, (ExprInterface) p1, mo))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+                visitor.append(Llvm.newStore((IExpr) p0, (ExprInterface) p1, mo));
                 return;
             case "__llvm_atomic_fence":
                 mo = C11.intToMo(((IConst) p0).getValueAsInt());
-                visitor.programBuilder.addChild(visitor.threadCount, Llvm.newFence(mo))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+                visitor.append(Llvm.newFence(mo));
                 return;
             case "__llvm_atomic32_cmpxchg":
             case "__llvm_atomic64_cmpxchg":
@@ -89,14 +86,12 @@ public class LlvmProcedures {
                 // create such registers,
                 // then when calling "extractvalue" we can check if the member was properly
                 // initialized
-                Register oldValueRegister = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(0)", GlobalSettings.getArchPrecision());
-                Register cmpRegister = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, regName + "(1)", GlobalSettings.getArchPrecision());
+                Register oldValueRegister = visitor.thread.getOrNewRegister(regName + "(0)", GlobalSettings.getArchPrecision());
+                Register cmpRegister = visitor.thread.getOrNewRegister(regName + "(1)", GlobalSettings.getArchPrecision());
                 // The compilation of Llvm.newCompareExchange will
                 // assign the correct values to the registers above
                 mo = C11.intToMo(((IConst) p3).getValueAsInt());
-                visitor.programBuilder
-                        .addChild(visitor.threadCount, Llvm.newCompareExchange(oldValueRegister, cmpRegister, (IExpr) p0, (IExpr) p1, (IExpr) p2, mo, true))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+                visitor.append(Llvm.newCompareExchange(oldValueRegister, cmpRegister, (IExpr) p0, (IExpr) p1, (IExpr) p2, mo, true));
                 return;
             case "__llvm_atomic32_rmw":
             case "__llvm_atomic64_rmw":
@@ -104,9 +99,7 @@ public class LlvmProcedures {
                 IOpBin op;
                 switch (((IConst) p3).getValueAsInt()) {
                     case 0:
-                        visitor.programBuilder
-                                .addChild(visitor.threadCount, Llvm.newExchange(reg, (IExpr) p0, (IExpr) p1, mo))
-                                .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+                        visitor.append(Llvm.newExchange(reg, (IExpr) p0, (IExpr) p1, mo));
                         return;
                     case 1:
                         op = IOpBin.PLUS;
@@ -126,8 +119,7 @@ public class LlvmProcedures {
                     default:
                         throw new UnsupportedOperationException("Operation " + params.get(3).getText() + " is not recognized.");
                 }
-                visitor.programBuilder.addChild(visitor.threadCount, Llvm.newRMW(reg, (IExpr) p0, (IExpr) p1, op, mo))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+                visitor.append(Llvm.newRMW(reg, (IExpr) p0, (IExpr) p1, op, mo));
                 return;
             case "llvm.smax.i32":
             case "llvm.smax.i64":
@@ -136,9 +128,7 @@ public class LlvmProcedures {
                 i1 = (IExpr) p0;
                 i2 = (IExpr) p1;
                 cond = name.contains("smax") ? new Atom(i1, COpBin.GTE, i2) : new Atom(i1, COpBin.UGTE, i2);
-                visitor.programBuilder
-                        .addChild(visitor.threadCount, EventFactory.newLocal(reg, new IfExpr(cond, i1, i2)))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+                visitor.append(EventFactory.newLocal(reg, new IfExpr(cond, i1, i2)));
                 return;
             case "llvm.smin.i32":
             case "llvm.smin.i64":
@@ -147,17 +137,13 @@ public class LlvmProcedures {
                 i1 = (IExpr) p0;
                 i2 = (IExpr) p1;
                 cond = name.contains("smin") ? new Atom(i1, COpBin.LTE, i2) : new Atom(i1, COpBin.ULTE, i2);
-                visitor.programBuilder
-                        .addChild(visitor.threadCount, EventFactory.newLocal(reg, new IfExpr(cond, i1, i2)))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+                visitor.append(EventFactory.newLocal(reg, new IfExpr(cond, i1, i2)));
                 return;
             case "llvm.ctlz.i32":
             case "llvm.ctlz.i64":
                 i1 = (IExpr) p0;
                 i2 = (IExpr) p1;
-                visitor.programBuilder
-                        .addChild(visitor.threadCount, EventFactory.newLocal(reg, new IExprUn(IOpUn.CTLZ, i1)))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+                visitor.append(EventFactory.newLocal(reg, new IExprUn(IOpUn.CTLZ, i1)));
                 return;
             default:
                 throw new UnsupportedOperationException(name + " procedure is not part of LLVMPROCEDURES");

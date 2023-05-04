@@ -3,11 +3,8 @@ package com.dat3m.dartagnan.parsers.program;
 import com.dat3m.dartagnan.parsers.LitmusAArch64Lexer;
 import com.dat3m.dartagnan.parsers.LitmusAArch64Parser;
 import com.dat3m.dartagnan.exception.ParserErrorListener;
-import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.VisitorLitmusAArch64;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Program.SourceLanguage;
-import com.dat3m.dartagnan.configuration.Arch;
 
 import org.antlr.v4.runtime.*;
 
@@ -21,12 +18,8 @@ class ParserLitmusAArch64 implements ParserInterface {
         LitmusAArch64Parser parser = new LitmusAArch64Parser(tokenStream);
         parser.addErrorListener(new DiagnosticErrorListener(true));
         parser.addErrorListener(new ParserErrorListener());
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
         ParserRuleContext parserEntryPoint = parser.main();
-        VisitorLitmusAArch64 visitor = new VisitorLitmusAArch64(pb);
-
-        Program program = (Program) parserEntryPoint.accept(visitor);
-        program.setArch(Arch.ARM8);
-        return program;
+        VisitorLitmusAArch64 visitor = new VisitorLitmusAArch64();
+        return (Program) parserEntryPoint.accept(visitor);
     }
 }

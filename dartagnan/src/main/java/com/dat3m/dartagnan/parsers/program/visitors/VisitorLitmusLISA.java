@@ -4,239 +4,256 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusLISABaseVisitor;
-import com.dat3m.dartagnan.parsers.LitmusLISAParser;
+import com.dat3m.dartagnan.parsers.LitmusLISAParser.*;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
-import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 
 public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
-    private final ProgramBuilder programBuilder;
-    private int mainThread;
-    private int threadCount = 0;
+	private final Program program = new Program(Program.SourceLanguage.LITMUS);
+	private final int archPrecision = getArchPrecision();
+	private Thread[] threadList;
+	private Thread thread;
+	private final Map<String, Label> labelMap = new HashMap<>();
 
-    public VisitorLitmusLISA(ProgramBuilder pb){
-        this.programBuilder = pb;
-    }
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Entry point
-
-    @Override
-    public Object visitMain(LitmusLISAParser.MainContext ctx) {
-        visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
-        visitVariableDeclaratorList(ctx.variableDeclaratorList());
-        visitInstructionList(ctx.program().instructionList());
-        if(ctx.assertionList() != null){
-            int a = ctx.assertionList().getStart().getStartIndex();
-            int b = ctx.assertionList().getStop().getStopIndex();
-            String raw = ctx.assertionList().getStart().getInputStream().getText(new Interval(a, b));
-            programBuilder.setAssert(AssertionHelper.parseAssertionList(programBuilder, raw));
-        }
-        if(ctx.assertionFilter() != null){
-            int a = ctx.assertionFilter().getStart().getStartIndex();
-            int b = ctx.assertionFilter().getStop().getStopIndex();
-            String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
-            programBuilder.setAssertFilter(AssertionHelper.parseAssertionFilter(programBuilder, raw));
-        }
-        return programBuilder.build();
-    }
-
-
-    // ----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    public Object visitVariableDeclaratorLocation(LitmusLISAParser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.initLocEqConst(ctx.location().getText(), new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()));
-        return null;
-    }
-
-    @Override
-    public Object visitVariableDeclaratorRegister(LitmusLISAParser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()));
-        return null;
-    }
-
-    @Override
-    public Object visitVariableDeclaratorRegisterLocation(LitmusLISAParser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), getArchPrecision());
-        return null;
-    }
-
-    @Override
-    public Object visitVariableDeclaratorLocationLocation(LitmusLISAParser.VariableDeclaratorLocationLocationContext ctx) {
-        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText());
-        return null;
-    }
-
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Thread declarator list (on top of instructions), e.g. " P0  |   P1  |   P2  ;"
-
-    @Override
-    public Object visitThreadDeclaratorList(LitmusLISAParser.ThreadDeclaratorListContext ctx) {
-        for(LitmusLISAParser.ThreadIdContext threadCtx : ctx.threadId()){
-            programBuilder.initThread(threadCtx.id);
-            threadCount++;
-        }
-        return null;
-    }
-
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Instruction list (the program itself)
-
-    @Override
-    public Object visitInstructionRow(LitmusLISAParser.InstructionRowContext ctx) {
-        for(int i = 0; i < threadCount; i++){
-            mainThread = i;
-            visitInstruction(ctx.instruction(i));
-        }
-        return null;
-    }
+	// ----------------------------------------------------------------------------------------------------------------
+	// Entry point
 
 	@Override
-	public Object visitLoad(LitmusLISAParser.LoadContext ctx) {
-        Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
-        IExpr address = (IExpr) ctx.expression().accept(this);
-        String mo = ctx.mo() != null ? ctx.mo().getText() : "";
-		programBuilder.addChild(mainThread, EventFactory.newLoad(reg, address, mo));
+	public Object visitMain(MainContext ctx) {
+		visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
+		visitVariableDeclaratorList(ctx.variableDeclaratorList());
+		visitInstructionList(ctx.program().instructionList());
+		if (ctx.assertionList() != null) {
+			int a = ctx.assertionList().getStart().getStartIndex();
+			int b = ctx.assertionList().getStop().getStopIndex();
+			String raw = ctx.assertionList().getStart().getInputStream().getText(new Interval(a, b));
+			AssertionHelper.parseAssertionList(program, raw);
+		}
+		if (ctx.assertionFilter() != null) {
+			int a = ctx.assertionFilter().getStart().getStartIndex();
+			int b = ctx.assertionFilter().getStop().getStopIndex();
+			String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
+			AssertionHelper.parseAssertionFilter(program, raw);
+		}
+		for (Thread thread : threadList) {
+			thread.append(labelMap.computeIfAbsent(thread.getEndLabelName(), EventFactory::newLabel));
+		}
+		EventIdReassignment.newInstance().run(program);
+		program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+		return program;
+	}
+
+
+	// ----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
+		MemoryObject object = program.getMemory().getOrNewObject(ctx.location().getText());
+		IValue value = new IValue(new BigInteger(ctx.constant().getText()), archPrecision);
+		object.setInitialValue(0, value);
 		return null;
 	}
 
 	@Override
-	public Object visitLocal(LitmusLISAParser.LocalContext ctx) {
-        Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
-		ExprInterface e = (ExprInterface) ctx.expression().accept(this);
-        programBuilder.addChild(mainThread, EventFactory.newLocal(reg, e));
+	public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
+		Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
+		Register register = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
+		IValue value = new IValue(new BigInteger(ctx.constant().getText()), archPrecision);
+		thread.append(EventFactory.newLocal(register, value));
 		return null;
 	}
 
 	@Override
-	public Object visitStore(LitmusLISAParser.StoreContext ctx) {
+	public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
+		Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
+		Register register = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
+		MemoryObject value = program.getMemory().getOrNewObject(ctx.location().getText());
+		thread.append(EventFactory.newLocal(register, value));
+		return null;
+	}
+
+	@Override
+	public Object visitVariableDeclaratorLocationLocation(VariableDeclaratorLocationLocationContext ctx) {
+		MemoryObject object = program.getMemory().getOrNewObject(ctx.location(0).getText());
+		MemoryObject value = program.getMemory().getOrNewObject(ctx.location(1).getText());
+		object.setInitialValue(0, value);
+		return null;
+	}
+
+
+	// ----------------------------------------------------------------------------------------------------------------
+	// Thread declarator list (on top of instructions), e.g. " P0  |   P1  |   P2  ;"
+
+	@Override
+	public Object visitThreadDeclaratorList(ThreadDeclaratorListContext ctx) {
+		threadList = new Thread[ctx.threadId().size()];
+		for (int i = 0; i < threadList.length; i++) {
+			threadList[i] = program.getOrNewThread(Integer.toString(ctx.threadId(i).id));
+		}
+		return null;
+	}
+
+
+	// ----------------------------------------------------------------------------------------------------------------
+	// Instruction list (the program itself)
+
+	@Override
+	public Object visitInstructionRow(InstructionRowContext ctx) {
+		for (int i = 0; i < threadList.length; i++) {
+			thread = threadList[i];
+			visitInstruction(ctx.instruction(i));
+		}
+		return null;
+	}
+
+	@Override
+	public Object visitLoad(LoadContext ctx) {
+		Register result = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
+		IExpr address = (IExpr) ctx.expression().accept(this);
+		String mo = ctx.mo() != null ? ctx.mo().getText() : "";
+		thread.append(EventFactory.newLoad(result, address, mo));
+		return null;
+	}
+
+	@Override
+	public Object visitLocal(LocalContext ctx) {
+		Register result = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
+		ExprInterface expression = (ExprInterface) ctx.expression().accept(this);
+		thread.append(EventFactory.newLocal(result, expression));
+		return null;
+	}
+
+	@Override
+	public Object visitStore(StoreContext ctx) {
 		IExpr value = (IExpr) ctx.value().accept(this);
-        IExpr address = (IExpr) ctx.expression().accept(this);
-        String mo = ctx.mo() != null ? ctx.mo().getText() : "";
-        programBuilder.addChild(mainThread, EventFactory.newStore(address, value, mo));
+		IExpr address = (IExpr) ctx.expression().accept(this);
+		String mo = ctx.mo() != null ? ctx.mo().getText() : "";
+		thread.append(EventFactory.newStore(address, value, mo));
 		return null;
 
 	}
-	
+
 	@Override
-	public Object visitRmw(LitmusLISAParser.RmwContext ctx) {
-        Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
+	public Object visitRmw(RmwContext ctx) {
+		Register result = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
 		IExpr value = (IExpr) ctx.value().accept(this);
-        IExpr address = (IExpr) ctx.expression().accept(this);
-        String mo = ctx.mo() != null ? ctx.mo().getText() : "";
-        programBuilder.addChild(mainThread, EventFactory.LISA.newRMW(address, reg, value, mo));
+		IExpr address = (IExpr) ctx.expression().accept(this);
+		String mo = ctx.mo() != null ? ctx.mo().getText() : "";
+		thread.append(EventFactory.LISA.newRMW(address, result, value, mo));
 		return null;
 	}
 
 	@Override
-	public Object visitFence(LitmusLISAParser.FenceContext ctx) {
-        String mo = ctx.mo() != null ? ctx.mo().getText() : "";
-        programBuilder.addChild(mainThread, EventFactory.newFence(mo));
+	public Object visitFence(FenceContext ctx) {
+		String mo = ctx.mo() != null ? ctx.mo().getText() : "";
+		thread.append(EventFactory.newFence(mo));
 		return null;
 	}
-	
+
 	@Override
-	public Object visitLabel(LitmusLISAParser.LabelContext ctx) {
+	public Object visitLabel(LabelContext ctx) {
 		String name = ctx.getText();
-        Label label = programBuilder.getOrCreateLabel(name.substring(0, name.length()-1));
-		programBuilder.addChild(mainThread, label);
+		Label label = labelMap.computeIfAbsent(name.substring(0, name.length() - 1), EventFactory::newLabel);
+		thread.append(label);
 		return null;
 	}
 
 	@Override
-	public Object visitJump(LitmusLISAParser.JumpContext ctx) {
-        Label label = programBuilder.getOrCreateLabel(ctx.labelName().getText());
-        Register reg = (Register) ctx.register().accept(this);
-        Atom cond = new Atom(reg, COpBin.EQ, IValue.ONE);
-		programBuilder.addChild(mainThread, EventFactory.newJump(cond, label));
+	public Object visitJump(JumpContext ctx) {
+		Label label = labelMap.computeIfAbsent(ctx.labelName().getText(), EventFactory::newLabel);
+		Register left = (Register) ctx.register().accept(this);
+		Atom condition = new Atom(left, COpBin.EQ, IValue.ONE);
+		thread.append(EventFactory.newJump(condition, label));
 		return null;
 	}
 
 	// Other
-	
+
 	@Override
-	public Object visitLocation(LitmusLISAParser.LocationContext ctx) {
-		return programBuilder.getOrNewObject(ctx.getText());
+	public Object visitLocation(LocationContext ctx) {
+		return program.getMemory().getOrNewObject(ctx.getText());
 	}
 
 	@Override
-	public Object visitRegister(LitmusLISAParser.RegisterContext ctx) {
-		return programBuilder.getOrCreateRegister(mainThread, ctx.getText(), getArchPrecision());
+	public Object visitRegister(RegisterContext ctx) {
+		return thread.getOrNewRegister(ctx.getText(), archPrecision);
 	}
 
 	@Override
-	public Object visitConstant(LitmusLISAParser.ConstantContext ctx) {
-		return new IValue(new BigInteger(ctx.getText()),getArchPrecision());
+	public Object visitConstant(ConstantContext ctx) {
+		return new IValue(new BigInteger(ctx.getText()), archPrecision);
 	}
 
 	@Override
-	public Object visitAdd(LitmusLISAParser.AddContext ctx) {
+	public Object visitAdd(AddContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
 		return new IExprBin(e1, IOpBin.PLUS, e2);
 	}
 
 	@Override
-	public Object visitSub(LitmusLISAParser.SubContext ctx) {
+	public Object visitSub(SubContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
 		return new IExprBin(e1, IOpBin.MINUS, e2);
 	}
 
 	@Override
-	public Object visitXor(LitmusLISAParser.XorContext ctx) {
+	public Object visitXor(XorContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
 		return new IExprBin(e1, IOpBin.XOR, e2);
 	}
 
 	@Override
-	public Object visitOr(LitmusLISAParser.OrContext ctx) {
+	public Object visitOr(OrContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
 		return new IExprBin(e1, IOpBin.OR, e2);
 	}
 
 	@Override
-	public Object visitAnd(LitmusLISAParser.AndContext ctx) {
+	public Object visitAnd(AndContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
 		return new IExprBin(e1, IOpBin.AND, e2);
 	}
 
 	@Override
-	public Object visitEq(LitmusLISAParser.EqContext ctx) {
+	public Object visitEq(EqContext ctx) {
 		ExprInterface e1 = (ExprInterface) ctx.expression(0).accept(this);
 		ExprInterface e2 = (ExprInterface) ctx.expression(1).accept(this);
 		return new Atom(e1, COpBin.EQ, e2);
 	}
 
 	@Override
-	public Object visitNeq(LitmusLISAParser.NeqContext ctx) {
+	public Object visitNeq(NeqContext ctx) {
 		ExprInterface e1 = (ExprInterface) ctx.expression(0).accept(this);
 		ExprInterface e2 = (ExprInterface) ctx.expression(1).accept(this);
 		return new Atom(e1, COpBin.NEQ, e2);
 	}
-	
+
 	@Override
-	public Object visitParaExpr(LitmusLISAParser.ParaExprContext ctx) {
+	public Object visitParaExpr(ParaExprContext ctx) {
 		return ctx.expression().accept(this);
 	}
 
 	@Override
-	public Object visitArrayAccess(LitmusLISAParser.ArrayAccessContext ctx) {
+	public Object visitArrayAccess(ArrayAccessContext ctx) {
 		MemoryObject base = (MemoryObject) ctx.location().accept(this);
 		IExpr offset = (IExpr) ctx.value().accept(this);
 		return new IExprBin(base, IOpBin.PLUS, offset);

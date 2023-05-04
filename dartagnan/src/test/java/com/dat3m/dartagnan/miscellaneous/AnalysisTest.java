@@ -3,10 +3,10 @@ package com.dat3m.dartagnan.miscellaneous;
 import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpBin;
-import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.program.processing.MemoryAllocation;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
@@ -48,31 +49,32 @@ public class AnalysisTest {
 
     @Test
     public void dependencyMustOverride() throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
-        Register r1 = b.getOrCreateRegister(0, "r1", getArchPrecision());
-        Register r2 = b.getOrCreateRegister(0, "r2", getArchPrecision());
-        Label alt = b.getOrCreateLabel("alt");
-        b.addChild(0, newJump(new BNonDet(), alt));
+        Program program = new Program(SourceLanguage.LITMUS);
+        Thread thread = program.newThread("test");
+        Register r0 = thread.newRegister("r0", getArchPrecision());
+        Register r1 = thread.newRegister("r1", getArchPrecision());
+        Register r2 = thread.newRegister("r2", getArchPrecision());
+        Label alt = EventFactory.newLabel("alt");
+        thread.append(newJump(new BNonDet(), alt));
         Local e0 = newLocal(r0, value(1));
-        b.addChild(0, e0);
+        thread.append(e0);
         Local e1 = newLocal(r1, r0);
-        b.addChild(0, e1);
-        Label join = b.getOrCreateLabel("join");
-        b.addChild(0, newGoto(join));
-        b.addChild(0, alt);
+        thread.append(e1);
+        Label join = EventFactory.newLabel("join");
+        thread.append(newGoto(join));
+        thread.append(alt);
         Local e2 = newLocal(r1, value(2));
-        b.addChild(0, e2);
-        b.addChild(0, join);
+        thread.append(e2);
+        thread.append(join);
         Local e3 = newLocal(r2, r0);
-        b.addChild(0, e3);
+        thread.append(e3);
         Local e4 = newLocal(r2, r1);
-        b.addChild(0, e4);
+        thread.append(e4);
         Local e5 = newLocal(r0, r2);
-        b.addChild(0, e5);
+        thread.append(e5);
 
-        Program program = b.build();
+        EventIdReassignment.newInstance().run(program);
+        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
         Compilation.newInstance().run(program);
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
@@ -112,26 +114,27 @@ public class AnalysisTest {
     }
 
     private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
+        Program program = new Program(SourceLanguage.LITMUS);
 
-        MemoryObject x = b.newObject("x", 2);
-        MemoryObject y = b.getOrNewObject("y");
+        MemoryObject x = program.getMemory().getOrNewObject("x", 2);
+        MemoryObject y = program.getMemory().getOrNewObject("y");
 
-        b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
+        Thread thread = program.newThread("program0");
+        Register r0 = thread.newRegister("r0", getArchPrecision());
         //this is undefined behavior in C11
         //the expression does not match a sum, but x occurs in it
-        b.addChild(0, newLocal(r0, mult(x, 1)));
+        thread.append(newLocal(r0, mult(x, 1)));
         Store e0 = newStore(r0);
-        b.addChild(0, e0);
+        thread.append(e0);
         Store e1 = newStore(plus(r0, 1));
-        b.addChild(0, e1);
+        thread.append(e1);
         Store e2 = newStore(x);
-        b.addChild(0, e2);
+        thread.append(e2);
         Store e3 = newStore(y);
-        b.addChild(0, e3);
+        thread.append(e3);
 
-        Program program = b.build();
+        EventIdReassignment.newInstance().run(program);
+        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
         Compilation.newInstance().run(program);
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
@@ -160,22 +163,23 @@ public class AnalysisTest {
     }
 
     private void program1(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        MemoryObject x = b.newObject("x", 3);
+        Program program = new Program(SourceLanguage.LITMUS);
+        MemoryObject x = program.getMemory().getOrNewObject("x", 3);
         x.setInitialValue(0, x);
 
-        b.initThread(0);
+        Thread thread = program.newThread("program1");
         Store e0 = newStore(plus(x, 1));
-        b.addChild(0, e0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
+        thread.append(e0);
+        Register r0 = thread.newRegister("r0", getArchPrecision());
         Load e1 = newLoad(r0, x);
-        b.addChild(0, e1);
+        thread.append(e1);
         Store e2 = newStore(r0);
-        b.addChild(0, e2);
+        thread.append(e2);
         Store e3 = newStore(plus(r0, 1), r0);
-        b.addChild(0, e3);
+        thread.append(e3);
 
-        Program program = b.build();
+        EventIdReassignment.newInstance().run(program);
+        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
         Compilation.newInstance().run(program);
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
@@ -204,27 +208,28 @@ public class AnalysisTest {
     }
 
     private void program2(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        MemoryObject x = b.newObject("x", 3);
+        Program program = new Program(SourceLanguage.LITMUS);
+        MemoryObject x = program.getMemory().getOrNewObject("x", 3);
 
-        b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
-        b.addChild(0, newLocal(r0, new INonDet(INonDetTypes.INT, getArchPrecision())));
-        Label l0 = b.getOrCreateLabel("l0");
-        b.addChild(0, newJump(new BExprBin(new Atom(r0, GT, ONE), BOpBin.OR, new Atom(r0, LT, ZERO)), l0));
+        Thread thread = program.newThread("program2");
+        Register r0 = thread.newRegister("r0", getArchPrecision());
+        thread.append(newLocal(r0, new INonDet(INonDetTypes.INT, getArchPrecision())));
+        Label l0 = EventFactory.newLabel("l0");
+        thread.append(newJump(new BExprBin(new Atom(r0, GT, ONE), BOpBin.OR, new Atom(r0, LT, ZERO)), l0));
         Store e0 = newStore(x);
-        b.addChild(0, e0);
+        thread.append(e0);
         Store e1 = newStore(plus(x, 1));
-        b.addChild(0, e1);
+        thread.append(e1);
         Store e2 = newStore(plus(x, 2));
-        b.addChild(0, e2);
-        Register r1 = b.getOrCreateRegister(0, "r1", getArchPrecision());
-        b.addChild(0, newLocal(r1, ZERO));
+        thread.append(e2);
+        Register r1 = thread.newRegister("r1", getArchPrecision());
+        thread.append(newLocal(r1, ZERO));
         Store e3 = newStore(new IExprBin(new IExprBin(x, PLUS, mult(r0, 2)), PLUS, mult(r1, 4)));
-        b.addChild(0, e3);
-        b.addChild(0, l0);
+        thread.append(e3);
+        thread.append(l0);
 
-        Program program = b.build();
+        EventIdReassignment.newInstance().run(program);
+        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
         Compilation.newInstance().run(program);
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
@@ -253,22 +258,23 @@ public class AnalysisTest {
     }
 
     private void program3(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        MemoryObject x = b.newObject("x", 3);
+        Program program = new Program(SourceLanguage.LITMUS);
+        MemoryObject x = program.getMemory().getOrNewObject("x", 3);
         x.setInitialValue(0, x);
 
-        b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
+        Thread thread = program.newThread("program3");
+        Register r0 = thread.newRegister("r0", getArchPrecision());
         Load e0 = newLoad(r0, x);
-        b.addChild(0, e0);
+        thread.append(e0);
         Store e1 = newStore(x, plus(r0, 1));
-        b.addChild(0, e1);
+        thread.append(e1);
         Store e2 = newStore(plus(x, 2));
-        b.addChild(0, e2);
+        thread.append(e2);
         Store e3 = newStore(r0);
-        b.addChild(0, e3);
+        thread.append(e3);
 
-        Program program = b.build();
+        EventIdReassignment.newInstance().run(program);
+        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
         Compilation.newInstance().run(program);
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
@@ -297,25 +303,26 @@ public class AnalysisTest {
     }
 
     private void program4(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        MemoryObject x = b.getOrNewObject("x");
-        MemoryObject y = b.getOrNewObject("y");
-        MemoryObject z = b.getOrNewObject("z");
+        Program program = new Program(SourceLanguage.LITMUS);
+        MemoryObject x = program.getMemory().getOrNewObject("x");
+        MemoryObject y = program.getMemory().getOrNewObject("y");
+        MemoryObject z = program.getMemory().getOrNewObject("z");
 
-        b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
-        b.addChild(0, newLocal(r0, mult(x, 0)));
-        b.addChild(0, newLocal(r0, y));
+        Thread thread = program.newThread("program4");
+        Register r0 = thread.newRegister("r0", getArchPrecision());
+        thread.append(newLocal(r0, mult(x, 0)));
+        thread.append(newLocal(r0, y));
         Store e0 = newStore(r0);
-        b.addChild(0, e0);
+        thread.append(e0);
         Store e1 = newStore(x);
-        b.addChild(0, e1);
+        thread.append(e1);
         Store e2 = newStore(y);
-        b.addChild(0, e2);
+        thread.append(e2);
         Store e3 = newStore(z);
-        b.addChild(0, e3);
+        thread.append(e3);
 
-        Program program = b.build();
+        EventIdReassignment.newInstance().run(program);
+        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
         MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
@@ -341,25 +348,26 @@ public class AnalysisTest {
     }
 
     private void program5(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        MemoryObject x = b.getOrNewObject("x");
-        MemoryObject y = b.getOrNewObject("y");
-        MemoryObject z = b.getOrNewObject("z");
+        Program program = new Program(SourceLanguage.LITMUS);
+        MemoryObject x = program.getMemory().getOrNewObject("x");
+        MemoryObject y = program.getMemory().getOrNewObject("y");
+        MemoryObject z = program.getMemory().getOrNewObject("z");
 
-        b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
-        b.addChild(0, newLocal(r0, y));
+        Thread thread = program.newThread("program5");
+        Register r0 = thread.newRegister("r0", getArchPrecision());
+        thread.append(newLocal(r0, y));
         Store e0 = newStore(r0);
-        b.addChild(0, e0);
-        b.addChild(0, newLocal(r0, mult(x, 0)));
+        thread.append(e0);
+        thread.append(newLocal(r0, mult(x, 0)));
         Store e1 = newStore(x);
-        b.addChild(0, e1);
+        thread.append(e1);
         Store e2 = newStore(y);
-        b.addChild(0, e2);
+        thread.append(e2);
         Store e3 = newStore(z);
-        b.addChild(0, e3);
+        thread.append(e3);
 
-        Program program = b.build();
+        EventIdReassignment.newInstance().run(program);
+        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
         MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);

@@ -49,9 +49,9 @@ public class StdProcedures {
         }
         if (name.equals("get_my_tid")) {
             String registerName = ctx.call_params().Ident(0).getText();
-            Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
+            Register register = visitor.thread.getRegister(visitor.currentScope.getID() + ":" + registerName).orElseThrow();
             IValue tid = new IValue(BigInteger.valueOf(visitor.threadCount), getArchPrecision());
-            visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, tid));
+            visitor.thread.append(EventFactory.newLocal(register, tid));
             return;
         }
         if (name.equals("__assert_fail") || name.equals("__assert_rtn")) {
@@ -113,9 +113,10 @@ public class StdProcedures {
         //Uniquely identify the allocated storage in the entire program
         final IExpr sizeExpr = ((IExpr) ctx.call_params().exprs().expr(0).accept(visitor));
         final String ptrName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
-        final Register reg = visitor.programBuilder.getRegister(visitor.threadCount, ptrName);
+        //FIXME Perhaps this should require existence
+        final Register reg = visitor.thread.getRegister(ptrName).orElse(null);
 
-        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Std.newMalloc(reg, sizeExpr));
+        visitor.thread.append(EventFactory.Std.newMalloc(reg, sizeExpr));
     }
 
     private static void __assert(VisitorBoogie visitor, Call_cmdContext ctx) {

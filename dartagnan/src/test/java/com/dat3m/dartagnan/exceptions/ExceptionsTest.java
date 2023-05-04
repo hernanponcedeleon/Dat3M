@@ -4,15 +4,14 @@ import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.processing.BranchReordering;
+import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import org.junit.Test;
@@ -23,17 +22,9 @@ import java.io.File;
 public class ExceptionsTest {
 
     @Test(expected = MalformedProgramException.class)
-    public void noThread() throws Exception {
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-        // Thread 1 does not exists
-        pb.addChild(1, new Skip());
-    }
-
-    @Test(expected = MalformedProgramException.class)
     public void RegisterAlreadyExist() throws Exception {
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-        pb.initThread(0);
-        Thread t = pb.build().getThreads().get(0);
+        Program program = new Program(SourceLanguage.LITMUS);
+        Thread t = program.newThread("0");
         t.newRegister("r1", -1);
         // Adding same register a second time
         t.newRegister("r1", -1);
@@ -41,22 +32,24 @@ public class ExceptionsTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void reorderAfterUnrollException() throws Exception {
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-        pb.initThread(0);
-        Program p = pb.build();
-        LoopUnrolling.newInstance().run(p);
+        Program program = new Program(SourceLanguage.LITMUS);
+        program.newThread("0");
+        EventIdReassignment.newInstance().run(program);
+        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+        LoopUnrolling.newInstance().run(program);
         // Reordering cannot be called after unrolling
-        BranchReordering.newInstance().run(p);
+        BranchReordering.newInstance().run(program);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void analyzeBeforeUnrollException() throws Exception {
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-        pb.initThread(0);
-        Program p = pb.build();
+        Program program = new Program(SourceLanguage.LITMUS);
+        program.newThread("0");
+        EventIdReassignment.newInstance().run(program);
+        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
         Configuration config = Configuration.defaultConfiguration();
-        // The program must be unrolled before being able to construct an Encoder for it
-        BranchEquivalence.fromConfig(p, config);
+        // The program must be unrolled before being analyzed
+        BranchEquivalence.fromConfig(program, config);
     }
 
     @Test(expected = IllegalArgumentException.class)

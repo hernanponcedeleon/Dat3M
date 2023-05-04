@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
-import java.util.List;
 import java.util.stream.IntStream;
 
 /*
@@ -76,10 +75,8 @@ public class MemoryAllocation implements ProgramProcessor {
     }
 
     private void createInitEvents(Program program) {
-        final List<Thread> threads = program.getThreads();
         final boolean isLitmus = program.getFormat() == Program.SourceLanguage.LITMUS;
 
-        int nextThreadId = threads.get(threads.size() - 1).getId() + 1;
         for(MemoryObject memObj : program.getMemory().getObjects()) {
             // The last case "heuristically checks" if Smack generated initialization or not:
             // we expect at least every 8 bytes to be initialized.
@@ -91,12 +88,8 @@ public class MemoryAllocation implements ProgramProcessor {
 
             for(int i : fieldsToInit) {
                 final Event init = EventFactory.newInit(memObj, i);
-                final Thread thread = new Thread(nextThreadId++, init);
-
-                program.add(thread);
-                thread.setProgram(program);
-                thread.getEntry().setSuccessor(EventFactory.newLabel("END_OF_T" + thread.getId()));
-                thread.updateExit(thread.getEntry());
+                final Thread thread = program.newThread(".INIT." + memObj + "." + i, init);
+                thread.append(EventFactory.newLabel(thread.getEndLabelName()));
             }
         }
     }

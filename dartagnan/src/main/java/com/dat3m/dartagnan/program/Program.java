@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program;
 
 
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -9,6 +10,7 @@ import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Program {
@@ -24,6 +26,10 @@ public class Program {
     private int unrollingBound = 0;
     private boolean isCompiled;
     private SourceLanguage format;
+
+    public Program(SourceLanguage format) {
+        this("", new Memory(), format);
+    }
 
     public Program(Memory memory, SourceLanguage format){
         this("", memory, format);
@@ -83,8 +89,25 @@ public class Program {
         this.filterSpec = spec;
     }
 
-    public void add(Thread t) {
-		threads.add(t);
+    public Thread newThread(String name) {
+        return newThread(name, EventFactory.newSkip());
+    }
+
+    public Thread newThread(String name, Event entry) {
+        //TODO assert unique name
+        int id = threads.size();
+        Thread thread = new Thread(this, name, id, entry);
+		threads.add(thread);
+        return thread;
+    }
+
+    public Optional<Thread> getThread(String name) {
+        return threads.stream().filter(thread -> thread.getName().equals(name)).findAny();
+    }
+
+    public Thread getOrNewThread(String name) {
+        Optional<Thread> fetched = getThread(name);
+        return fetched.orElseGet(() -> newThread(name));
 	}
 
     public List<Thread> getThreads() {

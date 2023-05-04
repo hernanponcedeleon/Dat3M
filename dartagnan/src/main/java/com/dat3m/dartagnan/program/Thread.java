@@ -4,37 +4,31 @@ import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.base.Preconditions;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static com.dat3m.dartagnan.program.event.Tag.NOOPT;
 import java.util.stream.Collectors;
 
 public class Thread {
 
+    private final Program program; // The program this thread belongs to
 	private String name;
     private final int id;
     private final Event entry;
     private Event exit;
-    
-	protected Program program; // The program this thread belongs to
-
     private final Map<String, Register> registers;
     private int dummyCount = 0;
 
-    public Thread(String name, int id, Event entry){
+    Thread(Program program, String name, int id, Event entry){
     	Preconditions.checkArgument(id >= 0, "Invalid thread ID");
     	Preconditions.checkNotNull(entry, "Thread entry event must be not null");
         entry.setThread(this);
+        this.program = program;
         this.name = name;
         this.id = id;
         this.entry = entry;
         this.exit = this.entry;
         this.registers = new HashMap<>();
-    }
-
-    public Thread(int id, Event entry){
-    	this(String.valueOf(id), id, entry);
     }
 
     public String getName(){
@@ -49,6 +43,10 @@ public class Thread {
         return id;
     }
 
+    public String getEndLabelName() {
+        return "END_OF_T" + id;
+    }
+
     public List<Event> getEvents() {
         return entry.getSuccessors();
     }
@@ -61,11 +59,6 @@ public class Thread {
 		return program;
 	}
 
-	public void setProgram(Program program) {
-		Preconditions.checkNotNull(program);
-		this.program = program;
-	}
-
     /**
      * Lists all registers of this thread.
      * @return
@@ -75,8 +68,8 @@ public class Thread {
         return registers.values();
     }
 
-    public Register getRegister(String name){
-        return registers.get(name);
+    public Optional<Register> getRegister(String name){
+        return Optional.ofNullable(registers.get(name));
     }
 
     public Register newRegister(int precision) {
@@ -92,6 +85,10 @@ public class Thread {
         return register;
     }
 
+    public Register getOrNewRegister(String name, int precision) {
+        return registers.computeIfAbsent(name, k -> new Register(k, id, precision));
+    }
+
     public Event getEntry(){
         return entry;
     }
@@ -100,7 +97,10 @@ public class Thread {
         return exit;
     }
 
-    public void append(Event event){
+    public void append(Event event) {
+        if (program.getFormat().equals(Program.SourceLanguage.LITMUS)) {
+            event.addFilters(NOOPT);
+        }
         exit.setSuccessor(event);
         event.setThread(this);
         updateExit(event);
