@@ -29,19 +29,12 @@ public class MemoryObject extends IConst {
     BigInteger address;
     private String cVar;
     private MemoryObject alias;
-    private MemoryObject shadowAlias; // non-GEN MemObj's direct alias on GEN MemObj
     public MemoryObject getAlias() {
         return alias;
-    }
-    public MemoryObject getShadowAlias() {
-        return shadowAlias;
     }
 
     public void setAlias(MemoryObject alias) {
         this.alias = alias;
-    }
-    public void setShadowAliasAlias(MemoryObject shadowAlias) {
-        this.shadowAlias = shadowAlias;
     }
 
 
@@ -60,7 +53,6 @@ public class MemoryObject extends IConst {
         this.size = size;
         this.isStatic = isStaticallyAllocated;
         this.alias = null;
-        this.shadowAlias = null;
 
         if (isStaticallyAllocated) {
             // Static allocations are default-initialized

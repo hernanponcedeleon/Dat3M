@@ -17,13 +17,16 @@ let texture-proxy = TEX * TEX
 let constant-proxy = CON * CON
 let same-proxy = generic-proxy | surface-proxy | texture-proxy | constant-proxy
 
-(* Alias rf and fr *)
-let alias-rf = rf | ([W]; (alias \ loc); [R])
-let alias-fr = fr | ([R]; (alias \ loc); [W])
 // Alias definition:
-// dalias: direct alias, two event R/W to locations directly alias to each other
-// salias: shadoww alias, two event R/W to non-Generic locations alias to the same Generic location
-// alias : general alias, two event R/W to locations directly or indirectly alias to each other
+// alias: direct alias, two event R/W to locations directly alias to each other
+// cross-proxy-alias: shadow alias, two event R/W to non-Generic locations alias to the same Generic location
+// recursive-alias : general alias, two event R/W to locations directly or indirectly alias to each other
+let non-gen = SUR | TEX
+let cross-proxy-alias = [non-gen]; alias; alias; [non-gen]
+let recursive-alias = alias+
+(* Alias rf and fr *)
+let alias-rf = rf | ([W]; (recursive-alias \ loc); [R])
+let alias-fr = fr | ([R]; (recursive-alias \ loc); [W])
 
 (* Relations *)
 let sr-fence = ([strong-operation]; (sr & same-proxy); [F]) | ([F]; (sr & same-proxy); [strong-operation])
@@ -49,15 +52,15 @@ let no-alias-fence-cause = ([M & GEN]; (loc & cause-base); [M & GEN])
 let no-proxy-fence-cause = ([M]; (same-proxy & scta & loc & cause-base); [M])
 let no-fence-cause = no-alias-fence-cause | no-proxy-fence-cause
 (*******************)
-let src-proxy-fence-cause = dalias & (proxy-ops-fence-cause; cause-base; [GEN])
-let dst-proxy-fence-cause = dalias & ([GEN]; cause-base; proxy-fence-ops-cause)
-let src-dst-proxy-fence-cause = salias & (proxy-ops-fence-cause; cause-base; proxy-fence-ops-cause)
+let src-proxy-fence-cause = alias & (proxy-ops-fence-cause; cause-base; [GEN])
+let dst-proxy-fence-cause = alias & ([GEN]; cause-base; proxy-fence-ops-cause)
+let src-dst-proxy-fence-cause = cross-proxy-alias & (proxy-ops-fence-cause; cause-base; proxy-fence-ops-cause)
 (*******************)
 let alias-fence = cause-base; [F & ALIAS]; cause-base
-let alias-gen-cause = alias & ([M & GEN]; alias-fence; [M & GEN])
-let src-alias-fence-cause = alias & (proxy-ops-fence-cause; alias-fence; [M & GEN])
-let dst-alias-fence-cause = alias & ([M & GEN]; alias-fence; proxy-fence-ops-cause)
-let src-dst-alias-proxy-fence-cause = alias & (proxy-ops-fence-cause; alias-fence; proxy-fence-ops-cause)
+let alias-gen-cause = recursive-alias & ([M & GEN]; alias-fence; [M & GEN])
+let src-alias-fence-cause = recursive-alias & (proxy-ops-fence-cause; alias-fence; [M & GEN])
+let dst-alias-fence-cause = recursive-alias & ([M & GEN]; alias-fence; proxy-fence-ops-cause)
+let src-dst-alias-proxy-fence-cause = recursive-alias & (proxy-ops-fence-cause; alias-fence; proxy-fence-ops-cause)
 (*******************)
 let proxy-no-alias-cause = no-fence-cause | src-proxy-fence-cause | dst-proxy-fence-cause | src-dst-proxy-fence-cause
 let proxy-alias-cause = alias-gen-cause | src-alias-fence-cause | dst-alias-fence-cause | src-dst-alias-proxy-fence-cause

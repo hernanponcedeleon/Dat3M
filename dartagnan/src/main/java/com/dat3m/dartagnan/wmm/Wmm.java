@@ -337,10 +337,6 @@ public class Wmm {
                 return sameSpecificScope(r, Tag.PTX.PTX, Tag.PTX.CTA);
             case ALIAS:
                 return new Alias(r);
-            case DALIAS:
-                return new AliasDirect(r);
-            case SALIAS:
-                return new AliasShadow(r);
             default:
                 throw new RuntimeException(name + "is part of RelationNameRepository but it has no associated relation.");
         }

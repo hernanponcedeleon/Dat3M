@@ -885,50 +885,16 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitAlias(Relation rel) {
             Set<Tuple> must = new HashSet<>();
+            List<Init> initEvents = program.getEvents(Init.class);
             List<Load> loadEvents = program.getEvents(Load.class);
             List<Store> storeEvents = program.getEvents(Store.class);
             List<MemEvent> events = new ArrayList<>();
-            events.addAll(loadEvents);
-            events.addAll(storeEvents);
-            for (MemEvent e1 : events) {
-                for (MemEvent e2 : events) {
-                    if (sameAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
-                        must.add(new Tuple(e1, e2));
-                    }
-                }
-            }
-            return new Knowledge(must, new HashSet<>(must));
-        }
-
-        @Override
-        public Knowledge visitDirectAlias(Relation rel) {
-            Set<Tuple> must = new HashSet<>();
-            List<Load> loadEvents = program.getEvents(Load.class);
-            List<Store> storeEvents = program.getEvents(Store.class);
-            List<MemEvent> events = new ArrayList<>();
+            events.addAll(initEvents);
             events.addAll(loadEvents);
             events.addAll(storeEvents);
             for (MemEvent e1 : events) {
                 for (MemEvent e2 : events) {
                     if (directAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
-                        must.add(new Tuple(e1, e2));
-                    }
-                }
-            }
-            return new Knowledge(must, new HashSet<>(must));
-        }
-
-        @Override
-        public Knowledge visitShadowAlias(Relation rel) {
-            Set<Tuple> must = new HashSet<>();
-            List<Load> loadEvents = program.getEvents(Load.class);
-            List<Store> storeEvents = program.getEvents(Store.class);
-            List<MemEvent> events = new ArrayList<>();
-            events.addAll(loadEvents);
-            events.addAll(storeEvents);
-            for (MemEvent e1 : events) {
-                for (MemEvent e2 : events) {
-                    if (shadowAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -1060,42 +1026,6 @@ public class RelationAnalysis {
                 return true;
             } else if (location2.getAlias() != null && location2.getAlias().equals(location1)) {
                 return true;
-            }
-            return false;
-        }
-        private Boolean shadowAlias(MemEvent e1, MemEvent e2) {
-            MemoryObject location1 = (MemoryObject) e1.getAddress();
-            MemoryObject location2 = (MemoryObject) e2.getAddress();
-            if (location1.getShadowAlias() != null && location2.getShadowAlias() != null
-                    && location1.getShadowAlias().equals(location2.getShadowAlias())) {
-                return true;
-            }
-            return false;
-        }
-
-        private Boolean sameAlias(MemEvent e1, MemEvent e2) {
-            MemoryObject location1 = (MemoryObject) e1.getAddress();
-            MemoryObject location2 = (MemoryObject) e2.getAddress();
-            Set<MemoryObject> locationSet1 = new HashSet<>();
-            Set<MemoryObject> locationSet2 = new HashSet<>();
-            locationSet1.add(location1);
-            locationSet2.add(location2);
-            MemoryObject runner1 = location1.getAlias();
-            MemoryObject runner2 = location2.getAlias();
-            while (runner1 != null) {
-                locationSet1.add(runner1);
-                runner1 = runner1.getAlias();
-            }
-            while (runner2 != null) {
-                locationSet2.add(runner2);
-                runner2 = runner2.getAlias();
-            }
-            for (MemoryObject l1 : locationSet1) {
-                for (MemoryObject l2 : locationSet2) {
-                    if (l1.equals(l2)) {
-                        return true;
-                    }
-                }
             }
             return false;
         }

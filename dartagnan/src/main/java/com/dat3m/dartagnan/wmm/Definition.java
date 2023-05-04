@@ -94,7 +94,6 @@ public abstract class Definition implements Constraint {
         default T visitSameScope(Relation sc, ArrayList<String> scopes) { return visitDefinition(sc, List.of()); }
         default T visitAlias(Relation alias) { return visitDefinition(alias, List.of()); }
         default T visitDirectAlias(Relation dalias) { return visitDefinition(dalias, List.of()); }
-        default T visitShadowAlias(Relation dalias) { return visitDefinition(dalias, List.of()); }
         default T visitSameSpecificScope(Relation r, ArrayList<String> scopes, String scope)
         { return visitDefinition(r, List.of()); }
     }
