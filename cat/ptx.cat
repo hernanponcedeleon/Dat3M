@@ -17,17 +17,6 @@ let texture-proxy = TEX * TEX
 let constant-proxy = CON * CON
 let same-proxy = generic-proxy | surface-proxy | texture-proxy | constant-proxy
 
-// Alias definition:
-// alias: direct alias, two event R/W to locations directly alias to each other
-// cross-proxy-alias: shadow alias, two event R/W to non-Generic locations alias to the same Generic location
-// recursive-alias : general alias, two event R/W to locations directly or indirectly alias to each other
-let non-gen = SUR | TEX
-let cross-proxy-alias = [non-gen]; alias; alias; [non-gen]
-let recursive-alias = alias+
-(* Alias rf and fr *)
-let alias-rf = rf | ([W]; (recursive-alias \ loc); [R])
-let alias-fr = fr | ([R]; (recursive-alias \ loc); [W])
-
 (* Relations *)
 let sr-fence = ([strong-operation]; (sr & same-proxy); [F]) | ([F]; (sr & same-proxy); [strong-operation])
 let po-fence = ([strong-operation]; (po & same-proxy); [F]) | ([F]; (po & same-proxy); [strong-operation])
@@ -36,7 +25,7 @@ let po-m = ([M]; (po & loc & same-proxy); [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
 (*******************)
 let fence-sc = [F & SC] ; sr; [F & SC]
-let rec observation = (morally-strong & alias-rf) | (observation; rmw; observation)
+let rec observation = (morally-strong & rf) | (observation; rmw; observation)
 let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
 let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
 let sw = morally-strong & (release-pattern; observation+; acquire-pattern) | fence-sc
@@ -52,15 +41,15 @@ let no-alias-fence-cause = ([M & GEN]; (loc & cause-base); [M & GEN])
 let no-proxy-fence-cause = ([M]; (same-proxy & scta & loc & cause-base); [M])
 let no-fence-cause = no-alias-fence-cause | no-proxy-fence-cause
 (*******************)
-let src-proxy-fence-cause = alias & (proxy-ops-fence-cause; cause-base; [GEN])
-let dst-proxy-fence-cause = alias & ([GEN]; cause-base; proxy-fence-ops-cause)
-let src-dst-proxy-fence-cause = cross-proxy-alias & (proxy-ops-fence-cause; cause-base; proxy-fence-ops-cause)
+let src-proxy-fence-cause = loc & (proxy-ops-fence-cause; cause-base; [GEN])
+let dst-proxy-fence-cause = loc & ([GEN]; cause-base; proxy-fence-ops-cause)
+let src-dst-proxy-fence-cause = loc & (proxy-ops-fence-cause; cause-base; proxy-fence-ops-cause)
 (*******************)
 let alias-fence = cause-base; [F & ALIAS]; cause-base
-let alias-gen-cause = recursive-alias & ([M & GEN]; alias-fence; [M & GEN])
-let src-alias-fence-cause = recursive-alias & (proxy-ops-fence-cause; alias-fence; [M & GEN])
-let dst-alias-fence-cause = recursive-alias & ([M & GEN]; alias-fence; proxy-fence-ops-cause)
-let src-dst-alias-proxy-fence-cause = recursive-alias & (proxy-ops-fence-cause; alias-fence; proxy-fence-ops-cause)
+let alias-gen-cause = alias & ([M & GEN]; alias-fence; [M & GEN])
+let src-alias-fence-cause = alias & (proxy-ops-fence-cause; alias-fence; [M & GEN])
+let dst-alias-fence-cause = alias & ([M & GEN]; alias-fence; proxy-fence-ops-cause)
+let src-dst-alias-proxy-fence-cause = alias & (proxy-ops-fence-cause; alias-fence; proxy-fence-ops-cause)
 (*******************)
 let proxy-no-alias-cause = no-fence-cause | src-proxy-fence-cause | dst-proxy-fence-cause | src-dst-proxy-fence-cause
 let proxy-alias-cause = alias-gen-cause | src-alias-fence-cause | dst-alias-fence-cause | src-dst-alias-proxy-fence-cause
@@ -79,19 +68,19 @@ empty (cause-write \ co) as axiom-Coherence
 irreflexive (fence-sc ; cause) as axiom-FenceSC
 
 (* Axiom 3 Atomicity *)
-empty (((morally-strong & alias-fr); (morally-strong & co)) & rmw) as axiom-Atomicity
+empty (((morally-strong & fr); (morally-strong & co)) & rmw) as axiom-Atomicity
 
 (* Axiom 4 No-Thin-Air *)
 let dep = addr | data | ctrl
-acyclic (alias-rf | dep) as axiom-NoThinAir
+acyclic (rf | dep) as axiom-NoThinAir
 
 (* Axiom 5 SC-per-Location *)
-acyclic ((morally-strong & (alias-rf | co | alias-fr)) | po-loc) as axiom-ScPerLocation
+acyclic ((morally-strong & (rf | co | fr)) | po-loc) as axiom-ScPerLocation
 
 (* Axiom 6 Causality *)
-irreflexive ((alias-rf | alias-fr); cause) as axiom-Causality
+irreflexive ((rf | fr); cause) as axiom-Causality
 
 // Definition of paper: A Formal Analysis of the NVIDIA PTX Memory Consistency Model (NVIDIA 2019)
 // let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
 // let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po; [F & ACQ_REL])
-// irreflexive ((alias-rf | co | alias-fr)?; cause) as axiom-Causality
+// irreflexive ((rf | co | fr)?; cause) as axiom-Causality

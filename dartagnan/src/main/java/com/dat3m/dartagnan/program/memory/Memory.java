@@ -23,6 +23,13 @@ public class Memory {
         return address;
     }
 
+    public VirtualMemoryObject allocateVirtually(int size, boolean isStatic) {
+        Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
+        VirtualMemoryObject address = new VirtualMemoryObject(nextIndex++, size, isStatic);
+        objects.add(address);
+        return address;
+    }
+
     /**
      * Accesses all shared variables.
      * @return

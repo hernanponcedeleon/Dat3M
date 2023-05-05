@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -849,14 +850,16 @@ public class RelationAnalysis {
             List<MemEvent> events = program.getEvents(MemEvent.class);
             for (MemEvent e1 : events) {
                 for (MemEvent e2 : events) {
-                    if (alias.mayAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if ((alias.mayAlias(e1, e2) || virtualLoc(e1, e2))
+                            && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
             }
             Set<Tuple> must = new HashSet<>();
             for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
-                if (alias.mustAlias((MemEvent) t.getFirst(), (MemEvent) t.getSecond())) {
+                if (alias.mustAlias((MemEvent) t.getFirst(), (MemEvent) t.getSecond()) ||
+                        virtualLoc((MemEvent) t.getFirst(), (MemEvent) t.getSecond())) {
                     must.add(t);
                 }
             }
@@ -885,16 +888,14 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitAlias(Relation rel) {
             Set<Tuple> must = new HashSet<>();
-            List<Init> initEvents = program.getEvents(Init.class);
             List<Load> loadEvents = program.getEvents(Load.class);
             List<Store> storeEvents = program.getEvents(Store.class);
             List<MemEvent> events = new ArrayList<>();
-            events.addAll(initEvents);
             events.addAll(loadEvents);
             events.addAll(storeEvents);
             for (MemEvent e1 : events) {
                 for (MemEvent e2 : events) {
-                    if (directAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (alias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -1019,15 +1020,42 @@ public class RelationAnalysis {
             return result;
         }
 
-        private Boolean directAlias(MemEvent e1, MemEvent e2) {
-            MemoryObject location1 = (MemoryObject) e1.getAddress();
-            MemoryObject location2 = (MemoryObject) e2.getAddress();
-            if (location1.getAlias() != null && location1.getAlias().equals(location2)) {
-                return true;
-            } else if (location2.getAlias() != null && location2.getAlias().equals(location1)) {
-                return true;
+        private Boolean alias(MemEvent e1, MemEvent e2) {
+            MemoryObject alias1 = ((MemoryObject) e1.getAddress()).getAlias();
+            MemoryObject alias2 = ((MemoryObject) e2.getAddress()).getAlias();
+            if (e1.getAddress() instanceof VirtualMemoryObject &&
+                    e2.getAddress() instanceof VirtualMemoryObject) {
+                return (alias1 != null && alias1.getAlias() != null && alias1.getAlias().equals(alias2)) ||
+                        (alias1 != null && alias2 != null && alias1.equals(alias2.getAlias()));
+            } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof VirtualMemoryObject) {
+                return (alias2 != null && e1.getAddress().equals(alias2.getAlias())) ||
+                        (alias1 != null && alias1.equals(alias2));
+            } else if (e1.getAddress() instanceof VirtualMemoryObject && e2.getAddress() instanceof MemoryObject) {
+                return (alias1 != null && alias1.getAlias() != null && alias1.getAlias().equals(e2.getAddress())) ||
+                        (alias1 != null && alias1.equals(alias2));
+            } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof MemoryObject) {
+                return e1.getAddress().equals(alias2) ||
+                        (alias1 != null && alias1.equals(e2.getAddress()));
+            } else {
+                return false;
             }
-            return false;
+        }
+
+        private boolean virtualLoc(MemEvent e1, MemEvent e2) {
+            if (e1.getAddress() instanceof VirtualMemoryObject &&
+                    e2.getAddress() instanceof VirtualMemoryObject) {
+                return ((VirtualMemoryObject) e1.getAddress()).getAlias() != null &&
+                        ((VirtualMemoryObject) e1.getAddress()).getAlias().equals(
+                        ((VirtualMemoryObject) e2.getAddress()).getAlias());
+            } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof VirtualMemoryObject) {
+                return e1.getAddress() == ((VirtualMemoryObject) e2.getAddress()).getAlias();
+            } else if (e1.getAddress() instanceof VirtualMemoryObject && e2.getAddress() instanceof MemoryObject) {
+                return ((VirtualMemoryObject) e1.getAddress()).getAlias() == e2.getAddress();
+            } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof MemoryObject) {
+                return e1.getAddress() == e2.getAddress();
+            } else {
+                return false;
+            }
         }
     }
 

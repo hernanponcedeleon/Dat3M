@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
+import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.IConst;
@@ -239,12 +240,25 @@ public class ProgramBuilder {
         return event;
     }
 
-    public MemoryObject initLocEqLocAlias(String leftName, String rightName, String proxyType){
+    public MemoryObject initLocEqLocAliasGen(String leftName, String rightName){
         MemoryObject rightLocation = getObject(rightName);
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(leftName, k->memory.allocate(1, true));
+        object.setCVar(leftName);
+        object.setInitialValue(0,rightLocation.getInitialValue(0));
+        object.setAlias(rightLocation);
+        return object;
+    }
+
+    public VirtualMemoryObject initLocEqLocAliasProxy(String leftName, String rightName){
+        MemoryObject rightLocation = getObject(rightName);
+        if (rightLocation == null) {
+            throw new MalformedProgramException("Alias to non-exist location: " + rightName);
+        }
+        VirtualMemoryObject object = (VirtualMemoryObject) locations.computeIfAbsent(
+                leftName, k->memory.allocateVirtually(1, true));
         object.setCVar(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
         object.setAlias(rightLocation);
