@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.program.analysis.alias;
 import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -39,6 +41,23 @@ public interface AliasAnalysis {
         long t1 = System.currentTimeMillis();
         logger.info("Finished alias analysis in {}ms", t1 - t0);
         return a;
+    }
+
+    static boolean virtualLoc(MemEvent e1, MemEvent e2) {
+        if (e1.getAddress() instanceof VirtualMemoryObject &&
+                e2.getAddress() instanceof VirtualMemoryObject) {
+            return ((VirtualMemoryObject) e1.getAddress()).getAlias() != null &&
+                    ((VirtualMemoryObject) e1.getAddress()).getAlias().equals(
+                            ((VirtualMemoryObject) e2.getAddress()).getAlias());
+        } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof VirtualMemoryObject) {
+            return e1.getAddress() == ((VirtualMemoryObject) e2.getAddress()).getAlias();
+        } else if (e1.getAddress() instanceof VirtualMemoryObject && e2.getAddress() instanceof MemoryObject) {
+            return ((VirtualMemoryObject) e1.getAddress()).getAlias() == e2.getAddress();
+        } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof MemoryObject) {
+            return e1.getAddress() == e2.getAddress();
+        } else {
+            return false;
+        }
     }
 
     @Options

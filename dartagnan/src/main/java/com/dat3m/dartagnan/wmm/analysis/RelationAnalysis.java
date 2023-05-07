@@ -850,16 +850,14 @@ public class RelationAnalysis {
             List<MemEvent> events = program.getEvents(MemEvent.class);
             for (MemEvent e1 : events) {
                 for (MemEvent e2 : events) {
-                    if ((alias.mayAlias(e1, e2) || virtualLoc(e1, e2))
-                            && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (alias.mayAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
             }
             Set<Tuple> must = new HashSet<>();
             for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
-                if (alias.mustAlias((MemEvent) t.getFirst(), (MemEvent) t.getSecond()) ||
-                        virtualLoc((MemEvent) t.getFirst(), (MemEvent) t.getSecond())) {
+                if (alias.mustAlias((MemEvent) t.getFirst(), (MemEvent) t.getSecond())) {
                     must.add(t);
                 }
             }
@@ -888,11 +886,7 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitAlias(Relation rel) {
             Set<Tuple> must = new HashSet<>();
-            List<Load> loadEvents = program.getEvents(Load.class);
-            List<Store> storeEvents = program.getEvents(Store.class);
-            List<MemEvent> events = new ArrayList<>();
-            events.addAll(loadEvents);
-            events.addAll(storeEvents);
+            List<MemEvent> events = program.getEvents(MemEvent.class);
             for (MemEvent e1 : events) {
                 for (MemEvent e2 : events) {
                     if (alias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
@@ -1036,23 +1030,6 @@ public class RelationAnalysis {
             } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof MemoryObject) {
                 return e1.getAddress().equals(alias2) ||
                         (alias1 != null && alias1.equals(e2.getAddress()));
-            } else {
-                return false;
-            }
-        }
-
-        private boolean virtualLoc(MemEvent e1, MemEvent e2) {
-            if (e1.getAddress() instanceof VirtualMemoryObject &&
-                    e2.getAddress() instanceof VirtualMemoryObject) {
-                return ((VirtualMemoryObject) e1.getAddress()).getAlias() != null &&
-                        ((VirtualMemoryObject) e1.getAddress()).getAlias().equals(
-                        ((VirtualMemoryObject) e2.getAddress()).getAlias());
-            } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof VirtualMemoryObject) {
-                return e1.getAddress() == ((VirtualMemoryObject) e2.getAddress()).getAlias();
-            } else if (e1.getAddress() instanceof VirtualMemoryObject && e2.getAddress() instanceof MemoryObject) {
-                return ((VirtualMemoryObject) e1.getAddress()).getAlias() == e2.getAddress();
-            } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof MemoryObject) {
-                return e1.getAddress() == e2.getAddress();
             } else {
                 return false;
             }
