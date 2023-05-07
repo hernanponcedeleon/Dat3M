@@ -24,8 +24,8 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	protected int uId = -1;		// Global ID right before unrolling
 	protected int cId = -1;		// Global ID right before compilation
 
-	protected int cLine = -1;				// line in the original C program
-	protected String sourceCodeFile = "";	// filename of the original C program
+	protected int cLine = -1;				    // line in the original C program
+	protected String sourceCodeFilePath  = "";	// path of the original C program
 
 	protected Thread thread; // The thread this event belongs to
 
@@ -49,32 +49,40 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		this.uId = other.uId;
 		this.cId = other.cId;
 		this.cLine = other.cLine;
-		this.sourceCodeFile = other.sourceCodeFile;
+		this.sourceCodeFilePath = other.sourceCodeFilePath;
 	}
 
 	public int getGlobalId() { return globalId; }
 	public void setGlobalId(int id) { this.globalId = id; }
+	public boolean hasGlobalId() { return globalId != -1; }
 
 	public int getOId() { return oId; }
 	public void setOId(int id) { this.oId = id; }
+	public boolean hasOId() { return oId != -1; }
 
 	public int getUId(){ return uId; }
 	public void setUId(int id) { this.uId = id; }
+	public boolean hasUId() { return uId != -1; }
 
 	public int getCId() { return cId; }
 	public void setCId(int id) { this.cId = id; }
+	public boolean hasCId() { return cId != -1; }
 
-	public int getCLine() {
-		return cLine;
-	}
-	
-	public String getSourceCodeFile() {
-		return sourceCodeFile;
+	public int getCLine() { return cLine; }
+    public boolean hasCLine() { return cLine != -1; }
+
+	public String getSourceCodeFilePath() {
+		return sourceCodeFilePath ;
 	}
 
-	public Event setCFileInformation(int line, String file) {
+	public String getSourceCodeFileName() {
+        return sourceCodeFilePath.contains("/") ? sourceCodeFilePath.substring(sourceCodeFilePath.lastIndexOf("/") + 1)
+                : sourceCodeFilePath;
+	}
+
+	public Event setCFileInformation(int line, String sourceCodeFilePath) {
 		this.cLine = line;
-		this.sourceCodeFile = file;
+		this.sourceCodeFilePath  = sourceCodeFilePath ;
 		return this;
 	}
 

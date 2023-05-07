@@ -14,10 +14,7 @@ import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 
 import java.util.List;
 
@@ -41,7 +38,21 @@ class VisitorRISCV extends VisitorBase {
 		this.useRC11Scheme = useRC11Scheme;
 	}
 	
-	@Override
+    @Override
+	public List<Event> visitStoreExclusive(StoreExclusive e) {
+        RMWStoreExclusive store = RISCV.newRMWStoreConditional(e.getAddress(), e.getMemValue(), e.getMo());
+
+        return eventSequence(
+                store,
+                newExecutionStatusWithDependencyTracking(e.getResultRegister(), store)
+        );
+	}
+
+    // =============================================================================================
+    // ========================================= PTHREAD ===========================================
+    // =============================================================================================
+
+    @Override
 	public List<Event> visitCreate(Create e) {
         Store store = newStore(e.getAddress(), e.getMemValue(), Tag.RISCV.MO_REL);
         store.addFilters(C11.PTHREAD);
@@ -82,16 +93,33 @@ class VisitorRISCV extends VisitorBase {
         );
 	}
 
-	@Override
-	public List<Event> visitStoreExclusive(StoreExclusive e) {
-        RMWStoreExclusive store = RISCV.newRMWStoreConditional(e.getAddress(), e.getMemValue(), e.getMo());
-
+    @Override
+    public List<Event> visitInitLock(InitLock e) {
         return eventSequence(
-                store,
-                newExecutionStatusWithDependencyTracking(e.getResultRegister(), store)
-        );
-	}
+                RISCV.newRWWFence(),
+                newStore(e.getAddress(), e.getMemValue(), ""));
+    }
 
+    @Override
+    public List<Event> visitLock(Lock e) {
+        Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
+        // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can use
+        // assumes. With this we miss a ctrl dependency, but this does not matter
+        // because of the fence.
+        return eventSequence(
+                newRMWLoadExclusive(dummy, e.getAddress(), ""),
+                newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)),
+                newRMWStoreExclusive(e.getAddress(), IValue.ONE, "", true),
+                RISCV.newRRWFence());
+    }
+
+    @Override
+    public List<Event> visitUnlock(Unlock e) {
+        return eventSequence(
+                RISCV.newRWWFence(),
+                newStore(e.getAddress(), IValue.ZERO, ""));
+    }
+    
 	// =============================================================================================
     // =========================================== LLVM ============================================
     // =============================================================================================

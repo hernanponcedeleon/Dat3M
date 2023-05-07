@@ -12,10 +12,7 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 
 import java.util.List;
 
@@ -44,7 +41,11 @@ public class VisitorPower extends VisitorBase {
 		this.cToPowerScheme = cToPowerScheme;
 	}
 	
-	@Override
+    // =============================================================================================
+    // ========================================= PTHREAD ===========================================
+    // =============================================================================================
+
+    @Override
 	public List<Event> visitCreate(Create e) {
         Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo());
         store.addFilters(C11.PTHREAD);
@@ -98,7 +99,37 @@ public class VisitorPower extends VisitorBase {
         );
 	}
 
-	// =============================================================================================
+    @Override
+    public List<Event> visitInitLock(InitLock e) {
+        return eventSequence(
+                Power.newLwSyncBarrier(),
+                newStore(e.getAddress(), e.getMemValue(), ""));
+    }
+
+    @Override
+    public List<Event> visitLock(Lock e) {
+        Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
+        Label label = newLabel("FakeDep");
+        // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
+        // use assumes. The fake control dependency + isync guarantee acquire semantics.
+        return eventSequence(
+                newRMWLoadExclusive(dummy, e.getAddress(), ""),
+                newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)),
+                Power.newRMWStoreConditional(e.getAddress(), IValue.ONE, "", true),
+                // Fake dependency to guarantee acquire semantics
+                newFakeCtrlDep(dummy, label),
+                label,
+                Power.newISyncBarrier());
+    }
+
+    @Override
+    public List<Event> visitUnlock(Unlock e) {
+        return eventSequence(
+                Power.newLwSyncBarrier(),
+                newStore(e.getAddress(), IValue.ZERO, ""));
+    }
+    
+    // =============================================================================================
     // =========================================== LLVM ============================================
     // =============================================================================================
 

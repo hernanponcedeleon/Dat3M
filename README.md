@@ -55,6 +55,18 @@ To build the tool run
 mvn clean install -DskipTests
 ```
 
+Troubleshooting
+======
+**MacOS ARM**
+
+Dartagnan automatically loads native binaries for its supported SMT solvers.
+However, it always loads the x86 binaries even on MacOS ARM.
+This will trigger the following error when using Z3:
+```
+java.lang.UnsatisfiedLinkError: no libz3 in java.library.path: [/Users/***/Library/Java/Extensions, /Library/Java/Extensions, /Network/Library/Java/Extensions, /System/Library/Java/Extensions, /usr/lib/java, .]
+```
+A workaround here is to manually download the ARM binaries (https://github.com/Z3Prover/z3/releases/), unpack the .zip, and place the two `.dylib` files (`libz3.dylib` and `libz3java.dylib`) into one of the folders mentioned in the error message (e.g., `Library/Java/Extensions`).
+
 Usage
 ======
 Dartagnan comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
@@ -127,3 +139,5 @@ References
 [5] Hernán Ponce de León, Thomas Haas, Roland Meyer: [**Dartagnan: Leveraging Compiler Optimizations and the Price of Precision (Competition Contribution)**](https://hernanponcedeleon.github.io/pdfs/svcomp2021.pdf). TACAS 2021.
 
 [6] Hernán Ponce de León, Thomas Haas, Roland Meyer: [**Dartagnan: SMT-based Violation Witness Validation (Competition Contribution)**](https://hernanponcedeleon.github.io/pdfs/svcomp2022.pdf). TACAS 2022.
+
+[7] Thomas Haas, Roland Meyer, Hernán Ponce de León: [**CAAT: Consistency as a Theory**](https://hernanponcedeleon.github.io/pdfs/oopsla2022.pdf). OOSPLA 2022.

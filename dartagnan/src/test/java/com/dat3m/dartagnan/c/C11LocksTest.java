@@ -71,6 +71,10 @@ public class C11LocksTest extends AbstractCTest {
                 {"mutex_musl-rel2rx_futex", C11, UNKNOWN},
                 {"mutex_musl-rel2rx_unlock", C11, FAIL},
                 {"seqlock", C11, PASS},
+                {"clh_mutex", C11, UNKNOWN},
+                {"clh_mutex-acq2rx", C11, FAIL},
+                {"ticket_awnsb_mutex", C11, PASS},
+                {"ticket_awnsb_mutex-acq2rx", C11, FAIL},
         });
     }
 

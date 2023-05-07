@@ -6,10 +6,7 @@ import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
-import com.dat3m.dartagnan.program.analysis.Dependency;
-import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
-import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
+import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -35,11 +32,12 @@ import org.sosy_lab.java_smt.api.SolverException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.dat3m.dartagnan.configuration.Property.*;
+import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
+import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
-import static java.lang.Boolean.*;
+import static java.lang.Boolean.FALSE;
 import static java.util.stream.Collectors.toList;
 
 public abstract class ModelChecker {
@@ -138,21 +136,32 @@ public abstract class ModelChecker {
         program.setSpecification(spec);
     }
 
-    protected void saveFlaggedPairsOutput(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, EncodingContext ctx) throws SolverException {
+    protected void saveFlaggedPairsOutput(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, EncodingContext ctx, Program program) throws SolverException {
         if (!ctx.getTask().getProperty().contains(CAT_SPEC)) {
             return;
         }
-        Model model = prover.getModel();
+        final Model model = prover.getModel();
+        final SyntacticContextAnalysis synContext = newInstance(program);
         for(Axiom ax : wmm.getAxioms()) {
             if(ax.isFlagged() && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
                 StringBuilder violatingPairs = new StringBuilder("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
                 for(Tuple tuple : encoder.getTuples(ax.getRelation(), model)) {
+                    final String callSeparator = " -> ";
+                    final String callStackFirst = makeContextString(
+                            synContext.getContextInfo(tuple.getFirst()).getContextOfType(CallContext.class),
+                            callSeparator);
+                    final String callStackSecond = makeContextString(
+                            synContext.getContextInfo(tuple.getSecond()).getContextOfType(CallContext.class),
+                            callSeparator);
+
                     violatingPairs
-                        .append("\t").append(tuple.getFirst().getGlobalId())
-                        .append(" -> ").append(tuple.getSecond().getGlobalId())
-                        .append("\t(").append(tuple.getFirst().getSourceCodeFile()).append("#").append(tuple.getFirst().getCLine())
-                        .append(" -> ").append(tuple.getSecond().getSourceCodeFile()).append("#").append(tuple.getSecond().getCLine())
-                        .append(")\n");
+                        .append("\tE").append(tuple.getFirst().getGlobalId())
+                        .append(" / E").append(tuple.getSecond().getGlobalId())
+                        .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
+                        .append(getSourceLocationString(tuple.getFirst()))
+                        .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
+                        .append(getSourceLocationString(tuple.getSecond()))
+                        .append("\n");
                 }
                 flaggedPairsOutput += violatingPairs.toString();
             }

@@ -30,9 +30,11 @@ public class Label extends Event {
 
     @Override
     public void delete() {
-        // We delete all jumps that target this label to avoid
-        // broken jumps.
-        getJumpSet().forEach(CondJump::delete);
+        // We delete all jumps that target this label to avoid broken jumps.
+        // We iterate over a snapshot to avoid probles due to the jumpSet being modified
+        // during the iteration.
+        Set<CondJump> copyJumpSet = new HashSet<>(jumpSet);
+        copyJumpSet.forEach(CondJump::delete);
         super.delete();
     }
 

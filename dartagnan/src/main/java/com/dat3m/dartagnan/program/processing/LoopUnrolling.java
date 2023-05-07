@@ -137,6 +137,9 @@ public class LoopUnrolling implements ProgramProcessor {
                 endOfLoopMarker.addFilters(Tag.NOOPT);
                 boundEvent.getPredecessor().insertAfter(endOfLoopMarker);
 
+                boundEvent.copyMetadataFrom(loopBackJump);
+                endOfLoopMarker.copyMetadataFrom(loopBackJump);    
+
             } else {
                 final Map<Event, Event> copyCtx = new HashMap<>();
                 final List<Event> copies = copyPath(loopBegin, loopBackJump, copyCtx);
