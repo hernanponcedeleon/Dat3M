@@ -21,7 +21,7 @@
     <maven.compiler.release>11</maven.compiler.release>
     <project.dependency.relativepath>dependency</project.dependency.relativepath>
     <project.dependency.path>${project.build.directory}/${project.dependency.relativepath}</project.dependency.path>
-    <argLine>-Djava.library.path=${project.dependency.path}</argLine>
+    <argLine>-Djava.library.path=${project.dependency.path}:${java.library.path}</argLine>
   </properties>
 
   <!--

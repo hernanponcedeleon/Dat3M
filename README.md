@@ -139,3 +139,5 @@ References
 [5] Hernán Ponce de León, Thomas Haas, Roland Meyer: [**Dartagnan: Leveraging Compiler Optimizations and the Price of Precision (Competition Contribution)**](https://hernanponcedeleon.github.io/pdfs/svcomp2021.pdf). TACAS 2021.
 
 [6] Hernán Ponce de León, Thomas Haas, Roland Meyer: [**Dartagnan: SMT-based Violation Witness Validation (Competition Contribution)**](https://hernanponcedeleon.github.io/pdfs/svcomp2022.pdf). TACAS 2022.
+
+[7] Thomas Haas, Roland Meyer, Hernán Ponce de León: [**CAAT: Consistency as a Theory**](https://hernanponcedeleon.github.io/pdfs/oopsla2022.pdf). OOSPLA 2022.
