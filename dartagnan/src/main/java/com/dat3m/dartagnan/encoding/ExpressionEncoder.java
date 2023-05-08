@@ -69,7 +69,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         return booleanFormulaManager.ifThenElse((BooleanFormula) formula, one, zero);
     }
 
-    static BooleanFormula encodeAtom(COpBin op, Formula lhs, Formula rhs, FormulaManager fmgr) {
+    static BooleanFormula encodeComparison(COpBin op, Formula lhs, Formula rhs, FormulaManager fmgr) {
         BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         if (lhs instanceof BooleanFormula && rhs instanceof BooleanFormula) {
             BooleanFormula b1 = (BooleanFormula) lhs;
@@ -136,7 +136,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     public Formula visit(Atom atom) {
         Formula lhs = encodeInteger(atom.getLHS());
         Formula rhs = encodeInteger(atom.getRHS());
-        return encodeAtom(atom.getOp(), lhs, rhs, formulaManager);
+        return encodeComparison(atom.getOp(), lhs, rhs, formulaManager);
     }
 
     @Override

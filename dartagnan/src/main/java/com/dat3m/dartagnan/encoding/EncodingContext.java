@@ -118,8 +118,8 @@ public final class EncodingContext {
         return new ExpressionEncoder(formulaManager, event).encodeInteger(expression);
     }
 
-    public BooleanFormula encodeAtom(COpBin op, Formula lhs, Formula rhs) {
-        return ExpressionEncoder.encodeAtom(op, lhs, rhs, formulaManager);
+    public BooleanFormula encodeComparison(COpBin op, Formula lhs, Formula rhs) {
+        return ExpressionEncoder.encodeComparison(op, lhs, rhs, formulaManager);
     }
 
     public BooleanFormula controlFlow(Event event) {

@@ -25,7 +25,7 @@ public class AssertBasic extends AbstractAssert {
     @Override
     public BooleanFormula encode(EncodingContext context) {
         FormulaManager ctx = context.getFormulaManager();
-        return context.encodeAtom(op, e1.getLastValueExpr(ctx), e2.getLastValueExpr(ctx));
+        return context.encodeComparison(op, e1.getLastValueExpr(ctx), e2.getLastValueExpr(ctx));
     }
 
     @Override
