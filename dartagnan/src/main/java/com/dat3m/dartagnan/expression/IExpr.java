@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.expression;
 
-public abstract class IExpr implements Reducible {
+public abstract class IExpr implements ExprInterface {
 
 	public IExpr getBase() {
 		throw new UnsupportedOperationException("getBase() not supported for " + this);
@@ -10,7 +10,6 @@ public abstract class IExpr implements Reducible {
 		throw new UnsupportedOperationException("getPrecision() not supported for " + this);
 	}
 	
-	@Override
 	public IConst reduce() {
 		throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
