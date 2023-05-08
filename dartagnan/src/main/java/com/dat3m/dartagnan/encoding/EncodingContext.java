@@ -110,11 +110,11 @@ public final class EncodingContext {
         return booleanFormulaManager;
     }
 
-    public BooleanFormula encodeBooleanExpression(Event event, ExprInterface expression) {
+    public BooleanFormula encodeBooleanExpressionAt(ExprInterface expression, Event event) {
         return new ExpressionEncoder(formulaManager, event).encodeBoolean(expression);
     }
 
-    public Formula encodeIntegerExpression(Event event, ExprInterface expression) {
+    public Formula encodeIntegerExpressionAt(ExprInterface expression, Event event) {
         return new ExpressionEncoder(formulaManager, event).encodeInteger(expression);
     }
 
@@ -127,7 +127,7 @@ public final class EncodingContext {
     }
 
     public BooleanFormula jumpCondition(CondJump event) {
-        return encodeBooleanExpression(event, event.getGuard());
+        return encodeBooleanExpressionAt(event.getGuard(), event);
     }
 
     public BooleanFormula execution(Event event) {
@@ -269,8 +269,8 @@ public final class EncodingContext {
             }
             Formula r = e instanceof RegWriter ? ((RegWriter) e).getResultRegister().toIntFormulaResult(e, formulaManager) : null;
             if (e instanceof MemEvent) {
-                addresses.put(e, encodeIntegerExpression(e, ((MemEvent) e).getAddress()));
-                values.put(e, e instanceof Load ? r : encodeIntegerExpression(e, ((MemEvent) e).getMemValue()));
+                addresses.put(e, encodeIntegerExpressionAt(((MemEvent) e).getAddress(), e));
+                values.put(e, e instanceof Load ? r : encodeIntegerExpressionAt(((MemEvent) e).getMemValue(), e));
             }
             if (r != null) {
                 results.put(e, r);

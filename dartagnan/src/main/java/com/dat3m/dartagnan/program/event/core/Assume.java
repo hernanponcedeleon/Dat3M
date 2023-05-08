@@ -46,7 +46,7 @@ public class Assume extends Event implements RegReaderData {
 		BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
 		return bmgr.and(
 				super.encodeExec(ctx),
-				bmgr.implication(ctx.execution(this), ctx.encodeBooleanExpression(this, expr)));
+				bmgr.implication(ctx.execution(this), ctx.encodeBooleanExpressionAt(expr, this)));
 	}
 
 	// Unrolling

@@ -62,7 +62,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
     public BooleanFormula encodeExec(EncodingContext context) {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = super.encodeExec(context);
-        Formula expression = context.encodeIntegerExpression(this, expr);
+        Formula expression = context.encodeIntegerExpressionAt(expr, this);
         if (expr instanceof INonDet) {
             INonDet nonDet = (INonDet) expr;
             long min = nonDet.getMin();
