@@ -130,7 +130,7 @@ public class Program {
     /**
      * Iterates all events in this program.
      *
-     * @return {@code cId}-ordered complete sequence of all events in this program.
+     * @return {@code globalId}-ordered complete sequence of all events in this program.
      */
     public List<Event> getEvents() {
         List<Event> events = new ArrayList<>();
@@ -144,7 +144,7 @@ public class Program {
      * Iterates a subset of events in this program.
      *
      * @param cls Class of events to be selected.
-     * @return {@code cId}-ordered complete sequence of all events of class {@code cls} in this program.
+     * @return {@code globalId}-ordered complete sequence of all events of class {@code cls} in this program.
      * @param <T> Desired subclass of {@link Event}.
      */
     public <T extends Event> List<T> getEvents(Class<T> cls) {
