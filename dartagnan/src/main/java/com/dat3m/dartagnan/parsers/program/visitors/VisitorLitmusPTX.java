@@ -30,9 +30,6 @@ public class VisitorLitmusPTX
     private int mainThread;
     private int threadCount = 0;
 
-    private HashMap<String, HashSet<String>> proxyMap = new HashMap<>();
-    // key: variable name, value: proxy types. Add values as filters to relevant load
-
     public VisitorLitmusPTX(ProgramBuilder pb){
         this.programBuilder = pb;
     }
@@ -67,7 +64,6 @@ public class VisitorLitmusPTX
     public Object visitVariableDeclaratorLocation(LitmusPTXParser.VariableDeclaratorLocationContext ctx) {
         programBuilder.initLocEqConst(ctx.location().getText(),
                 new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()));
-        proxyMap.putIfAbsent(ctx.location().getText(), new HashSet<>(Arrays.asList(Tag.PTX.GEN)));
         return null;
     }
 
@@ -100,8 +96,6 @@ public class VisitorLitmusPTX
             programBuilder.initLocEqLocAliasProxy(ctx.location(0).getText(),
                     ctx.location(1).getText());
         }
-        proxyMap.putIfAbsent(ctx.location(0).getText(),
-                new HashSet<>(Arrays.asList(ctx.proxyType().content)));
         return null;
     }
 
@@ -152,14 +146,6 @@ public class VisitorLitmusPTX
         Store store = EventFactory.PTX.newTaggedStore(object, constant, sem, scope);
         store.addFilters(ctx.store().storeProxy);
         store.addFilters(Tag.PTX.CON);
-        if (proxyMap.containsKey(ctx.location().getText())) {
-            HashSet<String> proxies = proxyMap.get(ctx.location().getText());
-            proxies.add(Tag.PTX.CON);
-            store.addFilters(proxies);
-        } else {
-            HashSet<String> proxies = new HashSet<>(Arrays.asList(Tag.PTX.CON));
-            proxyMap.put(ctx.location().getText(), proxies);
-        }
         return programBuilder.addScopedChild(mainThread, store);
     }
 
@@ -181,14 +167,6 @@ public class VisitorLitmusPTX
         }
         Store store = EventFactory.PTX.newTaggedStore(object, register, sem, scope);
         store.addFilters(ctx.store().storeProxy);
-        if (proxyMap.containsKey(ctx.location().getText())) {
-            HashSet<String> proxies = proxyMap.get(ctx.location().getText());
-            proxies.add(ctx.store().storeProxy);
-            store.addFilters(proxies);
-        } else {
-            HashSet<String> proxies = new HashSet<>(Arrays.asList(ctx.store().storeProxy));
-            proxyMap.put(ctx.location().getText(), proxies);
-        }
         return programBuilder.addScopedChild(mainThread, store);
     }
 
@@ -229,9 +207,6 @@ public class VisitorLitmusPTX
         }
         Load load = EventFactory.PTX.newTaggedLoad(register, location, sem, scope);
         load.addFilters(ctx.load().loadProxy);
-        if (proxyMap.containsKey(ctx.location().getText())) {
-            load.addFilters(proxyMap.get(ctx.location().getText()));
-        }
         return programBuilder.addScopedChild(mainThread, load);
     }
 
@@ -250,14 +225,6 @@ public class VisitorLitmusPTX
         }
         RMWFetchOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, sem, scope);
         atom.addFilters(ctx.atom().atomProxy);
-        if (proxyMap.containsKey(ctx.location().getText())) {
-            HashSet<String> proxies = proxyMap.get(ctx.location().getText());
-            proxies.add(ctx.atom().atomProxy);
-            atom.addFilters(proxies);
-        } else {
-            HashSet<String> proxies = new HashSet<>(Arrays.asList(ctx.atom().atomProxy));
-            proxyMap.put(ctx.location().getText(), proxies);
-        }
         return programBuilder.addScopedChild(mainThread, atom);
     }
 
@@ -276,14 +243,6 @@ public class VisitorLitmusPTX
         }
         RMWFetchOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, sem, scope);
         atom.addFilters(ctx.atom().atomProxy);
-        if (proxyMap.containsKey(ctx.location().getText())) {
-            HashSet<String> proxies = proxyMap.get(ctx.location().getText());
-            proxies.add(ctx.atom().atomProxy);
-            atom.addFilters(proxies);
-        } else {
-            HashSet<String> proxies = new HashSet<>(Arrays.asList(ctx.atom().atomProxy));
-            proxyMap.put(ctx.location().getText(), proxies);
-        }
         return programBuilder.addScopedChild(mainThread, atom);
     }
 
@@ -302,14 +261,6 @@ public class VisitorLitmusPTX
         }
         RMWOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, constant, op, sem, scope);
         red.addFilters(ctx.red().redProxy);
-        if (proxyMap.containsKey(ctx.location().getText())) {
-            HashSet<String> proxies = proxyMap.get(ctx.location().getText());
-            proxies.add(ctx.red().redProxy);
-            red.addFilters(proxies);
-        } else {
-            HashSet<String> proxies = new HashSet<>(Arrays.asList(ctx.red().redProxy));
-            proxyMap.put(ctx.location().getText(), proxies);
-        }
         return programBuilder.addScopedChild(mainThread, red);
     }
 
@@ -328,14 +279,6 @@ public class VisitorLitmusPTX
         }
         RMWOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, register_operand, op, sem, scope);
         red.addFilters(ctx.red().redProxy);
-        if (proxyMap.containsKey(ctx.location().getText())) {
-            HashSet<String> proxies = proxyMap.get(ctx.location().getText());
-            proxies.add(ctx.red().redProxy);
-            red.addFilters(proxies);
-        } else {
-            HashSet<String> proxies = new HashSet<>(Arrays.asList(ctx.red().redProxy));
-            proxyMap.put(ctx.location().getText(), proxies);
-        }
         return programBuilder.addScopedChild(mainThread,red);
     }
 

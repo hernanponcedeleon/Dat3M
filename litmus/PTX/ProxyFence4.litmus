@@ -9,7 +9,7 @@ P1:%r5=0;
 }
  P0@cta 0,gpu 0                   |P1@cta 0,gpu 0                   ;
  st.weak rd1, 42                  |ld.acquire.cta %r5, rd4          ;
- fence.proxy.constant             |cold.weak %r3, rd2                 ;
+ fence.proxy.constant             |cold.weak %r3, rd2               ;
  st.release.cta rd4, 1            |                                 ;
 ~exists
 (P1:%r5 == 1 /\ P1:%r3 != 42)

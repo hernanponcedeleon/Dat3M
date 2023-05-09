@@ -8,9 +8,4 @@ public class VirtualMemoryObject extends MemoryObject{
     VirtualMemoryObject(int index, int size, boolean isStaticallyAllocated) {
         super(index, size, isStaticallyAllocated);
     }
-
-    @Override
-    public Formula toIntFormula(Event e, FormulaManager m) {
-        return this.getAlias().toIntFormula(e, m);
-    }
 }

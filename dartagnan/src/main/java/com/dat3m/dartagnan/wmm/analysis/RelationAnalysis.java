@@ -724,7 +724,7 @@ public class RelationAnalysis {
                         continue;
                     }
                     if (w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)
-                            && alias.mayAlias((MemEvent) w1, w2)) {
+                            && (alias.mayAlias((MemEvent) w1, w2) || directAlias((MemEvent) w1, w2))) {
                         may.add(new Tuple(w1, w2));
                     }
                 }
@@ -760,7 +760,7 @@ public class RelationAnalysis {
                     continue;
                 }
                 for (Load e2 : loadEvents) {
-                    if (alias.mayAlias((MemEvent) e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if ((alias.mayAlias((MemEvent) e1, e2) || directAlias((MemEvent) e1, e2)) && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
@@ -889,7 +889,7 @@ public class RelationAnalysis {
             List<MemEvent> events = program.getEvents(MemEvent.class);
             for (MemEvent e1 : events) {
                 for (MemEvent e2 : events) {
-                    if (alias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (directAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -1012,27 +1012,6 @@ public class RelationAnalysis {
                 }
             }
             return result;
-        }
-
-        private Boolean alias(MemEvent e1, MemEvent e2) {
-            MemoryObject alias1 = ((MemoryObject) e1.getAddress()).getAlias();
-            MemoryObject alias2 = ((MemoryObject) e2.getAddress()).getAlias();
-            if (e1.getAddress() instanceof VirtualMemoryObject &&
-                    e2.getAddress() instanceof VirtualMemoryObject) {
-                return (alias1 != null && alias1.getAlias() != null && alias1.getAlias().equals(alias2)) ||
-                        (alias1 != null && alias2 != null && alias1.equals(alias2.getAlias()));
-            } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof VirtualMemoryObject) {
-                return (alias2 != null && e1.getAddress().equals(alias2.getAlias())) ||
-                        (alias1 != null && alias1.equals(alias2));
-            } else if (e1.getAddress() instanceof VirtualMemoryObject && e2.getAddress() instanceof MemoryObject) {
-                return (alias1 != null && alias1.getAlias() != null && alias1.getAlias().equals(e2.getAddress())) ||
-                        (alias1 != null && alias1.equals(alias2));
-            } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof MemoryObject) {
-                return e1.getAddress().equals(alias2) ||
-                        (alias1 != null && alias1.equals(e2.getAddress()));
-            } else {
-                return false;
-            }
         }
     }
 
@@ -1543,7 +1522,8 @@ public class RelationAnalysis {
             //TODO use transitivity
             Set<Tuple> e = new HashSet<>();
             for (Tuple xy : disabled) {
-                if (alias.mustAlias((MemEvent) xy.getFirst(), (MemEvent) xy.getSecond())) {
+                if (alias.mustAlias((MemEvent) xy.getFirst(), (MemEvent) xy.getSecond())
+                        || directAlias((MemEvent) xy.getFirst(), (MemEvent) xy.getSecond())) {
                     e.add(xy.getInverse());
                 }
             }
@@ -1589,5 +1569,26 @@ public class RelationAnalysis {
 
     private long countMustSet() {
         return knowledgeMap.values().stream().mapToLong(k -> k.must.size()).sum();
+    }
+
+    private Boolean directAlias(MemEvent e1, MemEvent e2) {
+        MemoryObject alias1 = ((MemoryObject) e1.getAddress()).getAlias();
+        MemoryObject alias2 = ((MemoryObject) e2.getAddress()).getAlias();
+        if (e1.getAddress() instanceof VirtualMemoryObject &&
+                e2.getAddress() instanceof VirtualMemoryObject) {
+            return (alias1 != null && alias1.getAlias() != null && alias1.getAlias().equals(alias2)) ||
+                    (alias1 != null && alias2 != null && alias1.equals(alias2.getAlias()));
+        } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof VirtualMemoryObject) {
+            return (alias2 != null && e1.getAddress().equals(alias2.getAlias())) ||
+                    (alias1 != null && alias1.equals(alias2));
+        } else if (e1.getAddress() instanceof VirtualMemoryObject && e2.getAddress() instanceof MemoryObject) {
+            return (alias1 != null && alias1.getAlias() != null && alias1.getAlias().equals(e2.getAddress())) ||
+                    (alias1 != null && alias1.equals(alias2));
+        } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof MemoryObject) {
+            return e1.getAddress().equals(alias2) ||
+                    (alias1 != null && alias1.equals(e2.getAddress()));
+        } else {
+            return false;
+        }
     }
 }

@@ -37,24 +37,17 @@ let proxy-ops-fence = [M]; (same-proxy & scta); [F \ ALIAS]
 let proxy-fence-ops-cause = cause-base & proxy-fence-ops
 let proxy-ops-fence-cause = cause-base & proxy-ops-fence
 (*******************)
-let no-alias-fence-cause = ([M & GEN]; (loc & cause-base); [M & GEN])
-let no-proxy-fence-cause = ([M]; (same-proxy & scta & loc & cause-base); [M])
-let no-fence-cause = no-alias-fence-cause | no-proxy-fence-cause
-(*******************)
-let src-proxy-fence-cause = loc & (proxy-ops-fence-cause; cause-base; [GEN])
-let dst-proxy-fence-cause = loc & ([GEN]; cause-base; proxy-fence-ops-cause)
-let src-dst-proxy-fence-cause = loc & (proxy-ops-fence-cause; cause-base; proxy-fence-ops-cause)
-(*******************)
 let alias-fence = cause-base; [F & ALIAS]; cause-base
-let alias-gen-cause = alias & ([M & GEN]; alias-fence; [M & GEN])
-let src-alias-fence-cause = alias & (proxy-ops-fence-cause; alias-fence; [M & GEN])
-let dst-alias-fence-cause = alias & ([M & GEN]; alias-fence; proxy-fence-ops-cause)
-let src-dst-alias-proxy-fence-cause = alias & (proxy-ops-fence-cause; alias-fence; proxy-fence-ops-cause)
 (*******************)
-let proxy-no-alias-cause = no-fence-cause | src-proxy-fence-cause | dst-proxy-fence-cause | src-dst-proxy-fence-cause
-let proxy-alias-cause = alias-gen-cause | src-alias-fence-cause | dst-alias-fence-cause | src-dst-alias-proxy-fence-cause
-(*******************)
-let cause-proxy = proxy-no-alias-cause | proxy-alias-cause
+let cause-proxy = ([M & GEN]; (loc & cause-base); [M & GEN])
+                | ([M]; (same-proxy & scta & loc & cause-base); [M])
+                | loc & (proxy-ops-fence-cause; cause-base; [GEN])
+                | loc & ([GEN]; cause-base; proxy-fence-ops-cause)
+                | loc & (proxy-ops-fence-cause; cause-base; proxy-fence-ops-cause)
+                | alias & ([M & GEN]; alias-fence; [M & GEN])
+                | alias & (proxy-ops-fence-cause; alias-fence; [M & GEN])
+                | alias & ([M & GEN]; alias-fence; proxy-fence-ops-cause)
+                | alias & (proxy-ops-fence-cause; alias-fence; proxy-fence-ops-cause)
 let cause = observation?; cause-proxy
 
 (******************************)

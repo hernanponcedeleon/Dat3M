@@ -28,7 +28,7 @@ public class WmmAnalysis {
             name= LOCALLY_CONSISTENT,
             description="Assumes local consistency for all created wmms.",
             secure=true)
-    private boolean assumeLocalConsistency = true;
+    private boolean assumeLocalConsistency = false;
 
     @Option(
             description="Assumes the WMM respects atomic blocks for optimization (only the case for SVCOMP right now).",

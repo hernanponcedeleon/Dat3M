@@ -37,6 +37,15 @@ public class MemoryObject extends IConst {
         this.alias = alias;
     }
 
+    @Override
+    public Formula toIntFormula(Event e, FormulaManager m) {
+        if (this.getAlias() != null) {
+            return this.getAlias().toIntFormula(e, m);
+        } else {
+            return super.toIntFormula(e, m);
+        }
+    }
+
 
     // TODO
     // Right now we assume that either the whole object is atomic or it is not.
