@@ -9,15 +9,16 @@ package com.dat3m.dartagnan.program.event;
 public final class Tag {
     private Tag() { }
 
-    public static final String VISIBLE          = "V"; // TODO: Maybe change to "_"?
+    public static final String VISIBLE          = "_";
     public static final String INIT             = "IW";
     public static final String READ             = "R";
     public static final String WRITE            = "W";
     public static final String MEMORY           = "M";
     public static final String FENCE            = "F";
+    public static final String STRONG           = "STRONG"; // TODO: Maybe move to C11 or IMM?
+    public static final String RMW              = "RMW";
 
     // ---------- Internally used tags (not referenced in CAT) ----------
-    public static final String RMW              = "__RMW";
     public static final String EXCL             = "__EXCL";
     public static final String ASSERTION        = "__ASS";
     // Marks the event that is reachable IFF a loop has not been fully unrolled.

@@ -20,6 +20,9 @@ public class RMWStoreExclusive extends Store {
         addFilters(Tag.EXCL, Tag.RMW);
         this.isStrong = isStrong;
         this.requiresMatchingAddresses = requiresMatchingAddresses;
+        if (isStrong) {
+            addFilters(Tag.STRONG);
+        }
     }
 
     protected RMWStoreExclusive(RMWStoreExclusive other) {
