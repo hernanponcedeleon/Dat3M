@@ -526,24 +526,25 @@ public class RelationAnalysis {
             //TODO: We can restrict the codomain to visible events as the only usage of this Relation is in
             // ctrl := idd^+;ctrlDirect & (R*V)
             Set<Tuple> must = new HashSet<>();
-            // NOTE: If's (under Linux) have different notion of ctrl dependency than conditional jumps!
             for (Thread thread : program.getThreads()) {
-                for (Event e1 : thread.getEvents()) {
-                    if (e1.is(CMP)) {
-                        for (Event e2 : ((IfAsJump) e1).getBranchesEvents()) {
-                            if (!exec.areMutuallyExclusive(e1, e2)) {
-                                must.add(new Tuple(e1, e2));
-                            }
-                        }
+                for (CondJump jump : thread.getEvents(CondJump.class)) {
+                    if (jump.isGoto() || jump.isDead()) {
+                        continue; // There is no point in ctrl-edges from unconditional jumps.
                     }
-                }
-                // Relates jumps (except those implementing Ifs and their internal jump to end) with all later events
-                for (Event e1 : thread.getEvents()) {
-                    if (e1.is(JUMP) && !e1.is(CMP) && !e1.is(IFI)) {
-                        for (Event e2 : thread.getEvents()) {
-                            if (e1.getGlobalId() < e2.getGlobalId() && !exec.areMutuallyExclusive(e1, e2)) {
-                                must.add(new Tuple(e1, e2));
-                            }
+
+                    final List<Event> ctrlDependentEvents;
+                    if (jump instanceof IfAsJump) {
+                        // Ctrl dependencies of Ifs (under Linux) only extend up until the merge point of both
+                        // branches.
+                        ctrlDependentEvents = ((IfAsJump)jump).getBranchesEvents();
+                    } else {
+                        // Regular jumps give dependencies to all successors.
+                        ctrlDependentEvents = jump.getSuccessor().getSuccessors();
+                    }
+
+                    for (Event e : ctrlDependentEvents) {
+                        if (!exec.areMutuallyExclusive(jump, e)) {
+                            must.add(new Tuple(jump, e));
                         }
                     }
                 }

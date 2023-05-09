@@ -17,7 +17,7 @@ public class Assume extends Event implements RegReaderData {
 	public Assume(ExprInterface expr) {
 		super();
 		this.expr = expr;
-		addFilters(Tag.LOCAL, Tag.REG_READER);
+		addFilters(Tag.REG_READER);
 	}
 
 	protected Assume(Assume other){

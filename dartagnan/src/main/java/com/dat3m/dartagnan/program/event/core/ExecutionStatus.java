@@ -23,7 +23,7 @@ public class ExecutionStatus extends Event implements RegWriter {
         this.register = register;
         this.event = event;
         this.trackDep = trackDep;
-        addFilters(Tag.LOCAL, Tag.REG_WRITER);
+        addFilters(Tag.REG_WRITER);
     }
 
     protected ExecutionStatus(ExecutionStatus other) {

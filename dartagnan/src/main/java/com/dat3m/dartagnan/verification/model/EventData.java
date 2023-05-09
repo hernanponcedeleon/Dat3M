@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 
 import java.math.BigInteger;
@@ -83,7 +84,7 @@ public class EventData implements Comparable<EventData> {
     public boolean isRead() { return event.is(READ); }
     public boolean isFence() { return event.is(FENCE); }
     public boolean isJump() {
-        return event.is(JUMP);
+        return event instanceof CondJump;
     }
     public boolean isExclusive() {
     	return event.is(EXCL);
