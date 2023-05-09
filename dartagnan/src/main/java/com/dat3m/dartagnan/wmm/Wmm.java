@@ -4,8 +4,8 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -247,8 +247,6 @@ public class Wmm {
     private Definition basicDefinition(String name) {
         Relation r = newRelation(name);
         switch (name) {
-            case POWITHLOCALEVENTS:
-                return new ProgramOrder(r, FilterBasic.get(Tag.ANY));
             case PO:
                 return new ProgramOrder(r, FilterBasic.get(Tag.VISIBLE));
             case LOC:
