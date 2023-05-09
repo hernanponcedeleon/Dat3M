@@ -32,7 +32,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         return formulaManager.getBitvectorFormulaManager();
     }
 
-    public BooleanFormula encodeBoolean(ExprInterface expression) {
+    BooleanFormula encodeAsBoolean(ExprInterface expression) {
         Formula formula = expression.visit(this);
         if (formula instanceof BooleanFormula) {
             return (BooleanFormula) formula;
@@ -49,7 +49,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         return integerFormulaManager.greaterThan((IntegerFormula) formula, zero);
     }
 
-    public Formula encodeInteger(ExprInterface expression) {
+    Formula encodeAsInteger(ExprInterface expression) {
         Formula formula = expression.visit(this);
         if (formula instanceof BitvectorFormula || formula instanceof IntegerFormula) {
             return formula;
@@ -134,8 +134,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(Atom atom) {
-        Formula lhs = encodeInteger(atom.getLHS());
-        Formula rhs = encodeInteger(atom.getRHS());
+        Formula lhs = encodeAsInteger(atom.getLHS());
+        Formula rhs = encodeAsInteger(atom.getRHS());
         return encodeComparison(atom.getOp(), lhs, rhs, formulaManager);
     }
 
@@ -146,8 +146,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(BExprBin bBin) {
-        BooleanFormula lhs = encodeBoolean(bBin.getLHS());
-        BooleanFormula rhs = encodeBoolean(bBin.getRHS());
+        BooleanFormula lhs = encodeAsBoolean(bBin.getLHS());
+        BooleanFormula rhs = encodeAsBoolean(bBin.getRHS());
         switch (bBin.getOp()) {
             case AND:
                 return booleanFormulaManager.and(lhs, rhs);
@@ -159,7 +159,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(BExprUn bUn) {
-        BooleanFormula inner = encodeBoolean(bUn.getInner());
+        BooleanFormula inner = encodeAsBoolean(bUn.getInner());
         return booleanFormulaManager.not(inner);
     }
 
@@ -177,8 +177,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(IExprBin iBin) {
-        Formula lhs = encodeInteger(iBin.getLHS());
-        Formula rhs = encodeInteger(iBin.getRHS());
+        Formula lhs = encodeAsInteger(iBin.getLHS());
+        Formula rhs = encodeAsInteger(iBin.getRHS());
         if (lhs instanceof IntegerFormula && rhs instanceof IntegerFormula) {
             IntegerFormula i1 = (IntegerFormula) lhs;
             IntegerFormula i2 = (IntegerFormula) rhs;
@@ -302,7 +302,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(IExprUn iUn) {
-        Formula inner = encodeInteger(iUn.getInner());
+        Formula inner = encodeAsInteger(iUn.getInner());
         if (inner instanceof IntegerFormula) {
             IntegerFormula i = (IntegerFormula) inner;
             switch (iUn.getOp()) {
@@ -455,9 +455,9 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(IfExpr ifExpr) {
-        BooleanFormula guard = encodeBoolean(ifExpr.getGuard());
-        Formula tBranch = encodeInteger(ifExpr.getTrueBranch());
-        Formula fBranch = encodeInteger(ifExpr.getFalseBranch());
+        BooleanFormula guard = encodeAsBoolean(ifExpr.getGuard());
+        Formula tBranch = encodeAsInteger(ifExpr.getTrueBranch());
+        Formula fBranch = encodeAsInteger(ifExpr.getFalseBranch());
         return booleanFormulaManager.ifThenElse(guard, tBranch, fBranch);
     }
 

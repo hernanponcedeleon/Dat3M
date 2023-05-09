@@ -111,11 +111,11 @@ public final class EncodingContext {
     }
 
     public BooleanFormula encodeBooleanExpressionAt(ExprInterface expression, Event event) {
-        return new ExpressionEncoder(formulaManager, event).encodeBoolean(expression);
+        return new ExpressionEncoder(formulaManager, event).encodeAsBoolean(expression);
     }
 
     public Formula encodeIntegerExpressionAt(ExprInterface expression, Event event) {
-        return new ExpressionEncoder(formulaManager, event).encodeInteger(expression);
+        return new ExpressionEncoder(formulaManager, event).encodeAsInteger(expression);
     }
 
     public BooleanFormula encodeComparison(COpBin op, Formula lhs, Formula rhs) {
