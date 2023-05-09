@@ -12,8 +12,6 @@ public final class Tag {
     public static final String RMW              = "RMW";
     public static final String EXCL             = "EXCL";
     public static final String STRONG           = "STRONG";
-    // For SC events in RISCV and Power, addresses should match
-    public static final String MATCHADDRESS     = "MATCHADDRESS";
     public static final String LOCAL            = "T";
     public static final String LABEL            = "LB";
     public static final String CMP              = "C";

@@ -521,7 +521,7 @@ public class EventFactory {
 
         public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
             RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong, true);
-            store.addFilters(Tag.RISCV.STCOND, Tag.MATCHADDRESS);
+            store.addFilters(Tag.RISCV.STCOND);
             return store;
         }
 
@@ -592,9 +592,7 @@ public class EventFactory {
         }
 
         public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
-            RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong, true);
-            store.addFilters(Tag.MATCHADDRESS);
-            return store;
+            return new RMWStoreExclusive(address, value, mo, isStrong, true);
         }
 
         public static Fence newISyncBarrier() {

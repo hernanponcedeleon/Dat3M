@@ -6,13 +6,9 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
-import com.dat3m.dartagnan.program.event.core.IfAsJump;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
+import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
@@ -684,10 +680,10 @@ public class RelationAnalysis {
                 // assume order by cId
                 // assume cId describes a topological sorting over the control flow
                 for (int end = 1; end < events.size(); end++) {
-                    Event store = events.get(end);
-                    if (!store.is(WRITE)) {
+                    if (!(events.get(end) instanceof RMWStoreExclusive)) {
                         continue;
                     }
+                    final RMWStoreExclusive store = (RMWStoreExclusive)events.get(end);
                     int start = iterate(end - 1, i -> i >= 0, i -> i - 1)
                             .filter(i -> exec.isImplied(store, events.get(i)))
                             .findFirst().orElse(0);
@@ -698,14 +694,14 @@ public class RelationAnalysis {
                     for (int i = 0; i < size; i++) {
                         Event load = candidates.get(i);
                         List<Event> intermediaries = candidates.subList(i + 1, size);
-                        if (!load.is(READ) || intermediaries.stream().anyMatch(e -> exec.isImplied(load, e))) {
+                        if (!(load instanceof Load) || intermediaries.stream().anyMatch(e -> exec.isImplied(load, e))) {
                             continue;
                         }
                         Tuple tuple = new Tuple(load, store);
                         may.add(tuple);
                         if (enableMustSets &&
                                 intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(load, e)) &&
-                                (store.is(MATCHADDRESS) || alias.mustAlias((MemEvent) load, (MemEvent) store))) {
+                                (store.doesRequireMatchingAddresses() || alias.mustAlias((MemEvent) load, store))) {
                             must.add(tuple);
                         }
                     }
