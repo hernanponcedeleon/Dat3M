@@ -12,17 +12,16 @@ import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.Cmp;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
-
 import org.antlr.v4.runtime.misc.Interval;
 
-import static com.dat3m.dartagnan.GlobalSettings.*;
-
 import java.math.BigInteger;
+
+import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 
 public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
@@ -172,7 +171,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        StoreExclusive event = EventFactory.newExclusiveStore(statusReg, address, register, ctx.storeExclusiveInstruction().mo);
+        StoreExclusive event = EventFactory.Common.newExclusiveStore(statusReg, address, register, ctx.storeExclusiveInstruction().mo);
         return programBuilder.addChild(mainThread, event);
     }
 

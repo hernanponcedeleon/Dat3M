@@ -11,26 +11,38 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 
 public class RMWStoreExclusive extends Store {
 
-    public RMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean strong) {
+    private final boolean isStrong;
+    private final boolean requiresMatchingAddresses;
+
+    public RMWStoreExclusive(IExpr address, ExprInterface value, String mo,
+                             boolean isStrong, boolean requiresMatchingAddresses) {
         super(address, value, mo);
         addFilters(Tag.EXCL, Tag.RMW);
-        if (strong) {
+        if (isStrong) {
             addFilters(Tag.STRONG);
         }
+        this.isStrong = isStrong;
+        this.requiresMatchingAddresses = requiresMatchingAddresses;
     }
 
     protected RMWStoreExclusive(RMWStoreExclusive other) {
         super(other);
+        this.isStrong = other.isStrong;
+        this.requiresMatchingAddresses = other.requiresMatchingAddresses;
     }
+
+    public boolean isStrong() { return this.isStrong; }
+    public boolean doesRequireMatchingAddresses() { return this. requiresMatchingAddresses; }
 
     @Override
     public boolean cfImpliesExec() {
-        return is(Tag.STRONG); // Strong RMWs always succeed
+        return isStrong; // Strong RMWs always succeed
     }
 
     @Override
     public String toString() {
-        String tag = is(Tag.STRONG) ? " strong" : "";
+        String tag = isStrong ? " strong" : "";
+        tag += requiresMatchingAddresses ? " addrmatch" : "";
         return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", super.toString()) + "# opt" + tag;
     }
 
