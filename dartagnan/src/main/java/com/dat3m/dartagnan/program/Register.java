@@ -1,15 +1,10 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.*;
 
-import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
-import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
-
-public class Register extends IExpr implements LastValueInterface {
+public class Register extends IExpr {
 
 	public static final int NO_THREAD = -1;
 
@@ -66,13 +61,6 @@ public class Register extends IExpr implements LastValueInterface {
 	@Override
 	public ImmutableSet<Register> getRegs() {
 		return ImmutableSet.of(this);
-	}
-
-	@Override
-	public Formula getLastValueExpr(FormulaManager m) {
-		String name = getName() + "_" + threadId + "_final";
-		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
-		return m.makeVariable(type, name);
 	}
 
 	@Override

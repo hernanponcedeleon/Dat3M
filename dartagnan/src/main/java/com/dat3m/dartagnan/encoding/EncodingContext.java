@@ -111,6 +111,10 @@ public final class EncodingContext {
         return booleanFormulaManager;
     }
 
+    public Formula encodeFinalIntegerExpression(ExprInterface expression) {
+        return new ExpressionEncoder(formulaManager, null).encodeAsInteger(expression);
+    }
+
     public BooleanFormula encodeBooleanExpressionAt(ExprInterface expression, Event event) {
         return new ExpressionEncoder(formulaManager, event).encodeAsBoolean(expression);
     }

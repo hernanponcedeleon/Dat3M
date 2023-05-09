@@ -5,11 +5,14 @@ import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 import static java.util.Arrays.asList;
 
 class ExpressionEncoder implements ExpressionVisitor<Formula> {
@@ -130,6 +133,16 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             }
         }
         throw new UnsupportedOperationException("Encoding not supported for COpBin: " + lhs + " " + op + " " + rhs);
+    }
+
+    static Formula getLastMemValueExpr(MemoryObject object, int offset, FormulaManager formulaManager) {
+        checkArgument(0 <= offset && offset < object.size(), "array index out of bounds");
+        String name = String.format("last_val_at_%s_%d", object, offset);
+        if (getArchPrecision() > -1) {
+            return formulaManager.getBitvectorFormulaManager().makeVariable(getArchPrecision(), name);
+        } else {
+            return formulaManager.getIntegerFormulaManager().makeVariable(name);
+        }
     }
 
     @Override
@@ -472,7 +485,9 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(Register reg) {
-        String name = reg.getName() + "(" + event.getGlobalId() + ")";
+        String name = event == null ?
+                reg.getName() + "_" + reg.getThreadId() + "_final" :
+                reg.getName() + "(" + event.getGlobalId() + ")";
         if (reg.getPrecision() < 0) {
             return integerFormulaManager().makeVariable(name);
         }
@@ -484,5 +499,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         return address.getPrecision() > 0
                 ? bitvectorFormulaManager().makeBitvector(address.getPrecision(), address.getValue())
                 : integerFormulaManager().makeNumber(address.getValue());
+    }
+
+    @Override
+    public Formula visit(Location location) {
+        checkState(event != null, "Cannot evaluate %s at event %s.", location, event);
+        return getLastMemValueExpr(location.getMemoryObject(), location.getOffset(), formulaManager);
     }
 }
