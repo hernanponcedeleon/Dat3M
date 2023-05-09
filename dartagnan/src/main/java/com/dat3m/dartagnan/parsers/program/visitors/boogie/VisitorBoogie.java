@@ -21,13 +21,13 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -59,6 +59,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     private static final Logger logger = LogManager.getLogger(VisitorBoogie.class);
 
     protected final Program program = new Program(Program.SourceLanguage.BOOGIE);
+    protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
     protected Thread thread = program.newThread("0");
     protected final Map<String, Label> labelMap = new HashMap<>();
     protected int threadCount = 0;
@@ -98,7 +99,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     protected BeginAtomic currentBeginAtomic = null;
     protected Call_cmdContext atomicMode = null;
 
-    private final ExprSimplifier exprSimplifier = new ExprSimplifier(program.getExpressionFactory());
+    private final ExprSimplifier exprSimplifier = new ExprSimplifier(expressionFactory);
 
 
     private final List<String> smackDummyVariables =
@@ -503,7 +504,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             }
             BExpr c = (BExpr) ctx.proposition().expr().accept(this);
             if (c != null) {
-                thread.append(EventFactory.newJumpUnless(c, pairingLabel));
+                thread.append(EventFactory.newJump(expressions.makeUnary(NOT, c), pairingLabel));
             }
         }
         return null;
@@ -553,11 +554,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         ExprInterface v1 = (ExprInterface) ctx.rel_expr().accept(this);
         if (ctx.and_expr() != null) {
             ExprInterface v2 = (ExprInterface) ctx.and_expr().accept(this);
-            v1 = new BExprBin(v1, ctx.and_op().op, v2);
+            v1 = expressions.makeBinary(v1, ctx.and_op().op, v2);
         }
         if (ctx.or_expr() != null) {
             ExprInterface v2 = (ExprInterface) ctx.or_expr().accept(this);
-            v1 = new BExprBin(v1, ctx.or_op().op, v2);
+            v1 = expressions.makeBinary(v1, ctx.or_op().op, v2);
         }
         return v1;
     }
@@ -565,13 +566,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     @Override
     public Object visitMinus_expr(Minus_exprContext ctx) {
         IExpr v = (IExpr) ctx.unary_expr().accept(this);
-        return new IExprUn(IOpUn.MINUS, v);
+        return expressions.makeUnary(IOpUn.MINUS, v);
     }
 
     @Override
     public Object visitNeg_expr(Neg_exprContext ctx) {
         ExprInterface v = (ExprInterface) ctx.unary_expr().accept(this);
-        return new BExprUn(NOT, v);
+        return expressions.makeUnary(NOT, v);
     }
 
     @Override
@@ -580,7 +581,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         ExprInterface v2;
         for (int i = 0; i < ctx.rel_expr().size() - 1; i++) {
             v2 = (ExprInterface) ctx.rel_expr(i + 1).accept(this);
-            v1 = new BExprBin(v1, ctx.and_op(i).op, v2);
+            v1 = expressions.makeBinary(v1, ctx.and_op(i).op, v2);
         }
         return v1;
     }
@@ -591,7 +592,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         ExprInterface v2;
         for (int i = 0; i < ctx.rel_expr().size() - 1; i++) {
             v2 = (ExprInterface) ctx.rel_expr(i + 1).accept(this);
-            v1 = new BExprBin(v1, ctx.or_op(i).op, v2);
+            v1 = expressions.makeBinary(v1, ctx.or_op(i).op, v2);
         }
         return v1;
     }
@@ -602,7 +603,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         ExprInterface v2;
         for (int i = 0; i < ctx.bv_term().size() - 1; i++) {
             v2 = (ExprInterface) ctx.bv_term(i + 1).accept(this);
-            v1 = new Atom(v1, ctx.rel_op(i).op, v2);
+            v1 = expressions.makeBinary(v1, ctx.rel_op(i).op, v2);
         }
         return v1;
     }
@@ -613,7 +614,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         ExprInterface v2;
         for (int i = 0; i < ctx.factor().size() - 1; i++) {
             v2 = (ExprInterface) ctx.factor(i + 1).accept(this);
-            v1 = new IExprBin((IExpr) v1, ctx.add_op(i).op, (IExpr) v2);
+            v1 = expressions.makeBinary((IExpr) v1, ctx.add_op(i).op, (IExpr) v2);
         }
         return v1;
     }
@@ -624,7 +625,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         ExprInterface v2;
         for (int i = 0; i < ctx.power().size() - 1; i++) {
             v2 = (ExprInterface) ctx.power(i + 1).accept(this);
-            v1 = new IExprBin((IExpr) v1, ctx.mul_op(i).op, (IExpr) v2);
+            v1 = expressions.makeBinary((IExpr) v1, ctx.mul_op(i).op, (IExpr) v2);
         }
         return v1;
     }
@@ -700,19 +701,19 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         currentCall = new FunctionCall(function, callParams, currentCall);
         if (LLVMFUNCTIONS.stream().anyMatch(name::startsWith)) {
             currentCall = currentCall.getParent();
-            return llvmFunction(name, callParams);
+            return llvmFunction(name, callParams, expressions);
         }
         if (LLVMPREDICATES.stream().anyMatch(name::equals)) {
             currentCall = currentCall.getParent();
-            return llvmPredicate(name, callParams);
+            return llvmPredicate(name, callParams, expressions);
         }
         if (LLVMUNARY.stream().anyMatch(name::startsWith)) {
             currentCall = currentCall.getParent();
-            return llvmUnary(name, callParams);
+            return llvmUnary(name, callParams, expressions);
         }
         if (SMACKPREDICATES.stream().anyMatch(name::equals)) {
             currentCall = currentCall.getParent();
-            return smackPredicate(name, callParams);
+            return smackPredicate(name, callParams, expressions);
         }
         // Some functions do not have a body
         if (function.getBody() == null) {
@@ -729,7 +730,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         BExpr guard = (BExpr) ctx.expr(0).accept(this);
         IExpr tbranch = (IExpr) ctx.expr(1).accept(this);
         IExpr fbranch = (IExpr) ctx.expr(2).accept(this);
-        return new IfExpr(guard, tbranch, fbranch);
+        return expressions.makeConditional(guard, tbranch, fbranch);
     }
 
     @Override
@@ -741,17 +742,17 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     public Object visitBv_expr(Bv_exprContext ctx) {
         String value = ctx.getText().split("bv")[0];
         int precision = Integer.parseInt(ctx.getText().split("bv")[1]);
-        return new IValue(new BigInteger(value), precision);
+        return expressions.parseValue(value, precision);
     }
 
     @Override
     public Object visitInt_expr(Int_exprContext ctx) {
-        return new IValue(new BigInteger(ctx.getText()), getArchPrecision());
+        return expressions.parseValue(ctx.getText(), getArchPrecision());
     }
 
     @Override
     public Object visitBool_lit(Bool_litContext ctx) {
-        return new BConst(Boolean.parseBoolean(ctx.getText()));
+        return expressions.makeValue(Boolean.parseBoolean(ctx.getText()));
     }
 
     @Override
@@ -769,12 +770,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     protected void addAssertion(IExpr expr) {
         Register ass = thread.getOrNewRegister("assert_" + assertionIndex, expr.getPrecision());
+        IValue one = expressions.makeOne(expr.getPrecision());
         assertionIndex++;
         Event local = EventFactory.newLocal(ass, expr);
         append(local);
         local.addFilters(Tag.ASSERTION);
         Label end = labelMap.computeIfAbsent(thread.getEndLabelName(), EventFactory::newLabel);
-        CondJump jump = EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end);
+        CondJump jump = EventFactory.newJump(expressions.makeBinary(ass, COpBin.NEQ, one), end);
         jump.addFilters(Tag.EARLYTERMINATION);
         thread.append(jump);
 

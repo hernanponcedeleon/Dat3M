@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.processing.BranchReordering;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
@@ -55,7 +56,7 @@ public class ExceptionsTest {
     @Test(expected = IllegalArgumentException.class)
     public void diffPrecisionInt() throws Exception {
         // Both arguments should have same precision
-        new IExprBin(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
+        ExpressionFactory.getInstance().makeBinary(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
     }
 
     @Test(expected = NullPointerException.class)

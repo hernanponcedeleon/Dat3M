@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.Lists;
@@ -80,7 +81,9 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         for (Thread thread : program.getThreads()) {
             final List<IterationData> iterationData = computeIterationDataList(thread, loopAnalysis);
             iterationData.forEach(this::reduceToDominatingSideEffects);
-            iterationData.forEach(this::insertSideEffectChecks);
+            for (IterationData iter : iterationData) {
+                insertSideEffectChecks(iter);
+            }
             stats = stats.add(collectStats(iterationData));
         }
 
@@ -122,11 +125,12 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
 
         final List<Register> trackingRegs = new ArrayList<>();
         Event insertionPoint = iterInfo.getIterationEnd();
+        int precision = GlobalSettings.getArchPrecision();
         for (int i = 0; i < sideEffects.size(); i++) {
             final Event sideEffect = sideEffects.get(i);
             final Register trackingReg = thread.newRegister(
                     String.format("Loop%s_%s_%s", loopNumber, iterNumber, i),
-                    GlobalSettings.getArchPrecision());
+                    precision);
             trackingRegs.add(trackingReg);
 
             final Event execCheck = EventFactory.newExecutionStatus(trackingReg, sideEffect);
@@ -134,10 +138,11 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             insertionPoint = execCheck;
         }
 
-        final BExpr atLeastOneSideEffect = trackingRegs.stream()
-                .map(reg -> (BExpr) new Atom(reg, COpBin.EQ, IValue.ZERO))
-                .reduce(BConst.FALSE, (x, y) -> new BExprBin(x, BOpBin.OR, y));
-        final CondJump assumeSideEffect = EventFactory.newJumpUnless(atLeastOneSideEffect, (Label) thread.getExit());
+        ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
+        final BExpr noSideEffect = trackingRegs.stream()
+                .map(reg -> expressionFactory.makeBinary(reg, COpBin.NEQ, expressionFactory.makeZero(precision)))
+                .reduce(BConst.TRUE, (x, y) -> expressionFactory.makeBinary(x, BOpBin.AND, y));
+        final CondJump assumeSideEffect = EventFactory.newJump(noSideEffect, (Label) thread.getExit());
         assumeSideEffect.addFilters(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
         final Event spinloopStart = iterInfo.getIterationStart();
         assumeSideEffect.copyMetadataFrom(spinloopStart);

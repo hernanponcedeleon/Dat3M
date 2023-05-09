@@ -62,25 +62,27 @@ class VisitorTso extends VisitorBase {
         @Override
         public List<Event> visitJoin(Join e) {
                 Register resultRegister = e.getResultRegister();
+                IValue zero = expressions.makeZero(resultRegister.getPrecision());
                 Load load = newLoad(resultRegister, e.getAddress(), "");
                 load.addFilters(C11.PTHREAD);
 
                 return tagList(eventSequence(
                                 load,
-                                newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO),
+                                newJump(expressions.makeBinary(resultRegister, NEQ, zero),
                                                 (Label) e.getThread().getExit())));
         }
 
         @Override
         public List<Event> visitStart(Start e) {
                 Register resultRegister = e.getResultRegister();
+                IValue one = expressions.makeOne(resultRegister.getPrecision());
                 Load load = newLoad(resultRegister, e.getAddress(), "");
                 load.addFilters(Tag.STARTLOAD);
 
                 return tagList(eventSequence(
                                 load,
                                 super.visitStart(e),
-                                newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE),
+                                newJump(expressions.makeBinary(resultRegister, NEQ, one),
                                                 (Label) e.getThread().getExit())));
         }
 
@@ -98,7 +100,7 @@ class VisitorTso extends VisitorBase {
             Load load = newRMWLoad(dummy, e.getAddress(), "");
             return eventSequence(
                     load,
-                    newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)),
+                    newAssume(expressions.makeBinary(dummy, COpBin.EQ, IValue.ZERO)),
                     newRMWStore(load, e.getAddress(), IValue.ONE, ""));
         }
 
@@ -148,7 +150,7 @@ class VisitorTso extends VisitorBase {
 
                 return tagList(eventSequence(
                                 load,
-                                newLocal(dummyReg, new IExprBin(resultRegister, e.getOp(), (IExpr) e.getMemValue())),
+                                newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOp(), (IExpr) e.getMemValue())),
                                 newRMWStore(load, address, dummyReg, "")));
         }
 
@@ -161,9 +163,9 @@ class VisitorTso extends VisitorBase {
                 IExpr address = e.getAddress();
                 ExprInterface expectedValue = e.getExpectedValue();
 
-                Local casCmpResult = newLocal(resultRegister, new Atom(oldValueRegister, EQ, expectedValue));
+                Local casCmpResult = newLocal(resultRegister, expressions.makeBinary(oldValueRegister, EQ, expectedValue));
                 Label casEnd = newLabel("CAS_end");
-                CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
+                CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ONE), casEnd);
 
                 Load load = newRMWLoad(oldValueRegister, address, "");
                 Store store = newRMWStore(load, address, value, "");
@@ -202,9 +204,9 @@ class VisitorTso extends VisitorBase {
                 Load loadExpected = newLoad(regExpected, expectedAddr, "");
                 Register regValue = e.getThread().newRegister(precision);
                 Load loadValue = newRMWLoad(regValue, address, mo);
-                Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
+                Local casCmpResult = newLocal(resultRegister, expressions.makeBinary(regValue, EQ, regExpected));
                 Label casFail = newLabel("CAS_fail");
-                CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
+                CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ONE), casFail);
                 Store storeValue = newRMWStore(loadValue, address, value, mo);
                 Label casEnd = newLabel("CAS_end");
                 CondJump gotoCasEnd = newGoto(casEnd);
@@ -234,7 +236,7 @@ class VisitorTso extends VisitorBase {
 
                 return tagList(eventSequence(
                                 load,
-                                newLocal(dummyReg, new IExprBin(resultRegister, e.getOp(), (IExpr) e.getMemValue())),
+                                newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOp(), (IExpr) e.getMemValue())),
                                 newRMWStore(load, address, dummyReg, mo)));
         }
 

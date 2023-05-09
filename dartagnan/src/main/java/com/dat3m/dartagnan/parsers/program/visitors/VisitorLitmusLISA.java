@@ -11,11 +11,11 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import org.antlr.v4.runtime.misc.Interval;
 
-import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,6 +24,7 @@ import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
 	private final Program program = new Program(Program.SourceLanguage.LITMUS);
+	private final ExpressionFactory expressions = ExpressionFactory.getInstance();
 	private final int archPrecision = getArchPrecision();
 	private Thread[] threadList;
 	private Thread thread;
@@ -63,7 +64,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	@Override
 	public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
 		MemoryObject object = program.getMemory().getOrNewObject(ctx.location().getText());
-		IValue value = new IValue(new BigInteger(ctx.constant().getText()), archPrecision);
+		IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
 		object.setInitialValue(0, value);
 		return null;
 	}
@@ -72,7 +73,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
 		Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
 		Register register = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
-		IValue value = new IValue(new BigInteger(ctx.constant().getText()), archPrecision);
+		IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
 		thread.append(EventFactory.newLocal(register, value));
 		return null;
 	}
@@ -176,7 +177,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	public Object visitJump(JumpContext ctx) {
 		Label label = labelMap.computeIfAbsent(ctx.labelName().getText(), EventFactory::newLabel);
 		Register left = (Register) ctx.register().accept(this);
-		Atom condition = new Atom(left, COpBin.EQ, IValue.ONE);
+		BExpr condition = expressions.makeBinary(left, COpBin.EQ, IValue.ONE);
 		thread.append(EventFactory.newJump(condition, label));
 		return null;
 	}
@@ -195,56 +196,56 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
 	@Override
 	public Object visitConstant(ConstantContext ctx) {
-		return new IValue(new BigInteger(ctx.getText()), archPrecision);
+		return expressions.parseValue(ctx.getText(), archPrecision);
 	}
 
 	@Override
 	public Object visitAdd(AddContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
-		return new IExprBin(e1, IOpBin.PLUS, e2);
+		return expressions.makeBinary(e1, IOpBin.PLUS, e2);
 	}
 
 	@Override
 	public Object visitSub(SubContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
-		return new IExprBin(e1, IOpBin.MINUS, e2);
+		return expressions.makeBinary(e1, IOpBin.MINUS, e2);
 	}
 
 	@Override
 	public Object visitXor(XorContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
-		return new IExprBin(e1, IOpBin.XOR, e2);
+		return expressions.makeBinary(e1, IOpBin.XOR, e2);
 	}
 
 	@Override
 	public Object visitOr(OrContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
-		return new IExprBin(e1, IOpBin.OR, e2);
+		return expressions.makeBinary(e1, IOpBin.OR, e2);
 	}
 
 	@Override
 	public Object visitAnd(AndContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
-		return new IExprBin(e1, IOpBin.AND, e2);
+		return expressions.makeBinary(e1, IOpBin.AND, e2);
 	}
 
 	@Override
 	public Object visitEq(EqContext ctx) {
 		ExprInterface e1 = (ExprInterface) ctx.expression(0).accept(this);
 		ExprInterface e2 = (ExprInterface) ctx.expression(1).accept(this);
-		return new Atom(e1, COpBin.EQ, e2);
+		return expressions.makeBinary(e1, COpBin.EQ, e2);
 	}
 
 	@Override
 	public Object visitNeq(NeqContext ctx) {
 		ExprInterface e1 = (ExprInterface) ctx.expression(0).accept(this);
 		ExprInterface e2 = (ExprInterface) ctx.expression(1).accept(this);
-		return new Atom(e1, COpBin.NEQ, e2);
+		return expressions.makeBinary(e1, COpBin.NEQ, e2);
 	}
 
 	@Override
@@ -256,7 +257,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	public Object visitArrayAccess(ArrayAccessContext ctx) {
 		MemoryObject base = (MemoryObject) ctx.location().accept(this);
 		IExpr offset = (IExpr) ctx.value().accept(this);
-		return new IExprBin(base, IOpBin.PLUS, offset);
+		return expressions.makeBinary(base, IOpBin.PLUS, offset);
 	}
 
 }

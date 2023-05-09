@@ -10,12 +10,11 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.misc.Interval;
-
-import java.math.BigInteger;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.MFENCE;
@@ -25,6 +24,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     private final static ImmutableSet<String> fences = ImmutableSet.of(MFENCE);
 
     private final Program program = new Program(Program.SourceLanguage.LITMUS);
+    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final int archPrecision = getArchPrecision();
     private Thread[] threadList;
     private Thread thread;
@@ -65,7 +65,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
         MemoryObject object = program.getMemory().getOrNewObject(ctx.location().getText());
-        IValue value = new IValue(new BigInteger(ctx.constant().getText()), archPrecision);
+        IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
         object.setInitialValue(0, value);
         return null;
     }
@@ -74,7 +74,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
         Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
         Register register = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
-        IValue value = new IValue(new BigInteger(ctx.constant().getText()), archPrecision);
+        IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
         thread.append(EventFactory.newLocal(register, value));
         return null;
     }
@@ -125,7 +125,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitLoadValueToRegister(LoadValueToRegisterContext ctx) {
         Register register = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), archPrecision);
+        IValue constant = expressions.parseValue(ctx.constant().getText(), archPrecision);
         thread.append(EventFactory.newLocal(register, constant));
         return null;
     }
@@ -141,7 +141,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitStoreValueToLocation(StoreValueToLocationContext ctx) {
         MemoryObject object = program.getMemory().getOrNewObject(ctx.location().getText());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), archPrecision);
+        IValue constant = expressions.parseValue(ctx.constant().getText(), archPrecision);
         thread.append(EventFactory.newStore(object, constant, "_rx"));
         return null;
     }

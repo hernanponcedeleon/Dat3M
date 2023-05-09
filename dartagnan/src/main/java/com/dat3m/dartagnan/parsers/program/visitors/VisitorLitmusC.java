@@ -15,11 +15,11 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import org.antlr.v4.runtime.misc.Interval;
 
-import java.math.BigInteger;
 import java.util.*;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
@@ -28,6 +28,7 @@ import static com.dat3m.dartagnan.program.event.Tag.C11;
 public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     private final Program program = new Program(Program.SourceLanguage.LITMUS);
+    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final int archPrecision = getArchPrecision();
     private Thread thread;
     private final Map<String, Label> labelMap = new HashMap<>();
@@ -71,9 +72,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitGlobalDeclaratorLocation(GlobalDeclaratorLocationContext ctx) {
         if (ctx.initConstantValue() != null) {
             MemoryObject object = program.getMemory().getOrNewObject(ctx.varName().getText());
-            BigInteger value = new BigInteger(ctx.initConstantValue().constant().getText());
-            // Unknown precision, defaults to unbound integer?
-            object.setInitialValue(0, new IValue(value, -1));
+            //TODO Unknown precision, defaults to unbound integer?
+            object.setInitialValue(0, expressions.parseValue(ctx.initConstantValue().constant().getText(), -1));
         }
         return null;
     }
@@ -82,10 +82,10 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitGlobalDeclaratorRegister(GlobalDeclaratorRegisterContext ctx) {
         if (ctx.initConstantValue() != null) {
             Thread thread = program.newThread(Integer.toString(ctx.threadId().id));
-            // Unknown precision, defaults to unbound integer?
+            //TODO Unknown precision, defaults to unbound integer?
             Register register = thread.getOrNewRegister(ctx.varName().getText(), -1);
-            BigInteger value = new BigInteger(ctx.initConstantValue().constant().getText());
-            thread.append(EventFactory.newLocal(register, new IValue(value, -1)));
+            IValue value = expressions.parseValue(ctx.initConstantValue().constant().getText(), -1);
+            thread.append(EventFactory.newLocal(register, value));
         }
         return null;
     }
@@ -144,7 +144,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
                 List<IConst> values = new ArrayList<>();
                 for (ArrayElementContext elCtx : ctx.initArray().arrayElement()) {
                     if (elCtx.constant() != null) {
-                        values.add(new IValue(new BigInteger(elCtx.constant().getText()), archPrecision));
+                        values.add(expressions.parseValue(elCtx.constant().getText(), archPrecision));
                     } else {
                         String varName = elCtx.varName().getText();
                         //see test/resources/arrays/ok/C-array-ok-17.litmus
@@ -189,14 +189,14 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
                 String name = ctx.varName(id).getText();
                 MemoryObject object = program.getMemory().getOrNewObject(name);
                 PointerTypeSpecifierContext pType = ctx.pointerTypeSpecifier(id);
-				if(pType != null) {
+                if(pType != null) {
                     BasicTypeSpecifierContext bType = pType.basicTypeSpecifier();
-					if(bType != null) {
+                    if(bType != null) {
                         if(bType.AtomicInt() != null) {
-                        	object.markAsAtomic();
+                            object.markAsAtomic();
                         }
                     }
-				}
+                }
                 Register register = thread.getOrNewRegister(name, archPrecision);
                 thread.append(EventFactory.newLocal(register, object));
             }
@@ -210,7 +210,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         ifId++;
         Label elseL = labelMap.computeIfAbsent("else_" + ifId, EventFactory::newLabel);
         Label endL = labelMap.computeIfAbsent("end_" + ifId, EventFactory::newLabel);
-        thread.append(EventFactory.newIfJumpUnless(expr, elseL, endL));
+        thread.append(EventFactory.newIfJump(expressions.makeUnary(BOpUn.NOT, expr), elseL, endL));
         for (ExpressionContext expressionContext : ctx.expression()) {
             expressionContext.accept(this);
         }
@@ -232,7 +232,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public IExpr visitReAtomicOpReturn(ReAtomicOpReturnContext ctx) {
         Register register = getReturnRegister(true);
-        IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
+        IExpr value = returnExpressionOrOne(ctx.value);
         thread.append(EventFactory.Linux.newRMWOpReturn(getAddress(ctx.address), register, value, ctx.op, ctx.mo));
         return register;
     }
@@ -241,7 +241,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public IExpr visitReAtomicFetchOp(ReAtomicFetchOpContext ctx) {
         Register register = getReturnRegister(true);
-        IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
+        IExpr value = returnExpressionOrOne(ctx.value);
         thread.append(EventFactory.Linux.newRMWFetchOp(getAddress(ctx.address), register, value, ctx.op, ctx.mo));
         return register;
     }
@@ -249,7 +249,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public IExpr visitC11AtomicOp(C11AtomicOpContext ctx) {
         Register register = getReturnRegister(true);
-        IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
+        IExpr value = returnExpressionOrOne(ctx.value);
         thread.append(EventFactory.Atomic.newFetchOp(register, getAddress(ctx.address), value, ctx.op, ctx.c11Mo().mo));
         return register;
     }
@@ -258,7 +258,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public IExpr visitReAtomicOpAndTest(ReAtomicOpAndTestContext ctx) {
         Register register = getReturnRegister(true);
-        IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
+        IExpr value = returnExpressionOrOne(ctx.value);
         thread.append(EventFactory.Linux.newRMWOpAndTest(getAddress(ctx.address), register, value, ctx.op));
         return register;
     }
@@ -339,10 +339,11 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public ExprInterface visitReOpCompare(ReOpCompareContext ctx) {
+        //TODO boolean register
         Register register = getReturnRegister(false);
         ExprInterface v1 = (ExprInterface) ctx.re(0).accept(this);
         ExprInterface v2 = (ExprInterface) ctx.re(1).accept(this);
-        Atom result = new Atom(v1, ctx.opCompare().op, v2);
+        BExpr result = expressions.makeBinary(v1, ctx.opCompare().op, v2);
         return assignToReturnRegister(register, result);
     }
 
@@ -351,7 +352,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(false);
         IExpr v1 = (IExpr) ctx.re(0).accept(this);
         IExpr v2 = (IExpr) ctx.re(1).accept(this);
-        IExpr result = new IExprBin(v1, ctx.opArith().op, v2);
+        IExpr result = expressions.makeBinary(v1, ctx.opArith().op, v2);
         return assignToReturnRegister(register, result);
     }
 
@@ -360,7 +361,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(false);
         ExprInterface v1 = (ExprInterface) ctx.re(0).accept(this);
         ExprInterface v2 = (ExprInterface) ctx.re(1).accept(this);
-        BExprBin result = new BExprBin(v1, ctx.opBool().op, v2);
+        BExpr result = expressions.makeBinary(v1, ctx.opBool().op, v2);
         return assignToReturnRegister(register, result);
     }
 
@@ -368,13 +369,13 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public ExprInterface visitReOpBoolNot(ReOpBoolNotContext ctx) {
         Register register = getReturnRegister(false);
         ExprInterface v = (ExprInterface) ctx.re().accept(this);
-        BExprUn result = new BExprUn(BOpUn.NOT, v);
+        BExpr result = expressions.makeUnary(BOpUn.NOT, v);
         return assignToReturnRegister(register, result);
     }
 
     @Override
     public ExprInterface visitReBoolConst(ReBoolConstContext ctx) {
-        return new BConst(ctx.boolConst().value);
+        return expressions.makeValue(ctx.boolConst().value);
     }
 
     @Override
@@ -403,7 +404,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public ExprInterface visitReConst(ReConstContext ctx) {
         Register register = getReturnRegister(false);
-        IValue result = new IValue(new BigInteger(ctx.getText()), archPrecision);
+        IValue result = expressions.parseValue(ctx.getText(), archPrecision);
         return assignToReturnRegister(register, result);
     }
 
@@ -413,7 +414,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitNreAtomicOp(NreAtomicOpContext ctx) {
-        IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
+        IExpr value = returnExpressionOrOne(ctx.value);
         Register register = thread.newRegister(archPrecision);
         thread.append(EventFactory.Linux.newRMWOp(getAddress(ctx.address), register, value, ctx.op));
         return null;
@@ -538,8 +539,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
 
-    private IExpr returnExpressionOrDefault(ReContext ctx, BigInteger defaultValue) {
-        return ctx != null ? (IExpr) ctx.accept(this) : new IValue(defaultValue, archPrecision);
+    private IExpr returnExpressionOrOne(ReContext ctx) {
+        return ctx != null ? (IExpr) ctx.accept(this) : expressions.makeOne(archPrecision);
     }
 
     private Register getReturnRegister(boolean createOnNull) {

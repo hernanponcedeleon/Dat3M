@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.BOpUn;
-import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
@@ -20,8 +18,10 @@ import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -87,8 +87,8 @@ public class EventFactory {
         return fence;
     }
 
-    public static Init newInit(MemoryObject base, int offset) {
-        return new Init(base, offset);
+    public static Init newInit(MemoryObject base, int offset, ExpressionFactory factory) {
+        return new Init(base, offset, factory.makeBinary(base, IOpBin.PLUS, factory.makeValue(BigInteger.valueOf(offset), base.getPrecision())));
     }
 
     // ------------------------------------------ Local events ------------------------------------------
@@ -125,29 +125,12 @@ public class EventFactory {
         return new CondJump(cond, target);
     }
 
-    public static CondJump newJumpUnless(BExpr cond, Label target) {
-        if (cond.isFalse()) {
-            return newGoto(target);
-        }
-        return newJump(new BExprUn(BOpUn.NOT, cond), target);
-    }
-
     public static IfAsJump newIfJump(BExpr expr, Label label, Label end) {
         return new IfAsJump(expr, label, end);
     }
 
-    public static IfAsJump newIfJumpUnless(ExprInterface expr, Label label, Label end) {
-        return newIfJump(new BExprUn(BOpUn.NOT, expr), label, end);
-    }
-
     public static CondJump newGoto(Label target) {
         return newJump(BConst.TRUE, target);
-    }
-
-    public static CondJump newFakeCtrlDep(Register reg, Label target) {
-        CondJump jump = newJump(new Atom(reg, COpBin.EQ, reg), target);
-        jump.addFilters(Tag.NOOPT);
-        return jump;
     }
 
     public static Assume newAssume(ExprInterface expr) {

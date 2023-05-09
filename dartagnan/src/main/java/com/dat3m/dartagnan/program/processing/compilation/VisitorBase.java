@@ -3,7 +3,9 @@ package com.dat3m.dartagnan.program.processing.compilation;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.BOpBin;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
@@ -22,6 +24,7 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.google.common.base.Preconditions;
 
 import java.util.Collections;
@@ -33,11 +36,12 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 class VisitorBase implements EventVisitor<List<Event>> {
 
 	protected boolean forceStart;
+	protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
 	protected VisitorBase(boolean forceStart) {
 		this.forceStart = forceStart;
 	}
-	
+
 	@Override
 	public List<Event> visitEvent(Event e) {
 		return Collections.singletonList(e);
@@ -45,7 +49,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
 	@Override
 	public List<Event> visitCondJump(CondJump e) {
-    	Preconditions.checkState(e.getSuccessor() != null, "Malformed CondJump event");
+		Preconditions.checkState(e.getSuccessor() != null, "Malformed CondJump event");
 		return visitEvent(e);
 	};
 
@@ -56,10 +60,10 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
         return eventSequence(
                 forceStart ? newExecutionStatus(statusRegister, e.getCreationEvent()) : null,
-                forceStart ? newAssume(new BExprBin(resultRegister, BOpBin.OR, statusRegister)) : null
+                forceStart ? newAssume(expressions.makeBinary(resultRegister, BOpBin.OR, statusRegister)) : null
         );
 	}
-	
+
 	@Override
 	public List<Event> visitInitLock(InitLock e) {
 		return eventSequence(
@@ -75,7 +79,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		Load rmwLoad = newRMWLoad(resultRegister, e.getAddress(), mo);
 		return eventSequence(
                 rmwLoad,
-                newJump(new Atom(resultRegister, NEQ, IValue.ZERO), (Label) e.getThread().getExit()),
+                newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ZERO), (Label) e.getThread().getExit()),
                 newRMWStore(rmwLoad, e.getAddress(), IValue.ONE, mo)
         );
     }
@@ -89,7 +93,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		Load rmwLoad = newRMWLoad(resultRegister, address, mo);
 		return eventSequence(
                 rmwLoad,
-                newJump(new Atom(resultRegister, NEQ, IValue.ONE), (Label) e.getThread().getExit()),
+                newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ONE), (Label) e.getThread().getExit()),
                 newRMWStore(rmwLoad, address, IValue.ZERO, mo)
         );
 	}
@@ -163,12 +167,12 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		Load load = newRMWLoad(dummyReg, address, mo);
         RMWStore store = newRMWStore(load, address, e.getMemValue(), mo);
 		return eventSequence(
-        		load,
+				load,
                 store,
                 newLocal(resultRegister, dummyReg)
         );
 	}
-	
+
 	@Override
 	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
 		throw error(e);
@@ -193,9 +197,15 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		throw error(e);
 	}
 
+	protected CondJump newFakeCtrlDep(Register reg, Label target) {
+		CondJump jump = newJump(expressions.makeBinary(reg, COpBin.EQ, reg), target);
+		jump.addFilters(Tag.NOOPT);
+		return jump;
+	}
+
 	private IllegalArgumentException error(Event e) {
-		return new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + 
+		return new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() +
 				" is not supported by " + getClass().getSimpleName());
 	}
-	
+
 }

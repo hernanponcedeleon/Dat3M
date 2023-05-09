@@ -18,31 +18,31 @@ public final class ExpressionFactory {
         return instance;
     }
 
-    public BExpr makeTrue() {
+    public BConst makeTrue() {
         return BConst.TRUE;
     }
 
-    public BExpr makeFalse() {
+    public BConst makeFalse() {
         return BConst.FALSE;
     }
 
-    public BExpr makeValue(boolean value) {
+    public BConst makeValue(boolean value) {
         return value ? BConst.TRUE : BConst.FALSE;
     }
 
-    public IExpr makeZero(int bitWidth) {
+    public IValue makeZero(int bitWidth) {
         return makeValue(BigInteger.ZERO, bitWidth);
     }
 
-    public IExpr makeOne(int bitWidth) {
+    public IValue makeOne(int bitWidth) {
         return makeValue(BigInteger.ONE, bitWidth);
     }
 
-    public IExpr parseValue(String text, int bitWidth) {
+    public IValue parseValue(String text, int bitWidth) {
         return makeValue(new BigInteger(text), bitWidth);
     }
 
-    public IExpr makeValue(BigInteger value, int bitWidth) {
+    public IValue makeValue(BigInteger value, int bitWidth) {
         return new IValue(value, bitWidth);
     }
 

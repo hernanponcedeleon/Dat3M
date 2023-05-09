@@ -1,12 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprUn;
-import com.dat3m.dartagnan.expression.IfExpr;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
@@ -16,6 +11,8 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.EventFactory.Llvm;
 import com.dat3m.dartagnan.program.event.Tag.C11;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -56,12 +53,14 @@ public class LlvmProcedures {
         Object p2 = params.size() > 2 ? params.get(2).accept(visitor) : null;
         Object p3 = params.size() > 3 ? params.get(3).accept(visitor) : null;
 
+        ExpressionFactory factory = visitor.expressions;
+
         String mo;
 
         // For intrinsics
         IExpr i1;
         IExpr i2;
-        Atom cond;
+        BExpr cond;
 
         switch (name) {
             case "__llvm_atomic32_load":
@@ -127,8 +126,8 @@ public class LlvmProcedures {
             case "llvm.umax.i64":
                 i1 = (IExpr) p0;
                 i2 = (IExpr) p1;
-                cond = name.contains("smax") ? new Atom(i1, COpBin.GTE, i2) : new Atom(i1, COpBin.UGTE, i2);
-                visitor.append(EventFactory.newLocal(reg, new IfExpr(cond, i1, i2)));
+                cond = name.contains("smax") ? factory.makeBinary(i1, COpBin.GTE, i2) : factory.makeBinary(i1, COpBin.UGTE, i2);
+                visitor.append(EventFactory.newLocal(reg, factory.makeConditional(cond, i1, i2)));
                 return;
             case "llvm.smin.i32":
             case "llvm.smin.i64":
@@ -136,14 +135,14 @@ public class LlvmProcedures {
             case "llvm.umin.i64":
                 i1 = (IExpr) p0;
                 i2 = (IExpr) p1;
-                cond = name.contains("smin") ? new Atom(i1, COpBin.LTE, i2) : new Atom(i1, COpBin.ULTE, i2);
-                visitor.append(EventFactory.newLocal(reg, new IfExpr(cond, i1, i2)));
+                cond = name.contains("smin") ? factory.makeBinary(i1, COpBin.LTE, i2) : factory.makeBinary(i1, COpBin.ULTE, i2);
+                visitor.append(EventFactory.newLocal(reg, factory.makeConditional(cond, i1, i2)));
                 return;
             case "llvm.ctlz.i32":
             case "llvm.ctlz.i64":
                 i1 = (IExpr) p0;
                 i2 = (IExpr) p1;
-                visitor.append(EventFactory.newLocal(reg, new IExprUn(IOpUn.CTLZ, i1)));
+                visitor.append(EventFactory.newLocal(reg, factory.makeUnary(IOpUn.CTLZ, i1)));
                 return;
             default:
                 throw new UnsupportedOperationException(name + " procedure is not part of LLVMPROCEDURES");

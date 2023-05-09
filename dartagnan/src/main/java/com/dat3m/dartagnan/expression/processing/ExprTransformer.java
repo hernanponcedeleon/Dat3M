@@ -16,7 +16,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
 
     @Override
     public ExprInterface visit(Atom atom) {
-        return new Atom(atom.getLHS().visit(this), atom.getOp(), atom.getRHS().visit(this));
+        return factory.makeBinary(atom.getLHS().visit(this), atom.getOp(), atom.getRHS().visit(this));
     }
 
     @Override
@@ -26,12 +26,12 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
 
     @Override
     public BExpr visit(BExprBin bBin) {
-        return new BExprBin(bBin.getLHS().visit(this), bBin.getOp(), bBin.getRHS().visit(this));
+        return factory.makeBinary(bBin.getLHS().visit(this), bBin.getOp(), bBin.getRHS().visit(this));
     }
 
     @Override
     public BExpr visit(BExprUn bUn) {
-        return new BExprUn(bUn.getOp(), bUn.getInner().visit(this));
+        return factory.makeUnary(bUn.getOp(), bUn.getInner().visit(this));
     }
 
     @Override
@@ -46,17 +46,20 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
 
     @Override
     public IExpr visit(IExprBin iBin) {
-        return new IExprBin((IExpr) iBin.getLHS().visit(this), iBin.getOp(), (IExpr) iBin.getRHS().visit(this));
+        return factory.makeBinary((IExpr) iBin.getLHS().visit(this), iBin.getOp(), (IExpr) iBin.getRHS().visit(this));
     }
 
     @Override
     public IExpr visit(IExprUn iUn) {
-        return new IExprUn(iUn.getOp(), (IExpr) iUn.getInner().visit(this));
+        return factory.makeUnary(iUn.getOp(), (IExpr) iUn.getInner().visit(this));
     }
 
     @Override
     public ExprInterface visit(IfExpr ifExpr) {
-        return new IfExpr((BExpr)ifExpr.getGuard().visit(this), (IExpr)ifExpr.getTrueBranch().visit(this), (IExpr)ifExpr.getFalseBranch().visit(this));
+        return factory.makeConditional(
+                (BExpr)ifExpr.getGuard().visit(this),
+                (IExpr)ifExpr.getTrueBranch().visit(this),
+                (IExpr)ifExpr.getFalseBranch().visit(this));
     }
 
     @Override

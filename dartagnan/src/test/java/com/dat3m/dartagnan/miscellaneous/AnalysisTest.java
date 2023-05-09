@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
@@ -46,6 +47,8 @@ public class AnalysisTest {
     private static final Result NONE = Result.NONE;
     private static final Result MAY = Result.MAY;
     private static final Result MUST = Result.MUST;
+
+    private final ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
 
     @Test
     public void dependencyMustOverride() throws InvalidConfigurationException {
@@ -215,7 +218,10 @@ public class AnalysisTest {
         Register r0 = thread.newRegister("r0", getArchPrecision());
         thread.append(newLocal(r0, program.newConstant(getArchPrecision(), true, null, null)));
         Label l0 = EventFactory.newLabel("l0");
-        thread.append(newJump(new BExprBin(new Atom(r0, GT, ONE), BOpBin.OR, new Atom(r0, LT, ZERO)), l0));
+        thread.append(newJump(expressionFactory.makeBinary(
+                expressionFactory.makeBinary(r0, GT, ONE),
+                BOpBin.OR,
+                expressionFactory.makeBinary(r0, LT, ZERO)), l0));
         Store e0 = newStore(x);
         thread.append(e0);
         Store e1 = newStore(plus(x, 1));
@@ -224,7 +230,10 @@ public class AnalysisTest {
         thread.append(e2);
         Register r1 = thread.newRegister("r1", getArchPrecision());
         thread.append(newLocal(r1, ZERO));
-        Store e3 = newStore(new IExprBin(new IExprBin(x, PLUS, mult(r0, 2)), PLUS, mult(r1, 4)));
+        Store e3 = newStore(expressionFactory.makeBinary(
+                expressionFactory.makeBinary(x, PLUS, mult(r0, 2)),
+                PLUS,
+                mult(r1, 4)));
         thread.append(e3);
         thread.append(l0);
 
@@ -395,15 +404,15 @@ public class AnalysisTest {
     }
 
     private IValue value(long v) {
-        return new IValue(BigInteger.valueOf(v), getArchPrecision());
+        return expressionFactory.makeValue(BigInteger.valueOf(v), getArchPrecision());
     }
 
     private IExpr plus(IExpr lhs, long rhs) {
-        return new IExprBin(lhs, PLUS, value(rhs));
+        return expressionFactory.makeBinary(lhs, PLUS, value(rhs));
     }
 
     private IExpr mult(IExpr lhs, long rhs) {
-        return new IExprBin(lhs, MULT, value(rhs));
+        return expressionFactory.makeBinary(lhs, MULT, value(rhs));
     }
 
     private AliasAnalysis analyze(Program program, Alias method) throws InvalidConfigurationException {

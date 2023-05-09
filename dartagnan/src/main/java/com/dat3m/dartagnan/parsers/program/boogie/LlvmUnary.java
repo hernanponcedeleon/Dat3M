@@ -1,11 +1,9 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.BExprUn;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprUn;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpUn;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 
 import java.util.Arrays;
 import java.util.List;
@@ -39,9 +37,9 @@ public class LlvmUnary {
 			"$sext.bv32.bv64"
 			);
 	
-	public static Object llvmUnary(String name, List<Object> callParams) {
+	public static Object llvmUnary(String name, List<Object> callParams, ExpressionFactory factory) {
 		if(name.startsWith("$not.")) {
-			return new BExprUn(NOT, (ExprInterface)callParams.get(0));
+			return factory.makeUnary(NOT, (ExprInterface)callParams.get(0));
 		}
 
 		IOpUn op = null;
@@ -136,6 +134,6 @@ public class LlvmUnary {
 		if(op == null) {
 			throw new ParsingException("Function " + name + " has no implementation");
 		}
-		return new IExprUn(op, (IExpr)callParams.get(0));
+		return factory.makeUnary(op, (IExpr)callParams.get(0));
 	}
 }

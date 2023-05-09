@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
@@ -76,6 +77,7 @@ public class MemoryAllocation implements ProgramProcessor {
 
     private void createInitEvents(Program program) {
         final boolean isLitmus = program.getFormat() == Program.SourceLanguage.LITMUS;
+        ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
 
         for(MemoryObject memObj : program.getMemory().getObjects()) {
             // The last case "heuristically checks" if Smack generated initialization or not:
@@ -87,7 +89,7 @@ public class MemoryAllocation implements ProgramProcessor {
                     memObj.getStaticallyInitializedFields() : IntStream.range(0, memObj.size()).boxed()::iterator;
 
             for(int i : fieldsToInit) {
-                final Event init = EventFactory.newInit(memObj, i);
+                final Event init = EventFactory.newInit(memObj, i, expressionFactory);
                 final Thread thread = program.newThread(".INIT." + memObj + "." + i, init);
                 thread.append(EventFactory.newLabel(thread.getEndLabelName()));
             }

@@ -19,6 +19,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -226,7 +227,8 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             if (retVal instanceof BConst) {
                 // We only have integral registers, so we need to implicitly convert booleans to
                 // integers.
-                return retVal.equals(BConst.TRUE) ? IValue.ONE : IValue.ZERO;
+                BigInteger value = retVal.equals(BConst.TRUE) ? BigInteger.ONE : BigInteger.ZERO;
+                return factory.makeValue(value, reg.getPrecision());
             } else {
                 return retVal;
             }
@@ -237,17 +239,21 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             ExprInterface lhs = atom.getLHS().visit(this);
             ExprInterface rhs = atom.getRHS().visit(this);
             if (lhs instanceof BConst) {
-                lhs = lhs.equals(BConst.TRUE) ? IValue.ONE : IValue.ZERO;
+                lhs = factory.makeValue(
+                        ((BConst) lhs).isTrue() ? BigInteger.ONE : BigInteger.ZERO,
+                        rhs instanceof IExpr ? ((IExpr) rhs).getPrecision() : 1);
             }
             if (rhs instanceof BConst) {
-                rhs = rhs.equals(BConst.TRUE) ? IValue.ONE : IValue.ZERO;
+                rhs = factory.makeValue(
+                        ((BConst) rhs).isTrue() ? BigInteger.ONE : BigInteger.ZERO,
+                        lhs instanceof IExpr ? ((IExpr) lhs).getPrecision() : 1);
             }
             if (lhs instanceof IValue && rhs instanceof IValue) {
                 IValue left = (IValue) lhs;
                 IValue right = (IValue) rhs;
-                return atom.getOp().combine(left.getValue(), right.getValue()) ? BConst.TRUE : BConst.FALSE;
+                return factory.makeValue(atom.getOp().combine(left.getValue(), right.getValue()));
             } else {
-                return new Atom(lhs, atom.getOp(), rhs);
+                return factory.makeBinary(lhs, atom.getOp(), rhs);
             }
         }
 
@@ -258,9 +264,9 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             if (lhs instanceof BConst && rhs instanceof BConst) {
                 BConst left = (BConst) lhs;
                 BConst right = (BConst) rhs;
-                return bBin.getOp().combine(left.getValue(), right.getValue()) ? BConst.TRUE : BConst.FALSE;
+                return factory.makeValue(bBin.getOp().combine(left.getValue(), right.getValue()));
             } else {
-                return new BExprBin(lhs, bBin.getOp(), rhs);
+                return factory.makeBinary(lhs, bBin.getOp(), rhs);
             }
         }
 
@@ -268,9 +274,9 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         public BExpr visit(BExprUn bUn) {
             ExprInterface inner = bUn.getInner().visit(this);
             if (inner instanceof BConst) {
-                return bUn.getOp().combine(((BConst) inner).getValue()) ? BConst.TRUE : BConst.FALSE;
+                return factory.makeValue(bUn.getOp().combine(((BConst) inner).getValue()));
             } else {
-                return new BExprUn(bUn.getOp(), inner);
+                return factory.makeUnary(bUn.getOp(), inner);
             }
         }
 
@@ -281,9 +287,9 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             if (lhs instanceof IValue && rhs instanceof IValue) {
                 IValue left = (IValue) lhs;
                 IValue right = (IValue) rhs;
-                return new IValue(iBin.getOp().combine(left.getValue(), right.getValue()), left.getPrecision());
+                return factory.makeValue(iBin.getOp().combine(left.getValue(), right.getValue()), left.getPrecision());
             } else {
-                return new IExprBin(lhs, iBin.getOp(), rhs);
+                return factory.makeBinary(lhs, iBin.getOp(), rhs);
             }
         }
 
@@ -291,11 +297,11 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         public IExpr visit(IExprUn iUn) {
             IExpr inner = (IExpr) iUn.getInner().visit(this);
             if (inner instanceof IValue && iUn.getOp() == IOpUn.MINUS) {
-                return new IValue(((IValue) inner).getValue().negate(), inner.getPrecision());
+                return factory.makeValue(((IValue) inner).getValue().negate(), inner.getPrecision());
             } else if (inner instanceof IValue && iUn.getOp() == IOpUn.CTLZ) {
-                return new IExprUn(iUn.getOp(), inner).reduce();
+                return factory.makeUnary(iUn.getOp(), inner).reduce();
             } else {
-                return new IExprUn(iUn.getOp(), inner);
+                return factory.makeUnary(iUn.getOp(), inner);
             }
         }
 
@@ -307,9 +313,9 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             if (guard instanceof BConst && trueBranch instanceof IValue && falseBranch instanceof IValue) {
                 // We optimize ITEs only if all subexpressions are constant to avoid messing up
                 // data dependencies
-                return guard.equals(BConst.TRUE) ? trueBranch : falseBranch;
+                return guard.isTrue() ? trueBranch : falseBranch;
             }
-            return new IfExpr(guard, trueBranch, falseBranch);
+            return factory.makeConditional(guard, trueBranch, falseBranch);
         }
 
     }
