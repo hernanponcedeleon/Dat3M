@@ -3,11 +3,9 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
 import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
@@ -64,12 +62,6 @@ public class Register extends IExpr implements LastValueInterface {
         Register rObj = (Register) obj;
         return name.equals(rObj.name) && threadId == rObj.threadId;
     }
-
-	public Formula toIntFormulaResult(Event e, FormulaManager m) {
-		String name = getName() + "(" + e.getGlobalId() + "_result)";
-		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
-		return m.makeVariable(type, name);
-	}
 
 	@Override
 	public ImmutableSet<Register> getRegs() {

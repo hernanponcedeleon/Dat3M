@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
@@ -267,7 +268,19 @@ public final class EncodingContext {
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
             }
-            Formula r = e instanceof RegWriter ? ((RegWriter) e).getResultRegister().toIntFormulaResult(e, formulaManager) : null;
+            Formula r;
+            if (e instanceof RegWriter) {
+                Register register = ((RegWriter) e).getResultRegister();
+                String name = register.getName() + "(" + e.getGlobalId() + "_result)";
+                int precision = register.getPrecision();
+                if (precision > 0) {
+                    r = formulaManager.getBitvectorFormulaManager().makeVariable(precision, name);
+                } else {
+                    r = formulaManager.getIntegerFormulaManager().makeVariable(name);
+                }
+            } else {
+                r = null;
+            }
             if (e instanceof MemEvent) {
                 addresses.put(e, encodeIntegerExpressionAt(((MemEvent) e).getAddress(), e));
                 values.put(e, e instanceof Load ? r : encodeIntegerExpressionAt(((MemEvent) e).getMemValue(), e));
