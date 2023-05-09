@@ -11,8 +11,6 @@ public final class Tag {
     public static final String FENCE            = "F";
     public static final String RMW              = "RMW";
     public static final String EXCL             = "EXCL";
-    public static final String REG_WRITER       = "rW";
-    public static final String REG_READER       = "rR";
     public static final String ASSERTION        = "ASS";
     // Marks the event that is reachable IFF a loop has not been fully unrolled.
     public static final String BOUND            = "BOUND";

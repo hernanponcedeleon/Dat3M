@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.collect.ImmutableSet;
@@ -17,7 +16,6 @@ public class Assume extends Event implements RegReaderData {
 	public Assume(ExprInterface expr) {
 		super();
 		this.expr = expr;
-		addFilters(Tag.REG_READER);
 	}
 
 	protected Assume(Assume other){

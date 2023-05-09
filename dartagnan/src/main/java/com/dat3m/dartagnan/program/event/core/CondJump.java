@@ -25,7 +25,6 @@ public class CondJump extends Event implements RegReaderData {
         this.label.getJumpSet().add(this);
         this.thread = label.getThread();
         this.expr = expr;
-        addFilters(Tag.REG_READER);
     }
 
     protected CondJump(CondJump other) {

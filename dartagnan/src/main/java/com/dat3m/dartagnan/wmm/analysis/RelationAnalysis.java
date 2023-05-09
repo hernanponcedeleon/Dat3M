@@ -553,11 +553,11 @@ public class RelationAnalysis {
         }
         @Override
         public Knowledge visitAddressDependency(Relation rel) {
-            return visitDependency(MEMORY, e -> ((MemEvent) e).getAddress().getRegs());
+            return visitDependency(MemEvent.class, e -> ((MemEvent) e).getAddress().getRegs());
         }
         @Override
         public Knowledge visitInternalDataDependency(Relation rel) {
-            return visitDependency(REG_READER, e -> ((RegReaderData) e).getDataRegs());
+            return visitDependency(RegReaderData.class , e -> ((RegReaderData) e).getDataRegs());
         }
         @Override
         public Knowledge visitFences(Relation rel, FilterAbstract fence) {
@@ -860,14 +860,17 @@ public class RelationAnalysis {
             }
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
-        private Knowledge visitDependency(String tag, Function<Event, Set<Register>> registers) {
+        private Knowledge visitDependency(Class<?> eventClass, Function<Event, Set<Register>> registers) {
             Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
             // We need to track ExecutionStatus events separately, because they induce data-dependencies
             // without reading from a register.
             Set<ExecutionStatus> execStatusRegWriter = new HashSet<>();
             for (Event regReader : program.getEvents()) {
-                if (!regReader.is(tag)) {
+                if (!eventClass.isInstance(regReader)) {
+                    //FIXME: It would be better to use program.getEvents(eventClass), but that doesn't work
+                    // because we call this method with RegReaderData.class, which (unfortunately) does not
+                    // inherit from Event.
                     continue;
                 }
                 for (Register register : registers.apply(regReader)) {

@@ -18,7 +18,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     public Xchg(MemoryObject address, Register register) {
         super(address, "");
         this.resultRegister = register;
-        addFilters(READ, WRITE, TSO.ATOM, REG_WRITER, REG_READER);
+        addFilters(READ, WRITE, TSO.ATOM);
     }
 
     private Xchg(Xchg other){
