@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import org.sosy_lab.common.configuration.Configuration;
@@ -60,11 +61,14 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
     @Override
     public void run(Program program) {
         Preconditions.checkArgument(program.isUnrolled(), "Constant propagation only works on unrolled programs.");
-        program.getThreads().forEach(this::run);
+        ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
+        for (Thread thread : program.getThreads()) {
+            run(thread, expressionFactory);
+        }
     }
 
-    private void run(Thread thread) {
-        final EventSimplifier simplifier = new EventSimplifier();
+    private void run(Thread thread, ExpressionFactory expressionFactory) {
+        final EventSimplifier simplifier = new EventSimplifier(expressionFactory);
         final Predicate<ExprInterface> checkDoPropagate = propagateCopyAssignments
                 ? (expr -> expr instanceof IConst || expr instanceof BConst || expr instanceof Register)
                 : (expr -> expr instanceof IConst || expr instanceof BConst);
@@ -153,7 +157,11 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
      */
     private static class EventSimplifier implements EventVisitor<Void> {
 
-        private final ConstantPropagator propagator = new ConstantPropagator();
+        private final ConstantPropagator propagator;
+
+        private EventSimplifier(ExpressionFactory factory) {
+            this.propagator = new ConstantPropagator(factory);
+        }
 
         public void setPropagationMap(Map<Register, ExprInterface> propagationMap) {
             this.propagator.propagationMap = propagationMap;
@@ -207,6 +215,10 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
     private static class ConstantPropagator extends ExprTransformer {
 
         private Map<Register, ExprInterface> propagationMap = new HashMap<>();
+
+        private ConstantPropagator(ExpressionFactory factory) {
+            super(factory);
+        }
 
         @Override
         public ExprInterface visit(Register reg) {

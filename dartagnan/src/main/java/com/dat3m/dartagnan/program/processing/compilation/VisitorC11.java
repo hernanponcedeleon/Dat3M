@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
+
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
@@ -116,11 +117,11 @@ public class VisitorC11 extends VisitorBase {
 		IOpBin op = e.getOp();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
-		
+
         Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
         Load load = newRMWLoad(resultRegister, address, mo);
         RMWStore store = newRMWStore(load, address, dummyReg, mo);
-        
+
 		return tagList(eventSequence(
                 load,
                 newLocal(dummyReg, new IExprBin(resultRegister, op, (IExpr) e.getMemValue())),
@@ -155,7 +156,7 @@ public class VisitorC11 extends VisitorBase {
 
         Load load = newRMWLoad(e.getResultRegister(), address, mo);
         RMWStore store = newRMWStore(load, address, e.getMemValue(), mo);
-        
+
 		return tagList(eventSequence(
                 load,
                 store

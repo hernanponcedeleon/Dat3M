@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
@@ -13,6 +14,10 @@ import static com.dat3m.dartagnan.expression.op.IOpBin.R_SHIFT;
 
 //TODO: This is buggy for now, because Addresses are treated as IConst
 public class ExprSimplifier extends ExprTransformer {
+
+    public ExprSimplifier(ExpressionFactory factory) {
+        super(factory);
+    }
 
     @Override
     public ExprInterface visit(Atom atom) {

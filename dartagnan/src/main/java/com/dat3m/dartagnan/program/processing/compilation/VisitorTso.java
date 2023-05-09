@@ -20,9 +20,9 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 class VisitorTso extends VisitorBase {
 
-        protected VisitorTso(boolean forceStart) {
-                super(forceStart);
-        }
+    protected VisitorTso(boolean forceStart) {
+        super(forceStart);
+    }
 
         @Override
         public List<Event> visitXchg(Xchg e) {

@@ -80,7 +80,6 @@ public class Compilation implements ProgramProcessor {
             logger.warn("Skipped compilation: Program is already compiled to {}", program.getArch());
             return;
         }
-
         EventVisitor<List<Event>> visitor;
         switch (target) {
             case C11:

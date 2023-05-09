@@ -23,10 +23,10 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 public class VisitorLKMM extends VisitorBase {
 
-	protected VisitorLKMM(boolean forceStart) {
-		super(forceStart);
-        }
-	
+    protected VisitorLKMM(boolean forceStart) {
+        super(forceStart);
+    }
+
         @Override
         public List<Event> visitCreate(Create e) {
             Store store = newStore(e.getAddress(), e.getMemValue(), Tag.Linux.MO_RELEASE);

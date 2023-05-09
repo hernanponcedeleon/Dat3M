@@ -98,7 +98,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     protected BeginAtomic currentBeginAtomic = null;
     protected Call_cmdContext atomicMode = null;
 
-    private final ExprSimplifier exprSimplifier = new ExprSimplifier();
+    private final ExprSimplifier exprSimplifier = new ExprSimplifier(program.getExpressionFactory());
 
 
     private final List<String> smackDummyVariables =
