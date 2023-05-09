@@ -275,7 +275,6 @@ public final class Tag {
         public static final String CTA = "CTA";
         public static final String GPU = "GPU";
         public static final String SYS = "SYS";
-        public static final String[] SCOPES = new String[]{SYS, GPU, CTA};
 
         public static final String WEAK = "WEAK";
         public static final String RLX = "RLX"; // RELAXED
@@ -292,6 +291,5 @@ public final class Tag {
         public static final String SUR = "SUR"; // SURFACE
         public static final String CON = "CON"; // CONSTANT
         public static final String ALIAS = "ALIAS";
-
     }
 }
