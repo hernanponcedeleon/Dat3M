@@ -1,11 +1,10 @@
 package com.dat3m.dartagnan.program.event.lang.llvm;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.collect.ImmutableSet;
-
-import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -15,15 +14,15 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
     private IExpr expectedValue;
     private Register oldValueRegister;
     private Register cmpRegister;
+    private boolean isStrong;
 
-    public LlvmCmpXchg(Register oldValueRegister, Register cmpRegister, IExpr address, IExpr expectedValue, IExpr value, String mo, boolean strong) {
+    public LlvmCmpXchg(Register oldValueRegister, Register cmpRegister, IExpr address, IExpr expectedValue, IExpr value,
+                       String mo, boolean isStrong) {
         super(address, null, value, mo);
         this.expectedValue = expectedValue;
         this.oldValueRegister = oldValueRegister;
         this.cmpRegister = cmpRegister;
-        if(strong) {
-        	addFilters(STRONG);
-        }
+        this.isStrong = isStrong;
     }
 
     private LlvmCmpXchg(LlvmCmpXchg other){
@@ -31,7 +30,10 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
         this.expectedValue = other.expectedValue;
         this.oldValueRegister = other.oldValueRegister;
         this.cmpRegister = other.cmpRegister;
+        this.isStrong = other.isStrong;
     }
+
+    public boolean isStrong() { return this.isStrong; }
 
     // The llvm instructions actually returns a structure.
     // In most cases the structure is not used as a whole, 
@@ -67,7 +69,7 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
 
     @Override
     public String toString() {
-        return "(" + oldValueRegister + ", " + cmpRegister + ") = llvm_cmpxchg" + (is(STRONG) ? "_strong" : "_weak") + 
+        return "(" + oldValueRegister + ", " + cmpRegister + ") = llvm_cmpxchg" + (isStrong ? "_strong" : "_weak") +
             "(*" + address + ", " + expectedValue + ", " + value + ", " + mo + ")\t### LLVM";
     }
 

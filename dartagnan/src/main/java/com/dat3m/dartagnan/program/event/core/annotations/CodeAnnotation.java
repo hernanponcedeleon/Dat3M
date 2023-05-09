@@ -12,7 +12,7 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 public abstract class CodeAnnotation extends Event {
 
     public CodeAnnotation() {
-        addFilters(Tag.ANY, Tag.ANNOTATION);
+        addFilters(Tag.ANNOTATION);
     }
 
     protected CodeAnnotation(CodeAnnotation other) {

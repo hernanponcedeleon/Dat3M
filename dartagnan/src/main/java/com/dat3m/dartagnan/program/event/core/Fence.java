@@ -9,7 +9,7 @@ public class Fence extends Event {
 
 	public Fence(String name){
         this.name = name;
-        this.addFilters(Tag.ANY, Tag.VISIBLE, Tag.FENCE, name);
+        this.addFilters(Tag.VISIBLE, Tag.FENCE, name);
 	}
 
 	protected Fence(Fence other){

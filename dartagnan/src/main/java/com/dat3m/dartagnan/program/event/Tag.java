@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.event;
 public final class Tag {
     private Tag() { }
 
-    public static final String ANY              = "_";
     public static final String INIT             = "IW";
     public static final String READ             = "R";
     public static final String WRITE            = "W";
@@ -11,7 +10,6 @@ public final class Tag {
     public static final String FENCE            = "F";
     public static final String RMW              = "RMW";
     public static final String EXCL             = "EXCL";
-    public static final String STRONG           = "STRONG";
     public static final String LOCAL            = "T";
     public static final String LABEL            = "LB";
     public static final String CMP              = "C";
