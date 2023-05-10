@@ -131,8 +131,7 @@ public abstract class ModelChecker {
                 spec = new AssertCompositeAnd(spec, new AssertInline(assertions.get(i)));
             }
         }
-        spec.setType(AbstractAssert.ASSERT_TYPE_FORALL);
-        program.setSpecification(spec);
+        program.setSpecification(Program.SpecificationType.FORALL, spec);
     }
 
     protected void saveFlaggedPairsOutput(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, EncodingContext ctx, Program program) throws SolverException {

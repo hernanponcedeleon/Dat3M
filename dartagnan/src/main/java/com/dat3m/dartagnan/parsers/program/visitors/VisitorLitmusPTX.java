@@ -46,17 +46,17 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
-        if (ctx.assertionList() != null) {
+        if(ctx.assertionList() != null){
             int a = ctx.assertionList().getStart().getStartIndex();
             int b = ctx.assertionList().getStop().getStopIndex();
             String raw = ctx.assertionList().getStart().getInputStream().getText(new Interval(a, b));
-            programBuilder.setAssert(AssertionHelper.parseAssertionList(programBuilder, raw));
+            AssertionHelper.parseAssertion(programBuilder, raw);
         }
-        if (ctx.assertionFilter() != null) {
+        if(ctx.assertionFilter() != null){
             int a = ctx.assertionFilter().getStart().getStartIndex();
             int b = ctx.assertionFilter().getStop().getStopIndex();
             String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
-            programBuilder.setAssertFilter(AssertionHelper.parseAssertionFilter(programBuilder, raw));
+            AssertionHelper.parseAssertion(programBuilder, raw);
         }
         return programBuilder.build();
     }

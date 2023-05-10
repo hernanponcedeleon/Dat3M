@@ -154,7 +154,7 @@ public class PropertyEncoder implements Encoder {
         // Litmus (program spec). We cannot check this together with safety specs, so we make sure
         // that we do not mix them up.
         Preconditions.checkArgument(properties.contains(PROGRAM_SPEC));
-        Preconditions.checkArgument(!program.getSpecification().isSafetySpec());
+        Preconditions.checkArgument(program.hasReachabilitySpecification());
 
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final TrackableFormula progSpec = encodeProgramSpecification();
@@ -256,21 +256,21 @@ public class PropertyEncoder implements Encoder {
         // safety specs we need to query for a violation (= negation of the spec)
         final BooleanFormula encoding;
         final BooleanFormula trackingLiteral;
-        switch (spec.getType()) {
-            case AbstractAssert.ASSERT_TYPE_FORALL:
+        switch (program.getSpecificationType()) {
+            case FORALL:
                 encoding = bmgr.not(spec.encode(context));
                 trackingLiteral = bmgr.not(PROGRAM_SPEC.getSMTVariable(context));
                 break;
-            case AbstractAssert.ASSERT_TYPE_NOT_EXISTS:
+            case NOT_EXISTS:
                 encoding = spec.encode(context);
                 trackingLiteral = bmgr.not(PROGRAM_SPEC.getSMTVariable(context));
                 break;
-            case AbstractAssert.ASSERT_TYPE_EXISTS:
+            case EXISTS:
                 encoding = spec.encode(context);
                 trackingLiteral = PROGRAM_SPEC.getSMTVariable(context);
                 break;
             default:
-                throw new IllegalStateException("Unrecognized program specification: " + spec.toStringWithType());
+                throw new IllegalStateException("Unrecognized program specification: " + program.getSpecificationType() + " " + spec);
         }
         return new TrackableFormula(trackingLiteral, encoding);
     }

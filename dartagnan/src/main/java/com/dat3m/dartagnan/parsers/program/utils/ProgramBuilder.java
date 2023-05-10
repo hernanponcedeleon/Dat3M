@@ -100,8 +100,8 @@ public class ProgramBuilder {
         return expressions;
     }
 
-    public void setAssert(AbstractAssert ass) {
-        program.setSpecification(ass);
+    public void setAssert(Program.SpecificationType type, AbstractAssert ass) {
+        program.setSpecification(type, ass);
     }
 
     public void setAssertFilter(AbstractAssert ass) {

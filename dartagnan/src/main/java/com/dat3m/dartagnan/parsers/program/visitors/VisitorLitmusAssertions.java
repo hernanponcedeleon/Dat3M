@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.specification.*;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import static com.dat3m.dartagnan.program.Program.SpecificationType.*;
 import static com.google.common.base.Preconditions.checkState;
 
 public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<AbstractAssert> {
@@ -27,19 +28,20 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
     }
 
     @Override
-    public AbstractAssert visitAssertionFilter(LitmusAssertionsParser.AssertionFilterContext ctx){
-        return ctx.assertion().accept(this);
+    public AbstractAssert visitAssertionFilter(LitmusAssertionsParser.AssertionFilterContext ctx) {
+        programBuilder.setAssertFilter(ctx.assertion().accept(this));
+        return null;
     }
 
     @Override
     public AbstractAssert visitAssertionList(LitmusAssertionsParser.AssertionListContext ctx){
         AbstractAssert ass = ctx.assertion().accept(this);
         if(ctx.AssertionNot() != null) {
-            ass.setType(AbstractAssert.ASSERT_TYPE_NOT_EXISTS);
+            programBuilder.setAssert(NOT_EXISTS, ass);
         } else if(ctx.AssertionExists() != null || ctx.AssertionFinal() != null){
-            ass.setType(AbstractAssert.ASSERT_TYPE_EXISTS);
+            programBuilder.setAssert(EXISTS, ass);
         } else if(ctx.AssertionForall() != null){
-            ass.setType(AbstractAssert.ASSERT_TYPE_FORALL);
+            programBuilder.setAssert(FORALL, ass);
         } else {
             throw new ParsingException("Unrecognised assertion type");
         }

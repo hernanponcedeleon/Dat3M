@@ -19,7 +19,10 @@ public class Program {
 
     public enum SourceLanguage { LITMUS, LLVM, SPV }
 
+    public enum SpecificationType { EXISTS, FORALL, NOT_EXISTS }
+
     private String name;
+    private SpecificationType specificationType;
     private AbstractAssert spec;
     private AbstractAssert filterSpec; // Acts like "assume" statements, filtering out executions
     private final List<Thread> threads;
@@ -81,11 +84,20 @@ public class Program {
         return this.memory;
     }
 
+    public SpecificationType getSpecificationType() {
+        return specificationType;
+    }
+
+    public boolean hasReachabilitySpecification() {
+        return SpecificationType.EXISTS.equals(specificationType);
+    }
+
     public AbstractAssert getSpecification() {
         return spec;
     }
 
-    public void setSpecification(AbstractAssert spec) {
+    public void setSpecification(SpecificationType type, AbstractAssert spec) {
+        this.specificationType = type;
         this.spec = spec;
     }
 
@@ -94,7 +106,6 @@ public class Program {
     }
 
     public void setFilterSpecification(AbstractAssert spec) {
-        Preconditions.checkArgument(spec == null || AbstractAssert.ASSERT_TYPE_FORALL.equals(spec.getType()));
         this.filterSpec = spec;
     }
 
