@@ -5,10 +5,6 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.event.core.Event;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
 
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -119,23 +115,6 @@ public class MemoryObject extends IConst {
         return offset == 0 ? this : new IExprBin(this, PLUS, new IValue(BigInteger.valueOf(offset), getPrecision()));
     }
 
-    /**
-     * Encodes the final state of a location.
-     *
-     * @param m      Builder of formulas.
-     * @param offset Non-negative number of fields before the target field.
-     * @return Variable associated with the value at the location after the execution ended.
-     */
-    public Formula getLastMemValueExpr(FormulaManager m, int offset) {
-        checkArgument(0 <= offset && offset < size, "array index out of bounds");
-        String name = String.format("last_val_at_memory_%d_%d", index, offset);
-        if (getArchPrecision() > -1) {
-            return m.getBitvectorFormulaManager().makeVariable(getArchPrecision(), name);
-        } else {
-            return m.getIntegerFormulaManager().makeVariable(name);
-        }
-    }
-
     public boolean isAtomic() {
         return atomic;
     }
@@ -151,11 +130,6 @@ public class MemoryObject extends IConst {
     @Override
     public int getPrecision() {
         return getArchPrecision();
-    }
-
-    @Override
-    public BooleanFormula toBoolFormula(Event e, FormulaManager m) {
-        return m.getBooleanFormulaManager().makeTrue();
     }
 
     @Override

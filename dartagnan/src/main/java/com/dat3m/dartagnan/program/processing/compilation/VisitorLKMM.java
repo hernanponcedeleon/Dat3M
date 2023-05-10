@@ -81,7 +81,7 @@ public class VisitorLKMM extends VisitorBase {
         Label end = newLabel("RMW_end");
         Load rmwLoad;
         return eventSequence(
-                newJump(new BNonDet(resultRegister.getPrecision()), success),
+                newJump(new BNonDet(), success),
                     newLoad(dummy, address, Tag.Linux.MO_ONCE),
                     newAssume(new Atom(dummy, EQ, cmp)),
                     newGoto(end),
@@ -109,7 +109,7 @@ public class VisitorLKMM extends VisitorBase {
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         Load casLoad;
         return eventSequence(
-                newJump(new BNonDet(resultRegister.getPrecision()), success),
+                newJump(new BNonDet(), success),
                     newLoad(dummy, address, Tag.Linux.MO_ONCE),
                     newAssume(new Atom(dummy, NEQ, cmp)),
                     newGoto(end),

@@ -3,16 +3,16 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.expression.INonDetTypes;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.*;
+
+import static com.dat3m.dartagnan.expression.INonDetTypes.*;
 
 public class Local extends Event implements RegWriter, RegReaderData {
 
@@ -60,12 +60,27 @@ public class Local extends Event implements RegWriter, RegReaderData {
     @Override
     public BooleanFormula encodeExec(EncodingContext context) {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        FormulaManager fmgr = context.getFormulaManager();
         BooleanFormula enc = super.encodeExec(context);
+        Formula expression = context.encodeIntegerExpressionAt(expr, this);
         if (expr instanceof INonDet) {
-            enc = bmgr.and(enc, ((INonDet) expr).encodeBounds(expr.toIntFormula(this, fmgr) instanceof BitvectorFormula, fmgr));
+            INonDet nonDet = (INonDet) expr;
+            long min = nonDet.getMin();
+            long max = nonDet.getMax();
+            if (expression instanceof BitvectorFormula) {
+                INonDetTypes type = nonDet.getType();
+                boolean signed = type.equals(INT) || type.equals(LONG) || type.equals(SHORT) || type.equals(CHAR);
+                BitvectorFormulaManager bvmgr = context.getFormulaManager().getBitvectorFormulaManager();
+                enc = bmgr.and(enc,
+                        bvmgr.greaterOrEquals((BitvectorFormula) expression, bvmgr.makeBitvector(nonDet.getPrecision(), min), signed),
+                        bvmgr.lessOrEquals((BitvectorFormula) expression, bvmgr.makeBitvector(nonDet.getPrecision(), max), signed));
+            } else {
+                IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
+                enc = bmgr.and(enc,
+                        imgr.greaterOrEquals((NumeralFormula.IntegerFormula) expression, imgr.makeNumber(min)),
+                        imgr.lessOrEquals((NumeralFormula.IntegerFormula) expression, imgr.makeNumber(max)));
+            }
         }
-        return bmgr.and(enc, context.equal(context.result(this), expr.toIntFormula(this, fmgr)));
+        return bmgr.and(enc, context.equal(context.result(this), expression));
     }
 
     // Unrolling

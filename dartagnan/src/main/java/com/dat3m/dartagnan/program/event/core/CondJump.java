@@ -8,8 +8,6 @@ import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.Model;
 
 import java.util.Map;
 
@@ -91,10 +89,6 @@ public class CondJump extends Event implements RegReaderData {
     public void delete() {
         super.delete();
         label.getJumpSet().remove(this);
-    }
-
-    public boolean didJump(Model model, FormulaManager m) {
-        return expr.getBoolValue(this, model, m);
     }
 
     // Unrolling

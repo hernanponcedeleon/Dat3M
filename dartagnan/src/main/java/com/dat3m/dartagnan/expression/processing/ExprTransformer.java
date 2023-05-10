@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.expression.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface> {
@@ -64,5 +65,10 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
     @Override
     public ExprInterface visit(MemoryObject address) {
         return address;
+    }
+
+    @Override
+    public ExprInterface visit(Location location) {
+        return location;
     }
 }

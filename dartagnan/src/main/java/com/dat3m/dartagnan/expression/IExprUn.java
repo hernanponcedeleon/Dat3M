@@ -3,11 +3,7 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.Model;
 
 import static com.dat3m.dartagnan.GlobalSettings.*;
 
@@ -29,16 +25,6 @@ public class IExprUn extends IExpr {
 
     public IExpr getInner() {
         return b;
-    }
-
-    @Override
-    public Formula toIntFormula(Event e, FormulaManager m) {
-        return op.encode(b.toIntFormula(e, m), m);
-    }
-
-    @Override
-    public BigInteger getIntValue(Event e, Model model, FormulaManager m) {
-        return b.getIntValue(e, model, m).negate();
     }
 
     @Override
