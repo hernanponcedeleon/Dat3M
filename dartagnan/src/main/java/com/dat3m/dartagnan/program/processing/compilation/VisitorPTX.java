@@ -5,7 +5,10 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Fence;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
@@ -16,7 +19,7 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
-public class VisitorPTX extends VisitorBase{
+public class VisitorPTX extends VisitorBase {
 
     protected VisitorPTX(boolean forceStart) {
         super(forceStart);
@@ -102,6 +105,7 @@ public class VisitorPTX extends VisitorBase{
             load.addFilters(Tag.PTX.RLX);
         }
     }
+
     private void addSemFilters(Event e, Store store) {
         if (e.is(Tag.PTX.ACQ_REL)) {
             store.addFilters(Tag.PTX.REL);
