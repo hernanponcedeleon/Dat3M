@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.c;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
@@ -53,13 +52,11 @@ public abstract class AbstractSvCompTest {
     }
 
     protected Provider<Wmm> getWmmProvider() {
-        return GlobalSettings.ATOMIC_AS_LOCK ?
-                Providers.createWmmFromName(() -> "svcomp-locks") :
-                Providers.createWmmFromName(() -> "svcomp");
+        return Providers.createWmmFromName(() -> "svcomp");
     }
 
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> Property.getDefault());
+        return Property::getDefault;
     }
 
     @ClassRule

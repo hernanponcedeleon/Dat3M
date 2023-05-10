@@ -22,7 +22,7 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
         Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
         this.resultRegister = register;
         this.value = value;
-        addFilters(READ, WRITE, RMW, REG_WRITER, REG_READER);
+        addFilters(READ, WRITE, RMW);
     }
 
     AtomicAbstract(AtomicAbstract other) {

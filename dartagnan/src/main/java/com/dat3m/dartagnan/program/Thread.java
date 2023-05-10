@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Thread {
 
@@ -50,6 +51,10 @@ public class Thread {
 
     public List<Event> getEvents() {
         return entry.getSuccessors();
+    }
+
+    public <T extends Event> List<T> getEvents(Class<T> cls) {
+        return getEvents().stream().filter(cls::isInstance).map(cls::cast).collect(Collectors.toList());
     }
 
 	public Program getProgram() {

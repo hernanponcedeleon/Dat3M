@@ -1,16 +1,16 @@
 package com.dat3m.dartagnan.program.event.arch.lisa;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import static com.dat3m.dartagnan.program.event.Tag.*;
-
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.collect.ImmutableSet;
 
-import com.dat3m.dartagnan.expression.IExpr;
+import static com.dat3m.dartagnan.program.event.Tag.RMW;
+import static com.dat3m.dartagnan.program.event.Tag.*;
 
 public class RMW extends MemEvent implements RegWriter, RegReaderData {
 
@@ -22,7 +22,7 @@ public class RMW extends MemEvent implements RegWriter, RegReaderData {
         super(address, mo);
 		this.resultRegister = register;
         this.value = value;
-        addFilters(READ, WRITE, RMW, REG_WRITER, REG_READER);
+        addFilters(READ, WRITE, RMW);
     }
 
     private RMW(RMW other){

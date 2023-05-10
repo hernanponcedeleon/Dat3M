@@ -1,23 +1,14 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
-
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
-import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 
 public class SvcompProcedures {
 
@@ -64,18 +55,10 @@ public class SvcompProcedures {
 				__VERIFIER_assume(visitor, ctx);
 				break;
 			case "__VERIFIER_atomic_begin":
-				if(GlobalSettings.ATOMIC_AS_LOCK) {
-					__VERIFIER_atomic(visitor, true);
-				} else {
-					__VERIFIER_atomic_begin(visitor);
-				}
+				__VERIFIER_atomic_begin(visitor);
 				break;
 			case "__VERIFIER_atomic_end":
-				if(GlobalSettings.ATOMIC_AS_LOCK) {
-					__VERIFIER_atomic(visitor, false);
-				} else {
-					__VERIFIER_atomic_end(visitor);
-				}
+				__VERIFIER_atomic_end(visitor);
 				break;
 			case "__VERIFIER_nondet_bool":
 				__VERIFIER_nondet_bool(visitor, ctx);
@@ -100,20 +83,6 @@ public class SvcompProcedures {
 	private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
     	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
        	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newAssume(expr));
-	}
-
-	public static void __VERIFIER_atomic(VisitorBoogie visitor, boolean begin) {
-        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, getArchPrecision());
-        MemoryObject lockAddress = visitor.programBuilder.getOrNewObject("__VERIFIER_atomic");
-       	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-		LinkedList<Event> events = new LinkedList<>();
-        events.add(EventFactory.newLoad(register, lockAddress, null));
-        events.add(EventFactory.newJump(new Atom(register, NEQ, begin?IValue.ZERO:IValue.ONE), label));
-        events.add(EventFactory.newStore(lockAddress, begin?IValue.ONE:IValue.ZERO, null));
-        for(Event e : events) {
-        	e.addFilters(Tag.C11.LOCK, Tag.RMW);
-        	visitor.programBuilder.addChild(visitor.threadCount, e);
-        }
 	}
 	
 	public static void __VERIFIER_atomic_begin(VisitorBoogie visitor) {

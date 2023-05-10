@@ -19,7 +19,6 @@ import java.util.List;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.LEADING_SYNC;
 
 public class VisitorPower extends VisitorBase {
@@ -386,10 +385,10 @@ public class VisitorPower extends VisitorBase {
 
         // Power does not have mo tags, thus we use the emptz string
         Load loadValue = newRMWLoadExclusive(regValue, address, "");
-        Store storeValue = Power.newRMWStoreConditional(address, value, "", e.is(STRONG));
+        Store storeValue = Power.newRMWStoreConditional(address, value, "", e.isStrong());
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
-        if (!e.is(STRONG)) {
+        if (e.isWeak()) {
             Register statusReg = e.getThread().newRegister(precision);
             optionalExecStatus = newExecutionStatus(statusReg, storeValue);
             optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));

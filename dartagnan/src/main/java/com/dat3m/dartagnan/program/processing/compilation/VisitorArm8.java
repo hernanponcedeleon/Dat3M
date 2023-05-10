@@ -9,9 +9,9 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.ARMv8;
 import com.dat3m.dartagnan.program.event.Tag.C11;
+import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -22,7 +22,6 @@ import java.util.List;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 
 class VisitorArm8 extends VisitorBase {
 
@@ -247,10 +246,10 @@ class VisitorArm8 extends VisitorBase {
         CondJump gotoCasEnd = newGoto(casEnd);
 
         Load loadValue = newRMWLoadExclusive(regValue, address, ARMv8.extractLoadMoFromCMo(mo));
-        Store storeValue = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), e.is(STRONG));
+        Store storeValue = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), e.isStrong());
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
-        if (!e.is(STRONG)) {
+        if (e.isWeak()) {
             Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", precision);
             optionalExecStatus = newExecutionStatus(statusReg, storeValue);
             optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));

@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.BExpr;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
@@ -15,7 +14,6 @@ public class IfAsJump extends CondJump {
 	public IfAsJump(BExpr expr, Label label, Label end) {
 		super(expr, label);
 		this.end = end;
-		addFilters(Tag.CMP);
 	}
 	
     protected IfAsJump(IfAsJump other) {

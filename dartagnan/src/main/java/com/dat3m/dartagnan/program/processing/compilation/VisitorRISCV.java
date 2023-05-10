@@ -8,9 +8,9 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
+import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -22,7 +22,6 @@ import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_ACQUIRE;
-import static com.dat3m.dartagnan.program.event.Tag.STRONG;
 
 class VisitorRISCV extends VisitorBase {
 	// Some language memory models (e.g. RC11) are non-dependency tracking and might need a 
@@ -275,8 +274,8 @@ class VisitorRISCV extends VisitorBase {
         CondJump gotoCasEnd = newGoto(casEnd);
 
         Load loadValue = newRMWLoadExclusive(regValue, address, Tag.RISCV.extractLoadMoFromCMo(mo));
-        Store storeValue = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), e.is(STRONG));
-        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")",precision);
+        Store storeValue = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), e.isStrong());
+        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", precision);
         // We normally make the following two events optional.
         // Here we make them mandatory to guarantee correct dependencies.
         ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, storeValue);

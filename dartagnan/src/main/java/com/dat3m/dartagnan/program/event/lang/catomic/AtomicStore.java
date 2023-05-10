@@ -9,8 +9,9 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
-import static com.dat3m.dartagnan.program.event.Tag.C11.*;
-import static com.dat3m.dartagnan.program.event.Tag.*;
+import static com.dat3m.dartagnan.program.event.Tag.C11.MO_ACQUIRE;
+import static com.dat3m.dartagnan.program.event.Tag.C11.MO_ACQUIRE_RELEASE;
+import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 
 public class AtomicStore extends MemEvent implements RegReaderData {
 
@@ -22,7 +23,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
         Preconditions.checkArgument(!mo.equals(MO_ACQUIRE) && !mo.equals(MO_ACQUIRE_RELEASE),
         		getClass().getName() + " can not have memory order: " + mo);
         this.value = value;
-        addFilters(WRITE, REG_READER);
+        addFilters(WRITE);
     }
 
     private AtomicStore(AtomicStore other){

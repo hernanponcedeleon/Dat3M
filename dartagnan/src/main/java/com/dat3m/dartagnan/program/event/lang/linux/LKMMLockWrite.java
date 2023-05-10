@@ -1,15 +1,17 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import static com.dat3m.dartagnan.program.event.Tag.*;
-
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 
-public class LKMMLockWrite extends Store {
+import static com.dat3m.dartagnan.program.event.Tag.Linux;
+import static com.dat3m.dartagnan.program.event.Tag.RMW;
 
-	public LKMMLockWrite(IExpr lock) {
-		super(lock, IValue.ONE, Linux.MO_ONCE);
+public class LKMMLockWrite extends RMWStore {
+
+	public LKMMLockWrite(Load lockRead, IExpr lock) {
+		super(lockRead, lock, IValue.ONE, Linux.MO_ONCE);
 		addFilters(RMW, Linux.LOCK_WRITE);
 	}
 

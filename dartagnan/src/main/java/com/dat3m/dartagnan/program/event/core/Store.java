@@ -15,7 +15,7 @@ public class Store extends MemEvent implements RegReaderData {
     public Store(IExpr address, ExprInterface value, String mo){
     	super(address, mo);
         this.value = value;
-        addFilters(Tag.WRITE, Tag.REG_READER);
+        addFilters(Tag.WRITE);
     }
     
     protected Store(Store other){

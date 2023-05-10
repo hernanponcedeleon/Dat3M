@@ -1,15 +1,14 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
-
-import static com.dat3m.dartagnan.configuration.OptionNames.ARCH_PRECISION;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.ARCH_PRECISION;
 
 @Options
 public class GlobalSettings {
@@ -31,9 +30,6 @@ public class GlobalSettings {
        config.inject(instance);
     }
 
-    // === Parsing ===
-    public static final boolean ATOMIC_AS_LOCK = false;
-
     // === Static analysis ===
     public static final boolean ALLOW_MULTIREADS = false; // Allows a read to have multiple rf-edges
 
@@ -52,7 +48,6 @@ public class GlobalSettings {
     public static void LogGlobalSettings() {
         // General settings
         logger.info("ARCH_PRECISION: " + getArchPrecision());
-        logger.info("ATOMIC_AS_LOCK: " + ATOMIC_AS_LOCK);
 
         // Refinement settings
         logger.info("REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES: " + REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES);

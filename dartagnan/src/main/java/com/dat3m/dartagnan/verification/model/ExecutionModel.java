@@ -344,6 +344,7 @@ public class ExecutionModel {
                     addressInitMap.put(address, data);
                 }
             } else {
+                //FIXME: Handle other kinds of memory events such as SRCU_SYNC.
                 throw new UnsupportedOperationException("Unexpected memory event " + data.getEvent());
             }
 

@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.event.lang.pthread;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -18,7 +17,6 @@ public class Lock extends Store {
 		super(address, IValue.ONE, MO_SC);
 		this.name = name;
         this.reg = reg;
-        addFilters(C11.LOCK);
     }
 
 	private Lock(Lock other){

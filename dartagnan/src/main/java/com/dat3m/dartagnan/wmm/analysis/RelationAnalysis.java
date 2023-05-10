@@ -6,13 +6,9 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
-import com.dat3m.dartagnan.program.event.core.IfAsJump;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
+import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
@@ -530,24 +526,25 @@ public class RelationAnalysis {
             //TODO: We can restrict the codomain to visible events as the only usage of this Relation is in
             // ctrl := idd^+;ctrlDirect & (R*V)
             Set<Tuple> must = new HashSet<>();
-            // NOTE: If's (under Linux) have different notion of ctrl dependency than conditional jumps!
             for (Thread thread : program.getThreads()) {
-                for (Event e1 : thread.getEvents()) {
-                    if (e1.is(CMP)) {
-                        for (Event e2 : ((IfAsJump) e1).getBranchesEvents()) {
-                            if (!exec.areMutuallyExclusive(e1, e2)) {
-                                must.add(new Tuple(e1, e2));
-                            }
-                        }
+                for (CondJump jump : thread.getEvents(CondJump.class)) {
+                    if (jump.isGoto() || jump.isDead()) {
+                        continue; // There is no point in ctrl-edges from unconditional jumps.
                     }
-                }
-                // Relates jumps (except those implementing Ifs and their internal jump to end) with all later events
-                for (Event e1 : thread.getEvents()) {
-                    if (e1.is(JUMP) && !e1.is(CMP) && !e1.is(IFI)) {
-                        for (Event e2 : thread.getEvents()) {
-                            if (e1.getGlobalId() < e2.getGlobalId() && !exec.areMutuallyExclusive(e1, e2)) {
-                                must.add(new Tuple(e1, e2));
-                            }
+
+                    final List<Event> ctrlDependentEvents;
+                    if (jump instanceof IfAsJump) {
+                        // Ctrl dependencies of Ifs (under Linux) only extend up until the merge point of both
+                        // branches.
+                        ctrlDependentEvents = ((IfAsJump)jump).getBranchesEvents();
+                    } else {
+                        // Regular jumps give dependencies to all successors.
+                        ctrlDependentEvents = jump.getSuccessor().getSuccessors();
+                    }
+
+                    for (Event e : ctrlDependentEvents) {
+                        if (!exec.areMutuallyExclusive(jump, e)) {
+                            must.add(new Tuple(jump, e));
                         }
                     }
                 }
@@ -556,11 +553,11 @@ public class RelationAnalysis {
         }
         @Override
         public Knowledge visitAddressDependency(Relation rel) {
-            return visitDependency(MEMORY, e -> ((MemEvent) e).getAddress().getRegs());
+            return visitDependency(MemEvent.class, e -> ((MemEvent) e).getAddress().getRegs());
         }
         @Override
         public Knowledge visitInternalDataDependency(Relation rel) {
-            return visitDependency(REG_READER, e -> ((RegReaderData) e).getDataRegs());
+            return visitDependency(RegReaderData.class , e -> ((RegReaderData) e).getDataRegs());
         }
         @Override
         public Knowledge visitFences(Relation rel, FilterAbstract fence) {
@@ -657,13 +654,7 @@ public class RelationAnalysis {
             for (RMWStore store : program.getEvents(RMWStore.class)) {
                 must.add(new Tuple(store.getLoadEvent(), store));
             }
-            // Locks: Load -> Assume/CondJump -> Store
-            for (Event e : program.getEvents()) {
-                if (e.is(RMW) && e.is(READ) && (e.is(C11.LOCK) || e.is(Linux.LOCK_READ))) {
-                    // Connect Load to Store
-                    must.add(new Tuple(e, e.getSuccessor().getSuccessor()));
-                }
-            }
+
             // Atomics blocks: BeginAtomic -> EndAtomic
             for (EndAtomic end : program.getEvents(EndAtomic.class)) {
                 List<Event> block = end.getBlock().stream().filter(x -> x.is(VISIBLE)).collect(toList());
@@ -681,13 +672,13 @@ public class RelationAnalysis {
             // LoadExcl -> StoreExcl
             for (Thread thread : program.getThreads()) {
                 List<Event> events = thread.getEvents().stream().filter(e -> e.is(EXCL)).collect(toList());
-                // assume order by cId
-                // assume cId describes a topological sorting over the control flow
+                // assume order by globalId
+                // assume globalId describes a topological sorting over the control flow
                 for (int end = 1; end < events.size(); end++) {
-                    Event store = events.get(end);
-                    if (!store.is(WRITE)) {
+                    if (!(events.get(end) instanceof RMWStoreExclusive)) {
                         continue;
                     }
+                    final RMWStoreExclusive store = (RMWStoreExclusive)events.get(end);
                     int start = iterate(end - 1, i -> i >= 0, i -> i - 1)
                             .filter(i -> exec.isImplied(store, events.get(i)))
                             .findFirst().orElse(0);
@@ -698,14 +689,14 @@ public class RelationAnalysis {
                     for (int i = 0; i < size; i++) {
                         Event load = candidates.get(i);
                         List<Event> intermediaries = candidates.subList(i + 1, size);
-                        if (!load.is(READ) || intermediaries.stream().anyMatch(e -> exec.isImplied(load, e))) {
+                        if (!(load instanceof Load) || intermediaries.stream().anyMatch(e -> exec.isImplied(load, e))) {
                             continue;
                         }
                         Tuple tuple = new Tuple(load, store);
                         may.add(tuple);
                         if (enableMustSets &&
                                 intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(load, e)) &&
-                                (store.is(MATCHADDRESS) || alias.mustAlias((MemEvent) load, (MemEvent) store))) {
+                                (store.doesRequireMatchingAddresses() || alias.mustAlias((MemEvent) load, store))) {
                             must.add(tuple);
                         }
                     }
@@ -863,14 +854,17 @@ public class RelationAnalysis {
             }
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
-        private Knowledge visitDependency(String tag, Function<Event, Set<Register>> registers) {
+        private Knowledge visitDependency(Class<?> eventClass, Function<Event, Set<Register>> registers) {
             Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
             // We need to track ExecutionStatus events separately, because they induce data-dependencies
             // without reading from a register.
             Set<ExecutionStatus> execStatusRegWriter = new HashSet<>();
             for (Event regReader : program.getEvents()) {
-                if (!regReader.is(tag)) {
+                if (!eventClass.isInstance(regReader)) {
+                    //FIXME: It would be better to use program.getEvents(eventClass), but that doesn't work
+                    // because we call this method with RegReaderData.class, which (unfortunately) does not
+                    // inherit from Event.
                     continue;
                 }
                 for (Register register : registers.apply(regReader)) {
