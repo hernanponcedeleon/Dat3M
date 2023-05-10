@@ -503,7 +503,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(Location location) {
-        checkState(event != null, "Cannot evaluate %s at event %s.", location, event);
+        checkState(event == null, "Cannot evaluate %s at event %s.", location, event);
         return getLastMemValueExpr(location.getMemoryObject(), location.getOffset(), formulaManager);
     }
 }
