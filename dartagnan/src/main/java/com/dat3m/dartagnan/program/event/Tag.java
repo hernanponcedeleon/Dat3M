@@ -114,14 +114,14 @@ public final class Tag {
         public static final String ATOMIC               = "A";
         public static final String NONATOMIC            = "NA";
 
-        public static final String PTHREAD              = "__PTHREAD";
-
         public static final String MO_RELAXED           = "RLX";
         public static final String MO_CONSUME           = "CON";
         public static final String MO_ACQUIRE           = "ACQ";
         public static final String MO_RELEASE           = "REL";
         public static final String MO_ACQUIRE_RELEASE   = "ACQ_REL";
         public static final String MO_SC                 = "SC";
+
+        public static final String PTHREAD              = "__PTHREAD";
 
         public static String intToMo(int i) {
             switch (i) {
