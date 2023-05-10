@@ -90,7 +90,7 @@ public class EventData implements Comparable<EventData> {
     	return event.is(EXCL);
     }
     public boolean isLock() {
-    	return event.is(C11.LOCK) || event.is(Linux.LOCK_READ);
+    	return event.is(Linux.LOCK_READ);
     }
     public boolean isRMW() {
     	return event.is(RMW);

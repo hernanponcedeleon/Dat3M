@@ -7,13 +7,12 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
@@ -106,12 +105,13 @@ public class SvcompProcedures {
         Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, getArchPrecision());
         MemoryObject lockAddress = visitor.programBuilder.getOrNewObject("__VERIFIER_atomic");
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-		LinkedList<Event> events = new LinkedList<>();
-        events.add(EventFactory.newLoad(register, lockAddress, null));
-        events.add(EventFactory.newJump(new Atom(register, NEQ, begin?IValue.ZERO:IValue.ONE), label));
-        events.add(EventFactory.newStore(lockAddress, begin?IValue.ONE:IValue.ZERO, null));
+		Load rmwLoad = EventFactory.newRMWLoad(register, lockAddress, "");
+		List<Event> events = EventFactory.eventSequence(
+				rmwLoad,
+				EventFactory.newJump(new Atom(register, NEQ, begin ? IValue.ZERO : IValue.ONE), label),
+				EventFactory.newStore(lockAddress, begin ? IValue.ONE : IValue.ZERO, "")
+		);
         for(Event e : events) {
-        	e.addFilters(Tag.C11.LOCK, Tag.RMW);
         	visitor.programBuilder.addChild(visitor.threadCount, e);
         }
 	}

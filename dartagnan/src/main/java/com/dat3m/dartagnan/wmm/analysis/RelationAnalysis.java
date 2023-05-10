@@ -656,7 +656,7 @@ public class RelationAnalysis {
             }
             // Locks: Load -> Assume/CondJump -> Store
             for (Event e : program.getEvents()) {
-                if (e.is(RMW) && e.is(READ) && (e.is(C11.LOCK) || e.is(Linux.LOCK_READ))) {
+                if (e.is(RMW) && e.is(READ) && e.is(Linux.LOCK_READ)) {
                     // Connect Load to Store
                     must.add(new Tuple(e, e.getSuccessor().getSuccessor()));
                 }

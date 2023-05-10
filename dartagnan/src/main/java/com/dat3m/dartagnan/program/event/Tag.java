@@ -115,7 +115,6 @@ public final class Tag {
         public static final String NONATOMIC            = "NA";
 
         public static final String PTHREAD              = "__PTHREAD";
-        public static final String LOCK                 = "LK";
 
         public static final String MO_RELAXED           = "RLX";
         public static final String MO_CONSUME           = "CON";
