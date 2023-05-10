@@ -29,6 +29,7 @@ public class MemoryObject extends IConst {
     BigInteger address;
     private String cVar;
     private MemoryObject alias;
+
     public MemoryObject getAlias() {
         return alias;
     }

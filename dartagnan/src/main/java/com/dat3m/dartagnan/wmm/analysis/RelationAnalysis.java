@@ -863,6 +863,7 @@ public class RelationAnalysis {
             }
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitSameScope(Relation rel, ArrayList<String> scopes) {
             Set<Tuple> must = new HashSet<>();
@@ -1003,7 +1004,7 @@ public class RelationAnalysis {
 
         private int getScopeID(Set<String> filters, String scope) {
             int result = -1;
-            for (String filter: filters) {
+            for (String filter : filters) {
                 if (filter.equals(scope)) {
                     continue;
                 }

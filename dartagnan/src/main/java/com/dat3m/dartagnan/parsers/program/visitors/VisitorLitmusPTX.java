@@ -9,8 +9,6 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
-
 import com.dat3m.dartagnan.program.event.core.Fence;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -20,9 +18,8 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
+
+import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 
 public class VisitorLitmusPTX
         extends LitmusPTXBaseVisitor<Object> {
@@ -30,7 +27,7 @@ public class VisitorLitmusPTX
     private int mainThread;
     private int threadCount = 0;
 
-    public VisitorLitmusPTX(ProgramBuilder pb){
+    public VisitorLitmusPTX(ProgramBuilder pb) {
         this.programBuilder = pb;
     }
 
@@ -42,13 +39,13 @@ public class VisitorLitmusPTX
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
-        if(ctx.assertionList() != null){
+        if (ctx.assertionList() != null) {
             int a = ctx.assertionList().getStart().getStartIndex();
             int b = ctx.assertionList().getStop().getStopIndex();
             String raw = ctx.assertionList().getStart().getInputStream().getText(new Interval(a, b));
             programBuilder.setAssert(AssertionHelper.parseAssertionList(programBuilder, raw));
         }
-        if(ctx.assertionFilter() != null){
+        if (ctx.assertionFilter() != null) {
             int a = ctx.assertionFilter().getStart().getStartIndex();
             int b = ctx.assertionFilter().getStop().getStopIndex();
             String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
@@ -103,7 +100,7 @@ public class VisitorLitmusPTX
     // Thread declarator list (on top of instructions)
     @Override
     public Object visitThreadDeclaratorList(LitmusPTXParser.ThreadDeclaratorListContext ctx) {
-        for(LitmusPTXParser.ThreadScopeContext threadScopeContext : ctx.threadScope()){
+        for (LitmusPTXParser.ThreadScopeContext threadScopeContext : ctx.threadScope()) {
             int ctaID = threadScopeContext.scopeID().ctaID().id;
             int gpuID = threadScopeContext.scopeID().gpuID().id;
             programBuilder.initScopedThread(threadScopeContext.threadId().id, ctaID, gpuID);
@@ -114,13 +111,14 @@ public class VisitorLitmusPTX
 
     // ----------------------------------------------------------------------------------------------------------------
     // Instruction list (the program itself)
-    @Override public Object visitConstant(LitmusPTXParser.ConstantContext ctx) {
-        return new IValue(new BigInteger(ctx.getText()),-1);
+    @Override
+    public Object visitConstant(LitmusPTXParser.ConstantContext ctx) {
+        return new IValue(new BigInteger(ctx.getText()), -1);
     }
 
     @Override
     public Object visitInstructionRow(LitmusPTXParser.InstructionRowContext ctx) {
-        for(int i = 0; i < threadCount; i++){
+        for (int i = 0; i < threadCount; i++) {
             mainThread = i;
             visitInstruction(ctx.instruction(i));
         }
@@ -128,7 +126,7 @@ public class VisitorLitmusPTX
     }
 
     @Override
-    public Object visitStoreConstant(LitmusPTXParser.StoreConstantContext ctx){
+    public Object visitStoreConstant(LitmusPTXParser.StoreConstantContext ctx) {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
         String sem = ctx.sem().content;
@@ -150,7 +148,7 @@ public class VisitorLitmusPTX
     }
 
     @Override
-    public Object visitStoreRegister(LitmusPTXParser.StoreRegisterContext ctx){
+    public Object visitStoreRegister(LitmusPTXParser.StoreRegisterContext ctx) {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
         String sem = ctx.sem().content;
@@ -171,7 +169,7 @@ public class VisitorLitmusPTX
     }
 
     @Override
-    public Object visitLoadConstant(LitmusPTXParser.LoadConstantContext ctx){
+    public Object visitLoadConstant(LitmusPTXParser.LoadConstantContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
         IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
         String sem = ctx.sem().content;
@@ -190,7 +188,7 @@ public class VisitorLitmusPTX
     }
 
     @Override
-    public Object visitLoadLocation(LitmusPTXParser.LoadLocationContext ctx){
+    public Object visitLoadLocation(LitmusPTXParser.LoadLocationContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
         MemoryObject location = programBuilder.getOrNewObject(ctx.location().getText());
         String sem = ctx.sem().content;
@@ -279,11 +277,11 @@ public class VisitorLitmusPTX
         }
         RMWOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, register_operand, op, sem, scope);
         red.addFilters(ctx.red().redProxy);
-        return programBuilder.addScopedChild(mainThread,red);
+        return programBuilder.addScopedChild(mainThread, red);
     }
 
     @Override
-    public Object visitFencePhysic(LitmusPTXParser.FencePhysicContext ctx){
+    public Object visitFencePhysic(LitmusPTXParser.FencePhysicContext ctx) {
         String sem = ctx.sem().content;
         String scope;
         if (sem.equals(Tag.PTX.ACQ_REL) || sem.equals(Tag.PTX.SC)) {
