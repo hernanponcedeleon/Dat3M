@@ -476,8 +476,8 @@ public class EventFactory {
             return new LKMMLockRead(register, address);
         }
 
-        public static LKMMLockWrite newLockWrite(IExpr address) {
-            return new LKMMLockWrite(address);
+        public static LKMMLockWrite newLockWrite(Load lockRead, IExpr address) {
+            return new LKMMLockWrite(lockRead, address);
         }
 
         public static LKMMLock newLock(IExpr address) {

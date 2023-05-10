@@ -654,13 +654,7 @@ public class RelationAnalysis {
             for (RMWStore store : program.getEvents(RMWStore.class)) {
                 must.add(new Tuple(store.getLoadEvent(), store));
             }
-            // Locks: Load -> Assume/CondJump -> Store
-            for (Event e : program.getEvents()) {
-                if (e.is(RMW) && e.is(READ) && e.is(Linux.LOCK_READ)) {
-                    // Connect Load to Store
-                    must.add(new Tuple(e, e.getSuccessor().getSuccessor()));
-                }
-            }
+
             // Atomics blocks: BeginAtomic -> EndAtomic
             for (EndAtomic end : program.getEvents(EndAtomic.class)) {
                 List<Event> block = end.getBlock().stream().filter(x -> x.is(VISIBLE)).collect(toList());
@@ -678,8 +672,8 @@ public class RelationAnalysis {
             // LoadExcl -> StoreExcl
             for (Thread thread : program.getThreads()) {
                 List<Event> events = thread.getEvents().stream().filter(e -> e.is(EXCL)).collect(toList());
-                // assume order by cId
-                // assume cId describes a topological sorting over the control flow
+                // assume order by globalId
+                // assume globalId describes a topological sorting over the control flow
                 for (int end = 1; end < events.size(); end++) {
                     if (!(events.get(end) instanceof RMWStoreExclusive)) {
                         continue;
