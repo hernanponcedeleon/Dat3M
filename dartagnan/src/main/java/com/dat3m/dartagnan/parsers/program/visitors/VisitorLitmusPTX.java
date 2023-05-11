@@ -214,7 +214,7 @@ public class VisitorLitmusPTX
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
-        IOpBin op = IOpBin.valueOf(ctx.operation().content);
+        IOpBin op = ctx.operation().op;
         String sem = ctx.sem().content;
         String scope;
         if (sem.equals(Tag.PTX.ACQ_REL) || sem.equals(Tag.PTX.RLX)) {
@@ -232,7 +232,7 @@ public class VisitorLitmusPTX
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(0).getText(), getArchPrecision());
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(1).getText(), getArchPrecision());
-        IOpBin op = IOpBin.valueOf(ctx.operation().content);
+        IOpBin op = ctx.operation().op;
         String sem = ctx.sem().content;
         String scope;
         if (sem.equals(Tag.PTX.ACQ_REL) || sem.equals(Tag.PTX.RLX)) {
@@ -249,7 +249,7 @@ public class VisitorLitmusPTX
     public Object visitRedConstant(LitmusPTXParser.RedConstantContext ctx) {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
-        IOpBin op = IOpBin.valueOf(ctx.operation().content);
+        IOpBin op = ctx.operation().op;
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, getArchPrecision());
         String sem = ctx.sem().content;
         String scope;
@@ -267,7 +267,7 @@ public class VisitorLitmusPTX
     public Object visitRedRegister(LitmusPTXParser.RedRegisterContext ctx) {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
-        IOpBin op = IOpBin.valueOf(ctx.operation().content);
+        IOpBin op = ctx.operation().op;
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, getArchPrecision());
         String sem = ctx.sem().content;
         String scope;

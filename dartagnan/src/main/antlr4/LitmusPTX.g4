@@ -2,6 +2,10 @@ grammar LitmusPTX;
 
 import LitmusAssertions;
 
+@header{
+import com.dat3m.dartagnan.expression.op.*;
+}
+
 main
     :    LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionFilter? assertionList? EOF
     ;
@@ -172,20 +176,20 @@ register
     :   Register
     ;
 
-operation returns [String content]
-    :   Plus {$content = "PLUS";}
-    |   Minus {$content = "MINUS";}
-    |   Mult {$content = "MULT";}
-    |   Div {$content = "DIV";}
-    |   Udiv {$content = "UDIV";}
-    |   Mod {$content = "MOD";}
-    |   SRem {$content = "SREM";}
-    |   URem {$content = "UREM";}
-    |   And {$content = "AND";}
-    |   Or {$content = "OR";}
-    |   Xor {$content = "XOR";}
-    |   L_Shift {$content = "L_SHIFT";}
-    |   R_Shift {$content = "R_SHIFT";}
+operation locals [IOpBin op]
+    :   Plus {$op = IOpBin.PLUS;}
+    |   Minus {$op = IOpBin.MINUS;}
+    |   Mult {$op = IOpBin.MULT;}
+    |   Div {$op = IOpBin.DIV;}
+    |   Udiv {$op = IOpBin.UDIV;}
+    |   Mod {$op = IOpBin.MOD;}
+    |   SRem {$op = IOpBin.SREM;}
+    |   URem {$op = IOpBin.UREM;}
+    |   And {$op = IOpBin.AND;}
+    |   Or {$op = IOpBin.OR;}
+    |   Xor {$op = IOpBin.XOR;}
+    |   L_Shift {$op = IOpBin.L_SHIFT;}
+    |   R_Shift {$op = IOpBin.R_SHIFT;}
     ;
 
 assertionValue
@@ -207,8 +211,8 @@ sem returns [String content]
     |   Relaxed {$content = "RLX";}
     |   Acquire {$content = "ACQ";}
     |   Release {$content = "REL";}
-    |   ACQ_REL {$content = "ACQ_REL";}
-    |   SC {$content = "SC";}
+    |   Acq_rel {$content = "ACQ_REL";}
+    |   Sc {$content = "SC";}
     ;
 
 load returns [String loadProxy]
@@ -261,8 +265,8 @@ Weak    :   'weak';
 Relaxed :   'relaxed';
 Acquire :   'acquire';
 Release :   'release';
-ACQ_REL :   'acq_rel';
-SC      :   'sc';
+Acq_rel :   'acq_rel';
+Sc      :   'sc';
 
 Plus    :   'plus';
 Minus   :   'minus';
