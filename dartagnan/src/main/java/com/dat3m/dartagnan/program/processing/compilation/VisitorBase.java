@@ -25,6 +25,8 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.Type;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.google.common.base.Preconditions;
 
 import java.util.Collections;
@@ -36,6 +38,8 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 class VisitorBase implements EventVisitor<List<Event>> {
 
 	protected boolean forceStart;
+	protected static final TypeFactory types = TypeFactory.getInstance();
+	protected static final Type archType = types.getPointerType();
 	protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
 	protected VisitorBase(boolean forceStart) {
@@ -56,7 +60,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-        Register statusRegister = e.getThread().newRegister(resultRegister.getPrecision());
+        Register statusRegister = e.getThread().newRegister(resultRegister.getType());
 
         return eventSequence(
                 forceStart ? newExecutionStatus(statusRegister, e.getCreationEvent()) : null,
@@ -163,7 +167,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
         Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
-        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
 		Load load = newRMWLoad(dummyReg, address, mo);
         RMWStore store = newRMWStore(load, address, e.getMemValue(), mo);
 		return eventSequence(

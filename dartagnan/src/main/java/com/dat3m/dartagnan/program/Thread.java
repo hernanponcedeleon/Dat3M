@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.expression.type.Type;
 import com.google.common.base.Preconditions;
 
 import java.util.*;
@@ -72,21 +73,21 @@ public class Thread {
         return Optional.ofNullable(registers.get(name));
     }
 
-    public Register newRegister(int precision) {
-        return newRegister("DUMMY_REG_" + dummyCount++, precision);
+    public Register newRegister(Type type) {
+        return newRegister("DUMMY_REG_" + dummyCount++, type);
     }
 
-    public Register newRegister(String name, int precision){
+    public Register newRegister(String name, Type type) {
         if(registers.containsKey(name)){
             throw new MalformedProgramException("Register " + id + ":" + name + " already exists");
         }
-        Register register = new Register(name, id, precision);
+        Register register = new Register(name, id, type);
         registers.put(register.getName(), register);
         return register;
     }
 
-    public Register getOrNewRegister(String name, int precision) {
-        return registers.computeIfAbsent(name, k -> new Register(k, id, precision));
+    public Register getOrNewRegister(String name, Type type) {
+        return registers.computeIfAbsent(name, k -> new Register(k, id, type));
     }
 
     public Event getEntry(){

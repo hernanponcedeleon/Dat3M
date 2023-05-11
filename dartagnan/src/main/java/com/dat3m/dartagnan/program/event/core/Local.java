@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.expression.type.IntegerType;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
@@ -64,9 +65,10 @@ public class Local extends Event implements RegWriter, RegReaderData {
             if (expression instanceof BitvectorFormula) {
                 boolean signed = nonDet.isSigned();
                 BitvectorFormulaManager bvmgr = context.getFormulaManager().getBitvectorFormulaManager();
+                IntegerType type = (IntegerType) nonDet.getType();
                 enc = bmgr.and(enc,
-                        nonDet.getMin().map(min -> bvmgr.greaterOrEquals((BitvectorFormula) expression, bvmgr.makeBitvector(nonDet.getPrecision(), min), signed)).orElseGet(bmgr::makeTrue),
-                        nonDet.getMax().map(max -> bvmgr.lessOrEquals((BitvectorFormula) expression, bvmgr.makeBitvector(nonDet.getPrecision(), max), signed)).orElseGet(bmgr::makeTrue));
+                        nonDet.getMin().map(min -> bvmgr.greaterOrEquals((BitvectorFormula) expression, bvmgr.makeBitvector(type.getBitWidth(), min), signed)).orElseGet(bmgr::makeTrue),
+                        nonDet.getMax().map(max -> bvmgr.lessOrEquals((BitvectorFormula) expression, bvmgr.makeBitvector(type.getBitWidth(), max), signed)).orElseGet(bmgr::makeTrue));
             } else {
                 IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
                 enc = bmgr.and(enc,

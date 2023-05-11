@@ -11,6 +11,9 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.expression.type.IntegerType;
+import com.dat3m.dartagnan.program.expression.type.NumberType;
+import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -276,11 +279,11 @@ public final class EncodingContext {
             if (e instanceof RegWriter) {
                 Register register = ((RegWriter) e).getResultRegister();
                 String name = register.getName() + "(" + e.getGlobalId() + "_result)";
-                int precision = register.getPrecision();
-                if (precision > 0) {
-                    r = formulaManager.getBitvectorFormulaManager().makeVariable(precision, name);
-                } else {
+                Type type = register.getType();
+                if (type instanceof NumberType) {
                     r = formulaManager.getIntegerFormulaManager().makeVariable(name);
+                } else {
+                    r = formulaManager.getBitvectorFormulaManager().makeVariable(((IntegerType) type).getBitWidth(), name);
                 }
             } else {
                 r = null;

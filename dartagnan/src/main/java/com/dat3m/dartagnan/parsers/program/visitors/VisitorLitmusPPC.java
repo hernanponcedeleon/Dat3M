@@ -16,6 +16,8 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.Type;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.google.common.collect.ImmutableSet;
@@ -24,7 +26,6 @@ import org.antlr.v4.runtime.misc.Interval;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
@@ -32,8 +33,9 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     private final static ImmutableSet<String> fences = ImmutableSet.of(SYNC, LWSYNC, ISYNC);
 
     private final Program program = new Program(Program.SourceLanguage.LITMUS);
+    private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final int archPrecision = getArchPrecision();
+    private final Type archPrecision = types.getPointerType();
     private Thread[] threadList;
     private Thread thread;
     private final Map<String, Label> labelMap = new HashMap<>();

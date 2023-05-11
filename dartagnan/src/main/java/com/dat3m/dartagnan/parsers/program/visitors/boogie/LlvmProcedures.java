@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
@@ -13,6 +12,7 @@ import com.dat3m.dartagnan.program.event.EventFactory.Llvm;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.Type;
 
 import java.util.Arrays;
 import java.util.List;
@@ -47,7 +47,7 @@ public class LlvmProcedures {
         List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 
         String regName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
-        Register reg = visitor.thread.getOrNewRegister(regName, GlobalSettings.getArchPrecision());
+        Register reg = visitor.thread.getOrNewRegister(regName, visitor.types.getPointerType());
 
         Object p0 = params.get(0).accept(visitor);
         Object p1 = params.size() > 1 ? params.get(1).accept(visitor) : null;
@@ -86,8 +86,9 @@ public class LlvmProcedures {
                 // create such registers,
                 // then when calling "extractvalue" we can check if the member was properly
                 // initialized
-                Register oldValueRegister = visitor.thread.getOrNewRegister(regName + "(0)", GlobalSettings.getArchPrecision());
-                Register cmpRegister = visitor.thread.getOrNewRegister(regName + "(1)", GlobalSettings.getArchPrecision());
+                Type type = visitor.types.getPointerType();
+                Register oldValueRegister = visitor.thread.getOrNewRegister(regName + "(0)", type);
+                Register cmpRegister = visitor.thread.getOrNewRegister(regName + "(1)", type);
                 // The compilation of Llvm.newCompareExchange will
                 // assign the correct values to the registers above
                 mo = C11.intToMo(((IConst) p3).getValueAsInt());

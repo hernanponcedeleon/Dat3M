@@ -16,6 +16,8 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.Type;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import org.antlr.v4.runtime.misc.Interval;
@@ -23,13 +25,11 @@ import org.antlr.v4.runtime.misc.Interval;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
-
 public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     private final Program program = new Program(Program.SourceLanguage.LITMUS);
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final int archPrecision = getArchPrecision();
+    private final Type type = TypeFactory.getInstance().getPointerType();
     private Thread[] threadList;
     private Thread thread;
     private final Map<String, Label> labelMap = new HashMap<>();
@@ -70,7 +70,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
         MemoryObject object = program.getMemory().getOrNewObject(ctx.location().getText());
-        IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
+        IValue value = expressions.parseValue(ctx.constant().getText(), type);
         object.setInitialValue(0, value);
         return null;
     }
@@ -78,8 +78,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
         Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
-        Register register = thread.getOrNewRegister(ctx.register64().id, archPrecision);
-        IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
+        Register register = thread.getOrNewRegister(ctx.register64().id, type);
+        IValue value = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(register, value));
         return null;
     }
@@ -87,7 +87,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
         Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
-        Register register = thread.getOrNewRegister(ctx.register64().id, archPrecision);
+        Register register = thread.getOrNewRegister(ctx.register64().id, type);
         MemoryObject value = program.getMemory().getObject(ctx.location().getText()).orElseThrow();
         thread.append(EventFactory.newLocal(register, value));
         return null;
@@ -128,7 +128,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitMov(MovContext ctx) {
-        Register register = thread.getOrNewRegister(ctx.rD, archPrecision);
+        Register register = thread.getOrNewRegister(ctx.rD, type);
         IExpr expr = ctx.expr32() != null ? (IExpr) ctx.expr32().accept(this) : (IExpr) ctx.expr64().accept(this);
         thread.append(EventFactory.newLocal(register, expr));
         return null;
@@ -136,7 +136,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitCmp(CmpContext ctx) {
-        Register register = thread.getOrNewRegister(ctx.rD, archPrecision);
+        Register register = thread.getOrNewRegister(ctx.rD, type);
         IExpr expr = ctx.expr32() != null ? (IExpr) ctx.expr32().accept(this) : (IExpr) ctx.expr64().accept(this);
         thread.append(EventFactory.newCompare(register, expr));
         return null;
@@ -144,7 +144,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitArithmetic(ArithmeticContext ctx) {
-        Register rD = thread.getOrNewRegister(ctx.rD, archPrecision);
+        Register rD = thread.getOrNewRegister(ctx.rD, type);
         Register r1 = thread.getRegister(ctx.rV).orElseThrow();
         IExpr expr = ctx.expr32() != null ? (IExpr) ctx.expr32().accept(this) : (IExpr) ctx.expr64().accept(this);
         thread.append(EventFactory.newLocal(rD, expressions.makeBinary(r1, ctx.arithmeticInstruction().op, expr)));
@@ -153,7 +153,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitLoad(LoadContext ctx) {
-        Register register = thread.getOrNewRegister(ctx.rD, archPrecision);
+        Register register = thread.getOrNewRegister(ctx.rD, type);
         Register address = thread.getRegister(ctx.address().id).orElseThrow();
         if (ctx.offset() != null) {
             address = visitOffset(ctx.offset(), address);
@@ -164,7 +164,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitLoadExclusive(LoadExclusiveContext ctx) {
-        Register register = thread.getOrNewRegister(ctx.rD, archPrecision);
+        Register register = thread.getOrNewRegister(ctx.rD, type);
         Register address = thread.getRegister(ctx.address().id).orElseThrow();
         if (ctx.offset() != null) {
             address = visitOffset(ctx.offset(), address);
@@ -175,7 +175,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitStore(StoreContext ctx) {
-        Register register = thread.getOrNewRegister(ctx.rV, archPrecision);
+        Register register = thread.getOrNewRegister(ctx.rV, type);
         Register address = thread.getRegister(ctx.address().id).orElseThrow();
         if (ctx.offset() != null) {
             address = visitOffset(ctx.offset(), address);
@@ -186,8 +186,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitStoreExclusive(StoreExclusiveContext ctx) {
-        Register register = thread.getOrNewRegister(ctx.rV, archPrecision);
-        Register statusReg = thread.getOrNewRegister(ctx.rS, archPrecision);
+        Register register = thread.getOrNewRegister(ctx.rV, type);
+        Register statusReg = thread.getOrNewRegister(ctx.rS, type);
         Register address = thread.getRegister(ctx.address().id).orElseThrow();
         if (ctx.offset() != null) {
             address = visitOffset(ctx.offset(), address);
@@ -216,7 +216,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitBranchRegister(BranchRegisterContext ctx) {
         Register register = thread.getRegister(ctx.rV).orElseThrow();
-        IValue zero = expressions.makeZero(register.getPrecision());
+        IValue zero = expressions.makeZero(register.getType());
         Expression expr = expressions.makeBinary(register, ctx.branchRegInstruction().op, zero);
         Label label = labelMap.computeIfAbsent(ctx.label().getText(), EventFactory::newLabel);
         thread.append(EventFactory.newJump(expr, label));
@@ -238,9 +238,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public IExpr visitExpressionRegister64(ExpressionRegister64Context ctx) {
-        IExpr expr = thread.getOrNewRegister(ctx.register64().id, archPrecision);
+        IExpr expr = thread.getOrNewRegister(ctx.register64().id, type);
         if (ctx.shift() != null) {
-            IValue val = expressions.parseValue(ctx.shift().immediate().constant().getText(), archPrecision);
+            IValue val = expressions.parseValue(ctx.shift().immediate().constant().getText(), type);
             expr = expressions.makeBinary(expr, ctx.shift().shiftOperator().op, val);
         }
         return expr;
@@ -248,9 +248,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public IExpr visitExpressionRegister32(ExpressionRegister32Context ctx) {
-        IExpr expr = thread.getOrNewRegister(ctx.register32().id, archPrecision);
+        IExpr expr = thread.getOrNewRegister(ctx.register32().id, type);
         if (ctx.shift() != null) {
-            IValue val = expressions.parseValue(ctx.shift().immediate().constant().getText(), archPrecision);
+            IValue val = expressions.parseValue(ctx.shift().immediate().constant().getText(), type);
             expr = expressions.makeBinary(expr, ctx.shift().shiftOperator().op, val);
         }
         return expr;
@@ -258,9 +258,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public IExpr visitExpressionImmediate(ExpressionImmediateContext ctx) {
-        IExpr expr = expressions.parseValue(ctx.immediate().constant().getText(), archPrecision);
+        IExpr expr = expressions.parseValue(ctx.immediate().constant().getText(), type);
         if (ctx.shift() != null) {
-            IValue val = expressions.parseValue(ctx.shift().immediate().constant().getText(), archPrecision);
+            IValue val = expressions.parseValue(ctx.shift().immediate().constant().getText(), type);
             expr = expressions.makeBinary(expr, ctx.shift().shiftOperator().op, val);
         }
         return expr;
@@ -269,14 +269,14 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public IExpr visitExpressionConversion(ExpressionConversionContext ctx) {
         // TODO: Implement when adding support for mixed-size accesses
-        return thread.getOrNewRegister(ctx.register32().id, archPrecision);
+        return thread.getOrNewRegister(ctx.register32().id, type);
     }
 
     private Register visitOffset(OffsetContext ctx, Register register) {
-        Register result = thread.newRegister(archPrecision);
+        Register result = thread.newRegister(type);
         IExpr expr = ctx.immediate() == null
                 ? thread.getRegister(ctx.expressionConversion().register32().id).orElseThrow()
-                : expressions.parseValue(ctx.immediate().constant().getText(), archPrecision);
+                : expressions.parseValue(ctx.immediate().constant().getText(), type);
         thread.append(EventFactory.newLocal(result, expressions.makeBinary(register, IOpBin.PLUS, expr)));
         return result;
     }

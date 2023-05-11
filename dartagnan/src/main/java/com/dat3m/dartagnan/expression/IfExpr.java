@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.type.Type;
 import com.google.common.collect.ImmutableSet;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -46,8 +47,8 @@ public class IfExpr extends IExpr {
 	}
 
 	@Override
-	public int getPrecision() {
-		return tbranch.getPrecision();
+	public Type getType() {
+		return tbranch.getType();
 	}
 
 	@Override

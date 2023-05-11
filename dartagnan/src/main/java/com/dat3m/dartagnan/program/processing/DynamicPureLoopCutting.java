@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.expression.op.COpBin;
@@ -18,6 +17,8 @@ import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.Type;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.Lists;
@@ -126,12 +127,12 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
 
         final List<Register> trackingRegs = new ArrayList<>();
         Event insertionPoint = iterInfo.getIterationEnd();
-        int precision = GlobalSettings.getArchPrecision();
+        Type type = TypeFactory.getInstance().getPointerType();
         for (int i = 0; i < sideEffects.size(); i++) {
             final Event sideEffect = sideEffects.get(i);
             final Register trackingReg = thread.newRegister(
                     String.format("Loop%s_%s_%s", loopNumber, iterNumber, i),
-                    precision);
+                    type);
             trackingRegs.add(trackingReg);
 
             final Event execCheck = EventFactory.newExecutionStatus(trackingReg, sideEffect);
@@ -141,7 +142,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
 
         ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
         Expression noSideEffect = trackingRegs.stream()
-                .map(reg -> expressionFactory.makeBinary(reg, COpBin.NEQ, expressionFactory.makeZero(precision)))
+                .map(reg -> expressionFactory.makeBinary(reg, COpBin.NEQ, expressionFactory.makeZero(type)))
                 .reduce(BConst.TRUE, (x, y) -> expressionFactory.makeBinary(x, BOpBin.AND, y));
         final CondJump assumeSideEffect = EventFactory.newJump(noSideEffect, (Label) thread.getExit());
         assumeSideEffect.addFilters(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);

@@ -77,9 +77,9 @@ public class Program {
         return arch;
     }
 
-    public INonDet newConstant(int precision, boolean signed, BigInteger min, BigInteger max) {
+    public INonDet newConstant(Type type, boolean signed, BigInteger min, BigInteger max) {
         int id = constants.size();
-        INonDet constant = new INonDet(id, precision, signed, min, max);
+        INonDet constant = new INonDet(id, type, signed, min, max);
         constants.add(constant);
         return constant;
     }

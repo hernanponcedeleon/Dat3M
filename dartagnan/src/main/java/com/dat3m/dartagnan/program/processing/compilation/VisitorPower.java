@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.COpBin;
@@ -14,6 +13,7 @@ import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.type.Type;
 
 import java.util.List;
 
@@ -67,7 +67,7 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		IValue zero = expressions.makeZero(resultRegister.getPrecision());
+		IValue zero = expressions.makeZero(resultRegister.getType());
 		Load load = newLoad(resultRegister, e.getAddress(), "");
         load.addFilters(C11.PTHREAD);
         Label label = newLabel("Jump_" + e.getGlobalId());
@@ -85,7 +85,7 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-		IValue one = expressions.makeOne(resultRegister.getPrecision());
+		IValue one = expressions.makeOne(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
 		load.addFilters(Tag.STARTLOAD);
 		Label label = newLabel("Jump_" + e.getGlobalId());
@@ -110,7 +110,7 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
+        Register dummy = e.getThread().newRegister(archType);
         Label label = newLabel("FakeDep");
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
         // use assumes. The fake control dependency + isync guarantee acquire semantics.
@@ -255,7 +255,7 @@ public class VisitorPower extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+		Register dummyReg = e.getThread().newRegister(resultRegister.getType());
 		Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOp(), (IExpr) e.getMemValue()));
 
 		// Power does not have mo tags, thus we use null
@@ -374,10 +374,10 @@ public class VisitorPower extends VisitorBase {
 		Expression value = e.getMemValue();
 		String mo = e.getMo();
 		IExpr expectedAddr = e.getExpectedAddr();
-		int precision = resultRegister.getPrecision();
+		Type type = resultRegister.getType();
 
-		Register regExpected = e.getThread().newRegister(precision);
-        Register regValue = e.getThread().newRegister(precision);
+		Register regExpected = e.getThread().newRegister(type);
+        Register regValue = e.getThread().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr, "");
         Store storeExpected = newStore(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
@@ -392,7 +392,7 @@ public class VisitorPower extends VisitorBase {
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
         if (e.isWeak()) {
-            Register statusReg = e.getThread().newRegister(precision);
+            Register statusReg = e.getThread().newRegister(type);
             optionalExecStatus = newExecutionStatus(statusReg, storeValue);
             optionalUpdateCasCmpResult = newLocal(resultRegister, expressions.makeUnary(BOpUn.NOT, statusReg));
         }
@@ -448,7 +448,7 @@ public class VisitorPower extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+		Register dummyReg = e.getThread().newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
 
         // Power does not have mo tags, thus we use the emptz string
@@ -739,7 +739,7 @@ public class VisitorPower extends VisitorBase {
 		Expression value = e.getMemValue();
 		String mo = e.getMo();
 
-		Register dummy = e.getThread().newRegister(e.getResultRegister().getPrecision());
+		Register dummy = e.getThread().newRegister(e.getResultRegister().getType());
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(dummy, NEQ, e.getCmp()), casEnd);
 
@@ -775,7 +775,7 @@ public class VisitorPower extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+		Register dummy = e.getThread().newRegister(resultRegister.getType());
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = Power.newRMWStoreConditional(address, value, "", true);
@@ -806,7 +806,7 @@ public class VisitorPower extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+		Register dummy = e.getThread().newRegister(resultRegister.getType());
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = Power.newRMWStoreConditional(address, expressions.makeBinary(dummy, op, value), "", true);
@@ -837,7 +837,7 @@ public class VisitorPower extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+		Register dummy = e.getThread().newRegister(resultRegister.getType());
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = Power.newRMWStoreConditional(address, dummy, "", true);
@@ -869,7 +869,7 @@ public class VisitorPower extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+		Register dummy = e.getThread().newRegister(resultRegister.getType());
 		Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = Power.newRMWStoreConditional(address, expressions.makeBinary(dummy, e.getOp(), value), "", true);
         Label label = newLabel("FakeDep");
@@ -902,16 +902,16 @@ public class VisitorPower extends VisitorBase {
 		IExpr address = e.getAddress();
 		Expression value = e.getMemValue();
 		String mo = e.getMo();
-		int precision = resultRegister.getPrecision();
+		Type type = resultRegister.getType();
 
-        Register regValue = e.getThread().newRegister(precision);
+        Register regValue = e.getThread().newRegister(type);
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(regValue, address, "");
         Store store = Power.newRMWStoreConditional(address, expressions.makeBinary(regValue, IOpBin.PLUS, (IExpr) value), "", true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+        Register dummy = e.getThread().newRegister(resultRegister.getType());
 		Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJump(expressions.makeBinary(dummy, EQ, IValue.ZERO), cauEnd);
@@ -948,8 +948,8 @@ public class VisitorPower extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        Register retReg = e.getThread().newRegister(resultRegister.getPrecision());
+		Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register retReg = e.getThread().newRegister(resultRegister.getType());
         Local localOp = newLocal(retReg, expressions.makeBinary(dummy, op, value));
         Local testOp = newLocal(resultRegister, expressions.makeBinary(retReg, EQ, IValue.ZERO));
 
@@ -979,7 +979,7 @@ public class VisitorPower extends VisitorBase {
 
 	@Override
 	public List<Event> visitLKMMLock(LKMMLock e) {
-		Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
+		Register dummy = e.getThread().newRegister(archType);
 		Label label = newLabel("FakeDep");
     // Spinlock events are guaranteed to succeed, i.e. we can use assumes
 		return eventSequence(

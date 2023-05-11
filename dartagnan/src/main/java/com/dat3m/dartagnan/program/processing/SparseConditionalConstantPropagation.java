@@ -229,7 +229,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
                 // We only have integral registers, so we need to implicitly convert booleans to
                 // integers.
                 BigInteger value = retVal.equals(BConst.TRUE) ? BigInteger.ONE : BigInteger.ZERO;
-                return factory.makeValue(value, reg.getPrecision());
+                return factory.makeValue(value, reg.getType());
             } else {
                 return retVal;
             }
@@ -241,13 +241,13 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             Expression rhs = atom.getRHS().visit(this);
             if (lhs instanceof BConst) {
                 lhs = factory.makeValue(
-                        ((BConst) lhs).isTrue() ? BigInteger.ONE : BigInteger.ZERO,
-                        rhs instanceof IExpr ? ((IExpr) rhs).getPrecision() : 1);
+                        lhs.isTrue() ? BigInteger.ONE : BigInteger.ZERO,
+                        rhs instanceof IExpr ? rhs.getType() : types.getIntegerType(1));
             }
             if (rhs instanceof BConst) {
                 rhs = factory.makeValue(
-                        ((BConst) rhs).isTrue() ? BigInteger.ONE : BigInteger.ZERO,
-                        lhs instanceof IExpr ? ((IExpr) lhs).getPrecision() : 1);
+                        rhs.isTrue() ? BigInteger.ONE : BigInteger.ZERO,
+                        lhs instanceof IExpr ? lhs.getType() : types.getIntegerType(1));
             }
             if (lhs instanceof IValue && rhs instanceof IValue) {
                 IValue left = (IValue) lhs;
@@ -288,7 +288,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             if (lhs instanceof IValue && rhs instanceof IValue) {
                 IValue left = (IValue) lhs;
                 IValue right = (IValue) rhs;
-                return factory.makeValue(iBin.getOp().combine(left.getValue(), right.getValue()), left.getPrecision());
+                return factory.makeValue(iBin.getOp().combine(left.getValue(), right.getValue()), left.getType());
             } else {
                 return factory.makeBinary(lhs, iBin.getOp(), rhs);
             }
@@ -298,7 +298,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         public IExpr visit(IExprUn iUn) {
             IExpr inner = (IExpr) iUn.getInner().visit(this);
             if (inner instanceof IValue && iUn.getOp() == IOpUn.MINUS) {
-                return factory.makeValue(((IValue) inner).getValue().negate(), inner.getPrecision());
+                return factory.makeValue(((IValue) inner).getValue().negate(), inner.getType());
             } else if (inner instanceof IValue && iUn.getOp() == IOpUn.CTLZ) {
                 return factory.makeUnary(iUn.getOp(), inner).reduce();
             } else {

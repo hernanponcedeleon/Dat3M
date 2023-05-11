@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.type.Type;
 
 import java.util.Collections;
 import java.util.List;
@@ -58,14 +59,14 @@ class VisitorIMM extends VisitorBase {
 	public List<Event> visitEnd(End e) {
 		//TODO boolean
         return eventSequence(
-				newStore(e.getAddress(), expressions.makeZero(getArchPrecision()), C11.MO_RELEASE)
+				newStore(e.getAddress(), expressions.makeZero(archType), C11.MO_RELEASE)
         );
 	}
 
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		IValue zero = expressions.makeZero(resultRegister.getPrecision());
+		IValue zero = expressions.makeZero(resultRegister.getType());
 		Load load = newLoad(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
         load.addFilters(C11.PTHREAD);
         
@@ -78,7 +79,7 @@ class VisitorIMM extends VisitorBase {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-		IValue one = expressions.makeOne(resultRegister.getPrecision());
+		IValue one = expressions.makeOne(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
         load.addFilters(Tag.STARTLOAD);
 
@@ -101,11 +102,11 @@ class VisitorIMM extends VisitorBase {
 		Fence optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		Fence optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		IExpr expectedAddr = e.getExpectedAddr();
-		int precision = resultRegister.getPrecision();
-		IValue one = expressions.makeOne(precision);
+		Type type = resultRegister.getType();
+		IValue one = expressions.makeOne(type);
 
-		Register regExpected = e.getThread().newRegister(precision);
-        Register regValue = e.getThread().newRegister(precision);
+		Register regExpected = e.getThread().newRegister(type);
+        Register regValue = e.getThread().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr, "");
         loadExpected.addFilters(Tag.IMM.CASDEPORIGIN);
         Store storeExpected = newStore(expectedAddr, regValue, "");
@@ -142,7 +143,7 @@ class VisitorIMM extends VisitorBase {
 		Fence optionalFenceBefore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		Fence optionalFenceAfter = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 
-		Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+		Register dummyReg = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoad(resultRegister, address, extractLoadMo(mo));
 
         return eventSequence(
@@ -239,7 +240,7 @@ class VisitorIMM extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+		Register dummyReg = e.getThread().newRegister(resultRegister.getType());
 		Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
 
 		Load load = newRMWLoadExclusive(resultRegister, address, IMM.extractLoadMo(mo));
@@ -259,7 +260,7 @@ class VisitorIMM extends VisitorBase {
 	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
 		Register oldValueRegister = e.getStructRegister(0);
 		Register resultRegister = e.getStructRegister(1);
-		IValue one = expressions.makeOne(resultRegister.getPrecision());
+		IValue one = expressions.makeOne(resultRegister.getType());
 
 		Expression value = e.getMemValue();
 		IExpr address = e.getAddress();

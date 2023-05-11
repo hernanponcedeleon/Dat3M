@@ -15,6 +15,8 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.Type;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import org.antlr.v4.runtime.misc.Interval;
@@ -22,13 +24,12 @@ import org.antlr.v4.runtime.misc.Interval;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
-
 public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     private final Program program = new Program(Program.SourceLanguage.LITMUS);
+    private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final int archPrecision = getArchPrecision();
+    private final Type type = types.getPointerType();
     private Thread[] threadList;
     private Thread thread;
     private final Map<String, Label> labelMap = new HashMap<>();
@@ -69,7 +70,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
         MemoryObject object = program.getMemory().getOrNewObject(ctx.location().getText());
-        IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
+        IValue value = expressions.parseValue(ctx.constant().getText(), type);
         object.setInitialValue(0, value);
         return null;
     }
@@ -77,8 +78,8 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
         Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
-        Register register = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
-        IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
+        Register register = thread.getOrNewRegister(ctx.register().getText(), type);
+        IValue value = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(register, value));
         return null;
     }
@@ -86,7 +87,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
         Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
-        Register register = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
+        Register register = thread.getOrNewRegister(ctx.register().getText(), type);
         MemoryObject value = program.getMemory().getObject(ctx.location().getText()).orElseThrow();
         thread.append(EventFactory.newLocal(register, value));
         return null;
@@ -128,15 +129,15 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitLi(LiContext ctx) {
-        Register register = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
-        IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
+        Register register = thread.getOrNewRegister(ctx.register().getText(), type);
+        IValue value = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(register, value));
         return null;
     }
 
     @Override
     public Object visitXor(XorContext ctx) {
-        Register result = thread.getOrNewRegister(ctx.register(0).getText(), archPrecision);
+        Register result = thread.getOrNewRegister(ctx.register(0).getText(), type);
         Register left = thread.getRegister(ctx.register(1).getText()).orElseThrow();
         Register right = thread.getRegister(ctx.register(2).getText()).orElseThrow();
         thread.append(EventFactory.newLocal(result, expressions.makeBinary(left, IOpBin.XOR, right)));
@@ -145,7 +146,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitAnd(AndContext ctx) {
-        Register result = thread.getOrNewRegister(ctx.register(0).getText(), archPrecision);
+        Register result = thread.getOrNewRegister(ctx.register(0).getText(), type);
         Register left = thread.getRegister(ctx.register(1).getText()).orElseThrow();
         Register right = thread.getRegister(ctx.register(2).getText()).orElseThrow();
         thread.append(EventFactory.newLocal(result, expressions.makeBinary(left, IOpBin.AND, right)));
@@ -154,7 +155,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitOr(OrContext ctx) {
-        Register result = thread.getOrNewRegister(ctx.register(0).getText(), archPrecision);
+        Register result = thread.getOrNewRegister(ctx.register(0).getText(), type);
         Register left = thread.getRegister(ctx.register(1).getText()).orElseThrow();
         Register right = thread.getRegister(ctx.register(2).getText()).orElseThrow();
         thread.append(EventFactory.newLocal(result, expressions.makeBinary(left, IOpBin.OR, right)));
@@ -163,7 +164,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitAdd(AddContext ctx) {
-        Register result = thread.getOrNewRegister(ctx.register(0).getText(), archPrecision);
+        Register result = thread.getOrNewRegister(ctx.register(0).getText(), type);
         Register left = thread.getRegister(ctx.register(1).getText()).orElseThrow();
         Register right = thread.getRegister(ctx.register(2).getText()).orElseThrow();
         thread.append(EventFactory.newLocal(result, expressions.makeBinary(left, IOpBin.PLUS, right)));
@@ -172,45 +173,45 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitXori(XoriContext ctx) {
-        Register result = thread.getOrNewRegister(ctx.register(0).getText(), archPrecision);
+        Register result = thread.getOrNewRegister(ctx.register(0).getText(), type);
         Register left = thread.getRegister(ctx.register(1).getText()).orElseThrow();
-        IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
+        IValue value = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(result, expressions.makeBinary(left, IOpBin.XOR, value)));
         return null;
     }
 
     @Override
     public Object visitAndi(AndiContext ctx) {
-        Register result = thread.getOrNewRegister(ctx.register(0).getText(), archPrecision);
+        Register result = thread.getOrNewRegister(ctx.register(0).getText(), type);
         Register left = thread.getRegister(ctx.register(1).getText()).orElseThrow();
-        IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
+        IValue value = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(result, expressions.makeBinary(left, IOpBin.AND, value)));
         return null;
     }
 
     @Override
     public Object visitOri(OriContext ctx) {
-        Register result = thread.getOrNewRegister(ctx.register(0).getText(), archPrecision);
+        Register result = thread.getOrNewRegister(ctx.register(0).getText(), type);
         // Why not require that this register is already defined?
-        Register left = thread.getOrNewRegister(ctx.register(1).getText(), archPrecision);
-        IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
+        Register left = thread.getOrNewRegister(ctx.register(1).getText(), type);
+        IValue value = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(result, expressions.makeBinary(left, IOpBin.OR, value)));
         return null;
     }
 
     @Override
     public Object visitAddi(AddiContext ctx) {
-        Register result = thread.getOrNewRegister(ctx.register(0).getText(), archPrecision);
+        Register result = thread.getOrNewRegister(ctx.register(0).getText(), type);
         // Why not require that this register is already defined?
-        Register left = thread.getOrNewRegister(ctx.register(1).getText(), archPrecision);
-        IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
+        Register left = thread.getOrNewRegister(ctx.register(1).getText(), type);
+        IValue value = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(result, expressions.makeBinary(left, IOpBin.PLUS, value)));
         return null;
     }
 
     @Override
     public Object visitLw(LwContext ctx) {
-        Register result = thread.getOrNewRegister(ctx.register(0).getText(), archPrecision);
+        Register result = thread.getOrNewRegister(ctx.register(0).getText(), type);
         Register address = thread.getRegister(ctx.register(1).getText()).orElseThrow();
         thread.append(EventFactory.newLoad(result, address, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
         return null;
@@ -226,7 +227,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitLr(LrContext ctx) {
-        Register result = thread.getOrNewRegister(ctx.register(0).getText(), archPrecision);
+        Register result = thread.getOrNewRegister(ctx.register(0).getText(), type);
         Register address = thread.getRegister(ctx.register(1).getText()).orElseThrow();
         thread.append(EventFactory.newRMWLoadExclusive(result, address, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
         return null;
@@ -234,8 +235,8 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitSc(ScContext ctx) {
-        Register result = thread.getOrNewRegister(ctx.register(0).getText(), archPrecision);
-        Register value = thread.getOrNewRegister(ctx.register(1).getText(), archPrecision);
+        Register result = thread.getOrNewRegister(ctx.register(0).getText(), type);
+        Register value = thread.getOrNewRegister(ctx.register(1).getText(), type);
         Register address = thread.getRegister(ctx.register(2).getText()).orElseThrow();
         thread.append(EventFactory.Common.newExclusiveStore(result, address, value, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
         return null;
@@ -251,8 +252,8 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     @Override
     public Object visitBranchCond(BranchCondContext ctx) {
         Label label = labelMap.computeIfAbsent(ctx.Label().getText(), EventFactory::newLabel);
-        Register left = thread.getOrNewRegister(ctx.register(0).getText(), archPrecision);
-        Register right = thread.getOrNewRegister(ctx.register(1).getText(), archPrecision);
+        Register left = thread.getOrNewRegister(ctx.register(0).getText(), type);
+        Register right = thread.getOrNewRegister(ctx.register(1).getText(), type);
         Expression expr = expressions.makeBinary(left, ctx.cond().op, right);
         thread.append(EventFactory.newJump(expr, label));
         return null;

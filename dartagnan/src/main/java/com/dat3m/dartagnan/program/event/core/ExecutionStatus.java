@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.expression.type.IntegerType;
 import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -53,12 +54,13 @@ public class ExecutionStatus extends Event implements RegWriter {
         FormulaManager fmgr = context.getFormulaManager();
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
-        int precision = register.getPrecision();
+        int bitWidth = register.getType() instanceof IntegerType ? ((IntegerType) register.getType()).getBitWidth() : -1;
+
         return bmgr.and(super.encodeExec(context),
                 bmgr.implication(context.execution(event),
                         context.equalZero(context.result(this))),
                 bmgr.or(context.execution(event),
-                        context.equal(context.result(this), bvmgr.makeBitvector(1, precision))));
+                        context.equal(context.result(this), bvmgr.makeBitvector(1, bitWidth))));
     }
 
     // Unrolling

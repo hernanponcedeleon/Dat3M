@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.expression;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.*;
+import com.dat3m.dartagnan.program.expression.type.Type;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,20 +31,20 @@ public final class ExpressionFactory {
         return value ? BConst.TRUE : BConst.FALSE;
     }
 
-    public IValue makeZero(int bitWidth) {
-        return makeValue(BigInteger.ZERO, bitWidth);
+    public IValue makeZero(Type type) {
+        return makeValue(BigInteger.ZERO, type);
     }
 
-    public IValue makeOne(int bitWidth) {
-        return makeValue(BigInteger.ONE, bitWidth);
+    public IValue makeOne(Type type) {
+        return makeValue(BigInteger.ONE, type);
     }
 
-    public IValue parseValue(String text, int bitWidth) {
-        return makeValue(new BigInteger(text), bitWidth);
+    public IValue parseValue(String text, Type type) {
+        return makeValue(new BigInteger(text), type);
     }
 
-    public IValue makeValue(BigInteger value, int bitWidth) {
-        return new IValue(value, bitWidth);
+    public IValue makeValue(BigInteger value, Type type) {
+        return new IValue(value, type);
     }
 
     public Expression makeUnary(BOpUn operator, Expression inner) {

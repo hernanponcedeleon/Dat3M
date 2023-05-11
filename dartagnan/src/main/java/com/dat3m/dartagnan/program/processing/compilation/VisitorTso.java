@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
@@ -12,6 +11,7 @@ import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.type.Type;
 
 import java.util.List;
 
@@ -30,7 +30,7 @@ class VisitorTso extends VisitorBase {
                 Register resultRegister = e.getResultRegister();
                 IExpr address = e.getAddress();
 
-                Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+                Register dummyReg = e.getThread().newRegister(resultRegister.getType());
                 Load load = newRMWLoad(dummyReg, address, "");
 
                 return tagList(eventSequence(
@@ -63,7 +63,7 @@ class VisitorTso extends VisitorBase {
         @Override
         public List<Event> visitJoin(Join e) {
                 Register resultRegister = e.getResultRegister();
-                IValue zero = expressions.makeZero(resultRegister.getPrecision());
+                IValue zero = expressions.makeZero(resultRegister.getType());
                 Load load = newLoad(resultRegister, e.getAddress(), "");
                 load.addFilters(C11.PTHREAD);
 
@@ -76,7 +76,7 @@ class VisitorTso extends VisitorBase {
         @Override
         public List<Event> visitStart(Start e) {
                 Register resultRegister = e.getResultRegister();
-                IValue one = expressions.makeOne(resultRegister.getPrecision());
+                IValue one = expressions.makeOne(resultRegister.getType());
                 Load load = newLoad(resultRegister, e.getAddress(), "");
                 load.addFilters(Tag.STARTLOAD);
 
@@ -95,7 +95,7 @@ class VisitorTso extends VisitorBase {
 
         @Override
         public List<Event> visitLock(Lock e) {
-            Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
+            Register dummy = e.getThread().newRegister(archType);
             // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
             // use assumes. Nothing else is needed to guarantee acquire semantics in TSO.
             Load load = newRMWLoad(dummy, e.getAddress(), "");
@@ -144,7 +144,7 @@ class VisitorTso extends VisitorBase {
         @Override
         public List<Event> visitLlvmRMW(LlvmRMW e) {
                 Register resultRegister = e.getResultRegister();
-                Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+                Register dummyReg = e.getThread().newRegister(resultRegister.getType());
 
                 IExpr address = e.getAddress();
                 Load load = newRMWLoad(resultRegister, address, "");
@@ -199,11 +199,11 @@ class VisitorTso extends VisitorBase {
                 Expression value = e.getMemValue();
                 String mo = e.getMo();
                 IExpr expectedAddr = e.getExpectedAddr();
-                int precision = resultRegister.getPrecision();
+                Type type = resultRegister.getType();
 
-                Register regExpected = e.getThread().newRegister(precision);
+                Register regExpected = e.getThread().newRegister(type);
                 Load loadExpected = newLoad(regExpected, expectedAddr, "");
-                Register regValue = e.getThread().newRegister(precision);
+                Register regValue = e.getThread().newRegister(type);
                 Load loadValue = newRMWLoad(regValue, address, mo);
                 Local casCmpResult = newLocal(resultRegister, expressions.makeBinary(regValue, EQ, regExpected));
                 Label casFail = newLabel("CAS_fail");
@@ -229,7 +229,7 @@ class VisitorTso extends VisitorBase {
         @Override
         public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
                 Register resultRegister = e.getResultRegister();
-                Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+                Register dummyReg = e.getThread().newRegister(resultRegister.getType());
 
                 IExpr address = e.getAddress();
                 String mo = e.getMo();

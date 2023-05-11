@@ -92,7 +92,7 @@ public class MemoryAllocation implements ProgramProcessor {
                     memObj.getStaticallyInitializedFields() : IntStream.range(0, memObj.size()).boxed()::iterator;
 
             for(int i : fieldsToInit) {
-                IValue offset = expressionFactory.makeValue(BigInteger.valueOf(i), memObj.getPrecision());
+                IValue offset = expressionFactory.makeValue(BigInteger.valueOf(i), memObj.getType());
                 Event init = new Init(memObj, i, expressionFactory.makeBinary(memObj, IOpBin.PLUS, offset));
                 final Thread thread = program.newThread(".INIT." + memObj + "." + i, init);
                 thread.append(EventFactory.newLabel(thread.getEndLabelName()));

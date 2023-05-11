@@ -109,10 +109,10 @@ public class SmackPredicates {
 				throw new ParsingException("Function " + name + " has no implementation");
 			}
 		}
-		IValue maxValue = factory.parseValue(max, var.getPrecision());
+		IValue maxValue = factory.parseValue(max, var.getType());
 		return factory.makeConditional(
 				factory.makeBinary(
-						factory.makeBinary(var, GTE, factory.parseValue(min, var.getPrecision())),
+						factory.makeBinary(var, GTE, factory.parseValue(min, var.getType())),
 						AND,
 						factory.makeBinary(var, LTE, maxValue)),
 				var,

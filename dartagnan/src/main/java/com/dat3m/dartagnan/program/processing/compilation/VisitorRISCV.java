@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.COpBin;
@@ -16,6 +15,7 @@ import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.type.Type;
 
 import java.util.List;
 
@@ -71,7 +71,7 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		IValue zero = expressions.makeZero(resultRegister.getPrecision());
+		IValue zero = expressions.makeZero(resultRegister.getType());
 		Load load = newLoad(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
         load.addFilters(C11.PTHREAD);
 
@@ -84,7 +84,7 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-		IValue one = expressions.makeOne(resultRegister.getPrecision());
+		IValue one = expressions.makeOne(resultRegister.getType());
 		Load load = newLoad(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
         load.addFilters(Tag.STARTLOAD);
 
@@ -104,7 +104,7 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
+        Register dummy = e.getThread().newRegister(archType);
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can use
         // assumes. With this we miss a ctrl dependency, but this does not matter
         // because of the fence.
@@ -160,7 +160,7 @@ class VisitorRISCV extends VisitorBase {
 
 		Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
 		Store store = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
-		Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
+		Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getType());
 		// We normally make the following optional.
 		// Here we make it mandatory to guarantee correct dependencies.
 		ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
@@ -183,12 +183,12 @@ class VisitorRISCV extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+		Register dummyReg = e.getThread().newRegister(resultRegister.getType());
 		Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
 
 		Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
 		Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
-		Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
+		Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getType());
 		// We normally make the following optional.
 		// Here we make it mandatory to guarantee correct dependencies.
 		ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
@@ -264,10 +264,10 @@ class VisitorRISCV extends VisitorBase {
 		Expression value = e.getMemValue();
 		String mo = e.getMo();
 		IExpr expectedAddr = e.getExpectedAddr();
-		int precision = resultRegister.getPrecision();
+		Type type = resultRegister.getType();
 
-		Register regExpected = e.getThread().newRegister(precision);
-        Register regValue = e.getThread().newRegister(precision);
+		Register regExpected = e.getThread().newRegister(type);
+        Register regValue = e.getThread().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr, "");
         Store storeExpected = newStore(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
@@ -278,7 +278,7 @@ class VisitorRISCV extends VisitorBase {
 
         Load loadValue = newRMWLoadExclusive(regValue, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store storeValue = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), e.isStrong());
-        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", precision);
+        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", type);
         // We normally make the following two events optional.
         // Here we make them mandatory to guarantee correct dependencies.
         ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, storeValue);
@@ -308,12 +308,12 @@ class VisitorRISCV extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+		Register dummyReg = e.getThread().newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
 
         Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
-        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
+        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getType());
         // We normally make the following optional.
         // Here we make it mandatory to guarantee correct dependencies.
         ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
@@ -387,7 +387,7 @@ class VisitorRISCV extends VisitorBase {
 
         Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store store = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
-        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
+        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getType());
         // We normally make the following optional.
         // Here we make it mandatory to guarantee correct dependencies.
         ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
@@ -482,8 +482,8 @@ class VisitorRISCV extends VisitorBase {
 		Expression value = e.getMemValue();
 		String mo = e.getMo();
 
-		Register dummy = e.getThread().newRegister(e.getResultRegister().getPrecision());
-		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
+		Register dummy = e.getThread().newRegister(e.getResultRegister().getType());
+		Register statusReg = e.getThread().newRegister(e.getResultRegister().getType());
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(dummy, NEQ, e.getCmp()), casEnd);
         
@@ -520,8 +520,8 @@ class VisitorRISCV extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
+		Register dummy = e.getThread().newRegister(resultRegister.getType());
+		Register statusReg = e.getThread().newRegister(e.getResultRegister().getType());
 		String moLoad = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.RISCV.MO_ACQ : "";
         Load load = newRMWLoadExclusive(dummy, address, moLoad);
         String moStore = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_RELEASE) ? Tag.RISCV.MO_ACQ_REL : "";
@@ -553,8 +553,8 @@ class VisitorRISCV extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
+        Register dummy = e.getThread().newRegister(resultRegister.getType());
+		Register statusReg = e.getThread().newRegister(e.getResultRegister().getType());
 		String moLoad = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.RISCV.MO_ACQ : "";
         Load load = newRMWLoadExclusive(dummy, address, moLoad);
         String moStore = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_RELEASE) ? Tag.RISCV.MO_ACQ_REL : "";
@@ -584,8 +584,8 @@ class VisitorRISCV extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
+		Register dummy = e.getThread().newRegister(resultRegister.getType());
+		Register statusReg = e.getThread().newRegister(e.getResultRegister().getType());
 
 		Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = RISCV.newRMWStoreConditional(address, expressions.makeBinary(dummy, e.getOp(), value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
@@ -620,8 +620,8 @@ class VisitorRISCV extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
+		Register dummy = e.getThread().newRegister(resultRegister.getType());
+		Register statusReg = e.getThread().newRegister(e.getResultRegister().getType());
 
         Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = RISCV.newRMWStoreConditional(address, dummy, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
@@ -655,10 +655,10 @@ class VisitorRISCV extends VisitorBase {
 		IExpr address = e.getAddress();
 		Expression value = e.getMemValue();
 		String mo = e.getMo();
-		int precision = resultRegister.getPrecision();
+		Type type = resultRegister.getType();
 
-        Register regValue = e.getThread().newRegister(precision);
-		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
+        Register regValue = e.getThread().newRegister(type);
+		Register statusReg = e.getThread().newRegister(e.getResultRegister().getType());
 
 		Load load = newRMWLoadExclusive(regValue, address, "");
         Store store = RISCV.newRMWStoreConditional(address, expressions.makeBinary(regValue, IOpBin.PLUS, (IExpr) value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
@@ -667,7 +667,7 @@ class VisitorRISCV extends VisitorBase {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+        Register dummy = e.getThread().newRegister(resultRegister.getType());
 		Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJump(expressions.makeBinary(dummy, EQ, IValue.ZERO), cauEnd);
@@ -700,9 +700,9 @@ class VisitorRISCV extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
-        Register retReg = e.getThread().newRegister(resultRegister.getPrecision());
+		Register dummy = e.getThread().newRegister(resultRegister.getType());
+		Register statusReg = e.getThread().newRegister(e.getResultRegister().getType());
+        Register retReg = e.getThread().newRegister(resultRegister.getType());
         Local localOp = newLocal(retReg, expressions.makeBinary(dummy, op, value));
         Local testOp = newLocal(resultRegister, expressions.makeBinary(retReg, EQ, IValue.ZERO));
 
@@ -727,7 +727,7 @@ class VisitorRISCV extends VisitorBase {
 
 	@Override
 	public List<Event> visitLKMMLock(LKMMLock e) {
-		Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
+		Register dummy = e.getThread().newRegister(archType);
     // From this "unofficial" source (there is no RISCV specific implementation in the kernel)
 		// 		https://github.com/westerndigitalcorporation/RISC-V-Linux/blob/master/linux/arch/riscv/include/asm/spinlock.h
 		// We replace AMO instructions with LL/SC

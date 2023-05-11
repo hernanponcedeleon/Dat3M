@@ -6,6 +6,9 @@ import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.type.IntegerType;
+import com.dat3m.dartagnan.program.expression.type.NumberType;
+import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.sosy_lab.java_smt.api.*;
@@ -184,9 +187,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(IValue iValue) {
-        return iValue.getPrecision() > 0
-                ? bitvectorFormulaManager().makeBitvector(iValue.getPrecision(), iValue.getValue())
-                : integerFormulaManager().makeNumber(iValue.getValue());
+        Type type = iValue.getType();
+        if (type instanceof NumberType) {
+            return integerFormulaManager().makeNumber(iValue.getValue());
+        }
+        return bitvectorFormulaManager().makeBitvector(((IntegerType) type).getBitWidth(), iValue.getValue());
     }
 
     @Override
@@ -478,10 +483,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     @Override
     public Formula visit(INonDet iNonDet) {
         String name = iNonDet.getName();
-        if (iNonDet.getPrecision() < 0) {
+        Type type = iNonDet.getType();
+        if (type instanceof NumberType) {
             return integerFormulaManager().makeVariable(name);
         }
-        return bitvectorFormulaManager().makeVariable(iNonDet.getPrecision(), name);
+        return bitvectorFormulaManager().makeVariable(((IntegerType) type).getBitWidth(), name);
     }
 
     @Override
@@ -489,17 +495,20 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         String name = event == null ?
                 reg.getName() + "_" + reg.getThreadId() + "_final" :
                 reg.getName() + "(" + event.getGlobalId() + ")";
-        if (reg.getPrecision() < 0) {
+        Type type = reg.getType();
+        if (type instanceof NumberType) {
             return integerFormulaManager().makeVariable(name);
         }
-        return bitvectorFormulaManager().makeVariable(reg.getPrecision(), name);
+        return bitvectorFormulaManager().makeVariable(((IntegerType) type).getBitWidth(), name);
     }
 
     @Override
     public Formula visit(MemoryObject address) {
-        return address.getPrecision() > 0
-                ? bitvectorFormulaManager().makeBitvector(address.getPrecision(), address.getValue())
-                : integerFormulaManager().makeNumber(address.getValue());
+        Type type = address.getType();
+        if (type instanceof NumberType) {
+            return integerFormulaManager().makeNumber(address.getValue());
+        }
+        return bitvectorFormulaManager().makeBitvector(((IntegerType) type).getBitWidth(), address.getValue());
     }
 
     @Override

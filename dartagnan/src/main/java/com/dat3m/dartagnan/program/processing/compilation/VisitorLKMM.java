@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
@@ -13,6 +12,7 @@ import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.type.Type;
 
 import java.util.List;
 
@@ -41,14 +41,14 @@ public class VisitorLKMM extends VisitorBase {
         public List<Event> visitEnd(End e) {
             //TODO boolean
             return eventSequence(
-                    newStore(e.getAddress(), expressions.makeZero(GlobalSettings.getArchPrecision()), Tag.Linux.MO_RELEASE)
+                    newStore(e.getAddress(), expressions.makeZero(archType), Tag.Linux.MO_RELEASE)
             );
         }
 
     @Override
     public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-        IValue zero = expressions.makeZero(resultRegister.getPrecision());
+        IValue zero = expressions.makeZero(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
         load.addFilters(C11.PTHREAD);
         
@@ -61,7 +61,7 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-        IValue one = expressions.makeOne(resultRegister.getPrecision());
+        IValue one = expressions.makeOne(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
         load.addFilters(Tag.STARTLOAD);
 
@@ -75,7 +75,7 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitRMWAddUnless(RMWAddUnless e) {
         Register resultRegister = e.getResultRegister();
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+        Register dummy = e.getThread().newRegister(resultRegister.getType());
         Expression cmp = e.getCmp();
         Expression value = e.getMemValue();
         IExpr address = e.getAddress();
@@ -109,7 +109,7 @@ public class VisitorLKMM extends VisitorBase {
 
         Label success = newLabel("CAS_success");
         Label end = newLabel("CAS_end");
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+        Register dummy = e.getThread().newRegister(resultRegister.getType());
         Load casLoad;
         return eventSequence(
                 newJump(new BNonDet(), success),
@@ -134,7 +134,7 @@ public class VisitorLKMM extends VisitorBase {
         IExpr address = e.getAddress();
         Expression value = e.getMemValue();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+        Register dummy = e.getThread().newRegister(resultRegister.getType());
         Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
         Load load = newRMWLoad(dummy, address, Tag.Linux.loadMO(mo));
         Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
@@ -153,7 +153,7 @@ public class VisitorLKMM extends VisitorBase {
         IExpr address = e.getAddress();
         Register resultRegister = e.getResultRegister();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+        Register dummy = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoad(dummy, address, Tag.Linux.MO_ONCE);
         load.addFilters(Tag.Linux.NORETURN);
         
@@ -167,9 +167,9 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
         Register resultRegister = e.getResultRegister();
         IExpr address = e.getAddress();
-        int precision = resultRegister.getPrecision();
+        Type type = resultRegister.getType();
 
-        Register dummy = e.getThread().newRegister(precision);
+        Register dummy = e.getThread().newRegister(type);
         Load load = newRMWLoad(dummy, address, Tag.Linux.MO_ONCE);
 
         return eventSequence(
@@ -177,7 +177,7 @@ public class VisitorLKMM extends VisitorBase {
                 load,
                 newLocal(dummy, expressions.makeBinary(dummy, e.getOp(), (IExpr) e.getMemValue())),
                 newRMWStore(load, address, dummy, Tag.Linux.MO_ONCE),
-                newLocal(resultRegister, expressions.makeBinary(dummy, EQ, expressions.makeZero(precision))),
+                newLocal(resultRegister, expressions.makeBinary(dummy, EQ, expressions.makeZero(type))),
                 Linux.newMemoryBarrier()
         );
     }
@@ -188,7 +188,7 @@ public class VisitorLKMM extends VisitorBase {
         IExpr address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+        Register dummy = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoad(dummy, address, Tag.Linux.loadMO(mo));
         Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
         Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
@@ -209,7 +209,7 @@ public class VisitorLKMM extends VisitorBase {
         String mo = e.getMo();
         IExpr address = e.getAddress();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
+        Register dummy = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoad(dummy, address, Tag.Linux.loadMO(mo));
         Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
         Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
@@ -225,8 +225,8 @@ public class VisitorLKMM extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
-        Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
-        IExpr zero = expressions.makeZero(dummy.getPrecision());
+        Register dummy = e.getThread().newRegister(archType);
+        IExpr zero = expressions.makeZero(dummy.getType());
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
         Load lockRead = Linux.newLockRead(dummy, e.getLock());
 		Event middle = e.getThread().getProgram().getFormat().equals(LITMUS) ?

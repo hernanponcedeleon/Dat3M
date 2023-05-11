@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.type.Type;
 
 import java.util.List;
 
@@ -38,13 +39,13 @@ public class VisitorC11 extends VisitorBase {
     public List<Event> visitEnd(End e) {
         //TODO boolean
         return tagList(eventSequence(
-                newStore(e.getAddress(), expressions.makeZero(getArchPrecision()), Tag.C11.MO_RELEASE)));
+                newStore(e.getAddress(), expressions.makeZero(archType), Tag.C11.MO_RELEASE)));
     }
 
     @Override
     public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-        IExpr zero = expressions.makeZero(resultRegister.getPrecision());
+        IExpr zero = expressions.makeZero(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
         load.addFilters(C11.PTHREAD);
 
@@ -56,7 +57,7 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-        IExpr one = expressions.makeOne(resultRegister.getPrecision());
+        IExpr one = expressions.makeOne(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
         load.addFilters(Tag.STARTLOAD);
 
@@ -88,16 +89,16 @@ public class VisitorC11 extends VisitorBase {
         IExpr address = e.getAddress();
         String mo = e.getMo();
         IExpr expectedAddr = e.getExpectedAddr();
-        int precision = resultRegister.getPrecision();
+        Type type = resultRegister.getType();
 
-        Register regExpected = e.getThread().newRegister(precision);
-        Register regValue = e.getThread().newRegister(precision);
+        Register regExpected = e.getThread().newRegister(type);
+        Register regValue = e.getThread().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr, "");
         Store storeExpected = newStore(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, expressions.makeBinary(regValue, EQ, regExpected));
-        CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, expressions.makeOne(precision)), casFail);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, expressions.makeOne(type)), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
         Load loadValue = newRMWLoad(regValue, address, mo);
         Store storeValue = newRMWStore(loadValue, address, e.getMemValue(), mo);
@@ -122,7 +123,7 @@ public class VisitorC11 extends VisitorBase {
         IOpBin op = e.getOp();
         IExpr address = e.getAddress();
         String mo = e.getMo();
-        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoad(resultRegister, address, mo);
         RMWStore store = newRMWStore(load, address, dummyReg, mo);
 
@@ -206,7 +207,7 @@ public class VisitorC11 extends VisitorBase {
         IExpr address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
 
         Load load = newRMWLoadExclusive(resultRegister, address, mo);

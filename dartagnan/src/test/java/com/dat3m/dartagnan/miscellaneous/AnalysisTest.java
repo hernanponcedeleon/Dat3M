@@ -14,6 +14,8 @@ import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.Type;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
@@ -48,15 +50,17 @@ public class AnalysisTest {
     private static final Result MAY = Result.MAY;
     private static final Result MUST = Result.MUST;
 
-    private final ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
+    private static final TypeFactory typeFactory = TypeFactory.getInstance();
+    private static final ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
+    private static final Type type = typeFactory.getPointerType();
 
     @Test
     public void dependencyMustOverride() throws InvalidConfigurationException {
         Program program = new Program(SourceLanguage.LITMUS);
         Thread thread = program.newThread("test");
-        Register r0 = thread.newRegister("r0", getArchPrecision());
-        Register r1 = thread.newRegister("r1", getArchPrecision());
-        Register r2 = thread.newRegister("r2", getArchPrecision());
+        Register r0 = thread.newRegister("r0", type);
+        Register r1 = thread.newRegister("r1", type);
+        Register r2 = thread.newRegister("r2", type);
         Label alt = EventFactory.newLabel("alt");
         thread.append(newJump(new BNonDet(), alt));
         Local e0 = newLocal(r0, value(1));
@@ -123,7 +127,7 @@ public class AnalysisTest {
         MemoryObject y = program.getMemory().getOrNewObject("y");
 
         Thread thread = program.newThread("program0");
-        Register r0 = thread.newRegister("r0", getArchPrecision());
+        Register r0 = thread.newRegister("r0", type);
         //this is undefined behavior in C11
         //the expression does not match a sum, but x occurs in it
         thread.append(newLocal(r0, mult(x, 1)));
@@ -173,7 +177,7 @@ public class AnalysisTest {
         Thread thread = program.newThread("program1");
         Store e0 = newStore(plus(x, 1));
         thread.append(e0);
-        Register r0 = thread.newRegister("r0", getArchPrecision());
+        Register r0 = thread.newRegister("r0", type);
         Load e1 = newLoad(r0, x);
         thread.append(e1);
         Store e2 = newStore(r0);
@@ -215,8 +219,8 @@ public class AnalysisTest {
         MemoryObject x = program.getMemory().getOrNewObject("x", 3);
 
         Thread thread = program.newThread("program2");
-        Register r0 = thread.newRegister("r0", getArchPrecision());
-        thread.append(newLocal(r0, program.newConstant(getArchPrecision(), true, null, null)));
+        Register r0 = thread.newRegister("r0", type);
+        thread.append(newLocal(r0, program.newConstant(type, true, null, null)));
         Label l0 = EventFactory.newLabel("l0");
         thread.append(newJump(expressionFactory.makeBinary(
                 expressionFactory.makeBinary(r0, GT, ONE),
@@ -228,7 +232,7 @@ public class AnalysisTest {
         thread.append(e1);
         Store e2 = newStore(plus(x, 2));
         thread.append(e2);
-        Register r1 = thread.newRegister("r1", getArchPrecision());
+        Register r1 = thread.newRegister("r1", type);
         thread.append(newLocal(r1, ZERO));
         Store e3 = newStore(expressionFactory.makeBinary(
                 expressionFactory.makeBinary(x, PLUS, mult(r0, 2)),
@@ -272,7 +276,7 @@ public class AnalysisTest {
         x.setInitialValue(0, x);
 
         Thread thread = program.newThread("program3");
-        Register r0 = thread.newRegister("r0", getArchPrecision());
+        Register r0 = thread.newRegister("r0", type);
         Load e0 = newLoad(r0, x);
         thread.append(e0);
         Store e1 = newStore(x, plus(r0, 1));
@@ -318,7 +322,7 @@ public class AnalysisTest {
         MemoryObject z = program.getMemory().getOrNewObject("z");
 
         Thread thread = program.newThread("program4");
-        Register r0 = thread.newRegister("r0", getArchPrecision());
+        Register r0 = thread.newRegister("r0", type);
         thread.append(newLocal(r0, mult(x, 0)));
         thread.append(newLocal(r0, y));
         Store e0 = newStore(r0);
@@ -363,7 +367,7 @@ public class AnalysisTest {
         MemoryObject z = program.getMemory().getOrNewObject("z");
 
         Thread thread = program.newThread("program5");
-        Register r0 = thread.newRegister("r0", getArchPrecision());
+        Register r0 = thread.newRegister("r0", type);
         thread.append(newLocal(r0, y));
         Store e0 = newStore(r0);
         thread.append(e0);
@@ -404,7 +408,7 @@ public class AnalysisTest {
     }
 
     private IValue value(long v) {
-        return expressionFactory.makeValue(BigInteger.valueOf(v), getArchPrecision());
+        return expressionFactory.makeValue(BigInteger.valueOf(v), type);
     }
 
     private IExpr plus(IExpr lhs, long rhs) {

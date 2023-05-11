@@ -6,16 +6,16 @@ import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.specification.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.Location;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
-
 public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<AbstractAssert> {
 
     private final Program program;
+    private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     public VisitorLitmusAssertions(Program program) {
@@ -71,7 +71,7 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
 
     private Expression acceptAssertionValue(LitmusAssertionsParser.AssertionValueContext ctx, boolean right) {
         if(ctx.constant() != null) {
-            return expressions.parseValue(ctx.constant().getText(), getArchPrecision());
+            return expressions.parseValue(ctx.constant().getText(), types.getPointerType());
         }
         String name = ctx.varName().getText();
         if(ctx.threadId() != null) {

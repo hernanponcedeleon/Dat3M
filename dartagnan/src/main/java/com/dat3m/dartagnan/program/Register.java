@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.program.expression.type.Type;
 import com.google.common.collect.ImmutableSet;
 
 public class Register extends IExpr {
@@ -12,12 +13,12 @@ public class Register extends IExpr {
 	private String cVar;
     private final int threadId;
 
-    private final int precision;
+    private final Type type;
 
-	public Register(String name, int threadId, int precision) {
+	public Register(String name, int threadId, Type type) {
 		this.name = name;
 		this.threadId = threadId;
-		this.precision = precision;
+		this.type = type;
 	}
 	
 	public String getName() {
@@ -63,13 +64,13 @@ public class Register extends IExpr {
 		return ImmutableSet.of(this);
 	}
 
+    @Override
+    public Type getType() {
+        return type;
+    }
+
 	@Override
 	public <T> T visit(ExpressionVisitor<T> visitor) {
 		return visitor.visit(this);
 	}
-
-	@Override
-	public int getPrecision() {
-    	return precision;
-    }
 }

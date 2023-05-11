@@ -15,8 +15,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
-
 public class PthreadsProcedures {
 
     public static List<String> PTHREADPROCEDURES = Arrays.asList(
@@ -85,7 +83,8 @@ public class PthreadsProcedures {
 
         visitor.allocations.add(pointer);
         visitor.append(EventFactory.Pthread.newCreate(pointer, threadName));
-        Register reg = visitor.thread.getOrNewRegister(visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), getArchPrecision());
+        String registerName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
+        Register reg = visitor.thread.getOrNewRegister(registerName, visitor.types.getPointerType());
         visitor.thread.append(EventFactory.newLocal(reg, IValue.ZERO));
     }
 
@@ -100,7 +99,7 @@ public class PthreadsProcedures {
 
     private static void mutexLock(VisitorBoogie visitor, Call_cmdContext ctx) {
         ExprsContext lock = ctx.call_params().exprs();
-        Register register = visitor.thread.newRegister(getArchPrecision());
+        Register register = visitor.thread.newRegister(visitor.types.getPointerType());
         IExpr lockAddress = (IExpr) lock.accept(visitor);
         if (lockAddress != null) {
             visitor.append(EventFactory.Pthread.newLock(lock.getText(), lockAddress, register));
@@ -109,7 +108,7 @@ public class PthreadsProcedures {
 
     private static void mutexUnlock(VisitorBoogie visitor, Call_cmdContext ctx) {
         ExprsContext lock = ctx.call_params().exprs();
-        Register register = visitor.thread.newRegister(getArchPrecision());
+        Register register = visitor.thread.newRegister(visitor.types.getPointerType());
         IExpr lockAddress = (IExpr) lock.accept(visitor);
         if (lockAddress != null) {
             visitor.append(EventFactory.Pthread.newUnlock(lock.getText(), lockAddress, register));

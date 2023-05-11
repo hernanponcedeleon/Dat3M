@@ -160,7 +160,7 @@ public class SvcompProcedures {
         }
         visitor.append(EventFactory.newLocal(register.get(),
                         visitor.program.newConstant(
-                                register.get().getPrecision(),
+                                register.get().getType(),
                                 signed,
                                 BigInteger.valueOf(min),
                                 BigInteger.valueOf(max))));

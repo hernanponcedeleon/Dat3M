@@ -3,12 +3,13 @@ package com.dat3m.dartagnan.program.memory;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.program.expression.type.Type;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -114,8 +115,13 @@ public class MemoryObject extends IConst {
     }
 
     @Override
-    public int getPrecision() {
-        return getArchPrecision();
+    public Type getType() {
+        return TypeFactory.getInstance().getPointerType();
+    }
+
+    @Override
+    public <T> T visit(ExpressionVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     @Override
@@ -124,7 +130,9 @@ public class MemoryObject extends IConst {
     }
 
     @Override
-    public int hashCode() { return index; }
+    public int hashCode() {
+        return index;
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -133,12 +141,6 @@ public class MemoryObject extends IConst {
         } else if (obj == null || getClass() != obj.getClass()) {
             return false;
         }
-
         return index == ((MemoryObject) obj).index;
-    }
-
-    @Override
-    public <T> T visit(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
     }
 }

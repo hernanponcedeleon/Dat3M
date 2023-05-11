@@ -13,6 +13,8 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.Type;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import org.antlr.v4.runtime.misc.Interval;
@@ -20,13 +22,12 @@ import org.antlr.v4.runtime.misc.Interval;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
-
 public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
 	private final Program program = new Program(Program.SourceLanguage.LITMUS);
+	private final TypeFactory types = TypeFactory.getInstance();
 	private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-	private final int archPrecision = getArchPrecision();
+	private final Type type = types.getPointerType();
 	private Thread[] threadList;
 	private Thread thread;
 	private final Map<String, Label> labelMap = new HashMap<>();
@@ -65,7 +66,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	@Override
 	public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
 		MemoryObject object = program.getMemory().getOrNewObject(ctx.location().getText());
-		IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
+		IValue value = expressions.parseValue(ctx.constant().getText(), type);
 		object.setInitialValue(0, value);
 		return null;
 	}
@@ -73,8 +74,8 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	@Override
 	public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
 		Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
-		Register register = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
-		IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
+		Register register = thread.getOrNewRegister(ctx.register().getText(), type);
+		IValue value = expressions.parseValue(ctx.constant().getText(), type);
 		thread.append(EventFactory.newLocal(register, value));
 		return null;
 	}
@@ -82,7 +83,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	@Override
 	public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
 		Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
-		Register register = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
+		Register register = thread.getOrNewRegister(ctx.register().getText(), type);
 		MemoryObject value = program.getMemory().getOrNewObject(ctx.location().getText());
 		thread.append(EventFactory.newLocal(register, value));
 		return null;
@@ -124,7 +125,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
 	@Override
 	public Object visitLoad(LoadContext ctx) {
-		Register result = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
+		Register result = thread.getOrNewRegister(ctx.register().getText(), type);
 		IExpr address = (IExpr) ctx.expression().accept(this);
 		String mo = ctx.mo() != null ? ctx.mo().getText() : "";
 		thread.append(EventFactory.newLoad(result, address, mo));
@@ -133,7 +134,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
 	@Override
 	public Object visitLocal(LocalContext ctx) {
-		Register result = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
+		Register result = thread.getOrNewRegister(ctx.register().getText(), type);
 		Expression expression = (Expression) ctx.expression().accept(this);
 		thread.append(EventFactory.newLocal(result, expression));
 		return null;
@@ -151,7 +152,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
 	@Override
 	public Object visitRmw(RmwContext ctx) {
-		Register result = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
+		Register result = thread.getOrNewRegister(ctx.register().getText(), type);
 		IExpr value = (IExpr) ctx.value().accept(this);
 		IExpr address = (IExpr) ctx.expression().accept(this);
 		String mo = ctx.mo() != null ? ctx.mo().getText() : "";
@@ -192,12 +193,12 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
 	@Override
 	public Object visitRegister(RegisterContext ctx) {
-		return thread.getOrNewRegister(ctx.getText(), archPrecision);
+		return thread.getOrNewRegister(ctx.getText(), type);
 	}
 
 	@Override
 	public Object visitConstant(ConstantContext ctx) {
-		return expressions.parseValue(ctx.getText(), archPrecision);
+		return expressions.parseValue(ctx.getText(), type);
 	}
 
 	@Override

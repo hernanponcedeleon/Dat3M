@@ -17,20 +17,22 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.Type;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.util.*;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.program.event.Tag.C11;
 
 public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     private final Program program = new Program(Program.SourceLanguage.LITMUS);
+    private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final int archPrecision = getArchPrecision();
+    private final Type type = types.getPointerType();
     private Thread thread;
     private final Map<String, Label> labelMap = new HashMap<>();
     private int ifId = 0;
@@ -74,7 +76,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         if (ctx.initConstantValue() != null) {
             MemoryObject object = program.getMemory().getOrNewObject(ctx.varName().getText());
             //TODO Unknown precision, defaults to unbound integer?
-            object.setInitialValue(0, expressions.parseValue(ctx.initConstantValue().constant().getText(), -1));
+            Type type = types.getNumberType();
+            object.setInitialValue(0, expressions.parseValue(ctx.initConstantValue().constant().getText(), type));
         }
         return null;
     }
@@ -84,8 +87,9 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         if (ctx.initConstantValue() != null) {
             Thread thread = program.newThread(Integer.toString(ctx.threadId().id));
             //TODO Unknown precision, defaults to unbound integer?
-            Register register = thread.getOrNewRegister(ctx.varName().getText(), -1);
-            IValue value = expressions.parseValue(ctx.initConstantValue().constant().getText(), -1);
+            Type type = types.getNumberType();
+            Register register = thread.getOrNewRegister(ctx.varName().getText(), type);
+            IValue value = expressions.parseValue(ctx.initConstantValue().constant().getText(), type);
             thread.append(EventFactory.newLocal(register, value));
         }
         return null;
@@ -114,7 +118,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitGlobalDeclaratorRegisterLocation(GlobalDeclaratorRegisterLocationContext ctx) {
         Thread thread = program.newThread(Integer.toString(ctx.threadId().id));
-        Register register = thread.getOrNewRegister(ctx.varName(0).getText(), archPrecision);
+        Register register = thread.getOrNewRegister(ctx.varName(0).getText(), type);
         String rightName = ctx.varName(1).getText();
         IConst value;
         if (ctx.Ast() == null) {
@@ -145,7 +149,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
                 List<IConst> values = new ArrayList<>();
                 for (ArrayElementContext elCtx : ctx.initArray().arrayElement()) {
                     if (elCtx.constant() != null) {
-                        values.add(expressions.parseValue(elCtx.constant().getText(), archPrecision));
+                        values.add(expressions.parseValue(elCtx.constant().getText(), type));
                     } else {
                         String varName = elCtx.varName().getText();
                         //see test/resources/arrays/ok/C-array-ok-17.litmus
@@ -198,7 +202,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
                         }
                     }
                 }
-                Register register = thread.getOrNewRegister(name, archPrecision);
+                Register register = thread.getOrNewRegister(name, type);
                 thread.append(EventFactory.newLocal(register, object));
             }
         }
@@ -405,7 +409,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Expression visitReConst(ReConstContext ctx) {
         Register register = getReturnRegister(false);
-        IValue result = expressions.parseValue(ctx.getText(), archPrecision);
+        IValue result = expressions.parseValue(ctx.getText(), type);
         return assignToReturnRegister(register, result);
     }
 
@@ -416,7 +420,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitNreAtomicOp(NreAtomicOpContext ctx) {
         IExpr value = returnExpressionOrOne(ctx.value);
-        Register register = thread.newRegister(archPrecision);
+        Register register = thread.newRegister(type);
         thread.append(EventFactory.Linux.newRMWOp(getAddress(ctx.address), register, value, ctx.op));
         return null;
     }
@@ -469,7 +473,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitNreRegDeclaration(NreRegDeclarationContext ctx) {
-        Register register = thread.newRegister(ctx.varName().getText(), archPrecision);
+        Register register = thread.newRegister(ctx.varName().getText(), type);
         if (ctx.re() != null) {
             returnRegister = register;
             ctx.re().accept(this);
@@ -515,7 +519,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         String name = ctx.getText();
         if (thread == null) {
             MemoryObject object = program.getMemory().getOrNewObject(name);
-            Register register = thread.newRegister(archPrecision);
+            Register register = thread.newRegister(type);
             thread.append(EventFactory.newLoad(register, object, C11.NONATOMIC));
             return register;
         }
@@ -525,11 +529,11 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         }
         Optional<MemoryObject> object = program.getMemory().getObject(name);
         if (object.isPresent()) {
-            Register register = thread.newRegister(archPrecision);
+            Register register = thread.newRegister(type);
             thread.append(EventFactory.newLoad(register, object.get(), C11.NONATOMIC));
             return register;
         }
-        return thread.getOrNewRegister(name, archPrecision);
+        return thread.getOrNewRegister(name, type);
     }
 
     private IExpr getAddress(ReContext ctx) {
@@ -541,13 +545,13 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     }
 
     private IExpr returnExpressionOrOne(ReContext ctx) {
-        return ctx != null ? (IExpr) ctx.accept(this) : expressions.makeOne(archPrecision);
+        return ctx != null ? (IExpr) ctx.accept(this) : expressions.makeOne(type);
     }
 
     private Register getReturnRegister(boolean createOnNull) {
         Register register = returnRegister;
         if (register == null && createOnNull) {
-            return thread.newRegister(archPrecision);
+            return thread.newRegister(type);
         }
         returnRegister = null;
         return register;

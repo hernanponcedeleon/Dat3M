@@ -22,6 +22,8 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.Type;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -31,7 +33,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.parsers.program.boogie.LlvmFunctions.LLVMFUNCTIONS;
@@ -59,6 +60,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     private static final Logger logger = LogManager.getLogger(VisitorBoogie.class);
 
     protected final Program program = new Program(Program.SourceLanguage.BOOGIE);
+    protected final TypeFactory types = TypeFactory.getInstance();
     protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
     protected Thread thread = program.newThread("0");
     protected final Map<String, Label> labelMap = new HashMap<>();
@@ -88,7 +90,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     private String currentReturnName = null;
 
     private final Map<String, Expression> constantsMap = new HashMap<>();
-    private final Map<String, Integer> constantsTypeMap = new HashMap<>();
+    private final Map<String, Type> constantsTypeMap = new HashMap<>();
 
     protected final Set<IExpr> allocations = new HashSet<>();
 
@@ -143,7 +145,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             throw new ParsingException("Program shall have a main procedure");
         }
 
-        IExpr next = thread.getOrNewRegister(currentScope.getID() + ":" + "ptrMain", getArchPrecision());
+        IExpr next = thread.getOrNewRegister(currentScope.getID() + ":" + "ptrMain", types.getPointerType());
         pool.add(next, "main", -1);
         while (pool.canCreate()) {
             next = pool.next();
@@ -168,10 +170,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (name.equals("main") && ctx.proc_sign().proc_sign_in() != null) {
             threadCallingValues.put(threadCount, new ArrayList<>());
             for (Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
+                Type type = (Type) atiwC.typed_idents_where().typed_idents().type().accept(this);
                 for (ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
-                    String type = atiwC.typed_idents_where().typed_idents().type().getText();
-                    int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : getArchPrecision();
-                    Register register = thread.getOrNewRegister(currentScope.getID() + ":" + ident.getText(), precision);
+                    Register register = thread.getOrNewRegister(currentScope.getID() + ":" + ident.getText(), type);
                     threadCallingValues.get(threadCount).add(register);
                 }
             }
@@ -192,10 +193,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitConst_decl(Const_declContext ctx) {
+        Type type = (Type) ctx.typed_idents().type().accept(this);
         for (ParseTree ident : ctx.typed_idents().idents().Ident()) {
             String name = ident.getText();
-            String type = ctx.typed_idents().type().getText();
-            int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : getArchPrecision();
             if (ctx.getText().contains(":treadLocal")) {
                 threadLocalVariables.add(name);
             }
@@ -205,7 +205,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                         : 1;
                 program.getMemory().newObject(name, size);
             } else {
-                constantsTypeMap.put(name, precision);
+                constantsTypeMap.put(name, type);
             }
         }
         return null;
@@ -233,17 +233,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     public Object visitLocal_vars(Local_varsContext ctx, int scope) {
         for (Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
+            Type type = (Type) atiwC.typed_idents_where().typed_idents().type().accept(this);
             for (ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
                 String name = ident.getText();
-                String type = atiwC.typed_idents_where().typed_idents().type().getText();
-                int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : getArchPrecision();
                 if (constantsTypeMap.containsKey(name)) {
                     throw new ParsingException("Variable " + name + " is already defined as a constant");
                 }
                 if (program.getMemory().getObject(name).isPresent()) {
                     throw new ParsingException("Variable " + name + " is already defined globally");
                 }
-                thread.getOrNewRegister(currentScope.getID() + ":" + name, precision);
+                thread.getOrNewRegister(currentScope.getID() + ":" + name, type);
             }
         }
         return null;
@@ -271,7 +270,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             if (threadCount != 1) {
                 // Used to allow execution of threads after they have been created (pthread_create)
                 IExpr pointer = pool.getPtrFromInt(threadCount);
-                Register reg = thread.newRegister(getArchPrecision());
+                Register reg = thread.newRegister(types.getPointerType());
                 thread.append(EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
             }
         }
@@ -287,12 +286,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (ctx.proc_sign().proc_sign_in() != null) {
             int index = 0;
             for (Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
+                Type type = (Type) atiwC.typed_idents_where().typed_idents().type().accept(this);
                 for (ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
                     // To deal with references passed to created threads
                     if (index < callingValues.size()) {
-                        String type = atiwC.typed_idents_where().typed_idents().type().getText();
-                        int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : getArchPrecision();
-                        Register register = thread.getOrNewRegister(currentScope.getID() + ":" + ident.getText(), precision);
+                        Register register = thread.getOrNewRegister(currentScope.getID() + ":" + ident.getText(), type);
                         Expression value = callingValues.get(index);
                         append(EventFactory.newLocal(register, value));
                         index++;
@@ -544,6 +542,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     @Override
+    public Type visitType(TypeContext ctx) {
+        String typeString = ctx.getText();
+        return typeString.contains("bv") ?
+                types.getIntegerType(Integer.parseInt(typeString.split("bv")[1])) :
+                types.getPointerType();
+    }
+
+    @Override
     public Object visitLogical_expr(Logical_exprContext ctx) {
         if (ctx.getText().contains("forall") || ctx.getText().contains("exists") || ctx.getText().contains("lambda")) {
             return null;
@@ -738,13 +744,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     @Override
     public Object visitBv_expr(Bv_exprContext ctx) {
         String value = ctx.getText().split("bv")[0];
-        int precision = Integer.parseInt(ctx.getText().split("bv")[1]);
-        return expressions.parseValue(value, precision);
+        int bitWidth = Integer.parseInt(ctx.getText().split("bv")[1]);
+        Type type = types.getIntegerType(bitWidth);
+        return expressions.parseValue(value, type);
     }
 
     @Override
     public Object visitInt_expr(Int_exprContext ctx) {
-        return expressions.parseValue(ctx.getText(), getArchPrecision());
+        return expressions.parseValue(ctx.getText(), types.getPointerType());
     }
 
     @Override
@@ -766,8 +773,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     protected void addAssertion(IExpr expr) {
-        Register ass = thread.getOrNewRegister("assert_" + assertionIndex, expr.getPrecision());
-        IValue one = expressions.makeOne(expr.getPrecision());
+        Register ass = thread.getOrNewRegister("assert_" + assertionIndex, expr.getType());
+        IValue one = expressions.makeOne(expr.getType());
         assertionIndex++;
         Event local = EventFactory.newLocal(ass, expr);
         append(local);

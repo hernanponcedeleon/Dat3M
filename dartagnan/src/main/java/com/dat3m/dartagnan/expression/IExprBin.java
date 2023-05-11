@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.expression.type.Type;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
@@ -15,7 +16,8 @@ public class IExprBin extends IExpr {
     private final IOpBin op;
 
     public IExprBin(IExpr lhs, IOpBin op, IExpr rhs) {
-    	Preconditions.checkArgument(lhs.getPrecision() == rhs.getPrecision(), "The type of " + lhs + " and " + rhs + " does not match");
+    	Preconditions.checkArgument(lhs.getType().equals(rhs.getType()),
+                "The types of %s and %s does not match", lhs, rhs);
         this.lhs = lhs;
         this.rhs = rhs;
         this.op = op;
@@ -35,12 +37,12 @@ public class IExprBin extends IExpr {
 	public IConst reduce() {
     	BigInteger v1 = lhs.reduce().getValue();
     	BigInteger v2 = rhs.reduce().getValue();
-		return new IValue(op.combine(v1, v2), lhs.getPrecision());
+		return new IValue(op.combine(v1, v2), lhs.getType());
 	}
 
 	@Override
-	public int getPrecision() {
-		return lhs.getPrecision();
+	public Type getType() {
+		return lhs.getType();
 	}
 	
 	public IOpBin getOp() {
