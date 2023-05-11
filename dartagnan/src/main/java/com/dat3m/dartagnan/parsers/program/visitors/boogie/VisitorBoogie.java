@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
@@ -86,12 +87,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     private final List<Register> returnRegister = new ArrayList<>();
     private String currentReturnName = null;
 
-    private final Map<String, ExprInterface> constantsMap = new HashMap<>();
+    private final Map<String, Expression> constantsMap = new HashMap<>();
     private final Map<String, Integer> constantsTypeMap = new HashMap<>();
 
     protected final Set<IExpr> allocations = new HashSet<>();
 
-    protected Map<Integer, List<ExprInterface>> threadCallingValues = new HashMap<>();
+    protected Map<Integer, List<Expression>> threadCallingValues = new HashMap<>();
 
     protected int assertionIndex = 0;
 
@@ -180,10 +181,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitAxiom_decl(Axiom_declContext ctx) {
-        ExprInterface exp = (ExprInterface) ctx.proposition().accept(this);
+        Expression exp = (Expression) ctx.proposition().accept(this);
         if (exp instanceof Atom && ((Atom) exp).getLHS() instanceof Register && ((Atom) exp).getOp().equals(EQ)) {
             String name = ((Register) ((Atom) exp).getLHS()).getName();
-            ExprInterface def = ((Atom) exp).getRHS();
+            Expression def = ((Atom) exp).getRHS();
             constantsMap.put(name, def);
         }
         return null;
@@ -248,7 +249,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         return null;
     }
 
-    private void visitProc_decl(Proc_declContext ctx, boolean create, List<ExprInterface> callingValues) {
+    private void visitProc_decl(Proc_declContext ctx, boolean create, List<Expression> callingValues) {
         currentLine = -1;
         if (ctx.proc_sign().proc_sign_out() != null) {
             for (Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where()) {
@@ -292,7 +293,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                         String type = atiwC.typed_idents_where().typed_idents().type().getText();
                         int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : getArchPrecision();
                         Register register = thread.getOrNewRegister(currentScope.getID() + ":" + ident.getText(), precision);
-                        ExprInterface value = callingValues.get(index);
+                        Expression value = callingValues.get(index);
                         append(EventFactory.newLocal(register, value));
                         index++;
                     }
@@ -390,9 +391,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             thread.getRegister(currentScope.getID() + ":" + ctx.call_params().Ident(0).getText())
                     .ifPresent(returnRegister::add);
         }
-        List<ExprInterface> callingValues = new ArrayList<>();
+        List<Expression> callingValues = new ArrayList<>();
         if (ctx.call_params().exprs() != null) {
-            callingValues = ctx.call_params().exprs().expr().stream().map(c -> (ExprInterface) c.accept(this)).collect(Collectors.toList());
+            callingValues = ctx.call_params().exprs().expr().stream().map(c -> (Expression) c.accept(this)).collect(Collectors.toList());
         }
         if (!procedures.containsKey(name)) {
             throw new ParsingException("Procedure " + name + " is not defined");
@@ -418,7 +419,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             throw new ParsingException("There should be one expression per variable\nor only one expression for all in " + ctx.getText());
         }
         for (int i = 0; i < ctx.Ident().size(); i++) {
-            ExprInterface value = (ExprInterface) exprs.expr(i).accept(this);
+            Expression value = (Expression) exprs.expr(i).accept(this);
             if (value == null) {
                 continue;
             }
@@ -498,7 +499,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             if (ctx.proposition().expr().getText().equals("false")) {
                 thread.append(EventFactory.newGoto(pairingLabel));
             }
-            BExpr c = (BExpr) ctx.proposition().expr().accept(this);
+            Expression c = (Expression) ctx.proposition().expr().accept(this);
             if (c != null) {
                 thread.append(EventFactory.newJump(expressions.makeUnary(NOT, c), pairingLabel));
             }
@@ -547,13 +548,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (ctx.getText().contains("forall") || ctx.getText().contains("exists") || ctx.getText().contains("lambda")) {
             return null;
         }
-        ExprInterface v1 = (ExprInterface) ctx.rel_expr().accept(this);
+        Expression v1 = (Expression) ctx.rel_expr().accept(this);
         if (ctx.and_expr() != null) {
-            ExprInterface v2 = (ExprInterface) ctx.and_expr().accept(this);
+            Expression v2 = (Expression) ctx.and_expr().accept(this);
             v1 = expressions.makeBinary(v1, ctx.and_op().op, v2);
         }
         if (ctx.or_expr() != null) {
-            ExprInterface v2 = (ExprInterface) ctx.or_expr().accept(this);
+            Expression v2 = (Expression) ctx.or_expr().accept(this);
             v1 = expressions.makeBinary(v1, ctx.or_op().op, v2);
         }
         return v1;
@@ -567,16 +568,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitNeg_expr(Neg_exprContext ctx) {
-        ExprInterface v = (ExprInterface) ctx.unary_expr().accept(this);
+        Expression v = (Expression) ctx.unary_expr().accept(this);
         return expressions.makeUnary(NOT, v);
     }
 
     @Override
     public Object visitAnd_expr(And_exprContext ctx) {
-        ExprInterface v1 = (ExprInterface) ctx.rel_expr(0).accept(this);
-        ExprInterface v2;
+        Expression v1 = (Expression) ctx.rel_expr(0).accept(this);
+        Expression v2;
         for (int i = 0; i < ctx.rel_expr().size() - 1; i++) {
-            v2 = (ExprInterface) ctx.rel_expr(i + 1).accept(this);
+            v2 = (Expression) ctx.rel_expr(i + 1).accept(this);
             v1 = expressions.makeBinary(v1, ctx.and_op(i).op, v2);
         }
         return v1;
@@ -584,10 +585,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitOr_expr(Or_exprContext ctx) {
-        ExprInterface v1 = (ExprInterface) ctx.rel_expr(0).accept(this);
-        ExprInterface v2;
+        Expression v1 = (Expression) ctx.rel_expr(0).accept(this);
+        Expression v2;
         for (int i = 0; i < ctx.rel_expr().size() - 1; i++) {
-            v2 = (ExprInterface) ctx.rel_expr(i + 1).accept(this);
+            v2 = (Expression) ctx.rel_expr(i + 1).accept(this);
             v1 = expressions.makeBinary(v1, ctx.or_op(i).op, v2);
         }
         return v1;
@@ -595,10 +596,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitRel_expr(Rel_exprContext ctx) {
-        ExprInterface v1 = (ExprInterface) ctx.bv_term(0).accept(this);
-        ExprInterface v2;
+        Expression v1 = (Expression) ctx.bv_term(0).accept(this);
+        Expression v2;
         for (int i = 0; i < ctx.bv_term().size() - 1; i++) {
-            v2 = (ExprInterface) ctx.bv_term(i + 1).accept(this);
+            v2 = (Expression) ctx.bv_term(i + 1).accept(this);
             v1 = expressions.makeBinary(v1, ctx.rel_op(i).op, v2);
         }
         return v1;
@@ -606,10 +607,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitTerm(TermContext ctx) {
-        ExprInterface v1 = (ExprInterface) ctx.factor(0).accept(this);
-        ExprInterface v2;
+        Expression v1 = (Expression) ctx.factor(0).accept(this);
+        Expression v2;
         for (int i = 0; i < ctx.factor().size() - 1; i++) {
-            v2 = (ExprInterface) ctx.factor(i + 1).accept(this);
+            v2 = (Expression) ctx.factor(i + 1).accept(this);
             v1 = expressions.makeBinary((IExpr) v1, ctx.add_op(i).op, (IExpr) v2);
         }
         return v1;
@@ -617,10 +618,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitFactor(FactorContext ctx) {
-        ExprInterface v1 = (ExprInterface) ctx.power(0).accept(this);
-        ExprInterface v2;
+        Expression v1 = (Expression) ctx.power(0).accept(this);
+        Expression v2;
         for (int i = 0; i < ctx.power().size() - 1; i++) {
-            v2 = (ExprInterface) ctx.power(i + 1).accept(this);
+            v2 = (Expression) ctx.power(i + 1).accept(this);
             v1 = expressions.makeBinary((IExpr) v1, ctx.mul_op(i).op, (IExpr) v2);
         }
         return v1;
@@ -674,7 +675,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             IExpr value = (IExpr) ctx.expr(2).accept(this);
             // This improves the blow-up
             if (initMode && !(value instanceof MemoryObject)) {
-                ExprInterface lhs = address;
+                Expression lhs = address;
                 int rhs = 0;
                 while (lhs instanceof IExprBin) {
                     rhs += ((IExprBin) lhs).getRHS().reduce().getValueAsInt();
@@ -723,7 +724,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitIf_then_else_expr(If_then_else_exprContext ctx) {
-        BExpr guard = (BExpr) ctx.expr(0).accept(this);
+        Expression guard = (Expression) ctx.expr(0).accept(this);
         IExpr tbranch = (IExpr) ctx.expr(1).accept(this);
         IExpr fbranch = (IExpr) ctx.expr(2).accept(this);
         return expressions.makeConditional(guard, tbranch, fbranch);

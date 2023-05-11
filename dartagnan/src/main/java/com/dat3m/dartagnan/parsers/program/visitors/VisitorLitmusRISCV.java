@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
@@ -252,7 +253,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Label label = labelMap.computeIfAbsent(ctx.Label().getText(), EventFactory::newLabel);
         Register left = thread.getOrNewRegister(ctx.register(0).getText(), archPrecision);
         Register right = thread.getOrNewRegister(ctx.register(1).getText(), archPrecision);
-        BExpr expr = expressions.makeBinary(left, ctx.cond().op, right);
+        Expression expr = expressions.makeBinary(left, ctx.cond().op, right);
         thread.append(EventFactory.newJump(expr, label));
         return null;
     }

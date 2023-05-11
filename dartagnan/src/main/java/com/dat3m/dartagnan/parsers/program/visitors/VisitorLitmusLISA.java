@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
@@ -133,7 +134,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	@Override
 	public Object visitLocal(LocalContext ctx) {
 		Register result = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
-		ExprInterface expression = (ExprInterface) ctx.expression().accept(this);
+		Expression expression = (Expression) ctx.expression().accept(this);
 		thread.append(EventFactory.newLocal(result, expression));
 		return null;
 	}
@@ -177,7 +178,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	public Object visitJump(JumpContext ctx) {
 		Label label = labelMap.computeIfAbsent(ctx.labelName().getText(), EventFactory::newLabel);
 		Register left = (Register) ctx.register().accept(this);
-		BExpr condition = expressions.makeBinary(left, COpBin.EQ, IValue.ONE);
+		Expression condition = expressions.makeBinary(left, COpBin.EQ, IValue.ONE);
 		thread.append(EventFactory.newJump(condition, label));
 		return null;
 	}
@@ -236,15 +237,15 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
 	@Override
 	public Object visitEq(EqContext ctx) {
-		ExprInterface e1 = (ExprInterface) ctx.expression(0).accept(this);
-		ExprInterface e2 = (ExprInterface) ctx.expression(1).accept(this);
+		Expression e1 = (Expression) ctx.expression(0).accept(this);
+		Expression e2 = (Expression) ctx.expression(1).accept(this);
 		return expressions.makeBinary(e1, COpBin.EQ, e2);
 	}
 
 	@Override
 	public Object visitNeq(NeqContext ctx) {
-		ExprInterface e1 = (ExprInterface) ctx.expression(0).accept(this);
-		ExprInterface e2 = (ExprInterface) ctx.expression(1).accept(this);
+		Expression e1 = (Expression) ctx.expression(0).accept(this);
+		Expression e2 = (Expression) ctx.expression(1).accept(this);
 		return expressions.makeBinary(e1, COpBin.NEQ, e2);
 	}
 

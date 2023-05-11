@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.expression.Expression;
 
 import java.util.List;
 
@@ -370,7 +371,7 @@ public class VisitorPower extends VisitorBase {
 	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
-		ExprInterface value = e.getMemValue();
+		Expression value = e.getMemValue();
 		String mo = e.getMo();
 		IExpr expectedAddr = e.getExpectedAddr();
 		int precision = resultRegister.getPrecision();
@@ -542,7 +543,7 @@ public class VisitorPower extends VisitorBase {
 
 	@Override
 	public List<Event> visitAtomicStore(AtomicStore e) {
-		ExprInterface value = e.getMemValue();
+		Expression value = e.getMemValue();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
@@ -584,7 +585,7 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitAtomicXchg(AtomicXchg e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
+		Expression value = e.getMemValue();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
@@ -655,7 +656,7 @@ public class VisitorPower extends VisitorBase {
 	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
 	@Override
 	public List<Event> visitLKMMStore(LKMMStore e) {
-		ExprInterface value = e.getMemValue();
+		Expression value = e.getMemValue();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
@@ -735,7 +736,7 @@ public class VisitorPower extends VisitorBase {
 	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
-		ExprInterface value = e.getMemValue();
+		Expression value = e.getMemValue();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(e.getResultRegister().getPrecision());
@@ -770,7 +771,7 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitRMWXchg(RMWXchg e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
+		Expression value = e.getMemValue();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
@@ -899,7 +900,7 @@ public class VisitorPower extends VisitorBase {
 	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
-		ExprInterface value = e.getMemValue();
+		Expression value = e.getMemValue();
 		String mo = e.getMo();
 		int precision = resultRegister.getPrecision();
 
@@ -911,7 +912,7 @@ public class VisitorPower extends VisitorBase {
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		ExprInterface unless = e.getCmp();
+		Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJump(expressions.makeBinary(dummy, EQ, IValue.ZERO), cauEnd);
 

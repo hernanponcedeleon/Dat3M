@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -139,7 +140,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         }
 
         ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
-        final BExpr noSideEffect = trackingRegs.stream()
+        Expression noSideEffect = trackingRegs.stream()
                 .map(reg -> expressionFactory.makeBinary(reg, COpBin.NEQ, expressionFactory.makeZero(precision)))
                 .reduce(BConst.TRUE, (x, y) -> expressionFactory.makeBinary(x, BOpBin.AND, y));
         final CondJump assumeSideEffect = EventFactory.newJump(noSideEffect, (Label) thread.getExit());

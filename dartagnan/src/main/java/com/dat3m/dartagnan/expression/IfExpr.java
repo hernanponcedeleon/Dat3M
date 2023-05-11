@@ -2,18 +2,22 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
-import com.google.common.base.Preconditions;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.google.common.collect.ImmutableSet;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class IfExpr extends IExpr {
 
-	private final BExpr guard;
+	private final Expression guard;
 	private final IExpr tbranch;
 	private final IExpr fbranch;
 	
-	public IfExpr(BExpr guard, IExpr tbranch, IExpr fbranch) {
-    	Preconditions.checkArgument(tbranch.getPrecision() == fbranch.getPrecision(), 
-    			"The type of " + tbranch + " and " + fbranch + " does not match");
+	public IfExpr(Expression guard, IExpr tbranch, IExpr fbranch) {
+		checkArgument(guard.isBoolean(),
+				"Expected boolean type for %s.", guard);
+    	checkArgument(tbranch.getType().equals(fbranch.getType()),
+    			"The types of %s and %s do not match", tbranch, fbranch);
 		this.guard =  guard;
 		this.tbranch = tbranch;
 		this.fbranch = fbranch;
@@ -29,7 +33,7 @@ public class IfExpr extends IExpr {
         return "(if " + guard + " then " + tbranch + " else " + fbranch + ")";
     }
 
-	public BExpr getGuard() {
+	public Expression getGuard() {
 		return guard;
 	}
 

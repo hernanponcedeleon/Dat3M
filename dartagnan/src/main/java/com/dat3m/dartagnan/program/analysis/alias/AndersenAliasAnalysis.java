@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
@@ -133,7 +133,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
         //event is a store operation
         Verify.verify(e.is(Tag.WRITE), "memory event that is neither tagged \"W\" nor a register writer");
-        ExprInterface value = e.getMemValue();
+        Expression value = e.getMemValue();
         if (value instanceof Register) {
             addEdge(value, location);
             return;
@@ -149,7 +149,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
 
     private void processRegs(Local e) {
         Register register = e.getResultRegister();
-        ExprInterface expr = e.getExpr();
+        Expression expr = e.getExpr();
         if (expr instanceof Register) {
             // r1 = r2 -> add edge r2 --> r1
             addEdge(expr, register);
@@ -180,7 +180,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                             }
                         } else if (e instanceof Store) {
                             // *variable = register
-                            ExprInterface value = e.getMemValue();
+                            Expression value = e.getMemValue();
                             if (value instanceof Register) {
                                 Register register = (Register) value;
                                 // Add edge from register to location
@@ -203,7 +203,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     }
 
     private void processResults(Local e) {
-        ExprInterface exp = e.getExpr();
+        Expression exp = e.getExpr();
         Register reg = e.getResultRegister();
         if (exp instanceof MemoryObject) {
             addTarget(reg, new Location((MemoryObject) exp, 0));
@@ -271,7 +271,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         /**
          * Tries to match an expression as a constant address.
          */
-        Constant(ExprInterface x) {
+        Constant(Expression x) {
             if (x instanceof IConst) {
                 location = x instanceof MemoryObject ? new Location((MemoryObject) x, 0) : null;
                 failed = false;

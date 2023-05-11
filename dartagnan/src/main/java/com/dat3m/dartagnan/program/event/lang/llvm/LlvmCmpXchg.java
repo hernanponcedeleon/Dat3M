@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.llvm;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -55,7 +55,7 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
         }
     }
 
-    public ExprInterface getExpectedValue() {
+    public Expression getExpectedValue() {
     	return expectedValue;
     }
     

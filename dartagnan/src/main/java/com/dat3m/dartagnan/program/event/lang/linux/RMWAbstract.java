@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -14,9 +14,9 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 public abstract class RMWAbstract extends MemEvent implements RegWriter, RegReaderData {
 
     protected final Register resultRegister;
-    protected ExprInterface value;
+    protected Expression value;
 
-    RMWAbstract(IExpr address, Register register, ExprInterface value, String mo) {
+    RMWAbstract(IExpr address, Register register, Expression value, String mo) {
         super(address, mo);
         this.resultRegister = register;
         this.value = value;
@@ -40,12 +40,12 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
     }
 
     @Override
-    public ExprInterface getMemValue(){
+    public Expression getMemValue(){
         return value;
     }
 
     @Override
-    public void setMemValue(ExprInterface value){
+    public void setMemValue(Expression value){
         this.value = value;
     }
 

@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Cmp;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
@@ -207,7 +208,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
             throw new ParsingException("Invalid syntax near " + ctx.getText());
         }
         Cmp cmp = (Cmp) lastEvent;
-        BExpr expr = expressions.makeBinary(cmp.getLeft(), ctx.branchCondition().op, cmp.getRight());
+        Expression expr = expressions.makeBinary(cmp.getLeft(), ctx.branchCondition().op, cmp.getRight());
         thread.append(EventFactory.newJump(expr, label));
         return null;
     }
@@ -216,7 +217,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitBranchRegister(BranchRegisterContext ctx) {
         Register register = thread.getRegister(ctx.rV).orElseThrow();
         IValue zero = expressions.makeZero(register.getPrecision());
-        BExpr expr = expressions.makeBinary(register, ctx.branchRegInstruction().op, zero);
+        Expression expr = expressions.makeBinary(register, ctx.branchRegInstruction().op, zero);
         Label label = labelMap.computeIfAbsent(ctx.label().getText(), EventFactory::newLabel);
         thread.append(EventFactory.newJump(expr, label));
         return null;

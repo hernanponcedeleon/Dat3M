@@ -3,25 +3,26 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.google.common.collect.ImmutableSet;
 
 public class BExprBin extends BExpr {
 
-    private final ExprInterface b1;
-    private final ExprInterface b2;
+    private final Expression b1;
+    private final Expression b2;
     private final BOpBin op;
 
-    public BExprBin(ExprInterface b1, BOpBin op, ExprInterface b2) {
+    public BExprBin(Expression b1, BOpBin op, Expression b2) {
         this.b1 = b1;
         this.b2 = b2;
         this.op = op;
     }
 
-    public ExprInterface getLHS() {
+    public Expression getLHS() {
     	return b1;
     }
     
-    public ExprInterface getRHS() {
+    public Expression getRHS() {
     	return b2;
     }
     

@@ -2,11 +2,12 @@ package com.dat3m.dartagnan.expression.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface> {
+public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     protected final ExpressionFactory factory;
 
@@ -15,27 +16,27 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
     }
 
     @Override
-    public ExprInterface visit(Atom atom) {
+    public Expression visit(Atom atom) {
         return factory.makeBinary(atom.getLHS().visit(this), atom.getOp(), atom.getRHS().visit(this));
     }
 
     @Override
-    public BExpr visit(BConst bConst) {
+    public Expression visit(BConst bConst) {
         return bConst;
     }
 
     @Override
-    public BExpr visit(BExprBin bBin) {
+    public Expression visit(BExprBin bBin) {
         return factory.makeBinary(bBin.getLHS().visit(this), bBin.getOp(), bBin.getRHS().visit(this));
     }
 
     @Override
-    public BExpr visit(BExprUn bUn) {
+    public Expression visit(BExprUn bUn) {
         return factory.makeUnary(bUn.getOp(), bUn.getInner().visit(this));
     }
 
     @Override
-    public BExpr visit(BNonDet bNonDet) {
+    public Expression visit(BNonDet bNonDet) {
         return bNonDet;
     }
 
@@ -55,9 +56,9 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
     }
 
     @Override
-    public ExprInterface visit(IfExpr ifExpr) {
+    public Expression visit(IfExpr ifExpr) {
         return factory.makeConditional(
-                (BExpr)ifExpr.getGuard().visit(this),
+                ifExpr.getGuard().visit(this),
                 (IExpr)ifExpr.getTrueBranch().visit(this),
                 (IExpr)ifExpr.getFalseBranch().visit(this));
     }
@@ -68,17 +69,17 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
     }
 
     @Override
-    public ExprInterface visit(Register reg) {
+    public Expression visit(Register reg) {
         return reg;
     }
 
     @Override
-    public ExprInterface visit(MemoryObject address) {
+    public Expression visit(MemoryObject address) {
         return address;
     }
 
     @Override
-    public ExprInterface visit(Location location) {
+    public Expression visit(Location location) {
         return location;
     }
 }

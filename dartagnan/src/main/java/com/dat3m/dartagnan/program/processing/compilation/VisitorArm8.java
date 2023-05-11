@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.expression.Expression;
 
 import java.util.List;
 
@@ -140,7 +141,7 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitLlvmXchg(LlvmXchg e) {
         Register resultRegister = e.getResultRegister();
-        ExprInterface value = e.getMemValue();
+        Expression value = e.getMemValue();
         IExpr address = e.getAddress();
         String mo = e.getMo();
 
@@ -187,10 +188,10 @@ class VisitorArm8 extends VisitorBase {
         Register oldValueRegister = e.getStructRegister(0);
         Register resultRegister = e.getStructRegister(1);
 
-        ExprInterface value = e.getMemValue();
+        Expression value = e.getMemValue();
         IExpr address = e.getAddress();
         String mo = e.getMo();
-        ExprInterface expectedValue = e.getExpectedValue();
+        Expression expectedValue = e.getExpectedValue();
 
         Local casCmpResult = newLocal(resultRegister, expressions.makeBinary(oldValueRegister, EQ, expectedValue));
         Label casEnd = newLabel("CAS_end");
@@ -231,7 +232,7 @@ class VisitorArm8 extends VisitorBase {
     public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
         Register resultRegister = e.getResultRegister();
         IExpr address = e.getAddress();
-        ExprInterface value = e.getMemValue();
+        Expression value = e.getMemValue();
         String mo = e.getMo();
         IExpr expectedAddr = e.getExpectedAddr();
         int precision = resultRegister.getPrecision();
@@ -324,7 +325,7 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitAtomicXchg(AtomicXchg e) {
         Register resultRegister = e.getResultRegister();
-        ExprInterface value = e.getMemValue();
+        Expression value = e.getMemValue();
         IExpr address = e.getAddress();
         String mo = e.getMo();
 
@@ -364,7 +365,7 @@ class VisitorArm8 extends VisitorBase {
     //		https://elixir.bootlin.com/linux/v5.18/source/arch/arm64/include/asm/barrier.h#L116
     @Override
     public List<Event> visitLKMMStore(LKMMStore e) {
-        ExprInterface value = e.getMemValue();
+        Expression value = e.getMemValue();
         IExpr address = e.getAddress();
         String mo = e.getMo();
 
@@ -434,7 +435,7 @@ class VisitorArm8 extends VisitorBase {
     public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
         Register resultRegister = e.getResultRegister();
         IExpr address = e.getAddress();
-        ExprInterface value = e.getMemValue();
+        Expression value = e.getMemValue();
         String mo = e.getMo();
 
         Register dummy = e.getThread().newRegister(e.getResultRegister().getPrecision());
@@ -467,7 +468,7 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitRMWXchg(RMWXchg e) {
         Register resultRegister = e.getResultRegister();
-        ExprInterface value = e.getMemValue();
+        Expression value = e.getMemValue();
         IExpr address = e.getAddress();
         String mo = e.getMo();
 
@@ -578,7 +579,7 @@ class VisitorArm8 extends VisitorBase {
     public List<Event> visitRMWAddUnless(RMWAddUnless e) {
         Register resultRegister = e.getResultRegister();
         IExpr address = e.getAddress();
-        ExprInterface value = e.getMemValue();
+        Expression value = e.getMemValue();
         String mo = e.getMo();
         int precision = resultRegister.getPrecision();
 
@@ -590,7 +591,7 @@ class VisitorArm8 extends VisitorBase {
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
         Register dummy = e.getThread().newRegister(precision);
-        ExprInterface unless = e.getCmp();
+        Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJump(expressions.makeBinary(dummy, EQ, expressions.makeZero(precision)), cauEnd);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;

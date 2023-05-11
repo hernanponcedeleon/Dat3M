@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -14,9 +14,9 @@ import org.sosy_lab.java_smt.api.*;
 public class Local extends Event implements RegWriter, RegReaderData {
 
     protected final Register register;
-    protected ExprInterface expr;
+    protected Expression expr;
 
-    public Local(Register register, ExprInterface expr) {
+    public Local(Register register, Expression expr) {
         this.register = register;
         this.expr = expr;
     }
@@ -27,11 +27,11 @@ public class Local extends Event implements RegWriter, RegReaderData {
         this.expr = other.expr;
     }
 
-    public ExprInterface getExpr() {
+    public Expression getExpr() {
         return expr;
     }
 
-    public void setExpr(ExprInterface expr) {
+    public void setExpr(Expression expr) {
         this.expr = expr;
     }
 

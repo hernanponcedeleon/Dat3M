@@ -3,15 +3,16 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.google.common.collect.ImmutableSet;
 
 public class Atom extends BExpr {
 	
-	private final ExprInterface lhs;
-	private final ExprInterface rhs;
+	private final Expression lhs;
+	private final Expression rhs;
 	private final COpBin op;
 	
-	public Atom (ExprInterface lhs, COpBin op, ExprInterface rhs) {
+	public Atom (Expression lhs, COpBin op, Expression rhs) {
 		this.lhs = lhs;
 		this.rhs = rhs;
 		this.op = op;
@@ -31,11 +32,11 @@ public class Atom extends BExpr {
     	return op;
     }
     
-    public ExprInterface getLHS() {
+    public Expression getLHS() {
     	return lhs;
     }
     
-    public ExprInterface getRHS() {
+    public Expression getRHS() {
     	return rhs;
     }
 

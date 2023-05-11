@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -276,7 +277,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         final HashSet<Register> register = new HashSet<>();
         Result result;
 
-        Collector(ExprInterface x) {
+        Collector(Expression x) {
             result = x.visit(this);
         }
 

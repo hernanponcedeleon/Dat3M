@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -10,9 +10,9 @@ import com.google.common.collect.ImmutableSet;
 
 public class Store extends MemEvent implements RegReaderData {
 
-    protected ExprInterface value;
+    protected Expression value;
 
-    public Store(IExpr address, ExprInterface value, String mo){
+    public Store(IExpr address, Expression value, String mo){
     	super(address, mo);
         this.value = value;
         addFilters(Tag.WRITE);
@@ -34,12 +34,12 @@ public class Store extends MemEvent implements RegReaderData {
     }
 
     @Override
-    public ExprInterface getMemValue(){
+    public Expression getMemValue(){
         return value;
     }
 
     @Override
-    public void setMemValue(ExprInterface value){
+    public void setMemValue(Expression value){
         this.value = value;
     }
 

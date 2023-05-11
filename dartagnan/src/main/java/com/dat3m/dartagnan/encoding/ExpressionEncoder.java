@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.sosy_lab.java_smt.api.*;
@@ -35,7 +36,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         return formulaManager.getBitvectorFormulaManager();
     }
 
-    BooleanFormula encodeAsBoolean(ExprInterface expression) {
+    BooleanFormula encodeAsBoolean(Expression expression) {
         Formula formula = expression.visit(this);
         if (formula instanceof BooleanFormula) {
             return (BooleanFormula) formula;
@@ -52,7 +53,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         return integerFormulaManager.greaterThan((IntegerFormula) formula, zero);
     }
 
-    Formula encodeAsInteger(ExprInterface expression) {
+    Formula encodeAsInteger(Expression expression) {
         Formula formula = expression.visit(this);
         if (formula instanceof BitvectorFormula || formula instanceof IntegerFormula) {
             return formula;

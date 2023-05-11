@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.google.common.primitives.UnsignedInteger;
 import com.google.common.primitives.UnsignedLong;
 
@@ -85,7 +86,7 @@ public class SvcompProcedures {
     }
 
     private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
-        ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
+        Expression expr = (Expression)ctx.call_params().exprs().accept(visitor);
         visitor.thread.append(EventFactory.newAssume(expr));
     }
 

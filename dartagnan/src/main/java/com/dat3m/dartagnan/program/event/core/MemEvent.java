@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
@@ -32,11 +32,11 @@ public abstract class MemEvent extends Event {
     public IExpr getAddress() { return address; }
     public void setAddress(IExpr address) { this.address = address; }
 
-    public ExprInterface getMemValue() {
+    public Expression getMemValue() {
         throw new RuntimeException("MemValue is not available for event " + this.getClass().getName());
     }
 
-    public void setMemValue(ExprInterface value) {
+    public void setMemValue(Expression value) {
         throw new RuntimeException("SetValue is not available for event " + this.getClass().getName());
     }
 

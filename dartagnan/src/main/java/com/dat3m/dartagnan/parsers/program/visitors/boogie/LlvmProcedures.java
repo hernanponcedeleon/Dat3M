@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.EventFactory.Llvm;
 import com.dat3m.dartagnan.program.event.Tag.C11;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 
 import java.util.Arrays;
@@ -60,7 +61,7 @@ public class LlvmProcedures {
         // For intrinsics
         IExpr i1;
         IExpr i2;
-        BExpr cond;
+        Expression cond;
 
         switch (name) {
             case "__llvm_atomic32_load":
@@ -71,7 +72,7 @@ public class LlvmProcedures {
             case "__llvm_atomic32_store":
             case "__llvm_atomic64_store":
                 mo = C11.intToMo(((IConst) p2).getValueAsInt());
-                visitor.append(Llvm.newStore((IExpr) p0, (ExprInterface) p1, mo));
+                visitor.append(Llvm.newStore((IExpr) p0, (Expression) p1, mo));
                 return;
             case "__llvm_atomic_fence":
                 mo = C11.intToMo(((IConst) p0).getValueAsInt());

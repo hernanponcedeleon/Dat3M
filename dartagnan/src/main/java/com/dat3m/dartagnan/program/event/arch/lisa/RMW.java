@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.arch.lisa;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -36,7 +36,7 @@ public class RMW extends MemEvent implements RegWriter, RegReaderData {
         return resultRegister + " := rmw[" + mo + "](" + value + ", " + address + ")";
     }
 
-    public ExprInterface getMemValue(){
+    public Expression getMemValue(){
         return value;
     }
 

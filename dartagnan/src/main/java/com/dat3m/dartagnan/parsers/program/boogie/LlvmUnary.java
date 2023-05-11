@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.parsers.program.boogie;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpUn;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 
 import java.util.Arrays;
@@ -39,7 +40,7 @@ public class LlvmUnary {
 	
 	public static Object llvmUnary(String name, List<Object> callParams, ExpressionFactory factory) {
 		if(name.startsWith("$not.")) {
-			return factory.makeUnary(NOT, (ExprInterface)callParams.get(0));
+			return factory.makeUnary(NOT, (Expression)callParams.get(0));
 		}
 
 		IOpUn op = null;

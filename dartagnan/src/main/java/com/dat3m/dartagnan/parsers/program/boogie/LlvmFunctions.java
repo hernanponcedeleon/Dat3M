@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 
 import java.util.Arrays;
@@ -62,7 +63,7 @@ public class LlvmFunctions {
 				if (c.getValueAsInt() == 0) {
 					return callParams.get(0);
 				} else if (c.getValueAsInt() == 1) {
-					return factory.makeUnary(BOpUn.NOT, (ExprInterface) callParams.get(0));
+					return factory.makeUnary(BOpUn.NOT, (Expression) callParams.get(0));
 				}
 			}
 			op = XOR;

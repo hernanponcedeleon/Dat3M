@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -9,9 +9,9 @@ import com.google.common.collect.ImmutableSet;
 
 public class RMWCmpXchg extends RMWAbstract {
 
-    private final ExprInterface cmp;
+    private final Expression cmp;
 
-    public RMWCmpXchg(IExpr address, Register register, ExprInterface cmp, IExpr value, String mo) {
+    public RMWCmpXchg(IExpr address, Register register, Expression cmp, IExpr value, String mo) {
         super(address, register, value, mo);
         this.cmp = cmp;
     }
@@ -26,7 +26,7 @@ public class RMWCmpXchg extends RMWAbstract {
         return resultRegister + " := atomic_cmpxchg" + Tag.Linux.toText(mo) + "(" + address + ", " + cmp + ", " + value + ")\t### LKMM";
     }
 
-    public ExprInterface getCmp() {
+    public Expression getCmp() {
     	return cmp;
     }
     

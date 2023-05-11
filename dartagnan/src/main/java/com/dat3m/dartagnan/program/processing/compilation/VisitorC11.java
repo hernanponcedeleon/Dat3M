@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.expression.Expression;
 
 import java.util.List;
 
@@ -185,7 +186,7 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitLlvmXchg(LlvmXchg e) {
         Register resultRegister = e.getResultRegister();
-        ExprInterface value = e.getMemValue();
+        Expression value = e.getMemValue();
         IExpr address = e.getAddress();
         String mo = e.getMo();
 
@@ -222,10 +223,10 @@ public class VisitorC11 extends VisitorBase {
         Register oldValueRegister = e.getStructRegister(0);
         Register resultRegister = e.getStructRegister(1);
 
-        ExprInterface value = e.getMemValue();
+        Expression value = e.getMemValue();
         IExpr address = e.getAddress();
         String mo = e.getMo();
-        ExprInterface expectedValue = e.getExpectedValue();
+        Expression expectedValue = e.getExpectedValue();
 
         Local casCmpResult = newLocal(resultRegister, expressions.makeBinary(oldValueRegister, EQ, expectedValue));
         Label casEnd = newLabel("CAS_end");

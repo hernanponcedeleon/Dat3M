@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.BExpr;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -14,9 +14,9 @@ import java.util.Map;
 public class CondJump extends Event implements RegReaderData {
 
     private Label label;
-    private BExpr expr;
+    private Expression expr;
 
-    public CondJump(BExpr expr, Label label){
+    public CondJump(Expression expr, Label label){
     	Preconditions.checkNotNull(label, "CondJump event requires non null label event");
     	Preconditions.checkNotNull(expr, "CondJump event requires non null expression");
         this.label = label;
@@ -41,10 +41,10 @@ public class CondJump extends Event implements RegReaderData {
         return label;
     }
 
-    public BExpr getGuard(){
+    public Expression getGuard(){
         return expr;
     }
-    public void setGuard(BExpr guard){
+    public void setGuard(Expression guard){
         this.expr = guard;
     }
 

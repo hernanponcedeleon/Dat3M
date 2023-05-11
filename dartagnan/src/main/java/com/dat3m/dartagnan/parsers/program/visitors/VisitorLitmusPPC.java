@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Cmp;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
@@ -208,7 +209,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
             throw new ParsingException("Invalid syntax near " + ctx.getText());
         }
         Cmp cmp = (Cmp) lastEvent;
-        BExpr expr = expressions.makeBinary(cmp.getLeft(), ctx.cond().op, cmp.getRight());
+        Expression expr = expressions.makeBinary(cmp.getLeft(), ctx.cond().op, cmp.getRight());
         thread.append(EventFactory.newJump(expr, label));
         return null;
     }

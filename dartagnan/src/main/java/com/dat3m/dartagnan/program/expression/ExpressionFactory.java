@@ -46,7 +46,7 @@ public final class ExpressionFactory {
         return new IValue(value, bitWidth);
     }
 
-    public BExpr makeUnary(BOpUn operator, ExprInterface inner) {
+    public Expression makeUnary(BOpUn operator, Expression inner) {
         return new BExprUn(operator, inner);
     }
 
@@ -54,14 +54,14 @@ public final class ExpressionFactory {
         return new IExprUn(operator, inner);
     }
 
-    public BExpr makeBinary(ExprInterface left, BOpBin operator, ExprInterface right) {
-        if (!(left instanceof BExpr) || !(right instanceof BExpr)) {
+    public Expression makeBinary(Expression left, BOpBin operator, Expression right) {
+        if (!left.isBoolean() || !right.isBoolean()) {
             logger.warn("non-boolean operands {} {} {}", left, operator, right);
         }
         return new BExprBin(left, operator, right);
     }
 
-    public BExpr makeBinary(ExprInterface left, COpBin comparator, ExprInterface right) {
+    public Expression makeBinary(Expression left, COpBin comparator, Expression right) {
         checkTypes(left, comparator, right);
         return new Atom(left, comparator, right);
     }
@@ -71,11 +71,11 @@ public final class ExpressionFactory {
         return new IExprBin(left, operator, right);
     }
 
-    public IExpr makeConditional(BExpr condition, IExpr ifTrue, IExpr ifFalse) {
+    public IExpr makeConditional(Expression condition, IExpr ifTrue, IExpr ifFalse) {
         return new IfExpr(condition, ifTrue, ifFalse);
     }
 
-    private void checkTypes(ExprInterface left, Object operator, ExprInterface right) {
+    private void checkTypes(Expression left, Object operator, Expression right) {
         if (!left.getType().equals(right.getType())) {
             logger.warn("Type mismatch: {} {} {}", left, operator, right);
         }

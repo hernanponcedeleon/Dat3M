@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.specification;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -11,11 +11,11 @@ import java.util.List;
 
 public class AssertBasic extends AbstractAssert {
 
-    private final ExprInterface e1;
-    private final ExprInterface e2;
+    private final Expression e1;
+    private final Expression e2;
     private final COpBin op;
 
-    public AssertBasic(ExprInterface e1, COpBin op, ExprInterface e2){
+    public AssertBasic(Expression e1, COpBin op, Expression e2){
         this.e1 = e1;
         this.e2 = e2;
         this.op = op;
@@ -33,7 +33,7 @@ public class AssertBasic extends AbstractAssert {
         return valueToString(e1) + op + valueToString(e2);
     }
 
-    private String valueToString(ExprInterface value){
+    private String valueToString(Expression value){
         if(value instanceof Register){
             return ((Register)value).getThreadId() + ":" + value;
         }

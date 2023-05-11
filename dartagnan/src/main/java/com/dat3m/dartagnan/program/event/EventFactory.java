@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
@@ -73,7 +74,7 @@ public class EventFactory {
         return new Load(register, address, mo);
     }
 
-    public static Store newStore(IExpr address, ExprInterface value, String mo) {
+    public static Store newStore(IExpr address, Expression value, String mo) {
         return new Store(address, value, mo);
     }
 
@@ -113,7 +114,7 @@ public class EventFactory {
         return new StringAnnotation(annotation);
     }
 
-    public static Local newLocal(Register register, ExprInterface expr) {
+    public static Local newLocal(Register register, Expression expr) {
         return new Local(register, expr);
     }
 
@@ -121,11 +122,11 @@ public class EventFactory {
         return new Label(name);
     }
 
-    public static CondJump newJump(BExpr cond, Label target) {
+    public static CondJump newJump(Expression cond, Label target) {
         return new CondJump(cond, target);
     }
 
-    public static IfAsJump newIfJump(BExpr expr, Label label, Label end) {
+    public static IfAsJump newIfJump(Expression expr, Label label, Label end) {
         return new IfAsJump(expr, label, end);
     }
 
@@ -133,7 +134,7 @@ public class EventFactory {
         return newJump(BConst.TRUE, target);
     }
 
-    public static Assume newAssume(ExprInterface expr) {
+    public static Assume newAssume(Expression expr) {
         return new Assume(expr);
     }
 
@@ -145,7 +146,7 @@ public class EventFactory {
         return load;
     }
 
-    public static RMWStore newRMWStore(Load loadEvent, IExpr address, ExprInterface value, String mo) {
+    public static RMWStore newRMWStore(Load loadEvent, IExpr address, Expression value, String mo) {
         return new RMWStore(loadEvent, address, value, mo);
     }
 
@@ -155,11 +156,11 @@ public class EventFactory {
         return load;
     }
 
-    public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean isStrong) {
+    public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, Expression value, String mo, boolean isStrong) {
         return new RMWStoreExclusive(address, value, mo, isStrong, false);
     }
 
-    public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo) {
+    public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, Expression value, String mo) {
         return newRMWStoreExclusive(address, value, mo, false);
     }
 
@@ -182,7 +183,7 @@ public class EventFactory {
         private Common() {
         }
 
-        public static StoreExclusive newExclusiveStore(Register register, IExpr address, ExprInterface value, String mo) {
+        public static StoreExclusive newExclusiveStore(Register register, IExpr address, Expression value, String mo) {
             return new StoreExclusive(register, address, value, mo);
         }
     }
@@ -256,7 +257,7 @@ public class EventFactory {
             return new AtomicLoad(register, address, mo);
         }
 
-        public static AtomicStore newStore(IExpr address, ExprInterface value, String mo) {
+        public static AtomicStore newStore(IExpr address, Expression value, String mo) {
             return new AtomicStore(address, value, mo);
         }
 
@@ -280,7 +281,7 @@ public class EventFactory {
             return new LlvmLoad(register, address, mo);
         }
 
-        public static LlvmStore newStore(IExpr address, ExprInterface value, String mo) {
+        public static LlvmStore newStore(IExpr address, Expression value, String mo) {
             return new LlvmStore(address, value, mo);
         }
 
@@ -415,15 +416,15 @@ public class EventFactory {
             return new LKMMLoad(reg, address, mo);
         }
 
-        public static LKMMStore newLKMMStore(IExpr address, ExprInterface value, String mo) {
+        public static LKMMStore newLKMMStore(IExpr address, Expression value, String mo) {
             return new LKMMStore(address, value, mo);
         }
 
-        public static RMWAddUnless newRMWAddUnless(IExpr address, Register register, ExprInterface cmp, IExpr value) {
+        public static RMWAddUnless newRMWAddUnless(IExpr address, Register register, Expression cmp, IExpr value) {
             return new RMWAddUnless(address, register, cmp, value);
         }
 
-        public static RMWCmpXchg newRMWCompareExchange(IExpr address, Register register, ExprInterface cmp, IExpr value, String mo) {
+        public static RMWCmpXchg newRMWCompareExchange(IExpr address, Register register, Expression cmp, IExpr value, String mo) {
             return new RMWCmpXchg(address, register, cmp, value, mo);
         }
 
@@ -502,13 +503,13 @@ public class EventFactory {
         private RISCV() {
         }
 
-        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
+        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, Expression value, String mo, boolean isStrong) {
             RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong, true);
             store.addFilters(Tag.RISCV.STCOND);
             return store;
         }
 
-        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo) {
+        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, Expression value, String mo) {
             return RISCV.newRMWStoreConditional(address, value, mo, false);
         }
 
@@ -574,7 +575,7 @@ public class EventFactory {
         private Power() {
         }
 
-        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
+        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, Expression value, String mo, boolean isStrong) {
             return new RMWStoreExclusive(address, value, mo, isStrong, true);
         }
 

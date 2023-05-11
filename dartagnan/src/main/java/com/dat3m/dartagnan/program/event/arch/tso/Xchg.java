@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.arch.tso;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
@@ -42,7 +42,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     }
 
     @Override
-    public ExprInterface getMemValue(){
+    public Expression getMemValue(){
         return resultRegister;
     }
 

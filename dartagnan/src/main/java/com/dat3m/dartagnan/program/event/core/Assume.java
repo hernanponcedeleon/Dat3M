@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -11,9 +11,9 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
 public class Assume extends Event implements RegReaderData {
 
-	protected final ExprInterface expr;
+	protected final Expression expr;
 
-	public Assume(ExprInterface expr) {
+	public Assume(Expression expr) {
 		super();
 		this.expr = expr;
 	}
@@ -24,7 +24,7 @@ public class Assume extends Event implements RegReaderData {
 	}
 
 
-	public ExprInterface getExpr(){
+	public Expression getExpr(){
 		return expr;
 	}
 

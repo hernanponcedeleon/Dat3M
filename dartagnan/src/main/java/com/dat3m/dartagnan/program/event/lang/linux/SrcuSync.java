@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -26,7 +26,7 @@ public class SrcuSync extends MemEvent {
 	// the alias analysis and the result of passes like constant propagation is 
 	// irrelevant because this event does not contribute to any data flow.
 	@Override
-	public ExprInterface getMemValue(){
+	public Expression getMemValue(){
 		return IValue.ZERO;
 	}
 

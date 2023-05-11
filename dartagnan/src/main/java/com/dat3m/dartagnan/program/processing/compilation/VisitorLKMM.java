@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.expression.Expression;
 
 import java.util.List;
 
@@ -75,8 +76,8 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitRMWAddUnless(RMWAddUnless e) {
         Register resultRegister = e.getResultRegister();
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        ExprInterface cmp = e.getCmp();
-        ExprInterface value = e.getMemValue();
+        Expression cmp = e.getCmp();
+        Expression value = e.getMemValue();
         IExpr address = e.getAddress();
 
         Label success = newLabel("RMW_success");
@@ -101,8 +102,8 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
         Register resultRegister = e.getResultRegister();
-        ExprInterface cmp = e.getCmp();
-        ExprInterface value = e.getMemValue();
+        Expression cmp = e.getCmp();
+        Expression value = e.getMemValue();
         IExpr address = e.getAddress();
         String mo = e.getMo();
 
@@ -131,7 +132,7 @@ public class VisitorLKMM extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
         IExpr address = e.getAddress();
-        ExprInterface value = e.getMemValue();
+        Expression value = e.getMemValue();
 
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;

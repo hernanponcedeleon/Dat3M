@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -9,9 +9,9 @@ import com.google.common.collect.ImmutableSet;
 
 public class RMWAddUnless extends RMWAbstract {
 
-    private final ExprInterface cmp;
+    private final Expression cmp;
 
-    public RMWAddUnless(IExpr address, Register register, ExprInterface cmp, IExpr value) {
+    public RMWAddUnless(IExpr address, Register register, Expression cmp, IExpr value) {
         super(address, register, value, Tag.Linux.MO_MB);
         this.cmp = cmp;
     }
@@ -26,7 +26,7 @@ public class RMWAddUnless extends RMWAbstract {
         return resultRegister + " := atomic_add_unless" + "(" + address + ", " + value + ", " + cmp + ")\t### LKMM";
     }
 
-    public ExprInterface getCmp() {
+    public Expression getCmp() {
     	return cmp;
     }
     

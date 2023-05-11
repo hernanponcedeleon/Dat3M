@@ -3,14 +3,15 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.google.common.collect.ImmutableSet;
 
 public class BExprUn extends BExpr {
 
-    private final ExprInterface b;
+    private final Expression b;
     private final BOpUn op;
 
-    public BExprUn(BOpUn op, ExprInterface b) {
+    public BExprUn(BOpUn op, Expression b) {
         this.b = b;
         this.op = op;
     }
@@ -19,7 +20,7 @@ public class BExprUn extends BExpr {
         return op;
     }
 
-    public ExprInterface getInner() {
+    public Expression getInner() {
         return b;
     }
 

@@ -1,9 +1,10 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 
-public abstract class IExpr implements ExprInterface {
+public abstract class IExpr implements Expression {
 
 	public IExpr getBase() {
 		throw new UnsupportedOperationException("getBase() not supported for " + this);

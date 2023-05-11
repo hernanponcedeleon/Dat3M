@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.expression.Expression;
 
 import java.util.List;
 
@@ -159,9 +160,9 @@ class VisitorTso extends VisitorBase {
                 Register oldValueRegister = e.getStructRegister(0);
                 Register resultRegister = e.getStructRegister(1);
 
-                ExprInterface value = e.getMemValue();
+                Expression value = e.getMemValue();
                 IExpr address = e.getAddress();
-                ExprInterface expectedValue = e.getExpectedValue();
+                Expression expectedValue = e.getExpectedValue();
 
                 Local casCmpResult = newLocal(resultRegister, expressions.makeBinary(oldValueRegister, EQ, expectedValue));
                 Label casEnd = newLabel("CAS_end");
@@ -195,7 +196,7 @@ class VisitorTso extends VisitorBase {
         public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
                 Register resultRegister = e.getResultRegister();
                 IExpr address = e.getAddress();
-                ExprInterface value = e.getMemValue();
+                Expression value = e.getMemValue();
                 String mo = e.getMo();
                 IExpr expectedAddr = e.getExpectedAddr();
                 int precision = resultRegister.getPrecision();

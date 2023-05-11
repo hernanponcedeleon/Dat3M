@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.catomic;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -41,7 +41,7 @@ public class AtomicLoad extends MemEvent implements RegWriter {
     }
 
     @Override
-    public ExprInterface getMemValue(){
+    public Expression getMemValue(){
         return resultRegister;
     }
 
