@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
-import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.*;
@@ -98,8 +97,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     protected BeginAtomic currentBeginAtomic = null;
     protected Call_cmdContext atomicMode = null;
-
-    private final ExprSimplifier exprSimplifier = new ExprSimplifier(expressionFactory);
 
 
     private final List<String> smackDummyVariables =
@@ -450,7 +447,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                     append(child);
                     continue;
                 }
-                value = value.visit(exprSimplifier);
                 append(EventFactory.newLocal(register.get(), value));
                 continue;
             }
