@@ -114,7 +114,7 @@ public class VisitorLitmusPTX
     // Instruction list (the program itself)
     @Override
     public Object visitConstant(LitmusPTXParser.ConstantContext ctx) {
-        return new IValue(new BigInteger(ctx.getText()), -1);
+        return new IValue(new BigInteger(ctx.getText()), getArchPrecision());
     }
 
     @Override
@@ -132,15 +132,21 @@ public class VisitorLitmusPTX
         IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
         String sem = ctx.sem().content;
         String scope;
-        if (sem.equals(Tag.PTX.WEAK)) {
-            if (ctx.scope() != null) {
-                throw new ParsingException("Weak store instruction doesn't need scope: " + ctx.scope().content);
-            }
-            scope = Tag.PTX.SYS;
-        } else if (sem.equals(Tag.PTX.REL) || sem.equals(Tag.PTX.RLX)) {
-            scope = ctx.scope().content;
-        } else {
-            throw new ParsingException("Store instruction doesn't support sem: " + ctx.sem().content);
+        switch (sem) {
+            case Tag.PTX.WEAK:
+                if (ctx.scope() != null) {
+                    throw new ParsingException("Weak store instruction doesn't need scope: " + ctx.scope().content);
+                }
+                scope = Tag.PTX.SYS;
+                break;
+            case Tag.PTX.REL:
+                scope = ctx.scope().content;
+                break;
+            case Tag.PTX.RLX:
+                scope = ctx.scope().content;
+                break;
+            default:
+                throw new ParsingException("Store instruction doesn't support sem: " + ctx.sem().content);
         }
         Store store = EventFactory.PTX.newTaggedStore(object, constant, sem, scope);
         store.addFilters(ctx.store().storeProxy);
@@ -154,15 +160,21 @@ public class VisitorLitmusPTX
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
         String sem = ctx.sem().content;
         String scope;
-        if (sem.equals(Tag.PTX.WEAK)) {
-            if (ctx.scope() != null) {
-                throw new ParsingException("Weak store instruction doesn't need scope: " + ctx.scope().content);
-            }
-            scope = Tag.PTX.SYS;
-        } else if (sem.equals(Tag.PTX.REL) || sem.equals(Tag.PTX.RLX)) {
-            scope = ctx.scope().content;
-        } else {
-            throw new ParsingException("Store instruction doesn't support sem: " + ctx.sem().content);
+        switch (sem) {
+            case Tag.PTX.WEAK:
+                if (ctx.scope() != null) {
+                    throw new ParsingException("Weak store instruction doesn't need scope: " + ctx.scope().content);
+                }
+                scope = Tag.PTX.SYS;
+                break;
+            case Tag.PTX.REL:
+                scope = ctx.scope().content;
+                break;
+            case Tag.PTX.RLX:
+                scope = ctx.scope().content;
+                break;
+            default:
+                throw new ParsingException("Store instruction doesn't support sem: " + ctx.sem().content);
         }
         Store store = EventFactory.PTX.newTaggedStore(object, register, sem, scope);
         store.addFilters(ctx.store().storeProxy);
@@ -170,7 +182,7 @@ public class VisitorLitmusPTX
     }
 
     @Override
-    public Object visitLoadConstant(LitmusPTXParser.LoadConstantContext ctx) {
+    public Object visitLocalConstant(LitmusPTXParser.LocalConstantContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
         IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
         String sem = ctx.sem().content;
@@ -194,15 +206,21 @@ public class VisitorLitmusPTX
         MemoryObject location = programBuilder.getOrNewObject(ctx.location().getText());
         String sem = ctx.sem().content;
         String scope;
-        if (sem.equals(Tag.PTX.WEAK)) {
-            if (ctx.scope() != null) {
-                throw new ParsingException("Weak load instruction doesn't need scope: " + ctx.scope().content);
-            }
-            scope = Tag.PTX.SYS;
-        } else if (sem.equals(Tag.PTX.ACQ) || sem.equals(Tag.PTX.RLX)) {
-            scope = ctx.scope().content;
-        } else {
-            throw new ParsingException("Load instruction doesn't support sem: " + ctx.sem().content);
+        switch (sem) {
+            case Tag.PTX.WEAK:
+                if (ctx.scope() != null) {
+                    throw new ParsingException("Weak load instruction doesn't need scope: " + ctx.scope().content);
+                }
+                scope = Tag.PTX.SYS;
+                break;
+            case Tag.PTX.ACQ:
+                scope = ctx.scope().content;
+                break;
+            case Tag.PTX.RLX:
+                scope = ctx.scope().content;
+                break;
+            default:
+                throw new ParsingException("Load instruction doesn't support sem: " + ctx.sem().content);
         }
         Load load = EventFactory.PTX.newTaggedLoad(register, location, sem, scope);
         load.addFilters(ctx.load().loadProxy);

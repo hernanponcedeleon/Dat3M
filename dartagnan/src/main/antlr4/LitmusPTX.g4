@@ -104,11 +104,11 @@ storeRegister
     ;
 
 loadInstruction
-    :   loadConstant
+    :   localConstant
     |   loadLocation
     ;
 
-loadConstant
+localConstant
     :   load Period sem (Period scope)? register Comma constant
     ;
 
