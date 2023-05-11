@@ -169,7 +169,7 @@ location
     ;
 
 register
-    :   Percent Identifier
+    :   Register
     ;
 
 operation returns [String content]
@@ -231,6 +231,10 @@ atom returns [String atomProxy]
 red returns [String redProxy]
     :   Red {$redProxy = "GEN";}
     |   SurfaceRed {$redProxy = "SUR";}
+    ;
+
+Register
+    :   'r' DigitSequence
     ;
 
 Load            :   'ld';

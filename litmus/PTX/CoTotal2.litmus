@@ -3,11 +3,11 @@ PTX Bar
 {
 x=0;
 y=0;
-P0:%r1=0;
-P1:%r2=0;
+P0:r1=0;
+P1:r2=0;
 }
  P0@cta 0,gpu 0         | P1@cta 1,gpu 0         ;
  st.weak x, 1           | st.weak y, 1           ;
- ld.weak %r1, y         | ld.weak %r2, x         ;
+ ld.weak r1, y          | ld.weak r2, x          ;
 exists
-(P0:%r1 != 1 /\ P1:%r2 != 1)
+(P0:r1 != 1 /\ P1:r2 != 1)

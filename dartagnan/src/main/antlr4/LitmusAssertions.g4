@@ -34,7 +34,6 @@ assertionValue
 
 varName
     :    Underscore* Identifier (Identifier | DigitSequence | Underscore)*
-    |    Percent? Identifier (Identifier | DigitSequence | Underscore)*
     ;
 
 constant

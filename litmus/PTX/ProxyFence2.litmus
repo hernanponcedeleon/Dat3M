@@ -3,11 +3,11 @@ PTX fence
 {
 rd1 = 0;
 rd2 @ generic aliases rd1;
-P0:%r0=0;
+P0:r0=0;
 }
  P0@cta 0,gpu 0                   ;
  st.weak rd1, 42                  ;
  fence.proxy.constant             ;
- cold.weak %r0, rd2               ;
+ cold.weak r0, rd2                ;
 forall
-(P0:%r0 == 42)
+(P0:r0 == 42)

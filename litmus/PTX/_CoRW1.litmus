@@ -1,12 +1,12 @@
 PTX CoRW
 "Coherence, Read Write"
 {
-0:%r3=0;
-1:%r1=0;
+P0:r3=0;
+P1:r1=0;
 x=0;
 }
  P0@cta 0,gpu 0         | P1@cta 1,gpu 0         ;
- st.release.gpu x, 1    | ld.acquire.gpu %r1, x  ;
- ld.weak %r3, x         | st.weak x, 2           ;
+ st.release.gpu x, 1    | ld.acquire.gpu r1, x   ;
+ ld.weak r3, x          | st.weak x, 2           ;
 ~exists
-(P1:%r1 == 1 /\ x == 1)
+(1:r1 == 1 /\ x == 1)

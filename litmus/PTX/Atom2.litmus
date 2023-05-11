@@ -1,12 +1,12 @@
 PTX atom
 "Atomicity of Read Modify Write(RMW) operations"
 {
-P0:%r0=0;
-P1:%r0=0;
+P0:r0=0;
+P1:r0=0;
 x=0;
 }
  P0@cta 0,gpu 0                   | P1@cta 1,gpu 0                   ;
  red.acq_rel.cta.plus x, 1        | red.acq_rel.cta.plus x, 1        ;
-                                  | ld.acquire.cta %r0, x            ;
+                                  | ld.acquire.cta r0, x             ;
 exists
-(P1:%r0 == 1)
+(P1:r0 == 1)

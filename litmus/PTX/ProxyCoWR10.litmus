@@ -4,12 +4,12 @@ PTX proxyfence
 x = 0;
 t @ texture aliases x;
 s @ surface aliases x;
-P0:%r0=0;
+P0:r0=0;
 }
  P0@cta 0,gpu 0                   ;
  sust.weak s, 1                   ;
  fence.proxy.surface              ;
  fence.proxy.texture              ;
- tld.weak %r0, t                  ;
+ tld.weak r0, t                   ;
 forall
-(P0:%r0 == 1)
+(P0:r0 == 1)

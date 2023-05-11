@@ -5,7 +5,7 @@ x=0;
 y=0;
 }
  P0@cta 0,gpu 0         | P1@cta 0,gpu 0         ;
- st.weak x, 1           | ld.acquire.gpu %r1, y  ;
- st.release.gpu y, 1    | ld.weak %r2, x         ;
+ st.weak x, 1           | ld.acquire.gpu r1, y   ;
+ st.release.gpu y, 1    | ld.weak r2, x          ;
 ~exists
-(P1:%r1 == 1 /\ P1:%r2 != 1)
+(P1:r1 == 1 /\ P1:r2 != 1)

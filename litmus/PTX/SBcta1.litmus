@@ -3,12 +3,12 @@ PTX Bar
 {
 x=0;
 y=0;
-P0:%r0=0;
-P1:%r2=0;
+P0:r0=0;
+P1:r2=0;
 }
  P0@cta 0,gpu 0         | P1@cta 0,gpu 0         ;
  st.weak x, 1           | st.weak y, 2           ;
  fence.sc.cta           | fence.sc.cta           ;
- ld.weak %r0, y         | ld.weak %r1, x         ;
+ ld.weak r0, y          | ld.weak r1, x          ;
 forall
-(P0:%r0 == 2 \/ P1:%r1 == 1)
+(P0:r0 == 2 \/ P1:r1 == 1)

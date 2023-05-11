@@ -1,13 +1,13 @@
 PTX atom
 "Atomicity of Read Modify Write(RMW) operations"
 {
-P0:%r0=0;
-P1:%r1=0;
+P0:r0=0;
+P1:r1=0;
 x=0;
 y=0;
 }
  P0@cta 0,gpu 0                       | P1@cta 1,gpu 0                         ;
- atom.acq_rel.gpu.plus %r1, x, 1      | atom.acq_rel.gpu.plus %r3, y, 1        ;
- atom.acq_rel.gpu.plus %r2, y, 1      | atom.acq_rel.gpu.plus %r4, x, 1        ;
+ atom.acq_rel.gpu.plus r1, x, 1       | atom.acq_rel.gpu.plus r3, y, 1         ;
+ atom.acq_rel.gpu.plus r2, y, 1       | atom.acq_rel.gpu.plus r4, x, 1         ;
 forall
-(P0:%r2 != 0 \/ P1:%r4 != 0)
+(P0:r2 != 0 \/ P1:r4 != 0)
