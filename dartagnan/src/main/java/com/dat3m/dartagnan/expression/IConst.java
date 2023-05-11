@@ -22,9 +22,4 @@ public abstract class IConst extends IExpr {
 	public IConst reduce() {
 		return this;
 	}
-	
-	@Override
-	public IExpr getBase() {
-		return this;
-	}
 }

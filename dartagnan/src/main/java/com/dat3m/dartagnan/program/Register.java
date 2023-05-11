@@ -72,9 +72,4 @@ public class Register extends IExpr {
 	public int getPrecision() {
     	return precision;
     }
-
-	@Override
-	public IExpr getBase() {
-    	return this;
-    }
 }

@@ -153,9 +153,15 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         if (expr instanceof Register) {
             // r1 = r2 -> add edge r2 --> r1
             addEdge(expr, register);
-        } else if (expr instanceof IExprBin && ((IExprBin) expr).getBase() instanceof Register) {
-            addAllAddresses(register, maxAddressSet);
-            variables.add(register);
+        } else if (expr instanceof IExprBin) {
+            Expression base = ((IExprBin) expr).getLHS();
+            while (base instanceof IExprBin) {
+                base = ((IExprBin) base).getLHS();
+            }
+            if (base instanceof Register) {
+                addAllAddresses(register, maxAddressSet);
+                variables.add(register);
+            }
         } else if (expr instanceof MemoryObject) {
             // r = &a
             addAddress(register, new Location((MemoryObject) expr, 0));
@@ -212,7 +218,10 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         if (!(exp instanceof IExprBin)) {
             return;
         }
-        IExpr base = ((IExprBin) exp).getBase();
+        Expression base = ((IExprBin) exp).getLHS();
+        while (base instanceof IExprBin) {
+            base = ((IExprBin) base).getLHS();
+        }
         if (base instanceof MemoryObject) {
             IExpr rhs = ((IExprBin) exp).getRHS();
             //FIXME Address extends IConst

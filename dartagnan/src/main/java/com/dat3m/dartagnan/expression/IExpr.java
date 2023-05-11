@@ -6,10 +6,6 @@ import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 
 public abstract class IExpr implements Expression {
 
-	public IExpr getBase() {
-		throw new UnsupportedOperationException("getBase() not supported for " + this);
-	}
-
 	public int getPrecision() {
 		throw new UnsupportedOperationException("getPrecision() not supported for " + this);
 	}

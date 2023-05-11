@@ -43,11 +43,6 @@ public class IExprBin extends IExpr {
 		return lhs.getPrecision();
 	}
 	
-	@Override
-	public IExpr getBase() {
-		return lhs.getBase();
-	}
-	
 	public IOpBin getOp() {
 		return op;
 	}
