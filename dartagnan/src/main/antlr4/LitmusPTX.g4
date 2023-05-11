@@ -178,18 +178,9 @@ register
 
 operation locals [IOpBin op]
     :   Plus {$op = IOpBin.PLUS;}
-    |   Minus {$op = IOpBin.MINUS;}
-    |   Mult {$op = IOpBin.MULT;}
-    |   Div {$op = IOpBin.DIV;}
-    |   Udiv {$op = IOpBin.UDIV;}
-    |   Mod {$op = IOpBin.MOD;}
-    |   SRem {$op = IOpBin.SREM;}
-    |   URem {$op = IOpBin.UREM;}
     |   And {$op = IOpBin.AND;}
     |   Or {$op = IOpBin.OR;}
     |   Xor {$op = IOpBin.XOR;}
-    |   L_Shift {$op = IOpBin.L_SHIFT;}
-    |   R_Shift {$op = IOpBin.R_SHIFT;}
     ;
 
 assertionValue
@@ -269,18 +260,9 @@ Acq_rel :   'acq_rel';
 Sc      :   'sc';
 
 Plus    :   'plus';
-Minus   :   'minus';
-Mult    :   'mult';
-Div     :   'div';
-Udiv    :   'udiv';
-Mod     :   'mod';
-SRem    :   's_rem';
-URem    :   'u_rem';
 And     :   'and';
 Or      :   'or';
 Xor     :   'xor';
-L_Shift :   'l_shift';
-R_Shift :   'r_shift';
 
 Proxy       :   'proxy';
 Generic     :   'generic';
