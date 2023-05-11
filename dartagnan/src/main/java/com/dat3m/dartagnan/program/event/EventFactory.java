@@ -19,10 +19,8 @@ import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -88,18 +86,10 @@ public class EventFactory {
         return fence;
     }
 
-    public static Init newInit(MemoryObject base, int offset, ExpressionFactory factory) {
-        return new Init(base, offset, factory.makeBinary(base, IOpBin.PLUS, factory.makeValue(BigInteger.valueOf(offset), base.getPrecision())));
-    }
-
     // ------------------------------------------ Local events ------------------------------------------
 
     public static Cmp newCompare(IExpr left, IExpr right) {
         return new Cmp(left, right);
-    }
-
-    public static Skip newSkip() {
-        return new Skip();
     }
 
     public static FunCall newFunctionCall(String funName) {

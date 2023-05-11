@@ -2,7 +2,8 @@ package com.dat3m.dartagnan.program;
 
 
 import com.dat3m.dartagnan.expression.INonDet;
-import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.core.Skip;
+import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -103,7 +104,7 @@ public class Program {
     }
 
     public Thread newThread(String name) {
-        return newThread(name, EventFactory.newSkip());
+        return newThread(name, new Skip());
     }
 
     public Thread newThread(String name, Event entry) {

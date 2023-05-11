@@ -1,11 +1,14 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
@@ -89,7 +92,8 @@ public class MemoryAllocation implements ProgramProcessor {
                     memObj.getStaticallyInitializedFields() : IntStream.range(0, memObj.size()).boxed()::iterator;
 
             for(int i : fieldsToInit) {
-                final Event init = EventFactory.newInit(memObj, i, expressionFactory);
+                IValue offset = expressionFactory.makeValue(BigInteger.valueOf(i), memObj.getPrecision());
+                Event init = new Init(memObj, i, expressionFactory.makeBinary(memObj, IOpBin.PLUS, offset));
                 final Thread thread = program.newThread(".INIT." + memObj + "." + i, init);
                 thread.append(EventFactory.newLabel(thread.getEndLabelName()));
             }
