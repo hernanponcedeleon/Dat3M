@@ -67,7 +67,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
             long min = nonDet.getMin();
             long max = nonDet.getMax();
             if (expression instanceof BitvectorFormula) {
-                INonDetTypes type = nonDet.getType();
+                INonDetTypes type = nonDet.getNonDetType();
                 boolean signed = type.equals(INT) || type.equals(LONG) || type.equals(SHORT) || type.equals(CHAR);
                 BitvectorFormulaManager bvmgr = context.getFormulaManager().getBitvectorFormulaManager();
                 enc = bmgr.and(enc,

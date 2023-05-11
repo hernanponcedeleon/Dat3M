@@ -15,7 +15,7 @@ public class INonDet extends IExpr {
         this.precision = precision;
     }
 
-    public INonDetTypes getType() {
+    public INonDetTypes getNonDetType() {
         return type;
     }
 
