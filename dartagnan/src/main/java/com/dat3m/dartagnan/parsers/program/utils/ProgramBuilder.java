@@ -252,12 +252,12 @@ public class ProgramBuilder {
         return object;
     }
 
-    public VirtualMemoryObject initLocEqLocAliasProxy(String leftName, String rightName){
+    public MemoryObject initLocEqLocAliasProxy(String leftName, String rightName){
         MemoryObject rightLocation = getObject(rightName);
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
-        VirtualMemoryObject object = (VirtualMemoryObject) locations.computeIfAbsent(
+        MemoryObject object = locations.computeIfAbsent(
                 leftName, k->memory.allocateVirtually(1, true));
         object.setCVar(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
