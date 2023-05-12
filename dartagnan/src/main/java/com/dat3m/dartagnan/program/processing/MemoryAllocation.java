@@ -18,6 +18,8 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import java.math.BigInteger;
 import java.util.stream.IntStream;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 /*
     This pass collects all Malloc events in the program and for each of them it:
         (1) allocates a MemoryObject of appropriate size
@@ -49,12 +51,10 @@ public class MemoryAllocation implements ProgramProcessor {
     }
 
     private int getSize(Malloc malloc) {
-        try {
-            return malloc.getSizeExpr().reduce().getValueAsInt();
-        } catch (Exception e) {
-            final String error = String.format("Variable-sized malloc '%s' is not supported", malloc);
-            throw new MalformedProgramException(error);
+        if (!(malloc.getSizeExpr() instanceof IValue)) {
+            throw new MalformedProgramException("Variable-sized malloc '" + malloc + "' is not supported");
         }
+        return ((IValue) malloc.getSizeExpr()).getValueAsInt();
     }
 
     public void moveAndAlignMemoryObjects(Memory memory) {

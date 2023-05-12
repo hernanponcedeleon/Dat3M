@@ -430,7 +430,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             }
             if (initMode) {
                 MemoryObject object = program.getMemory().getOrNewObject(name);
-                object.setInitialValue(0, ((IExpr) value).reduce());
+                if (!(value instanceof IConst)) {
+                    throw new ParsingException("Expected constant value in " + ctx.getText() + ".");
+                }
+                object.setInitialValue(0, (IConst) value);
                 continue;
             }
             Optional<Register> register = thread.getRegister(currentScope.getID() + ":" + name);
@@ -684,7 +687,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 Expression lhs = address;
                 int rhs = 0;
                 while (lhs instanceof IExprBin) {
-                    rhs += ((IExprBin) lhs).getRHS().reduce().getValueAsInt();
+                    rhs += ((IValue) ((IExprBin) lhs).getRHS()).getValueAsInt();
                     lhs = ((IExprBin) lhs).getLHS();
                 }
                 String text = ctx.expr(1).getText();
@@ -693,7 +696,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                     text = split[split.length - 1];
                     text = text.substring(text.indexOf("(") + 1, text.indexOf(","));
                 }
-                program.getMemory().getOrNewObject(text).appendInitialValue(rhs, value.reduce());
+                if (!(value instanceof IConst)) {
+                    throw new ParsingException("Expected constant value in " + ctx.getText() + ".");
+                }
+                program.getMemory().getOrNewObject(text).appendInitialValue(rhs, (IConst) value);
                 return null;
             }
             append(EventFactory.newStore(address, value, ""));

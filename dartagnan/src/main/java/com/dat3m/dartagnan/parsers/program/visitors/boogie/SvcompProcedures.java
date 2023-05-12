@@ -174,7 +174,11 @@ public class SvcompProcedures {
     }
 
     private static void __VERIFIER_loop_bound(VisitorBoogie visitor, Call_cmdContext ctx) {
-        int bound = ((IExpr)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValueAsInt();
+        Object boundObject = ctx.call_params().exprs().expr(0).accept(visitor);
+        if (!(boundObject instanceof IValue)) {
+            throw new ParsingException("Expected constant bound in " + ctx.getText() + ".");
+        }
+        int bound = ((IValue) boundObject).getValueAsInt();
         visitor.append(EventFactory.Svcomp.newLoopBound(bound));
 
     }

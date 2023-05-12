@@ -16,10 +16,4 @@ public abstract class IConst extends IExpr {
 	public int getValueAsInt() {
 		return getValue().intValue();
 	}
-
-
-	@Override
-	public IConst reduce() {
-		return this;
-	}
 }
