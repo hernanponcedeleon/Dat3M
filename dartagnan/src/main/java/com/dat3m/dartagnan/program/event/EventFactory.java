@@ -608,37 +608,37 @@ public class EventFactory {
     public static class PTX {
         private PTX() {}
 
-        public static Store newTaggedStore(IExpr address, ExprInterface value, String sem,  String scope) {
-            Store store = new Store(address, value, sem); // sem = REL || RLX || WEAK
+        public static Store newTaggedStore(IExpr address, ExprInterface value, String mo,  String scope) {
+            Store store = new Store(address, value, mo); // mo = REL || RLX || WEAK
             store.addFilters(scope); // scope = CTA || GPU || SYS
             return store;
         }
 
-        public static Load newTaggedLoad(Register register, IExpr address, String sem, String scope) {
-            Load load = new Load(register, address, sem); // sem = ACQ || RLX || WEAK
+        public static Load newTaggedLoad(Register register, IExpr address, String mo, String scope) {
+            Load load = new Load(register, address, mo); // mo = ACQ || RLX || WEAK
             load.addFilters(scope); // scope =  CTA || GPU || SYS
             return load;
         }
 
-        public static Fence newTaggedFence(String sem, String scope) {
-            Fence fence = new Fence(sem); // sem = ACQ_REL || SC
+        public static Fence newTaggedFence(String mo, String scope) {
+            Fence fence = new Fence(mo); // mo = ACQ_REL || SC
             fence.addFilters(scope);
             return fence;
         }
 
         public static RMWFetchOp newTaggedAtomOp(IExpr address, Register register, IExpr value,
-                                           IOpBin op, String sem, String scope) {
+                                           IOpBin op, String mo, String scope) {
             RMWFetchOp atom = new RMWFetchOp(address, register, value, op, Tag.Linux.MO_MB);
             atom.addFilters(scope);
-            atom.addFilters(sem); // sem = ACQ_REL || RLX
+            atom.addFilters(mo); // mo = ACQ_REL || RLX
             return atom;
         }
 
         public static RMWOp newTaggedRedOp(IExpr address, Register register, IExpr value,
-                                                    IOpBin op, String sem, String scope) {
+                                                    IOpBin op, String mo, String scope) {
             RMWOp red = new RMWOp(address, register, value, op);
             red.addFilters(scope);
-            red.addFilters(sem); // sem = ACQ_REL || RLX
+            red.addFilters(mo); // mo = ACQ_REL || RLX
             return red;
         }
     }
