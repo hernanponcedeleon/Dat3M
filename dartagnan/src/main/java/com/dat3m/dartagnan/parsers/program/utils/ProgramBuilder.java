@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
-import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
+import com.dat3m.dartagnan.program.ScopedThread.PTXThread;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.IConst;
@@ -29,9 +29,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 public class ProgramBuilder {
 
     private final Map<Integer, Thread> threads = new HashMap<>();
-
-    private final Map<Integer, Integer> threadGPU = new HashMap<>();
-    private final Map<Integer, Integer> threadCTA = new HashMap<>();
 
     private final Map<String,MemoryObject> locations = new HashMap<>();
 
@@ -220,24 +217,14 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // PTX
     public void initScopedThread(String name, int id, int ctaID, int gpuID) {
-        initThread(name, id);
-        if(!threadCTA.containsKey(id)){
-            threadCTA.putIfAbsent(id, ctaID);
-        }
-        if(!threadGPU.containsKey(id)){
-            threadGPU.putIfAbsent(id, gpuID);
+        if(!threads.containsKey(id)){
+            Skip threadEntry = EventFactory.newSkip();
+            threads.putIfAbsent(id, new PTXThread(name, id, threadEntry, gpuID, ctaID));
         }
     }
 
     public void initScopedThread(int id, int ctaID, int gpuID) {
         initScopedThread(String.valueOf(id), id, ctaID, gpuID);
-    }
-
-    public Event addScopedChild(int thread, Event child) {
-        Event event = addChild(thread, child);
-        event.addFilters(Tag.PTX.CTA + this.threadCTA.get(thread));
-        event.addFilters(Tag.PTX.GPU + this.threadGPU.get(thread));
-        return event;
     }
 
     public MemoryObject initLocEqLocAliasGen(String leftName, String rightName){

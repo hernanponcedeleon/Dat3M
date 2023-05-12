@@ -91,10 +91,9 @@ public abstract class Definition implements Constraint {
         default T visitCoherence(Relation co) { return visitDefinition(co, List.of()); }
         default T visitSameAddress(Relation loc) { return visitDefinition(loc, List.of()); }
         default T visitReadFrom(Relation rf) { return visitDefinition(rf, List.of()); }
-        default T visitSameScope(Relation sc, ArrayList<String> scopes) { return visitDefinition(sc, List.of()); }
+        default T visitSameScope(Relation sc) { return visitDefinition(sc, List.of()); }
         default T visitAlias(Relation alias) { return visitDefinition(alias, List.of()); }
-        default T visitDirectAlias(Relation dalias) { return visitDefinition(dalias, List.of()); }
-        default T visitSameSpecificScope(Relation r, ArrayList<String> scopes, String scope)
+        default T visitSameSpecificScope(Relation r, String scope)
         { return visitDefinition(r, List.of()); }
     }
 

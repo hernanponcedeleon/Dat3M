@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.wmm.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.ScopedThread.PTXThread;
+import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -902,7 +904,7 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitSameScope(Relation rel, ArrayList<String> scopes) {
+        public Knowledge visitSameScope(Relation rel) {
             Set<Tuple> must = new HashSet<>();
             List<Load> loadEvents = program.getEvents(Load.class);
             List<Store> storeEvents = program.getEvents(Store.class);
@@ -913,7 +915,7 @@ public class RelationAnalysis {
             events.addAll(fenceEvents);
             for (Event e1 : events) {
                 for (Event e2 : events) {
-                    if (mustSameScope(e1, e2, scopes) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (mustSameScope(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -936,7 +938,7 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitSameSpecificScope(Relation rel, ArrayList<String> scopes, String specificScope) {
+        public Knowledge visitSameSpecificScope(Relation rel, String specificScope) {
             Set<Tuple> must = new HashSet<>();
             List<Load> loadEvents = program.getEvents(Load.class);
             List<Store> storeEvents = program.getEvents(Store.class);
@@ -947,7 +949,7 @@ public class RelationAnalysis {
             events.addAll(fenceEvents);
             for (Event e1 : events) {
                 for (Event e2 : events) {
-                    if (sameHigherScope(e1, e2, scopes, specificScope) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (sameHigherScope(e1, e2, specificScope) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -995,7 +997,8 @@ public class RelationAnalysis {
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
 
-        private boolean mustSameScope(Event first, Event second, ArrayList<String> scopes) {
+        private boolean mustSameScope(Event first, Event second) {
+            ArrayList<String> scopes = ((ScopedThread) first.getThread()).getScopes();
             String firstScope = getValidScope(first, scopes);
             String secondScope = getValidScope(second, scopes);
             if (firstScope == null || secondScope == null) {
@@ -1004,10 +1007,11 @@ public class RelationAnalysis {
             if (!firstScope.equals(secondScope)) {
                 return false;
             }
-            return sameHigherScope(first, second, scopes, firstScope);
+            return sameHigherScope(first, second, firstScope);
         }
 
-        private boolean sameHigherScope(Event first, Event second, ArrayList<String> scopes, String flag) {
+        private boolean sameHigherScope(Event first, Event second, String flag) {
+            ArrayList<String> scopes = ((ScopedThread) first.getThread()).getScopes();
             int validIndex = scopes.indexOf(flag);
             for (int i = 1; i <= validIndex; i++) {
                 String scope = scopes.get(i);
@@ -1028,28 +1032,9 @@ public class RelationAnalysis {
         }
 
         private boolean onSameScope(Event first, Event second, String scope) {
-            Set<String> f1 = first.getFilters();
-            Set<String> f2 = second.getFilters();
-            if (getScopeID(f1, scope) != getScopeID(f2, scope)) {
-                return false;
-            }
-            if (getScopeID(f1, scope) == -1) {
-                return false;
-            }
-            return true;
-        }
-
-        private int getScopeID(Set<String> filters, String scope) {
-            int result = -1;
-            for (String filter : filters) {
-                if (filter.equals(scope)) {
-                    continue;
-                }
-                if (filter.contains(scope)) {
-                    result = Integer.parseInt(filter.replace(scope, ""));
-                }
-            }
-            return result;
+            int firstId = ((PTXThread) first.getThread()).getScopeIds(scope);
+            int secondId = ((PTXThread) second.getThread()).getScopeIds(scope);
+            return (firstId == secondId && firstId != -1);
         }
     }
 

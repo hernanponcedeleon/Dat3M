@@ -22,8 +22,7 @@ import java.math.BigInteger;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 
-public class VisitorLitmusPTX
-        extends LitmusPTXBaseVisitor<Object> {
+public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     private final ProgramBuilder programBuilder;
     private int mainThread;
     private int threadCount = 0;
@@ -151,7 +150,7 @@ public class VisitorLitmusPTX
         Store store = EventFactory.PTX.newTaggedStore(object, constant, sem, scope);
         store.addFilters(ctx.store().storeProxy);
         store.addFilters(Tag.PTX.CON);
-        return programBuilder.addScopedChild(mainThread, store);
+        return programBuilder.addChild(mainThread, store);
     }
 
     @Override
@@ -178,7 +177,7 @@ public class VisitorLitmusPTX
         }
         Store store = EventFactory.PTX.newTaggedStore(object, register, sem, scope);
         store.addFilters(ctx.store().storeProxy);
-        return programBuilder.addScopedChild(mainThread, store);
+        return programBuilder.addChild(mainThread, store);
     }
 
     @Override
@@ -224,7 +223,7 @@ public class VisitorLitmusPTX
         }
         Load load = EventFactory.PTX.newTaggedLoad(register, location, sem, scope);
         load.addFilters(ctx.load().loadProxy);
-        return programBuilder.addScopedChild(mainThread, load);
+        return programBuilder.addChild(mainThread, load);
     }
 
     @Override
@@ -242,7 +241,7 @@ public class VisitorLitmusPTX
         }
         RMWFetchOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, sem, scope);
         atom.addFilters(ctx.atom().atomProxy);
-        return programBuilder.addScopedChild(mainThread, atom);
+        return programBuilder.addChild(mainThread, atom);
     }
 
     @Override
@@ -260,7 +259,7 @@ public class VisitorLitmusPTX
         }
         RMWFetchOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, sem, scope);
         atom.addFilters(ctx.atom().atomProxy);
-        return programBuilder.addScopedChild(mainThread, atom);
+        return programBuilder.addChild(mainThread, atom);
     }
 
     @Override
@@ -278,7 +277,7 @@ public class VisitorLitmusPTX
         }
         RMWOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, constant, op, sem, scope);
         red.addFilters(ctx.red().redProxy);
-        return programBuilder.addScopedChild(mainThread, red);
+        return programBuilder.addChild(mainThread, red);
     }
 
     @Override
@@ -296,7 +295,7 @@ public class VisitorLitmusPTX
         }
         RMWOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, register_operand, op, sem, scope);
         red.addFilters(ctx.red().redProxy);
-        return programBuilder.addScopedChild(mainThread, red);
+        return programBuilder.addChild(mainThread, red);
     }
 
     @Override
@@ -309,14 +308,14 @@ public class VisitorLitmusPTX
             throw new ParsingException("Fence instruction doesn't support sem: " + ctx.sem().content);
         }
         Fence fence = EventFactory.PTX.newTaggedFence(sem, scope);
-        return programBuilder.addScopedChild(mainThread, fence);
+        return programBuilder.addChild(mainThread, fence);
     }
 
     @Override
     public Object visitFenceProxy(LitmusPTXParser.FenceProxyContext ctx) {
         Fence fence = EventFactory.newFence(Tag.PTX.PROXY);
         fence.addFilters(ctx.proxyType().content);
-        return programBuilder.addScopedChild(mainThread, fence);
+        return programBuilder.addChild(mainThread, fence);
     }
 
     @Override
@@ -324,6 +323,6 @@ public class VisitorLitmusPTX
         Fence fence = EventFactory.newFence(Tag.PTX.PROXY);
         fence.addFilters(Tag.PTX.GEN);
         fence.addFilters(Tag.PTX.ALIAS);
-        return programBuilder.addScopedChild(mainThread, fence);
+        return programBuilder.addChild(mainThread, fence);
     }
 }
