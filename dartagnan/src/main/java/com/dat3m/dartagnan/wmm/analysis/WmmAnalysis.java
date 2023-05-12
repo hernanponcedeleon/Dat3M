@@ -28,6 +28,9 @@ public class WmmAnalysis {
             name= LOCALLY_CONSISTENT,
             description="Assumes local consistency for all created wmms.",
             secure=true)
+    // Set to false because local consistency does not hold in PTX
+    // When location accessed via different proxies but not properly synchronized,
+    // they can form intra-thread data races.
     private boolean assumeLocalConsistency = false;
 
     @Option(

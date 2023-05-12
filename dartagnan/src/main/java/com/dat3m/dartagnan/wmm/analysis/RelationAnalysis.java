@@ -757,6 +757,9 @@ public class RelationAnalysis {
                 }
                 for (MemEvent w2 : nonInitWrites) {
                     if (w1.is(PTX.WEAK) && w2.is(PTX.WEAK)) {
+                        // In PTX memory model the coherence order (co) is defined as “a partial transitive order that
+                        // relates overlapping write operations, determined at runtime,” overlapping morally weak stores
+                        // are not related by co if they are not causally related.
                         continue;
                     }
                     if (w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)
@@ -905,13 +908,10 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitSameScope(Relation rel) {
             Set<Tuple> must = new HashSet<>();
-            List<Load> loadEvents = program.getEvents(Load.class);
-            List<Store> storeEvents = program.getEvents(Store.class);
-            List<Fence> fenceEvents = program.getEvents(Fence.class);
             List<Event> events = new ArrayList<>();
-            events.addAll(loadEvents);
-            events.addAll(storeEvents);
-            events.addAll(fenceEvents);
+            events.addAll(program.getEvents(Load.class));
+            events.addAll(program.getEvents(Store.class));
+            events.addAll(program.getEvents(Fence.class));
             for (Event e1 : events) {
                 for (Event e2 : events) {
                     if (mustSameScope(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
@@ -939,13 +939,10 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitSameSpecificScope(Relation rel, String specificScope) {
             Set<Tuple> must = new HashSet<>();
-            List<Load> loadEvents = program.getEvents(Load.class);
-            List<Store> storeEvents = program.getEvents(Store.class);
-            List<Fence> fenceEvents = program.getEvents(Fence.class);
             List<Event> events = new ArrayList<>();
-            events.addAll(loadEvents);
-            events.addAll(storeEvents);
-            events.addAll(fenceEvents);
+            events.addAll(program.getEvents(Load.class));
+            events.addAll(program.getEvents(Store.class));
+            events.addAll(program.getEvents(Fence.class));
             for (Event e1 : events) {
                 for (Event e2 : events) {
                     if (sameHigherScope(e1, e2, specificScope) && !exec.areMutuallyExclusive(e1, e2)) {
