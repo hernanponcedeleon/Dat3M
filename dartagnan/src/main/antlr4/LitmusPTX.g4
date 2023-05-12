@@ -178,6 +178,9 @@ register
 
 operation locals [IOpBin op]
     :   Plus {$op = IOpBin.PLUS;}
+    |   Minus {$op = IOpBin.MINUS;}
+    |   Mult {$op = IOpBin.MULT;}
+    |   Div {$op = IOpBin.DIV;}
     |   And {$op = IOpBin.AND;}
     |   Or {$op = IOpBin.OR;}
     |   Xor {$op = IOpBin.XOR;}
@@ -260,6 +263,9 @@ Acq_rel :   'acq_rel';
 Sc      :   'sc';
 
 Plus    :   'plus';
+Minus   :   'minus';
+Mult    :   'mult';
+Div     :   'div';
 And     :   'and';
 Or      :   'or';
 Xor     :   'xor';
