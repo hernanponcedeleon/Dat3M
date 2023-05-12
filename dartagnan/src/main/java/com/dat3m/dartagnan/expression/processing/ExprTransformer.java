@@ -23,11 +23,6 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public Expression visit(BConst bConst) {
-        return bConst;
-    }
-
-    @Override
     public Expression visit(BExprBin bBin) {
         Expression l = bBin.getLHS().visit(this);
         Expression r = bBin.getRHS().visit(this);

@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 public interface ExpressionVisitor<T> {
     default T visit(Atom atom) { return null; }
-    default T visit(BConst bConst) { return null; }
     default T visit(BExprBin bBin) { return null; }
     default T visit(BExprUn bUn) { return null; }
     default T visit(BNonDet bNonDet) { return null; }

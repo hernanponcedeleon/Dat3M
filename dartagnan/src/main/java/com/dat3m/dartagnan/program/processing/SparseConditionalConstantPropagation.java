@@ -71,8 +71,8 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
     private void run(Thread thread, ExpressionFactory expressionFactory) {
         final EventSimplifier simplifier = new EventSimplifier(expressionFactory);
         final Predicate<Expression> checkDoPropagate = propagateCopyAssignments
-                ? (expr -> expr instanceof IConst || expr instanceof BConst || expr instanceof Register)
-                : (expr -> expr instanceof IConst || expr instanceof BConst);
+                ? (expr -> expr instanceof IConst || expr instanceof Register)
+                : (expr -> expr instanceof IConst);
 
         Set<Event> reachableEvents = new HashSet<>();
         Map<Label, Map<Register, Expression>> inflowMap = new HashMap<>();
@@ -224,10 +224,10 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         @Override
         public Expression visit(Register reg) {
             final Expression retVal = propagationMap.getOrDefault(reg, reg);
-            if (retVal instanceof BConst) {
+            if (retVal instanceof IValue && retVal.isBoolean()) {
                 // We only have integral registers, so we need to implicitly convert booleans to
                 // integers.
-                BigInteger value = retVal.equals(BConst.TRUE) ? BigInteger.ONE : BigInteger.ZERO;
+                BigInteger value = retVal.isTrue() ? BigInteger.ONE : BigInteger.ZERO;
                 return factory.makeValue(value, reg.getType());
             } else {
                 return retVal;

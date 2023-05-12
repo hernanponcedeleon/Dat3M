@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.witness;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -173,7 +172,7 @@ public class WitnessBuilder {
 		Map<Integer, List<Event>> map = new HashMap<>();
         for(Event e : execEvents) {
 			// TODO improve this: these events correspond to return statements
-			if(e instanceof MemEvent && ((MemEvent)e).getMemValue() instanceof BConst && !((BConst)((MemEvent)e).getMemValue()).getValue()) {
+			if(e instanceof MemEvent && ((MemEvent)e).getMemValue().isFalse()) {
 				continue;
 			}
         	BigInteger var = model.evaluate(context.clockVariable("hb", e));

@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.*;
 import com.dat3m.dartagnan.program.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.expression.type.Type;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -14,6 +15,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 public final class ExpressionFactory {
 
     private static final Logger logger = LogManager.getLogger(ExpressionFactory.class);
+    private final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory instance = new ExpressionFactory();
 
     private ExpressionFactory() {}
@@ -22,16 +24,16 @@ public final class ExpressionFactory {
         return instance;
     }
 
-    public BConst makeTrue() {
-        return BConst.TRUE;
+    public IValue makeTrue() {
+        return makeValue(BigInteger.ONE, types.getBooleanType());
     }
 
-    public BConst makeFalse() {
-        return BConst.FALSE;
+    public IValue makeFalse() {
+        return makeValue(BigInteger.ZERO, types.getBooleanType());
     }
 
-    public BConst makeValue(boolean value) {
-        return value ? BConst.TRUE : BConst.FALSE;
+    public IValue makeValue(boolean value) {
+        return value ? makeTrue() : makeFalse();
     }
 
     public IValue makeZero(Type type) {
@@ -55,7 +57,7 @@ public final class ExpressionFactory {
             logger.warn("Non-boolean operand for {} {}.", operator, inner);
         }
         assert operator.equals(BOpUn.NOT);
-        if (inner instanceof BConst) {
+        if (inner instanceof IValue) {
             return makeValue(inner.isFalse());
         }
         if (inner instanceof BExprUn) {

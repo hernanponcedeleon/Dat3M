@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.*;
@@ -121,7 +122,7 @@ public class EventFactory {
     }
 
     public static CondJump newGoto(Label target) {
-        return newJump(BConst.TRUE, target);
+        return newJump(ExpressionFactory.getInstance().makeTrue(), target);
     }
 
     public static Assume newAssume(Expression expr) {

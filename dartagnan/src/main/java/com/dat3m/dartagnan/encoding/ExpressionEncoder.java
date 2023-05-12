@@ -157,11 +157,6 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(BConst bConst) {
-        return booleanFormulaManager.makeBoolean(bConst.getValue());
-    }
-
-    @Override
     public Formula visit(BExprBin bBin) {
         BooleanFormula lhs = encodeAsBoolean(bBin.getLHS());
         BooleanFormula rhs = encodeAsBoolean(bBin.getRHS());
@@ -187,6 +182,9 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(IValue iValue) {
+        if (iValue.isBoolean()) {
+            return booleanFormulaManager.makeBoolean(iValue.isTrue());
+        }
         Type type = iValue.getType();
         if (type instanceof NumberType) {
             return integerFormulaManager().makeNumber(iValue.getValue());

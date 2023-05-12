@@ -1,11 +1,13 @@
 package com.dat3m.dartagnan.program.expression;
 
-import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.google.common.collect.ImmutableSet;
+
+import java.math.BigInteger;
 
 public interface Expression {
 
@@ -14,11 +16,11 @@ public interface Expression {
     <T> T visit(ExpressionVisitor<T> visitor);
 
     default boolean isTrue() {
-        return equals(BConst.TRUE);
+        return this instanceof IValue && isBoolean() && !((IValue) this).getValue().equals(BigInteger.ZERO);
     }
 
     default boolean isFalse() {
-        return equals(BConst.FALSE);
+        return this instanceof IValue && isBoolean() && ((IValue) this).getValue().equals(BigInteger.ZERO);
     }
 
     default ImmutableSet<Register> getRegs() {

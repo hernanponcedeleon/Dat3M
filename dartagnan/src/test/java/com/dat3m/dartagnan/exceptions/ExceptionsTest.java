@@ -66,7 +66,7 @@ public class ExceptionsTest {
 
     @Test(expected = NullPointerException.class)
     public void JumpWithNullLabel() throws Exception {
-        EventFactory.newJump(BConst.FALSE, null);
+        EventFactory.newJump(ExpressionFactory.getInstance().makeFalse(), null);
     }
 
     @Test(expected = NullPointerException.class)
